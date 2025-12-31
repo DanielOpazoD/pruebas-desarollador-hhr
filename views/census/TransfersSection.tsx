@@ -25,9 +25,8 @@ export const TransfersSection: React.FC<TransfersSectionProps> = ({
                     </div>
                     <div>
                         <h2 className="text-base font-bold text-slate-800 leading-tight">
-                            Traslados Efectuados
+                            Traslados
                         </h2>
-                        <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Derivaciones a otros centros</p>
                     </div>
                 </div>
             </div>

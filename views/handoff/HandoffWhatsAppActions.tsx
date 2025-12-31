@@ -21,8 +21,9 @@ export const HandoffWhatsAppActions: React.FC<HandoffWhatsAppActionsProps> = ({
             <button
                 onClick={onShareLink}
                 className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium text-sm transition-colors"
+                aria-label="Copiar enlace de entrega al portapapeles"
             >
-                <Share2 size={16} />
+                <Share2 size={16} aria-hidden="true" />
                 Copiar enlace
             </button>
 
@@ -30,20 +31,21 @@ export const HandoffWhatsAppActions: React.FC<HandoffWhatsAppActionsProps> = ({
                 onClick={onSendWhatsApp}
                 disabled={whatsappSending || whatsappSent}
                 className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label={whatsappSent ? "Entrega enviada" : "Enviar entrega a WhatsApp"}
             >
                 {whatsappSending ? (
                     <>
-                        <RefreshCw size={16} className="animate-spin" />
+                        <RefreshCw size={16} className="animate-spin" aria-hidden="true" />
                         Enviando...
                     </>
                 ) : whatsappSent ? (
                     <>
-                        <CheckCircle size={16} />
+                        <CheckCircle size={16} aria-hidden="true" />
                         Enviado
                     </>
                 ) : (
                     <>
-                        <Send size={16} />
+                        <Send size={16} aria-hidden="true" />
                         Enviar a WhatsApp
                     </>
                 )}

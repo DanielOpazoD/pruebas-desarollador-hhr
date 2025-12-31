@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useDailyRecordContext } from '../context/DailyRecordContext';
 import { useStaffContext } from '../context/StaffContext';
-import { getPreviousDay } from '../services/repositories/DailyRecordRepository';
+import { getPreviousDay, getAvailableDates } from '../services/repositories/DailyRecordRepository';
 import { calculateStats } from '../services/calculations/statsCalculator';
 
 export const useCensusLogic = (currentDateString: string) => {
@@ -21,11 +21,23 @@ export const useCensusLogic = (currentDateString: string) => {
 
     // previousRecordAvailable state (Async check)
     const [previousRecordAvailable, setPreviousRecordAvailable] = React.useState(false);
+    const [previousRecordDate, setPreviousRecordDate] = React.useState<string | undefined>(undefined);
+    const [availableDates, setAvailableDates] = React.useState<string[]>([]);
 
     React.useEffect(() => {
         let mounted = true;
         getPreviousDay(currentDateString).then(prev => {
-            if (mounted) setPreviousRecordAvailable(!!prev);
+            if (mounted) {
+                setPreviousRecordAvailable(!!prev);
+                setPreviousRecordDate(prev?.date);
+            }
+        });
+        getAvailableDates().then(dates => {
+            if (mounted) {
+                // Filter out the current date and sort
+                const filtered = dates.filter(d => d !== currentDateString);
+                setAvailableDates(filtered);
+            }
         });
         return () => { mounted = false; };
     }, [currentDateString]);
@@ -43,6 +55,8 @@ export const useCensusLogic = (currentDateString: string) => {
         tensList,
         stats,
         previousRecordAvailable,
+        previousRecordDate,
+        availableDates,
 
         // Actions
         createDay,

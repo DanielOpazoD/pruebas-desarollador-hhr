@@ -26,9 +26,8 @@ export const DischargesSection: React.FC<DischargesSectionProps> = ({
                     </div>
                     <div>
                         <h2 className="text-base font-bold text-slate-800 leading-tight">
-                            Pacientes con Alta
+                            Altas
                         </h2>
-                        <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Altas Médicas y Administrativas</p>
                     </div>
                 </div>
             </div>

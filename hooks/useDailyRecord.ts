@@ -83,19 +83,26 @@ export const useDailyRecord = (
      * 
      * @example
      * ```typescript
-     * await createDay(true);
+     * await createDay(true); // Copy from previous day
+     * await createDay(true, '2025-12-25'); // Copy from specific date
      * ```
      */
-    const createDay = useCallback(async (copyFromPrevious: boolean) => {
+    const createDay = useCallback(async (copyFromPrevious: boolean, specificDate?: string) => {
         let prevDate: string | undefined = undefined;
 
         if (copyFromPrevious) {
-            const prevRecord = await getPreviousDay(currentDateString);
-            if (prevRecord) {
-                prevDate = prevRecord.date;
+            if (specificDate) {
+                // Use the specific date provided
+                prevDate = specificDate;
             } else {
-                warning("No se encontró registro anterior", "No hay datos del día previo para copiar.");
-                return;
+                // Fall back to finding the previous day
+                const prevRecord = await getPreviousDay(currentDateString);
+                if (prevRecord) {
+                    prevDate = prevRecord.date;
+                } else {
+                    warning("No se encontró registro anterior", "No hay datos del día previo para copiar.");
+                    return;
+                }
             }
         }
 
@@ -103,10 +110,11 @@ export const useDailyRecord = (
         markLocalChange();
         setRecord(newRecord);
 
-        success('Día creado', `Se ha inicializado el registro para ${currentDateString}.`);
+        const sourceMsg = prevDate ? `Copiado desde ${prevDate}` : 'Registro en blanco';
+        success('Día creado', sourceMsg);
 
         // Audit Log
-        logDailyRecordCreated(currentDateString, copyFromPrevious ? 'previous_day' : 'blank');
+        logDailyRecordCreated(currentDateString, copyFromPrevious ? (specificDate || 'previous_day') : 'blank');
     }, [currentDateString, warning, success, markLocalChange, setRecord]);
 
     const generateDemo = useCallback(async () => {

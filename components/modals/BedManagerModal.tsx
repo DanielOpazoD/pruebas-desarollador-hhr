@@ -186,9 +186,10 @@ export const BedManagerModal: React.FC<BedManagerModalProps> = ({
                         : "border-slate-100 bg-white text-slate-500 hover:border-medical-300 hover:bg-slate-50 focus:ring-2 focus:ring-medical-500/20 focus:outline-none"
                     )}
                     disabled={blockingBedId !== null || editingBedId !== null}
+                    aria-label={`Gestionar cama ${bed.name}: ${isBlocked ? 'Bloqueada' : 'Disponible'}`}
                   >
                     <span className="leading-none">{bed.name}</span>
-                    {isBlocked ? <Lock size={12} className="text-amber-500" /> : <div className="h-2" />}
+                    {isBlocked ? <Lock size={12} className="text-amber-500" aria-hidden="true" /> : <div className="h-2" aria-hidden="true" />}
                   </button>
                 )
               })}
@@ -215,9 +216,11 @@ export const BedManagerModal: React.FC<BedManagerModalProps> = ({
                         : "border-slate-100 bg-white text-slate-500 hover:border-medical-300 hover:bg-slate-50 focus:ring-2 focus:ring-medical-500/20 focus:outline-none"
                     )}
                     disabled={blockingBedId !== null}
+                    aria-label={isEnabled ? `Desactivar cama extra ${bed.name}` : `Activar cama extra ${bed.name}`}
+                    aria-pressed={isEnabled}
                   >
                     <span className="leading-none">{bed.name}</span>
-                    {isEnabled ? <CheckCircle size={12} className="text-medical-600" /> : <div className="h-2" />}
+                    {isEnabled ? <CheckCircle size={12} className="text-medical-600" aria-hidden="true" /> : <div className="h-2" aria-hidden="true" />}
                   </button>
                 )
               })}

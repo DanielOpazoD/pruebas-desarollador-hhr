@@ -6,6 +6,9 @@ import { BEDS } from '@/constants';
 import { VerticalHeader } from '@/views/cudyr/CudyrRow';
 import { getCategorization } from '@/views/cudyr/CudyrScoreUtils';
 import { CudyrScore } from '@/types';
+import { calculateStats } from '@/services/calculations/statsCalculator';
+
+// ... (existing imports)
 
 export const HandoffCudyrPrint: React.FC = () => {
     const { record } = useDailyRecordContext();
@@ -14,6 +17,36 @@ export const HandoffCudyrPrint: React.FC = () => {
         if (!record) return [];
         const activeExtras = record.activeExtraBeds || [];
         return BEDS.filter((b) => !b.isExtra || activeExtras.includes(b.id));
+    }, [record]);
+
+    // Calculate Summary Metrics for Header
+    const metrics = useMemo(() => {
+        if (!record) return { occupied: 0, categorized: 0, index: 0 };
+
+        const stats = calculateStats(record.beds);
+        const occupied = stats.totalHospitalized;
+
+        let categorized = 0;
+
+        Object.entries(record.beds).forEach(([bedId, data]) => {
+            if (data.isBlocked) return;
+
+            // Check main patient
+            if (data.patientName && data.patientName.trim()) {
+                const { isCategorized } = getCategorization(data.cudyr);
+                if (isCategorized) categorized++;
+            }
+
+            // Check clinical crib
+            if (data.clinicalCrib?.patientName && data.clinicalCrib.patientName.trim()) {
+                const { isCategorized } = getCategorization(data.clinicalCrib.cudyr);
+                if (isCategorized) categorized++;
+            }
+        });
+
+        const index = occupied > 0 ? Math.round((categorized / occupied) * 100) : 0;
+
+        return { occupied, categorized, index };
     }, [record]);
 
     if (!record) return null;
@@ -35,11 +68,31 @@ export const HandoffCudyrPrint: React.FC = () => {
     return (
         <div className="handoff-cudyr-print bg-white print:bg-white print:m-0 print:p-0 list-none">
             <div className="mb-3 pb-3 border-b border-slate-300">
-                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-1">
-                    <ClipboardList size={18} className="text-medical-700" />
-                    Instrumento CUDYR
-                </h2>
-                <div className="flex flex-wrap items-center gap-3 text-sm text-slate-700">
+                <div className="flex justify-between items-center mb-1">
+                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <ClipboardList size={18} className="text-medical-700" />
+                        Instrumento CUDYR
+                    </h2>
+                    {/* Metrics Badge */}
+                    <div className="flex gap-3 text-[10px] font-bold bg-slate-50 px-2 py-1 rounded-md border border-slate-200 print:bg-white print:border-slate-300">
+                        <div className="flex flex-col items-center leading-none">
+                            <span className="text-slate-400 text-[8px] uppercase tracking-tighter mb-0.5">Ocupadas</span>
+                            <span className="text-sm text-slate-700">{metrics.occupied}</span>
+                        </div>
+                        <div className="w-px bg-slate-200 h-5 self-center"></div>
+                        <div className="flex flex-col items-center leading-none">
+                            <span className="text-slate-400 text-[8px] uppercase tracking-tighter mb-0.5">Categ.</span>
+                            <span className="text-sm text-blue-600">{metrics.categorized}</span>
+                        </div>
+                        <div className="w-px bg-slate-200 h-5 self-center"></div>
+                        <div className="flex flex-col items-center leading-none">
+                            <span className="text-slate-400 text-[8px] uppercase tracking-tighter mb-0.5">Índice</span>
+                            <span className="text-sm text-slate-700">{metrics.index}%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 text-sm text-slate-700 mt-2">
                     <span className="font-semibold">Fecha: {formatPrintDate()}</span>
                     <span className="text-slate-400">|</span>
                     <span>

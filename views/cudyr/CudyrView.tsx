@@ -40,18 +40,17 @@ export const CudyrView: React.FC<CudyrViewProps> = ({ readOnly = false }) => {
         }
     }, [record?.date, logEvent, userId, record?.nursesDayShift, record?.nursesNightShift]);
 
-    if (!record) {
-        return <div className="p-8 text-center text-slate-500">Seleccione una fecha con registros para ver el CUDYR.</div>;
-    }
-
-    // Filter beds to display
+    // Filter beds to display - MUST be called before any early return
     const visibleBeds = useMemo(() => {
+        if (!record) return [];
         const activeExtras = record.activeExtraBeds || [];
         return BEDS.filter(b => !b.isExtra || activeExtras.includes(b.id));
-    }, [record.activeExtraBeds]);
+    }, [record]);
 
-    // Calculate statistics
+    // Calculate statistics - MUST be called before any early return
     const stats = useMemo(() => {
+        if (!record) return { occupiedCount: 0, categorizedCount: 0 };
+
         const occupied = visibleBeds.filter(b => {
             const p = record.beds[b.id];
             return p.patientName && !p.isBlocked;
@@ -67,7 +66,12 @@ export const CudyrView: React.FC<CudyrViewProps> = ({ readOnly = false }) => {
             occupiedCount: occupied.length,
             categorizedCount: categorized.length
         };
-    }, [visibleBeds, record.beds]);
+    }, [visibleBeds, record]);
+
+    // Early return AFTER all hooks have been called
+    if (!record) {
+        return <div className="p-8 text-center text-slate-500">Seleccione una fecha con registros para ver el CUDYR.</div>;
+    }
 
     const handleScoreChange = (bedId: string, field: keyof CudyrScore, value: number) => {
         updateCudyr(bedId, field, value);

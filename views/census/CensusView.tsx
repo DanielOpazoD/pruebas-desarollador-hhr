@@ -41,6 +41,8 @@ const CensusViewContent: React.FC<CensusViewProps> = ({
         record,
         stats,
         previousRecordAvailable,
+        previousRecordDate,
+        availableDates,
         createDay,
         resetDay,
         updateNurse,
@@ -73,6 +75,8 @@ const CensusViewContent: React.FC<CensusViewProps> = ({
                 selectedDay={selectedDay}
                 selectedMonth={selectedMonth}
                 previousRecordAvailable={previousRecordAvailable}
+                previousRecordDate={previousRecordDate}
+                availableDates={availableDates}
                 onCreateDay={createDay}
             />
         );

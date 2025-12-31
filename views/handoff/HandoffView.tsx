@@ -183,15 +183,17 @@ export const HandoffView: React.FC<HandoffViewProps> = ({ type = 'nursing', read
                                     : "bg-green-500 text-white hover:bg-green-600"
                             )}
                             title="Enviar entrega por WhatsApp (Manual)"
+                            aria-label="Enviar entrega por WhatsApp (Manual)"
                         >
-                            <Send size={14} /> Enviar por WhatsApp
+                            <Send size={14} aria-hidden="true" /> Enviar por WhatsApp
                         </button>
                         <button
                             onClick={handleShareLink}
                             className="flex items-center gap-2 px-3 py-1.5 bg-sky-100 text-sky-700 rounded-lg hover:bg-sky-200 transition-colors text-xs font-bold"
                             title="Generar link para firma del médico"
+                            aria-label="Generar link para firma del médico"
                         >
-                            <Share2 size={14} />
+                            <Share2 size={14} aria-hidden="true" />
                         </button>
                     </div>
                 )}
@@ -320,7 +322,11 @@ export const HandoffView: React.FC<HandoffViewProps> = ({ type = 'nursing', read
             {/* Novedades Section */}
             {!isMedical && (
                 <HandoffNovedades
-                    value={selectedShift === 'day' ? (record.handoffNovedadesDayShift || '') : (record.handoffNovedadesNightShift || '')}
+                    value={
+                        selectedShift === 'day'
+                            ? (record.handoffNovedadesDayShift || '')
+                            : (record.handoffNovedadesNightShift || record.handoffNovedadesDayShift || '')
+                    }
                     onChange={(val) => updateHandoffNovedades(selectedShift, val)}
                 />
             )}

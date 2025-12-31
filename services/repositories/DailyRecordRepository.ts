@@ -14,6 +14,8 @@ import {
     saveRecord as saveToIndexedDB,
     deleteRecord as deleteFromIndexedDB,
     getAllRecords as getAllFromIndexedDB,
+    getAllDates as getAllDatesFromIndexedDB,
+    getAllDemoRecords as getAllDemoRecordsFromIndexedDB,
     migrateFromLocalStorage,
     isIndexedDBAvailable,
     saveDemoRecord,
@@ -71,24 +73,7 @@ export interface IDailyRecordRepository {
 // Repository Implementation
 // ============================================================================
 
-// ============================================================================
-// Repository Implementation
-// ============================================================================
-
-import {
-    getRecordForDate as getRecordFromIndexedDB,
-    getPreviousDayRecord as getPreviousDayFromIndexedDB,
-    saveRecord as saveToIndexedDB,
-    deleteRecord as deleteFromIndexedDB,
-    getAllRecords as getAllFromIndexedDB,
-    migrateFromLocalStorage,
-    isIndexedDBAvailable
-} from '../storage/indexedDBService';
-
-// Initialize migration on load (non-blocking)
-if (isIndexedDBAvailable()) {
-    migrateFromLocalStorage().catch(err => console.error('[Repository] Migration failed:', err));
-}
+// Duplicate imports removed
 
 /**
  * Retrieves the daily record for a specific date.
@@ -114,6 +99,20 @@ export const getPreviousDay = async (date: string): Promise<DailyRecord | null> 
         return await getPreviousDemoDayRecord(date);
     }
     return getPreviousDayFromIndexedDB(date);
+};
+
+/**
+ * Retrieves all dates that have patient records.
+ * Used for the "copy from any day" feature.
+ * 
+ * @returns Array of date strings (YYYY-MM-DD) sorted descending (most recent first)
+ */
+export const getAvailableDates = async (): Promise<string[]> => {
+    if (demoModeActive) {
+        const records = await getAllDemoRecordsFromIndexedDB();
+        return Object.keys(records).sort().reverse();
+    }
+    return getAllDatesFromIndexedDB();
 };
 
 /**
@@ -227,7 +226,7 @@ export const syncWithFirestore = async (date: string): Promise<DailyRecord | nul
 export const initializeDay = async (
     date: string,
     copyFromDate?: string
-): Promise<DailyRecord | null> => {
+): Promise<DailyRecord> => {
     // 1. Check if record already exists
     const existing = await getForDate(date);
     if (existing) return existing;
@@ -274,6 +273,7 @@ export const initializeDay = async (
                     const prevNightNote = prevPatient.handoffNoteNightShift || prevPatient.handoffNote || '';
                     initialBeds[bed.id].handoffNoteDayShift = prevNightNote;
                     initialBeds[bed.id].handoffNoteNightShift = prevNightNote;
+
                     if (initialBeds[bed.id].clinicalCrib && prevPatient.clinicalCrib) {
                         const cribPrevNight = prevPatient.clinicalCrib.handoffNoteNightShift || prevPatient.clinicalCrib.handoffNote || '';
                         initialBeds[bed.id].clinicalCrib!.handoffNoteDayShift = cribPrevNight;
@@ -302,7 +302,12 @@ export const initializeDay = async (
         nursesNightShift: nursesNight,
         tensDayShift: tensDay,
         tensNightShift: tensNight,
-        activeExtraBeds: activeExtras
+        activeExtraBeds: activeExtras,
+        // Copy previous handoff novedades (Inter-day persistence)
+        // Logic: Day starts with previous Night's notes, or fallback to Day notes if Night was just inherited
+        handoffNovedadesDayShift: prevRecord
+            ? (prevRecord.handoffNovedadesNightShift || prevRecord.handoffNovedadesDayShift || '')
+            : ''
     };
 
     await save(newRecord);

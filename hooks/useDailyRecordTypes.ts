@@ -105,7 +105,7 @@ export interface DailyRecordContextType {
     lastSyncTime: Date | null;
 
     // Day Management
-    createDay: (copyFromPrevious: boolean) => void;
+    createDay: (copyFromPrevious: boolean, specificDate?: string) => void;
     generateDemo: () => void;
     resetDay: () => Promise<void>;
     refresh: () => void;
