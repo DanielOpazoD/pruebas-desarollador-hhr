@@ -93,7 +93,8 @@ export const HandoffView: React.FC<HandoffViewProps> = ({ type = 'nursing', read
                 authors
             );
         }
-    }, [record?.date, type, selectedShift, isMedical, logEvent, userId, record?.nursesDayShift, record?.nursesNightShift]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [record?.date, type, selectedShift, isMedical, userId]); // Only log when essential state changes
 
     // Update document title for PDF export filename
     useEffect(() => {

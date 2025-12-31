@@ -28,7 +28,7 @@ export const useHandoffManagement = (
     patchRecord: (partial: Record<string, any>) => Promise<void>
 ): HandoffManagementActions => {
     const { success, error: notifyError } = useNotification();
-    const { logDebouncedEvent, userId } = useAuditContext();
+    const { logEvent, logDebouncedEvent, userId } = useAuditContext();
 
     const updateHandoffChecklist = useCallback((shift: 'day' | 'night', field: string, value: boolean | string) => {
         if (!record) return;
@@ -70,11 +70,21 @@ export const useHandoffManagement = (
         // Audit Log (Smart/Debounced)
         const authors = getAttributedAuthors(userId, record, shift === 'medical' ? undefined : (shift as 'day' | 'night'));
 
+        const oldContent = shift === 'day'
+            ? record.handoffNovedadesDayShift
+            : (shift === 'night' ? record.handoffNovedadesNightShift : record.medicalHandoffNovedades);
+
         logDebouncedEvent(
             'HANDOFF_NOVEDADES_MODIFIED',
             'dailyRecord',
             record.date,
-            { shift, value },
+            {
+                shift,
+                value,
+                changes: {
+                    novedades: { old: oldContent || '', new: value }
+                }
+            },
             undefined,
             record.date,
             authors
@@ -108,14 +118,29 @@ export const useHandoffManagement = (
         if (!record) return;
 
         const updatedRecord = { ...record };
+        const signedAt = new Date().toISOString();
+
         updatedRecord.medicalSignature = {
             doctorName,
-            signedAt: new Date().toISOString()
+            signedAt
         };
 
         updatedRecord.lastUpdated = new Date().toISOString();
         saveAndUpdate(updatedRecord);
-    }, [record, saveAndUpdate]);
+
+        // Audit Log
+        logEvent(
+            'MEDICAL_HANDOFF_SIGNED',
+            'dailyRecord',
+            record.date,
+            {
+                doctorName,
+                signedAt
+            },
+            undefined,
+            record.date
+        );
+    }, [record, saveAndUpdate, logEvent]);
 
     const updateMedicalHandoffDoctor = useCallback(async (doctorName: string): Promise<void> => {
         if (!record) return;

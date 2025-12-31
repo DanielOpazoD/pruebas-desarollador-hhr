@@ -98,6 +98,12 @@ export const useAuthState = (): UseAuthStateReturn => {
         await clearStoredPassport();
         await saveSetting('hhr_offline_user', null);
         localStorage.removeItem('hhr_offline_user'); // Cleanup
+
+        // Reset login flag for audit tracking
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem('hhr_logged_this_session');
+        }
+
         setIsOfflineMode(false);
 
         // Firebase sign out (may fail if offline, that's ok)

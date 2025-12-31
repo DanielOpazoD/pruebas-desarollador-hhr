@@ -115,21 +115,86 @@ export const useBedManagement = (
         }
 
         const processedValue = result.value;
+        const oldPatient = record.beds[bedId];
+        const oldValue = oldPatient[field];
 
-        // Audit Logging for patient admission
+        // Audit Logging for patient admission/modification
         if (field === 'patientName') {
-            const oldName = record.beds[bedId].patientName;
+            const oldName = oldPatient.patientName;
             const newName = processedValue as string;
             // Admission: Empty -> Name
             if (!oldName && newName) {
-                logPatientAdmission(bedId, newName, record.beds[bedId].rut, record.date);
+                logPatientAdmission(bedId, newName, oldPatient.rut, oldPatient.pathology, record.date);
+            } else if (oldName && newName && oldName !== newName) {
+                // Name modification
+                logDebouncedEvent(
+                    'PATIENT_MODIFIED',
+                    'patient',
+                    bedId,
+                    {
+                        patientName: newName,
+                        changes: { [field]: { old: oldName, new: newName } }
+                    },
+                    oldPatient.rut,
+                    record.date
+                );
+            }
+        } else if (field === 'deviceDetails') {
+            // Specialized auditing for invasive devices
+            const oldDevices = (oldPatient.deviceDetails || {}) as Record<string, any>;
+            const newDevices = (processedValue || {}) as Record<string, any>;
+
+            // Detect which device changed
+            const allKeys = Array.from(new Set([...Object.keys(oldDevices), ...Object.keys(newDevices)]));
+            const deviceChanges: Record<string, any> = {};
+
+            allKeys.forEach(device => {
+                const oldD = oldDevices[device];
+                const newD = newDevices[device];
+                if (JSON.stringify(oldD) !== JSON.stringify(newD)) {
+                    deviceChanges[device] = { old: oldD || 'N/A', new: newD || 'Eliminado' };
+                }
+            });
+
+            if (Object.keys(deviceChanges).length > 0) {
+                logDebouncedEvent(
+                    'PATIENT_MODIFIED',
+                    'patient',
+                    bedId,
+                    {
+                        patientName: oldPatient.patientName,
+                        changes: { deviceDetails: deviceChanges }
+                    },
+                    oldPatient.rut,
+                    record.date
+                );
+            }
+        } else if (oldValue !== processedValue) {
+            // Critical fields logging
+            const criticalFields: (keyof PatientData)[] = [
+                'pathology', 'age', 'specialty', 'status', 'biologicalSex',
+                'insurance', 'admissionOrigin', 'origin', 'admissionDate'
+            ];
+
+            if (criticalFields.includes(field)) {
+                logDebouncedEvent(
+                    'PATIENT_MODIFIED',
+                    'patient',
+                    bedId,
+                    {
+                        patientName: oldPatient.patientName,
+                        changes: { [field]: { old: oldValue, new: processedValue } }
+                    },
+                    oldPatient.rut,
+                    record.date
+                );
             }
         }
 
         patchRecord({
             [`beds.${bedId}.${field}`]: processedValue
         });
-    }, [record, validation, patchRecord]);
+    }, [record, validation, patchRecord, logPatientAdmission, logDebouncedEvent]);
 
     /**
      * Update multiple patient fields atomically
@@ -180,7 +245,8 @@ export const useBedManagement = (
                     patientName: record.beds[bedId].patientName,
                     bedId,
                     field,
-                    value
+                    value,
+                    oldValue: record.beds[bedId].cudyr?.[field] || 0
                 },
                 record.beds[bedId].rut,
                 record.date,

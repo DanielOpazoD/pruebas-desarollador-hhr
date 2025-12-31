@@ -38,7 +38,8 @@ export const CudyrView: React.FC<CudyrViewProps> = ({ readOnly = false }) => {
                 authors
             );
         }
-    }, [record?.date, logEvent, userId, record?.nursesDayShift, record?.nursesNightShift]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [record?.date, userId]); // Only log when the date changes or user changes
 
     // Filter beds to display - MUST be called before any early return
     const visibleBeds = useMemo(() => {

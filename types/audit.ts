@@ -20,15 +20,31 @@ export type AuditAction =
     | 'VIEW_NURSING_HANDOFF'
     | 'VIEW_MEDICAL_HANDOFF'
     | 'USER_LOGIN'
-    | 'USER_LOGOUT';
+    | 'USER_LOGOUT'
+    | 'BED_BLOCKED'
+    | 'BED_UNBLOCKED'
+    | 'EXTRA_BED_TOGGLED'
+    | 'MEDICAL_HANDOFF_SIGNED';
 
 export interface AuditLogEntry {
     id: string;
     timestamp: string;          // ISO 8601
-    userId: string;             // email del usuario
+
+    // User identification (improved)
+    userId: string;             // email del usuario (primary)
+    userDisplayName?: string;   // Nombre visible (ej: "Daniel Opazo")
+    userUid?: string;           // Firebase UID (técnico)
+    ipAddress?: string;         // IP del cliente (si disponible)
+
+    // Action details
     action: AuditAction;        // tipo de acción
     entityType: 'patient' | 'discharge' | 'transfer' | 'dailyRecord' | 'user';
     entityId: string;           // bedId, recordId, etc.
+
+    // Human-readable summary (NEW)
+    summary?: string;           // "Ingresó a Juan Pérez en cama R2"
+
+    // Technical details (hidden by default in UI)
     details: Record<string, unknown>;  // datos específicos de la acción
     patientIdentifier?: string; // RUT enmascarado (ej: 12.345.***-K)
     recordDate?: string;        // fecha del registro afectado

@@ -124,15 +124,22 @@ export const useHandoffLogic = ({
      * @param isNested - True if the note belongs to a clinical crib within the bed.
      */
     const handleNursingNoteChange = useCallback(async (bedId: string, value: string, isNested: boolean = false) => {
+        const bed = record?.beds[bedId];
+        const oldNote = isMedical
+            ? (isNested ? bed?.clinicalCrib?.medicalHandoffNote : bed?.medicalHandoffNote)
+            : (selectedShift === 'day'
+                ? (isNested ? bed?.clinicalCrib?.handoffNoteDayShift : bed?.handoffNoteDayShift)
+                : (isNested ? bed?.clinicalCrib?.handoffNoteNightShift : bed?.handoffNoteNightShift));
+
         if (isMedical) {
             if (isNested) {
                 await updateClinicalCrib(bedId, 'medicalHandoffNote', value);
                 const p = record?.beds[bedId].clinicalCrib;
-                if (p) logMedicalHandoffModified(bedId, p.patientName || 'Cuna', p.rut || '-', value, record?.date || '');
+                if (p) logMedicalHandoffModified(bedId, p.patientName || 'Cuna', p.rut || '-', value, (oldNote as string) || '', record?.date || '');
             } else {
                 updatePatient(bedId, 'medicalHandoffNote', value);
                 const p = record?.beds[bedId];
-                if (p) logMedicalHandoffModified(bedId, p.patientName || 'ANONYMOUS', p.rut || '-', value, record?.date || '');
+                if (p) logMedicalHandoffModified(bedId, p.patientName || 'ANONYMOUS', p.rut || '-', value, (oldNote as string) || '', record?.date || '');
             }
         } else {
             if (selectedShift === 'day') {
@@ -142,28 +149,28 @@ export const useHandoffLogic = ({
                         handoffNoteNightShift: value
                     });
                     const p = record?.beds[bedId].clinicalCrib;
-                    if (p) logNurseHandoffModified(bedId, p.patientName || 'Cuna', p.rut || '-', 'day', value, record?.date || '');
+                    if (p) logNurseHandoffModified(bedId, p.patientName || 'Cuna', p.rut || '-', 'day', value, (oldNote as string) || '', record?.date || '');
                 } else {
                     updatePatientMultiple(bedId, {
                         handoffNoteDayShift: value,
                         handoffNoteNightShift: value
                     });
                     const p = record?.beds[bedId];
-                    if (p) logNurseHandoffModified(bedId, p.patientName || 'ANONYMOUS', p.rut || '-', 'day', value, record?.date || '');
+                    if (p) logNurseHandoffModified(bedId, p.patientName || 'ANONYMOUS', p.rut || '-', 'day', value, (oldNote as string) || '', record?.date || '');
                 }
             } else {
                 if (isNested) {
                     updateClinicalCrib(bedId, 'handoffNoteNightShift', value);
                     const p = record?.beds[bedId].clinicalCrib;
-                    if (p) logNurseHandoffModified(bedId, p.patientName || 'Cuna', p.rut || '-', 'night', value, record?.date || '');
+                    if (p) logNurseHandoffModified(bedId, p.patientName || 'Cuna', p.rut || '-', 'night', value, (oldNote as string) || '', record?.date || '');
                 } else {
                     updatePatient(bedId, 'handoffNoteNightShift', value);
                     const p = record?.beds[bedId];
-                    if (p) logNurseHandoffModified(bedId, p.patientName || 'ANONYMOUS', p.rut || '-', 'night', value, record?.date || '');
+                    if (p) logNurseHandoffModified(bedId, p.patientName || 'ANONYMOUS', p.rut || '-', 'night', value, (oldNote as string) || '', record?.date || '');
                 }
             }
         }
-    }, [isMedical, selectedShift, updatePatient, updatePatientMultiple, updateClinicalCrib, updateClinicalCribMultiple]);
+    }, [isMedical, selectedShift, record, updatePatient, updatePatientMultiple, updateClinicalCrib, updateClinicalCribMultiple]);
 
     /**
      * Copies the unique signature link to the system clipboard.

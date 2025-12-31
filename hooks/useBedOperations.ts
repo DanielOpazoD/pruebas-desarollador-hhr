@@ -9,6 +9,7 @@ import { DailyRecord, PatientData } from '../types';
 import { createEmptyPatient } from '../services/factories/patientFactory';
 import { BEDS } from '../constants';
 import { logPatientCleared, logAuditEvent } from '../services/admin/auditService';
+import { useAuditContext } from '../context/AuditContext';
 import { DailyRecordPatchLoose } from './useDailyRecordTypes';
 
 // ============================================================================
@@ -51,6 +52,7 @@ export const useBedOperations = (
     record: DailyRecord | null,
     patchRecord: (partial: DailyRecordPatchLoose) => Promise<void>
 ): BedOperationsActions => {
+    const { logEvent, logDebouncedEvent, logPatientCleared, userId } = useAuditContext();
 
     // ========================================================================
     // Clear Operations
@@ -75,7 +77,7 @@ export const useBedOperations = (
         patchRecord({
             [`beds.${bedId}`]: cleanPatient
         });
-    }, [record, patchRecord]);
+    }, [record, patchRecord, logPatientCleared]);
 
     const clearAllBeds = useCallback(() => {
         if (!record) return;
@@ -131,8 +133,7 @@ export const useBedOperations = (
             });
 
             // Audit
-            logAuditEvent(
-                record.beds[sourceBedId].patientName || 'anonymous',
+            logEvent(
                 'PATIENT_MODIFIED',
                 'patient',
                 targetBedId,
@@ -140,7 +141,10 @@ export const useBedOperations = (
                     action: 'move',
                     sourceBed: sourceBedId,
                     targetBed: targetBedId,
-                    patientName: sourceData.patientName
+                    patientName: sourceData.patientName,
+                    changes: {
+                        location: { old: record.beds[sourceBedId].location, new: record.beds[targetBedId].location }
+                    }
                 },
                 sourceData.rut,
                 record.date
@@ -159,8 +163,7 @@ export const useBedOperations = (
             });
 
             // Audit
-            logAuditEvent(
-                record.beds[sourceBedId].patientName || 'anonymous',
+            logEvent(
                 'PATIENT_MODIFIED',
                 'patient',
                 targetBedId,
@@ -168,13 +171,16 @@ export const useBedOperations = (
                     action: 'copy',
                     sourceBed: sourceBedId,
                     targetBed: targetBedId,
-                    patientName: sourceData.patientName
+                    patientName: sourceData.patientName,
+                    changes: {
+                        location: { old: 'N/A', new: record.beds[targetBedId].location }
+                    }
                 },
                 sourceData.rut,
                 record.date
             );
         }
-    }, [record, patchRecord]);
+    }, [record, patchRecord, logEvent]);
 
     // ========================================================================
     // Block/Extra Bed Operations
@@ -189,7 +195,17 @@ export const useBedOperations = (
             [`beds.${bedId}.isBlocked`]: newIsBlocked,
             [`beds.${bedId}.blockedReason`]: newIsBlocked ? (reason || '') : ''
         });
-    }, [record, patchRecord]);
+
+        // Audit Log
+        logEvent(
+            newIsBlocked ? 'BED_BLOCKED' : 'BED_UNBLOCKED',
+            'patient',
+            bedId,
+            { bedId, reason: newIsBlocked ? (reason || '') : '' },
+            undefined,
+            record.date
+        );
+    }, [record, patchRecord, logEvent]);
 
     /**
      * Update the blocked reason for an already blocked bed without toggling the block state.
@@ -202,17 +218,38 @@ export const useBedOperations = (
         patchRecord({
             [`beds.${bedId}.blockedReason`]: reason || ''
         });
-    }, [record, patchRecord]);
+
+        // Audit Log
+        logEvent(
+            'BED_BLOCKED',
+            'patient',
+            bedId,
+            { bedId, reason: reason || '', updateOnly: true },
+            undefined,
+            record.date
+        );
+    }, [record, patchRecord, logEvent]);
 
     const toggleExtraBed = useCallback((bedId: string) => {
         if (!record) return;
         const currentExtras = record.activeExtraBeds || [];
-        const newExtras = currentExtras.includes(bedId)
-            ? currentExtras.filter(id => id !== bedId)
-            : [...currentExtras, bedId];
+        const isActive = !currentExtras.includes(bedId);
+        const newExtras = isActive
+            ? [...currentExtras, bedId]
+            : currentExtras.filter(id => id !== bedId);
 
         patchRecord({ activeExtraBeds: newExtras });
-    }, [record, patchRecord]);
+
+        // Audit Log
+        logEvent(
+            'EXTRA_BED_TOGGLED',
+            'dailyRecord',
+            record.date,
+            { bedId, active: isActive },
+            undefined,
+            record.date
+        );
+    }, [record, patchRecord, logEvent]);
 
     // ========================================================================
     // Return API
