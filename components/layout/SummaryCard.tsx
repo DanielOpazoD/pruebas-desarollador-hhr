@@ -13,7 +13,7 @@ interface SummaryCardProps {
  * Common Card Wrapper to maintain consistency with Nurse/Tens selectors
  */
 const BaseSummaryCard: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
-    <div className="card px-3 py-2 flex flex-col justify-center gap-2 hover:border-slate-300 transition-colors min-w-[140px] h-full animate-fade-in">
+    <div className="card px-3 py-2 flex flex-col justify-between gap-2 hover:border-slate-300 transition-colors min-w-[140px] min-h-[88px] animate-fade-in">
         <div className="flex justify-between items-center pb-1 border-b border-slate-100">
             <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1">
                 {icon} {title}

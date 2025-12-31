@@ -7,18 +7,20 @@ interface NurseSelectorProps {
     nursesNightShift: string[];
     nursesList: string[];
     onUpdateNurse: (shift: 'day' | 'night', index: number, name: string) => void;
+    className?: string;
 }
 
 export const NurseSelector: React.FC<NurseSelectorProps> = ({
     nursesDayShift,
     nursesNightShift,
     nursesList,
-    onUpdateNurse
+    onUpdateNurse,
+    className
 }) => {
     const { setShowNurseManager } = useStaffContext();
 
     return (
-        <div className="card px-3 py-2 flex flex-col justify-center gap-2 hover:border-slate-300 transition-colors w-fit h-full !overflow-visible">
+        <div className={`card px-3 py-2 flex flex-col justify-between gap-2 hover:border-slate-300 transition-colors w-fit min-h-[88px] !overflow-visible ${className || ''}`}>
             <div className="flex justify-between items-center pb-1 border-b border-slate-100">
                 <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1">
                     <Users size={12} /> Enfermería

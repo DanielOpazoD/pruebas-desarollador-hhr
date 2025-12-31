@@ -31,23 +31,23 @@ export const CensusStaffHeader: React.FC<CensusStaffHeaderProps> = ({
 
     return (
         <div className="flex justify-center items-stretch gap-3 flex-wrap animate-fade-in px-4">
-            {/* Staff Selectors */}
-            <div className={clsx("flex gap-3 flex-wrap", readOnly && "pointer-events-none opacity-80")}>
-                <NurseSelector
-                    nursesDayShift={safeNursesDayShift}
-                    nursesNightShift={safeNursesNightShift}
-                    nursesList={nursesList}
-                    onUpdateNurse={onUpdateNurse}
-                />
-                <TensSelector
-                    tensDayShift={safeTensDayShift}
-                    tensNightShift={safeTensNightShift}
-                    tensList={tensList}
-                    onUpdateTens={onUpdateTens}
-                />
-            </div>
+            {/* Staff Selectors and Stats flattened for equal height */}
+            <NurseSelector
+                nursesDayShift={safeNursesDayShift}
+                nursesNightShift={safeNursesNightShift}
+                nursesList={nursesList}
+                onUpdateNurse={onUpdateNurse}
+                className={readOnly ? "pointer-events-none opacity-80" : ""}
+            />
+            <TensSelector
+                tensDayShift={safeTensDayShift}
+                tensNightShift={safeTensNightShift}
+                tensList={tensList}
+                onUpdateTens={onUpdateTens}
+                className={readOnly ? "pointer-events-none opacity-80" : ""}
+            />
 
-            {/* Stats Summary Cards - Separated for consistency */}
+            {/* Stats Summary Cards */}
             {stats && (
                 <>
                     <BedSummaryCard stats={stats} />
