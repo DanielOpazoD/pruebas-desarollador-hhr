@@ -122,8 +122,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             <div className="w-full max-w-sm">
                 {/* Logo/Header */}
                 <div className="text-center mb-10">
-                    <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-2xl shadow-xl mb-6">
-                        <Hospital className="w-10 h-10 text-medical-600" />
+                    <div className="inline-flex items-center justify-center w-24 h-24 bg-white rounded-2xl shadow-xl mb-6 p-2">
+                        <img
+                            src="/images/logos/logo_HHR.png"
+                            alt="Hospital Hanga Roa"
+                            className="w-full h-full object-contain"
+                        />
                     </div>
                     <h1 className="text-3xl font-bold text-white mb-2">Hospital Hanga Roa</h1>
                     <p className="text-medical-200">Sistema Estadístico de Hospitalizados</p>
@@ -217,10 +221,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 {/* Version/Footer */}
                 <div className="text-center mt-8 space-y-1">
                     <p className="text-medical-200/60 text-[10px] uppercase tracking-widest font-bold">
-                        Unidad de Estadística • v1.2.0
+                        v2.0.0
                     </p>
                     <p className="text-medical-300/40 text-[9px]">
-                        Isla de Pascua, Chile
+                        Desarrollo: daniel.opazo@hospitalhangaroa.cl
+                    </p>
+                    <p className="text-medical-300/40 text-[9px]">
+                        Rapa Nui, Chile
                     </p>
                 </div>
             </div>

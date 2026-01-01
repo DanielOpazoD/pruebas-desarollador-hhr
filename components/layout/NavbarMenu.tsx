@@ -67,8 +67,12 @@ export const NavbarMenu: React.FC<NavbarMenuProps> = ({
                 onClick={onToggle}
                 className="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-white/10 transition-all duration-200"
             >
-                <div className="bg-white/20 p-2 rounded-xl backdrop-blur-md border border-white/20 shadow-glass">
-                    <LayoutList size={22} className="text-white" />
+                <div className="bg-white p-1.5 rounded-xl shadow-sm">
+                    <img
+                        src="/images/logos/logo_HHR.png"
+                        alt="HHR"
+                        className="w-7 h-7 object-contain"
+                    />
                 </div>
                 <div className="text-left">
                     <h1 className="text-lg font-display font-bold leading-tight tracking-tight">Hospital Hanga Roa</h1>
@@ -102,13 +106,6 @@ export const NavbarMenu: React.FC<NavbarMenuProps> = ({
                                 }}
                             />
 
-                            {visibleModules.includes('REPORTS') && (
-                                <MenuItem
-                                    icon={FileSpreadsheet}
-                                    label="Reportes"
-                                    onClick={() => handleModuleChange('REPORTS')}
-                                />
-                            )}
 
                             {isUserAdmin && (
                                 <>
