@@ -33,15 +33,90 @@ function versionPlugin(): Plugin {
       );
 
       console.log(`[versionPlugin] Generated version.json: ${version}`);
-    }
+    },
   };
 }
-
-
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   const isProduction = mode === 'production';
+  const chunkForModule = (moduleId: string): string | undefined => {
+    const normalizedId = moduleId.replace(/\\/g, '/');
+
+    if (normalizedId.includes('/node_modules/')) {
+      // Keep React together with UI libs that depend on it
+      if (
+        normalizedId.includes('/node_modules/react/') ||
+        normalizedId.includes('/node_modules/react-dom/') ||
+        normalizedId.includes('/node_modules/lucide-react/')
+      ) {
+        return 'vendor-react';
+      }
+
+      // Firebase separate
+      if (normalizedId.includes('/node_modules/firebase/')) {
+        return 'vendor-firebase';
+      }
+
+      // 3D stack for floor map
+      if (
+        normalizedId.includes('/node_modules/three/') ||
+        normalizedId.includes('/node_modules/@react-three/fiber/') ||
+        normalizedId.includes('/node_modules/@react-three/drei/')
+      ) {
+        return 'vendor-three';
+      }
+
+      // Charts separate (lazy loaded)
+      if (normalizedId.includes('/node_modules/recharts/')) {
+        return 'vendor-charts';
+      }
+
+      // Excel/Reports (lazy loaded)
+      if (
+        normalizedId.includes('/node_modules/exceljs/') ||
+        normalizedId.includes('/node_modules/file-saver/')
+      ) {
+        return 'vendor-excel';
+      }
+
+      // PDF generation (lazy loaded)
+      if (
+        normalizedId.includes('/node_modules/jspdf/') ||
+        normalizedId.includes('/node_modules/jspdf-autotable/')
+      ) {
+        return 'vendor-pdf';
+      }
+
+      // DOCX/XLSX helpers for transfer bundles
+      if (
+        normalizedId.includes('/node_modules/docx/') ||
+        normalizedId.includes('/node_modules/docxtemplater/') ||
+        normalizedId.includes('/node_modules/pizzip/') ||
+        normalizedId.includes('/node_modules/xlsx-populate/')
+      ) {
+        return 'vendor-docs';
+      }
+
+      // HTML to Canvas (lazy loaded for screenshots)
+      if (normalizedId.includes('/node_modules/html2canvas/')) {
+        return 'vendor-canvas';
+      }
+    }
+
+    // Split heavy internal features for better cacheability and lower entry chunk pressure
+    if (normalizedId.includes('/src/features/census/components/3d/')) {
+      return 'feature-census-3d';
+    }
+    if (normalizedId.includes('/src/features/transfers/')) {
+      return 'feature-transfers';
+    }
+    if (normalizedId.includes('/src/features/admin/')) {
+      return 'feature-admin';
+    }
+
+    return undefined;
+  };
 
   return {
     server: {
@@ -74,57 +149,50 @@ export default defineConfig(({ mode }) => {
             {
               src: 'images/logos/logo_HHR.png', // Using existing logo as base
               sizes: '192x192',
-              type: 'image/png'
+              type: 'image/png',
             },
             {
               src: 'images/logos/logo_HHR.png',
               sizes: '512x512',
-              type: 'image/png'
-            }
-          ]
+              type: 'image/png',
+            },
+          ],
         },
         devOptions: {
           enabled: false, // Disabling SW in dev to prevent source code caching/interfering
-          type: 'module'
-        }
+          type: 'module',
+        },
       }),
       // Gzip compression for production builds
-      isProduction && viteCompression({
-        algorithm: 'gzip',
-        ext: '.gz',
-        threshold: 10240, // Only compress files > 10KB
-        deleteOriginFile: false,
-      }),
+      isProduction &&
+        viteCompression({
+          algorithm: 'gzip',
+          ext: '.gz',
+          threshold: 10240, // Only compress files > 10KB
+          deleteOriginFile: false,
+        }),
       // Brotli compression (better ratio than gzip)
-      isProduction && viteCompression({
-        algorithm: 'brotliCompress',
-        ext: '.br',
-        threshold: 10240,
-        deleteOriginFile: false,
-      }),
+      isProduction &&
+        viteCompression({
+          algorithm: 'brotliCompress',
+          ext: '.br',
+          threshold: 10240,
+          deleteOriginFile: false,
+        }),
     ].filter(Boolean),
     define: {
-      'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY),
-      'import.meta.env.VITE_API_KEY': JSON.stringify(env.VITE_API_KEY || env.API_KEY || env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY),
+      'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(
+        env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY
+      ),
+      'import.meta.env.VITE_API_KEY': JSON.stringify(
+        env.VITE_API_KEY || env.API_KEY || env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY
+      ),
       'import.meta.env.VITE_E2E_MODE': JSON.stringify(process.env.VITE_E2E_MODE || 'false'),
     },
     build: {
       rollupOptions: {
         output: {
-          manualChunks: {
-            // Keep React together with UI libs that depend on it
-            'vendor-react': ['react', 'react-dom', 'lucide-react'],
-            // Firebase separate
-            'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
-            // Charts separate (lazy loaded)
-            'vendor-charts': ['recharts'],
-            // Excel/Reports (lazy loaded)
-            'vendor-excel': ['exceljs', 'file-saver'],
-            // PDF generation (lazy loaded)
-            'vendor-pdf': ['jspdf', 'jspdf-autotable'],
-            // HTML to Canvas (lazy loaded for screenshots)
-            'vendor-canvas': ['html2canvas'],
-          },
+          manualChunks: chunkForModule,
         },
       },
       chunkSizeWarningLimit: 600, // Stricter warning at 600KB
@@ -147,17 +215,23 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),
-      }
+      },
     },
     // Optimize dependencies - pre-bundle CommonJS packages for ESM compatibility
     optimizeDeps: {
-      include: ['react', 'react-dom', 'firebase/app', 'firebase/auth', 'firebase/firestore', 'exceljs'],
+      include: [
+        'react',
+        'react-dom',
+        'firebase/app',
+        'firebase/auth',
+        'firebase/firestore',
+        'exceljs',
+      ],
     },
     test: {
       environment: 'jsdom',
       globals: true,
       setupFiles: './tests/setup.ts',
-    }
+    },
   };
 });
-

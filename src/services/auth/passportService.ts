@@ -65,17 +65,30 @@ declare global {
 const PASSPORT_VERSION = 1;
 const PASSPORT_EXPIRATION_YEARS = 3;
 const ELIGIBLE_ROLES = ['admin', 'nurse_hospital'];
+const DEV_FALLBACK_SIGNATURE_KEY = 'HHR-DEV-FALLBACK-KEY-NOT-FOR-PRODUCTION';
 
 // Secret key for HMAC signature - configured via environment variable for security
 // In development, uses fallback key. In production, set VITE_PASSPORT_SECRET.
 // Note: Still visible in bundle since this is a client app. For maximum security,
 // signature verification should happen in a Cloud Function.
-const SIGNATURE_KEY =
-  import.meta.env.VITE_PASSPORT_SECRET || 'HHR-DEV-FALLBACK-KEY-NOT-FOR-PRODUCTION';
 const IS_TEST_ENV =
   import.meta.env.MODE === 'test' ||
   import.meta.env.VITEST === true ||
   import.meta.env.VITEST === 'true';
+
+const getSignatureKey = (): string | null => {
+  const configuredSecret = import.meta.env.VITE_PASSPORT_SECRET?.trim();
+  if (configuredSecret) {
+    return configuredSecret;
+  }
+
+  // In production we require an explicit secret to prevent weak fallback signing.
+  if (import.meta.env.PROD) {
+    return null;
+  }
+
+  return DEV_FALLBACK_SIGNATURE_KEY;
+};
 
 // ============================================================================
 // Utilities
@@ -96,8 +109,13 @@ async function hashString(message: string): Promise<string> {
  * Generate a modern signature using SHA-256.
  */
 const generateSignature = async (data: string): Promise<string> => {
+  const signatureKey = getSignatureKey();
+  if (!signatureKey) {
+    throw new Error('Passport secret missing in production environment.');
+  }
+
   const timestamp = Date.now().toString(36);
-  const combined = data + timestamp + SIGNATURE_KEY;
+  const combined = data + timestamp + signatureKey;
   const hash = await hashString(combined);
   return `v${PASSPORT_VERSION + 1}-${hash}-${timestamp}`;
 };
@@ -106,6 +124,9 @@ const generateSignature = async (data: string): Promise<string> => {
  * Verify the signature of a passport.
  */
 const verifySignature = async (passport: OfflinePassport): Promise<boolean> => {
+  const signatureKey = getSignatureKey();
+  if (!signatureKey) return false;
+
   // Recreate the data string that was signed
   const dataToSign = `${passport.email}|${passport.role}|${passport.displayName}|${passport.issuedAt}|${passport.expiresAt}`;
 
@@ -117,7 +138,7 @@ const verifySignature = async (passport: OfflinePassport): Promise<boolean> => {
   if (version === `v${PASSPORT_VERSION + 1}`) {
     // Modern SHA-256 signature
     const timestamp = signatureParts[2] || '';
-    const expectedHash = await hashString(dataToSign + timestamp + SIGNATURE_KEY);
+    const expectedHash = await hashString(dataToSign + timestamp + signatureKey);
     // Strict check: hash must match AND signature must match exactly the expected pattern
     return (
       signatureParts[1] === expectedHash &&
@@ -128,7 +149,7 @@ const verifySignature = async (passport: OfflinePassport): Promise<boolean> => {
   if (version === `v${PASSPORT_VERSION}`) {
     // Legacy simple hash signature
     let hash = 0;
-    const combined = dataToSign + SIGNATURE_KEY;
+    const combined = dataToSign + signatureKey;
     for (let i = 0; i < combined.length; i++) {
       const char = combined.charCodeAt(i);
       hash = (hash << 5) - hash + char;
@@ -215,6 +236,13 @@ export const validatePassport = async (
   const isE2ETestPassport = IS_TEST_ENV && passport.signature.endsWith('-e2e-test');
 
   if (!isE2ETestPassport) {
+    if (!getSignatureKey()) {
+      return {
+        valid: false,
+        error: 'Configuración de seguridad incompleta. Contacte a soporte.',
+      };
+    }
+
     // Check signature only for non-test passports
     if (!(await verifySignature(passport))) {
       return { valid: false, error: 'Firma del pasaporte inválida.' };

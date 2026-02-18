@@ -187,8 +187,8 @@ service cloud.firestore {
         allow update: if isAdmin() || 
                         (isNurse() && isWithinEditingWindow(resource.data.dateTimestamp)) ||
                         (isDoctor() && isMedicalUpdate());
-        // Delete: Admin always, Nurse only if it's the current day
-        allow delete: if isAdmin() || (isNurse() && isCurrentDay(resource.data.dateTimestamp));
+        // Delete: Admin only (nurses must not hard-delete census records)
+        allow delete: if isAdmin();
         
         // History subcollection
         match /history/{historyId} {

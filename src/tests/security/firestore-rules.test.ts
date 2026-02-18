@@ -26,11 +26,17 @@ describeRules('Firestore Security Rules', () => {
       .firestore();
   const admin = () =>
     testEnv
-      .authenticatedContext('user_admin', { email: 'daniel.opazo@hospitalhangaroa.cl' })
+      .authenticatedContext('user_admin', {
+        email: 'daniel.opazo@hospitalhangaroa.cl',
+        role: 'admin',
+      })
       .firestore();
   const nurse = () =>
     testEnv
-      .authenticatedContext('user_nurse', { email: 'hospitalizados@hospitalhangaroa.cl' })
+      .authenticatedContext('user_nurse', {
+        email: 'hospitalizados@hospitalhangaroa.cl',
+        role: 'nurse_hospital',
+      })
       .firestore();
   const doctor = () =>
     testEnv
