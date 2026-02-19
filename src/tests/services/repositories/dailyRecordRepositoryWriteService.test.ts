@@ -42,8 +42,8 @@ vi.mock('@/services/repositories/PatientMasterRepository', () => ({
   },
 }));
 
-vi.mock('@/services/admin/auditService', () => ({
-  logConflictAutoMerged: vi.fn().mockResolvedValue(undefined),
+vi.mock('@/services/repositories/ports/repositoryAuditPort', () => ({
+  logRepositoryConflictAutoMerged: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { save, updatePartial } from '@/services/repositories/dailyRecordRepositoryWriteService';
@@ -57,7 +57,7 @@ import {
   updateRecordPartial as updateRecordPartialToFirestore,
 } from '@/services/storage/firestoreService';
 import { isRetryableSyncError, queueSyncTask } from '@/services/storage/syncQueueService';
-import { logConflictAutoMerged } from '@/services/admin/auditService';
+import { logRepositoryConflictAutoMerged } from '@/services/repositories/ports/repositoryAuditPort';
 
 const buildRecord = (date: string): DailyRecord => ({
   date,
@@ -171,7 +171,7 @@ describe('dailyRecordRepositoryWriteService outbox fallback', () => {
         }),
       })
     );
-    expect(logConflictAutoMerged).toHaveBeenCalledWith(
+    expect(logRepositoryConflictAutoMerged).toHaveBeenCalledWith(
       '2026-02-16',
       expect.objectContaining({
         policyVersion: '2026-02-v2',
@@ -211,7 +211,7 @@ describe('dailyRecordRepositoryWriteService outbox fallback', () => {
         }),
       })
     );
-    expect(logConflictAutoMerged).toHaveBeenCalledWith(
+    expect(logRepositoryConflictAutoMerged).toHaveBeenCalledWith(
       '2026-02-15',
       expect.objectContaining({
         policyVersion: '2026-02-v2',

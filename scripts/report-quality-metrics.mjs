@@ -275,14 +275,27 @@ const getTypeSafetySignals = () => {
   });
 
   let explicitAnyCount = 0;
+  let explicitAnySourceCount = 0;
+  let explicitAnyTestCount = 0;
 
   for (const filePath of files) {
     const content = fs.readFileSync(filePath, 'utf8');
-    explicitAnyCount += content.match(/:\s*any\b/g)?.length || 0;
-    explicitAnyCount += content.match(/\bas\s+any\b/g)?.length || 0;
+    const count =
+      (content.match(/:\s*any\b/g)?.length || 0) + (content.match(/\bas\s+any\b/g)?.length || 0);
+    explicitAnyCount += count;
+
+    const relative = toPosix(path.relative(ROOT, filePath));
+    const isTest =
+      relative.includes('/tests/') || TEST_FILE_PATTERN.test(relative) || relative.includes('.spec.');
+
+    if (isTest) {
+      explicitAnyTestCount += count;
+    } else {
+      explicitAnySourceCount += count;
+    }
   }
 
-  return { explicitAnyCount };
+  return { explicitAnyCount, explicitAnySourceCount, explicitAnyTestCount };
 };
 
 const generatedAt = new Date().toISOString();
@@ -328,7 +341,9 @@ const mdLines = [
   '',
   '## Type Safety Signals',
   '',
-  `- Explicit any occurrences: ${metrics.typeSafety.explicitAnyCount}`,
+  `- Explicit any occurrences (total): ${metrics.typeSafety.explicitAnyCount}`,
+  `- Explicit any in source (non-test): ${metrics.typeSafety.explicitAnySourceCount}`,
+  `- Explicit any in tests: ${metrics.typeSafety.explicitAnyTestCount}`,
   '',
 ];
 

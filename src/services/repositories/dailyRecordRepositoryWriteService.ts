@@ -25,9 +25,9 @@ import {
 import { mapPatientToFhir } from '@/services/utils/fhirMappers';
 import { logError } from '@/services/utils/errorService';
 import { PatientMasterRepository } from '@/services/repositories/PatientMasterRepository';
-import { logConflictAutoMerged } from '@/services/admin/auditService';
 import { resolveDailyRecordConflictWithTrace } from '@/services/repositories/conflictResolutionMatrix';
 import { buildConflictAuditSummary } from '@/services/repositories/conflictResolutionAuditSummary';
+import { logRepositoryConflictAutoMerged } from '@/services/repositories/ports/repositoryAuditPort';
 import {
   createPartialUpdateDailyRecordCommand,
   createSaveDailyRecordCommand,
@@ -63,7 +63,7 @@ const autoMergeAndQueueConflict = async (
 
     await saveToIndexedDB(merged);
     await queueSyncTask('UPDATE_DAILY_RECORD', merged);
-    await logConflictAutoMerged(date, auditDetails);
+    await logRepositoryConflictAutoMerged(date, auditDetails);
     return true;
   } catch (mergeError) {
     console.warn('[Repository] Auto-merge conflict fallback failed:', mergeError);
