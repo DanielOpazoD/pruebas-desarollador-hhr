@@ -61,6 +61,11 @@ jobs:
         run: npm run test:ci:unit
         env:
           CI: true
+
+      - name: Run critical sync resilience tests
+        run: npm run test:resilience
+        env:
+          CI: true
       
       - name: Upload test coverage (optional)
         if: always()
