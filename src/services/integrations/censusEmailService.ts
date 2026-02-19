@@ -83,7 +83,7 @@ export const triggerCensusEmail = async (params: TriggerEmailParams): Promise<Em
   }
 
   if (import.meta.env.DEV && allowDevelopmentEmailSend) {
-    console.info(`[CensusEmail] Modo desarrollo habilitado. Endpoint: ${ENDPOINT}`);
+    console.warn(`[CensusEmail] Modo desarrollo habilitado. Endpoint: ${ENDPOINT}`);
   }
 
   // Validate recipients - must be provided explicitly since no hardcoded defaults

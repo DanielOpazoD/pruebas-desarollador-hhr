@@ -77,6 +77,14 @@ describe('cudyrStorageService', () => {
       vi.mocked(getMetadata).mockRejectedValue({ code: 'storage/unauthenticated' });
       expect(await cudyrExists(mockDate)).toBe(false);
     });
+
+    it('should return false when storage reports 403/404 through unknown error payload', async () => {
+      vi.mocked(getMetadata).mockRejectedValue({
+        code: 'storage/unknown',
+        customData: { serverResponse: 'status=403 Forbidden' },
+      });
+      expect(await cudyrExists(mockDate)).toBe(false);
+    });
   });
 
   describe('deleteCudyrFile', () => {

@@ -26,7 +26,6 @@ vi.mock('@/schemas', () => ({
 describe('exportService', () => {
   type BackupData = Record<string, DailyRecord>;
   type ValidateBackupResult = ReturnType<typeof validation.validateBackupData>;
-  type AnchorElementLike = Pick<HTMLAnchorElement, 'click'>;
   const toBackupData = (value: BackupData): ValidateBackupResult =>
     ({ success: true, data: value }) as unknown as ValidateBackupResult;
 

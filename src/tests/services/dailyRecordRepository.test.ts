@@ -213,11 +213,12 @@ describe('DailyRecordRepository (Expanded)', () => {
 
     it('uses demo storage in demo mode', async () => {
       setDemoModeActive(true);
-      const demoRecord = createMockRecord('demo-date');
+      const demoDate = '2025-01-15';
+      const demoRecord = createMockRecord(demoDate);
       await save(demoRecord);
 
-      const result = await getForDate('demo-date');
-      expect(result?.date).toBe('demo-date');
+      const result = await getForDate(demoDate);
+      expect(result?.date).toBe(demoDate);
     });
   });
 

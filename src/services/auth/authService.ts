@@ -18,6 +18,8 @@ import { safeJsonParse } from '@/utils/jsonUtils';
 export type { AuthUser, UserRole } from '@/types';
 import { AuthUser, UserRole } from '@/types';
 import { INSTITUTIONAL_ACCOUNTS } from '@/constants/identities';
+import { acquireGoogleLoginLock, releaseGoogleLoginLock } from '@/services/auth/googleLoginLock';
+import { checkSharedCensusAccess, isSharedCensusMode } from '@/services/auth/sharedCensusAuth';
 
 // ============================================================================
 // CONFIGURACIÓN DE ACCESOS ESTÁTICOS (Hardcoded)
@@ -30,96 +32,8 @@ const STATIC_ROLES: Record<string, string> = {
   'd.opazo.damiani@gmail.com': 'doctor_urgency',
 };
 
-const SHARED_CENSUS_ROUTE_PREFIXES = ['/censo-compartido', '/censo-publico'] as const;
-const GOOGLE_LOGIN_LOCK_KEY = 'hhr_google_login_lock_v1';
-const GOOGLE_LOGIN_LOCK_TTL_MS = 30_000;
-const GOOGLE_LOGIN_TAB_ID =
-  typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-    ? crypto.randomUUID()
-    : `tab_${Math.random().toString(36).slice(2)}`;
-
-const isSharedCensusPath = (pathname: string): boolean =>
-  SHARED_CENSUS_ROUTE_PREFIXES.some(prefix => pathname.startsWith(prefix));
-
-const isSharedCensusMode = (): boolean =>
-  typeof window !== 'undefined' && isSharedCensusPath(window.location.pathname);
-
 const createAuthError = (code: string, message: string): Error & { code: string } =>
   Object.assign(new Error(message), { code });
-
-type GoogleLoginLockPayload = {
-  owner: string;
-  timestamp: number;
-};
-
-const readGoogleLoginLock = (): GoogleLoginLockPayload | null => {
-  if (typeof window === 'undefined' || !window.localStorage) return null;
-  const raw = window.localStorage.getItem(GOOGLE_LOGIN_LOCK_KEY);
-  const parsed = safeJsonParse<GoogleLoginLockPayload | null>(raw, null);
-  if (!parsed || !parsed.owner || !parsed.timestamp) return null;
-  return parsed;
-};
-
-const isGoogleLoginLockActive = (payload: GoogleLoginLockPayload | null): boolean =>
-  Boolean(payload && Date.now() - payload.timestamp < GOOGLE_LOGIN_LOCK_TTL_MS);
-
-const acquireGoogleLoginLock = (): boolean => {
-  if (typeof window === 'undefined' || !window.localStorage) return true;
-
-  const currentLock = readGoogleLoginLock();
-  if (isGoogleLoginLockActive(currentLock) && currentLock?.owner !== GOOGLE_LOGIN_TAB_ID) {
-    return false;
-  }
-
-  const nextLock: GoogleLoginLockPayload = {
-    owner: GOOGLE_LOGIN_TAB_ID,
-    timestamp: Date.now(),
-  };
-  window.localStorage.setItem(GOOGLE_LOGIN_LOCK_KEY, JSON.stringify(nextLock));
-
-  const confirmed = readGoogleLoginLock();
-  return confirmed?.owner === GOOGLE_LOGIN_TAB_ID;
-};
-
-const releaseGoogleLoginLock = (): void => {
-  if (typeof window === 'undefined' || !window.localStorage) return;
-  const currentLock = readGoogleLoginLock();
-  if (currentLock?.owner === GOOGLE_LOGIN_TAB_ID) {
-    window.localStorage.removeItem(GOOGLE_LOGIN_LOCK_KEY);
-  }
-};
-
-type SharedCensusAccessResult = {
-  authorized: boolean;
-  role: 'viewer' | 'downloader';
-};
-
-const checkSharedCensusAccess = async (
-  email: string | null | undefined = auth.currentUser?.email
-): Promise<SharedCensusAccessResult> => {
-  const currentEmail = normalizeEmail(email || auth.currentUser?.email || '');
-  if (!currentEmail) {
-    return { authorized: false, role: 'viewer' };
-  }
-  try {
-    const checkSharedAccess = httpsCallable<Record<string, never>, SharedCensusAccessResult>(
-      functions,
-      'checkSharedCensusAccess'
-    );
-    const response = await checkSharedAccess({});
-
-    if (!response.data?.authorized) {
-      return { authorized: false, role: 'viewer' };
-    }
-    return {
-      authorized: true,
-      role: response.data.role === 'downloader' ? 'downloader' : 'viewer',
-    };
-  } catch (error) {
-    console.error('[authService] Shared census authorization check failed', error);
-    return { authorized: false, role: 'viewer' };
-  }
-};
 
 const clearLegacyRoleCache = (key: string): void => {
   if (typeof window !== 'undefined' && window.localStorage) {

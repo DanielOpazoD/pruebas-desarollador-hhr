@@ -27,6 +27,14 @@ describe('pdfStorageService runtime resilience', () => {
     await expect(getPdfUrl('2026-02-19', 'day')).resolves.toBeNull();
   });
 
+  it('returns null url when storage returns 404 inside unknown error message', async () => {
+    vi.mocked(getDownloadURL).mockRejectedValue({
+      code: 'storage/unknown',
+      message: 'Firebase Storage: HTTP 404 Not Found',
+    });
+    await expect(getPdfUrl('2026-02-19', 'day')).resolves.toBeNull();
+  });
+
   it('returns false for unauthorized/unauthenticated in exists check', async () => {
     vi.mocked(getMetadata).mockRejectedValue({ code: 'storage/unauthorized' });
     await expect(pdfExists('2026-02-19', 'day')).resolves.toBe(false);

@@ -30,7 +30,7 @@ describe('useNavbarNavigation', () => {
   type VisibleModulesArg = Parameters<typeof useNavbarNavigation>[1];
   type ViewModeArg = Parameters<typeof useNavbarNavigation>[2];
 
-  const callHook = (
+  const useTestHook = (
     currentModule: CurrentModuleArg,
     visibleModules: VisibleModulesArg,
     censusViewMode: ViewModeArg = 'REGISTER'
@@ -38,7 +38,7 @@ describe('useNavbarNavigation', () => {
 
   it('should categorize navigation items correctly', () => {
     const { result } = renderHook(() =>
-      callHook(
+      useTestHook(
         'HANDOFF' as unknown as CurrentModuleArg,
         ['HANDOFF', 'CENSUS', 'ADMIN', 'HISTORY'] as unknown as VisibleModulesArg,
         'REGISTER'
@@ -53,7 +53,7 @@ describe('useNavbarNavigation', () => {
   it('should filter admin-only items for non-admin users', () => {
     // With admin role, admin items should be visible
     const { result } = renderHook(() =>
-      callHook(
+      useTestHook(
         'HANDOFF' as unknown as CurrentModuleArg,
         ['HANDOFF', 'ADMIN'] as unknown as VisibleModulesArg,
         'REGISTER'
@@ -66,7 +66,7 @@ describe('useNavbarNavigation', () => {
 
   it('should detect utility active state', () => {
     const { result } = renderHook(() =>
-      callHook(
+      useTestHook(
         'CENSUS' as unknown as CurrentModuleArg,
         ['HANDOFF', 'CENSUS'] as unknown as VisibleModulesArg,
         'REGISTER'
@@ -79,7 +79,7 @@ describe('useNavbarNavigation', () => {
   it('should filter items based on required module', () => {
     // Without HISTORY in visible modules
     const { result: result1 } = renderHook(() =>
-      callHook(
+      useTestHook(
         'HANDOFF' as unknown as CurrentModuleArg,
         ['HANDOFF', 'CENSUS'] as unknown as VisibleModulesArg,
         'REGISTER'
@@ -95,7 +95,7 @@ describe('useNavbarNavigation', () => {
 
     // With HISTORY in visible modules
     const { result: result2 } = renderHook(() =>
-      callHook(
+      useTestHook(
         'HANDOFF' as unknown as CurrentModuleArg,
         ['HANDOFF', 'CENSUS', 'HISTORY'] as unknown as VisibleModulesArg,
         'REGISTER'

@@ -16,6 +16,7 @@ import { subscribeToSystemHealth, UserHealthStatus } from '@/services/admin/heal
 import clsx from 'clsx';
 import { evaluateSystemHealthState } from './systemHealthStatusPolicy';
 import { DailyOpsChecklistCard } from './DailyOpsChecklistCard';
+import { SystemHealthAlertsPanel } from './SystemHealthAlertsPanel';
 
 export const SystemHealthDashboard = () => {
   const [stats, setStats] = useState<UserHealthStatus[]>([]);
@@ -39,6 +40,7 @@ export const SystemHealthDashboard = () => {
   return (
     <div className="max-w-7xl mx-auto space-y-4">
       <DailyOpsChecklistCard />
+      <SystemHealthAlertsPanel stats={stats} />
 
       <div className="flex justify-end">
         <div className="relative w-full md:w-64">

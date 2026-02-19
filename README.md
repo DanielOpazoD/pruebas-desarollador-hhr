@@ -122,6 +122,7 @@ import { useDailyRecord } from '@/hooks/useDailyRecord';
 
 - [Arquitectura global](docs/ARCHITECTURE.md)
 - [Runbook de sync y resiliencia](docs/RUNBOOK_SYNC_RESILIENCE.md)
+- [Checklist diario admin (1 pagina)](docs/RUNBOOK_DAILY_ADMIN_CHECKLIST.md)
 - [Runbook técnico de soporte](docs/RUNBOOK_SUPPORT_OPERATIONS.md)
 - [Mapa de código fuente](src/README.md)
 
