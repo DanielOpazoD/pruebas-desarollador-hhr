@@ -4,105 +4,127 @@ import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { getExportPasswordsPath } from '@/constants/firestorePaths';
 
 interface TriggerEmailParams {
-    date: string;
-    records: DailyRecord[];
-    recipients?: string[];
-    nursesSignature?: string;
-    body?: string;
-    shareLink?: string;
-    userEmail?: string | null;
-    userRole?: string | null;
+  date: string;
+  records: DailyRecord[];
+  recipients?: string[];
+  nursesSignature?: string;
+  body?: string;
+  shareLink?: string;
+  userEmail?: string | null;
+  userRole?: string | null;
 }
 
 interface EmailResponse {
-    success: boolean;
-    message: string;
-    gmailId: string;
-    censusDate?: string;
-    exportPassword?: string;
+  success: boolean;
+  message: string;
+  gmailId: string;
+  censusDate?: string;
+  exportPassword?: string;
 }
 
-const ENDPOINT = '/.netlify/functions/send-census-email';
+const DEFAULT_ENDPOINT = '/.netlify/functions/send-census-email';
+const ENDPOINT = import.meta.env.VITE_CENSUS_EMAIL_ENDPOINT || DEFAULT_ENDPOINT;
 
 // Check if we're in development mode (Vite dev server)
 const isDevelopment = import.meta.env.DEV;
+const allowDevelopmentEmailSend =
+  String(import.meta.env.VITE_ALLOW_DEV_EMAIL_SEND || '').toLowerCase() === 'true';
 
 /**
  * Save export password to Firestore for audit purposes
  */
-const saveExportPassword = async (date: string, password: string, createdBy?: string): Promise<void> => {
-    try {
-        const db = getFirestore();
-        const passwordsPath = getExportPasswordsPath();
-        const docRef = doc(db, passwordsPath, date);
+const saveExportPassword = async (
+  date: string,
+  password: string,
+  createdBy?: string
+): Promise<void> => {
+  try {
+    const db = getFirestore();
+    const passwordsPath = getExportPasswordsPath();
+    const docRef = doc(db, passwordsPath, date);
 
-        await setDoc(docRef, {
-            date,
-            password,
-            createdAt: new Date().toISOString(),
-            createdBy,
-            source: 'email'
-        }, { merge: true });
+    await setDoc(
+      docRef,
+      {
+        date,
+        password,
+        createdAt: new Date().toISOString(),
+        createdBy,
+        source: 'email',
+      },
+      { merge: true }
+    );
 
-        // console.debug(`[CensusEmail] Password saved to Firestore for ${date}`);
-    } catch (error) {
-        console.error('[CensusEmail] Failed to save password to Firestore:', error);
-        // Don't throw - email was sent successfully, this is just for audit
-    }
+    // console.debug(`[CensusEmail] Password saved to Firestore for ${date}`);
+  } catch (error) {
+    console.error('[CensusEmail] Failed to save password to Firestore:', error);
+    // Don't throw - email was sent successfully, this is just for audit
+  }
 };
 
 export const triggerCensusEmail = async (params: TriggerEmailParams): Promise<EmailResponse> => {
-    const { date, records, recipients, nursesSignature, body, shareLink, userEmail, userRole } = params;
+  const { date, records, recipients, nursesSignature, body, shareLink, userEmail, userRole } =
+    params;
 
-
-    // In development, Netlify functions are not available
-    if (isDevelopment) {
-        console.warn('[CensusEmail] Modo desarrollo - el envío de correo solo funciona en Netlify.');
-        console.warn('[CensusEmail] Datos que se enviarían:', {
-            date,
-            recipientCount: recipients?.length || CENSUS_DEFAULT_RECIPIENTS.length,
-            recordCount: records.length,
-        });
-
-        // Show a user-friendly message instead of crashing
-        throw new Error('El envío de correo automático solo está disponible cuando la aplicación está desplegada en Netlify. En desarrollo local, puedes verificar los datos en la consola.');
-    }
-
-    // Validate recipients - must be provided explicitly since no hardcoded defaults
-    const finalRecipients = recipients && recipients.length > 0 ? recipients : CENSUS_DEFAULT_RECIPIENTS;
-
-    if (finalRecipients.length === 0) {
-        throw new Error('No se especificaron destinatarios para el correo. Configure los destinatarios antes de enviar.');
-    }
-
-    const response = await fetch(ENDPOINT, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-user-email': userEmail || '',
-            'x-user-role': userRole || ''
-        },
-        body: JSON.stringify({
-            date,
-            records,
-            recipients: finalRecipients,
-            nursesSignature,
-            body,
-            shareLink
-        })
+  // By default, avoid sending real emails from local dev to prevent accidental dispatches.
+  // Teams can opt in explicitly using VITE_ALLOW_DEV_EMAIL_SEND=true.
+  if (isDevelopment && !allowDevelopmentEmailSend) {
+    console.warn('[CensusEmail] Modo desarrollo con envío deshabilitado por defecto.');
+    console.warn('[CensusEmail] Datos que se enviarían:', {
+      date,
+      recipientCount: recipients?.length || CENSUS_DEFAULT_RECIPIENTS.length,
+      recordCount: records.length,
     });
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'No se pudo enviar el correo.');
-    }
+    throw new Error(
+      'El envío de correo está deshabilitado en desarrollo local. ' +
+        'Si necesitas probar el flujo real, ejecuta las funciones y define ' +
+        'VITE_ALLOW_DEV_EMAIL_SEND=true (opcionalmente VITE_CENSUS_EMAIL_ENDPOINT).'
+    );
+  }
 
-    const result: EmailResponse = await response.json();
+  if (isDevelopment && allowDevelopmentEmailSend) {
+    console.info(`[CensusEmail] Modo desarrollo habilitado. Endpoint: ${ENDPOINT}`);
+  }
 
-    // Save password to Firestore for audit purposes
-    if (result.exportPassword && result.censusDate) {
-        await saveExportPassword(result.censusDate, result.exportPassword, userEmail || undefined);
-    }
+  // Validate recipients - must be provided explicitly since no hardcoded defaults
+  const finalRecipients =
+    recipients && recipients.length > 0 ? recipients : CENSUS_DEFAULT_RECIPIENTS;
 
-    return result;
+  if (finalRecipients.length === 0) {
+    throw new Error(
+      'No se especificaron destinatarios para el correo. Configure los destinatarios antes de enviar.'
+    );
+  }
+
+  const response = await fetch(ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-user-email': userEmail || '',
+      'x-user-role': userRole || '',
+    },
+    body: JSON.stringify({
+      date,
+      records,
+      recipients: finalRecipients,
+      nursesSignature,
+      body,
+      shareLink,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'No se pudo enviar el correo.');
+  }
+
+  const result: EmailResponse = await response.json();
+
+  // Save password to Firestore for audit purposes
+  if (result.exportPassword && result.censusDate) {
+    await saveExportPassword(result.censusDate, result.exportPassword, userEmail || undefined);
+  }
+
+  return result;
 };

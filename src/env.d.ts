@@ -11,6 +11,8 @@ interface ImportMetaEnv {
   readonly VITE_GEMINI_API_KEY?: string;
   readonly VITE_API_KEY?: string;
   readonly VITE_E2E_MODE?: string;
+  readonly VITE_ALLOW_DEV_EMAIL_SEND?: string;
+  readonly VITE_CENSUS_EMAIL_ENDPOINT?: string;
 }
 
 interface _ImportMeta {
