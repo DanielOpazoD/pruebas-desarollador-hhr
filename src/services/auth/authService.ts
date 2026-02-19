@@ -31,12 +31,63 @@ const STATIC_ROLES: Record<string, string> = {
 };
 
 const SHARED_CENSUS_ROUTE_PREFIXES = ['/censo-compartido', '/censo-publico'] as const;
+const GOOGLE_LOGIN_LOCK_KEY = 'hhr_google_login_lock_v1';
+const GOOGLE_LOGIN_LOCK_TTL_MS = 30_000;
+const GOOGLE_LOGIN_TAB_ID =
+  typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `tab_${Math.random().toString(36).slice(2)}`;
 
 const isSharedCensusPath = (pathname: string): boolean =>
   SHARED_CENSUS_ROUTE_PREFIXES.some(prefix => pathname.startsWith(prefix));
 
 const isSharedCensusMode = (): boolean =>
   typeof window !== 'undefined' && isSharedCensusPath(window.location.pathname);
+
+const createAuthError = (code: string, message: string): Error & { code: string } =>
+  Object.assign(new Error(message), { code });
+
+type GoogleLoginLockPayload = {
+  owner: string;
+  timestamp: number;
+};
+
+const readGoogleLoginLock = (): GoogleLoginLockPayload | null => {
+  if (typeof window === 'undefined' || !window.localStorage) return null;
+  const raw = window.localStorage.getItem(GOOGLE_LOGIN_LOCK_KEY);
+  const parsed = safeJsonParse<GoogleLoginLockPayload | null>(raw, null);
+  if (!parsed || !parsed.owner || !parsed.timestamp) return null;
+  return parsed;
+};
+
+const isGoogleLoginLockActive = (payload: GoogleLoginLockPayload | null): boolean =>
+  Boolean(payload && Date.now() - payload.timestamp < GOOGLE_LOGIN_LOCK_TTL_MS);
+
+const acquireGoogleLoginLock = (): boolean => {
+  if (typeof window === 'undefined' || !window.localStorage) return true;
+
+  const currentLock = readGoogleLoginLock();
+  if (isGoogleLoginLockActive(currentLock) && currentLock?.owner !== GOOGLE_LOGIN_TAB_ID) {
+    return false;
+  }
+
+  const nextLock: GoogleLoginLockPayload = {
+    owner: GOOGLE_LOGIN_TAB_ID,
+    timestamp: Date.now(),
+  };
+  window.localStorage.setItem(GOOGLE_LOGIN_LOCK_KEY, JSON.stringify(nextLock));
+
+  const confirmed = readGoogleLoginLock();
+  return confirmed?.owner === GOOGLE_LOGIN_TAB_ID;
+};
+
+const releaseGoogleLoginLock = (): void => {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  const currentLock = readGoogleLoginLock();
+  if (currentLock?.owner === GOOGLE_LOGIN_TAB_ID) {
+    window.localStorage.removeItem(GOOGLE_LOGIN_LOCK_KEY);
+  }
+};
 
 type SharedCensusAccessResult = {
   authorized: boolean;
@@ -301,7 +352,31 @@ googleProvider.setCustomParameters({
  * @returns The authenticated AuthUser object.
  */
 export const signInWithGoogle = async (): Promise<AuthUser> => {
+  if (!acquireGoogleLoginLock()) {
+    throw createAuthError(
+      'auth/multi-tab-login-in-progress',
+      'Ya hay un inicio de sesión en progreso en otra pestaña.'
+    );
+  }
+
   try {
+    const existingUser = auth.currentUser;
+    if (existingUser && !existingUser.isAnonymous) {
+      if (isSharedCensusMode()) {
+        const sharedAccess = await checkSharedCensusAccess(existingUser.email);
+        if (sharedAccess.authorized) {
+          return toAuthUser(existingUser, 'viewer_census');
+        }
+        await firebaseSignOut(auth);
+      } else {
+        const { allowed, role } = await checkEmailInFirestore(existingUser.email || '');
+        if (allowed) {
+          return toAuthUser(existingUser, role);
+        }
+        await firebaseSignOut(auth);
+      }
+    }
+
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
 
@@ -343,6 +418,8 @@ export const signInWithGoogle = async (): Promise<AuthUser> => {
     }
 
     const errorMessages: Record<string, string> = {
+      'auth/multi-tab-login-in-progress':
+        'Hay otra pestaña iniciando sesión. Espera unos segundos o usa el acceso alternativo.',
       'auth/popup-closed-by-user': 'Inicio de sesión cancelado',
       'auth/popup-blocked':
         'El navegador bloqueó la ventana emergente. Permita pop-ups para este sitio.',
@@ -360,6 +437,8 @@ export const signInWithGoogle = async (): Promise<AuthUser> => {
         ? errorMessages[err.code] || 'Error al iniciar sesión con Google'
         : 'Error al iniciar sesión con Google'
     );
+  } finally {
+    releaseGoogleLoginLock();
   }
 };
 

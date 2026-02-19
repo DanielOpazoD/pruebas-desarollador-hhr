@@ -1,5 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import { signInWithGoogle, signInAnonymouslyForPassport } from '@/services/auth/authService';
+import {
+  signInWithGoogle,
+  signInAnonymouslyForPassport,
+  signInWithGoogleRedirect,
+} from '@/services/auth/authService';
 import {
   parsePassportFile,
   validatePassport,
@@ -43,8 +47,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 }) => {
   const [error, setError] = useState<string | null>(null);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isRedirectLoading, setIsRedirectLoading] = useState(false);
   const [isPassportLoading, setIsPassportLoading] = useState(false);
   const [backgroundMode, setBackgroundMode] = useState<'auto' | 'day' | 'night'>('auto');
+  const [showAlternateAccess, setShowAlternateAccess] = useState(false);
   const [_isDragging, setIsDragging] = useState(false);
 
   const _fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -52,6 +58,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const handleGoogleSignIn = async () => {
     setError(null);
     setIsGoogleLoading(true);
+    setShowAlternateAccess(false);
 
     try {
       await signInWithGoogle();
@@ -67,11 +74,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       const isPopupIssue =
         errorCode === 'auth/network-request-failed' ||
         errorMessage.includes('INTERNAL ASSERTION') ||
-        errorCode === 'auth/popup-blocked';
+        errorCode === 'auth/popup-blocked' ||
+        errorCode === 'auth/cancelled-popup-request' ||
+        errorCode === 'auth/multi-tab-login-in-progress';
 
       if (isPopupIssue) {
+        setShowAlternateAccess(true);
         setError(
-          'El navegador bloqueó la conexión segura. Intenta con el botón de "Acceso Alternativo" abajo.'
+          'No se pudo abrir el login emergente (popup), posiblemente por bloqueo del navegador o por otra pestaña iniciando sesión.'
         );
       } else {
         setError(errorMessage || 'Error al iniciar sesión con Google');
@@ -155,7 +165,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     setIsDragging(false);
   }, []);
 
-  const isAnyLoading = isGoogleLoading || isPassportLoading;
+  const isAnyLoading = isGoogleLoading || isPassportLoading || isRedirectLoading;
   const currentHour = new Date().getHours();
   const isAutoDayWindow = currentHour >= 8 && currentHour < 20;
   const isDayGradient = backgroundMode === 'auto' ? isAutoDayWindow : backgroundMode === 'day';
@@ -228,6 +238,38 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               </>
             )}
           </button>
+
+          {showAlternateAccess && (
+            <button
+              type="button"
+              onClick={async () => {
+                setError(null);
+                setIsRedirectLoading(true);
+                try {
+                  await signInWithGoogleRedirect();
+                } catch (redirectError) {
+                  const redirectMessage =
+                    redirectError instanceof Error
+                      ? redirectError.message
+                      : 'No fue posible iniciar por redirección.';
+                  setError(redirectMessage);
+                } finally {
+                  setIsRedirectLoading(false);
+                }
+              }}
+              disabled={isAnyLoading || isRedirectLoading}
+              className="mt-3 w-full bg-slate-100 hover:bg-slate-200 disabled:bg-slate-100 border border-slate-200 text-slate-700 font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2"
+            >
+              {isRedirectLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin text-slate-600" />
+                  Redirigiendo...
+                </>
+              ) : (
+                'Acceso alternativo (sin popup)'
+              )}
+            </button>
+          )}
 
           {/* Error Message */}
           {error && (
