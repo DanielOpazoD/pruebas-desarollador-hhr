@@ -53,7 +53,7 @@ describe('CatalogRepository', () => {
     });
 
     it('saveNurses should save to both', async () => {
-      await CatalogRepository.saveNurses(['Nurse A']);
+      await CatalogRepository.saveNurses([' Nurse A ', 'Nurse A', '']);
       expect(idbService.saveCatalog).toHaveBeenCalledWith('nurses', ['Nurse A']);
       expect(firestoreService.saveNurseCatalogToFirestore).toHaveBeenCalledWith(['Nurse A']);
     });
@@ -62,6 +62,12 @@ describe('CatalogRepository', () => {
       const cb = vi.fn();
       CatalogRepository.subscribeNurses(cb);
       expect(firestoreService.subscribeToNurseCatalog).toHaveBeenCalled();
+    });
+
+    it('subscribeNurses should reject non-function callbacks', () => {
+      expect(() =>
+        CatalogRepository.subscribeNurses(null as unknown as (nurses: string[]) => void)
+      ).toThrow(/callback must be a function/);
     });
   });
 
@@ -75,7 +81,7 @@ describe('CatalogRepository', () => {
     });
 
     it('saveTens should save to both', async () => {
-      await CatalogRepository.saveTens(['TENS A']);
+      await CatalogRepository.saveTens([' TENS A ', 'TENS A', '']);
       expect(idbService.saveCatalog).toHaveBeenCalledWith('tens', ['TENS A']);
       expect(firestoreService.saveTensCatalogToFirestore).toHaveBeenCalledWith(['TENS A']);
     });

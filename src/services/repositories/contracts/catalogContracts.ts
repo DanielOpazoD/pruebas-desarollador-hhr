@@ -83,3 +83,9 @@ export const normalizeProfessionalCatalog = (value: unknown): ProfessionalCatalo
 
   return Array.from(unique.values());
 };
+
+export const assertCatalogSubscriptionCallback = (callback: unknown, catalogName: string): void => {
+  if (typeof callback !== 'function') {
+    throw new Error(`[RepositoryContract] ${catalogName} subscription callback must be a function`);
+  }
+};

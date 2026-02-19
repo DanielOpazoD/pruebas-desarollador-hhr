@@ -28,11 +28,11 @@ import { useCallback, useMemo } from 'react';
 import { ClinicalEvent } from '@/types';
 import { getShiftSchedule } from '@/utils/dateUtils';
 import { useAuditContext } from '@/context/AuditContext';
+import { useDailyRecordData } from '@/context/DailyRecordContext';
 import {
-  useDailyRecordData,
   useDailyRecordBedActions,
   useDailyRecordHandoffActions,
-} from '@/context/DailyRecordContext';
+} from '@/context/useDailyRecordScopedActions';
 
 // ========== SUB-HOOKS ==========
 import { useHandoffVisibility, NursingShift } from './useHandoffVisibility';

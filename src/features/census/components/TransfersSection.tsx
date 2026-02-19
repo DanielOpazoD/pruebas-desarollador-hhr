@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { useDailyRecordMovementActions } from '@/context/DailyRecordContext';
+import { useDailyRecordMovementActions } from '@/context/useDailyRecordScopedActions';
 import { useCensusActionCommands } from './CensusActionsContext';
 import { ArrowRightLeft } from 'lucide-react';
 import { TRANSFERS_TABLE_HEADERS } from '@/features/census/controllers/censusTransfersTableController';

@@ -1,12 +1,14 @@
 import { useMemo } from 'react';
 import {
-  useDailyRecordDayActions,
   useDailyRecordBeds,
-  useDailyRecordMovementActions,
   useDailyRecordMovements,
-  useDailyRecordStaffActions,
   useDailyRecordStaff,
 } from '@/context/DailyRecordContext';
+import {
+  useDailyRecordDayActions,
+  useDailyRecordMovementActions,
+  useDailyRecordStaffActions,
+} from '@/context/useDailyRecordScopedActions';
 import { useStaffContext } from '@/context/StaffContext';
 import { calculateStats } from '@/services/calculations/statsCalculator';
 import { useCensusPromptState } from '@/hooks/useCensusPromptState';

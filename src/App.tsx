@@ -37,6 +37,7 @@ import { HospitalProvider } from './context/HospitalContext';
 import { RepositoryProvider, defaultRepositories } from '@/services/RepositoryContext';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/config/queryClient';
+import { setFirestoreEnabled } from '@/services/repositories/DailyRecordRepository';
 
 // ============================================================================
 // Sync Effect - Keeps repository in sync with Firebase connection status
@@ -48,24 +49,14 @@ const isIgnorableWorkerShutdownImportError = (error: unknown): boolean => {
 
 const useSyncFirestoreStatus = (isFirebaseConnected: boolean) => {
   React.useEffect(() => {
-    let isMounted = true;
-    void import('@/services/repositories/DailyRecordRepository')
-      .then(({ setFirestoreEnabled }) => {
-        if (!isMounted) {
-          return;
-        }
-        setFirestoreEnabled(isFirebaseConnected);
-      })
-      .catch(error => {
-        if (isIgnorableWorkerShutdownImportError(error)) {
-          return;
-        }
-        console.error('[App] Failed to sync Firestore status', error);
-      });
-
-    return () => {
-      isMounted = false;
-    };
+    try {
+      setFirestoreEnabled(isFirebaseConnected);
+    } catch (error) {
+      if (isIgnorableWorkerShutdownImportError(error)) {
+        return;
+      }
+      console.error('[App] Failed to sync Firestore status', error);
+    }
   }, [isFirebaseConnected]);
 };
 

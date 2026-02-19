@@ -1,10 +1,12 @@
 import {
-  useDailyRecordBedActions,
   useDailyRecordBeds,
-  useDailyRecordDayActions,
   useDailyRecordOverrides,
   useDailyRecordStaff,
 } from '@/context/DailyRecordContext';
+import {
+  useDailyRecordBedActions,
+  useDailyRecordDayActions,
+} from '@/context/useDailyRecordScopedActions';
 import { useCensusActionCommands } from '@/features/census/context/censusActionContexts';
 import { useConfirmDialog, useNotification } from '@/context/UIContext';
 import { useAuth } from '@/context/AuthContext';

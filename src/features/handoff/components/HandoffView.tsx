@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { useDailyRecordData, useDailyRecordHandoffActions } from '@/context/DailyRecordContext';
+import { useDailyRecordData } from '@/context/DailyRecordContext';
+import { useDailyRecordHandoffActions } from '@/context/useDailyRecordScopedActions';
 import { useStaffContext } from '@/context/StaffContext';
 import { MessageSquare, Stethoscope, Activity } from 'lucide-react';
 import { HandoffHeader } from './HandoffHeader';

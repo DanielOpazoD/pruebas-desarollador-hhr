@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useDailyRecordData, useDailyRecordHandoffActions } from '@/context/DailyRecordContext';
+import { useDailyRecordData } from '@/context/DailyRecordContext';
+import { useDailyRecordHandoffActions } from '@/context/useDailyRecordScopedActions';
 import { HandoffView } from '@/features/handoff';
 import { PenTool, CheckCircle } from 'lucide-react';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';

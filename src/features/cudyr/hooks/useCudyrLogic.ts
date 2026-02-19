@@ -1,9 +1,9 @@
 import { useMemo, useEffect, useCallback } from 'react';
+import { useDailyRecordData } from '@/context/DailyRecordContext';
 import {
   useDailyRecordCudyrActions,
-  useDailyRecordData,
   useDailyRecordDayActions,
-} from '@/context/DailyRecordContext';
+} from '@/context/useDailyRecordScopedActions';
 import { BEDS } from '@/constants';
 import { CudyrScore } from '@/types';
 import { useAuditContext } from '@/context/AuditContext';

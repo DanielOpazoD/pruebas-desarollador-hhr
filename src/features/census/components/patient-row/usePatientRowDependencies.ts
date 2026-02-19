@@ -1,4 +1,4 @@
-import { useDailyRecordBedActions } from '@/context/DailyRecordContext';
+import { useDailyRecordBedActions } from '@/context/useDailyRecordScopedActions';
 import { useConfirmDialog } from '@/context/UIContext';
 
 export interface PatientRowDependencies {

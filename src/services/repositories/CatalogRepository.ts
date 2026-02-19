@@ -21,6 +21,7 @@ import { ProfessionalCatalogItem } from '@/types';
 import {
   normalizeProfessionalCatalog,
   normalizeStringCatalog,
+  assertCatalogSubscriptionCallback,
 } from '@/services/repositories/contracts/catalogContracts';
 
 export interface ICatalogRepository {
@@ -78,9 +79,10 @@ export const getNurses = async (): Promise<string[]> => {
  * Saves the nurses list to local storage and syncs to Firestore if enabled.
  */
 export const saveNurses = async (nurses: string[]): Promise<void> => {
-  await saveCatalog('nurses', normalizeStringCatalog(nurses));
+  const normalized = normalizeStringCatalog(nurses);
+  await saveCatalog('nurses', normalized);
   if (isFirestoreEnabled() && !isDemoModeActive()) {
-    await saveNurseCatalogToFirestore(nurses);
+    await saveNurseCatalogToFirestore(normalized);
   }
 };
 
@@ -88,10 +90,12 @@ export const saveNurses = async (nurses: string[]): Promise<void> => {
  * Subscribes to real-time updates for the nurses catalog from Firestore.
  */
 export const subscribeNurses = (callback: (nurses: string[]) => void): (() => void) => {
+  assertCatalogSubscriptionCallback(callback, 'nurses');
   if (isDemoModeActive()) return () => {};
   return subscribeToNurseCatalog(async nurses => {
-    await saveCatalog('nurses', nurses);
-    callback(nurses);
+    const normalized = normalizeStringCatalog(nurses);
+    await saveCatalog('nurses', normalized);
+    callback(normalized);
   });
 };
 
@@ -137,9 +141,10 @@ export const getTens = async (): Promise<string[]> => {
  * Saves the TENS list to local storage and syncs to Firestore if enabled.
  */
 export const saveTens = async (tens: string[]): Promise<void> => {
-  await saveCatalog('tens', normalizeStringCatalog(tens));
+  const normalized = normalizeStringCatalog(tens);
+  await saveCatalog('tens', normalized);
   if (isFirestoreEnabled() && !isDemoModeActive()) {
-    await saveTensCatalogToFirestore(tens);
+    await saveTensCatalogToFirestore(normalized);
   }
 };
 
@@ -147,10 +152,12 @@ export const saveTens = async (tens: string[]): Promise<void> => {
  * Subscribes to real-time updates for the TENS catalog from Firestore.
  */
 export const subscribeTens = (callback: (tens: string[]) => void): (() => void) => {
+  assertCatalogSubscriptionCallback(callback, 'tens');
   if (isDemoModeActive()) return () => {};
   return subscribeToTensCatalog(async tens => {
-    await saveCatalog('tens', tens);
-    callback(tens);
+    const normalized = normalizeStringCatalog(tens);
+    await saveCatalog('tens', normalized);
+    callback(normalized);
   });
 };
 
@@ -202,6 +209,7 @@ export const saveProfessionals = async (
 export const subscribeProfessionals = (
   callback: (professionals: ProfessionalCatalogItem[]) => void
 ): (() => void) => {
+  assertCatalogSubscriptionCallback(callback, 'professionals');
   if (isDemoModeActive()) return () => {};
   return subscribeToProfessionalsCatalog(async professionals => {
     const normalized = normalizeProfessionalCatalog(professionals);

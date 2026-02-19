@@ -4,7 +4,7 @@ import { Scissors } from 'lucide-react';
 import {
   useDailyRecordBedActions,
   useDailyRecordMovementActions,
-} from '@/context/DailyRecordContext';
+} from '@/context/useDailyRecordScopedActions';
 import { useConfirmDialog, useNotification } from '@/context/UIContext';
 import { CMA_TABLE_HEADERS } from '@/features/census/controllers/censusCmaTableController';
 import { CensusMovementSection } from '@/features/census/components/CensusMovementSection';

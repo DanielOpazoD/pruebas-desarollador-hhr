@@ -3,6 +3,7 @@ import { DailyRecord } from '@/types';
 import { checkCensusExists, uploadCensus } from '@/services/backup/censusStorageService';
 import { getMonthRecordsFromFirestore } from '@/services/storage/firestoreService';
 import { useConfirmDialog, useNotification } from '@/context/UIContext';
+import { getShiftSchedule } from '@/utils/dateUtils';
 
 interface UseExportManagerProps {
   currentDateString: string;
@@ -185,7 +186,6 @@ export const useExportManager = ({
           import('@/services/backup/pdfStorageService'),
         ]);
 
-        const [{ getShiftSchedule }] = await Promise.all([import('@/utils/dateUtils')]);
         const schedule = getShiftSchedule(record.date);
 
         const doc = new jsPDF();

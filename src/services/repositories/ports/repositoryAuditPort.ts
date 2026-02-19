@@ -1,3 +1,5 @@
+import { logConflictAutoMerged } from '@/services/admin/auditService';
+
 export interface ConflictAuditDetails {
   changedPaths: string[];
   policyVersion: string;
@@ -25,6 +27,5 @@ export const logRepositoryConflictAutoMerged = async (
     return;
   }
 
-  const { logConflictAutoMerged } = await import('@/services/admin/auditService');
   await logConflictAutoMerged(date, details);
 };

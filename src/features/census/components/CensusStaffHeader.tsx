@@ -3,11 +3,8 @@ import { Statistics } from '@/types';
 import { NurseSelector } from './NurseSelector';
 import { TensSelector } from './TensSelector';
 import { CombinedSummaryCard } from '@/components/layout/SummaryCard';
-import {
-  useDailyRecordStaff,
-  useDailyRecordStaffActions,
-  useDailyRecordMovements,
-} from '@/context/DailyRecordContext';
+import { useDailyRecordStaff, useDailyRecordMovements } from '@/context/DailyRecordContext';
+import { useDailyRecordStaffActions } from '@/context/useDailyRecordScopedActions';
 import { useStaffContext } from '@/context/StaffContext';
 import {
   resolveMovementSummaryState,

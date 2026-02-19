@@ -65,6 +65,25 @@ export default defineConfig(({ mode }) => {
       if (normalizedId.includes('/node_modules/html2canvas/')) {
         return 'vendor-canvas';
       }
+
+      // 3D map stack is heavy and should stay isolated from the main app bundle.
+      if (
+        normalizedId.includes('/node_modules/three/') ||
+        normalizedId.includes('/node_modules/@react-three/')
+      ) {
+        return 'vendor-three';
+      }
+
+      if (normalizedId.includes('/node_modules/exceljs/')) {
+        return 'vendor-excel';
+      }
+
+      if (
+        normalizedId.includes('/node_modules/jspdf/') ||
+        normalizedId.includes('/node_modules/jspdf-autotable/')
+      ) {
+        return 'vendor-pdf';
+      }
     }
 
     return undefined;

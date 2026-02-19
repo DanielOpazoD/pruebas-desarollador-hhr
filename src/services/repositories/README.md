@@ -19,6 +19,7 @@ Implementar Repository Pattern para ocultar detalles de almacenamiento/sincroniz
 | `PrintTemplateRepository.ts`                     | Plantillas de impresión                       |
 | `dataMigration.ts` / `patientMasterMigration.ts` | Migraciones                                   |
 | `monthIntegrity.ts`                              | Integridad mensual                            |
+| `contracts/*.ts`                                 | Contratos estrictos de entrada/salida         |
 | `index.ts`                                       | Barrel export                                 |
 
 ## Patrón de uso
@@ -32,3 +33,6 @@ const unsubscribe = DailyRecordRepository.subscribe(date, callback);
 ## Regla
 
 Todo acceso a `DailyRecord` debe pasar por este paquete (evitar acceso directo desde UI a storage).
+
+Los métodos públicos de `DailyRecordRepository` y `PatientMasterRepository` validan/sanean contratos
+de entrada (fecha, límites, RUT, IDs) antes de delegar en storage.

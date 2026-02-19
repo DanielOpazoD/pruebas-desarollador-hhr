@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
+import { useDailyRecordData } from '@/context/DailyRecordContext';
 import {
   useDailyRecordBedActions,
-  useDailyRecordData,
   useDailyRecordMovementActions,
-} from '@/context/DailyRecordContext';
+} from '@/context/useDailyRecordScopedActions';
 import { useConfirmDialog, useNotification } from '@/context/UIContext';
 import {
   buildCensusActionDependencies,

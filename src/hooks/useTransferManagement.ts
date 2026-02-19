@@ -22,11 +22,11 @@ import {
 } from '@/services/transfers/transferService';
 import { getNextStatus } from '@/constants/transferConstants';
 import { useAuth } from '@/context/AuthContext';
+import { useDailyRecordData } from '@/context/DailyRecordContext';
 import {
-  useDailyRecordData,
   useDailyRecordBedActions,
   useDailyRecordMovementActions,
-} from '@/context/DailyRecordContext';
+} from '@/context/useDailyRecordScopedActions';
 
 interface UseTransferManagementReturn {
   // State

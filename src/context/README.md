@@ -29,11 +29,15 @@ Providers de estado global y contratos para features transversales.
 
 - Context fragmentation para disminuir re-renders.
 - Hooks de acceso especializados (`useDailyRecordData`, `useDailyRecordBedActions`, `useDailyRecordMovementActions`, etc.).
+  Los hooks de **acciones** deben importarse desde `useDailyRecordScopedActions` para evitar ciclos de chunking.
 - Contratos tipados para evitar props drilling masivo.
 
 ## Ejemplo
 
 ```ts
+import { useDailyRecordData } from '@/context/DailyRecordContext';
+import { useDailyRecordBedActions } from '@/context/useDailyRecordScopedActions';
+
 const { record } = useDailyRecordData();
 const { updatePatient } = useDailyRecordBedActions();
 ```

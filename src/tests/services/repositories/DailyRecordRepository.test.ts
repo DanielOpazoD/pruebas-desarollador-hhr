@@ -462,4 +462,26 @@ describe('DailyRecordRepository', () => {
       );
     });
   });
+
+  describe('Repository contract guards', () => {
+    it('rejects invalid date format on getForDate', async () => {
+      await expect(Repository.getForDate('19-02-2026')).rejects.toThrow(/Invalid date format/);
+    });
+
+    it('rejects invalid date format on initializeDay copyFromDate', async () => {
+      await expect(Repository.initializeDay('2026-02-19', '19-02-2026')).rejects.toThrow(
+        /Invalid date format/
+      );
+    });
+
+    it('rejects empty bed ids on copyPatientToDate', async () => {
+      await expect(
+        Repository.copyPatientToDate('2026-02-18', '', '2026-02-19', 'R1')
+      ).rejects.toThrow(/non-empty bed id/);
+    });
+
+    it('rejects invalid date format on deleteDay', async () => {
+      await expect(Repository.deleteDay('2026/02/19')).rejects.toThrow(/Invalid date format/);
+    });
+  });
 });

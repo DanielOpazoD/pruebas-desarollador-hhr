@@ -15,8 +15,14 @@ import {
   DocumentData,
 } from 'firebase/firestore';
 import { MasterPatient } from '@/types';
-import { formatRut, isValidRut } from '@/utils/rutUtils';
 import { getActiveHospitalId, HOSPITAL_COLLECTIONS } from '@/constants/firestorePaths';
+import {
+  createBulkUpsertPatientsCommand,
+  createUpsertPatientCommand,
+  normalizeMasterPatientRut,
+  normalizePatientSearchTerm,
+  sanitizePatientQueryLimit,
+} from '@/services/repositories/contracts/patientMasterContracts';
 
 const COLLECTION_NAME = HOSPITAL_COLLECTIONS.PATIENTS;
 
@@ -25,10 +31,6 @@ const COLLECTION_NAME = HOSPITAL_COLLECTIONS.PATIENTS;
  * Ensures consistent format (12.345.678-9) or clean format (12345678-9)
  * We chose formatted RUT for readability in Console
  */
-const normalizeId = (rut: string): string => {
-  return formatRut(rut).toUpperCase();
-};
-
 const getCollectionPath = (): string => {
   const hospitalId = getActiveHospitalId();
   return `hospitals/${hospitalId}/${COLLECTION_NAME}`;
@@ -38,11 +40,11 @@ const getCollectionPath = (): string => {
  * Retrieves a patient from the master index by RUT
  */
 export const getPatientByRut = async (rut: string): Promise<MasterPatient | null> => {
-  if (!rut || !isValidRut(rut)) return null;
+  const normalizedRut = normalizeMasterPatientRut(rut);
+  if (!normalizedRut) return null;
 
-  const id = normalizeId(rut);
   const path = getCollectionPath();
-  const docRef = doc(db, path, id);
+  const docRef = doc(db, path, normalizedRut);
 
   try {
     const snap = await getDoc(docRef);
@@ -62,20 +64,20 @@ export const getPatientByRut = async (rut: string): Promise<MasterPatient | null
 export const upsertPatient = async (
   patient: Partial<MasterPatient> & { rut: string }
 ): Promise<void> => {
-  if (!patient.rut || !isValidRut(patient.rut)) {
+  const command = createUpsertPatientCommand(patient);
+  if (!command) {
     console.warn('[PatientMasterRepository] Invalid RUT for upsert:', patient.rut);
     return;
   }
 
-  const id = normalizeId(patient.rut);
   const path = getCollectionPath();
-  const docRef = doc(db, path, id);
+  const docRef = doc(db, path, command.rut);
 
   const now = Date.now();
 
   const dataToSave: Partial<MasterPatient> & { updatedAt: number } = {
-    ...patient,
-    rut: id, // Ensure ID format matches field
+    ...command,
+    rut: command.rut, // Ensure ID format matches field
     updatedAt: now,
   };
 
@@ -105,19 +107,19 @@ export const upsertPatient = async (
 export const bulkUpsertPatients = async (
   patients: MasterPatient[]
 ): Promise<{ successes: number; errors: number }> => {
+  const normalizedPatients = createBulkUpsertPatientsCommand(patients);
   const path = getCollectionPath();
   const batchSize = 400; // Limit is 500
   let successes = 0;
-  let errors = 0;
+  let errors = patients.length - normalizedPatients.length;
 
-  for (let i = 0; i < patients.length; i += batchSize) {
-    const chunk = patients.slice(i, i + batchSize);
+  for (let i = 0; i < normalizedPatients.length; i += batchSize) {
+    const chunk = normalizedPatients.slice(i, i + batchSize);
     const batch = writeBatch(db);
 
     chunk.forEach(p => {
-      const id = normalizeId(p.rut);
-      const docRef = doc(db, path, id);
-      batch.set(docRef, p, { merge: true });
+      const docRef = doc(db, path, p.rut);
+      batch.set(docRef, { ...p, rut: p.rut }, { merge: true });
     });
 
     try {
@@ -154,9 +156,10 @@ export const getPatientsPaginated = async (
   limitCount: number = 20,
   lastDoc?: QueryDocumentSnapshot<DocumentData>
 ): Promise<{ patients: MasterPatient[]; lastDoc: QueryDocumentSnapshot<DocumentData> | null }> => {
+  const safeLimit = sanitizePatientQueryLimit(limitCount);
   const path = getCollectionPath();
   try {
-    let q = query(collection(db, path), orderBy('updatedAt', 'desc'), limit(limitCount));
+    let q = query(collection(db, path), orderBy('updatedAt', 'desc'), limit(safeLimit));
 
     if (lastDoc) {
       q = query(q, startAfter(lastDoc));
@@ -180,14 +183,16 @@ export const searchPatients = async (
   searchTerm: string,
   limitCount: number = 20
 ): Promise<MasterPatient[]> => {
-  if (!searchTerm || searchTerm.length < 2) return [];
+  const normalizedTerm = normalizePatientSearchTerm(searchTerm);
+  const safeLimit = sanitizePatientQueryLimit(limitCount);
+  if (!normalizedTerm || normalizedTerm.length < 2) return [];
 
   const path = getCollectionPath();
   try {
     // 1. Try Exact match by RUT first
-    if (isValidRut(searchTerm)) {
-      const patient = await getPatientByRut(searchTerm);
-      if (patient) return [patient];
+    const patient = await getPatientByRut(normalizedTerm);
+    if (patient) {
+      return [patient];
     }
 
     // 2. Try simple search by Full Name (requires indexing in Firestore)
@@ -197,9 +202,9 @@ export const searchPatients = async (
     const q = query(
       collection(db, path),
       orderBy('fullName'),
-      where('fullName', '>=', searchTerm),
-      where('fullName', '<=', searchTerm + '\uf8ff'),
-      limit(limitCount)
+      where('fullName', '>=', normalizedTerm),
+      where('fullName', '<=', normalizedTerm + '\uf8ff'),
+      limit(safeLimit)
     );
 
     const snap = await getDocs(q);

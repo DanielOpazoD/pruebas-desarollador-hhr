@@ -1,7 +1,8 @@
 import React from 'react';
 import { Lock } from 'lucide-react';
 import { BEDS } from '@/constants';
-import { useDailyRecordBedActions, useDailyRecordData } from '@/context/DailyRecordContext';
+import { useDailyRecordData } from '@/context/DailyRecordContext';
+import { useDailyRecordBedActions } from '@/context/useDailyRecordScopedActions';
 import { BaseModal, ModalSection } from '@/components/shared/BaseModal';
 import { BedReasonDialog } from '@/components/modals/BedReasonDialog';
 import { BlockedBedsGrid } from '@/components/modals/BlockedBedsGrid';

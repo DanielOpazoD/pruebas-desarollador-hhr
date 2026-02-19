@@ -1,5 +1,5 @@
 import React from 'react';
-import { useDailyRecordMovementActions } from '@/context/DailyRecordContext';
+import { useDailyRecordMovementActions } from '@/context/useDailyRecordScopedActions';
 import { useCensusActionCommands } from './CensusActionsContext';
 import { CheckCircle } from 'lucide-react';
 import { DISCHARGES_TABLE_HEADERS } from '@/features/census/controllers/censusDischargesTableController';
