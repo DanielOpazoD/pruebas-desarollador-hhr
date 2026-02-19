@@ -2,6 +2,11 @@ import { DailyRecord } from '@/types';
 import { CENSUS_DEFAULT_RECIPIENTS } from '@/constants/email';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { getExportPasswordsPath } from '@/constants/firestorePaths';
+import {
+  getDevelopmentSendDisabledMessage,
+  resolveCensusEmailRuntimePolicy,
+} from '@/services/integrations/censusEmailRuntimePolicy';
+import { sendCensusEmailRequest } from '@/services/integrations/censusEmailNetworkClient';
 
 interface TriggerEmailParams {
   date: string;
@@ -22,13 +27,11 @@ interface EmailResponse {
   exportPassword?: string;
 }
 
-const DEFAULT_ENDPOINT = '/.netlify/functions/send-census-email';
-const ENDPOINT = import.meta.env.VITE_CENSUS_EMAIL_ENDPOINT || DEFAULT_ENDPOINT;
-
-// Check if we're in development mode (Vite dev server)
-const isDevelopment = import.meta.env.DEV;
-const allowDevelopmentEmailSend =
-  String(import.meta.env.VITE_ALLOW_DEV_EMAIL_SEND || '').toLowerCase() === 'true';
+const { endpoint: ENDPOINT, allowDevelopmentEmailSend } = resolveCensusEmailRuntimePolicy({
+  isDevelopment: import.meta.env.DEV,
+  allowDevEmailSendRaw: import.meta.env.VITE_ALLOW_DEV_EMAIL_SEND,
+  endpointRaw: import.meta.env.VITE_CENSUS_EMAIL_ENDPOINT,
+});
 
 /**
  * Save export password to Firestore for audit purposes
@@ -68,7 +71,7 @@ export const triggerCensusEmail = async (params: TriggerEmailParams): Promise<Em
 
   // By default, avoid sending real emails from local dev to prevent accidental dispatches.
   // Teams can opt in explicitly using VITE_ALLOW_DEV_EMAIL_SEND=true.
-  if (isDevelopment && !allowDevelopmentEmailSend) {
+  if (import.meta.env.DEV && !allowDevelopmentEmailSend) {
     console.warn('[CensusEmail] Modo desarrollo con envío deshabilitado por defecto.');
     console.warn('[CensusEmail] Datos que se enviarían:', {
       date,
@@ -76,14 +79,10 @@ export const triggerCensusEmail = async (params: TriggerEmailParams): Promise<Em
       recordCount: records.length,
     });
 
-    throw new Error(
-      'El envío de correo está deshabilitado en desarrollo local. ' +
-        'Si necesitas probar el flujo real, ejecuta las funciones y define ' +
-        'VITE_ALLOW_DEV_EMAIL_SEND=true (opcionalmente VITE_CENSUS_EMAIL_ENDPOINT).'
-    );
+    throw new Error(getDevelopmentSendDisabledMessage());
   }
 
-  if (isDevelopment && allowDevelopmentEmailSend) {
+  if (import.meta.env.DEV && allowDevelopmentEmailSend) {
     console.info(`[CensusEmail] Modo desarrollo habilitado. Endpoint: ${ENDPOINT}`);
   }
 
@@ -97,13 +96,10 @@ export const triggerCensusEmail = async (params: TriggerEmailParams): Promise<Em
     );
   }
 
-  const response = await fetch(ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-user-email': userEmail || '',
-      'x-user-role': userRole || '',
-    },
+  const response = await sendCensusEmailRequest({
+    endpoint: ENDPOINT,
+    userEmail,
+    userRole,
     body: JSON.stringify({
       date,
       records,
@@ -113,11 +109,6 @@ export const triggerCensusEmail = async (params: TriggerEmailParams): Promise<Em
       shareLink,
     }),
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || 'No se pudo enviar el correo.');
-  }
 
   const result: EmailResponse = await response.json();
 
