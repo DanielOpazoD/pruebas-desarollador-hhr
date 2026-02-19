@@ -11,8 +11,10 @@ node_modules
 
 # Build artifacts
 dist
+dist-man
 dist-ssr
 **/dist/
+**/dist-man/
 
 *.local
 

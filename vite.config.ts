@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs';
-import { defineConfig, loadEnv, Plugin } from 'vite';
+import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import viteCompression from 'vite-plugin-compression';
@@ -38,7 +38,6 @@ function versionPlugin(): Plugin {
 }
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '.', '');
   const isProduction = mode === 'production';
   const chunkForModule = (moduleId: string): string | undefined => {
     const normalizedId = moduleId.replace(/\\/g, '/');
@@ -142,12 +141,6 @@ export default defineConfig(({ mode }) => {
         }),
     ].filter(Boolean),
     define: {
-      'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(
-        env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY
-      ),
-      'import.meta.env.VITE_API_KEY': JSON.stringify(
-        env.VITE_API_KEY || env.API_KEY || env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY
-      ),
       'import.meta.env.VITE_E2E_MODE': JSON.stringify(process.env.VITE_E2E_MODE || 'false'),
     },
     build: {
