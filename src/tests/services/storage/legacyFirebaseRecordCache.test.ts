@@ -1,0 +1,44 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { getDocMock, docMock } = vi.hoisted(() => ({
+  getDocMock: vi.fn(),
+  docMock: vi.fn((_db: unknown, path: string) => ({ path })),
+}));
+
+vi.mock('firebase/firestore', () => ({
+  collection: vi.fn(),
+  doc: docMock,
+  getDoc: getDocMock,
+  getDocs: vi.fn(),
+  onSnapshot: vi.fn(),
+  orderBy: vi.fn(),
+  query: vi.fn(),
+  where: vi.fn(),
+}));
+
+vi.mock('@/services/storage/legacyfirebase/legacyFirebaseCore', () => ({
+  getLegacyDb: vi.fn(() => ({})),
+}));
+
+import {
+  clearLegacyMissingDateCache,
+  clearLegacyReadBlock,
+  getLegacyRecord,
+} from '@/services/storage/legacyfirebase/legacyFirebaseRecordService';
+
+describe('legacyFirebaseRecordService missing-date cache', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    clearLegacyReadBlock();
+    clearLegacyMissingDateCache();
+    getDocMock.mockResolvedValue({ exists: () => false });
+  });
+
+  it('avoids re-querying legacy paths for the same missing date in a session', async () => {
+    await getLegacyRecord('2026-02-20');
+    await getLegacyRecord('2026-02-20');
+
+    // First call explores known fallback paths, second call should be served by cache.
+    expect(getDocMock).toHaveBeenCalledTimes(5);
+  });
+});

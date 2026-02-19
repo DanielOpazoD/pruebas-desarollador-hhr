@@ -18,6 +18,10 @@ import {
 import { logUserLogout, logUserLogin } from '@/services/admin/auditService';
 import { getAppSetting, saveAppSetting } from '@/services/settingsService';
 import { safeJsonParse } from '@/utils/jsonUtils';
+import {
+  clearAuthBootstrapPending,
+  isAuthBootstrapPending,
+} from '@/services/auth/authBootstrapState';
 
 // UserRole and AuthUser are now imported from @/types
 
@@ -244,6 +248,7 @@ export const useAuthState = (): UseAuthStateReturn => {
           // console.debug('[useAuthState] ✅ User restored via redirect result:', redirectUser.email);
           setUser(redirectUser);
           setAuthLoading(false);
+          clearAuthBootstrapPending();
           // Subscription will pick up the rest
         }
       } catch (error) {
@@ -289,6 +294,11 @@ export const useAuthState = (): UseAuthStateReturn => {
           }
         } else {
           // console.debug('[useAuthState] 👤 Firebase user is NULL, checking offline fallback...');
+          // Keep loading while a redirect login is still pending to avoid bouncing to login screen.
+          if (isAuthBootstrapPending()) {
+            return;
+          }
+
           // Only check offline if Firebase reports no user
           const hasOffline = await checkOfflineUser();
           if (!hasOffline) {
@@ -297,6 +307,7 @@ export const useAuthState = (): UseAuthStateReturn => {
         }
 
         // console.debug('[useAuthState] ✨ Auth transition finished');
+        clearAuthBootstrapPending();
         setAuthLoading(false);
       });
 
@@ -307,11 +318,12 @@ export const useAuthState = (): UseAuthStateReturn => {
 
     // Safety timeout: If Firebase takes too long (e.g. network issues), stop loading
     // Shorter timeout if we're already offline to show LoginPage faster
-    const timeoutMs = window.navigator.onLine ? 15000 : 5000;
+    const timeoutMs = window.navigator.onLine ? (isAuthBootstrapPending() ? 45000 : 15000) : 5000;
     const safetyTimeout = setTimeout(() => {
       console.warn(
         `[useAuthState] ⚠️ Auth initialization timed out (${timeoutMs}ms) - forcing load completion`
       );
+      clearAuthBootstrapPending();
       setAuthLoading(false);
     }, timeoutMs);
 

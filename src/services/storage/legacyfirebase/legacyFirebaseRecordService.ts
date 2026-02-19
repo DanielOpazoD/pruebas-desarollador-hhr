@@ -27,6 +27,8 @@ import {
 let legacyReadBlockedForSession = false;
 const LEGACY_READ_BLOCK_KEY = 'hhr_legacy_read_block_v1';
 const LEGACY_READ_BLOCK_TTL_MS = 6 * 60 * 60 * 1000;
+const LEGACY_MISSING_DATE_TTL_MS = 30 * 60 * 1000;
+const legacyMissingDateCache = new Map<string, number>();
 
 const readLegacyReadBlockTimestamp = (): number | null => {
   if (typeof window === 'undefined' || !window.localStorage) return null;
@@ -52,6 +54,18 @@ export const clearLegacyReadBlock = (): void => {
   removeLegacyReadBlockTimestamp();
 };
 
+export const clearLegacyMissingDateCache = (): void => {
+  legacyMissingDateCache.clear();
+};
+
+const isLegacyDateCachedMissing = (date: string): boolean => {
+  const cachedAt = legacyMissingDateCache.get(date);
+  if (!cachedAt) return false;
+  if (Date.now() - cachedAt <= LEGACY_MISSING_DATE_TTL_MS) return true;
+  legacyMissingDateCache.delete(date);
+  return false;
+};
+
 export const registerLegacyPermissionDeniedBlock = (): void => {
   legacyReadBlockedForSession = true;
   writeLegacyReadBlockTimestamp(Date.now());
@@ -70,7 +84,7 @@ export const isLegacyReadBlocked = (): boolean => {
 };
 
 export const getLegacyRecord = async (date: string): Promise<DailyRecord | null> => {
-  if (isLegacyReadBlocked()) {
+  if (isLegacyReadBlocked() || isLegacyDateCachedMissing(date)) {
     return null;
   }
 
@@ -90,6 +104,7 @@ export const getLegacyRecord = async (date: string): Promise<DailyRecord | null>
 
         if (docSnap.exists()) {
           logLegacyInfo(`[LegacyFirebase] Found record at: ${path}`);
+          legacyMissingDateCache.delete(date);
           return parseDailyRecordWithDefaults(docSnap.data(), date);
         }
       } catch (error) {
@@ -102,6 +117,7 @@ export const getLegacyRecord = async (date: string): Promise<DailyRecord | null>
     }
 
     logLegacyInfo(`[LegacyFirebase] No legacy record found for ${date}`);
+    legacyMissingDateCache.set(date, Date.now());
     return null;
   } catch (error) {
     logLegacyError('[LegacyFirebase] Error reading legacy record:', error);

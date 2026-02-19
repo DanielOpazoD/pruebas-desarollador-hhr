@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { signIn, signInWithGoogle, onAuthChange } from '@/services/auth/authService';
+import {
+  signIn,
+  signInWithGoogle,
+  onAuthChange,
+  signInWithGoogleRedirect,
+  handleSignInRedirectResult,
+} from '@/services/auth/authService';
 import * as firebaseAuth from 'firebase/auth';
 import { getDocs } from 'firebase/firestore';
 import { QuerySnapshot } from 'firebase/firestore';
@@ -46,6 +52,7 @@ vi.mock('firebase/firestore', () => ({
 }));
 
 describe('authService', () => {
+  const AUTH_BOOTSTRAP_PENDING_KEY = 'hhr_auth_bootstrap_pending_v1';
   const originalLocation = window.location;
   const setPathname = (pathname: string) => {
     Reflect.deleteProperty(window, 'location');
@@ -57,6 +64,7 @@ describe('authService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.removeItem(AUTH_BOOTSTRAP_PENDING_KEY);
     mockCheckSharedCensusAccessCallable.mockResolvedValue({
       data: { authorized: true, role: 'viewer' },
     });
@@ -299,6 +307,28 @@ describe('authService', () => {
 
       // Restore location
       Object.defineProperty(window, 'location', { configurable: true, value: originalLocation });
+    });
+
+    it('should clear pending bootstrap marker when redirect finishes without result', async () => {
+      localStorage.setItem(
+        AUTH_BOOTSTRAP_PENDING_KEY,
+        JSON.stringify({ startedAt: Date.now(), mode: 'redirect' })
+      );
+      vi.mocked(firebaseAuth.getRedirectResult).mockResolvedValue(null);
+
+      const result = await handleSignInRedirectResult();
+
+      expect(result).toBeNull();
+      expect(localStorage.getItem(AUTH_BOOTSTRAP_PENDING_KEY)).toBeNull();
+    });
+  });
+
+  describe('signInWithGoogleRedirect', () => {
+    it('should mark bootstrap as pending before redirect starts', async () => {
+      await signInWithGoogleRedirect();
+
+      expect(firebaseAuth.signInWithRedirect).toHaveBeenCalled();
+      expect(localStorage.getItem(AUTH_BOOTSTRAP_PENDING_KEY)).not.toBeNull();
     });
   });
 });

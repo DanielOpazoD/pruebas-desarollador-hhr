@@ -9,8 +9,14 @@ const isLegacyDebugEnabled = (): boolean =>
 
 export const isLegacyPermissionDeniedError = (error: unknown): boolean => {
   if (!error || typeof error !== 'object') return false;
-  const code = (error as { code?: string }).code;
-  return code === 'permission-denied' || code === 'firestore/permission-denied';
+  const typed = error as { code?: string; message?: string };
+  const code = typed.code;
+  if (code === 'permission-denied' || code === 'firestore/permission-denied') {
+    return true;
+  }
+
+  const message = String(typed.message || '').toLowerCase();
+  return message.includes('missing or insufficient permissions');
 };
 
 export const logLegacyInfo = (message: string): void => {

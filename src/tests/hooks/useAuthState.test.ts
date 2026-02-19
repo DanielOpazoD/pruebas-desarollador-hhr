@@ -44,11 +44,13 @@ const setOnlineStatus = (online: boolean) => {
 };
 
 describe('useAuthState baseline', () => {
+  const AUTH_BOOTSTRAP_PENDING_KEY = 'hhr_auth_bootstrap_pending_v1';
   let authChangeCallback: ((user: AuthUser | null) => void | Promise<void>) | null = null;
 
   beforeEach(() => {
     vi.resetAllMocks();
     authChangeCallback = null;
+    localStorage.removeItem(AUTH_BOOTSTRAP_PENDING_KEY);
 
     vi.mocked(authService.onAuthChange).mockImplementation(
       (cb: (user: AuthUser | null) => void | Promise<void>) => {
@@ -168,6 +170,33 @@ describe('useAuthState baseline', () => {
       vi.advanceTimersByTime(1100);
     });
     expect(result.current.isFirebaseConnected).toBe(true);
+  });
+
+  it('extends auth bootstrap timeout while redirect login is pending', async () => {
+    vi.useFakeTimers();
+    localStorage.setItem(
+      AUTH_BOOTSTRAP_PENDING_KEY,
+      JSON.stringify({ startedAt: Date.now(), mode: 'redirect' })
+    );
+
+    // Simulate Firebase not notifying auth state yet.
+    vi.mocked(authService.onAuthChange).mockImplementation(() => () => {});
+
+    const { result } = renderHook(() => useAuthState());
+
+    await act(async () => {
+      vi.advanceTimersByTime(16000);
+    });
+
+    expect(result.current.authLoading).toBe(true);
+
+    await act(async () => {
+      vi.advanceTimersByTime(30000);
+      await vi.runOnlyPendingTimersAsync();
+    });
+
+    expect(result.current.authLoading).toBe(false);
+    expect(localStorage.getItem(AUTH_BOOTSTRAP_PENDING_KEY)).toBeNull();
   });
 
   it('should recover offline passport', async () => {

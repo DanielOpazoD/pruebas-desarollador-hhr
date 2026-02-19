@@ -15,6 +15,10 @@ import {
   readE2ERedirectMode,
   toAuthUser,
 } from '@/services/auth/authShared';
+import {
+  clearAuthBootstrapPending,
+  markAuthBootstrapPending,
+} from '@/services/auth/authBootstrapState';
 
 export const signInAnonymouslyForPassport = async (): Promise<string | null> => {
   try {
@@ -56,6 +60,7 @@ export const signInWithGoogleRedirect = async (): Promise<void> => {
         return;
       }
 
+      markAuthBootstrapPending('redirect');
       if (typeof window !== 'undefined' && window.localStorage) {
         window.localStorage.setItem(
           'hhr_e2e_redirect_pending_user',
@@ -71,6 +76,7 @@ export const signInWithGoogleRedirect = async (): Promise<void> => {
     }
 
     console.warn('[authService] 🔄 Starting Google Sign-In redirect flow...');
+    markAuthBootstrapPending('redirect');
     await signInWithRedirect(auth, googleProvider);
   } catch (error) {
     console.error('[authService] Google redirect failed', error);
@@ -109,5 +115,7 @@ export const handleSignInRedirectResult = async (): Promise<AuthUser | null> => 
   } catch (error) {
     console.error('[authService] Error handling redirect result', error);
     return null;
+  } finally {
+    clearAuthBootstrapPending();
   }
 };

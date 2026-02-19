@@ -24,6 +24,16 @@ Este runbook complementa `docs/RUNBOOK_SYNC_RESILIENCE.md` con una pauta más op
 3. Confirmar que no hay alertas repetidas de `permission-denied` en consola.
 4. Registrar incidentes abiertos/cerrados del día.
 
+## Controles Nuevos (Auth + Legacy)
+
+- Login redirect protegido:
+  - Se usa marca temporal `hhr_auth_bootstrap_pending_v1` para evitar rebote prematuro a Login durante retorno de Google redirect.
+  - Timeout extendido de bootstrap auth a 45s cuando la marca está activa.
+- Legacy fallback con menor ruido:
+  - Bloqueo persistente por sesión cuando hay `permission-denied` en legacy.
+  - Cache temporal de fechas no encontradas (evita reintentos repetidos sobre rutas legacy inválidas).
+  - Logs de repositorio legacy sólo en modo debug explícito (`VITE_DEBUG_REPOSITORY=true`).
+
 ## Matriz de Severidad
 
 - `SEV-1`:
@@ -59,6 +69,9 @@ Este runbook complementa `docs/RUNBOOK_SYNC_RESILIENCE.md` con una pauta más op
 3. Verificar reglas desplegadas (`firestore.rules`, `storage.rules`).
 4. Corregir claim/rol o regla y redeploy.
 5. Solicitar al usuario repetir acción.
+6. Si el error es en fuentes legacy:
+   - Confirmar que el bloqueo de lectura legacy quedó activo para la sesión (sin spam de consola).
+   - No forzar reintentos manuales sobre rutas legacy si ya hay bloqueo.
 
 Criterio de cierre:
 
@@ -104,6 +117,15 @@ Criterio de cierre:
 
 - `oldestPendingAgeMs` decrece sostenidamente.
 - `retryingSyncTasks` retorna a 0.
+
+## Variables de Diagnóstico (solo soporte técnico)
+
+- `VITE_DEBUG_REPOSITORY=true`:
+  - Habilita logs de trazas de repositorio (Firestore + fallback legacy).
+  - Mantener desactivado en operación normal para evitar ruido.
+- `VITE_DEBUG_LEGACY_FIREBASE=true`:
+  - Habilita logs detallados de rutas legacy.
+  - Usar sólo para diagnóstico acotado y luego desactivar.
 
 ## Evidencia Mínima para Escalar a Ingeniería
 

@@ -22,6 +22,10 @@ import {
   createGetPreviousDayQuery,
 } from '@/services/repositories/contracts/dailyRecordQueries';
 
+const isRepositoryDebugEnabled = () =>
+  import.meta.env.DEV &&
+  String(import.meta.env.VITE_DEBUG_REPOSITORY || '').toLowerCase() === 'true';
+
 export const getForDate = async (
   date: string,
   syncFromRemote: boolean = true
@@ -50,7 +54,7 @@ export const getForDate = async (
 
   if (query.syncFromRemote && isFirestoreEnabled()) {
     try {
-      if (import.meta.env.DEV) {
+      if (isRepositoryDebugEnabled()) {
         logLegacyInfo(`[Repository DEBUG] Attempting Firestore fetch for ${query.date}`);
       }
       const remoteRecord = await getRecordFromFirestore(query.date);
@@ -60,10 +64,14 @@ export const getForDate = async (
         return createDailyRecordReadResult(query.date, migrated, 'firestore').record;
       }
 
-      logLegacyInfo(`[Repository] Checking legacy fallback for ${query.date}...`);
+      if (isRepositoryDebugEnabled()) {
+        logLegacyInfo(`[Repository] Checking legacy fallback for ${query.date}...`);
+      }
       const legacyRecord = await getLegacyRecord(query.date);
       if (legacyRecord) {
-        logLegacyInfo(`[Repository] Found legacy record for ${query.date}. Migrating to Beta.`);
+        if (isRepositoryDebugEnabled()) {
+          logLegacyInfo(`[Repository] Found legacy record for ${query.date}. Migrating to Beta.`);
+        }
         const migrated = migrateLegacyData(legacyRecord, query.date);
         await saveToIndexedDB(migrated);
         return createDailyRecordReadResult(query.date, migrated, 'legacy').record;
