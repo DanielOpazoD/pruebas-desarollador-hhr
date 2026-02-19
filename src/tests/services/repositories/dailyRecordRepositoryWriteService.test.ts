@@ -48,6 +48,7 @@ import {
   saveRecord as saveToIndexedDB,
 } from '@/services/storage/indexedDBService';
 import {
+  getRecordFromFirestore,
   saveRecordToFirestore,
   updateRecordPartial as updateRecordPartialToFirestore,
 } from '@/services/storage/firestoreService';
@@ -138,5 +139,65 @@ describe('dailyRecordRepositoryWriteService outbox fallback', () => {
     await save(buildRecord('2026-02-17'));
 
     expect(queueSyncTask).not.toHaveBeenCalled();
+  });
+
+  it('auto-merges on concurrency conflict during full save and queues merged result', async () => {
+    const local = buildRecord('2026-02-16');
+    local.beds = { R1: buildPatient('R1', 'Nombre local') };
+
+    const remote = buildRecord('2026-02-16');
+    remote.beds = { R1: buildPatient('R1', 'Nombre remoto') };
+    remote.beds.R1.pathology = 'Diag remoto';
+    local.beds.R1.pathology = 'Diag local';
+
+    const concurrencyError = new Error('Concurrency conflict');
+    concurrencyError.name = 'ConcurrencyError';
+
+    vi.mocked(saveRecordToFirestore).mockRejectedValueOnce(concurrencyError);
+    vi.mocked(getRecordFromFirestore).mockResolvedValue(remote);
+
+    await expect(save(local, '2026-02-16T00:00:00.000Z')).resolves.toBeUndefined();
+    expect(queueSyncTask).toHaveBeenCalledWith(
+      'UPDATE_DAILY_RECORD',
+      expect.objectContaining({
+        date: '2026-02-16',
+        beds: expect.objectContaining({
+          R1: expect.objectContaining({ pathology: 'Diag local' }),
+        }),
+      })
+    );
+  });
+
+  it('auto-merges on concurrency conflict during partial update and queues merged result', async () => {
+    const current = buildRecord('2026-02-15');
+    current.beds = { R1: buildPatient('R1', 'Paciente local') };
+    current.beds.R1.pathology = 'Diagnostico local';
+
+    const remote = buildRecord('2026-02-15');
+    remote.beds = { R1: buildPatient('R1', 'Paciente remoto') };
+    remote.beds.R1.pathology = 'Diagnostico remoto';
+
+    const concurrencyError = new Error('Concurrency conflict');
+    concurrencyError.name = 'ConcurrencyError';
+
+    vi.mocked(getRecordFromIndexedDB).mockResolvedValueOnce(current);
+    vi.mocked(updateRecordPartialToFirestore).mockRejectedValueOnce(concurrencyError);
+    vi.mocked(getRecordFromFirestore).mockResolvedValue(remote);
+
+    await expect(
+      updatePartial('2026-02-15', {
+        'beds.R1.pathology': 'Diagnostico local',
+      })
+    ).resolves.toBeUndefined();
+
+    expect(queueSyncTask).toHaveBeenCalledWith(
+      'UPDATE_DAILY_RECORD',
+      expect.objectContaining({
+        date: '2026-02-15',
+        beds: expect.objectContaining({
+          R1: expect.objectContaining({ pathology: 'Diagnostico local' }),
+        }),
+      })
+    );
   });
 });

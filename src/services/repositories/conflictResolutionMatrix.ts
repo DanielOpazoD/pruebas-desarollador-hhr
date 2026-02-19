@@ -1,5 +1,17 @@
 import { DailyRecord, DailyRecordPatch, PatientData } from '@/types';
 import { applyPatches } from '@/utils/patchUtils';
+import {
+  RECORD_STRUCTURAL_FIELDS,
+  selectScalarByPolicy,
+} from '@/services/repositories/conflictResolutionPolicy';
+import {
+  getValueAtPath,
+  isPlainObject,
+  isPrimitive,
+  normalizeChangedPaths,
+  toIso,
+  toMillis,
+} from '@/services/repositories/conflictResolutionUtils';
 
 interface ConflictResolutionOptions {
   changedPaths?: string[];
@@ -88,6 +100,19 @@ const resolveWholeRecord = (remote: DailyRecord, local: DailyRecord): DailyRecor
     lastUpdated: toIso(Math.max(remoteTs, localTs)),
   };
 
+  const remoteRecord = remote as unknown as Record<string, unknown>;
+  const localRecord = local as unknown as Record<string, unknown>;
+  const scalarKeys = new Set([...Object.keys(remoteRecord), ...Object.keys(localRecord)]);
+  scalarKeys.forEach(key => {
+    if (RECORD_STRUCTURAL_FIELDS.has(key)) return;
+    (resolved as unknown as Record<string, unknown>)[key] = selectScalarByPolicy(
+      key,
+      remoteRecord[key],
+      localRecord[key],
+      preferLocal
+    );
+  });
+
   return resolved;
 };
 
@@ -148,7 +173,12 @@ const resolveByChangedPaths = (
       continue;
     }
 
-    (patches as Record<string, unknown>)[path] = getValueAtPath(local, path);
+    (patches as Record<string, unknown>)[path] = selectScalarByPolicy(
+      path,
+      getValueAtPath(remote, path),
+      getValueAtPath(local, path),
+      true
+    );
   }
 
   const merged = applyPatches(remote, patches);
@@ -166,7 +196,12 @@ const resolvePathValueWithMatrix = (
   const patientField = parts[2];
 
   if (!bedId || !patientField) {
-    return getValueAtPath(local, path);
+    return selectScalarByPolicy(
+      path,
+      getValueAtPath(remote, path),
+      getValueAtPath(local, path),
+      true
+    );
   }
 
   if (PATIENT_ID_ARRAY_FIELDS.has(patientField)) {
@@ -184,7 +219,12 @@ const resolvePathValueWithMatrix = (
     );
   }
 
-  return getValueAtPath(local, path);
+  return selectScalarByPolicy(
+    path,
+    getValueAtPath(remote, path),
+    getValueAtPath(local, path),
+    true
+  );
 };
 
 const mergeBeds = (
@@ -196,7 +236,12 @@ const mergeBeds = (
   const bedIds = new Set([...Object.keys(remoteBeds || {}), ...Object.keys(localBeds || {})]);
 
   bedIds.forEach(bedId => {
-    merged[bedId] = mergePatientData(remoteBeds?.[bedId], localBeds?.[bedId], preferLocal);
+    merged[bedId] = mergePatientData(
+      remoteBeds?.[bedId],
+      localBeds?.[bedId],
+      preferLocal,
+      `beds.${bedId}`
+    );
   });
 
   return merged;
@@ -205,7 +250,8 @@ const mergeBeds = (
 const mergePatientData = (
   remotePatient: PatientData | undefined,
   localPatient: PatientData | undefined,
-  preferLocal: boolean
+  preferLocal: boolean,
+  pathPrefix = 'beds'
 ): PatientData => {
   if (!remotePatient && localPatient) return localPatient;
   if (!localPatient && remotePatient) return remotePatient;
@@ -243,18 +289,24 @@ const mergePatientData = (
       merged[key] = mergePatientData(
         remoteValue as PatientData | undefined,
         localValue as PatientData | undefined,
-        preferLocal
+        preferLocal,
+        `${pathPrefix}.${key}`
       );
       return;
     }
 
-    merged[key] = mergeUnknown(remoteValue, localValue, preferLocal);
+    merged[key] = mergeUnknown(remoteValue, localValue, preferLocal, `${pathPrefix}.${key}`);
   });
 
   return merged as unknown as PatientData;
 };
 
-const mergeUnknown = (remote: unknown, local: unknown, preferLocal: boolean): unknown => {
+const mergeUnknown = (
+  remote: unknown,
+  local: unknown,
+  preferLocal: boolean,
+  path = ''
+): unknown => {
   if (Array.isArray(remote) || Array.isArray(local)) {
     const remoteArray = Array.isArray(remote) ? remote : [];
     const localArray = Array.isArray(local) ? local : [];
@@ -272,20 +324,18 @@ const mergeUnknown = (remote: unknown, local: unknown, preferLocal: boolean): un
     return mergeObject(
       (isPlainObject(remote) ? remote : {}) as Record<string, unknown>,
       (isPlainObject(local) ? local : {}) as Record<string, unknown>,
-      preferLocal
+      preferLocal,
+      path
     );
   }
-
-  if (preferLocal) {
-    return local === undefined ? remote : local;
-  }
-  return remote === undefined ? local : remote;
+  return selectScalarByPolicy(path, remote, local, preferLocal);
 };
 
 const mergeObject = (
   remote: Record<string, unknown> | undefined,
   local: Record<string, unknown> | undefined,
-  preferLocal: boolean
+  preferLocal: boolean,
+  pathPrefix = ''
 ): Record<string, unknown> | undefined => {
   if (!remote && !local) return undefined;
   if (!remote) return local;
@@ -295,7 +345,8 @@ const mergeObject = (
   const keys = new Set([...Object.keys(remote), ...Object.keys(local)]);
 
   keys.forEach(key => {
-    result[key] = mergeUnknown(remote[key], local[key], preferLocal);
+    const childPath = pathPrefix ? `${pathPrefix}.${key}` : key;
+    result[key] = mergeUnknown(remote[key], local[key], preferLocal, childPath);
   });
 
   return result;
@@ -335,45 +386,3 @@ const resolveItemId = (item: unknown): string => {
   }
   return JSON.stringify(item);
 };
-
-const getValueAtPath = (source: unknown, path: string): unknown => {
-  const parts = path.split('.');
-  let cursor: unknown = source;
-
-  for (const part of parts) {
-    if (cursor == null) {
-      return undefined;
-    }
-    if (Array.isArray(cursor)) {
-      const index = Number(part);
-      cursor = Number.isNaN(index) ? undefined : cursor[index];
-      continue;
-    }
-    if (typeof cursor === 'object') {
-      cursor = (cursor as Record<string, unknown>)[part];
-      continue;
-    }
-    return undefined;
-  }
-
-  return cursor;
-};
-
-const normalizeChangedPaths = (changedPaths?: string[]): string[] => {
-  if (!changedPaths || changedPaths.length === 0) return [];
-  return Array.from(new Set(changedPaths.map(path => path.trim()).filter(Boolean)));
-};
-
-const toMillis = (value: string | undefined): number => {
-  if (!value) return 0;
-  const parsed = Date.parse(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
-const toIso = (value: number): string => new Date(value || Date.now()).toISOString();
-
-const isPlainObject = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-
-const isPrimitive = (value: unknown): value is string | number | boolean =>
-  ['string', 'number', 'boolean'].includes(typeof value);

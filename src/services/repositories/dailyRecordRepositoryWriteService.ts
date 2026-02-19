@@ -25,6 +25,33 @@ import {
 import { mapPatientToFhir } from '@/services/utils/fhirMappers';
 import { logError } from '@/services/utils/errorService';
 import { PatientMasterRepository } from '@/services/repositories/PatientMasterRepository';
+import { resolveDailyRecordConflict } from '@/services/repositories/conflictResolutionMatrix';
+
+const isConcurrencyError = (error: unknown): boolean =>
+  error instanceof Error && error.name === 'ConcurrencyError';
+
+const autoMergeAndQueueConflict = async (
+  date: string,
+  localRecord: DailyRecord,
+  changedPaths: string[]
+): Promise<boolean> => {
+  try {
+    const remoteRecord = await getRecordFromFirestore(date);
+    if (!remoteRecord) {
+      return false;
+    }
+
+    const merged = resolveDailyRecordConflict(remoteRecord, localRecord, {
+      changedPaths: changedPaths.length > 0 ? changedPaths : ['*'],
+    });
+    await saveToIndexedDB(merged);
+    await queueSyncTask('UPDATE_DAILY_RECORD', merged);
+    return true;
+  } catch (mergeError) {
+    console.warn('[Repository] Auto-merge conflict fallback failed:', mergeError);
+    return false;
+  }
+};
 
 export const save = async (record: DailyRecord, expectedLastUpdated?: string): Promise<void> => {
   if (isDemoModeActive()) {
@@ -93,10 +120,13 @@ export const save = async (record: DailyRecord, expectedLastUpdated?: string): P
       await saveRecordToFirestore(validatedRecord, expectedLastUpdated);
     } catch (err) {
       console.warn('Firestore sync failed, data saved in IndexedDB:', err);
-      if (
-        err instanceof Error &&
-        (err.name === 'ConcurrencyError' || err instanceof DataRegressionError)
-      ) {
+      if (err instanceof Error && (isConcurrencyError(err) || err instanceof DataRegressionError)) {
+        if (isConcurrencyError(err)) {
+          const merged = await autoMergeAndQueueConflict(record.date, validatedRecord, ['*']);
+          if (merged) {
+            return;
+          }
+        }
         throw err;
       }
 
@@ -187,6 +217,10 @@ export const updatePartial = async (date: string, partialData: DailyRecordPatch)
       await updateRecordPartialToFirestore(date, mergedPatches);
     } catch (err) {
       console.warn('[Repository] Firestore partial update failed:', err);
+      if (isConcurrencyError(err)) {
+        await autoMergeAndQueueConflict(date, validatedRecord, Object.keys(mergedPatches));
+        return;
+      }
       if (isRetryableSyncError(err)) {
         await queueSyncTask('UPDATE_DAILY_RECORD', validatedRecord);
       }

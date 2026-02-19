@@ -92,4 +92,52 @@ describe('conflictResolutionMatrix', () => {
 
     expect(resolved.handoffNovedadesDayShift).toBe('');
   });
+
+  it('prioritizes clinical fields from local during automatic merge', () => {
+    const remote = makeRecord('2026-02-18', '2026-02-18T10:00:00.000Z');
+    remote.beds = {
+      R1: {
+        bedId: 'R1',
+        patientName: 'Remoto',
+        pathology: 'Diag remoto',
+      } as unknown as DailyRecord['beds'][string],
+    };
+
+    const local = makeRecord('2026-02-18', '2026-02-18T09:59:00.000Z');
+    local.beds = {
+      R1: {
+        bedId: 'R1',
+        patientName: 'Local',
+        pathology: 'Diag local',
+      } as unknown as DailyRecord['beds'][string],
+    };
+
+    const resolved = resolveDailyRecordConflict(remote, local, { changedPaths: ['*'] });
+    expect(resolved.beds.R1.pathology).toBe('Diag local');
+    expect(resolved.beds.R1.patientName).toBe('Local');
+  });
+
+  it('prioritizes administrative fields from remote during automatic merge', () => {
+    const remote = makeRecord('2026-02-18', '2026-02-18T10:00:00.000Z');
+    remote.beds = {
+      R1: {
+        bedId: 'R1',
+        bedMode: 'Cama',
+        location: 'Habitacion A',
+      } as unknown as DailyRecord['beds'][string],
+    };
+
+    const local = makeRecord('2026-02-18', '2026-02-18T10:05:00.000Z');
+    local.beds = {
+      R1: {
+        bedId: 'R1',
+        bedMode: 'Cuna',
+        location: 'Pasillo',
+      } as unknown as DailyRecord['beds'][string],
+    };
+
+    const resolved = resolveDailyRecordConflict(remote, local, { changedPaths: ['*'] });
+    expect(resolved.beds.R1.bedMode).toBe('Cama');
+    expect(resolved.beds.R1.location).toBe('Habitacion A');
+  });
 });
