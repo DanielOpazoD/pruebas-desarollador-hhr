@@ -15,6 +15,7 @@ import {
 import { subscribeToSystemHealth, UserHealthStatus } from '@/services/admin/healthService';
 import clsx from 'clsx';
 import { evaluateSystemHealthState } from './systemHealthStatusPolicy';
+import { DailyOpsChecklistCard } from './DailyOpsChecklistCard';
 
 export const SystemHealthDashboard = () => {
   const [stats, setStats] = useState<UserHealthStatus[]>([]);
@@ -37,6 +38,8 @@ export const SystemHealthDashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-4">
+      <DailyOpsChecklistCard />
+
       <div className="flex justify-end">
         <div className="relative w-full md:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
