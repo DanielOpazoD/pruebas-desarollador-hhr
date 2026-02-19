@@ -54,6 +54,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const [_isDragging, setIsDragging] = useState(false);
 
   const _fileInputRef = React.useRef<HTMLInputElement>(null);
+  const preferRedirectOnLocalhost =
+    String(import.meta.env.VITE_AUTH_PREFER_REDIRECT_ON_LOCALHOST || '').toLowerCase() === 'true';
+  const isLocalhostRuntime =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
   const handleGoogleSignIn = async () => {
     setError(null);
@@ -61,6 +66,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     setShowAlternateAccess(false);
 
     try {
+      if (isLocalhostRuntime && preferRedirectOnLocalhost) {
+        await signInWithGoogleRedirect();
+        return;
+      }
+
       await signInWithGoogle();
       onLoginSuccess();
     } catch (err: unknown) {

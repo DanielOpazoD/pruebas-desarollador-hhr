@@ -18,9 +18,19 @@ import {
   LEGACY_RECORD_COLLECTION_PATHS,
   LEGACY_RECORD_DOC_PATHS,
 } from './legacyFirebasePaths';
-import { logLegacyError, logLegacyInfo } from './legacyFirebaseLogger';
+import {
+  isLegacyPermissionDeniedError,
+  logLegacyError,
+  logLegacyInfo,
+} from './legacyFirebaseLogger';
+
+let legacyReadBlockedForSession = false;
 
 export const getLegacyRecord = async (date: string): Promise<DailyRecord | null> => {
+  if (legacyReadBlockedForSession) {
+    return null;
+  }
+
   const db = getLegacyDb();
   if (!db) {
     logLegacyInfo('[LegacyFirebase] No connection available');
@@ -40,6 +50,10 @@ export const getLegacyRecord = async (date: string): Promise<DailyRecord | null>
           return parseDailyRecordWithDefaults(docSnap.data(), date);
         }
       } catch (error) {
+        if (isLegacyPermissionDeniedError(error)) {
+          legacyReadBlockedForSession = true;
+          return null;
+        }
         logLegacyError(`[LegacyFirebase] Error testing path ${path}:`, error);
       }
     }
