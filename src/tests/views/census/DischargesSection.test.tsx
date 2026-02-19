@@ -27,6 +27,13 @@ vi.mock('@/context/UIContext', () => ({
 }));
 
 describe('DischargesSection', () => {
+  type CensusActionCommandsValue = ReturnType<typeof useCensusActionCommands>;
+  type DataValue = ReturnType<typeof useDailyRecordData>;
+  type MovementActionsValue = ReturnType<typeof useDailyRecordMovementActions>;
+  type MovementsValue = ReturnType<typeof useDailyRecordMovements>;
+  type ConfirmDialogValue = ReturnType<typeof useConfirmDialog>;
+  type NotificationValue = ReturnType<typeof useNotification>;
+
   const mockOnUndo = vi.fn();
   const mockOnDelete = vi.fn();
   const mockHandleEdit = vi.fn();
@@ -46,34 +53,40 @@ describe('DischargesSection', () => {
     vi.clearAllMocks();
     vi.mocked(useCensusActionCommands).mockReturnValue({
       handleEditDischarge: mockHandleEdit,
-    } as any);
-    vi.mocked(useConfirmDialog).mockReturnValue({ confirm: mockConfirm } as any);
-    vi.mocked(useNotification).mockReturnValue({ error: mockNotifyError } as any);
+    } as unknown as CensusActionCommandsValue);
+    vi.mocked(useConfirmDialog).mockReturnValue({
+      confirm: mockConfirm,
+    } as unknown as ConfirmDialogValue);
+    vi.mocked(useNotification).mockReturnValue({
+      error: mockNotifyError,
+    } as unknown as NotificationValue);
     mockConfirm.mockResolvedValue(true);
-    (useDailyRecordData as any).mockReturnValue({
+    vi.mocked(useDailyRecordData).mockReturnValue({
       record: { date: '2024-12-11' },
-    });
-    (useDailyRecordMovementActions as any).mockReturnValue({
+    } as unknown as DataValue);
+    vi.mocked(useDailyRecordMovementActions).mockReturnValue({
       undoDischarge: mockOnUndo,
       deleteDischarge: mockOnDelete,
-    });
+    } as unknown as MovementActionsValue);
     // Default empty movements
-    (useDailyRecordMovements as any).mockReturnValue({ discharges: [] });
+    vi.mocked(useDailyRecordMovements).mockReturnValue({
+      discharges: [],
+    } as unknown as MovementsValue);
   });
 
   it('renders empty message when no discharges', () => {
-    (useDailyRecordMovements as any).mockReturnValue({
+    vi.mocked(useDailyRecordMovements).mockReturnValue({
       discharges: [],
-    });
+    } as unknown as MovementsValue);
 
     render(<DischargesSection />);
     expect(screen.getByText(/No hay altas registradas/)).toBeInTheDocument();
   });
 
   it('renders discharge list and triggers actions', async () => {
-    (useDailyRecordMovements as any).mockReturnValue({
+    vi.mocked(useDailyRecordMovements).mockReturnValue({
       discharges: mockDischarges,
-    });
+    } as unknown as MovementsValue);
 
     render(<DischargesSection />);
 
@@ -97,9 +110,9 @@ describe('DischargesSection', () => {
 
   it('does not execute undo/delete when confirmation is rejected and ignores re-entrant click', async () => {
     mockConfirm.mockResolvedValue(false);
-    (useDailyRecordMovements as any).mockReturnValue({
+    vi.mocked(useDailyRecordMovements).mockReturnValue({
       discharges: mockDischarges,
-    });
+    } as unknown as MovementsValue);
 
     render(<DischargesSection />);
 
@@ -115,9 +128,9 @@ describe('DischargesSection', () => {
 
   it('shows error notification when confirm dialog fails', async () => {
     mockConfirm.mockRejectedValue(new Error('dialog failed'));
-    (useDailyRecordMovements as any).mockReturnValue({
+    vi.mocked(useDailyRecordMovements).mockReturnValue({
       discharges: mockDischarges,
-    });
+    } as unknown as MovementsValue);
 
     render(<DischargesSection />);
 
@@ -133,9 +146,9 @@ describe('DischargesSection', () => {
   });
 
   it('returns null when discharges is null', () => {
-    (useDailyRecordMovements as any).mockReturnValue({
+    vi.mocked(useDailyRecordMovements).mockReturnValue({
       discharges: null,
-    });
+    } as unknown as MovementsValue);
 
     const { container } = render(<DischargesSection />);
     expect(container.firstChild).toBeNull();
