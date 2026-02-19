@@ -1,0 +1,45 @@
+import { defineConfig, devices } from '@playwright/test';
+
+const baseEnv = {
+  VITE_E2E_MODE: 'true',
+  VITE_FIREBASE_API_KEY: process.env.VITE_FIREBASE_API_KEY || 'demo-api-key',
+  VITE_FIREBASE_AUTH_DOMAIN: process.env.VITE_FIREBASE_AUTH_DOMAIN || 'demo-hhr.firebaseapp.com',
+  VITE_FIREBASE_PROJECT_ID: process.env.VITE_FIREBASE_PROJECT_ID || 'demo-hhr-e2e',
+  VITE_FIREBASE_STORAGE_BUCKET:
+    process.env.VITE_FIREBASE_STORAGE_BUCKET || 'demo-hhr-e2e.firebasestorage.app',
+  VITE_FIREBASE_MESSAGING_SENDER_ID: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '1234567890',
+  VITE_FIREBASE_APP_ID: process.env.VITE_FIREBASE_APP_ID || '1:1234567890:web:abcdef123456',
+  VITE_FIRESTORE_EMULATOR_HOST: process.env.VITE_FIRESTORE_EMULATOR_HOST || '127.0.0.1:8080',
+};
+
+export default defineConfig({
+  testDir: './e2e',
+  fullyParallel: false,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 1 : 0,
+  workers: 1,
+  reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'html',
+  timeout: 45_000,
+
+  use: {
+    baseURL: 'http://localhost:3000',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+  },
+
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+  ],
+
+  webServer: {
+    command: 'npm run dev -- --host 127.0.0.1 --port 3000',
+    url: 'http://127.0.0.1:3000',
+    reuseExistingServer: !process.env.CI,
+    env: baseEnv,
+    timeout: 120_000,
+  },
+});

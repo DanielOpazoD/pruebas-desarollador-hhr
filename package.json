@@ -15,6 +15,8 @@
     "test:sync-load": "vitest run src/tests/services/storage/syncQueueLoad.test.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:e2e:critical": "playwright test -c playwright.emulator-critical.config.ts e2e/critical-emulator.spec.ts",
+    "test:e2e:critical:ci": "bash scripts/run-e2e-critical-emulator-ci.sh",
     "test:vrt": "playwright test e2e/visual-regression.spec.ts",
     "test:vrt:update": "playwright test e2e/visual-regression.spec.ts --update-snapshots",
     "test:send-email": "node --loader ts-node/esm scripts/testSendCensusEmail.ts",
