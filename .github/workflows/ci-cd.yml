@@ -114,6 +114,12 @@ jobs:
           CI: true
           RUN_FIRESTORE_RULES_TESTS: 1
 
+      - name: Run Firestore sync concurrency tests with emulator
+        run: npm run test:emulator:sync:ci
+        env:
+          CI: true
+          RUN_FIRESTORE_EMULATOR_TESTS: 1
+
   # ============================================
   # JOB 4: BUILD
   # ============================================
