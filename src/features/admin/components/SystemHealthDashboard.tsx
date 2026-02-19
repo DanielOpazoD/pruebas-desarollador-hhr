@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { subscribeToSystemHealth, UserHealthStatus } from '@/services/admin/healthService';
 import clsx from 'clsx';
+import { evaluateSystemHealthState } from './systemHealthStatusPolicy';
 
 export const SystemHealthDashboard = () => {
   const [stats, setStats] = useState<UserHealthStatus[]>([]);
@@ -33,34 +34,6 @@ export const SystemHealthDashboard = () => {
       u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.displayName.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const getHealthColor = (u: UserHealthStatus) => {
-    const conflictSyncTasks = u.conflictSyncTasks || 0;
-    if (
-      u.failedSyncTasks > 0 ||
-      conflictSyncTasks > 0 ||
-      u.localErrorCount > 10 ||
-      u.pendingMutations > 5
-    )
-      return 'from-red-50 to-red-100 border-red-200';
-    if (u.localErrorCount > 0 || u.pendingMutations > 0 || u.pendingSyncTasks > 0)
-      return 'from-amber-50 to-amber-100 border-amber-200';
-    return 'from-emerald-50 to-white border-emerald-100';
-  };
-
-  const getHealthBadge = (u: UserHealthStatus) => {
-    const conflictSyncTasks = u.conflictSyncTasks || 0;
-    if (
-      u.failedSyncTasks > 0 ||
-      conflictSyncTasks > 0 ||
-      u.localErrorCount > 10 ||
-      u.pendingMutations > 5
-    )
-      return { label: 'CRÍTICO', color: 'bg-red-500 text-white' };
-    if (u.localErrorCount > 0 || u.pendingMutations > 0 || u.pendingSyncTasks > 0)
-      return { label: 'ADVERTENCIA', color: 'bg-amber-500 text-white' };
-    return { label: 'SALUDABLE', color: 'bg-emerald-500 text-white' };
-  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-4">
@@ -92,7 +65,7 @@ export const SystemHealthDashboard = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredStats.map(u => {
-            const health = getHealthBadge(u);
+            const health = evaluateSystemHealthState(u);
             const isOffline = !u.isOnline;
             const syncIssueCount = u.failedSyncTasks + (u.conflictSyncTasks || 0);
             const retryingSyncTasks = u.retryingSyncTasks || 0;
@@ -104,17 +77,17 @@ export const SystemHealthDashboard = () => {
                 key={u.uid}
                 className={clsx(
                   'group relative overflow-hidden card p-0 bg-gradient-to-br transition-all duration-300 hover:shadow-xl hover:-translate-y-1',
-                  getHealthColor(u)
+                  health.cardClassName
                 )}
               >
                 {/* Status Banner */}
                 <div
                   className={clsx(
                     'px-4 py-1.5 flex justify-between items-center text-[10px] font-black tracking-widest uppercase',
-                    health.color
+                    health.badgeClassName
                   )}
                 >
-                  <span>{health.label}</span>
+                  <span>{health.badgeLabel}</span>
                   {u.isOutdated && <span className="bg-white/20 px-2 rounded">OBSOLETO</span>}
                 </div>
 
@@ -215,6 +188,19 @@ export const SystemHealthDashboard = () => {
                   <div className="text-[10px] text-slate-500 flex items-center justify-between">
                     <span>Reintentos: {retryingSyncTasks}</span>
                     <span>Cola más antigua: {oldestPendingAgeMinutes} min</span>
+                  </div>
+
+                  <div
+                    className={clsx(
+                      'text-[10px] rounded-md px-2 py-1 border',
+                      health.level === 'critical'
+                        ? 'bg-red-100 text-red-700 border-red-200'
+                        : health.level === 'warning'
+                          ? 'bg-amber-100 text-amber-700 border-amber-200'
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                    )}
+                  >
+                    {health.actionHint}
                   </div>
 
                   {/* Metadata */}
