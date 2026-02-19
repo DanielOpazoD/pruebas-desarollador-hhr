@@ -20,7 +20,8 @@ const checks = [
     id: 'dotenv-gemini-key',
     description: 'Environment files must not contain hardcoded Gemini API keys.',
     appliesTo: file => /(^|\/)\.env(\.|$)/.test(file),
-    regex: /\b(?:VITE_GEMINI_API_KEY|GEMINI_API_KEY|VITE_API_KEY|API_KEY)\s*=\s*AIza[0-9A-Za-z_-]{35}/g,
+    regex:
+      /\b(?:VITE_LOCAL_GEMINI_API_KEY|VITE_GEMINI_API_KEY|GEMINI_API_KEY|VITE_API_KEY|API_KEY)\s*=\s*AIza[0-9A-Za-z_-]{35}/g,
   },
   {
     id: 'client-inline-googlegenai-key',

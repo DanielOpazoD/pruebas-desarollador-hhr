@@ -11,6 +11,16 @@ vi.mock('../ai/aiRequestManager', () => ({
 // Mock fetch
 global.fetch = vi.fn();
 
+vi.mock('@google/genai', () => ({
+  GoogleGenAI: class {
+    models = {
+      generateContent: vi.fn().mockResolvedValue({
+        text: JSON.stringify([{ code: 'A00', description: 'Cólera', category: 'Infecciosas' }]),
+      }),
+    };
+  },
+}));
+
 describe('cie10AISearch', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -47,7 +57,24 @@ describe('cie10AISearch', () => {
       json: async () => ({ available: false }),
     });
 
+    vi.stubEnv('VITE_LOCAL_GEMINI_API_KEY', '');
+    vi.stubEnv('VITE_GEMINI_API_KEY', '');
+    vi.stubEnv('VITE_API_KEY', '');
     const results = await cie10Module.searchCIE10WithAI('query-no-backend');
+    vi.unstubAllEnvs();
     expect(results).toEqual([]);
+  });
+
+  it('should use local fallback in dev when serverless is unavailable and local key exists', async () => {
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ available: false }),
+    });
+
+    vi.stubEnv('VITE_LOCAL_GEMINI_API_KEY', 'test-local-key');
+    const results = await cie10Module.searchCIE10WithAI('query-local-fallback');
+    vi.unstubAllEnvs();
+
+    expect(results).toEqual([{ code: 'A00', description: 'Cólera', category: 'Infecciosas' }]);
   });
 });

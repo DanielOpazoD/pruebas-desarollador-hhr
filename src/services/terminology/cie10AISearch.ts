@@ -2,27 +2,54 @@
  * AI-Enhanced CIE-10 Search Service
  *
  * Security model:
- * - Browser only calls serverless endpoint
- * - Gemini API key is stored server-side only
+ * - Production: browser calls only serverless endpoint
+ * - Local development: optional direct Gemini fallback using local-only env var
  */
 
 import { CIE10Entry } from './cie10SpanishDatabase';
 import { aiRequestManager } from '../ai/aiRequestManager';
 
-// Track AI availability
 let aiAvailabilityChecked = false;
 let aiIsAvailable = false;
 
-/**
- * Check if AI search is available
- */
-export function isAIAvailable(): boolean {
-  return aiIsAvailable;
-}
+const getLocalDevApiKey = (): string | undefined => {
+  if (!import.meta.env.DEV) return undefined;
+  const key =
+    import.meta.env.VITE_LOCAL_GEMINI_API_KEY ||
+    import.meta.env.VITE_GEMINI_API_KEY ||
+    import.meta.env.VITE_API_KEY;
+  return key && key.trim().length > 0 ? key.trim() : undefined;
+};
 
-/**
- * Search CIE-10 using Netlify serverless function
- */
+const parseAIResults = (rawText: string): CIE10Entry[] => {
+  const text = rawText.trim();
+  if (!text) return [];
+
+  let jsonText = text;
+  if (text.startsWith('```')) {
+    const match = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    jsonText = match ? match[1].trim() : text;
+  }
+
+  const parsed = JSON.parse(jsonText);
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed
+    .filter(
+      item =>
+        item &&
+        typeof item.code === 'string' &&
+        typeof item.description === 'string' &&
+        item.code.trim().length > 0 &&
+        item.description.trim().length > 0
+    )
+    .map(item => ({
+      code: item.code,
+      description: item.description,
+      category: typeof item.category === 'string' ? item.category : 'IA',
+    }));
+};
+
 async function searchWithServerlessFunction(
   query: string,
   signal?: AbortSignal
@@ -49,9 +76,68 @@ async function searchWithServerlessFunction(
   }
 }
 
-/**
- * Searches for CIE-10 codes using Gemini AI via serverless endpoint.
- */
+const buildLocalPrompt = (query: string): string => `
+Eres un codificador experto de CIE-10 (Clasificación Internacional de Enfermedades, 10a edición) en español, trabajando para el Hospital Hanga Roa en Rapa Nui (Isla de Pascua).
+
+TU TAREA: Dada la consulta del usuario: "${query}", devuelve hasta 8 códigos CIE-10 que mejor representen el diagnóstico clínico.
+
+CONSIDERACIONES CRÍTICAS:
+1. ABREVIACIONES MÉDICAS CHILENAS: Interpretación obligatoria:
+   - IAM: Infarto agudo del miocardio (I21.9)
+   - ACV / AVE: Accidente cerebrovascular (I63.9 o I64)
+   - NAC: Neumonía adquirida en la comunidad (J18.9)
+   - TVP: Trombosis venosa profunda (I82.4)
+   - ITU: Infección del tracto urinario (N39.0)
+   - HTA: Hipertensión arterial (I10)
+   - DM / DM2: Diabetes mellitus (E11.9)
+   - EPOC: Enfermedad pulmonar obstructiva crónica (J44.9)
+   - AKI / IRA: Lesión renal aguda (N17.9)
+   - TEP: Tromboembolismo pulmonar (I26.9)
+   - GEA: Gastroenteritis aguda (A09.9)
+   - TEC: Traumatismo encéfalo craneano (S06.9)
+   - UPC: Unidad de Paciente Crítico (contexto grave)
+
+2. CONTEXTO RAPA NUI:
+   - "Dengue": A90
+   - "Zika": A92.8
+   - "Mordedura de perro": W54.0
+
+3. CALIDAD DE RESPUESTA:
+   - Responde ÚNICAMENTE con un array JSON válido.
+   - Cada objeto debe tener: "code", "description" (en español formal), "category" (agregación médica).
+   - No incluyas markdown, bloques de código \`\`\`json, ni texto explicativo.
+
+Ejemplo:
+[
+  {"code": "I21.9", "description": "Infarto agudo del miocardio, sin otra especificación", "category": "Cardiovasculares"},
+  {"code": "I10", "description": "Hipertensión esencial (primaria)", "category": "Cardiovasculares"}
+]
+`;
+
+async function searchWithLocalDevAPI(query: string, signal?: AbortSignal): Promise<CIE10Entry[]> {
+  const apiKey = getLocalDevApiKey();
+  if (!apiKey || signal?.aborted) return [];
+
+  try {
+    const { GoogleGenAI } = await import('@google/genai');
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: buildLocalPrompt(query),
+      config: { responseMimeType: 'application/json' },
+    });
+
+    return parseAIResults(response.text || '');
+  } catch (error) {
+    console.error('[CIE10 AI] Local dev fallback failed:', error);
+    return [];
+  }
+}
+
+export function isAIAvailable(): boolean {
+  return aiIsAvailable;
+}
+
 export async function searchCIE10WithAI(
   query: string,
   signal?: AbortSignal
@@ -61,12 +147,20 @@ export async function searchCIE10WithAI(
   return aiRequestManager.enqueue(
     `cie10-${query}`,
     async innerSignal => {
-      const serverlessResult = await searchWithServerlessFunction(query, innerSignal || signal);
+      const joinedSignal = innerSignal || signal;
+      const serverlessResult = await searchWithServerlessFunction(query, joinedSignal);
 
       if (serverlessResult.available) {
         aiAvailabilityChecked = true;
         aiIsAvailable = true;
         return serverlessResult.results;
+      }
+
+      const localResults = await searchWithLocalDevAPI(query, joinedSignal);
+      if (localResults.length > 0) {
+        aiAvailabilityChecked = true;
+        aiIsAvailable = true;
+        return localResults;
       }
 
       aiAvailabilityChecked = true;
@@ -77,9 +171,6 @@ export async function searchCIE10WithAI(
   );
 }
 
-/**
- * Check AI availability
- */
 export async function checkAIAvailability(): Promise<boolean> {
   if (aiAvailabilityChecked) {
     return aiIsAvailable;
@@ -97,13 +188,14 @@ export async function checkAIAvailability(): Promise<boolean> {
       const isAvailable = data.available === true;
       aiAvailabilityChecked = true;
       aiIsAvailable = isAvailable;
-      return isAvailable;
+      if (isAvailable) return true;
     }
   } catch {
-    // Serverless unavailable
+    // Serverless unavailable in local dev
   }
 
+  const hasLocalFallback = Boolean(getLocalDevApiKey());
   aiAvailabilityChecked = true;
-  aiIsAvailable = false;
-  return false;
+  aiIsAvailable = hasLocalFallback;
+  return hasLocalFallback;
 }

@@ -52,21 +52,13 @@ export default defineConfig(({ mode }) => {
         return 'vendor-react';
       }
 
-      // Firebase split by domain to avoid a single oversized chunk
-      if (normalizedId.includes('/node_modules/@firebase/firestore/')) {
-        return 'vendor-firebase-firestore';
-      }
-      if (normalizedId.includes('/node_modules/@firebase/auth/')) {
-        return 'vendor-firebase-auth';
-      }
-      if (normalizedId.includes('/node_modules/@firebase/storage/')) {
-        return 'vendor-firebase-storage';
-      }
+      // Keep Firebase in a single vendor chunk to avoid cross-chunk init cycles
+      // between firebase-core/firestore that can break runtime execution order.
       if (
         normalizedId.includes('/node_modules/firebase/') ||
         normalizedId.includes('/node_modules/@firebase/')
       ) {
-        return 'vendor-firebase-core';
+        return 'vendor-firebase';
       }
 
       // HTML to Canvas (lazy loaded for screenshots)
