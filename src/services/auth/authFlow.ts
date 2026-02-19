@@ -9,7 +9,13 @@ import { AuthUser, UserRole } from '@/types';
 import { acquireGoogleLoginLock, releaseGoogleLoginLock } from '@/services/auth/googleLoginLock';
 import { checkSharedCensusAccess, isSharedCensusMode } from '@/services/auth/sharedCensusAuth';
 import { checkEmailInFirestore } from '@/services/auth/authPolicy';
-import { createAuthError, googleProvider, toAuthUser } from '@/services/auth/authShared';
+import {
+  consumeE2EPopupErrorCode,
+  consumeE2EPopupMockUser,
+  createAuthError,
+  googleProvider,
+  toAuthUser,
+} from '@/services/auth/authShared';
 
 export const signIn = async (email: string, password: string): Promise<AuthUser> => {
   try {
@@ -68,6 +74,16 @@ export const signInWithGoogle = async (): Promise<AuthUser> => {
         }
         await firebaseSignOut(auth);
       }
+    }
+
+    const e2ePopupErrorCode = consumeE2EPopupErrorCode();
+    if (e2ePopupErrorCode) {
+      throw createAuthError(e2ePopupErrorCode, `E2E popup error: ${e2ePopupErrorCode}`);
+    }
+
+    const e2ePopupMockUser = consumeE2EPopupMockUser();
+    if (e2ePopupMockUser) {
+      return e2ePopupMockUser;
     }
 
     const result = await signInWithPopup(auth, googleProvider);

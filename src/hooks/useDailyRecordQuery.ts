@@ -11,6 +11,7 @@ import { generateDemoRecord } from '@/services/utils/demoDataGenerator';
 import { useEffect } from 'react';
 import { DailyRecordPatch } from './useDailyRecordTypes';
 import { applyPatches } from '@/utils/patchUtils';
+import { createGetDailyRecordQuery } from '@/services/repositories/contracts/dailyRecordQueries';
 
 /**
  * Hook for fetching a daily record by date with React Query.
@@ -33,7 +34,8 @@ export const useDailyRecordQuery = (
   const query = useQuery({
     queryKey,
     queryFn: async () => {
-      const record = await dailyRecord.getForDate(date);
+      const query = createGetDailyRecordQuery(date);
+      const record = await dailyRecord.getForDate(query.date);
       return record;
     },
     enabled: !!date,
@@ -66,7 +68,10 @@ export const useDailyRecordQuery = (
     // Prefetch in background (low priority)
     queryClient.prefetchQuery({
       queryKey: queryKeys.dailyRecord.byDate(prevDate),
-      queryFn: () => dailyRecord.getForDate(prevDate),
+      queryFn: () => {
+        const query = createGetDailyRecordQuery(prevDate);
+        return dailyRecord.getForDate(query.date);
+      },
       staleTime: 5 * 60 * 1000, // Consider fresh for 5 minutes
     });
   }, [date, queryClient, dailyRecord, isOfflineMode, isFirebaseConnected]);
@@ -191,7 +196,10 @@ export const usePrefetchDailyRecord = () => {
   return async (date: string) => {
     await queryClient.prefetchQuery({
       queryKey: queryKeys.dailyRecord.byDate(date),
-      queryFn: () => dailyRecord.getForDate(date),
+      queryFn: () => {
+        const query = createGetDailyRecordQuery(date);
+        return dailyRecord.getForDate(query.date);
+      },
     });
   };
 };

@@ -62,7 +62,15 @@ test.describe('Startup performance budget', () => {
             schemaVersion: 1,
           };
         }
+        const record = existing[dateStr];
         localStorage.setItem('hanga_roa_hospital_data', JSON.stringify(existing));
+        (
+          window as unknown as { __HHR_E2E_OVERRIDE__?: Record<string, unknown> }
+        ).__HHR_E2E_OVERRIDE__ = {
+          ...((window as unknown as { __HHR_E2E_OVERRIDE__?: Record<string, unknown> })
+            .__HHR_E2E_OVERRIDE__ || {}),
+          [dateStr]: record,
+        };
         localStorage.setItem(
           'hhr_offline_user',
           JSON.stringify({

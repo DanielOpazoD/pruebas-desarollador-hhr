@@ -59,6 +59,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const isLocalhostRuntime =
     typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const forcePopupForE2E =
+    import.meta.env.VITE_E2E_MODE === 'true' &&
+    typeof window !== 'undefined' &&
+    window.localStorage?.getItem('hhr_e2e_force_popup') === 'true';
 
   const handleGoogleSignIn = async () => {
     setError(null);
@@ -66,7 +70,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     setShowAlternateAccess(false);
 
     try {
-      if (isLocalhostRuntime && preferRedirectOnLocalhost) {
+      if (isLocalhostRuntime && preferRedirectOnLocalhost && !forcePopupForE2E) {
         await signInWithGoogleRedirect();
         return;
       }
@@ -86,7 +90,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         errorMessage.includes('INTERNAL ASSERTION') ||
         errorCode === 'auth/popup-blocked' ||
         errorCode === 'auth/cancelled-popup-request' ||
-        errorCode === 'auth/multi-tab-login-in-progress';
+        errorCode === 'auth/multi-tab-login-in-progress' ||
+        /ventana emergente|otra pestaña iniciando sesión|bloqueó la ventana|COOP\/Cookies|bloqueo de seguridad/i.test(
+          errorMessage
+        );
 
       if (isPopupIssue) {
         setShowAlternateAccess(true);

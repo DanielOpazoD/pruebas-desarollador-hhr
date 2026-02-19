@@ -16,54 +16,64 @@ import { getLegacyRecord } from '@/services/storage/legacyFirebaseService';
 import { logLegacyInfo } from '@/services/storage/legacyfirebase/legacyFirebaseLogger';
 import { isDemoModeActive, isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { migrateLegacyData } from '@/services/repositories/dataMigration';
+import {
+  createDailyRecordReadResult,
+  createGetDailyRecordQuery,
+  createGetPreviousDayQuery,
+} from '@/services/repositories/contracts/dailyRecordQueries';
 
 export const getForDate = async (
   date: string,
   syncFromRemote: boolean = true
 ): Promise<DailyRecord | null> => {
+  const query = createGetDailyRecordQuery(date, syncFromRemote);
+
   if (typeof window !== 'undefined' && window.__HHR_E2E_OVERRIDE__) {
     const override = window.__HHR_E2E_OVERRIDE__;
-    if (override[date]) {
-      console.warn(`[E2E] Using override record for ${date}`);
-      return migrateLegacyData(override[date], date);
+    if (override[query.date]) {
+      console.warn(`[E2E] Using override record for ${query.date}`);
+      const migrated = migrateLegacyData(override[query.date], query.date);
+      return createDailyRecordReadResult(query.date, migrated, 'e2e').record;
     }
   }
 
   if (isDemoModeActive()) {
-    return await getDemoRecordForDate(date);
+    const demoRecord = await getDemoRecordForDate(query.date);
+    return createDailyRecordReadResult(query.date, demoRecord, 'demo').record;
   }
 
-  const localRecord = await getRecordFromIndexedDB(date);
+  const localRecord = await getRecordFromIndexedDB(query.date);
   if (localRecord) {
-    return migrateLegacyData(localRecord, date);
+    const migrated = migrateLegacyData(localRecord, query.date);
+    return createDailyRecordReadResult(query.date, migrated, 'indexeddb').record;
   }
 
-  if (syncFromRemote && isFirestoreEnabled()) {
+  if (query.syncFromRemote && isFirestoreEnabled()) {
     try {
       if (import.meta.env.DEV) {
-        logLegacyInfo(`[Repository DEBUG] Attempting Firestore fetch for ${date}`);
+        logLegacyInfo(`[Repository DEBUG] Attempting Firestore fetch for ${query.date}`);
       }
-      const remoteRecord = await getRecordFromFirestore(date);
+      const remoteRecord = await getRecordFromFirestore(query.date);
       if (remoteRecord) {
-        const migrated = migrateLegacyData(remoteRecord, date);
+        const migrated = migrateLegacyData(remoteRecord, query.date);
         await saveToIndexedDB(migrated);
-        return migrated;
+        return createDailyRecordReadResult(query.date, migrated, 'firestore').record;
       }
 
-      logLegacyInfo(`[Repository] Checking legacy fallback for ${date}...`);
-      const legacyRecord = await getLegacyRecord(date);
+      logLegacyInfo(`[Repository] Checking legacy fallback for ${query.date}...`);
+      const legacyRecord = await getLegacyRecord(query.date);
       if (legacyRecord) {
-        logLegacyInfo(`[Repository] Found legacy record for ${date}. Migrating to Beta.`);
-        const migrated = migrateLegacyData(legacyRecord, date);
+        logLegacyInfo(`[Repository] Found legacy record for ${query.date}. Migrating to Beta.`);
+        const migrated = migrateLegacyData(legacyRecord, query.date);
         await saveToIndexedDB(migrated);
-        return migrated;
+        return createDailyRecordReadResult(query.date, migrated, 'legacy').record;
       }
     } catch (err) {
-      console.warn(`[Repository] getForDate: Remote fetch failed for ${date}:`, err);
+      console.warn(`[Repository] getForDate: Remote fetch failed for ${query.date}:`, err);
     }
   }
 
-  return localRecord ? migrateLegacyData(localRecord, date) : null;
+  return createDailyRecordReadResult(query.date, null, 'not_found').record;
 };
 
 export const getAvailableDates = async (): Promise<string[]> => {
@@ -88,11 +98,13 @@ export const getAvailableDates = async (): Promise<string[]> => {
 };
 
 export const getPreviousDay = async (date: string): Promise<DailyRecord | null> => {
+  const query = createGetPreviousDayQuery(date);
+
   if (isDemoModeActive()) {
-    return await getPreviousDemoDayRecord(date);
+    return await getPreviousDemoDayRecord(query.date);
   }
 
-  const localRecord = await getPreviousDayFromIndexedDB(date);
+  const localRecord = await getPreviousDayFromIndexedDB(query.date);
   if (localRecord) {
     return migrateLegacyData(localRecord, localRecord.date);
   }
@@ -100,7 +112,7 @@ export const getPreviousDay = async (date: string): Promise<DailyRecord | null> 
   if (isFirestoreEnabled()) {
     try {
       const allDates = await getAvailableDates();
-      const prevDate = allDates.find(d => d < date);
+      const prevDate = allDates.find(d => d < query.date);
 
       if (prevDate) {
         return await getForDate(prevDate);
