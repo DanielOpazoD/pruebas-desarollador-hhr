@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { CensusView } from '@/features/census/components/CensusView';
 import { useCensusViewModel } from '@/features/census/hooks/useCensusViewModel';
+import { BedType, type BedDefinition } from '@/types';
 
 vi.mock('@/features/census/hooks/useCensusViewModel', () => ({
   useCensusViewModel: vi.fn(),
@@ -59,7 +60,8 @@ describe('CensusView', () => {
     onCloseBedManagerModal: vi.fn(),
   };
 
-  const mockViewModel = {
+  type CensusViewModel = ReturnType<typeof useCensusViewModel>;
+  const baseViewModel = {
     beds: null,
     previousRecordAvailable: false,
     previousRecordDate: undefined,
@@ -68,11 +70,22 @@ describe('CensusView', () => {
     stats: null,
     marginStyle: {},
     visibleBeds: [],
-  };
+  } as unknown as CensusViewModel;
+
+  const buildViewModel = (overrides: Partial<CensusViewModel> = {}): CensusViewModel => ({
+    ...baseViewModel,
+    ...overrides,
+  });
+  const buildVisibleBed = (id: string): BedDefinition => ({
+    id,
+    name: id,
+    type: BedType.MEDIA,
+    isCuna: false,
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useCensusViewModel).mockReturnValue(mockViewModel as any);
+    vi.mocked(useCensusViewModel).mockReturnValue(buildViewModel());
   });
 
   it('renders AnalyticsView when viewMode is ANALYTICS', () => {
@@ -81,7 +94,7 @@ describe('CensusView', () => {
   });
 
   it('renders EmptyDayPrompt when record is missing', () => {
-    vi.mocked(useCensusViewModel).mockReturnValue({ ...mockViewModel, beds: null } as any);
+    vi.mocked(useCensusViewModel).mockReturnValue(buildViewModel({ beds: null }));
 
     render(<CensusView {...defaultProps} />);
 
@@ -89,11 +102,12 @@ describe('CensusView', () => {
   });
 
   it('renders main census sections when record is present', () => {
-    vi.mocked(useCensusViewModel).mockReturnValue({
-      ...mockViewModel,
-      beds: {},
-      visibleBeds: [{ id: 'H1C1' }],
-    } as any);
+    vi.mocked(useCensusViewModel).mockReturnValue(
+      buildViewModel({
+        beds: {},
+        visibleBeds: [buildVisibleBed('H1C1')],
+      })
+    );
 
     render(<CensusView {...defaultProps} />);
 
@@ -105,10 +119,11 @@ describe('CensusView', () => {
   });
 
   it('renders CensusModals when not in readOnly mode', () => {
-    vi.mocked(useCensusViewModel).mockReturnValue({
-      ...mockViewModel,
-      beds: {},
-    } as any);
+    vi.mocked(useCensusViewModel).mockReturnValue(
+      buildViewModel({
+        beds: {},
+      })
+    );
 
     render(<CensusView {...defaultProps} readOnly={false} />);
 
@@ -116,10 +131,11 @@ describe('CensusView', () => {
   });
 
   it('hides CensusModals in readOnly mode', () => {
-    vi.mocked(useCensusViewModel).mockReturnValue({
-      ...mockViewModel,
-      beds: {},
-    } as any);
+    vi.mocked(useCensusViewModel).mockReturnValue(
+      buildViewModel({
+        beds: {},
+      })
+    );
 
     render(<CensusView {...defaultProps} readOnly={true} />);
 
@@ -127,11 +143,12 @@ describe('CensusView', () => {
   });
 
   it('renders 3D map when localViewMode is 3D', () => {
-    vi.mocked(useCensusViewModel).mockReturnValue({
-      ...mockViewModel,
-      beds: {},
-      visibleBeds: [{ id: 'E1' }],
-    } as any);
+    vi.mocked(useCensusViewModel).mockReturnValue(
+      buildViewModel({
+        beds: {},
+        visibleBeds: [buildVisibleBed('E1')],
+      })
+    );
 
     render(<CensusView {...defaultProps} localViewMode="3D" />);
 

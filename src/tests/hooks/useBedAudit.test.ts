@@ -4,120 +4,197 @@ import { useBedAudit } from '@/hooks/useBedAudit';
 import { useAuditContext } from '@/context/AuditContext';
 import { getAttributedAuthors } from '@/services/admin/attributionService';
 import { logPatientAdmission } from '@/services/admin/auditService';
+import {
+  PatientStatus,
+  Specialty,
+  type CudyrScore,
+  type DailyRecord,
+  type PatientData,
+} from '@/types';
 
 vi.mock('../../context/AuditContext', () => ({
-    useAuditContext: vi.fn()
+  useAuditContext: vi.fn(),
 }));
 
 vi.mock('../../services/admin/attributionService', () => ({
-    getAttributedAuthors: vi.fn()
+  getAttributedAuthors: vi.fn(),
 }));
 
 vi.mock('../../services/admin/auditService', () => ({
-    logPatientAdmission: vi.fn()
+  logPatientAdmission: vi.fn(),
 }));
 
 describe('useBedAudit', () => {
-    const mockLogDebouncedEvent = vi.fn();
-    const mockRecord = {
-        date: '2026-01-19',
-        beds: {
-            'B1': { patientName: 'John Doe', rut: '123-4', cudyr: { mobilization: 1 } },
-            'B2': { clinicalCrib: { patientName: 'Baby Doe', rut: '567-8', cudyr: { feeding: 2 } } }
-        }
-    } as any;
+  const mockLogDebouncedEvent = vi.fn();
+  const buildCudyr = (overrides: Partial<CudyrScore> = {}): CudyrScore => ({
+    changeClothes: 0,
+    mobilization: 0,
+    feeding: 0,
+    elimination: 0,
+    psychosocial: 0,
+    surveillance: 0,
+    vitalSigns: 0,
+    fluidBalance: 0,
+    oxygenTherapy: 0,
+    airway: 0,
+    proInterventions: 0,
+    skinCare: 0,
+    pharmacology: 0,
+    invasiveElements: 0,
+    ...overrides,
+  });
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-        vi.mocked(useAuditContext).mockReturnValue({
-            logDebouncedEvent: mockLogDebouncedEvent,
-            userId: 'user123'
-        } as any);
+  const buildPatient = (overrides: Partial<PatientData> = {}): PatientData => ({
+    bedId: 'B1',
+    isBlocked: false,
+    bedMode: 'Cama',
+    hasCompanionCrib: false,
+    patientName: '',
+    rut: '',
+    age: '',
+    pathology: '',
+    specialty: Specialty.MEDICINA,
+    status: PatientStatus.ESTABLE,
+    admissionDate: '',
+    hasWristband: false,
+    devices: [],
+    surgicalComplication: false,
+    isUPC: false,
+    ...overrides,
+  });
+
+  const mockRecord: DailyRecord = {
+    date: '2026-01-19',
+    beds: {
+      B1: buildPatient({
+        patientName: 'John Doe',
+        rut: '123-4',
+        cudyr: buildCudyr({ mobilization: 1 }),
+      }),
+      B2: buildPatient({
+        clinicalCrib: buildPatient({
+          patientName: 'Baby Doe',
+          rut: '567-8',
+          cudyr: buildCudyr({ feeding: 2 }),
+        }),
+      }),
+    },
+    discharges: [],
+    transfers: [],
+    cma: [],
+    lastUpdated: '2026-01-19T00:00:00.000Z',
+    nurses: ['', ''],
+    activeExtraBeds: [],
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useAuditContext).mockReturnValue({
+      logDebouncedEvent: mockLogDebouncedEvent,
+      userId: 'user123',
+    } as unknown as ReturnType<typeof useAuditContext>);
+  });
+
+  it('should log patient admission when name is added', () => {
+    const { result } = renderHook(() => useBedAudit(mockRecord));
+    const oldPatient = buildPatient({ patientName: '' });
+
+    result.current.auditPatientChange('B1', 'patientName', oldPatient, 'New Patient');
+
+    expect(logPatientAdmission).toHaveBeenCalledWith('B1', 'New Patient', '', '', '2026-01-19');
+  });
+
+  it('should log PATIENT_MODIFIED when name is changed', () => {
+    const { result } = renderHook(() => useBedAudit(mockRecord));
+    const oldPatient = buildPatient({ patientName: 'Old Name', rut: '111' });
+
+    result.current.auditPatientChange('B1', 'patientName', oldPatient, 'New Name');
+
+    expect(mockLogDebouncedEvent).toHaveBeenCalledWith(
+      'PATIENT_MODIFIED',
+      'patient',
+      'B1',
+      expect.objectContaining({ patientName: 'New Name' }),
+      '111',
+      '2026-01-19'
+    );
+  });
+
+  it('should log device changes', () => {
+    const { result } = renderHook(() => useBedAudit(mockRecord));
+    const oldPatient = buildPatient({
+      patientName: 'John',
+      deviceDetails: { CVP: { installationDate: '2026-01-18' } },
     });
+    const newDetails = {
+      CVP: { installationDate: '2026-01-18', notes: 'Changed' },
+    };
 
-    it('should log patient admission when name is added', () => {
-        const { result } = renderHook(() => useBedAudit(mockRecord));
-        const oldPatient = { patientName: '' };
+    result.current.auditPatientChange('B1', 'deviceDetails', oldPatient, newDetails);
 
-        result.current.auditPatientChange('B1', 'patientName', oldPatient as any, 'New Patient');
+    expect(mockLogDebouncedEvent).toHaveBeenCalledWith(
+      'PATIENT_MODIFIED',
+      'patient',
+      'B1',
+      expect.objectContaining({
+        changes: expect.objectContaining({
+          deviceDetails: expect.any(Object),
+        }),
+      }),
+      '',
+      '2026-01-19'
+    );
+  });
 
-        expect(logPatientAdmission).toHaveBeenCalledWith('B1', 'New Patient', undefined, undefined, '2026-01-19');
-    });
+  it('should log critical field changes', () => {
+    const { result } = renderHook(() => useBedAudit(mockRecord));
+    const oldPatient = buildPatient({ patientName: 'John', status: PatientStatus.ESTABLE });
 
-    it('should log PATIENT_MODIFIED when name is changed', () => {
-        const { result } = renderHook(() => useBedAudit(mockRecord));
-        const oldPatient = { patientName: 'Old Name', rut: '111' };
+    result.current.auditPatientChange('B1', 'status', oldPatient, PatientStatus.DE_CUIDADO);
 
-        result.current.auditPatientChange('B1', 'patientName', oldPatient as any, 'New Name');
+    expect(mockLogDebouncedEvent).toHaveBeenCalledWith(
+      'PATIENT_MODIFIED',
+      'patient',
+      'B1',
+      expect.objectContaining({
+        changes: { status: { old: PatientStatus.ESTABLE, new: PatientStatus.DE_CUIDADO } },
+      }),
+      '',
+      '2026-01-19'
+    );
+  });
 
-        expect(mockLogDebouncedEvent).toHaveBeenCalledWith(
-            'PATIENT_MODIFIED', 'patient', 'B1',
-            expect.objectContaining({ patientName: 'New Name' }),
-            '111', '2026-01-19'
-        );
-    });
+  it('should log CUDYR changes with attributed authors', () => {
+    vi.mocked(getAttributedAuthors).mockReturnValue('Author 1');
+    const { result } = renderHook(() => useBedAudit(mockRecord));
 
-    it('should log device changes', () => {
-        const { result } = renderHook(() => useBedAudit(mockRecord));
-        const oldPatient = {
-            patientName: 'John',
-            deviceDetails: { 'CVP': { installationDate: '2026-01-18' } }
-        };
-        const newDetails = {
-            'CVP': { installationDate: '2026-01-18', notes: 'Changed' }
-        };
+    result.current.auditCudyrChange('B1', 'mobilization', 3);
 
-        result.current.auditPatientChange('B1', 'deviceDetails', oldPatient as any, newDetails as any);
+    expect(mockLogDebouncedEvent).toHaveBeenCalledWith(
+      'CUDYR_MODIFIED',
+      'dailyRecord',
+      '2026-01-19',
+      expect.objectContaining({ value: 3, oldValue: 1 }),
+      '123-4',
+      '2026-01-19',
+      'Author 1'
+    );
+  });
 
-        expect(mockLogDebouncedEvent).toHaveBeenCalledWith(
-            'PATIENT_MODIFIED', 'patient', 'B1',
-            expect.objectContaining({
-                changes: expect.objectContaining({
-                    deviceDetails: expect.any(Object)
-                })
-            }),
-            undefined, '2026-01-19'
-        );
-    });
+  it('should log Crib CUDYR changes', () => {
+    vi.mocked(getAttributedAuthors).mockReturnValue('Author 1');
+    const { result } = renderHook(() => useBedAudit(mockRecord));
 
-    it('should log critical field changes', () => {
-        const { result } = renderHook(() => useBedAudit(mockRecord));
-        const oldPatient = { patientName: 'John', status: 'Estable' };
+    result.current.auditCribCudyrChange('B2', 'feeding', 5);
 
-        result.current.auditPatientChange('B1', 'status', oldPatient as any, 'Grave');
-
-        expect(mockLogDebouncedEvent).toHaveBeenCalledWith(
-            'PATIENT_MODIFIED', 'patient', 'B1',
-            expect.objectContaining({
-                changes: { status: { old: 'Estable', new: 'Grave' } }
-            }),
-            undefined, '2026-01-19'
-        );
-    });
-
-    it('should log CUDYR changes with attributed authors', () => {
-        vi.mocked(getAttributedAuthors).mockReturnValue('Author 1');
-        const { result } = renderHook(() => useBedAudit(mockRecord));
-
-        result.current.auditCudyrChange('B1', 'mobilization', 3);
-
-        expect(mockLogDebouncedEvent).toHaveBeenCalledWith(
-            'CUDYR_MODIFIED', 'dailyRecord', '2026-01-19',
-            expect.objectContaining({ value: 3, oldValue: 1 }),
-            '123-4', '2026-01-19', 'Author 1'
-        );
-    });
-
-    it('should log Crib CUDYR changes', () => {
-        vi.mocked(getAttributedAuthors).mockReturnValue('Author 1');
-        const { result } = renderHook(() => useBedAudit(mockRecord));
-
-        result.current.auditCribCudyrChange('B2', 'feeding', 5);
-
-        expect(mockLogDebouncedEvent).toHaveBeenCalledWith(
-            'CUDYR_MODIFIED', 'dailyRecord', '2026-01-19',
-            expect.objectContaining({ patientName: 'Baby Doe', value: 5, oldValue: 2 }),
-            '567-8', '2026-01-19', 'Author 1'
-        );
-    });
+    expect(mockLogDebouncedEvent).toHaveBeenCalledWith(
+      'CUDYR_MODIFIED',
+      'dailyRecord',
+      '2026-01-19',
+      expect.objectContaining({ patientName: 'Baby Doe', value: 5, oldValue: 2 }),
+      '567-8',
+      '2026-01-19',
+      'Author 1'
+    );
+  });
 });

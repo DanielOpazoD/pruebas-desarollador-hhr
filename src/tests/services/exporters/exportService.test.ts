@@ -7,7 +7,7 @@ import {
 } from '@/services/exporters/exportService';
 import * as indexedDBService from '@/services/storage/indexedDBService';
 import * as validation from '@/schemas';
-import { DailyRecord } from '@/types';
+import { DailyRecord, PatientData, DischargeData, TransferData } from '@/types';
 
 // Mock dependencies
 vi.mock('@/services/storage/indexedDBService', async importOriginal => {
@@ -24,6 +24,12 @@ vi.mock('@/schemas', () => ({
 }));
 
 describe('exportService', () => {
+  type BackupData = Record<string, DailyRecord>;
+  type ValidateBackupResult = ReturnType<typeof validation.validateBackupData>;
+  type AnchorElementLike = Pick<HTMLAnchorElement, 'click'>;
+  const toBackupData = (value: BackupData): ValidateBackupResult =>
+    ({ success: true, data: value }) as unknown as ValidateBackupResult;
+
   const mockRecord: DailyRecord = {
     date: '2025-01-01',
     beds: {
@@ -39,7 +45,7 @@ describe('exportService', () => {
         isBlocked: false,
         location: 'UTI',
         deviceDetails: {},
-      } as any,
+      } as unknown as PatientData,
     },
     discharges: [
       {
@@ -52,7 +58,7 @@ describe('exportService', () => {
         diagnosis: 'Recuperado',
         status: 'Vivo',
       },
-    ] as any,
+    ] as unknown as DischargeData[],
     transfers: [
       {
         id: 'transfer-1',
@@ -66,7 +72,7 @@ describe('exportService', () => {
         evacuationMethod: 'Avión Comercial',
         receivingCenter: 'Hospital Regional',
       },
-    ] as any,
+    ] as unknown as TransferData[],
     cma: [],
     nurses: [],
     lastUpdated: new Date().toISOString(),
@@ -86,9 +92,11 @@ describe('exportService', () => {
   describe('exportDataJSON', () => {
     it('exports all records as JSON', async () => {
       const mockElement = { click: vi.fn() };
-      vi.spyOn(document, 'createElement').mockReturnValue(mockElement as any);
-      vi.spyOn(document.body, 'appendChild').mockImplementation(() => mockElement as any);
-      vi.spyOn(document.body, 'removeChild').mockImplementation(() => mockElement as any);
+      vi.spyOn(document, 'createElement').mockReturnValue(
+        mockElement as unknown as HTMLAnchorElement
+      );
+      vi.spyOn(document.body, 'appendChild').mockImplementation(node => node as unknown as Node);
+      vi.spyOn(document.body, 'removeChild').mockImplementation(node => node as unknown as Node);
 
       vi.mocked(indexedDBService.getAllRecords).mockResolvedValue({
         '2025-01-01': mockRecord,
@@ -114,9 +122,8 @@ describe('exportService', () => {
       const validData = { '2025-01-01': mockRecord };
 
       vi.mocked(validation.validateBackupData).mockReturnValue({
-        success: true,
-        data: validData as any,
-      });
+        ...toBackupData(validData),
+      } as ValidateBackupResult);
       vi.mocked(indexedDBService.saveRecord).mockResolvedValue();
 
       const file = new File([JSON.stringify(validData)], 'backup.json', {
