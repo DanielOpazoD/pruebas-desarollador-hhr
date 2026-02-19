@@ -77,6 +77,10 @@ export const SystemHealthAlertsPanel = ({ stats }: { stats: UserHealthStatus[] }
                 </span>
               </div>
               <p className="mt-1">{alert.description}</p>
+              <div className="mt-2 rounded bg-white/60 px-2 py-1 text-[11px]">
+                <span className="font-semibold">Accion:</span> {alert.recommendedAction}
+                <span className="ml-2 font-semibold">SLA:</span> {alert.slaMinutes} min
+              </div>
             </div>
           ))
         )}

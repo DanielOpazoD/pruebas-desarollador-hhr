@@ -32,6 +32,10 @@ import {
   createPartialUpdateDailyRecordCommand,
   createSaveDailyRecordCommand,
 } from '@/services/repositories/contracts/dailyRecordCommands';
+import {
+  createSaveDailyRecordResult,
+  createUpdatePartialDailyRecordResult,
+} from '@/services/repositories/contracts/dailyRecordResults';
 
 const isConcurrencyError = (error: unknown): boolean =>
   error instanceof Error && error.name === 'ConcurrencyError';
@@ -73,9 +77,19 @@ const autoMergeAndQueueConflict = async (
 
 export const save = async (record: DailyRecord, expectedLastUpdated?: string): Promise<void> => {
   const command = createSaveDailyRecordCommand(record, expectedLastUpdated);
+  let savedRemotely = false;
+  let queuedForRetry = false;
+  let autoMerged = false;
 
   if (isDemoModeActive()) {
     await saveDemoRecord(command.record);
+    createSaveDailyRecordResult({
+      date: command.date,
+      savedLocally: true,
+      savedRemotely: false,
+      queuedForRetry: false,
+      autoMerged: false,
+    });
     return;
   }
 
@@ -144,6 +158,14 @@ export const save = async (record: DailyRecord, expectedLastUpdated?: string): P
         if (isConcurrencyError(err)) {
           const merged = await autoMergeAndQueueConflict(command.date, validatedRecord, ['*']);
           if (merged) {
+            autoMerged = true;
+            createSaveDailyRecordResult({
+              date: command.date,
+              savedLocally: true,
+              savedRemotely: false,
+              queuedForRetry: true,
+              autoMerged,
+            });
             return;
           }
         }
@@ -152,7 +174,11 @@ export const save = async (record: DailyRecord, expectedLastUpdated?: string): P
 
       if (isRetryableSyncError(err)) {
         await queueSyncTask('UPDATE_DAILY_RECORD', validatedRecord);
+        queuedForRetry = true;
       }
+    }
+    if (!queuedForRetry && !autoMerged) {
+      savedRemotely = true;
     }
   }
 
@@ -186,10 +212,21 @@ export const save = async (record: DailyRecord, expectedLastUpdated?: string): P
       // intentionally ignored (non-critical background sync)
     }
   }, 1000);
+
+  createSaveDailyRecordResult({
+    date: command.date,
+    savedLocally: true,
+    savedRemotely,
+    queuedForRetry,
+    autoMerged,
+  });
 };
 
 export const updatePartial = async (date: string, partialData: DailyRecordPatch): Promise<void> => {
   const command = createPartialUpdateDailyRecordCommand(date, partialData);
+  let updatedRemotely = false;
+  let queuedForRetry = false;
+  let autoMerged = false;
 
   const current = isDemoModeActive()
     ? await getDemoRecordForDate(command.date)
@@ -220,6 +257,14 @@ export const updatePartial = async (date: string, partialData: DailyRecordPatch)
 
   if (isDemoModeActive()) {
     await saveDemoRecord(validatedRecord);
+    createUpdatePartialDailyRecordResult({
+      date: command.date,
+      savedLocally: true,
+      updatedRemotely: false,
+      queuedForRetry: false,
+      autoMerged: false,
+      patchedFields: Object.keys(mergedPatches).length,
+    });
     return;
   }
   await saveToIndexedDB(validatedRecord);
@@ -239,15 +284,35 @@ export const updatePartial = async (date: string, partialData: DailyRecordPatch)
       });
 
       await updateRecordPartialToFirestore(command.date, mergedPatches);
+      updatedRemotely = true;
     } catch (err) {
       console.warn('[Repository] Firestore partial update failed:', err);
       if (isConcurrencyError(err)) {
         await autoMergeAndQueueConflict(command.date, validatedRecord, Object.keys(mergedPatches));
+        autoMerged = true;
+        createUpdatePartialDailyRecordResult({
+          date: command.date,
+          savedLocally: true,
+          updatedRemotely: false,
+          queuedForRetry: true,
+          autoMerged,
+          patchedFields: Object.keys(mergedPatches).length,
+        });
         return;
       }
       if (isRetryableSyncError(err)) {
         await queueSyncTask('UPDATE_DAILY_RECORD', validatedRecord);
+        queuedForRetry = true;
       }
     }
   }
+
+  createUpdatePartialDailyRecordResult({
+    date: command.date,
+    savedLocally: true,
+    updatedRemotely,
+    queuedForRetry,
+    autoMerged,
+    patchedFields: Object.keys(mergedPatches).length,
+  });
 };

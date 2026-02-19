@@ -11,6 +11,8 @@ export interface OperationalAlert {
   title: string;
   description: string;
   severity: OperationalAlertSeverity;
+  recommendedAction: string;
+  slaMinutes: number;
   affectedUsers: string[];
   affectedCount: number;
 }
@@ -74,6 +76,9 @@ export const buildOperationalAlerts = (
       title: 'Usuarios en estado critico',
       description: 'Hay usuarios con riesgo alto de perdida de sincronizacion.',
       severity: 'critical',
+      recommendedAction:
+        'Contactar al usuario y ejecutar limpieza local + reintento de sincronizacion en menos de 10 minutos.',
+      slaMinutes: 10,
       affectedUsers: uniqueEmails(criticalUsers),
       affectedCount: criticalUsers.length,
     });
@@ -85,6 +90,9 @@ export const buildOperationalAlerts = (
       title: 'Sincronizaciones fallidas',
       description: 'Existen tareas fallidas que requieren revision de permisos o red.',
       severity: 'critical',
+      recommendedAction:
+        'Verificar permisos Firestore/Storage y reintentar cola. Si persiste, escalar a soporte tecnico.',
+      slaMinutes: 10,
       affectedUsers: uniqueEmails(failedSyncUsers),
       affectedCount: failedSyncUsers.length,
     });
@@ -96,6 +104,9 @@ export const buildOperationalAlerts = (
       title: 'Conflictos de sincronizacion',
       description: 'Se detectaron conflictos pendientes de resolucion o reintento.',
       severity: 'critical',
+      recommendedAction:
+        'Revisar panel de conflictos, confirmar merge sugerido y reintentar sincronizacion inmediatamente.',
+      slaMinutes: 15,
       affectedUsers: uniqueEmails(conflictUsers),
       affectedCount: conflictUsers.length,
     });
@@ -107,6 +118,9 @@ export const buildOperationalAlerts = (
       title: 'Cola atascada (>= 15 min)',
       description: 'La cola de outbox mantiene antiguedad critica.',
       severity: 'warning',
+      recommendedAction:
+        'Solicitar reintento de cola y validar conectividad de red del equipo afectado.',
+      slaMinutes: 30,
       affectedUsers: uniqueEmails(staleQueueUsers),
       affectedCount: staleQueueUsers.length,
     });
@@ -118,6 +132,9 @@ export const buildOperationalAlerts = (
       title: 'Usuarios offline prolongados',
       description: 'Usuarios sin conexion por mas de 15 minutos con sesion activa reciente.',
       severity: 'warning',
+      recommendedAction:
+        'Validar conectividad local y confirmar que no existan cambios pendientes antes de cerrar sesion.',
+      slaMinutes: 30,
       affectedUsers: uniqueEmails(prolongedOfflineUsers),
       affectedCount: prolongedOfflineUsers.length,
     });
@@ -129,6 +146,9 @@ export const buildOperationalAlerts = (
       title: 'Usuarios en advertencia',
       description: 'Hay degradacion leve en sincronizacion que requiere monitoreo.',
       severity: 'warning',
+      recommendedAction:
+        'Monitorear evolucion y escalar si la alerta permanece por mas de 30 minutos.',
+      slaMinutes: 45,
       affectedUsers: uniqueEmails(warningUsers),
       affectedCount: warningUsers.length,
     });
