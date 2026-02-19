@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FilePlus, User } from 'lucide-react';
 import { TransferRequest, TransferFormData } from '@/types/transfers';
-import { DESTINATION_HOSPITALS, MEDICAL_SPECIALTIES } from '@/constants/transferConstants';
+import {
+  DESTINATION_HOSPITALS,
+  MEDICAL_SPECIALTIES,
+  type DestinationHospitalOption,
+} from '@/constants/transferConstants';
 import { PatientSelector } from './PatientSelector';
 import { BaseModal, ModalSection } from '@/components/shared/BaseModal';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
+import { getDestinationHospitalCatalog } from '@/features/transfers/services/destinationHospitalCatalogService';
 
 interface Patient {
   id: string;
@@ -33,8 +38,29 @@ export const TransferFormModal: React.FC<TransferFormModalProps> = ({
   const [destinationHospital, setDestinationHospital] = useState(
     transfer?.destinationHospital || ''
   );
+  const [destinationHospitals, setDestinationHospitals] = useState<DestinationHospitalOption[]>([
+    ...DESTINATION_HOSPITALS,
+  ]);
   const [requiredSpecialty, setRequiredSpecialty] = useState(transfer?.requiredSpecialty || '');
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    void getDestinationHospitalCatalog()
+      .then(catalog => {
+        if (mounted) {
+          setDestinationHospitals(catalog);
+        }
+      })
+      .catch(error => {
+        console.warn('[TransferFormModal] Failed to load destination hospitals catalog:', error);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Find selected patient
   const selectedPatient = patients.find(p => p.id === selectedPatientId);
@@ -123,7 +149,7 @@ export const TransferFormModal: React.FC<TransferFormModalProps> = ({
               required
             >
               <option value="">Seleccionar hospital...</option>
-              {DESTINATION_HOSPITALS.map(h => (
+              {destinationHospitals.map(h => (
                 <option key={h.id} value={h.name}>
                   {h.name}
                 </option>

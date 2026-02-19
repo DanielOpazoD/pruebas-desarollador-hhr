@@ -21,6 +21,24 @@ const saveWorkbook = async (workbook: Workbook, filename: string) => {
   saveAs(blob, filename + '.xlsx');
 };
 
+const applyCensusRawFormatting = (worksheet: ReturnType<Workbook['addWorksheet']>) => {
+  worksheet.views = [{ state: 'frozen', ySplit: 1 }];
+
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  headerRow.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF0F4C81' },
+  };
+  headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+  headerRow.height = 22;
+
+  worksheet.columns.forEach(column => {
+    column.width = Math.min(Math.max((column.header?.toString().length || 12) + 2, 12), 36);
+  });
+};
+
 // --- EXPORT FUNCTIONS ---
 
 export const generateCensusDailyRaw = async (date: string) => {
@@ -72,13 +90,46 @@ export const generateCensusMonthRaw = async (year: number, month: number) => {
 
 // --- PLACEHOLDERS FOR FORMATTED REPORTS ---
 
-export const generateCensusDailyFormatted = async (_date: string) => {
-  alert("Funcionalidad 'Formato Especial' en desarrollo.");
-  // TODO: Implement complex styling here reflecting the visual request
+export const generateCensusDailyFormatted = async (date: string) => {
+  const record = await getRecordForDate(date);
+  if (!record) {
+    alert('No hay datos para la fecha seleccionada.');
+    return;
+  }
+
+  const workbook = await createWorkbook();
+  const sheet = workbook.addWorksheet('Censo Formateado');
+  sheet.addRow(getCensusRawHeader());
+
+  const rows = extractRowsFromRecord(record);
+  rows.forEach(row => sheet.addRow(row));
+
+  applyCensusRawFormatting(sheet);
+  await saveWorkbook(workbook, `Censo_HangaRoa_Formateado_${date}`);
 };
 
-export const generateCensusRangeFormatted = async (_startDate: string, _endDate: string) => {
-  alert("Funcionalidad 'Formato Especial' en desarrollo.");
+export const generateCensusRangeFormatted = async (startDate: string, endDate: string) => {
+  const allRecords = await getAllRecords();
+  const dates = Object.keys(allRecords)
+    .filter(d => d >= startDate && d <= endDate)
+    .sort();
+
+  if (dates.length === 0) {
+    alert('No hay registros en el rango de fechas seleccionado.');
+    return;
+  }
+
+  const workbook = await createWorkbook();
+  const sheet = workbook.addWorksheet('Censo Formateado');
+  sheet.addRow(getCensusRawHeader());
+
+  dates.forEach(date => {
+    const rows = extractRowsFromRecord(allRecords[date]);
+    rows.forEach(row => sheet.addRow(row));
+  });
+
+  applyCensusRawFormatting(sheet);
+  await saveWorkbook(workbook, `Censo_HangaRoa_Formateado_${startDate}_${endDate}`);
 };
 
 // --- CUDYR EXPORTS ---

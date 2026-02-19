@@ -193,5 +193,48 @@ describe('reportService', () => {
       // Verify saveAs was called
       expect(saveAs).toHaveBeenCalled();
     });
+
+    it('should generate formatted daily report when record exists', async () => {
+      const { saveAs } = await import('file-saver');
+      const { generateCensusDailyFormatted } = await import('@/services/exporters/reportService');
+      const { getRecordForDate } = await import('@/services/dataService');
+
+      vi.mocked(getRecordForDate).mockResolvedValue({
+        date: '2025-12-25',
+        beds: {},
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        nurses: [],
+        discharges: [],
+        transfers: [],
+        cma: [],
+        lastUpdated: new Date().toISOString(),
+      } as any);
+
+      await generateCensusDailyFormatted('2025-12-25');
+      expect(saveAs).toHaveBeenCalled();
+    });
+
+    it('should generate formatted range report with available records', async () => {
+      const { saveAs } = await import('file-saver');
+      const { generateCensusRangeFormatted } = await import('@/services/exporters/reportService');
+      const indexedDbService = await import('@/services/storage/indexedDBService');
+
+      vi.mocked(indexedDbService.getAllRecords).mockResolvedValue({
+        '2025-12-24': {
+          date: '2025-12-24',
+          beds: {},
+          discharges: [],
+          transfers: [],
+          cma: [],
+          nurses: [],
+          activeExtraBeds: [],
+          lastUpdated: new Date().toISOString(),
+        } as any,
+      });
+
+      await generateCensusRangeFormatted('2025-12-24', '2025-12-25');
+      expect(saveAs).toHaveBeenCalled();
+    });
   });
 });
