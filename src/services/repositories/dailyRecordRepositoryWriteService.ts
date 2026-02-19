@@ -28,6 +28,10 @@ import { PatientMasterRepository } from '@/services/repositories/PatientMasterRe
 import { logConflictAutoMerged } from '@/services/admin/auditService';
 import { resolveDailyRecordConflictWithTrace } from '@/services/repositories/conflictResolutionMatrix';
 import { ConflictResolutionTraceEntry } from '@/services/repositories/conflictResolutionTrace';
+import {
+  createPartialUpdateDailyRecordCommand,
+  createSaveDailyRecordCommand,
+} from '@/services/repositories/contracts/dailyRecordCommands';
 
 const isConcurrencyError = (error: unknown): boolean =>
   error instanceof Error && error.name === 'ConcurrencyError';
@@ -94,12 +98,14 @@ const autoMergeAndQueueConflict = async (
 };
 
 export const save = async (record: DailyRecord, expectedLastUpdated?: string): Promise<void> => {
+  const command = createSaveDailyRecordCommand(record, expectedLastUpdated);
+
   if (isDemoModeActive()) {
-    await saveDemoRecord(record);
+    await saveDemoRecord(command.record);
     return;
   }
 
-  const recordWithSchemaDefaults = validateAndSalvageRecord(record, record.date);
+  const recordWithSchemaDefaults = validateAndSalvageRecord(command.record, command.date);
 
   if (!recordWithSchemaDefaults.dateTimestamp && recordWithSchemaDefaults.date) {
     const dateObj = new Date(`${recordWithSchemaDefaults.date}T00:00:00`);
@@ -127,7 +133,7 @@ export const save = async (record: DailyRecord, expectedLastUpdated?: string): P
 
   if (isFirestoreEnabled()) {
     try {
-      const remoteRecord = await getRecordFromFirestore(record.date);
+      const remoteRecord = await getRecordFromFirestore(command.date);
       if (remoteRecord) {
         const remoteVersion = remoteRecord.schemaVersion || 0;
         if (remoteVersion > CURRENT_SCHEMA_VERSION) {
@@ -157,12 +163,12 @@ export const save = async (record: DailyRecord, expectedLastUpdated?: string): P
 
   if (isFirestoreEnabled()) {
     try {
-      await saveRecordToFirestore(validatedRecord, expectedLastUpdated);
+      await saveRecordToFirestore(validatedRecord, command.expectedLastUpdated);
     } catch (err) {
       console.warn('Firestore sync failed, data saved in IndexedDB:', err);
       if (err instanceof Error && (isConcurrencyError(err) || err instanceof DataRegressionError)) {
         if (isConcurrencyError(err)) {
-          const merged = await autoMergeAndQueueConflict(record.date, validatedRecord, ['*']);
+          const merged = await autoMergeAndQueueConflict(command.date, validatedRecord, ['*']);
           if (merged) {
             return;
           }
@@ -209,22 +215,26 @@ export const save = async (record: DailyRecord, expectedLastUpdated?: string): P
 };
 
 export const updatePartial = async (date: string, partialData: DailyRecordPatch): Promise<void> => {
+  const command = createPartialUpdateDailyRecordCommand(date, partialData);
+
   const current = isDemoModeActive()
-    ? await getDemoRecordForDate(date)
-    : await getRecordFromIndexedDB(date);
+    ? await getDemoRecordForDate(command.date)
+    : await getRecordFromIndexedDB(command.date);
 
   if (!current) {
-    console.warn(`[Repository] updatePartial: No record found for ${date}, operation aborted.`);
+    console.warn(
+      `[Repository] updatePartial: No record found for ${command.date}, operation aborted.`
+    );
     return;
   }
 
-  const updatedForInvariants = applyPatches(current, partialData);
+  const updatedForInvariants = applyPatches(current, command.patch);
   const normalized = normalizeDailyRecordInvariants(updatedForInvariants);
-  const mergedPatches: DailyRecordPatch = { ...partialData, ...normalized.patches };
+  const mergedPatches: DailyRecordPatch = { ...command.patch, ...normalized.patches };
 
   if (Object.keys(normalized.patches).length > 0) {
     logError('Invariant repair applied on updatePartial', undefined, {
-      date,
+      date: command.date,
       patches: Object.keys(normalized.patches),
     });
   }
@@ -232,7 +242,7 @@ export const updatePartial = async (date: string, partialData: DailyRecordPatch)
   const updated = applyPatches(current, mergedPatches);
   updated.lastUpdated = new Date().toISOString();
 
-  const validatedRecord = validateAndSalvageRecord(updated, date);
+  const validatedRecord = validateAndSalvageRecord(updated, command.date);
 
   if (isDemoModeActive()) {
     await saveDemoRecord(validatedRecord);
@@ -254,11 +264,11 @@ export const updatePartial = async (date: string, partialData: DailyRecordPatch)
         }
       });
 
-      await updateRecordPartialToFirestore(date, mergedPatches);
+      await updateRecordPartialToFirestore(command.date, mergedPatches);
     } catch (err) {
       console.warn('[Repository] Firestore partial update failed:', err);
       if (isConcurrencyError(err)) {
-        await autoMergeAndQueueConflict(date, validatedRecord, Object.keys(mergedPatches));
+        await autoMergeAndQueueConflict(command.date, validatedRecord, Object.keys(mergedPatches));
         return;
       }
       if (isRetryableSyncError(err)) {

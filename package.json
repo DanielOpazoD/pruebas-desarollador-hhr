@@ -12,6 +12,7 @@
     "test:resilience": "vitest run src/tests/integration/sync-resilience.test.ts src/tests/integration/sync-ui-resilience.test.tsx src/tests/integration/offline-persistence.test.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:sync-load": "vitest run src/tests/services/storage/syncQueueLoad.test.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:vrt": "playwright test e2e/visual-regression.spec.ts",
