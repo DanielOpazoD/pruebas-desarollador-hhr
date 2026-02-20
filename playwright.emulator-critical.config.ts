@@ -28,12 +28,35 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
 
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-  ],
+  projects: ((): Array<{ name: string; use: object }> => {
+    const configuredBrowsers = (process.env.E2E_CRITICAL_BROWSERS || 'chromium')
+      .split(',')
+      .map(browser => browser.trim().toLowerCase())
+      .filter(Boolean);
+
+    const projects: Array<{ name: string; use: object }> = [];
+    if (configuredBrowsers.includes('chromium')) {
+      projects.push({
+        name: 'chromium',
+        use: { ...devices['Desktop Chrome'] },
+      });
+    }
+    if (configuredBrowsers.includes('firefox')) {
+      projects.push({
+        name: 'firefox',
+        use: { ...devices['Desktop Firefox'] },
+      });
+    }
+
+    // Keep at least Chromium so local runs never end up with zero projects.
+    if (projects.length === 0) {
+      projects.push({
+        name: 'chromium',
+        use: { ...devices['Desktop Chrome'] },
+      });
+    }
+    return projects;
+  })(),
 
   webServer: {
     command: 'npm run dev -- --host 127.0.0.1 --port 3000',

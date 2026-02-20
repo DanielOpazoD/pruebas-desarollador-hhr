@@ -143,6 +143,9 @@ Criterio de cierre:
 - `E2E_BUDGET_LOGIN_VISIBLE_MS`, `E2E_BUDGET_AUTH_FEEDBACK_MS`, `E2E_BUDGET_CENSO_VISIBLE_MS`:
   - Umbrales del test de performance de arranque en CI.
   - Ajustar sólo con evidencia de hardware/red del entorno objetivo.
+- `E2E_CRITICAL_BROWSERS`:
+  - Define navegadores del gate E2E crítico (`chromium` por defecto).
+  - En CI se recomienda `chromium,firefox` para cubrir compatibilidad multi-browser sin duplicar suites.
 
 ## Evidencia Mínima para Escalar a Ingeniería
 

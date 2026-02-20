@@ -15,6 +15,8 @@ const fail = message => {
 };
 
 const toKb = value => `${(value / 1024).toFixed(1)} KB`;
+const toPct = (value, max) => `${((value / max) * 100).toFixed(1)}%`;
+const nearLimitThresholdRatio = 0.9;
 
 if (!fs.existsSync(configPath)) {
   fail(`Missing config file: ${configPath}`);
@@ -75,11 +77,16 @@ const jsAssets = fs
   });
 
 const violations = [];
+const nearLimitWarnings = [];
 
 for (const entryFile of entryFiles) {
   if (entryFile.size > entryMaxBytes) {
     violations.push(
       `Entry "${entryFile.name}" is ${toKb(entryFile.size)} (limit ${toKb(entryMaxBytes)})`
+    );
+  } else if (entryFile.size / entryMaxBytes >= nearLimitThresholdRatio) {
+    nearLimitWarnings.push(
+      `Entry "${entryFile.name}" is near limit: ${toKb(entryFile.size)} (${toPct(entryFile.size, entryMaxBytes)} of ${toKb(entryMaxBytes)})`
     );
   }
 }
@@ -88,6 +95,10 @@ for (const asset of jsAssets) {
   if (asset.size > chunkMaxBytes) {
     violations.push(
       `Chunk "${asset.name}" is ${toKb(asset.size)} (global chunk limit ${toKb(chunkMaxBytes)})`
+    );
+  } else if (asset.size / chunkMaxBytes >= nearLimitThresholdRatio) {
+    nearLimitWarnings.push(
+      `Chunk "${asset.name}" is near global limit: ${toKb(asset.size)} (${toPct(asset.size, chunkMaxBytes)} of ${toKb(chunkMaxBytes)})`
     );
   }
 }
@@ -111,6 +122,10 @@ for (const patternBudget of chunkPatternBudgets) {
       violations.push(
         `Chunk "${asset.name}" is ${toKb(asset.size)} (pattern ${pattern} limit ${toKb(maxBytes)})`
       );
+    } else if (asset.size / maxBytes >= nearLimitThresholdRatio) {
+      nearLimitWarnings.push(
+        `Chunk "${asset.name}" is near pattern limit: ${toKb(asset.size)} (${toPct(asset.size, maxBytes)} of ${toKb(maxBytes)}) [pattern ${pattern}]`
+      );
     }
   }
 }
@@ -129,3 +144,7 @@ console.warn(
 largestChunks.forEach(chunk => {
   console.warn(`[bundle-budget] Largest chunk: ${chunk.name} (${toKb(chunk.size)})`);
 });
+if (nearLimitWarnings.length > 0) {
+  console.warn('[bundle-budget] Near-limit warnings:');
+  nearLimitWarnings.forEach(warning => console.warn(`- ${warning}`));
+}

@@ -66,6 +66,9 @@ export default defineConfig(({ mode }) => {
       }
 
       // 3D map stack: split into focused chunks to avoid one near-limit artifact.
+      if (has('/node_modules/three/examples/')) {
+        return 'vendor-three-stdlib';
+      }
       if (has('/node_modules/three/')) {
         return 'vendor-three-core';
       }
@@ -91,9 +94,6 @@ export default defineConfig(({ mode }) => {
       if (has('/node_modules/exceljs/lib/csv/')) {
         return 'vendor-excel-csv';
       }
-      if (has('/node_modules/exceljs/')) {
-        return 'vendor-excel-core';
-      }
       if (
         has('/node_modules/jszip/') ||
         has('/node_modules/pako/') ||
@@ -115,6 +115,9 @@ export default defineConfig(({ mode }) => {
         has('/node_modules/dayjs/')
       ) {
         return 'vendor-excel-xml';
+      }
+      if (has('/node_modules/exceljs/')) {
+        return 'vendor-excel-core';
       }
 
       if (has('/node_modules/jspdf/') || has('/node_modules/jspdf-autotable/')) {
