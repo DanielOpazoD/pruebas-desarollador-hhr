@@ -1,0 +1,7 @@
+{
+  "maxFlaky": 0,
+  "maxRetriesUsed": 2,
+  "maxDurationMs": 480000,
+  "maxDurationRegressionPct": 20,
+  "historyWindow": 10
+}

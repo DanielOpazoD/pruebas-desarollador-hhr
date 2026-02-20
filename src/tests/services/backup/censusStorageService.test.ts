@@ -19,6 +19,7 @@ vi.mock('firebase/storage', () => ({
 
 vi.mock('@/firebaseConfig', () => ({
   storage: {} as Record<string, never>,
+  getStorageInstance: vi.fn().mockResolvedValue({} as Record<string, never>),
   auth: { currentUser: null },
   firebaseReady: Promise.resolve(),
 }));

@@ -1,42 +1,54 @@
 import { initializeApp, type FirebaseOptions, type FirebaseApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator, setPersistence, browserLocalPersistence, type Auth } from 'firebase/auth';
-import { initializeFirestore, connectFirestoreEmulator, type Firestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
-import { getStorage, type FirebaseStorage } from 'firebase/storage';
-import { getFunctions, connectFunctionsEmulator, type Functions } from 'firebase/functions';
+import {
+  getAuth,
+  connectAuthEmulator,
+  setPersistence,
+  browserLocalPersistence,
+  type Auth,
+} from 'firebase/auth';
+import {
+  initializeFirestore,
+  connectFirestoreEmulator,
+  type Firestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from 'firebase/firestore';
+import type { FirebaseStorage } from 'firebase/storage';
+import type { Functions } from 'firebase/functions';
 import { safeJsonParse } from '@/utils/jsonUtils';
 
 const CACHED_CONFIG_KEY = 'hhr_firebase_config';
 
 const decodeBase64 = (rawValue: string) => {
-    const value = rawValue?.trim();
-    if (!value) return '';
+  const value = rawValue?.trim();
+  if (!value) return '';
 
-    const normalized = value
-        .replace(/\s+/g, '')
-        .replace(/-/g, '+')
-        .replace(/_/g, '/')
-        .padEnd(Math.ceil(value.length / 4) * 4, '=');
+  const normalized = value
+    .replace(/\s+/g, '')
+    .replace(/-/g, '+')
+    .replace(/_/g, '/')
+    .padEnd(Math.ceil(value.length / 4) * 4, '=');
 
-    try {
-        if (typeof atob === 'function') {
-            return atob(normalized);
-        }
-
-        return Buffer.from(normalized, 'base64').toString('utf-8');
-    } catch (error) {
-        console.warn('Firebase API key could not be decoded from base64:', error);
-        return '';
+  try {
+    if (typeof atob === 'function') {
+      return atob(normalized);
     }
+
+    return Buffer.from(normalized, 'base64').toString('utf-8');
+  } catch (error) {
+    console.warn('Firebase API key could not be decoded from base64:', error);
+    return '';
+  }
 };
 
 const mountConfigWarning = (message: string) => {
-    console.warn(message);
+  console.warn(message);
 
-    if (typeof document === 'undefined') return;
-    const root = document.getElementById('root');
-    if (!root) return;
+  if (typeof document === 'undefined') return;
+  const root = document.getElementById('root');
+  if (!root) return;
 
-    root.innerHTML = `
+  root.innerHTML = `
         <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f8fafc;color:#0f172a;">
             <div style="max-width:520px;padding:24px;border-radius:12px;background:white;box-shadow:0 10px 40px rgba(15,23,42,0.12);font-family:Inter,sans-serif;">
                 <h1 style="font-size:20px;font-weight:700;margin:0 0 12px 0;">Configuración de Firebase incompleta</h1>
@@ -52,179 +64,202 @@ const mountConfigWarning = (message: string) => {
 };
 
 const saveCachedConfig = (config: FirebaseOptions) => {
-    try {
-        if (typeof localStorage === 'undefined') return;
-        localStorage.setItem(CACHED_CONFIG_KEY, JSON.stringify(config));
-    } catch (error) {
-        console.warn('[FirebaseConfig] Failed to cache Firebase config:', error);
-    }
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(CACHED_CONFIG_KEY, JSON.stringify(config));
+  } catch (error) {
+    console.warn('[FirebaseConfig] Failed to cache Firebase config:', error);
+  }
 };
 
 const getCachedConfig = (): FirebaseOptions | null => {
-    try {
-        if (typeof localStorage === 'undefined') return null;
-        const raw = localStorage.getItem(CACHED_CONFIG_KEY);
-        if (!raw) return null;
-        const parsed = safeJsonParse<FirebaseOptions | null>(raw, null);
-        if (!parsed) return null;
-        return parsed.apiKey ? parsed : null;
-    } catch (error) {
-        console.warn('[FirebaseConfig] Failed to read cached Firebase config:', error);
-        return null;
-    }
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    const raw = localStorage.getItem(CACHED_CONFIG_KEY);
+    if (!raw) return null;
+    const parsed = safeJsonParse<FirebaseOptions | null>(raw, null);
+    if (!parsed) return null;
+    return parsed.apiKey ? parsed : null;
+  } catch (error) {
+    console.warn('[FirebaseConfig] Failed to read cached Firebase config:', error);
+    return null;
+  }
 };
 
 const fetchRuntimeConfig = async (): Promise<FirebaseOptions> => {
-    const configUrl = `/.netlify/functions/firebase-config?t=${Date.now()}&mode=recovery`;
-    const response = await fetch(configUrl, {
-        headers: { 'Cache-Control': 'no-cache' }
-    });
+  const configUrl = `/.netlify/functions/firebase-config?t=${Date.now()}&mode=recovery`;
+  const response = await fetch(configUrl, {
+    headers: { 'Cache-Control': 'no-cache' },
+  });
 
-    if (!response.ok) {
-        throw new Error(`Runtime config request failed (${response.status})`);
-    }
+  if (!response.ok) {
+    throw new Error(`Runtime config request failed (${response.status})`);
+  }
 
-    const config = await response.json();
-    return config satisfies FirebaseOptions;
+  const config = await response.json();
+  return config satisfies FirebaseOptions;
 };
 
 const buildDevConfig = (): FirebaseOptions => {
-    const encodedKey = import.meta.env.VITE_FIREBASE_API_KEY_B64 || '';
-    const plainKey = import.meta.env.VITE_FIREBASE_API_KEY || '';
+  const encodedKey = import.meta.env.VITE_FIREBASE_API_KEY_B64 || '';
+  const plainKey = import.meta.env.VITE_FIREBASE_API_KEY || '';
 
-    // eslint-disable-next-line no-console
-    console.log('[FirebaseConfig] 🔍 Checking Environment Variables:', {
-        hasApiKey: !!plainKey,
-        hasB64Key: !!encodedKey,
-        projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-        mode: import.meta.env.MODE
-    });
+  // eslint-disable-next-line no-console
+  console.log('[FirebaseConfig] 🔍 Checking Environment Variables:', {
+    hasApiKey: !!plainKey,
+    hasB64Key: !!encodedKey,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    mode: import.meta.env.MODE,
+  });
 
-    const apiKey = encodedKey ? decodeBase64(encodedKey) : plainKey;
+  const apiKey = encodedKey ? decodeBase64(encodedKey) : plainKey;
 
-    return {
-        apiKey,
-        authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-        projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-        storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-        messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-        appId: import.meta.env.VITE_FIREBASE_APP_ID
-    } satisfies FirebaseOptions;
+  return {
+    apiKey,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  } satisfies FirebaseOptions;
 };
 
 const loadFirebaseConfig = async () => {
-    if (import.meta.env.DEV) {
-        return buildDevConfig();
+  if (import.meta.env.DEV) {
+    return buildDevConfig();
+  }
+
+  const cached = getCachedConfig();
+
+  try {
+    const config = await fetchRuntimeConfig();
+    saveCachedConfig(config);
+    return config;
+  } catch (error) {
+    if (cached?.apiKey) {
+      console.warn('[FirebaseConfig] Using cached Firebase config due to network error');
+      return cached;
     }
 
-    const cached = getCachedConfig();
-
-    try {
-        const config = await fetchRuntimeConfig();
-        saveCachedConfig(config);
-        return config;
-    } catch (error) {
-        if (cached?.apiKey) {
-            console.warn('[FirebaseConfig] Using cached Firebase config due to network error');
-            return cached;
-        }
-
-        console.error('Failed to load Firebase config from Netlify function', error);
-        mountConfigWarning('No se pudo cargar la configuración de Firebase desde Netlify. Verifica las variables en el panel de Netlify.');
-        throw error;
-    }
+    console.error('Failed to load Firebase config from Netlify function', error);
+    mountConfigWarning(
+      'No se pudo cargar la configuración de Firebase desde Netlify. Verifica las variables en el panel de Netlify.'
+    );
+    throw error;
+  }
 };
 
 let app!: FirebaseApp;
 let auth!: Auth;
 let db!: Firestore;
-let storage!: FirebaseStorage;
-let functions!: Functions;
+let storage: FirebaseStorage | undefined;
+let functions: Functions | undefined;
+let functionsEmulatorConnected = false;
+
+export const getStorageInstance = async (): Promise<FirebaseStorage> => {
+  await firebaseReady;
+  if (storage) return storage;
+
+  const { getStorage } = await import('firebase/storage');
+  storage = getStorage(app);
+  return storage;
+};
+
+export const getFunctionsInstance = async (): Promise<Functions> => {
+  await firebaseReady;
+  if (!functions) {
+    const { getFunctions } = await import('firebase/functions');
+    functions = getFunctions(app);
+  }
+
+  if (import.meta.env.DEV && !functionsEmulatorConnected) {
+    const functionsEmulatorHost = import.meta.env.VITE_FUNCTIONS_EMULATOR_HOST;
+    if (functionsEmulatorHost) {
+      const { connectFunctionsEmulator } = await import('firebase/functions');
+      const [host, port] = functionsEmulatorHost.split(':');
+      connectFunctionsEmulator(functions, host, Number(port));
+      functionsEmulatorConnected = true;
+    }
+  }
+
+  return functions;
+};
 
 export const firebaseReady = (async () => {
-    // eslint-disable-next-line no-console
-    console.log('[FirebaseConfig] 🚀 Starting Firebase Ready sequence...');
+  // eslint-disable-next-line no-console
+  console.log('[FirebaseConfig] 🚀 Starting Firebase Ready sequence...');
 
-    // Safety timeout for the entire initialization
-    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase initialization timed out')), 10000));
+  // Safety timeout for the entire initialization
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Firebase initialization timed out')), 10000)
+  );
 
-    try {
-        const configPromise = (async () => {
-            const config = await loadFirebaseConfig();
-            // eslint-disable-next-line no-console
-            console.log('[FirebaseConfig] 📁 Config loaded:', config.projectId);
-            // eslint-disable-next-line no-console
-            console.log('[FirebaseConfig] 🪣 Storage Bucket:', config.storageBucket || 'not set');
+  try {
+    const configPromise = (async () => {
+      const config = await loadFirebaseConfig();
+      // eslint-disable-next-line no-console
+      console.log('[FirebaseConfig] 📁 Config loaded:', config.projectId);
+      // eslint-disable-next-line no-console
+      console.log('[FirebaseConfig] 🪣 Storage Bucket:', config.storageBucket || 'not set');
 
-            if (!config.apiKey) {
-                mountConfigWarning('Firebase API key is missing. Please configure it in Netlify.');
-                throw new Error('Missing Firebase API key');
-            }
+      if (!config.apiKey) {
+        mountConfigWarning('Firebase API key is missing. Please configure it in Netlify.');
+        throw new Error('Missing Firebase API key');
+      }
 
-            // eslint-disable-next-line no-console
-            console.log('[FirebaseConfig] 🔌 Initializing services...');
-            app = initializeApp(config);
-            auth = getAuth(app);
+      // eslint-disable-next-line no-console
+      console.log('[FirebaseConfig] 🔌 Initializing services...');
+      app = initializeApp(config);
+      auth = getAuth(app);
 
-            // Initialize Firestore. Note: persistentLocalCache can hang if IndexedDB is locked.
-            try {
-                db = initializeFirestore(app, {
-                    ignoreUndefinedProperties: true,
-                    localCache: persistentLocalCache({
-                        tabManager: persistentMultipleTabManager()
-                    })
-                });
-                // eslint-disable-next-line no-console
-                console.log('[FirebaseConfig] 💾 Firestore initialized (persistence requested)');
-            } catch (fsErr) {
-                console.warn('[FirebaseConfig] ⚠️ Firestore persistence failed at init:', fsErr);
-                db = initializeFirestore(app, {
-                    ignoreUndefinedProperties: true
-                });
-            }
+      // Initialize Firestore. Note: persistentLocalCache can hang if IndexedDB is locked.
+      try {
+        db = initializeFirestore(app, {
+          ignoreUndefinedProperties: true,
+          localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager(),
+          }),
+        });
+        // eslint-disable-next-line no-console
+        console.log('[FirebaseConfig] 💾 Firestore initialized (persistence requested)');
+      } catch (fsErr) {
+        console.warn('[FirebaseConfig] ⚠️ Firestore persistence failed at init:', fsErr);
+        db = initializeFirestore(app, {
+          ignoreUndefinedProperties: true,
+        });
+      }
 
-            storage = getStorage(app);
-            functions = getFunctions(app);
+      // Set auth persistence in background to avoid blocking the whole app if it hangs
+      setPersistence(auth, browserLocalPersistence).catch(err => {
+        console.warn('[FirebaseConfig] ⚠️ Auth persistence failed:', err);
+      });
 
-            // Set auth persistence in background to avoid blocking the whole app if it hangs
-            setPersistence(auth, browserLocalPersistence).catch(err => {
-                console.warn('[FirebaseConfig] ⚠️ Auth persistence failed:', err);
-            });
+      // eslint-disable-next-line no-console
+      console.log('[FirebaseConfig] 🔥 Firebase services ready');
 
-            // eslint-disable-next-line no-console
-            console.log('[FirebaseConfig] 🔥 Firebase services ready');
+      const authEmulatorHost = import.meta.env.VITE_AUTH_EMULATOR_HOST;
+      const firestoreEmulatorHost = import.meta.env.VITE_FIRESTORE_EMULATOR_HOST;
 
-            const authEmulatorHost = import.meta.env.VITE_AUTH_EMULATOR_HOST;
-            const firestoreEmulatorHost = import.meta.env.VITE_FIRESTORE_EMULATOR_HOST;
+      if (import.meta.env.DEV && authEmulatorHost) {
+        connectAuthEmulator(auth, authEmulatorHost);
+      }
 
-            if (import.meta.env.DEV && authEmulatorHost) {
-                connectAuthEmulator(auth, authEmulatorHost);
-            }
+      if (import.meta.env.DEV && firestoreEmulatorHost) {
+        const [host, port] = firestoreEmulatorHost.split(':');
+        connectFirestoreEmulator(db, host, Number(port));
+      }
 
-            if (import.meta.env.DEV && firestoreEmulatorHost) {
-                const [host, port] = firestoreEmulatorHost.split(':');
-                connectFirestoreEmulator(db, host, Number(port));
-            }
+      return { app, auth, db };
+    })();
 
-            if (import.meta.env.DEV) {
-                const functionsEmulatorHost = import.meta.env.VITE_FUNCTIONS_EMULATOR_HOST;
-                if (functionsEmulatorHost) {
-                    const [host, port] = functionsEmulatorHost.split(':');
-                    connectFunctionsEmulator(functions, host, Number(port));
-                }
-            }
-
-            return { app, auth, db, storage, functions };
-        })();
-
-        return await Promise.race([configPromise, timeout]);
-    } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-        console.error('[FirebaseConfig] ❌ Critical initialization error:', message);
-        // We throw here because without Firebase the app can't function properly
-        // but it will be caught by anyone awaiting firebaseReady
-        throw err;
-    }
+    return await Promise.race([configPromise, timeout]);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[FirebaseConfig] ❌ Critical initialization error:', message);
+    // We throw here because without Firebase the app can't function properly
+    // but it will be caught by anyone awaiting firebaseReady
+    throw err;
+  }
 })();
 
 export { app, auth, db, storage, functions, mountConfigWarning };

@@ -1,5 +1,5 @@
 import { ref, getBlob } from 'firebase/storage';
-import { storage } from '@/firebaseConfig';
+import { getStorageInstance } from '@/firebaseConfig';
 import { TransferPatientData, QuestionnaireResponse } from '@/types/transferDocuments';
 import { createWorkbook } from '@/services/exporters/excelUtils';
 // import ExcelJS from 'exceljs'; // Removed static import
@@ -217,6 +217,7 @@ const calculateAge = (birthDateStr: string): string => {
  */
 export const fetchTemplateFromStorage = async (templateName: string): Promise<Blob | null> => {
   try {
+    const storage = await getStorageInstance();
     const templateRef = ref(storage, `templates/${templateName}`);
     // console.debug(`[TemplateService] Fetching template: templates/${templateName}`);
     return await getBlob(templateRef);

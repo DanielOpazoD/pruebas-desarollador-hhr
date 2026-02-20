@@ -12,7 +12,7 @@ import {
   getDateRangeFromPreset,
   filterRecordsByDateRange,
 } from '@/services/calculations/minsalStatsCalculator';
-import { functions } from '@/firebaseConfig';
+import { getFunctionsInstance } from '@/firebaseConfig';
 import { httpsCallable } from 'firebase/functions';
 import { getActiveHospitalId } from '@/constants/firestorePaths';
 import {
@@ -144,10 +144,9 @@ export function useMinsalStats(initialPreset: DateRangePreset = 'lastMonth'): Us
   // Remote Calculation Effect
   useEffect(() => {
     const fetchRemoteStats = async () => {
-      if (!functions) return;
-
       setIsRemoteLoading(true);
       try {
+        const functions = await getFunctionsInstance();
         const calculateStats = httpsCallable(functions, 'calculateMinsalStats');
         const result = await calculateStats({
           hospitalId: getActiveHospitalId(),

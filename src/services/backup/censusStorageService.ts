@@ -4,7 +4,7 @@
  */
 
 import { ref, uploadBytes, getDownloadURL, deleteObject, getMetadata } from 'firebase/storage';
-import { storage, auth, firebaseReady } from '@/firebaseConfig';
+import { auth, firebaseReady, getStorageInstance } from '@/firebaseConfig';
 import {
   createListYears,
   createListMonths,
@@ -58,6 +58,7 @@ const parseFilePath = (path: string): { date: string } | null => {
 export const uploadCensus = async (excelBlob: Blob, date: string): Promise<string> => {
   // console.info(`[CensusStorage] Starting upload for ${date}...`);
   await firebaseReady;
+  const storage = await getStorageInstance();
   assertStorageAvailable(storage, 'CensusStorage', 'uploadCensus');
 
   const filePath = generateCensusPath(date);
@@ -94,7 +95,7 @@ export const checkCensusExists = async (date: string): Promise<boolean> => {
     async (): Promise<boolean> => {
       try {
         await firebaseReady;
-        if (!storage) return false;
+        const storage = await getStorageInstance();
 
         const storageRef = ref(storage, generateCensusPath(date));
         await getMetadata(storageRef);
@@ -120,7 +121,8 @@ export const checkCensusExists = async (date: string): Promise<boolean> => {
  * Delete a Census file from Storage
  */
 export const deleteCensusFile = async (date: string): Promise<void> => {
-  if (!storage) return;
+  await firebaseReady;
+  const storage = await getStorageInstance();
   let filePath: string;
   try {
     filePath = generateCensusPath(date);

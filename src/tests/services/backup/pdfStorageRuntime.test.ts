@@ -4,6 +4,7 @@ import { deletePdf, getPdfUrl, pdfExists } from '@/services/backup/pdfStorageSer
 
 vi.mock('@/firebaseConfig', () => ({
   storage: {},
+  getStorageInstance: vi.fn().mockResolvedValue({}),
   auth: { currentUser: { email: 'test@example.com' } },
   firebaseReady: Promise.resolve(),
 }));

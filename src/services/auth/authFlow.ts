@@ -22,7 +22,11 @@ import {
   googleProvider,
   toAuthUser,
 } from '@/services/auth/authShared';
-import { isPopupRecoverableAuthError, toGoogleAuthError } from '@/services/auth/authErrorPolicy';
+import {
+  isPopupRecoverableAuthError,
+  shouldDowngradeGoogleAuthLogLevel,
+  toGoogleAuthError,
+} from '@/services/auth/authErrorPolicy';
 
 export const signIn = async (email: string, password: string): Promise<AuthUser> => {
   try {
@@ -129,12 +133,17 @@ export const signInWithGoogle = async (): Promise<AuthUser> => {
       throw error;
     }
 
-    console.error('[authService] Google sign-in failed', error);
+    const mappedError = toGoogleAuthError(error);
+    if (shouldDowngradeGoogleAuthLogLevel(error)) {
+      console.warn(`[authService] Google sign-in recoverable issue: ${mappedError.code}`);
+    } else {
+      console.error('[authService] Google sign-in failed', error);
+    }
 
     if (isPopupRecoverableAuthError(error)) {
       console.warn('[authService] 💡 Suggesting signInWithRedirect due to popup failure');
     }
-    throw toGoogleAuthError(error);
+    throw mappedError;
   } finally {
     stopLockHeartbeat();
     releaseGoogleLoginLock();

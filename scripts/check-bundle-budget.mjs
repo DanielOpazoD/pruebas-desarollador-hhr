@@ -17,6 +17,18 @@ const fail = message => {
 const toKb = value => `${(value / 1024).toFixed(1)} KB`;
 const toPct = (value, max) => `${((value / max) * 100).toFixed(1)}%`;
 const nearLimitThresholdRatio = 0.9;
+const baseChunkAdvisories = [
+  {
+    label: 'entry-app',
+    pattern: /^index-.*\.js$/,
+    recommendedMaxBytes: 620000,
+  },
+  {
+    label: 'firebase-core',
+    pattern: /^vendor-firebase-core-.*\.js$/,
+    recommendedMaxBytes: 560000,
+  },
+];
 
 if (!fs.existsSync(configPath)) {
   fail(`Missing config file: ${configPath}`);
@@ -125,6 +137,16 @@ for (const patternBudget of chunkPatternBudgets) {
     } else if (asset.size / maxBytes >= nearLimitThresholdRatio) {
       nearLimitWarnings.push(
         `Chunk "${asset.name}" is near pattern limit: ${toKb(asset.size)} (${toPct(asset.size, maxBytes)} of ${toKb(maxBytes)}) [pattern ${pattern}]`
+      );
+    }
+  }
+}
+
+for (const advisory of baseChunkAdvisories) {
+  for (const asset of jsAssets.filter(candidate => advisory.pattern.test(candidate.name))) {
+    if (asset.size > advisory.recommendedMaxBytes) {
+      nearLimitWarnings.push(
+        `Base chunk advisory (${advisory.label}): "${asset.name}" is ${toKb(asset.size)} (recommended <= ${toKb(advisory.recommendedMaxBytes)})`
       );
     }
   }

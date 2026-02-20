@@ -12,6 +12,7 @@ import { uploadBytes, getDownloadURL, getMetadata, deleteObject } from 'firebase
 // Mock firebaseConfig to resolve firebaseReady
 vi.mock('@/firebaseConfig', () => ({
   storage: {},
+  getStorageInstance: vi.fn().mockResolvedValue({}),
   auth: { currentUser: { email: 'test@example.com' } },
   firebaseReady: Promise.resolve(),
 }));

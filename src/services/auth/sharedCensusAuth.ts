@@ -1,5 +1,5 @@
 import { httpsCallable } from 'firebase/functions';
-import { auth, functions } from '@/firebaseConfig';
+import { auth, getFunctionsInstance } from '@/firebaseConfig';
 
 type SharedCensusAccessResult = {
   authorized: boolean;
@@ -27,6 +27,7 @@ export const checkSharedCensusAccess = async (
     return { authorized: false, role: 'viewer' };
   }
   try {
+    const functions = await getFunctionsInstance();
     const checkSharedAccess = httpsCallable<Record<string, never>, SharedCensusAccessResult>(
       functions,
       'checkSharedCensusAccess'

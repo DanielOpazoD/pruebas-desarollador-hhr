@@ -146,6 +146,12 @@ Criterio de cierre:
 - `E2E_CRITICAL_BROWSERS`:
   - Define navegadores del gate E2E crítico (`chromium` por defecto).
   - En CI se recomienda `chromium,firefox` para cubrir compatibilidad multi-browser sin duplicar suites.
+- Reporte operativo E2E en CI:
+  - Se genera `reports/e2e/critical-operational-metrics.json` y `reports/e2e/critical-operational-summary.md`.
+  - Revisar `flaky`, `retriesUsed` y `durationMs` antes de aprobar release si hubo incidentes de estabilidad.
+  - Umbrales operativos definidos en `scripts/config/e2e-operational-thresholds.json`.
+  - El gate duro actual bloquea sólo por `maxFlaky`; duración y reintentos quedan como advertencia operativa.
+  - Artefacto en GitHub Actions: `e2e-critical-emulator-artifacts`.
 
 ## Evidencia Mínima para Escalar a Ingeniería
 

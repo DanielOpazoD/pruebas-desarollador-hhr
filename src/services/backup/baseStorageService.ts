@@ -16,7 +16,7 @@ import {
   StorageReference,
   FullMetadata,
 } from 'firebase/storage';
-import { storage, firebaseReady } from '@/firebaseConfig';
+import { firebaseReady, getStorageInstance } from '@/firebaseConfig';
 import {
   isExpectedStorageLookupMiss,
   shouldLogStorageError,
@@ -105,7 +105,7 @@ export const createListYears = (storageRoot: string) => {
   return async (): Promise<string[]> => {
     try {
       await firebaseReady;
-      if (!storage) return [];
+      const storage = await getStorageInstance();
 
       const timeoutPromise = new Promise<string[]>(resolve =>
         setTimeout(() => resolve([]), DEFAULT_LIST_TIMEOUT_MS)
@@ -141,7 +141,7 @@ export const createListMonths = (storageRoot: string) => {
   return async (year: string): Promise<MonthInfo[]> => {
     try {
       await firebaseReady;
-      if (!storage) return [];
+      const storage = await getStorageInstance();
 
       const timeoutPromise = new Promise<MonthInfo[]>(resolve =>
         setTimeout(() => resolve([]), DEFAULT_LIST_TIMEOUT_MS)
@@ -188,7 +188,7 @@ export const createListFilesInMonth = <
     const fullStoragePath = `${config.storageRoot}/${year}/${month}`;
     try {
       await firebaseReady;
-      if (!storage) return [];
+      const storage = await getStorageInstance();
 
       const timeoutPromise = new Promise<T[]>(resolve =>
         setTimeout(() => {

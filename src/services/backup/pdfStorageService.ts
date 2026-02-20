@@ -11,7 +11,7 @@
  */
 
 import { ref, uploadBytes, getDownloadURL, deleteObject, getMetadata } from 'firebase/storage';
-import { storage, auth, firebaseReady } from '@/firebaseConfig';
+import { auth, firebaseReady, getStorageInstance } from '@/firebaseConfig';
 import {
   createListYears,
   createListMonths,
@@ -92,6 +92,7 @@ export const uploadPdf = async (
 ): Promise<string> => {
   // console.info(`[PdfStorage] Starting upload for ${date}...`);
   await firebaseReady;
+  const storage = await getStorageInstance();
   assertStorageAvailable(storage, 'PdfStorage', 'uploadPdf');
 
   const filePath = generatePdfPath(date, shiftType);
@@ -119,7 +120,8 @@ export const uploadPdf = async (
  * Delete a PDF from Storage
  */
 export const deletePdf = async (date: string, shiftType: 'day' | 'night'): Promise<void> => {
-  if (!storage) return;
+  await firebaseReady;
+  const storage = await getStorageInstance();
   let filePath: string;
   try {
     filePath = generatePdfPath(date, shiftType);
@@ -146,7 +148,8 @@ export const getPdfUrl = async (
   date: string,
   shiftType: 'day' | 'night'
 ): Promise<string | null> => {
-  if (!storage) return null;
+  await firebaseReady;
+  const storage = await getStorageInstance();
   try {
     const filePath = generatePdfPath(date, shiftType);
     const storageRef = ref(storage, filePath);
@@ -179,7 +182,7 @@ export const pdfExists = async (date: string, shiftType: 'day' | 'night'): Promi
     async (): Promise<boolean> => {
       try {
         await firebaseReady;
-        if (!storage) return false;
+        const storage = await getStorageInstance();
 
         const filePath = generatePdfPath(date, shiftType);
         const storageRef = ref(storage, filePath);

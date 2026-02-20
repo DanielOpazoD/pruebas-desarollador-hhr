@@ -64,6 +64,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     import.meta.env.VITE_E2E_MODE === 'true' &&
     typeof window !== 'undefined' &&
     window.localStorage?.getItem('hhr_e2e_force_popup') === 'true';
+  const autoRedirectFallbackEnabled =
+    String(import.meta.env.VITE_AUTH_AUTO_REDIRECT_FALLBACK || 'true').toLowerCase() !== 'false';
+  const shouldAutoFallbackToRedirect =
+    autoRedirectFallbackEnabled && !isLocalhostRuntime && !forcePopupForE2E;
 
   const handleGoogleSignIn = async () => {
     setError(null);
@@ -79,18 +83,34 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       await signInWithGoogle();
       onLoginSuccess();
     } catch (err: unknown) {
-      console.error('[LoginPage] Google sign-in failed', err);
-
       // Safer error handling without 'any'
       const errorMessage = err instanceof Error ? err.message : String(err);
       const isPopupIssue = isPopupRecoverableAuthError(err);
 
       if (isPopupIssue) {
         setShowAlternateAccess(true);
-        setError(
-          'No se pudo abrir el login emergente (popup), posiblemente por bloqueo del navegador o por otra pestaña iniciando sesión.'
-        );
+        if (shouldAutoFallbackToRedirect) {
+          setIsRedirectLoading(true);
+          setError('El navegador bloqueó el popup. Intentando acceso alternativo...');
+          try {
+            await signInWithGoogleRedirect();
+            return;
+          } catch (redirectError) {
+            const redirectMessage =
+              redirectError instanceof Error
+                ? redirectError.message
+                : 'No fue posible iniciar por redirección.';
+            setError(redirectMessage);
+          } finally {
+            setIsRedirectLoading(false);
+          }
+        } else {
+          setError(
+            'No se pudo abrir el login emergente (popup), posiblemente por bloqueo del navegador o por otra pestaña iniciando sesión.'
+          );
+        }
       } else {
+        console.error('[LoginPage] Google sign-in failed', err);
         setError(errorMessage || 'Error al iniciar sesión con Google');
       }
     } finally {

@@ -50,6 +50,9 @@ export const isPopupRecoverableAuthError = (error: unknown): boolean => {
   );
 };
 
+export const shouldDowngradeGoogleAuthLogLevel = (error: unknown): boolean =>
+  isPopupRecoverableAuthError(error);
+
 const GOOGLE_AUTH_ERROR_MESSAGES: Record<string, string> = {
   'auth/multi-tab-login-in-progress':
     'Hay otra pestaña iniciando sesión. Espera unos segundos o usa el acceso alternativo.',

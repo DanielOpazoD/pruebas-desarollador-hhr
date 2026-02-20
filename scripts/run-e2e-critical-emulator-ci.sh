@@ -30,4 +30,7 @@ ensure_java_available() {
 
 ensure_java_available
 
+export PLAYWRIGHT_JSON_OUTPUT="${PLAYWRIGHT_JSON_OUTPUT:-reports/e2e/playwright-report.json}"
+mkdir -p "$(dirname "$PLAYWRIGHT_JSON_OUTPUT")"
+
 npx -y firebase-tools@13.35.1 emulators:exec --only firestore "npm run test:e2e:critical"

@@ -1,5 +1,5 @@
 import { httpsCallable } from 'firebase/functions';
-import { auth, functions } from '@/firebaseConfig';
+import { auth, getFunctionsInstance } from '@/firebaseConfig';
 import { db } from '@/services/infrastructure/db';
 import { getSetting, saveSetting } from '@/services/storage/indexedDBService';
 import { safeJsonParse } from '@/utils/jsonUtils';
@@ -77,6 +77,7 @@ export const checkEmailInFirestore = async (
 
     try {
       console.warn('[authService] 📡 Fetching role via checkUserRole function...');
+      const functions = await getFunctionsInstance();
       const checkRoleFunc = httpsCallable<{ email: string }, { role: string }>(
         functions,
         'checkUserRole'

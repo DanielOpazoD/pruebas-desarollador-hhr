@@ -10,7 +10,7 @@
  */
 
 import { ref, uploadBytes, getDownloadURL, getMetadata } from 'firebase/storage';
-import { storage, auth, firebaseReady } from '@/firebaseConfig';
+import { auth, firebaseReady, getStorageInstance } from '@/firebaseConfig';
 import {
   createListYears,
   createListMonths,
@@ -87,6 +87,7 @@ const parseFilePath = (path: string): { date: string; year: string; month: strin
 export const uploadCudyrExcel = async (excelBlob: Blob, date: string): Promise<string> => {
   // console.info(`[CudyrStorage] Starting upload for ${date}...`);
   await firebaseReady;
+  const storage = await getStorageInstance();
   assertStorageAvailable(storage, 'CudyrStorage', 'uploadCudyrExcel');
 
   const filePath = generateCudyrPath(date);
@@ -143,7 +144,7 @@ export const cudyrExists = async (date: string): Promise<boolean> => {
     async (): Promise<boolean> => {
       try {
         await firebaseReady;
-        if (!storage) return false;
+        const storage = await getStorageInstance();
 
         const filePath = generateCudyrPath(date);
         const storageRef = ref(storage, filePath);
@@ -171,7 +172,8 @@ export const cudyrExists = async (date: string): Promise<boolean> => {
  * Delete a CUDYR file from Storage
  */
 export const deleteCudyrFile = async (date: string): Promise<void> => {
-  if (!storage) return;
+  await firebaseReady;
+  const storage = await getStorageInstance();
   const { deleteObject } = await import('firebase/storage');
   let filePath: string;
   try {

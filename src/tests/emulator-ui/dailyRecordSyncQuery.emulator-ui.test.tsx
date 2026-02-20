@@ -67,6 +67,8 @@ vi.mock('@/firebaseConfig', () => ({
   },
   storage: {},
   functions: {},
+  getStorageInstance: vi.fn().mockResolvedValue({}),
+  getFunctionsInstance: vi.fn().mockResolvedValue({}),
   firebaseReady: Promise.resolve(),
   mountConfigWarning: vi.fn(),
 }));

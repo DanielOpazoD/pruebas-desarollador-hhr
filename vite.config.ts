@@ -54,10 +54,34 @@ export default defineConfig(({ mode }) => {
         return 'vendor-react';
       }
 
-      // Keep Firebase in a single vendor chunk to avoid cross-chunk init cycles
-      // between firebase-core/firestore that can break runtime execution order.
+      if (
+        has('/node_modules/@tanstack/react-query/') ||
+        has('/node_modules/@tanstack/query-core/') ||
+        has('/node_modules/@tanstack/react-virtual/')
+      ) {
+        return 'vendor-tanstack';
+      }
+
+      if (has('/node_modules/dexie/')) {
+        return 'vendor-localdb';
+      }
+
+      if (has('/node_modules/zod/')) {
+        return 'vendor-zod';
+      }
+
+      // Keep Firebase core together and isolate auxiliary SDKs (storage/functions)
+      // so login bootstrap does not pay the cost of optional modules.
       if (has('/node_modules/firebase/') || has('/node_modules/@firebase/')) {
-        return 'vendor-firebase';
+        if (
+          has('/node_modules/firebase/storage') ||
+          has('/node_modules/firebase/functions') ||
+          has('/node_modules/@firebase/storage') ||
+          has('/node_modules/@firebase/functions')
+        ) {
+          return 'vendor-firebase-aux';
+        }
+        return 'vendor-firebase-core';
       }
 
       // HTML to Canvas (lazy loaded for screenshots)

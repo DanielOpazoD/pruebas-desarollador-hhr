@@ -1,5 +1,4 @@
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, WidthType } from 'docx';
-// import ExcelJS from 'exceljs'; // Removed static import
 import {
   HospitalConfig,
   QuestionnaireResponse,
@@ -16,9 +15,6 @@ import {
 } from './documentGeneratorUtils';
 import { createWorkbook } from '@/services/exporters/excelUtils';
 
-/**
- * Generate "Tapa de Traslado" DOCX Fallback
- */
 export const generateTapaTraslado = async (
   patientData: TransferPatientData,
   hospital: HospitalConfig
@@ -86,9 +82,6 @@ export const generateTapaTraslado = async (
   };
 };
 
-/**
- * Generate "Encuesta COVID" DOCX Fallback
- */
 export const generateEncuestaCovid = async (
   patientData: TransferPatientData,
   responses: QuestionnaireResponse,
@@ -183,9 +176,6 @@ export const generateEncuestaCovid = async (
   };
 };
 
-/**
- * Generate "Solicitud Cama HDS" DOCX Fallback
- */
 export const generateSolicitudCamaHDS = async (
   patientData: TransferPatientData,
   responses: QuestionnaireResponse,
@@ -260,9 +250,6 @@ export const generateSolicitudCamaHDS = async (
   };
 };
 
-/**
- * Generate "Solicitud Ambulancia" DOCX Fallback
- */
 export const generateSolicitudAmbulancia = async (
   patientData: TransferPatientData,
   responses: QuestionnaireResponse,
@@ -353,9 +340,6 @@ const processItinerarySection = (responses: QuestionnaireResponse) => {
   ];
 };
 
-/**
- * Generate "Formulario IAAS" XLSX Fallback
- */
 export const generateFormularioIAAS = async (
   patientData: TransferPatientData,
   responses: QuestionnaireResponse,

@@ -190,6 +190,8 @@ const firebaseMock = {
   db: mockFirestore,
   storage: {},
   functions: {},
+  getStorageInstance: vi.fn().mockResolvedValue({}),
+  getFunctionsInstance: vi.fn().mockResolvedValue({}),
   firebaseReady: Promise.resolve({ auth: mockAuth, db: mockFirestore }),
   mountConfigWarning: () => {},
 };

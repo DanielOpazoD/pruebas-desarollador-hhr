@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   isPopupRecoverableAuthError,
   resolveAuthErrorCode,
+  shouldDowngradeGoogleAuthLogLevel,
   toGoogleAuthError,
 } from '@/services/auth/authErrorPolicy';
 
@@ -28,5 +29,14 @@ describe('authErrorPolicy', () => {
     const err = toGoogleAuthError({ code: 'auth/popup-blocked' }) as Error & { code: string };
     expect(err.code).toBe('auth/popup-blocked');
     expect(err.message).toContain('ventana emergente');
+  });
+
+  it('downgrades recoverable popup errors to warning log level', () => {
+    expect(
+      shouldDowngradeGoogleAuthLogLevel({
+        message: 'INTERNAL ASSERTION FAILED: Cross-Origin-Opener-Policy',
+      })
+    ).toBe(true);
+    expect(shouldDowngradeGoogleAuthLogLevel({ message: 'fatal unknown error' })).toBe(false);
   });
 });
