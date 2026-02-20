@@ -6,6 +6,11 @@
 
 import { expect, Page } from '@playwright/test';
 
+const E2E_DEFAULT_DATE = process.env.E2E_FIXED_DATE ?? '2026-01-01';
+const PASSPORT_ISSUED_AT = `${E2E_DEFAULT_DATE}T00:00:00.000Z`;
+const PASSPORT_EXPIRES_AT = '2027-01-01T00:00:00.000Z';
+const RECORD_LAST_UPDATED = `${E2E_DEFAULT_DATE}T00:00:00.000Z`;
+
 // Mock user data for different roles
 export const MOCK_USERS = {
     editor: {
@@ -38,20 +43,20 @@ export async function setupE2EContext(
     populateWithPatient: boolean = false
 ) {
     const mockUser = MOCK_USERS[role];
-    const targetDate = new Date().toISOString().split('T')[0];
+    const targetDate = E2E_DEFAULT_DATE;
+
+    await page.addInitScript(() => {
+        (window as Window & { __HHR_E2E_OVERRIDE__?: Record<string, unknown> }).__HHR_E2E_OVERRIDE__ = {};
+    });
 
     // 1. Navigate to home
     await page.goto('/');
 
     // 2. Inject everything at once
-    await page.evaluate(({ user, dateStr, populate }: { user: typeof mockUser, dateStr: string, populate: boolean }) => {
+    await page.evaluate(({ user, dateStr, populate, issuedAt, expiresAtStr, lastUpdated }: { user: typeof mockUser, dateStr: string, populate: boolean, issuedAt: string, expiresAtStr: string, lastUpdated: string }) => {
         // --- Passport Generation Logic ---
         const SIGNATURE_KEY = 'HHR-2024-OFFLINE-PASSPORT-SECRET-KEY';
         const PASSPORT_VERSION = 1;
-        const issuedAt = new Date().toISOString();
-        const expiresAt = new Date();
-        expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-        const expiresAtStr = expiresAt.toISOString();
         const dataToSign = `${user.email}|${user.role}|${user.displayName}|${issuedAt}|${expiresAtStr}`;
 
         // Mock HMAC-like hash
@@ -86,7 +91,7 @@ export async function setupE2EContext(
             discharges: [],
             transfers: [],
             cma: [],
-            lastUpdated: new Date().toISOString(),
+            lastUpdated,
             nurses: ["Dr. Sender", "Enf. A"],
             activeExtraBeds: []
         };
@@ -114,11 +119,47 @@ export async function setupE2EContext(
         const records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
         records[dateStr] = mockRecord;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-    }, { user: mockUser, dateStr: targetDate, populate: populateWithPatient });
+    }, {
+        user: mockUser,
+        dateStr: targetDate,
+        populate: populateWithPatient,
+        issuedAt: PASSPORT_ISSUED_AT,
+        expiresAtStr: PASSPORT_EXPIRES_AT,
+        lastUpdated: RECORD_LAST_UPDATED,
+    });
 
     // 3. Single reload to apply all state
-    await page.reload();
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForLoadState('domcontentloaded');
+
+    // 4. If login screen is still visible, complete deterministic E2E popup login
+    const googleLoginButton = page.getByRole('button', { name: /Ingresar con Google/i });
+    const loginVisible = await googleLoginButton
+        .isVisible({ timeout: 2000 })
+        .catch(() => false);
+
+    if (loginVisible) {
+        await page.evaluate(({ user }) => {
+            localStorage.removeItem('hhr_google_login_lock_v1');
+            localStorage.setItem('hhr_e2e_force_popup', 'true');
+            localStorage.setItem(
+                'hhr_e2e_popup_success_user',
+                JSON.stringify({
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName,
+                    role: user.role,
+                })
+            );
+        }, { user: mockUser });
+
+        await googleLoginButton.click();
+
+        await Promise.race([
+            page.getByTestId('census-table').waitFor({ state: 'visible', timeout: 15000 }).catch(() => { }),
+            page.getByRole('button', { name: /Ingresar con Google/i }).waitFor({ state: 'hidden', timeout: 15000 }).catch(() => { }),
+        ]);
+    }
 }
 
 /**
@@ -129,8 +170,11 @@ export async function injectMockUser(page: Page, role: 'editor' | 'admin' | 'vie
 }
 
 export async function injectMockData(page: Page, date?: string, populateWithPatient: boolean = false) {
-    // If we're already on the page, we just inject data and reload
-    const targetDate = date || new Date().toISOString().split('T')[0];
+    // If we're already on the page, inject data without reload to preserve auth/session state
+    const targetDate = date || E2E_DEFAULT_DATE;
+    await page.addInitScript(() => {
+        (window as Window & { __HHR_E2E_OVERRIDE__?: Record<string, unknown> }).__HHR_E2E_OVERRIDE__ = {};
+    });
     await page.evaluate(({ dateStr, _populate }: { dateStr: string, _populate: boolean }) => {
         const STORAGE_KEY = 'hanga_roa_hospital_data';
         // ... (simplified version for legacy support)
@@ -140,7 +184,6 @@ export async function injectMockData(page: Page, date?: string, populateWithPati
         }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
     }, { dateStr: targetDate, _populate: populateWithPatient });
-    await page.reload();
 }
 
 /**
@@ -158,17 +201,38 @@ export async function clearAuth(page: Page) {
  * Uses stable data-testid instead of text selectors
  */
 export async function ensureRecordExists(page: Page) {
-    const table = page.getByTestId('census-table');
+    const loginButton = page.getByRole('button', { name: /Ingresar con Google/i });
+    if (await loginButton.isVisible().catch(() => false)) {
+        await page.evaluate(() => {
+            localStorage.removeItem('hhr_google_login_lock_v1');
+            localStorage.setItem('hhr_e2e_force_popup', 'true');
+            const offlineUserRaw = localStorage.getItem('hhr_offline_user');
+            if (offlineUserRaw) {
+                localStorage.setItem('hhr_e2e_popup_success_user', offlineUserRaw);
+            }
+        });
+        await loginButton.click();
+    }
+
+    const tableById = page.getByTestId('census-table');
+    const tableFallback = page.locator('main table').first();
     const blankBtn = page.getByTestId('blank-record-btn');
     const copyBtn = page.getByTestId('copy-previous-btn');
 
+    const isTableVisible = async (): Promise<boolean> => {
+        const byIdVisible = await tableById.isVisible().catch(() => false);
+        if (byIdVisible) return true;
+        return tableFallback.isVisible().catch(() => false);
+    };
+
     // Wait for either the table or the buttons to appear
     await Promise.race([
-        table.waitFor({ state: 'visible', timeout: 5000 }).catch(() => { }),
+        tableById.waitFor({ state: 'visible', timeout: 5000 }).catch(() => { }),
+        tableFallback.waitFor({ state: 'visible', timeout: 5000 }).catch(() => { }),
         blankBtn.waitFor({ state: 'visible', timeout: 5000 }).catch(() => { })
     ]);
 
-    if (await table.isVisible()) return;
+    if (await isTableVisible()) return;
 
     if (await blankBtn.isVisible()) {
         await blankBtn.click();
@@ -177,7 +241,11 @@ export async function ensureRecordExists(page: Page) {
     }
 
     // Final wait for table stability
-    await expect(table).toBeVisible({ timeout: 10000 });
+    if (await tableById.isVisible().catch(() => false)) {
+        await expect(tableById).toBeVisible({ timeout: 10000 });
+        return;
+    }
+    await expect(tableFallback).toBeVisible({ timeout: 10000 });
 }
 
 export { expect };

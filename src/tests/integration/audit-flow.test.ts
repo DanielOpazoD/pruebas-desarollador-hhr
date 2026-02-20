@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { User } from 'firebase/auth';
+import type { AuditLogEntry } from '@/types';
 
 // Unmock auditService to test the REAL logic
 vi.unmock('../../services/admin/auditService');
@@ -20,7 +22,7 @@ vi.mock('firebase/firestore', () => ({
     orderBy: vi.fn(),
     limit: vi.fn(),
     Timestamp: {
-        now: vi.fn(() => new Date())
+        now: vi.fn(() => new Date('2026-02-20T00:00:00.000Z'))
     },
     where: vi.fn()
 }));
@@ -29,13 +31,14 @@ const mockSaveAuditLog = vi.fn();
 const mockGetAuditLogs = vi.fn();
 
 vi.mock('../../services/storage/indexedDBService', () => ({
-    saveAuditLog: (log: any) => mockSaveAuditLog(log),
+    saveAuditLog: (log: AuditLogEntry) => mockSaveAuditLog(log),
     getAuditLogs: (limit: number) => mockGetAuditLogs(limit),
     getAuditLogsForDate: vi.fn()
 }));
 
 // Mock current user
 const mockAuth = vi.mocked(auth);
+const authState = mockAuth as typeof auth & { currentUser: User | null };
 
 describe('Audit Flow Integration', () => {
     beforeEach(() => {
@@ -43,10 +46,10 @@ describe('Audit Flow Integration', () => {
         mockGetAuditLogs.mockResolvedValue([]);
 
         // Mock default user
-        (mockAuth as any).currentUser = {
+        authState.currentUser = {
             email: 'doctor@hospital.cl',
             uid: 'doctor-123'
-        };
+        } as User;
     });
 
     it('should log patient admission locally and to Firestore', async () => {
@@ -70,9 +73,9 @@ describe('Audit Flow Integration', () => {
     });
 
     it('should NOT log patient view for admin users', async () => {
-        (mockAuth as any).currentUser = {
+        authState.currentUser = {
             email: 'daniel.opazo@hospitalhangaroa.cl' // Excluded user
-        };
+        } as User;
 
         await logPatientView('BED_01', 'Juan Pérez', '12345678-9', '2024-12-25');
 
@@ -80,9 +83,9 @@ describe('Audit Flow Integration', () => {
     });
 
     it('should log patient view for regular users', async () => {
-        (mockAuth as any).currentUser = {
+        authState.currentUser = {
             email: 'other@hospital.cl' // Regular user
-        };
+        } as User;
 
         // Clear throttle state to ensure fresh test
         sessionStorage.clear();

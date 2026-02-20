@@ -57,6 +57,6 @@ describe('Data Schema Resilience (Fuzzing)', () => {
 
         const result = safeParseDailyRecord(dataWithFutureFields);
         expect(result).not.toBeNull();
-        expect((result as any).newFeatureFlag).toBe(true);
+        expect((result as unknown as { newFeatureFlag?: boolean }).newFeatureFlag).toBe(true);
     });
 });

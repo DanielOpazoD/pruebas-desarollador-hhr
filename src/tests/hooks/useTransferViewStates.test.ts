@@ -24,6 +24,7 @@ vi.mock('@/shared/runtime/browserWindowRuntime', () => ({
 
 import { generateTransferDocuments } from '@/services/transfers/documentGeneratorService';
 import { TransferFormData } from '@/types/transfers';
+import { QuestionnaireResponse } from '@/types/transferDocuments';
 
 describe('useTransferViewStates', () => {
   let mockRecord: DailyRecord;
@@ -220,8 +221,14 @@ describe('useTransferViewStates', () => {
       result.current.handlers.handleGenerateDocs(mockTransfer);
     });
 
+    const emptyResponses: QuestionnaireResponse = {
+      responses: [],
+      completedAt: '2026-02-20T00:00:00.000Z',
+      completedBy: 'test-user',
+    };
+
     await act(async () => {
-      await result.current.handlers.handleQuestionnaireComplete({} as any);
+      await result.current.handlers.handleQuestionnaireComplete(emptyResponses);
     });
 
     expect(mockRuntimeAlert).toHaveBeenCalledWith(

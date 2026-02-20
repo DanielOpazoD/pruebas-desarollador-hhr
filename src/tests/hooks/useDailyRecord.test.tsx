@@ -148,9 +148,7 @@ describe('useDailyRecord', () => {
     const { result } = renderHook(() => useDailyRecord(mockDate), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.record).not.toBeNull());
 
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + 2);
-    const futureDateStr = futureDate.toISOString().split('T')[0];
+    const futureDateStr = '2099-01-01';
 
     act(() => {
       result.current.updatePatient('R1', 'admissionDate', futureDateStr);
@@ -177,9 +175,7 @@ describe('useDailyRecord', () => {
   });
 
   it('should not update crib admissionDate to a future date', async () => {
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + 2);
-    const futureDateStr = futureDate.toISOString().split('T')[0];
+    const futureDateStr = '2099-01-01';
 
     recordsMap[mockDate] = DataFactory.createMockDailyRecord(mockDate, {
       beds: {

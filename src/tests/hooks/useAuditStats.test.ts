@@ -1,13 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useAuditStats, formatDuration, getActionCriticality } from '@/hooks/useAuditStats';
 import { AuditLogEntry } from '@/types/audit';
 
 describe('useAuditStats', () => {
+    const FIXED_TS = '2026-01-01T10:00:00.000Z';
+    const FIXED_HOUR = new Date(FIXED_TS).getHours();
     const mockLogs: AuditLogEntry[] = [
         {
             id: '1',
-            timestamp: new Date().toISOString(),
+            timestamp: FIXED_TS,
             userId: 'user1@test.com',
             action: 'PATIENT_ADMITTED',
             entityType: 'patient',
@@ -16,7 +18,7 @@ describe('useAuditStats', () => {
         },
         {
             id: '2',
-            timestamp: new Date().toISOString(),
+            timestamp: FIXED_TS,
             userId: 'user1@test.com',
             action: 'USER_LOGIN',
             entityType: 'user',
@@ -25,7 +27,7 @@ describe('useAuditStats', () => {
         },
         {
             id: '3',
-            timestamp: new Date().toISOString(),
+            timestamp: FIXED_TS,
             userId: 'user2@test.com',
             action: 'USER_LOGOUT',
             entityType: 'user',
@@ -33,6 +35,15 @@ describe('useAuditStats', () => {
             details: { durationSeconds: 1200 } // 20m
         }
     ];
+
+    beforeEach(() => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date(FIXED_TS));
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
 
     it('should calculate basic counts correctly', () => {
         const { result } = renderHook(() => useAuditStats(mockLogs));
@@ -49,8 +60,7 @@ describe('useAuditStats', () => {
 
     it('should provide hourly activity breakdown', () => {
         const { result } = renderHook(() => useAuditStats(mockLogs));
-        const hour = new Date().getHours();
-        expect(result.current.hourlyActivity[hour]).toBe(3);
+        expect(result.current.hourlyActivity[FIXED_HOUR]).toBe(3);
     });
 
     it('should identify top users', () => {

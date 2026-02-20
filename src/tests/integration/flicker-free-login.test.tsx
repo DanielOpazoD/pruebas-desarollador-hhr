@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import App from '@/App';
+import type { AuthUser } from '@/services/auth/authService';
 
 // Mock useAuthState
 const mockUseAuthState = vi.fn();
@@ -13,7 +15,7 @@ vi.unmock('@/context/AuthContext');
 vi.unmock('../../context/AuthContext');
 
 vi.mock('@/features/auth/components/LoginPage', () => ({
-  LoginPage: ({ onLoginSuccess }: any) => (
+  LoginPage: ({ onLoginSuccess }: { onLoginSuccess: () => void }) => (
     <button data-testid="login-btn" onClick={onLoginSuccess}>
       Login
     </button>
@@ -21,7 +23,7 @@ vi.mock('@/features/auth/components/LoginPage', () => ({
 }));
 
 vi.mock('./setup', () => ({
-  render: (ui: any) => render(ui),
+  render: (ui: ReactNode) => render(ui),
 }));
 
 describe('Flicker-Free Login Flow', () => {
@@ -72,7 +74,7 @@ describe('Flicker-Free Login Flow', () => {
 
     // 4. Simulate State change (the actual user coming back from Firebase)
     mockUseAuthState.mockReturnValue({
-      user: { uid: 'user-123', email: 'test@hospital.cl' },
+      user: { uid: 'user-123', email: 'test@hospital.cl' } as AuthUser,
       authLoading: false,
       error: null,
       role: 'admin',

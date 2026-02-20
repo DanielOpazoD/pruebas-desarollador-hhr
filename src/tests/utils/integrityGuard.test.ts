@@ -13,7 +13,7 @@ describe('IntegrityGuard', () => {
     cma: [],
     nurses: ['', ''],
     activeExtraBeds: [],
-    lastUpdated: new Date().toISOString(),
+    lastUpdated: `${date}T00:00:00.000Z`,
   });
 
   const createDenseRecord = (date: string): DailyRecord =>
@@ -55,7 +55,7 @@ describe('IntegrityGuard', () => {
       cma: [],
       nurses: ['', ''],
       activeExtraBeds: [],
-      lastUpdated: new Date().toISOString(),
+      lastUpdated: `${date}T00:00:00.000Z`,
       novedadesDayShift: 'Some news',
     }) as unknown as DailyRecord;
 

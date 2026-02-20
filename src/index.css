@@ -243,6 +243,51 @@
   animation: slideFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Staggered reveal animation for login sections */
+@keyframes loginReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-login-reveal {
+  animation: loginReveal 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-login-reveal-delay-1 {
+  animation-delay: 80ms;
+}
+
+.animate-login-reveal-delay-2 {
+  animation-delay: 180ms;
+}
+
+.animate-login-reveal-delay-3 {
+  animation-delay: 280ms;
+}
+
+/* Float animation for icons */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
 /* Toast slide-in animation */
 @keyframes slideInRight {
   from {

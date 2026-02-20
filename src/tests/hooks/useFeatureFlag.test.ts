@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useFeatureFlag, useAllFeatureFlags } from '@/hooks/useFeatureFlag';
-import { featureFlags } from '@/services/utils/featureFlags';
+import { featureFlags, FeatureFlag } from '@/services/utils/featureFlags';
 
 vi.mock('@/services/utils/featureFlags', () => ({
   featureFlags: {
@@ -81,10 +81,17 @@ describe('useAllFeatureFlags', () => {
   });
 
   it('should return all flags', () => {
-    const flagsSnapshot = {
+    const flagsSnapshot: Record<FeatureFlag, boolean> = {
       SHOW_DEBUG_PANEL: true,
+      ENABLE_ANALYTICS_VIEW: true,
+      SHOW_CUDYR_PRINT: true,
+      ENABLE_OPTIMISTIC_UPDATES: true,
+      ENABLE_OFFLINE_MODE: false,
       ENABLE_WHATSAPP_INTEGRATION: false,
-    } as any;
+      ENABLE_EMAIL_NOTIFICATIONS: true,
+      VERBOSE_LOGGING: false,
+      SHOW_PERFORMANCE_METRICS: false,
+    };
 
     vi.mocked(featureFlags.getAll).mockReturnValue(flagsSnapshot);
 

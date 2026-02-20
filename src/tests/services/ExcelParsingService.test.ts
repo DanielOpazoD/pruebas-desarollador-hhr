@@ -27,6 +27,8 @@ describe('ExcelParsingService', () => {
     });
 
     const createMockSheet = (name: string, rows: Partial<Cell>[][]) => {
+        type MergeMap = Record<string, { top: number; left: number; bottom: number; right: number }>;
+        type WorksheetWithMerges = Worksheet & { _merges: MergeMap };
         const mockSheet = {
             name,
             rowCount: rows.length,
@@ -34,9 +36,9 @@ describe('ExcelParsingService', () => {
             getRow: vi.fn((r: number) => ({
                 getCell: vi.fn((c: number) => rows[r - 1][c - 1])
             } as unknown as Row)),
-            _merges: {} as Record<string, any>
-        } as unknown as Worksheet;
-        return mockSheet;
+            _merges: {} as MergeMap
+        } as unknown as WorksheetWithMerges;
+        return mockSheet as WorksheetWithMerges;
     };
 
     const createMockWorkbook = (sheets: Worksheet[]) => {
@@ -69,7 +71,7 @@ describe('ExcelParsingService', () => {
                     { value: null, isMerged: true, address: 'B1', master } as Partial<Cell>
                 ]
             ]);
-            (mockSheet as any)._merges = { 'A1': { top: 1, left: 1, bottom: 1, right: 2 } };
+            mockSheet._merges = { 'A1': { top: 1, left: 1, bottom: 1, right: 2 } };
             const mockWorkbook = createMockWorkbook([mockSheet]);
 
             vi.mocked(excelUtils.createWorkbook).mockResolvedValue(mockWorkbook);

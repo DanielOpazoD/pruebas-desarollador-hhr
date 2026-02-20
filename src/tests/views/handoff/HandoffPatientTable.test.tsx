@@ -4,25 +4,26 @@ import { describe, it, expect, vi } from 'vitest';
 import { screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { HandoffPatientTable } from '@/features/handoff/components/HandoffPatientTable';
-import { render, createMockPatient } from '../../integration/setup';
+import { render } from '../../integration/setup';
 import { BEDS } from '@/constants';
+import type { DailyRecord } from '@/types';
+import { DataFactory } from '@/tests/factories/DataFactory';
 
 describe('HandoffPatientTable', () => {
-    const mockRecord = {
-        date: '2025-01-01',
+    const mockRecord: DailyRecord = DataFactory.createMockDailyRecord('2025-01-01', {
         beds: {
-            R1: createMockPatient({
+            R1: DataFactory.createMockPatient('R1', {
                 patientName: 'Patient 1',
                 clinicalEvents: [{ id: 'e1', name: 'Cirugía P1', date: '2025-01-01', note: '', createdAt: '' }]
             }),
-            R2: createMockPatient({ patientName: 'Patient 2' })
+            R2: DataFactory.createMockPatient('R2', { patientName: 'Patient 2' })
         }
-    };
+    });
 
     const defaultProps = {
         visibleBeds: BEDS.filter(b => b.id === 'R1' || b.id === 'R2'),
-        record: mockRecord as any,
-        noteField: 'handoffNoteDayShift' as any,
+        record: mockRecord,
+        noteField: 'handoffNoteDayShift' as const,
         onNoteChange: vi.fn(),
         tableHeaderClass: 'bg-slate-50',
         readOnly: false,

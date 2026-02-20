@@ -51,10 +51,17 @@ describe('templateGeneratorService - mapDataToTags', () => {
 
     describe('Robustez ante Datos Nulos/Incompletos', () => {
         it('debe manejar campos de paciente indefinidos graciosamente', () => {
-            const emptyPatient: any = {
+            const emptyPatient: TransferPatientData = {
                 patientName: 'PACIENTE SIN DATOS',
                 rut: '',
-                diagnosis: ''
+                diagnosis: '',
+                birthDate: '',
+                age: 0,
+                admissionDate: '',
+                bedName: '',
+                bedType: '',
+                isUPC: false,
+                originHospital: '',
             };
             const emptyResponses: QuestionnaireResponse = {
                 responses: [],

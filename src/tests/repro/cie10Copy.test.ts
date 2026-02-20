@@ -53,7 +53,7 @@ describe('CIE-10 Copy Bug Reproduction', () => {
       discharges: [],
       transfers: [],
       cma: [],
-      lastUpdated: new Date().toISOString(),
+      lastUpdated: `${prevDate}T00:00:00.000Z`,
       nurses: [],
       activeExtraBeds: [],
     };
@@ -134,7 +134,7 @@ describe('CIE-10 Copy Bug Reproduction', () => {
       discharges: [],
       transfers: [],
       cma: [],
-      lastUpdated: new Date().toISOString(),
+      lastUpdated: `${prevDate}T00:00:00.000Z`,
       nurses: [],
       activeExtraBeds: [],
     };

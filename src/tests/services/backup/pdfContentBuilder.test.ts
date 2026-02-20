@@ -52,9 +52,9 @@ describe('pdfContentBuilder', () => {
       onerror?: (error?: unknown) => void;
       src: string = '';
       constructor() {
-        setTimeout(() => {
-          if (this.onload) this.onload();
-        }, 10);
+        queueMicrotask(() => {
+          this.onload?.();
+        });
       }
     } as unknown as typeof Image;
     Object.defineProperty(global.document, 'createElement', {
@@ -90,9 +90,9 @@ describe('pdfContentBuilder', () => {
       onerror?: (error?: unknown) => void;
       src: string = '';
       constructor() {
-        setTimeout(() => {
-          if (this.onerror) this.onerror(new Error('Fail'));
-        }, 10);
+        queueMicrotask(() => {
+          this.onerror?.(new Error('Fail'));
+        });
       }
     } as unknown as typeof Image;
 

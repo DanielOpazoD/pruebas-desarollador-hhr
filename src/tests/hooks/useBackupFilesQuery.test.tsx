@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useBackupFilesQuery } from '@/hooks/useBackupFilesQuery';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
+import type { BackupFolder } from '@/hooks/useBackupFilesQuery';
 
 // Mock storage services
 vi.mock('@/services/backup/pdfStorageService', () => ({
@@ -48,7 +49,7 @@ describe('useBackupFilesQuery', () => {
     });
 
     expect(result.current.data?.length).toBe(1);
-    expect((result.current.data?.[0].data as any).name).toBe('Enero');
+    expect((result.current.data?.[0].data as BackupFolder).name).toBe('Enero');
   });
 
   it('should fetch files when path has year and month', async () => {

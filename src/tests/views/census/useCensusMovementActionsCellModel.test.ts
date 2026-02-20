@@ -1,16 +1,17 @@
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useCensusMovementActionsCellModel } from '@/features/census/hooks/useCensusMovementActionsCellModel';
+import type { CensusMovementActionDescriptor } from '@/features/census/types/censusMovementActionTypes';
 
 describe('useCensusMovementActionsCellModel', () => {
   it('builds stable view models with keys and icon names', () => {
-    const actions = [
+    const actions: CensusMovementActionDescriptor[] = [
       { kind: 'undo', title: 'Undo', className: 'u', onClick: vi.fn() },
       { kind: 'edit', title: 'Edit', className: 'e', onClick: vi.fn() },
       { kind: 'delete', title: 'Delete', className: 'd', onClick: vi.fn() },
-    ] as const;
+    ];
 
-    const { result } = renderHook(() => useCensusMovementActionsCellModel(actions as any));
+    const { result } = renderHook(() => useCensusMovementActionsCellModel(actions));
 
     expect(result.current).toEqual([
       expect.objectContaining({ key: 'undo-0', iconName: 'undo', title: 'Undo' }),

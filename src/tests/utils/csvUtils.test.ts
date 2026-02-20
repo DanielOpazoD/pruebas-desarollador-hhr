@@ -54,7 +54,7 @@ describe('csvUtils', () => {
                 download: '',
                 click: vi.fn()
             };
-            vi.spyOn(document, 'createElement').mockReturnValue(link as any);
+            vi.spyOn(document, 'createElement').mockReturnValue(link as unknown as HTMLAnchorElement);
 
             downloadCsv('content', 'test.csv');
 

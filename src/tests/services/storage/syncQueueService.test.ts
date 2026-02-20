@@ -18,6 +18,8 @@ import {
 import { DailyRecord } from '@/types';
 
 describe('syncQueueService', () => {
+  const FIXED_NOW = 1760000000000;
+
   const makeRecord = (date: string, marker: string): DailyRecord => ({
     date,
     beds: {},
@@ -55,7 +57,7 @@ describe('syncQueueService', () => {
     expect(tasks).toHaveLength(1);
     expect(tasks[0].status).toBe('PENDING');
     expect(tasks[0].retryCount).toBe(1);
-    expect(tasks[0].nextAttemptAt || 0).toBeGreaterThan(Date.now() - 1000);
+    expect(tasks[0].nextAttemptAt || 0).toBeGreaterThan(FIXED_NOW - 1000);
   });
 
   it('reports queue stats', async () => {

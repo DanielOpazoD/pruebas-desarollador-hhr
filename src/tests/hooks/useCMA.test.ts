@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useCMA } from '@/hooks/useCMA';
 import { DataFactory } from '@/tests/factories/DataFactory';
-import { DailyRecord } from '@/types';
+import { CMAData, DailyRecord } from '@/types';
 
 describe('useCMA', () => {
     let mockRecord: DailyRecord;
@@ -16,7 +16,7 @@ describe('useCMA', () => {
     it('should add a CMA entry with normalized data', () => {
         const { result } = renderHook(() => useCMA(mockRecord, saveAndUpdate));
 
-        const cmaData: any = {
+        const cmaData: Omit<CMAData, 'id'> = {
             bedName: 'CMA 1',
             patientName: 'john doe', // should be capitalized
             rut: '111111111', // should be formatted
@@ -74,7 +74,15 @@ describe('useCMA', () => {
         const { result } = renderHook(() => useCMA(null, saveAndUpdate));
 
         act(() => {
-            result.current.addCMA({} as any);
+            result.current.addCMA({
+                bedName: '',
+                patientName: '',
+                rut: '',
+                age: '',
+                diagnosis: '',
+                specialty: '',
+                interventionType: '',
+            });
         });
 
         expect(saveAndUpdate).not.toHaveBeenCalled();

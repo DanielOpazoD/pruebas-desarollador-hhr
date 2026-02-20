@@ -27,6 +27,7 @@ vi.mock('@/hooks/useScrollLock', () => ({
 }));
 
 describe('TransfersSection integration', () => {
+  const asHookValue = <T,>(value: Partial<T>): T => value as T;
   const undoTransfer = vi.fn().mockResolvedValue(undefined);
   const deleteTransfer = vi.fn().mockResolvedValue(undefined);
   const handleEditTransfer = vi.fn();
@@ -37,21 +38,29 @@ describe('TransfersSection integration', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useDailyRecordData).mockReturnValue({
-      record: { date: '2026-02-14' },
-    } as any);
-    vi.mocked(useDailyRecordMovementActions).mockReturnValue({
-      undoTransfer,
-      deleteTransfer,
-    } as any);
-    vi.mocked(useDailyRecordMovements).mockReturnValue({
-      discharges: [],
-      transfers: [transferItem],
-      cma: [],
-    } as any);
-    vi.mocked(useCensusActionCommands).mockReturnValue({
-      handleEditTransfer,
-    } as any);
+    vi.mocked(useDailyRecordData).mockReturnValue(
+      asHookValue<ReturnType<typeof useDailyRecordData>>({
+        record: { date: '2026-02-14' },
+      })
+    );
+    vi.mocked(useDailyRecordMovementActions).mockReturnValue(
+      asHookValue<ReturnType<typeof useDailyRecordMovementActions>>({
+        undoTransfer,
+        deleteTransfer,
+      })
+    );
+    vi.mocked(useDailyRecordMovements).mockReturnValue(
+      asHookValue<ReturnType<typeof useDailyRecordMovements>>({
+        discharges: [],
+        transfers: [transferItem],
+        cma: [],
+      })
+    );
+    vi.mocked(useCensusActionCommands).mockReturnValue(
+      asHookValue<ReturnType<typeof useCensusActionCommands>>({
+        handleEditTransfer,
+      })
+    );
   });
 
   it('executes undo/edit/delete through real confirm dialog flow', async () => {

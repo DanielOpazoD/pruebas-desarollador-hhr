@@ -252,7 +252,7 @@ describe('core types', () => {
                 discharges: [],
                 transfers: [],
                 cma: [],
-                lastUpdated: new Date().toISOString(),
+                lastUpdated: '2026-01-15T00:00:00.000Z',
                 nurses: ['Enfermera 1', 'Enfermera 2'],
                 activeExtraBeds: [],
             };

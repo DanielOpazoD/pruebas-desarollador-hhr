@@ -8,11 +8,23 @@ import {
 import * as fs from 'fs';
 import * as path from 'path';
 
+type FirestoreLike = {
+  collection: (path: string) => { get: () => Promise<unknown>; add: (data: unknown) => Promise<unknown> };
+  doc: (path: string) => {
+    set: (data: unknown) => Promise<unknown>;
+    update: (data: unknown) => Promise<unknown>;
+    delete: () => Promise<unknown>;
+    get: () => Promise<unknown>;
+  };
+};
+
 const runRulesTests =
   process.env.RUN_FIRESTORE_RULES_TESTS === '1' ||
   process.env.FIRESTORE_EMULATOR_HOST !== undefined;
 
 const describeRules = runRulesTests ? describe : describe.skip;
+const NOW_MS = 1760000000000;
+const THREE_DAYS_MS = 3 * 86400000;
 
 // Run 'npx firebase emulators:start --only firestore' and set RUN_FIRESTORE_RULES_TESTS=1
 describeRules('Firestore Security Rules', () => {
@@ -76,7 +88,7 @@ describeRules('Firestore Security Rules', () => {
   });
 
   describe('Audit Logs Collection', () => {
-    const auditCollection = (db: any) => db.collection('hospitals/H1/auditLogs');
+    const auditCollection = (db: FirestoreLike) => db.collection('hospitals/H1/auditLogs');
 
     it('Unauthenticated users cannot read audit logs', async () => {
       await assertFails(auditCollection(unauth()).get());
@@ -125,7 +137,7 @@ describeRules('Firestore Security Rules', () => {
 
     it('Nurses can update records within the editing window', async () => {
       const db = nurse();
-      const now = Date.now();
+      const now = NOW_MS;
       await setupDoc(admin(), recordPath, { date: '2025-01-01', dateTimestamp: now });
 
       await assertSucceeds(db.doc(recordPath).update({ nursesDayShift: ['Nurse1'] }));
@@ -133,27 +145,27 @@ describeRules('Firestore Security Rules', () => {
 
     it('Nurses cannot update records outside the editing window', async () => {
       const db = nurse();
-      const old = Date.now() - 3 * 86400000;
+      const old = NOW_MS - THREE_DAYS_MS;
       await setupDoc(admin(), recordPath, { date: '2025-01-01', dateTimestamp: old });
 
       await assertFails(db.doc(recordPath).update({ nursesDayShift: ['Nurse1'] }));
     });
 
     it('Doctors can update only medical signature fields', async () => {
-      await setupDoc(admin(), recordPath, { date: '2025-01-01', dateTimestamp: Date.now() });
+      await setupDoc(admin(), recordPath, { date: '2025-01-01', dateTimestamp: NOW_MS });
 
       await assertSucceeds(
         doctor().doc(recordPath).update({
           medicalSignature: 'signed',
-          lastUpdated: Date.now(),
+          lastUpdated: NOW_MS,
           medicalHandoffDoctor: 'Dr. X',
-          medicalHandoffSentAt: Date.now(),
+          medicalHandoffSentAt: NOW_MS,
         })
       );
     });
 
     it('Doctors cannot update non-medical fields', async () => {
-      await setupDoc(admin(), recordPath, { date: '2025-01-01', dateTimestamp: Date.now() });
+      await setupDoc(admin(), recordPath, { date: '2025-01-01', dateTimestamp: NOW_MS });
 
       await assertFails(
         doctor()
@@ -170,13 +182,13 @@ describeRules('Firestore Security Rules', () => {
     });
 
     it('Nurses CANNOT delete daily records', async () => {
-      const now = Date.now();
+      const now = NOW_MS;
       await setupDoc(admin(), recordPath, { date: '2025-01-01', dateTimestamp: now });
       await assertFails(nurse().doc(recordPath).delete());
     });
 
     it('Nurses can create history snapshots under daily records', async () => {
-      const now = Date.now();
+      const now = NOW_MS;
       await setupDoc(admin(), recordPath, { date: '2025-01-01', dateTimestamp: now });
 
       await assertSucceeds(
@@ -188,7 +200,7 @@ describeRules('Firestore Security Rules', () => {
     });
 
     it('Doctors cannot create history snapshots under daily records', async () => {
-      const now = Date.now();
+      const now = NOW_MS;
       await setupDoc(admin(), recordPath, { date: '2025-01-01', dateTimestamp: now });
 
       await assertFails(
@@ -200,7 +212,7 @@ describeRules('Firestore Security Rules', () => {
     });
 
     it('Only admins can update or delete history snapshots', async () => {
-      const now = Date.now();
+      const now = NOW_MS;
       await setupDoc(admin(), recordPath, { date: '2025-01-01', dateTimestamp: now });
       await setupDoc(admin(), historyPath, {
         snapshotTimestamp: now,
@@ -318,7 +330,7 @@ describeRules('Firestore Security Rules', () => {
       uid: 'user_basic',
       email: 'user@example.com',
       displayName: 'User Basic',
-      lastSeen: new Date().toISOString(),
+      lastSeen: '2026-02-20T00:00:00.000Z',
       isOnline: true,
       isOutdated: false,
       pendingMutations: 0,
@@ -386,16 +398,16 @@ describeRules('Firestore Security Rules', () => {
       await setupDoc(admin(), invitationPath, {
         email: 'invited@example.com',
         status: 'pending',
-        createdAt: Date.now(),
+        createdAt: NOW_MS,
         createdBy: 'admin',
-        expiresAt: Date.now() + 86_400_000,
+        expiresAt: NOW_MS + 86_400_000,
       });
 
       await assertSucceeds(
         invitedUser().doc(invitationPath).update({
           status: 'used',
           usedBy: 'user_invited',
-          usedAt: Date.now(),
+          usedAt: NOW_MS + 1000,
         })
       );
     });
@@ -436,7 +448,7 @@ describeRules('Firestore Security Rules', () => {
           userId: 'user_basic',
           email: 'user@example.com',
           action: 'list_files',
-          timestamp: Date.now(),
+          timestamp: NOW_MS,
         })
       );
     });
@@ -447,7 +459,7 @@ describeRules('Firestore Security Rules', () => {
           userId: 'user_other',
           email: 'user@example.com',
           action: 'list_files',
-          timestamp: Date.now(),
+          timestamp: NOW_MS,
         })
       );
     });
@@ -468,7 +480,7 @@ describeRules('Firestore Security Rules', () => {
 });
 
 // Helper to setup a document as admin
-async function setupDoc(db: any, path: string, data: any) {
+async function setupDoc(db: FirestoreLike, path: string, data: unknown) {
   const docRef = db.doc(path);
   await docRef.set(data);
   return docRef;

@@ -51,9 +51,9 @@ describe('syncQueueService load baseline', () => {
       await queueSyncTask('UPDATE_DAILY_RECORD', makeRecord(date, `v${i}`));
     }
 
-    const t0 = Date.now();
+    const t0 = performance.now();
     await processSyncQueue();
-    const elapsedMs = Date.now() - t0;
+    const elapsedMs = performance.now() - t0;
 
     const telemetry = await getSyncQueueTelemetry();
     expect(telemetry.pending).toBe(0);

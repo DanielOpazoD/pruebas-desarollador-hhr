@@ -6,11 +6,14 @@ import {
   buildOperationalAlerts,
 } from '@/features/admin/components/systemHealthOperationalAlerts';
 
+const FIXED_NOW_MS = Date.parse('2026-02-19T20:00:00.000Z');
+const FIXED_LAST_SEEN = '2026-02-19T20:00:00.000Z';
+
 const baseStatus = (): UserHealthStatus => ({
   uid: 'u1',
   email: 'user@example.com',
   displayName: 'User',
-  lastSeen: new Date().toISOString(),
+  lastSeen: FIXED_LAST_SEEN,
   isOnline: true,
   isOutdated: false,
   pendingMutations: 0,
@@ -39,9 +42,9 @@ describe('systemHealthOperationalAlerts', () => {
   it('returns warning alert when users are offline for prolonged time', () => {
     const status = baseStatus();
     status.isOnline = false;
-    status.lastSeen = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+    status.lastSeen = new Date(FIXED_NOW_MS - 20 * 60 * 1000).toISOString();
 
-    const alerts = buildOperationalAlerts([status], Date.now());
+    const alerts = buildOperationalAlerts([status], FIXED_NOW_MS);
     expect(alerts.some(alert => alert.key === 'offline-users')).toBe(true);
   });
 

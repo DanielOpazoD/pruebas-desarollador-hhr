@@ -6,6 +6,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DailyRecord, PatientData } from '@/types';
 
+const FIXED_EPOCH_MS = 1768473000000;
+
 describe('PWA Offline Integration', () => {
     beforeEach(() => {
         localStorage.clear();
@@ -56,7 +58,7 @@ describe('PWA Offline Integration', () => {
         it('should queue operations when offline', () => {
             interface OfflineOperation {
                 type: string;
-                data: any;
+                data: Record<string, unknown>;
                 timestamp: number;
             }
 
@@ -66,7 +68,7 @@ describe('PWA Offline Integration', () => {
             queue.push({
                 type: 'UPDATE_PATIENT',
                 data: { bedId: 'R1', field: 'patientName', value: 'Juan' },
-                timestamp: Date.now(),
+                timestamp: FIXED_EPOCH_MS,
             });
 
             expect(queue.length).toBe(1);
@@ -75,8 +77,8 @@ describe('PWA Offline Integration', () => {
 
         it('should persist queue to localStorage', () => {
             const queue = [
-                { type: 'ADD_DISCHARGE', data: {}, timestamp: Date.now() },
-                { type: 'UPDATE_PATIENT', data: {}, timestamp: Date.now() },
+                { type: 'ADD_DISCHARGE', data: {}, timestamp: FIXED_EPOCH_MS },
+                { type: 'UPDATE_PATIENT', data: {}, timestamp: FIXED_EPOCH_MS + 1000 },
             ];
 
             localStorage.setItem('offlineQueue', JSON.stringify(queue));
@@ -86,7 +88,7 @@ describe('PWA Offline Integration', () => {
         });
 
         it('should clear queue after sync', () => {
-            const queue = [{ type: 'TEST', data: {}, timestamp: Date.now() }];
+            const queue = [{ type: 'TEST', data: {}, timestamp: FIXED_EPOCH_MS }];
             localStorage.setItem('offlineQueue', JSON.stringify(queue));
 
             // Simulate sync complete
@@ -181,8 +183,8 @@ describe('PWA Offline Integration', () => {
                 field: 'patientName',
                 localValue: 'Local',
                 remoteValue: 'Remote',
-                localTimestamp: Date.now() - 1000,
-                remoteTimestamp: Date.now(),
+                localTimestamp: FIXED_EPOCH_MS - 1000,
+                remoteTimestamp: FIXED_EPOCH_MS,
             };
 
             // Last-write-wins strategy

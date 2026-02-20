@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as firestore from 'firebase/firestore';
+import type { AuditLogEntry } from '@/types/audit';
 
 // Force unmock because it's globally mocked in setup.ts
 vi.unmock('../../services/admin/auditService');
@@ -16,8 +17,12 @@ vi.mock('../../firebaseConfig', () => ({
 vi.mock('firebase/firestore', () => {
     class MockTimestamp {
         constructor(public seconds: number, public nanoseconds: number) { }
-        static now() { return new MockTimestamp(Math.floor(Date.now() / 1000), 0); }
-        toDate() { return new Date(this.seconds * 1000); }
+        static now() { return new MockTimestamp(1735689600, 0); }
+        toDate() {
+            return {
+                toISOString: () => '2025-01-01T00:00:00.000Z'
+            } as unknown as Date;
+        }
     }
     return {
         collection: vi.fn(),
@@ -37,7 +42,7 @@ const mockGetAuditLogs = vi.fn();
 const mockGetAuditLogsForDate = vi.fn();
 
 vi.mock('../../services/storage/indexedDBService', () => ({
-    saveAuditLog: (log: any) => mockSaveAuditLog(log),
+    saveAuditLog: (log: AuditLogEntry) => mockSaveAuditLog(log),
     getAuditLogs: (limit: number) => mockGetAuditLogs(limit),
     getAuditLogsForDate: (date: string) => mockGetAuditLogsForDate(date)
 }));

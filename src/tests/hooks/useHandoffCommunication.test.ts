@@ -2,6 +2,9 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 
 import { useHandoffCommunication } from '@/hooks/useHandoffCommunication';
+import type { DailyRecord } from '@/types';
+import type { MessageTemplate } from '@/services/integrations/whatsapp/whatsappService';
+import { DataFactory } from '@/tests/factories/DataFactory';
 
 const mockWriteClipboardText = vi.fn();
 const mockOpen = vi.fn();
@@ -23,6 +26,17 @@ import { getMessageTemplates } from '@/services/integrations/whatsapp/whatsappSe
 
 describe('useHandoffCommunication', () => {
   const onSuccess = vi.fn();
+  const createRecord = (overrides?: Partial<DailyRecord>): DailyRecord =>
+    DataFactory.createMockDailyRecord('2026-02-15', {
+      beds: {},
+      discharges: [],
+      transfers: [],
+      cma: [],
+      lastUpdated: '',
+      nurses: [],
+      activeExtraBeds: [],
+      ...overrides,
+    });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -33,16 +47,7 @@ describe('useHandoffCommunication', () => {
 
     const { result } = renderHook(() =>
       useHandoffCommunication(
-        {
-          date: '2026-02-15',
-          beds: {},
-          discharges: [],
-          transfers: [],
-          cma: [],
-          lastUpdated: '',
-          nurses: [],
-          activeExtraBeds: [],
-        } as any,
+        createRecord(),
         [],
         vi.fn(),
         onSuccess
@@ -69,16 +74,7 @@ describe('useHandoffCommunication', () => {
 
     const { result } = renderHook(() =>
       useHandoffCommunication(
-        {
-          date: '2026-02-15',
-          beds: {},
-          discharges: [],
-          transfers: [],
-          cma: [],
-          lastUpdated: '',
-          nurses: [],
-          activeExtraBeds: [],
-        } as any,
+        createRecord(),
         [],
         vi.fn(),
         onSuccess
@@ -95,26 +91,20 @@ describe('useHandoffCommunication', () => {
   });
 
   it('opens manual WhatsApp URL through runtime adapter', async () => {
-    vi.mocked(getMessageTemplates).mockResolvedValue([
+    const templates: MessageTemplate[] = [
       { type: 'handoff', content: 'handoff-template' },
-    ] as any);
+    ];
+    vi.mocked(getMessageTemplates).mockResolvedValue(templates);
 
-    const record = {
-      date: '2026-02-15',
+    const record = createRecord({
       beds: {
-        'B-1': { patientName: 'Paciente', isBlocked: false },
+        B1: DataFactory.createMockPatient('B1', { patientName: 'Paciente', isBlocked: false }),
       },
       medicalHandoffDoctor: 'Dr. Test',
-      discharges: [],
-      transfers: [],
-      cma: [],
-      lastUpdated: '',
-      nurses: [],
-      activeExtraBeds: [],
-    } as any;
+    });
 
     const { result } = renderHook(() =>
-      useHandoffCommunication(record, [{ id: 'B-1' }], vi.fn(), onSuccess)
+      useHandoffCommunication(record, [{ id: 'B1' }], vi.fn(), onSuccess)
     );
 
     await act(async () => {

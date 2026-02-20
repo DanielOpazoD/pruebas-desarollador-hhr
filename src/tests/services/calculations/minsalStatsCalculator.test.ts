@@ -101,7 +101,7 @@ const createMockRecord = (
   discharges: [],
   transfers: [],
   cma: [],
-  lastUpdated: new Date().toISOString(),
+  lastUpdated: `${date}T00:00:00.000Z`,
   nurses: ['', ''],
   activeExtraBeds: [],
 });
@@ -147,7 +147,7 @@ describe('minsalStatsCalculator', () => {
     });
 
     it('should use selected month in current year for "currentMonth" preset', () => {
-      const now = new Date();
+      const now = new Date('2026-02-20T00:00:00.000Z');
       const selectedMonth = now.getMonth() === 0 ? 1 : now.getMonth();
       const result = getDateRangeFromPreset('currentMonth', undefined, undefined, selectedMonth);
       const start = parseIsoDateLocal(result.startDate);

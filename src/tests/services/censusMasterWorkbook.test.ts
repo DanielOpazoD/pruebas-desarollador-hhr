@@ -96,7 +96,7 @@ describe('census master workbook builder', () => {
         expect(Buffer.isBuffer(buffer)).toBe(true);
 
         const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.load(buffer as any);
+        await workbook.xlsx.load(buffer);
 
         expect(workbook.worksheets[0]?.name).toBe('03-05-2024');
     });

@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useBedManagement } from '@/hooks/useBedManagement';
-import { DailyRecord, Specialty, PatientStatus } from '@/types';
+import { DailyRecord, DailyRecordPatch, Specialty, PatientStatus } from '@/types';
+import { DataFactory } from '@/tests/factories/DataFactory';
 
 // Mock audit context
 vi.mock('../../context/AuditContext', () => ({
@@ -14,7 +15,7 @@ vi.mock('../../context/AuditContext', () => ({
 // Mock hook dependencies
 vi.mock('../../hooks/usePatientValidation', () => ({
     usePatientValidation: () => ({
-        processFieldValue: (field: string, value: any) => ({ valid: true, value })
+        processFieldValue: (field: string, value: unknown) => ({ valid: true, value })
     })
 }));
 
@@ -42,15 +43,13 @@ vi.mock('../../hooks/useClinicalCrib', () => ({
 
 describe('Identity-based Diagnosis Clearing', () => {
     let mockRecord: DailyRecord;
-    let patchRecord: any;
-    let saveAndUpdate: any;
+    let patchRecord: (partial: DailyRecordPatch) => Promise<void>;
+    let saveAndUpdate: (updatedRecord: DailyRecord) => void;
 
     beforeEach(() => {
-        mockRecord = {
-            date: '2026-01-18',
+        mockRecord = DataFactory.createMockDailyRecord('2026-01-18', {
             beds: {
-                'R1': {
-                    bedId: 'R1',
+                R1: DataFactory.createMockPatient('R1', {
                     patientName: 'Patient A',
                     rut: '11.111.111-1',
                     age: '30',
@@ -67,14 +66,14 @@ describe('Identity-based Diagnosis Clearing', () => {
                     hasWristband: true,
                     surgicalComplication: false,
                     isUPC: false,
-                    clinicalEvents: []
-                } as any
+                    clinicalEvents: [],
+                }),
             },
-            lastUpdated: new Date().toISOString()
-        } as unknown as DailyRecord;
+            lastUpdated: '2026-01-18T00:00:00.000Z',
+        });
 
-        patchRecord = vi.fn().mockResolvedValue(undefined);
-        saveAndUpdate = vi.fn();
+        patchRecord = vi.fn().mockResolvedValue(undefined) as (partial: DailyRecordPatch) => Promise<void>;
+        saveAndUpdate = vi.fn() as (updatedRecord: DailyRecord) => void;
     });
 
     it('should clear diagnosis fields when RUT changes', async () => {

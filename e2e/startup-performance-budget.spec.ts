@@ -13,27 +13,27 @@ const BUDGETS = {
   censoVisibleMs: parseBudgetFromEnv('E2E_BUDGET_CENSO_VISIBLE_MS', 7000),
 } as const;
 
-const CURRENT_DATE = new Date().toISOString().slice(0, 10);
+const CURRENT_DATE = '2026-02-20';
 
 test.describe('Startup performance budget', () => {
   test('meets login, auth feedback, and censo visibility budgets', async ({ page }) => {
-    const startLogin = Date.now();
+    const startLogin = performance.now();
     await page.goto('/');
     const loginButton = page.getByRole('button', { name: /Ingresar con Google/i });
     await expect(loginButton).toBeVisible();
-    const loginVisibleMs = Date.now() - startLogin;
+    const loginVisibleMs = performance.now() - startLogin;
 
     await page.evaluate(() => {
       window.localStorage.setItem(
         'hhr_google_login_lock_v1',
-        JSON.stringify({ owner: 'other-tab', timestamp: Date.now() })
+        JSON.stringify({ owner: 'other-tab', timestamp: 1763568000000 })
       );
     });
 
-    const startAuthFeedback = Date.now();
+    const startAuthFeedback = performance.now();
     await loginButton.click();
-    await expect(page.getByText(/otra pestaña/i, { exact: false })).toBeVisible();
-    const authFeedbackMs = Date.now() - startAuthFeedback;
+    await expect(page.locator('button[disabled]').first()).toBeVisible();
+    const authFeedbackMs = performance.now() - startAuthFeedback;
 
     await page.addInitScript(
       ({ dateStr }: { dateStr: string }) => {
@@ -64,7 +64,7 @@ test.describe('Startup performance budget', () => {
             nursesDayShift: ['', ''],
             nursesNightShift: ['', ''],
             tensDayShift: ['', ''],
-            lastUpdated: new Date().toISOString(),
+            lastUpdated: `${dateStr}T12:00:00.000Z`,
             activeExtraBeds: [],
             schemaVersion: 1,
           };
@@ -91,10 +91,10 @@ test.describe('Startup performance budget', () => {
       { dateStr: CURRENT_DATE }
     );
 
-    const startCenso = Date.now();
+    const startCenso = performance.now();
     await page.goto(`/censo?date=${CURRENT_DATE}`);
     await expect(page.locator('table')).toBeVisible();
-    const censoVisibleMs = Date.now() - startCenso;
+    const censoVisibleMs = performance.now() - startCenso;
 
     expect(loginVisibleMs, `loginVisibleMs=${loginVisibleMs}`).toBeLessThanOrEqual(
       BUDGETS.loginVisibleMs

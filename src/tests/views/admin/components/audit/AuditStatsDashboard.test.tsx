@@ -24,7 +24,7 @@ describe('AuditStatsDashboard', () => {
     const mockLogs: AuditLogEntry[] = Array(150).fill({
         id: '1',
         action: 'USER_LOGIN',
-        timestamp: new Date().toISOString(),
+        timestamp: '2026-02-20T00:00:00.000Z',
         userId: 'u1',
         details: {}
     });

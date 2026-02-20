@@ -7,16 +7,9 @@ import { describe, it, expect } from 'vitest';
 
 // Test date validation logic
 describe('Admission Date Validation', () => {
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const todayStr = '2026-02-20';
+    const yesterdayStr = '2026-02-19';
+    const tomorrowStr = '2026-02-21';
 
     describe('Date Format Validation', () => {
         it('should accept valid YYYY-MM-DD format', () => {

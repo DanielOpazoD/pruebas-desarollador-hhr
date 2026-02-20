@@ -138,7 +138,7 @@ describe('zodSchemas', () => {
             const patient = PatientDataSchema.parse({
                 customField: 'custom value',
             });
-            expect((patient as any).customField).toBe('custom value');
+            expect((patient as unknown as { customField?: string }).customField).toBe('custom value');
         });
     });
 

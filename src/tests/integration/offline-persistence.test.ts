@@ -28,7 +28,7 @@ describe('Offline Persistence Integration', () => {
         discharges: [],
         transfers: [],
         cma: [],
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: '2024-12-25T00:00:00.000Z',
         nurses: [],
         nursesDayShift: [],
         nursesNightShift: [],

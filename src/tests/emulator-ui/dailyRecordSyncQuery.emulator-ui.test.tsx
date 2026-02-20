@@ -104,7 +104,7 @@ const buildRecord = (date: string, patientName: string, pathology: string): Dail
     tensNightShift: [],
     activeExtraBeds: [],
     schemaVersion: 1,
-    dateTimestamp: Date.now(),
+    dateTimestamp: Date.parse(`${date}T00:00:00.000Z`),
     handoffDayChecklist: {},
     handoffNightChecklist: {},
   }) as unknown as DailyRecord;

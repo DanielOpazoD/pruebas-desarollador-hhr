@@ -32,7 +32,7 @@ export default defineConfig({
     webServer: {
         command: 'VITE_E2E_MODE=true npm run dev',
         url: 'http://localhost:3000',
-        reuseExistingServer: !process.env.CI,
+        reuseExistingServer: false,
         env: {
             VITE_E2E_MODE: 'true'
         }

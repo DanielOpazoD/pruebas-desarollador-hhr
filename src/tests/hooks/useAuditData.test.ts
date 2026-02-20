@@ -5,7 +5,7 @@ import { useAuditData, AUDIT_SECTIONS } from '@/hooks/useAuditData';
 import { useAuditWorker } from '@/hooks/useAuditWorker';
 import * as auditService from '@/services/admin/auditService';
 import { AUDIT_ACTION_LABELS } from '@/services/admin/auditConstants';
-import { AuditLogEntry } from '@/types/audit';
+import { AuditLogEntry, WorkerFilterParams } from '@/types/audit';
 import * as auditWorkerLogic from '@/services/admin/auditWorkerLogic';
 
 // Mock auditService
@@ -99,7 +99,7 @@ describe('useAuditData', () => {
                 stats: auditWorkerLogic.calculateAuditStats(mockLogs, [])
             });
 
-            const processData = useCallback((logs: AuditLogEntry[], params: any) => {
+            const processData = useCallback((logs: AuditLogEntry[], params: WorkerFilterParams & { groupedView?: boolean }) => {
                 const filtered = auditWorkerLogic.filterLogs(logs, params);
                 const display = params.groupedView
                     ? auditWorkerLogic.groupLogs(filtered, AUDIT_ACTION_LABELS)

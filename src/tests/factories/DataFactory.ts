@@ -14,6 +14,16 @@ import {
 import { BEDS } from '@/constants';
 import { createEmptyPatient } from '@/services/factories/patientFactory';
 
+const FIXED_ISO_TIMESTAMP = '2026-01-01T00:00:00.000Z';
+const FIXED_DATE = '2026-01-01';
+const FIXED_EPOCH_MS = 1767225600000;
+let idSequence = 0;
+
+const nextMockId = (prefix: string): string => {
+    idSequence += 1;
+    return `${prefix}-${String(idSequence).padStart(4, '0')}`;
+};
+
 /**
  * DataFactory for Testing
  * Provides consistent, typed generators for mock domain objects.
@@ -53,7 +63,7 @@ export const DataFactory = {
             age: '45',
             specialty: Specialty.MEDICINA,
             status: PatientStatus.ESTABLE,
-            admissionDate: new Date().toISOString().split('T')[0],
+            admissionDate: FIXED_DATE,
             hasWristband: true,
             isUPC: false,
             surgicalComplication: false,
@@ -79,7 +89,7 @@ export const DataFactory = {
         tensDayShift: [],
         tensNightShift: [],
         activeExtraBeds: [],
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: FIXED_ISO_TIMESTAMP,
         ...overrides
     }),
 
@@ -87,7 +97,7 @@ export const DataFactory = {
      * Creates a mock Discharge entry
      */
     createMockDischarge: (overrides?: Partial<DischargeData>): DischargeData => ({
-        id: `disc-${Math.random().toString(36).substring(2, 11)}`,
+        id: nextMockId('disc'),
         patientName: 'Discharged Patient',
         rut: '98765432-1',
         bedId: 'bed1',
@@ -103,7 +113,7 @@ export const DataFactory = {
      * Creates a mock Transfer entry
      */
     createMockTransfer: (overrides?: Partial<TransferData>): TransferData => ({
-        id: `trans-${Math.random().toString(36).substring(2, 11)}`,
+        id: nextMockId('trans'),
         patientName: 'Transferred Patient',
         rut: '11223344-5',
         bedId: 'bed1',
@@ -120,7 +130,7 @@ export const DataFactory = {
      * Creates a mock CMA entry
      */
     createMockCMA: (overrides?: Partial<CMAData>): CMAData => ({
-        id: `cma-${Math.random().toString(36).substring(2, 11)}`,
+        id: nextMockId('cma'),
         bedName: 'CMA 1',
         patientName: 'CMA Patient',
         rut: '55667788-9',
@@ -135,10 +145,10 @@ export const DataFactory = {
      * Creates a mock ClinicalEvent
      */
     createMockClinicalEvent: (overrides?: Partial<ClinicalEvent>): ClinicalEvent => ({
-        id: `event-${Math.random().toString(36).substring(2, 11)}`,
+        id: nextMockId('event'),
         name: 'Mock Procedure',
-        date: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
+        date: FIXED_ISO_TIMESTAMP,
+        createdAt: FIXED_ISO_TIMESTAMP,
         ...overrides
     }),
 
@@ -167,8 +177,8 @@ export const DataFactory = {
         birthDate: '1980-01-01',
         gender: 'Masculino',
         vitalStatus: 'Vivo',
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
+        createdAt: FIXED_EPOCH_MS,
+        updatedAt: FIXED_EPOCH_MS,
         hospitalizations: [],
         ...overrides
     })

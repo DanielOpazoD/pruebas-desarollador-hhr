@@ -3,13 +3,19 @@
  * Tests for date navigation state and operations
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useDateNavigation } from '@/hooks/useDateNavigation';
 
 describe('useDateNavigation', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-02-20T09:00:00.000Z'));
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
     });
 
     describe('Initial State', () => {

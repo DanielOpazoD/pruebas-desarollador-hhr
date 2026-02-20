@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useCensusEmail } from '@/hooks/useCensusEmail';
 import { DailyRecord } from '@/types';
+import { DataFactory } from '@/tests/factories/DataFactory';
 
 // ============================================================================
 // MOCKS
@@ -18,7 +19,7 @@ global.fetch = mockFetch;
 
 // Mock Services
 vi.mock('../../services', async (importOriginal) => {
-    const actual: any = await importOriginal();
+    const actual = await importOriginal() as typeof import('../../services');
     return {
         ...actual,
         initializeDay: vi.fn(() => Promise.resolve()),
@@ -44,7 +45,7 @@ vi.mock('firebase/firestore', () => ({
 
 // Mock Env to allow triggerCensusEmail to proceed to fetch
 vi.mock('../../services/integrations/censusEmailService', async (importOriginal) => {
-    const mod: any = await importOriginal();
+    const mod = await importOriginal() as typeof import('../../services/integrations/censusEmailService');
     // We need to bypass the isDevelopment check inside triggerCensusEmail
     // One way is to wrap the original function or just mock it to test the hook
     return {
@@ -56,22 +57,24 @@ vi.mock('../../services/integrations/censusEmailService', async (importOriginal)
 // HELPER DATA
 // ============================================================================
 
-const createMockRecord = (date: string): DailyRecord => ({
-    date,
-    beds: {},
-    discharges: [],
-    transfers: [],
-    cma: [],
-    lastUpdated: new Date().toISOString(),
-    nurses: [],
-} as any);
+const FIXED_ISO_TIMESTAMP = '2026-01-01T00:00:00.000Z';
+
+const createMockRecord = (date: string): DailyRecord =>
+    DataFactory.createMockDailyRecord(date, {
+        beds: {},
+        discharges: [],
+        transfers: [],
+        cma: [],
+        nurses: [],
+        lastUpdated: FIXED_ISO_TIMESTAMP,
+    });
 
 // ============================================================================
 // TESTS
 // ============================================================================
 
 describe('Census Email Integration', () => {
-    let mockParams: any;
+    let mockParams: Parameters<typeof useCensusEmail>[0];
 
     beforeEach(() => {
         vi.clearAllMocks();

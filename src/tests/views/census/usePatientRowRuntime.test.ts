@@ -8,6 +8,7 @@ import { usePatientRowDependencies } from '@/features/census/components/patient-
 import { usePatientRowHandlersModel } from '@/features/census/components/patient-row/usePatientRowHandlersModel';
 import { DataFactory } from '@/tests/factories/DataFactory';
 import { BedType } from '@/types';
+import type { BuildPatientRowChangeHandlersResult } from '@/features/census/controllers/patientRowChangeHandlersController';
 
 vi.mock('@/features/census/components/patient-row/usePatientRowDependencies', () => ({
   usePatientRowDependencies: vi.fn(),
@@ -26,6 +27,26 @@ vi.mock('@/features/census/components/patient-row/usePatientRowHandlersModel', (
 }));
 
 const asHookValue = <T>(value: Partial<T>): T => value as T;
+const createMockChangeHandlers = (): BuildPatientRowChangeHandlersResult => ({
+  mainInputChangeHandlers: {
+    text: vi.fn(() => vi.fn()),
+    check: vi.fn(() => vi.fn()),
+    devices: vi.fn(),
+    deviceDetails: vi.fn(),
+    deviceHistory: vi.fn(),
+    toggleDocType: vi.fn(),
+    deliveryRoute: vi.fn(),
+    multiple: vi.fn(),
+  },
+  cribInputChangeHandlers: {
+    text: vi.fn(() => vi.fn()),
+    check: vi.fn(() => vi.fn()),
+    devices: vi.fn(),
+    deviceDetails: vi.fn(),
+    deviceHistory: vi.fn(),
+    multiple: vi.fn(),
+  },
+});
 
 describe('usePatientRowRuntime', () => {
   const toggleBedType = vi.fn();
@@ -64,8 +85,7 @@ describe('usePatientRowRuntime', () => {
     vi.mocked(usePatientRowHandlersModel).mockReturnValue(
       asHookValue<ReturnType<typeof usePatientRowHandlersModel>>({
         handlers: {
-          mainInputChangeHandlers: asHookValue<any>({}),
-          cribInputChangeHandlers: asHookValue<any>({}),
+          ...createMockChangeHandlers(),
         },
         modalSavers: {
           onSaveDemographics: vi.fn(),

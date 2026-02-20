@@ -42,7 +42,7 @@ describe('geminiService', () => {
         nurses: [],
         activeExtraBeds: [],
         cma: []
-    } as any;
+    } as unknown as DailyRecord;
 
     beforeEach(() => {
         vi.resetAllMocks();

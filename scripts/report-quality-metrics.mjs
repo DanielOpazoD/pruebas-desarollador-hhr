@@ -12,6 +12,7 @@ const JSON_OUTPUT = path.join(REPORTS_DIR, 'quality-metrics.json');
 const MD_OUTPUT = path.join(REPORTS_DIR, 'quality-metrics.md');
 const MODULE_ALLOWLIST_PATH = path.join(ROOT, 'scripts', 'module-size-allowlist.json');
 const FOLDER_MATRIX_PATH = path.join(ROOT, 'scripts', 'folder-dependency-matrix.json');
+const FLAKY_QUARANTINE_PATH = path.join(ROOT, 'scripts', 'config', 'flaky-quarantine.json');
 
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
 const TEST_FILE_PATTERN = /\.(test|spec)\.(ts|tsx|js|jsx)$/;
@@ -227,6 +228,14 @@ const getFolderDependencyDebtMetrics = () => {
 
 const getTestMetrics = () => {
   const testFiles = walkFiles(TEST_ROOT).filter(filePath => TEST_FILE_PATTERN.test(filePath));
+  const flakyQuarantine = safeReadJson(FLAKY_QUARANTINE_PATH);
+  const quarantinedFiles = new Set(
+    Array.isArray(flakyQuarantine?.quarantined)
+      ? flakyQuarantine.quarantined
+          .map(entry => (typeof entry?.file === 'string' ? toPosix(entry.file.trim()) : ''))
+          .filter(Boolean)
+      : []
+  );
 
   let skipCount = 0;
   let onlyCount = 0;
@@ -246,16 +255,19 @@ const getTestMetrics = () => {
 
     onlyCount += content.match(onlyPattern)?.length || 0;
 
-    const hasFlakeSignals =
+    const hasNonDeterministicSignals =
       /Math\.random\s*\(/.test(content) ||
       /Date\.now\s*\(/.test(content) ||
-      /new\s+Date\s*\(/.test(content) ||
+      /new\s+Date\s*\(\s*\)/.test(content) ||
       /setTimeout\s*\(/.test(content) ||
       /setInterval\s*\(/.test(content);
 
-    const hasFakeTimerControls = /vi\.useFakeTimers\s*\(/.test(content) || /jest\.useFakeTimers\s*\(/.test(content);
+    const hasFakeTimerControls =
+      /vi\.useFakeTimers\s*\(/.test(content) || /jest\.useFakeTimers\s*\(/.test(content);
+    const explicitlyMarkedFlakeSafe = /@flake-safe/.test(content);
+    const isQuarantined = quarantinedFiles.has(relative);
 
-    if (hasFlakeSignals && !hasFakeTimerControls) {
+    if (hasNonDeterministicSignals && !hasFakeTimerControls && !explicitlyMarkedFlakeSafe && !isQuarantined) {
       flakeRiskFiles += 1;
     }
   }

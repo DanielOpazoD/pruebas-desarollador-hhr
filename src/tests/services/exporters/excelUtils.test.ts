@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import type { Worksheet } from 'exceljs';
 import {
     createWorkbook,
     workbookToBuffer,
@@ -15,6 +16,11 @@ vi.mock('exceljs', () => ({
 }));
 
 describe('excelUtils', () => {
+    type WorksheetColumnLike = { values: unknown[] | null; width: number };
+    type WorksheetLike = { columns: WorksheetColumnLike[] };
+
+    const asWorksheet = (value: WorksheetLike): Worksheet => value as unknown as Worksheet;
+
     describe('createWorkbook', () => {
         it('should create a new workbook', async () => {
             const workbook = await createWorkbook();
@@ -40,7 +46,7 @@ describe('excelUtils', () => {
                 ]
             };
 
-            autoFitColumns(mockWorksheet as any);
+            autoFitColumns(asWorksheet(mockWorksheet));
 
             // First column with values should have been fitted
             expect(mockWorksheet.columns[0].width).toBeGreaterThan(0);
@@ -55,7 +61,7 @@ describe('excelUtils', () => {
                 ]
             };
 
-            autoFitColumns(mockWorksheet as any, 10, 50);
+            autoFitColumns(asWorksheet(mockWorksheet), 10, 50);
 
             // Should not exceed maxWidth
             expect(mockWorksheet.columns[0].width).toBeLessThanOrEqual(50);

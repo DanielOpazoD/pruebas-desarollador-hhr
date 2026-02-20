@@ -2,20 +2,43 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { CensusTableHeader } from '@/features/census/components/CensusTableHeader';
+import type { CensusTableHeaderProps } from '@/features/census/types/censusTableComponentContracts';
+import type { DiagnosisMode } from '@/features/census/types/censusTableTypes';
 
 const diagnosisHeaderSpy = vi.fn();
 const actionHeaderSpy = vi.fn();
 const resizableSpy = vi.fn();
 
+type ActionHeaderProps = {
+  width: number;
+  isEditMode: boolean;
+  onResize: (width: number) => void;
+  headerClassName: string;
+  readOnly: boolean;
+  canDeleteRecord: boolean;
+  deniedMessage: string;
+  onClearAll: () => Promise<void>;
+};
+
+type DiagnosisHeaderProps = {
+  width: number;
+  isEditMode: boolean;
+  onResize: (width: number) => void;
+  headerClassName: string;
+  readOnly: boolean;
+  diagnosisMode: DiagnosisMode;
+  onToggleDiagnosisMode: () => void;
+};
+
 vi.mock('@/features/census/components/CensusActionHeaderCell', () => ({
-  CensusActionHeaderCell: (props: any) => {
+  CensusActionHeaderCell: (props: ActionHeaderProps) => {
     actionHeaderSpy(props);
     return <th data-testid="action-header-cell" />;
   },
 }));
 
 vi.mock('@/features/census/components/CensusDiagnosisHeaderCell', () => ({
-  CensusDiagnosisHeaderCell: (props: any) => {
+  CensusDiagnosisHeaderCell: (props: DiagnosisHeaderProps) => {
     diagnosisHeaderSpy(props);
     return <th data-testid="diagnosis-header-cell" />;
   },
@@ -29,7 +52,7 @@ vi.mock('@/components/ui/ResizableHeader', () => ({
 }));
 
 describe('CensusTableHeader', () => {
-  const columns = {
+  const columns: CensusTableHeaderProps['columns'] = {
     actions: 50,
     bed: 80,
     type: 60,

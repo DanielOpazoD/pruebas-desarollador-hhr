@@ -1,21 +1,24 @@
 import { describe, it, expect } from 'vitest';
 import { mapSourceToValue } from '@/services/utils/printMapper';
+import type { FieldDataSource } from '@/types/printTemplates';
+
+type PrintMapperInput = Parameters<typeof mapSourceToValue>[1];
 
 describe('printMapper', () => {
-    const mockData = {
+    const mockData: PrintMapperInput = {
         patient: {
             patientName: 'John Doe',
             rut: '1.234.567-8',
-            age: 30,
+            age: '30',
             biologicalSex: 'Masculino',
             birthDate: '1995-01-01'
-        } as any,
+        },
         survey: {
             diagnostico: 'Test Diagnosis',
-            peso: 70,
+            peso: '70',
             telefono: '123456',
             medicoTratante: 'Dr. Smith'
-        } as any,
+        },
         bedName: 'Bed 1',
         prevision: 'Fonasa',
         selectedExams: new Set(['Exam A', 'Exam B']),
@@ -46,7 +49,7 @@ describe('printMapper', () => {
     });
 
     it('should return empty for unknown source', () => {
-        expect(mapSourceToValue('unknown' as any, mockData, 'f')).toBe('');
+        expect(mapSourceToValue('unknown' as unknown as FieldDataSource, mockData, 'f')).toBe('');
     });
 
     it('should handle undefined source', () => {
@@ -54,7 +57,15 @@ describe('printMapper', () => {
     });
 
     it('should handle missing fields in survey', () => {
-        const emptySurvey = { ...mockData, survey: {} as any };
+        const emptySurvey: PrintMapperInput = {
+            ...mockData,
+            survey: {
+                diagnostico: '',
+                peso: '',
+                telefono: '',
+                medicoTratante: '',
+            },
+        };
         expect(mapSourceToValue('survey.weight', emptySurvey, 'f')).toBe('');
     });
 });

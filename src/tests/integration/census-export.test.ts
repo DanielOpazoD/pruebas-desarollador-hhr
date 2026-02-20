@@ -5,9 +5,15 @@
  * This is a CRITICAL flow that must be protected from regressions.
  */
 
-import { describe, it, expect } from 'vitest';
+import { beforeEach, describe, it, expect } from 'vitest';
 import { DailyRecord, PatientData, DischargeData, TransferData, CMAData, Specialty, PatientStatus } from '@/types';
 import { buildCensusMasterWorkbook, getCensusMasterFilename } from '@/services/exporters/censusMasterWorkbook';
+
+let deterministicIdCounter = 0;
+const nextDeterministicId = (prefix: string): string => {
+    deterministicIdCounter += 1;
+    return `${prefix}-${deterministicIdCounter}`;
+};
 
 // ============================================================================
 // Mock Data Factories
@@ -20,10 +26,10 @@ const createMockPatient = (
 ): PatientData => ({
     bedId,
     patientName: name,
-    rut: `${Math.floor(Math.random() * 99999999)}-${Math.floor(Math.random() * 9)}`,
+    rut: `${11000000 + deterministicIdCounter}-1`,
     pathology: 'Diagnóstico de prueba',
     specialty: Specialty.MEDICINA,
-    age: String(Math.floor(Math.random() * 80) + 18),
+    age: '45',
     insurance: 'Fonasa',
     origin: 'Residente',
     isRapanui: true,
@@ -51,7 +57,7 @@ const createMockDischarge = (
     bedId: string,
     patientName: string
 ): DischargeData => ({
-    id: crypto.randomUUID(),
+    id: nextDeterministicId('discharge'),
     bedId,
     bedName: `Cama ${bedId}`,
     bedType: 'UTI',
@@ -69,7 +75,7 @@ const createMockTransfer = (
     patientName: string,
     destination: string
 ): TransferData => ({
-    id: crypto.randomUUID(),
+    id: nextDeterministicId('transfer'),
     bedId,
     bedName: `Cama ${bedId}`,
     bedType: 'UTI',
@@ -83,7 +89,7 @@ const createMockTransfer = (
 });
 
 const createMockCMA = (patientName: string, procedure: string): CMAData => ({
-    id: crypto.randomUUID(),
+    id: nextDeterministicId('cma'),
     bedName: 'Sala CMA',
     patientName,
     rut: '99999999-9',
@@ -144,7 +150,7 @@ const createMockDailyRecord = (
         discharges: dischargesList,
         transfers: transfersList,
         cma: cmaList,
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: `${date}T12:00:00.000Z`,
         nurses: ['Enfermera Día 1', 'Enfermera Día 2'],
         nursesDayShift: ['ED1', 'ED2'],
         nursesNightShift: ['EN1', 'EN2'],
@@ -159,6 +165,10 @@ const createMockDailyRecord = (
 // ============================================================================
 
 describe('Census → Excel Export Integration', () => {
+    beforeEach(() => {
+        deterministicIdCounter = 0;
+    });
+
     describe('buildCensusMasterWorkbook', () => {
         it('should throw error when no records provided', async () => {
             await expect(buildCensusMasterWorkbook([])).rejects.toThrow(

@@ -130,7 +130,7 @@ describe('passportService', () => {
         });
 
         it('should fail validation for passport with invalid expiresAt date', async () => {
-            const issuedAt = new Date();
+            const issuedAt = new Date('2026-02-20T00:00:00.000Z');
             const passport: OfflinePassport = {
                 email: mockUser.email || '',
                 role: mockUser.role as UserRole,
@@ -189,12 +189,12 @@ describe('passportService', () => {
             // Match the encoding used in downloadPassport
             const base64Content = btoa(unescape(encodeURIComponent(jsonContent)));
 
-            const fileMock = {
+            const fileMock: Pick<File, 'name' | 'text'> = {
                 name: 'test.hhr',
-                text: async () => base64Content
+                text: async () => base64Content,
             };
 
-            const parsed = await parsePassportFile(fileMock as any);
+            const parsed = await parsePassportFile(fileMock as unknown as File);
 
             expect(parsed).not.toBeNull();
             expect(parsed?.email).toBe(mockUser.email);

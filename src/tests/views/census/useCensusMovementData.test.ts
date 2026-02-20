@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCensusMovementData } from '@/features/census/hooks/useCensusMovementData';
 import { useDailyRecordData, useDailyRecordMovements } from '@/context/DailyRecordContext';
+import { DataFactory } from '@/tests/factories/DataFactory';
 
 vi.mock('@/context/DailyRecordContext', () => ({
   useDailyRecordData: vi.fn(),
@@ -19,23 +20,27 @@ describe('useCensusMovementData', () => {
   it('returns record date and movement buckets from fragmented context hooks', () => {
     vi.mocked(useDailyRecordData).mockReturnValue(
       asHookValue<ReturnType<typeof useDailyRecordData>>({
-        record: { date: '2026-02-15' } as any,
+        record: DataFactory.createMockDailyRecord('2026-02-15'),
       })
     );
     vi.mocked(useDailyRecordMovements).mockReturnValue(
       asHookValue<ReturnType<typeof useDailyRecordMovements>>({
-        discharges: [{ id: 'd1' }] as any,
-        transfers: [{ id: 't1' }] as any,
-        cma: [{ id: 'c1' }] as any,
+        discharges: [DataFactory.createMockDischarge({ id: 'd1' })],
+        transfers: [DataFactory.createMockTransfer({ id: 't1' })],
+        cma: [DataFactory.createMockCMA({ id: 'c1' })],
       })
     );
 
     const { result } = renderHook(() => useCensusMovementData());
 
     expect(result.current.recordDate).toBe('2026-02-15');
-    expect(result.current.discharges).toEqual([{ id: 'd1' }]);
-    expect(result.current.transfers).toEqual([{ id: 't1' }]);
-    expect(result.current.cma).toEqual([{ id: 'c1' }]);
+    expect(result.current.discharges).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 'd1' })])
+    );
+    expect(result.current.transfers).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 't1' })])
+    );
+    expect(result.current.cma).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'c1' })]));
   });
 
   it('returns safe defaults when record and movements are absent', () => {

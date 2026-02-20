@@ -15,7 +15,7 @@ describe('validation schema helpers', () => {
     describe('validateRut', () => {
         it('should return true for empty or null RUT', () => {
             expect(validateRut('')).toBe(true);
-            expect(validateRut(null as any)).toBe(true);
+            expect(validateRut(null as unknown as string)).toBe(true);
         });
 
         it('should return true for valid RUT format', () => {
@@ -90,7 +90,7 @@ describe('validation schema helpers', () => {
                 beds: {},
                 discharges: [],
                 transfers: [],
-                lastUpdated: new Date().toISOString()
+                lastUpdated: '2025-01-01T00:00:00.000Z'
             };
             const result = validateDailyRecord(validData);
             expect(result.success).toBe(true);
@@ -113,7 +113,7 @@ describe('validation schema helpers', () => {
                 '2025-01-01': {
                     date: '2025-01-01',
                     beds: {},
-                    lastUpdated: new Date().toISOString()
+                    lastUpdated: '2025-01-01T00:00:00.000Z'
                 }
             };
             const result = validateBackupData(validData);
@@ -201,7 +201,7 @@ describe('validation schema helpers', () => {
                 beds: {},
                 discharges: [],
                 transfers: [],
-                lastUpdated: new Date().toISOString(),
+                lastUpdated: '2025-01-01T00:00:00.000Z',
                 nurseName: 'Test Nurse',
                 nursesDayShift: ['Ana', 'Pedro'],
                 nursesNightShift: ['Luis'],

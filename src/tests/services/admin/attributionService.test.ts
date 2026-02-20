@@ -19,7 +19,7 @@ describe('attributionService', () => {
         discharges: [],
         transfers: [],
         cma: [],
-        lastUpdated: new Date().toISOString()
+        lastUpdated: '2025-12-28T00:00:00.000Z'
     };
 
     describe('isSharedNursingAccount', () => {

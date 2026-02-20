@@ -297,7 +297,7 @@ describe('dateUtils', () => {
     it('should return null on catch (invalid split/data)', () => {
       // Force a crash type in calculateHospitalizedDays by passing non-string that .split fails on
       // but the type is string, so we use 'any'
-      expect(calculateHospitalizedDays(null as any, '2024-12-10')).toBeNull();
+      expect(calculateHospitalizedDays(null as unknown as string, '2024-12-10')).toBeNull();
     });
   });
 

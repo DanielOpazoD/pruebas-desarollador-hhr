@@ -10,6 +10,7 @@ vi.mock('../ai/aiRequestManager', () => ({
 
 // Mock fetch
 global.fetch = vi.fn();
+const mockFetch = vi.mocked(global.fetch);
 
 vi.mock('@google/genai', () => ({
   GoogleGenAI: class {
@@ -32,30 +33,30 @@ describe('cie10AISearch', () => {
   });
 
   it('should check AI availability via serverless function success', async () => {
-    (global.fetch as any).mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ available: true }),
-    });
+    } as Response);
 
     const available = await cie10Module.checkAIAvailability();
     expect(available).toBe(true);
   });
 
   it('should perform AI search using serverless function', async () => {
-    (global.fetch as any).mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ available: true, results: [{ code: 'B01', description: 'Results' }] }),
-    });
+    } as Response);
 
     const results = await cie10Module.searchCIE10WithAI('query-serverless');
     expect(results).toEqual([{ code: 'B01', description: 'Results' }]);
   });
 
   it('should return empty array when serverless is unavailable', async () => {
-    (global.fetch as any).mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ available: false }),
-    });
+    } as Response);
 
     vi.stubEnv('VITE_LOCAL_GEMINI_API_KEY', '');
     vi.stubEnv('VITE_GEMINI_API_KEY', '');
@@ -66,10 +67,10 @@ describe('cie10AISearch', () => {
   });
 
   it('should use local fallback in dev when serverless is unavailable and local key exists', async () => {
-    (global.fetch as any).mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ available: false }),
-    });
+    } as Response);
 
     vi.stubEnv('VITE_LOCAL_GEMINI_API_KEY', 'test-local-key');
     const results = await cie10Module.searchCIE10WithAI('query-local-fallback');

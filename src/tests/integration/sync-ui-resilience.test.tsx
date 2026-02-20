@@ -138,11 +138,9 @@ describe('Sync UI Resilience Integration', () => {
 
     mockGetForDate.mockClear();
 
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 2100));
-    });
-
-    expect(mockGetForDate).toHaveBeenCalledWith(date);
+    await waitFor(() => {
+      expect(mockGetForDate).toHaveBeenCalledWith(date);
+    }, { timeout: 3000 });
   });
 
   it('rolls back optimistic patch when update fails with permission-denied', async () => {

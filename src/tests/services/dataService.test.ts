@@ -41,7 +41,7 @@ describe('dateFormatter', () => {
         it('should return today date (local timezone)', () => {
             const result = getTodayISO();
             // Use same logic as getTodayISO to get expected value
-            const now = new Date();
+            const now = new globalThis.Date();
             const offset = now.getTimezoneOffset() * 60000;
             const expectedToday = (new Date(now.getTime() - offset)).toISOString().split('T')[0];
             expect(result).toBe(expectedToday);

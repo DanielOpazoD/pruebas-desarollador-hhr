@@ -5,6 +5,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { PatientData } from '@/types';
+import { DataFactory } from '@/tests/factories/DataFactory';
 
 // Test helper functions directly instead of hooks
 const createEmptyPatient = (bedId: string): PatientData => ({
@@ -54,10 +55,10 @@ describe('Bed Operations Logic', () => {
     describe('Clinical Crib Logic', () => {
         it('should add clinical crib to patient', () => {
             const patient = createPatient('Madre', 'bed-1');
-            patient.clinicalCrib = {
+            patient.clinicalCrib = DataFactory.createMockPatient('bed-1-crib', {
                 patientName: 'Recién Nacido',
                 rut: '11111111-1',
-            } as any;
+            });
 
             expect(patient.clinicalCrib?.patientName).toBe('Recién Nacido');
         });
@@ -66,13 +67,13 @@ describe('Bed Operations Logic', () => {
             const patient = createPatient('Madre', 'bed-1');
             expect(patient.clinicalCrib).toBeUndefined();
 
-            patient.clinicalCrib = { patientName: 'RN' } as any;
+            patient.clinicalCrib = DataFactory.createMockPatient('bed-1-crib', { patientName: 'RN' });
             expect(patient.clinicalCrib).toBeDefined();
         });
 
         it('should clear clinical crib', () => {
             const patient = createPatient('Madre', 'bed-1');
-            patient.clinicalCrib = { patientName: 'RN' } as any;
+            patient.clinicalCrib = DataFactory.createMockPatient('bed-1-crib', { patientName: 'RN' });
             patient.clinicalCrib = undefined;
             expect(patient.clinicalCrib).toBeUndefined();
         });

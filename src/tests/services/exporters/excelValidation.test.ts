@@ -57,7 +57,7 @@ describe('excelValidation', () => {
 
     describe('validateExcelFilename', () => {
         it('should return invalid for empty or non-string filename', () => {
-            expect(validateExcelFilename(null as any).valid).toBe(false);
+            expect(validateExcelFilename(null as unknown as string).valid).toBe(false);
             expect(validateExcelFilename('').valid).toBe(false);
             expect(validateExcelFilename('   ').valid).toBe(false);
         });

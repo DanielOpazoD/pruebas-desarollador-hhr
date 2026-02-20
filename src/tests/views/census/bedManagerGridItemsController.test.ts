@@ -4,13 +4,22 @@ import {
   resolveBlockedBedsGridItems,
   resolveExtraBedsGridItems,
 } from '@/features/census/controllers/bedManagerGridItemsController';
+import type { DailyRecord } from '@/types';
+import { DataFactory } from '@/tests/factories/DataFactory';
 
 describe('bedManagerGridItemsController', () => {
   it('maps regular beds with blocked state and reason', () => {
-    const items = resolveBlockedBedsGridItems(BEDS, {
-      R1: { isBlocked: true, blockedReason: 'Aislamiento' } as any,
-      R2: { isBlocked: false } as any,
-    });
+    const recordBeds: DailyRecord['beds'] = {
+      ...DataFactory.createMockDailyRecord('2026-01-01').beds,
+      R1: DataFactory.createMockPatient('R1', {
+        isBlocked: true,
+        blockedReason: 'Aislamiento',
+      }),
+      R2: DataFactory.createMockPatient('R2', {
+        isBlocked: false,
+      }),
+    };
+    const items = resolveBlockedBedsGridItems(BEDS, recordBeds);
 
     const r1 = items.find(item => item.id === 'R1');
     const r2 = items.find(item => item.id === 'R2');

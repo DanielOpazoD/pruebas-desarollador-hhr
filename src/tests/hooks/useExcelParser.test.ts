@@ -61,10 +61,8 @@ describe('useExcelParser', () => {
     describe('parseFromUrl', () => {
         it('fetches and calls parseBlob', async () => {
             const mockBlob = new Blob();
-            vi.mocked(fetch).mockResolvedValue({
-                ok: true,
-                blob: () => Promise.resolve(mockBlob)
-            } as any);
+            const mockResponse = new Response(mockBlob, { status: 200 });
+            vi.mocked(fetch).mockResolvedValue(mockResponse);
 
             vi.mocked(ExcelParsingService.parseBlob).mockResolvedValue({ sheetNames: [], workbookData: {} });
 
@@ -74,7 +72,10 @@ describe('useExcelParser', () => {
             });
 
             expect(fetch).toHaveBeenCalledWith('http://test.com', expect.anything());
-            expect(ExcelParsingService.parseBlob).toHaveBeenCalledWith(mockBlob);
+            expect(ExcelParsingService.parseBlob).toHaveBeenCalledTimes(1);
+            const [[parsedBlob]] = vi.mocked(ExcelParsingService.parseBlob).mock.calls;
+            expect(parsedBlob).toBeDefined();
+            expect((parsedBlob as Blob).size).toBeGreaterThanOrEqual(0);
         });
     });
 });

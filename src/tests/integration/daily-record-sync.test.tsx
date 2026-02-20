@@ -9,7 +9,9 @@ import React from 'react';
 import { useDailyRecordSyncQuery } from '@/hooks/useDailyRecordSyncQuery';
 import { UIProvider } from '@/context/UIContext';
 import { DailyRecord } from '@/types';
+import type { DailyRecordPatch } from '@/hooks/useDailyRecordTypes';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
+import { DataFactory } from '@/tests/factories/DataFactory';
 
 // ============================================================================
 // Mocks
@@ -21,13 +23,14 @@ const mockSyncWithFirestore = vi.fn();
 const mockSave = vi.fn();
 const mockUpdatePartial = vi.fn();
 const mockGetForDate = vi.fn();
+type SubscribeCallback = (record: DailyRecord, hasPendingWrites: boolean) => void;
 
 vi.mock('../../services/repositories/DailyRecordRepository', () => {
   const mockImpl = {
     getForDate: (date: string) => mockGetForDate(date),
     save: (record: DailyRecord) => mockSave(record),
-    updatePartial: (date: string, partial: any) => mockUpdatePartial(date, partial),
-    subscribe: (date: string, cb: any) => {
+    updatePartial: (date: string, partial: DailyRecordPatch) => mockUpdatePartial(date, partial),
+    subscribe: (date: string, cb: SubscribeCallback) => {
       mockSubscribe(date, cb);
       return () => {}; // Unsubscribe
     },
@@ -55,7 +58,7 @@ vi.mock('../../context/UIContext', () => ({
     success: vi.fn(),
     error: vi.fn(),
   }),
-  UIProvider: ({ children }: any) => <>{children}</>,
+  UIProvider: ({ children }: React.PropsWithChildren) => <>{children}</>,
 }));
 
 // Mock Utils
@@ -73,15 +76,14 @@ vi.mock('../../services/storage/unifiedLocalService', () => ({
 // ============================================================================
 
 const createMockRecord = (date: string): DailyRecord =>
-  ({
-    date,
+  DataFactory.createMockDailyRecord(date, {
     beds: {},
     discharges: [],
     transfers: [],
     cma: [],
     lastUpdated: '2024-12-28T12:00:00Z',
     nurses: [],
-  }) as any;
+  });
 
 // ============================================================================
 // Tests
@@ -193,8 +195,14 @@ describe('DailyRecord Sync Integration', () => {
       // Mock return for next fetch
       mockGetForDate.mockResolvedValue({
         ...initialRecord,
-        beds: { R1: { patientName: 'Nuevo Paciente' } },
-      } as any);
+        beds: {
+          ...initialRecord.beds,
+          R1: {
+            ...initialRecord.beds.R1,
+            patientName: 'Nuevo Paciente',
+          },
+        },
+      });
       await result.current.patchRecord(partial);
     });
 

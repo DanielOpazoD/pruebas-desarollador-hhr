@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
-const CURRENT_DATE = new Date().toISOString().slice(0, 10);
+const CURRENT_DATE = process.env.E2E_FIXED_DATE ?? '2026-01-01';
+const FIXED_LAST_UPDATED = `${CURRENT_DATE}T00:00:00.000Z`;
 
 const USERS = {
   editor: {
@@ -65,12 +66,12 @@ const bootstrapCensusSession = async (page: Page, role: keyof typeof USERS) => {
           date: dateStr,
           beds: {},
           discharges: [],
-          transfers: [],
-          cma: [],
-          lastUpdated: new Date().toISOString(),
-          nurses: ['E2E Nurse'],
-          activeExtraBeds: [],
-          schemaVersion: 1,
+            transfers: [],
+            cma: [],
+            lastUpdated: FIXED_LAST_UPDATED,
+            nurses: ['E2E Nurse'],
+            activeExtraBeds: [],
+            schemaVersion: 1,
         };
 
         const bedsMap = record.beds as Record<string, Record<string, unknown>>;
@@ -129,7 +130,7 @@ test.describe('Critical Census Flows (Firestore emulator-backed runtime)', () =>
     await expect(input).toBeVisible();
     await expect(input).toBeEnabled();
 
-    const newValue = `E2E_CRITICAL_${Date.now()}`;
+    const newValue = 'E2E_CRITICAL_VALUE';
     await input.fill(newValue);
     await input.blur();
     await expect(input).toHaveValue(new RegExp(newValue, 'i'));
@@ -141,7 +142,7 @@ test.describe('Critical Census Flows (Firestore emulator-backed runtime)', () =>
     const input = getPatientNameInput(page);
     await expect(input).toBeVisible();
 
-    const offlineValue = `OFFLINE_${Date.now()}`;
+    const offlineValue = 'OFFLINE_VALUE';
     await input.fill(offlineValue);
     await input.blur();
     await expect(input).toHaveValue(new RegExp(offlineValue, 'i'));

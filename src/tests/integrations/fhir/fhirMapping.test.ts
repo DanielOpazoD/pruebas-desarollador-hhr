@@ -92,7 +92,7 @@ describe('FhirMappingService', () => {
             discharges: [],
             transfers: [],
             cma: [],
-            lastUpdated: new Date().toISOString(),
+            lastUpdated: '2023-12-28T00:00:00.000Z',
             nurses: [],
             activeExtraBeds: []
         };

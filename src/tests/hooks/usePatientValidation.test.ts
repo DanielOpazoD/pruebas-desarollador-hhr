@@ -42,9 +42,7 @@ describe('usePatientValidation', () => {
     describe('validateAdmissionDate', () => {
         it('should reject a future date', () => {
             const { result } = renderHook(() => usePatientValidation());
-            const futureDate = new Date();
-            futureDate.setDate(futureDate.getDate() + 1);
-            const dateStr = futureDate.toISOString().split('T')[0];
+            const dateStr = '2099-01-01';
 
             const validation = result.current.validateAdmissionDate(dateStr);
             expect(validation.valid).toBe(false);
@@ -53,14 +51,12 @@ describe('usePatientValidation', () => {
 
         it('should accept today or a past date', () => {
             const { result } = renderHook(() => usePatientValidation());
-            // Use local date YYYY-MM-DD instead of UTC toISOString()
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const todayStr = `${year}-${month}-${day}`;
+            const now = new globalThis.Date();
+            const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+                now.getDate()
+            ).padStart(2, '0')}`;
 
-            const validation = result.current.validateAdmissionDate(todayStr);
+            const validation = result.current.validateAdmissionDate(today);
             expect(validation.valid).toBe(true);
 
             const pastValidation = result.current.validateAdmissionDate('2000-01-01');

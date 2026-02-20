@@ -83,10 +83,8 @@ describe('Concurrency Handling Integration', () => {
     // The hook sets a timeout of 2000ms to refresh
     vi.mocked(mockRepo.getForDate).mockClear(); // Clear initial load call
 
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 2100));
-    });
-
-    expect(mockRepo.getForDate).toHaveBeenCalledWith(mockDate);
+    await waitFor(() => {
+      expect(mockRepo.getForDate).toHaveBeenCalledWith(mockDate);
+    }, { timeout: 3000 });
   });
 });

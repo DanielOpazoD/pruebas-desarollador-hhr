@@ -140,7 +140,7 @@ describe('CensusTable', () => {
         },
         pageMargin: 20,
         version: 1,
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: '2026-02-20T00:00:00.000Z',
       },
       isEditMode: false,
       isLoading: false,

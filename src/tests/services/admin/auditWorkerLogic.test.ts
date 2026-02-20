@@ -75,7 +75,7 @@ describe('AuditWorkerLogic', () => {
         ];
         const grouped = groupLogs(similarLogs, actionLabels);
         expect(grouped.length).toBe(1);
-        expect((grouped[0] as any).isGroup).toBe(true);
+        expect((grouped[0] as unknown as { isGroup?: boolean }).isGroup).toBe(true);
     });
 
     it('should calculate stats correctly', () => {

@@ -8,9 +8,12 @@ import {
     CombinedSummaryCard,
     SummaryCard
 } from '@/components/layout/SummaryCard';
-import { Statistics } from '@/types';
+import { DischargeData, Statistics, TransferData } from '@/types';
 
 describe('SummaryCard Components', () => {
+    const asDischarge = (partial: Partial<DischargeData>): DischargeData => partial as DischargeData;
+    const asTransfer = (partial: Partial<TransferData>): TransferData => partial as TransferData;
+
     const mockStats: Statistics = {
         occupiedBeds: 10,
         occupiedCribs: 0,
@@ -46,8 +49,8 @@ describe('SummaryCard Components', () => {
 
     describe('MovementSummaryCard', () => {
         it('renders movements without deaths', () => {
-            const discharges = [{ status: 'Alta' } as any];
-            const transfers = [{ id: '1' } as any];
+            const discharges = [asDischarge({ status: 'Alta' })];
+            const transfers = [asTransfer({ id: '1' })];
             render(<MovementSummaryCard discharges={discharges} transfers={transfers} cmaCount={5} />);
 
             expect(screen.getByText('Egresos')).toBeInTheDocument();
@@ -64,8 +67,8 @@ describe('SummaryCard Components', () => {
 
         it('renders deaths branch when deaths > 0', () => {
             const discharges = [
-                { status: 'Alta' } as any,
-                { status: 'Fallecido' } as any
+                asDischarge({ status: 'Alta' }),
+                asDischarge({ status: 'Fallecido' })
             ];
             render(<MovementSummaryCard discharges={discharges} transfers={[]} cmaCount={0} />);
 
@@ -80,7 +83,7 @@ describe('SummaryCard Components', () => {
 
     describe('CombinedSummaryCard', () => {
         it('renders integrated statistics with all sections', () => {
-            const discharges = [{ status: 'Fallecido' } as any];
+            const discharges = [asDischarge({ status: 'Fallecido' })];
             render(<CombinedSummaryCard stats={mockStats} discharges={discharges} transfers={[]} cmaCount={3} />);
 
             expect(screen.getByText('Censo Camas')).toBeInTheDocument();

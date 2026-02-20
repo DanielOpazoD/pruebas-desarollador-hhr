@@ -104,7 +104,7 @@ describe('DailyRecordRepository', () => {
     discharges: [],
     transfers: [],
     cma: [],
-    lastUpdated: new Date().toISOString(),
+    lastUpdated: `${mockDate}T00:00:00.000Z`,
     nurses: ['', ''],
     nursesDayShift: ['', ''],
     nursesNightShift: ['', ''],

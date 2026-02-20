@@ -61,7 +61,7 @@ vi.mock('@/firebaseConfig', () => ({
 
 // Mock firebase/auth to override global setup and force correct email
 vi.mock('firebase/auth', async (importOriginal) => {
-    const actual: any = await importOriginal();
+    const actual = await importOriginal() as typeof import('firebase/auth');
     return {
         ...actual,
         getAuth: vi.fn(),
@@ -89,7 +89,7 @@ vi.mock('firebase/firestore', () => ({
 vi.mock('@/services/utils/errorService', () => ({
     logFirebaseError: vi.fn(),
     // Mock getUserFriendlyErrorMessage to return a simple string
-    getUserFriendlyErrorMessage: (_err: any) => 'Error simulado',
+    getUserFriendlyErrorMessage: (_err: unknown) => 'Error simulado',
 }));
 
 vi.mock('@/services/admin/auditService', () => ({

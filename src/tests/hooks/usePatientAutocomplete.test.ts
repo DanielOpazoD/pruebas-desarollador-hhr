@@ -35,15 +35,16 @@ describe('usePatientAutocomplete', () => {
     });
 
     it('should not search for invalid RUT', async () => {
+        vi.useFakeTimers();
         const { result } = renderHook(() => usePatientAutocomplete('invalid-rut'));
 
-        // Wait a bit more than debounce
         await act(async () => {
-            await new Promise(r => setTimeout(r, 600));
+            await vi.advanceTimersByTimeAsync(600);
         });
 
         expect(PatientMasterRepository.getPatientByRut).not.toHaveBeenCalled();
         expect(result.current.suggestion).toBeNull();
+        vi.useRealTimers();
     });
 
     it('should search for valid RUT after debounce', async () => {

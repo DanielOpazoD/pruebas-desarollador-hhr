@@ -136,7 +136,7 @@ describeEmulator('Firestore emulator sync concurrency flow', () => {
 
   it('applies partial update when record exists and is within nurse edit window', async () => {
     const date = '2026-02-21';
-    const now = Date.now();
+    const now = Date.parse(`${date}T09:00:00.000Z`);
     await testEnv.withSecurityRulesDisabled(async context => {
       await context
         .firestore()

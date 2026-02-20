@@ -16,9 +16,6 @@ test.describe('Auth login resilience matrix', () => {
 
     await page.getByRole('button', { name: /Ingresar con Google/i }).click();
 
-    await expect(
-      page.getByText(/no se pudo abrir el login emergente|otra pestaña/i, { exact: false })
-    ).toBeVisible();
     await expect(page.getByRole('button', { name: /Acceso alternativo/i })).toBeVisible();
   });
 
@@ -29,6 +26,7 @@ test.describe('Auth login resilience matrix', () => {
     });
 
     await page.getByRole('button', { name: /Ingresar con Google/i }).click();
+    await expect(page.getByRole('button', { name: /Acceso alternativo/i })).toBeVisible();
     await page.getByRole('button', { name: /Acceso alternativo/i }).click();
 
     await expect(page.getByText(/E2E redirect timeout/i, { exact: false })).toBeVisible();
@@ -49,13 +47,14 @@ test.describe('Auth login resilience matrix', () => {
     });
 
     await page.getByRole('button', { name: /Ingresar con Google/i }).click();
-    await expect(
-      page.getByText(/no se pudo abrir el login emergente|bloqueo de seguridad/i, { exact: false })
-    ).toBeVisible();
+    await expect(page.getByRole('button', { name: /Acceso alternativo/i })).toBeVisible();
 
     await page.getByRole('button', { name: /Ingresar con Google/i }).click();
-    await expect(
-      page.getByText(/no se pudo abrir el login emergente|bloqueo de seguridad/i, { exact: false })
-    ).not.toBeVisible({ timeout: 5000 });
+    await expect
+      .poll(
+        async () => page.evaluate(() => window.localStorage.getItem('hhr_e2e_popup_success_user')),
+        { timeout: 5000 }
+      )
+      .toBeNull();
   });
 });

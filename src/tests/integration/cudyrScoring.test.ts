@@ -5,6 +5,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { PatientData, Specialty, PatientStatus } from '@/types';
+import type { CudyrScore } from '@/types';
 
 // CUDYR Categories (Legacy context):
 // C = Contagio (Infection)
@@ -38,7 +39,7 @@ describe('CUDYR Integration', () => {
         bedMode: 'Cama',
         hasCompanionCrib: false,
         isBlocked: false,
-        cudyr: cudyr as any, // Cast to any here is acceptable as we are testing legacy bridge in an integration context
+        cudyr: cudyr as unknown as CudyrScore, // Legacy bridge mapping
     });
 
     describe('CUDYR Scoring', () => {

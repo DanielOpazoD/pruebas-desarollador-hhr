@@ -32,7 +32,7 @@ describe('Census Email Service', () => {
               discharges: [],
               transfers: [],
               cma: {},
-              lastUpdated: new Date().toISOString(),
+              lastUpdated: '2025-12-25T00:00:00.000Z',
               activeExtraBeds: [],
               nurses: [],
             },

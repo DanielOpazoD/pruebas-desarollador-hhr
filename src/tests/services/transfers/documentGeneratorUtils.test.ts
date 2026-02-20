@@ -59,10 +59,7 @@ describe('documentGeneratorUtils', () => {
 
     describe('calculateAge', () => {
         it('should calculate age correctly', () => {
-            // Use a fixed date for "today" by overriding strict logic or doing relative math
-            // For simplicity, we assume the function is correct relative to current system time.
-            const today = new Date();
-            const year = today.getFullYear();
+            const year = 2026;
 
             // Birthday passed this year
             const dob = `${year - 30}-01-01`;
@@ -70,7 +67,7 @@ describe('documentGeneratorUtils', () => {
         });
 
         it('should calculate age correctly if birthday has not passed yet', () => {
-            const today = new Date();
+            const today = new Date('2026-02-20T00:00:00.000Z');
             const year = today.getFullYear();
 
             // Birthday is Dec 31

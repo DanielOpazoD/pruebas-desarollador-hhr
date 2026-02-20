@@ -5,6 +5,8 @@ import { DailyRecord } from '@/types';
 import { AuditLogEntry } from '@/types/audit';
 import { ErrorLog } from '@/services/utils/errorService';
 
+const FIXED_ISO_TIMESTAMP = '2026-01-15T10:30:00.000Z';
+
 describe('indexedDBService', () => {
   const setMockLocationWithReload = () => {
     const originalLocation = window.location;
@@ -23,7 +25,7 @@ describe('indexedDBService', () => {
     discharges: [],
     transfers: [],
     cma: [],
-    lastUpdated: new Date().toISOString(),
+    lastUpdated: FIXED_ISO_TIMESTAMP,
     nurses: [],
     activeExtraBeds: [],
   };
@@ -88,7 +90,7 @@ describe('indexedDBService', () => {
     it('should save and retrieve error logs', async () => {
       const log = {
         id: '1',
-        timestamp: new Date().toISOString(),
+        timestamp: FIXED_ISO_TIMESTAMP,
         message: 'Test error',
         severity: 'high',
       } as ErrorLog;
@@ -101,7 +103,7 @@ describe('indexedDBService', () => {
     it('should clear error logs', async () => {
       await idbService.saveErrorLog({
         id: '2',
-        timestamp: new Date().toISOString(),
+        timestamp: FIXED_ISO_TIMESTAMP,
         message: 'err',
         severity: 'high',
       } as ErrorLog);
@@ -124,7 +126,7 @@ describe('indexedDBService', () => {
       const records = { '2025-01-01': mockRecord };
       const nurses = ['Alice'];
       const tens = ['Bob'];
-      const auditLogs = [{ id: 'a1', timestamp: new Date().toISOString() }];
+      const auditLogs = [{ id: 'a1', timestamp: FIXED_ISO_TIMESTAMP }];
       const demoRecords = { 'demo-date': mockRecord };
 
       localStorage.setItem('hanga_roa_hospital_data', JSON.stringify(records));
@@ -156,7 +158,7 @@ describe('indexedDBService', () => {
     it('should get audit logs for a specific date', async () => {
       const log = {
         id: 'a1',
-        timestamp: new Date().toISOString(),
+        timestamp: FIXED_ISO_TIMESTAMP,
         action: 'USER_LOGIN',
         userId: 'test@local',
         entityType: 'system',
@@ -176,7 +178,7 @@ describe('indexedDBService', () => {
       for (let i = 0; i < 5; i++) {
         await idbService.saveAuditLog({
           id: `l${i}`,
-          timestamp: new Date().toISOString(),
+          timestamp: FIXED_ISO_TIMESTAMP,
           action: 'SYSTEM_ERROR',
           userId: 'test@local',
           entityType: 'system',

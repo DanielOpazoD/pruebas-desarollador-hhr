@@ -5,6 +5,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { DailyRecord, PatientData, DischargeData, TransferData, CMAData, Specialty, PatientStatus } from '@/types';
+import { DataFactory } from '@/tests/factories/DataFactory';
 
 // Helper to create a complete mock record
 const createMockRecord = (): DailyRecord => ({
@@ -18,7 +19,7 @@ const createMockRecord = (): DailyRecord => ({
     discharges: [],
     transfers: [],
     cma: [],
-    lastUpdated: new Date().toISOString(),
+    lastUpdated: '2024-12-23T00:00:00.000Z',
     nurses: ['Enfermera 1', 'Enfermera 2'],
     activeExtraBeds: [],
 });
@@ -277,11 +278,12 @@ describe('Census Operations Integration', () => {
             const record = createMockRecord();
 
             record.beds['R1'].clinicalCrib = {
+                ...DataFactory.createMockPatient('R1-crib'),
                 patientName: 'Recién Nacido',
                 rut: '11111111-1',
                 pathology: 'RN Sano',
                 age: '1 día',
-            } as any;
+            };
 
             expect(record.beds['R1'].clinicalCrib?.patientName).toBe('Recién Nacido');
         });
@@ -291,8 +293,9 @@ describe('Census Operations Integration', () => {
 
             // Add crib to R1
             record.beds['R1'].clinicalCrib = {
+                ...DataFactory.createMockPatient('R1-crib'),
                 patientName: 'RN',
-            } as any;
+            };
 
             const mainPatients = Object.values(record.beds)
                 .filter(b => b.patientName).length;

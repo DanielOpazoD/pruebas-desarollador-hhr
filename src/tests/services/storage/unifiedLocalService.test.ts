@@ -25,7 +25,7 @@ const buildRecord = (date: string): DailyRecord => ({
   discharges: [],
   transfers: [],
   cma: [],
-  lastUpdated: new Date().toISOString(),
+  lastUpdated: `${date}T00:00:00.000Z`,
   nurses: [],
   activeExtraBeds: [],
 });

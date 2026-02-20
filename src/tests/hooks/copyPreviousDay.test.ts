@@ -5,6 +5,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { DailyRecord, PatientData, Specialty, PatientStatus } from '@/types';
+import { DataFactory } from '@/tests/factories/DataFactory';
 
 // Simulate the copy logic from DailyRecordRepository
 const copyPatientsFromPrevious = (
@@ -197,16 +198,15 @@ describe('Copy Previous Day', () => {
 
     describe('Movement Lists', () => {
         it('should start new day with empty discharges', () => {
-            const prevRecord: DailyRecord = {
-                date: '2024-12-22',
+            const prevRecord: DailyRecord = DataFactory.createMockDailyRecord('2024-12-22', {
                 beds: {},
-                discharges: [{ id: 'old', patientName: 'Old' } as any],
+                discharges: [DataFactory.createMockDischarge({ id: 'old', patientName: 'Old' })],
                 transfers: [],
                 cma: [],
                 lastUpdated: '',
                 nurses: [],
                 activeExtraBeds: [],
-            };
+            });
 
             const newDay = copyPatientsFromPrevious(prevRecord, '2024-12-23');
 
@@ -214,16 +214,15 @@ describe('Copy Previous Day', () => {
         });
 
         it('should start new day with empty transfers', () => {
-            const prevRecord: DailyRecord = {
-                date: '2024-12-22',
+            const prevRecord: DailyRecord = DataFactory.createMockDailyRecord('2024-12-22', {
                 beds: {},
                 discharges: [],
-                transfers: [{ id: 'old', patientName: 'Old' } as any],
+                transfers: [DataFactory.createMockTransfer({ id: 'old', patientName: 'Old' })],
                 cma: [],
                 lastUpdated: '',
                 nurses: [],
                 activeExtraBeds: [],
-            };
+            });
 
             const newDay = copyPatientsFromPrevious(prevRecord, '2024-12-23');
 
@@ -231,16 +230,15 @@ describe('Copy Previous Day', () => {
         });
 
         it('should start new day with empty CMA', () => {
-            const prevRecord: DailyRecord = {
-                date: '2024-12-22',
+            const prevRecord: DailyRecord = DataFactory.createMockDailyRecord('2024-12-22', {
                 beds: {},
                 discharges: [],
                 transfers: [],
-                cma: [{ id: 'old', patientName: 'Old' } as any],
+                cma: [DataFactory.createMockCMA({ id: 'old', patientName: 'Old' })],
                 lastUpdated: '',
                 nurses: [],
                 activeExtraBeds: [],
-            };
+            });
 
             const newDay = copyPatientsFromPrevious(prevRecord, '2024-12-23');
 

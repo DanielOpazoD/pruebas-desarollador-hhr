@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { ChangeEvent } from 'react';
+import type { DeviceInstance } from '@/types';
 import { usePatientRowCommandHandlers } from '@/features/census/components/patient-row/usePatientRowCommandHandlers';
 
 describe('usePatientRowCommandHandlers', () => {
@@ -27,7 +28,17 @@ describe('usePatientRowCommandHandlers', () => {
       result.current.handleDeviceDetailsChange({
         VMI: { installationDate: '2026-02-16', note: 'Detalle' },
       });
-      result.current.handleDeviceHistoryChange([{ id: 'h1' } as any]);
+      const history: DeviceInstance[] = [
+        {
+          id: 'h1',
+          type: 'VMI',
+          installationDate: '2026-02-16',
+          status: 'Active',
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      ];
+      result.current.handleDeviceHistoryChange(history);
       result.current.handleDemographicsSave({ age: '40' });
     });
 
@@ -37,7 +48,9 @@ describe('usePatientRowCommandHandlers', () => {
     expect(commands.setDeviceDetails).toHaveBeenCalledWith({
       VMI: { installationDate: '2026-02-16', note: 'Detalle' },
     });
-    expect(commands.setDeviceHistory).toHaveBeenCalledWith([{ id: 'h1' }]);
+    expect(commands.setDeviceHistory).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ id: 'h1' })])
+    );
     expect(commands.saveDemographics).toHaveBeenCalledWith({ age: '40' });
   });
 });

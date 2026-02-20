@@ -11,6 +11,7 @@ import {
     reorderBookmarks
 } from '@/services/bookmarks/bookmarkService';
 import { addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import type { Bookmark } from '@/types/bookmarks';
 
 // Mock Firebase
 vi.mock('firebase/firestore', () => ({
@@ -23,7 +24,7 @@ vi.mock('firebase/firestore', () => ({
     query: vi.fn(),
     orderBy: vi.fn(),
     onSnapshot: vi.fn(),
-    serverTimestamp: vi.fn(() => new Date()),
+    serverTimestamp: vi.fn(() => new Date('2026-02-20T00:00:00.000Z')),
     writeBatch: vi.fn(() => ({
         set: vi.fn(),
         update: vi.fn(),
@@ -86,11 +87,11 @@ describe('Bookmark Service', () => {
 
     describe('reorderBookmarks', () => {
         it('should batch update bookmark orders', async () => {
-            const bookmarks = [
+            const bookmarks: Bookmark[] = [
                 { id: 'b1', name: 'First', order: 2 },
                 { id: 'b2', name: 'Second', order: 0 },
                 { id: 'b3', name: 'Third', order: 1 }
-            ] as any[];
+            ];
 
             const result = await reorderBookmarks(bookmarks);
 

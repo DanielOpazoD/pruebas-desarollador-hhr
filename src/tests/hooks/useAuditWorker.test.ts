@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useAuditWorker } from '@/hooks/useAuditWorker';
+import type { AuditLogEntry, WorkerFilterParams } from '@/types/audit';
 
 // We need to mock the Worker, which is already done in setup.ts
 describe('useAuditWorker', () => {
@@ -26,16 +27,34 @@ describe('useAuditWorker', () => {
     it('should call processData without errors', () => {
         const { result } = renderHook(() => useAuditWorker());
 
-        const mockLogs = [{ id: '1', action: 'TEST', userId: 'user1' }];
-        const mockParams = { groupByAction: false, showCriticalOnly: false };
+        const mockLogs: AuditLogEntry[] = [
+            {
+                id: '1',
+                timestamp: '2026-01-01T00:00:00.000Z',
+                action: 'PATIENT_MODIFIED',
+                userId: 'user1',
+                entityType: 'patient',
+                entityId: 'R1',
+                details: {},
+            },
+        ];
+        const mockParams: WorkerFilterParams = {
+            searchTerm: '',
+            searchRut: '',
+            filterAction: 'ALL',
+            startDate: '',
+            endDate: '',
+            activeSection: 'all',
+            sectionActions: {},
+        };
         const mockActionLabels = { TEST: 'Test Action' };
         const mockCriticalActions = ['CRITICAL'];
 
         // This should not throw
         act(() => {
             result.current.processData(
-                mockLogs as any,
-                mockParams as any,
+                mockLogs,
+                mockParams,
                 mockActionLabels,
                 mockCriticalActions
             );

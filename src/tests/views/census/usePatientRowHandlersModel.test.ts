@@ -6,6 +6,7 @@ import {
   usePatientRowMainInputHandlers,
 } from '@/features/census/components/patient-row/usePatientRowInputHandlers';
 import { usePatientRowChangeHandlers } from '@/features/census/components/patient-row/usePatientRowChangeHandlers';
+import type { BuildPatientRowChangeHandlersResult } from '@/features/census/controllers/patientRowChangeHandlersController';
 
 vi.mock('@/features/census/components/patient-row/usePatientRowInputHandlers', () => ({
   usePatientRowMainInputHandlers: vi.fn(),
@@ -41,11 +42,11 @@ describe('usePatientRowHandlersModel', () => {
       handleCribDemographicsSave: cribSave,
     });
 
-    const composedHandlers = {
-      mainInputChangeHandlers: {} as any,
-      cribInputChangeHandlers: {} as any,
+    const composedHandlers: BuildPatientRowChangeHandlersResult = {
+      mainInputChangeHandlers: {},
+      cribInputChangeHandlers: {},
     };
-    vi.mocked(usePatientRowChangeHandlers).mockReturnValue(composedHandlers as any);
+    vi.mocked(usePatientRowChangeHandlers).mockReturnValue(composedHandlers);
 
     const { result } = renderHook(() =>
       usePatientRowHandlersModel({

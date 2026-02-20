@@ -12,9 +12,9 @@ describe('sharedCensusViewController', () => {
         email: 'guest@example.com',
         displayName: 'Guest User',
         role: 'viewer',
-        createdAt: new Date(),
+        createdAt: new Date('2026-02-20T00:00:00.000Z'),
         createdBy: 'admin',
-        expiresAt: new Date(),
+        expiresAt: new Date('2026-03-20T00:00:00.000Z'),
         isActive: true
     } as CensusAccessUser;
 

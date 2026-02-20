@@ -27,7 +27,7 @@ vi.mock('firebase/firestore', () => ({
   onSnapshot: vi.fn(() => vi.fn()),
   where: vi.fn(),
   Timestamp: {
-    now: () => ({ toDate: () => new Date() }),
+    now: () => ({ toDate: () => new Date('2026-02-20T00:00:00.000Z') }),
   },
 }));
 

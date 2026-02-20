@@ -193,7 +193,7 @@ describe('authService', () => {
     it('should fail with multi-tab guidance when another tab lock is active', async () => {
       localStorage.setItem(
         GOOGLE_LOGIN_LOCK_KEY,
-        JSON.stringify({ owner: 'external-tab', timestamp: Date.now() })
+        JSON.stringify({ owner: 'external-tab', timestamp: 9999999999999 })
       );
 
       await expect(signInWithGoogle()).rejects.toThrow(/otra pestaña.*\d+s/i);
@@ -334,7 +334,7 @@ describe('authService', () => {
     it('should clear pending bootstrap marker when redirect finishes without result', async () => {
       localStorage.setItem(
         AUTH_BOOTSTRAP_PENDING_KEY,
-        JSON.stringify({ startedAt: Date.now(), mode: 'redirect' })
+        JSON.stringify({ startedAt: 9999999999999, mode: 'redirect' })
       );
       vi.mocked(firebaseAuth.getRedirectResult).mockResolvedValue(null);
 

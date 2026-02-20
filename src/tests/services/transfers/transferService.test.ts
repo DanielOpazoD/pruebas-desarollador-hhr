@@ -54,9 +54,9 @@ vi.mock('firebase/firestore', () => ({
     return vi.fn(); // unsubscribe
   }),
   Timestamp: class {
-    static now = () => ({ toDate: () => new Date() });
+    static now = () => ({ toDate: () => new Date('2026-02-20T00:00:00.000Z') });
     toDate() {
-      return new Date();
+      return new Date('2026-02-20T00:00:00.000Z');
     }
   },
 }));

@@ -33,7 +33,7 @@ describe('DailyRecordContext', () => {
       activeExtraBeds: [],
     },
     syncStatus: 'synced',
-    lastSyncTime: new Date(),
+    lastSyncTime: new Date('2026-02-20T00:00:00.000Z'),
     inventory: {
       occupiedCount: 1,
       blockedCount: 0,

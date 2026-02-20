@@ -28,7 +28,7 @@ vi.mock('firebase/firestore', async () => {
     static now = vi.fn(() => new MockTimestamp());
     static fromDate = vi.fn();
     toDate() {
-      return new Date();
+      return new Date('2026-02-20T00:00:00.000Z');
     }
   }
 
@@ -58,7 +58,7 @@ describe('firestoreService', () => {
     beds: {
       BED_01: { patientName: 'John Doe', bedMode: 'Cama' },
     },
-    lastUpdated: new Date().toISOString(),
+    lastUpdated: '2024-12-24T00:00:00.000Z',
     nursesDayShift: ['', ''],
     nursesNightShift: ['', ''],
     tensDayShift: ['', '', ''],

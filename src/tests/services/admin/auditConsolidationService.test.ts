@@ -126,7 +126,7 @@ describe('Audit Consolidation Service', () => {
             ];
 
             const merged = mergeDetails(logs);
-            const changes = merged.changes as Record<string, any>;
+            const changes = merged.changes as Record<string, { old: unknown; new: unknown }>;
 
             expect(changes.name).toEqual({ old: 'Old', new: 'New' });
             expect(changes.age).toEqual({ old: 20, new: 21 }); // From first only

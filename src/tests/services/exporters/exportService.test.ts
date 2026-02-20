@@ -74,7 +74,7 @@ describe('exportService', () => {
     ] as unknown as TransferData[],
     cma: [],
     nurses: [],
-    lastUpdated: new Date().toISOString(),
+    lastUpdated: '2025-01-01T00:00:00.000Z',
     activeExtraBeds: [],
   };
 

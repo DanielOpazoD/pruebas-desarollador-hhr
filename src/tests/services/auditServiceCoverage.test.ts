@@ -1,7 +1,7 @@
 // Must unmock to test real implementation, as setup.ts mocks it globally
 vi.unmock('../../services/admin/auditService');
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as auditService from '@/services/admin/auditService';
 import { setDoc } from 'firebase/firestore';
 
@@ -47,14 +47,20 @@ const { mockAuditUtils } = vi.hoisted(() => ({
 vi.mock('../../services/admin/utils/auditUtils', () => mockAuditUtils);
 
 vi.mock('../../services/admin/utils/auditSummaryGenerator', () => ({
-    generateSummary: vi.fn((action: string, _details: any, _entityId: string) => `Summary for ${action}`)
+    generateSummary: vi.fn((action: string, _details: unknown, _entityId: string) => `Summary for ${action}`)
 }));
 
 describe('AuditService Coverage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.useFakeTimers();
+        vi.setSystemTime(Date.parse('2025-01-01T00:01:00.000Z'));
         localStorage.clear();
         sessionStorage.clear();
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
     });
 
     it('should catch Firestore errors silently and rely on local storage', async () => {
@@ -113,7 +119,7 @@ describe('AuditService Coverage', () => {
 
     it('should calculate session duration on logout', async () => {
         // Setup login time 1 minute ago
-        const startTime = new Date(Date.now() - 60000).toISOString();
+        const startTime = '2025-01-01T00:00:00.000Z';
         sessionStorage.setItem('hhr_session_start', startTime);
 
         // Act

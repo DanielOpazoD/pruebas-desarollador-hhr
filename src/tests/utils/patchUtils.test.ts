@@ -20,7 +20,7 @@ describe('patchUtils', () => {
     it('should auto-vivify missing paths', () => {
         const obj = {};
         const patches = { 'a.b.c': 123 };
-        const result: any = applyPatches(obj, patches);
+        const result = applyPatches(obj, patches) as { a: { b: { c: number } } };
         expect(result.a.b.c).toBe(123);
     });
 

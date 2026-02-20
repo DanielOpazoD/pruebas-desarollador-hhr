@@ -104,11 +104,9 @@ describe('tableConfigService', () => {
           onerror: ((event: ProgressEvent<FileReader>) => void) | null = null;
 
           readAsText = vi.fn(() => {
-            setTimeout(() => {
-              this.onload?.({
-                target: { result: mockConfigString } as EventTarget & FileReader,
-              } as ProgressEvent<FileReader>);
-            }, 0);
+            this.onload?.({
+              target: { result: mockConfigString } as EventTarget & FileReader,
+            } as ProgressEvent<FileReader>);
           });
         }
       );
@@ -130,11 +128,9 @@ describe('tableConfigService', () => {
           onerror: ((event: ProgressEvent<FileReader>) => void) | null = null;
 
           readAsText = vi.fn(() => {
-            setTimeout(() => {
-              this.onload?.({
-                target: { result: 'invalid' } as EventTarget & FileReader,
-              } as ProgressEvent<FileReader>);
-            }, 0);
+            this.onload?.({
+              target: { result: 'invalid' } as EventTarget & FileReader,
+            } as ProgressEvent<FileReader>);
           });
         }
       );

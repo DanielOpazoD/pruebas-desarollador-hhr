@@ -4,6 +4,7 @@ import {
   generateCudyrMonthlyExcelBlob,
 } from '@/services/cudyr/cudyrExportService';
 import { getCudyrMonthlyTotals } from '@/services/cudyr/cudyrSummary';
+import type { CudyrMonthlySummary } from '@/services/cudyr/cudyrSummary';
 import { createWorkbook } from '@/services/exporters/excelUtils';
 import { saveAs } from 'file-saver';
 
@@ -48,7 +49,7 @@ describe('cudyrExportService', () => {
 
   const mockWorkbook = {
     creator: '',
-    created: new Date(),
+    created: new Date('2026-02-20T00:00:00.000Z'),
     addWorksheet: vi.fn(() => mockWorksheet),
     xlsx: {
       writeBuffer: vi.fn(() => {
@@ -65,9 +66,9 @@ describe('cudyrExportService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(createWorkbook).mockResolvedValue(mockWorkbook as any);
+    vi.mocked(createWorkbook).mockResolvedValue(mockWorkbook as Awaited<ReturnType<typeof createWorkbook>>);
     // Provide a default return for getCudyrMonthlyTotals
-    vi.mocked(getCudyrMonthlyTotals).mockResolvedValue({
+    const emptySummary: CudyrMonthlySummary = {
       dailySummaries: [],
       totals: { uti: {}, media: {} },
       utiTotal: 0,
@@ -76,12 +77,13 @@ describe('cudyrExportService', () => {
       totalCategorized: 0,
       year: 2025,
       month: 1,
-    } as any);
+    } as unknown as CudyrMonthlySummary;
+    vi.mocked(getCudyrMonthlyTotals).mockResolvedValue(emptySummary);
   });
 
   it('should generate monthly excel and trigger saveAs', async () => {
     // Setup mock data with 1 day
-    vi.mocked(getCudyrMonthlyTotals).mockResolvedValue({
+    const oneDaySummary: CudyrMonthlySummary = {
       dailySummaries: [
         {
           date: '2025-01-01',
@@ -95,7 +97,8 @@ describe('cudyrExportService', () => {
       totals: { uti: { A1: 1 }, media: { A1: 0 } },
       year: 2025,
       month: 1,
-    } as any);
+    } as unknown as CudyrMonthlySummary;
+    vi.mocked(getCudyrMonthlyTotals).mockResolvedValue(oneDaySummary);
 
     await generateCudyrMonthlyExcel(2025, 1);
 
@@ -112,12 +115,13 @@ describe('cudyrExportService', () => {
   });
 
   it('should handle period with no data', async () => {
-    vi.mocked(getCudyrMonthlyTotals).mockResolvedValue({
+    const noDataSummary: CudyrMonthlySummary = {
       dailySummaries: [],
       totals: { uti: {}, media: {} },
       year: 2025,
       month: 1,
-    } as any);
+    } as unknown as CudyrMonthlySummary;
+    vi.mocked(getCudyrMonthlyTotals).mockResolvedValue(noDataSummary);
 
     await generateCudyrMonthlyExcel(2025, 1);
 

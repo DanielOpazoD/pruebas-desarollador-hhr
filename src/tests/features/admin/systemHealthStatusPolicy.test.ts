@@ -9,7 +9,7 @@ const baseStatus = (): UserHealthStatus => ({
   uid: 'u1',
   email: 'user@example.com',
   displayName: 'User',
-  lastSeen: new Date().toISOString(),
+  lastSeen: '2026-02-20T00:00:00.000Z',
   isOnline: true,
   isOutdated: false,
   pendingMutations: 0,

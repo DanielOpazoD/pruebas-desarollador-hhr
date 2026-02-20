@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import type { MouseEvent } from 'react';
 import { usePatientBedConfigController } from '@/features/census/components/patient-row/usePatientBedConfigController';
 
 const buildBaseParams = () => ({
@@ -35,7 +36,9 @@ describe('usePatientBedConfigController', () => {
       result.current.handleToggleMode();
       result.current.handleToggleCompanion();
       result.current.handleToggleClinicalCrib();
-      result.current.handleRemoveClinicalCrib({ stopPropagation: vi.fn() } as any);
+      result.current.handleRemoveClinicalCrib({
+        stopPropagation: vi.fn(),
+      } as unknown as MouseEvent<HTMLElement>);
     });
 
     expect(params.onToggleMode).toHaveBeenCalledTimes(1);

@@ -14,7 +14,7 @@ import { DailyRecord, Specialty, PatientStatus } from '@/types';
 // Create a proper Timestamp mock class for instanceof checks
 class MockTimestamp {
   toDate() {
-    return new Date();
+    return new Date('2026-02-20T00:00:00.000Z');
   }
   static now() {
     return new MockTimestamp();
@@ -52,7 +52,7 @@ const createMockRecord = (date: string): DailyRecord => ({
   tensDayShift: ['TENS 1', 'TENS 2'],
   tensNightShift: ['TENS 3'],
   activeExtraBeds: [],
-  lastUpdated: new Date().toISOString(),
+  lastUpdated: '2026-02-20T00:00:00.000Z',
 });
 
 describe('Firebase Sync Integration', () => {

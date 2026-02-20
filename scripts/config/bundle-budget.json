@@ -1,0 +1,22 @@
+{
+  "entryMaxBytes": 700000,
+  "chunkMaxBytes": 1250000,
+  "chunkPatternBudgets": [
+    {
+      "pattern": "^vendor-firebase-.*\\.js$",
+      "maxBytes": 700000
+    },
+    {
+      "pattern": "^vendor-excel-.*\\.js$",
+      "maxBytes": 950000
+    },
+    {
+      "pattern": "^vendor-three-.*\\.js$",
+      "maxBytes": 1150000
+    },
+    {
+      "pattern": "^TransferManagementView-.*\\.js$",
+      "maxBytes": 750000
+    }
+  ]
+}

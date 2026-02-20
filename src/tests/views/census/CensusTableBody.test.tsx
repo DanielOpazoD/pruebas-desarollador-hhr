@@ -3,19 +3,21 @@ import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { CensusTableBody } from '@/features/census/components/CensusTableBody';
 import { DataFactory } from '@/tests/factories/DataFactory';
+import type { OccupiedBedRow } from '@/features/census/types/censusTableTypes';
+import type { BedDefinition } from '@/types';
 
 const patientRowSpy = vi.fn();
 const emptyBedRowSpy = vi.fn();
 
 vi.mock('@/features/census/components/PatientRow', () => ({
-  PatientRow: (props: any) => {
+  PatientRow: (props: { bed: BedDefinition; actionMenuAlign: 'top' | 'bottom' }) => {
     patientRowSpy(props);
     return <tr data-testid={`patient-row-${props.bed.id}`} />;
   },
 }));
 
 vi.mock('@/features/census/components/EmptyBedRow', () => ({
-  EmptyBedRow: (props: any) => {
+  EmptyBedRow: (props: { bed: BedDefinition; onClick: () => void }) => {
     emptyBedRowSpy(props);
     return (
       <tr data-testid={`empty-bed-row-${props.bed.id}`} onClick={props.onClick}>
@@ -28,7 +30,7 @@ vi.mock('@/features/census/components/EmptyBedRow', () => ({
 describe('CensusTableBody', () => {
   it('assigns action menu alignment based on row position', () => {
     patientRowSpy.mockClear();
-    const occupiedRows = Array.from({ length: 6 }, (_, i) => ({
+    const occupiedRows: OccupiedBedRow[] = Array.from({ length: 6 }, (_, i) => ({
       id: `row-${i}`,
       bed: { id: `R${i + 1}`, name: `R${i + 1}` },
       data: DataFactory.createMockPatient(`R${i + 1}`),
@@ -38,7 +40,7 @@ describe('CensusTableBody', () => {
     render(
       <table>
         <CensusTableBody
-          occupiedRows={occupiedRows as any}
+          occupiedRows={occupiedRows}
           emptyBeds={[]}
           currentDateString="2026-02-15"
           readOnly={false}
@@ -59,7 +61,7 @@ describe('CensusTableBody', () => {
   it('renders empty bed divider and forwards empty bed activation', () => {
     emptyBedRowSpy.mockClear();
     const onActivateEmptyBed = vi.fn();
-    const emptyBeds = [
+    const emptyBeds: BedDefinition[] = [
       { id: 'R9', name: 'R9' },
       { id: 'R10', name: 'R10' },
     ];
@@ -68,7 +70,7 @@ describe('CensusTableBody', () => {
       <table>
         <CensusTableBody
           occupiedRows={[]}
-          emptyBeds={emptyBeds as any}
+          emptyBeds={emptyBeds}
           currentDateString="2026-02-15"
           readOnly={false}
           diagnosisMode="free"

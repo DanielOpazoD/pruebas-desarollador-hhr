@@ -1,15 +1,26 @@
 import { describe, it, expect } from 'vitest';
 import { migrateLegacyData } from '@/services/repositories/dataMigration';
+import type { DailyRecord } from '@/types';
+import { DataFactory } from '@/tests/factories/DataFactory';
+
+type LegacyDailyRecord = DailyRecord & {
+    nurseName?: string;
+    tens?: string[];
+};
 
 describe('Data Migration Service - Staff Fields', () => {
     const mockDate = '2025-01-01';
+    const createBaseRecord = (overrides: Partial<LegacyDailyRecord>): LegacyDailyRecord =>
+        ({
+            ...DataFactory.createMockDailyRecord(mockDate),
+            ...overrides,
+        }) as LegacyDailyRecord;
 
     it('should migrate legacy nurses array to nursesDayShift', () => {
-        const legacyRecord = {
-            date: mockDate,
+        const legacyRecord = createBaseRecord({
             nurses: ['Nurse A', 'Nurse B'],
             beds: {}
-        } as any;
+        });
 
         const migrated = migrateLegacyData(legacyRecord, mockDate);
 
@@ -17,11 +28,10 @@ describe('Data Migration Service - Staff Fields', () => {
     });
 
     it('should migrate legacy nurseName to first element of nursesDayShift', () => {
-        const legacyRecord = {
-            date: mockDate,
+        const legacyRecord = createBaseRecord({
             nurseName: 'Nurse Single',
             beds: {}
-        } as any;
+        });
 
         const migrated = migrateLegacyData(legacyRecord, mockDate);
 
@@ -29,11 +39,10 @@ describe('Data Migration Service - Staff Fields', () => {
     });
 
     it('should migrate legacy tens array to tensDayShift', () => {
-        const legacyRecord = {
-            date: mockDate,
+        const legacyRecord = createBaseRecord({
             tens: ['TENS 1', 'TENS 2'],
             beds: {}
-        } as any;
+        });
 
         const migrated = migrateLegacyData(legacyRecord, mockDate);
 
@@ -41,12 +50,11 @@ describe('Data Migration Service - Staff Fields', () => {
     });
 
     it('should not overwrite existing nursesDayShift with legacy data', () => {
-        const record = {
-            date: mockDate,
+        const record = createBaseRecord({
             nurses: ['Old Nurse'],
             nursesDayShift: ['New Nurse', 'Second Nurse'],
             beds: {}
-        } as any;
+        });
 
         const migrated = migrateLegacyData(record, mockDate);
 
@@ -54,16 +62,15 @@ describe('Data Migration Service - Staff Fields', () => {
     });
 
     it('should handle empty/missing staff fields gracefully', () => {
-        const record = {
-            date: mockDate,
+        const record = createBaseRecord({
             beds: {}
-        } as any;
+        });
 
         const migrated = migrateLegacyData(record, mockDate);
 
-        expect(migrated.nursesDayShift).toEqual(['', '']);
-        expect(migrated.nursesNightShift).toEqual(['', '']);
-        expect(migrated.tensDayShift).toEqual(['', '', '']);
-        expect(migrated.tensNightShift).toEqual(['', '', '']);
+        expect(migrated.nursesDayShift).toEqual([]);
+        expect(migrated.nursesNightShift).toEqual([]);
+        expect(migrated.tensDayShift).toEqual([]);
+        expect(migrated.tensNightShift).toEqual([]);
     });
 });

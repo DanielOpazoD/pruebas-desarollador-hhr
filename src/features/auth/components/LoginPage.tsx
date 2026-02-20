@@ -177,8 +177,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const isAutoDayWindow = currentHour >= 8 && currentHour < 20;
   const isDayGradient = backgroundMode === 'auto' ? isAutoDayWindow : backgroundMode === 'day';
   const loginBackgroundClass = isDayGradient
-    ? 'bg-[linear-gradient(180deg,_#39b5e8_0%,_#58c0ea_35%,_#7acde9_68%,_#a7dbe7_100%)]'
-    : 'bg-[linear-gradient(140deg,_#1b1b1b_0%,_#273244_34%,_#3f4d63_64%,_#5a6577_84%,_#7d8797_100%)]';
+    ? 'bg-gradient-to-br from-slate-50 via-blue-50/50 to-slate-100'
+    : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950';
 
   const toggleBackgroundMode = () => {
     setBackgroundMode(prev => {
@@ -203,20 +203,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       </button>
       <div className="w-full max-w-sm">
         {/* Logo/Header */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-24 h-24 bg-white rounded-2xl shadow-xl mb-6 p-2">
+        <div className="text-center mb-10 animate-login-reveal animate-login-reveal-delay-1">
+          <div className="inline-flex items-center justify-center w-24 h-24 bg-white rounded-2xl shadow-xl mb-6 p-2 animate-float">
             <img
               src="/images/logos/logo_HHR.svg"
               alt="Hospital Hanga Roa"
               className="w-full h-full object-contain"
             />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Hospital Hanga Roa</h1>
-          <p className="text-medical-200">Sistema Estadístico de Hospitalizados</p>
+          <h1
+            className={`text-3xl font-display tracking-tight font-bold mb-2 ${isDayGradient ? 'text-slate-800' : 'text-white'}`}
+          >
+            Hospital Hanga Roa
+          </h1>
+          <p className={isDayGradient ? 'text-blue-900' : 'text-blue-200'}>
+            Sistema Estadístico de Hospitalizados
+          </p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white rounded-3xl shadow-2xl p-10 relative overflow-hidden">
+        <div className="bg-white/85 backdrop-blur-md border border-white/40 rounded-3xl shadow-[0_24px_60px_-30px_rgba(15,23,42,0.45)] p-10 relative overflow-hidden animate-login-reveal animate-login-reveal-delay-2">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-medical-400 to-medical-600"></div>
 
           <h2 className="text-xl font-bold text-slate-800 mb-2 text-center text-balance">
@@ -234,7 +240,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             type="button"
             onClick={handleGoogleSignIn}
             disabled={isAnyLoading}
-            className="w-full bg-white hover:bg-slate-50 disabled:bg-slate-100 border-2 border-slate-200 text-slate-700 font-bold py-4 px-4 rounded-2xl transition-all flex items-center justify-center gap-3 shadow-sm hover:shadow-md hover:border-medical-300 active:scale-[0.98]"
+            className="w-full bg-white hover:bg-slate-50 disabled:bg-slate-100 border-2 border-slate-200 text-slate-700 font-bold py-4 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center gap-3 shadow-sm hover:shadow-lg hover:border-medical-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
           >
             {isGoogleLoading ? (
               <Loader2 className="w-6 h-6 animate-spin text-medical-600" />
@@ -339,14 +345,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         </div>
 
         {/* Version/Footer */}
-        <div className="text-center mt-8 space-y-1">
-          <p className="text-medical-200/60 text-[10px] uppercase tracking-widest font-bold">
+        <div className="text-center mt-8 space-y-1 animate-login-reveal animate-login-reveal-delay-3">
+          <p
+            className={`text-[10px] uppercase tracking-widest font-bold ${
+              isDayGradient ? 'text-slate-700' : 'text-slate-300'
+            }`}
+          >
             V 3.0
           </p>
-          <p className="text-medical-300/40 text-[9px]">
+          <p className={`text-[9px] ${isDayGradient ? 'text-slate-700' : 'text-slate-300'}`}>
             Desarrollo: daniel.opazo@hospitalhangaroa.cl
           </p>
-          <p className="text-medical-300/40 text-[9px]">Rapa Nui, Chile</p>
+          <p className={`text-[9px] ${isDayGradient ? 'text-slate-700' : 'text-slate-300'}`}>
+            Rapa Nui, Chile
+          </p>
         </div>
       </div>
     </div>

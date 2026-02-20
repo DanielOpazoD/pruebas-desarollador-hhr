@@ -7,6 +7,8 @@ import * as path from 'node:path';
 import { describe, it, expect, vi } from 'vitest';
 import { DailyRecord } from '@/types';
 
+const FIXED_ISO_TIMESTAMP = '2026-01-15T10:30:00.000Z';
+
 const readSource = (relativePath: string): string =>
   fs.readFileSync(path.resolve(process.cwd(), relativePath), 'utf8');
 const toDailyRecord = (partial: Partial<DailyRecord>) => partial as unknown as DailyRecord;
@@ -81,8 +83,8 @@ describe('censusMasterWorkbook', () => {
       const mockRecord = {
         date: '2025-12-25',
         beds: {},
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: FIXED_ISO_TIMESTAMP,
+        updatedAt: FIXED_ISO_TIMESTAMP,
       } as unknown as DailyRecord;
 
       // If ExcelJS is properly loaded, this should not throw
@@ -108,8 +110,8 @@ describe('censusRawWorkbook', () => {
       const mockRecord = {
         date: '2025-12-25',
         beds: {},
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: FIXED_ISO_TIMESTAMP,
+        updatedAt: FIXED_ISO_TIMESTAMP,
       } as unknown as DailyRecord;
 
       const workbook = await buildCensusDailyRawWorkbook(mockRecord);
@@ -127,8 +129,8 @@ describe('censusRawWorkbook', () => {
       const mockRecord = {
         date: '2025-12-25',
         beds: {},
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: FIXED_ISO_TIMESTAMP,
+        updatedAt: FIXED_ISO_TIMESTAMP,
       } as unknown as DailyRecord;
 
       const workbook = await buildCensusDailyRawWorkbook(mockRecord);
@@ -156,8 +158,8 @@ describe('censusRawWorkbook', () => {
             pathology: 'Test',
           },
         },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: FIXED_ISO_TIMESTAMP,
+        updatedAt: FIXED_ISO_TIMESTAMP,
       } as unknown as DailyRecord;
 
       const rows = extractRowsFromRecord(mockRecord);
@@ -181,13 +183,13 @@ describe('reportService', () => {
       vi.mocked(getRecordForDate).mockResolvedValue({
         date: '2025-12-25',
         beds: {},
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: FIXED_ISO_TIMESTAMP,
+        updatedAt: FIXED_ISO_TIMESTAMP,
         nurses: [],
         discharges: [],
         transfers: [],
         cma: [],
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: FIXED_ISO_TIMESTAMP,
       } as unknown as DailyRecord);
 
       await generateCensusDailyRaw('2025-12-25');
@@ -204,13 +206,13 @@ describe('reportService', () => {
       vi.mocked(getRecordForDate).mockResolvedValue({
         date: '2025-12-25',
         beds: {},
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: FIXED_ISO_TIMESTAMP,
+        updatedAt: FIXED_ISO_TIMESTAMP,
         nurses: [],
         discharges: [],
         transfers: [],
         cma: [],
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: FIXED_ISO_TIMESTAMP,
       } as unknown as DailyRecord);
 
       await generateCensusDailyFormatted('2025-12-25');
@@ -231,7 +233,7 @@ describe('reportService', () => {
           cma: [],
           nurses: [],
           activeExtraBeds: [],
-          lastUpdated: new Date().toISOString(),
+          lastUpdated: FIXED_ISO_TIMESTAMP,
         }),
       });
 
