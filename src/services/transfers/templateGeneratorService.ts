@@ -1,6 +1,7 @@
 import { ref, getBlob } from 'firebase/storage';
 import { storage } from '@/firebaseConfig';
 import { TransferPatientData, QuestionnaireResponse } from '@/types/transferDocuments';
+import { createWorkbook } from '@/services/exporters/excelUtils';
 // import ExcelJS from 'exceljs'; // Removed static import
 
 /**
@@ -269,9 +270,7 @@ export const generateXlsxFromTemplate = async (
   templateBlob: Blob,
   tags: Record<string, string | number | boolean>
 ): Promise<Blob> => {
-  // Dynamic import
-  const { Workbook } = await import('exceljs');
-  const workbook = new Workbook();
+  const workbook = await createWorkbook();
   const arrayBuffer = await templateBlob.arrayBuffer();
   await workbook.xlsx.load(arrayBuffer);
 

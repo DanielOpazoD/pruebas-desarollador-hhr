@@ -5,6 +5,7 @@
 
 import { MinsalStatistics, DailyStatsSnapshot } from '@/types/minsalTypes';
 import { validateExcelExport, XLSX_MIME_TYPE } from './excelValidation';
+import { createWorkbook } from './excelUtils';
 
 /**
  * Export MINSAL statistics to Excel workbook
@@ -13,8 +14,7 @@ export async function exportMinsalToExcel(
   stats: MinsalStatistics,
   trendData: DailyStatsSnapshot[]
 ): Promise<void> {
-  const [{ Workbook }, { saveAs }] = await Promise.all([import('exceljs'), import('file-saver')]);
-  const workbook = new Workbook();
+  const [workbook, { saveAs }] = await Promise.all([createWorkbook(), import('file-saver')]);
   workbook.creator = 'Hospital Hanga Roa';
   workbook.created = new Date();
 

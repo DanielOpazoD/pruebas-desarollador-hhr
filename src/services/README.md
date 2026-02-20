@@ -37,6 +37,7 @@ Capa de datos e integración: repositorios, persistencia, exportadores, integrac
 - **Repository Pattern** (`DailyRecordRepository`, `CatalogRepository`, etc.).
 - **Service split por responsabilidad** (`read/write/sync/init` en repositorio diario).
 - **Storage abstraction** con estrategia offline-first y fallback.
+- **Excel runtime centralizado** en `exporters/excelUtils.ts` para cargar primero el build browser-min (`exceljs/dist/exceljs.min.js`) y evitar crecimiento innecesario del bundle principal.
 
 ## Ejemplo
 
