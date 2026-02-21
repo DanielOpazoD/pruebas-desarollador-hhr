@@ -60,6 +60,10 @@ const createRecordStore = (key: string) => ({
     const prefix = `${year}-${String(month).padStart(2, '0')}`;
     return Object.values(getRecords(key)).filter(record => record.date.startsWith(prefix));
   },
+  getRecordsRange: (startDate: string, endDate: string): DailyRecord[] =>
+    Object.values(getRecords(key)).filter(
+      record => record.date >= startDate && record.date <= endDate
+    ),
   getPreviousDayRecord: (currentDate: string): DailyRecord | null =>
     getClosestPreviousRecord(getRecords(key), currentDate),
 });

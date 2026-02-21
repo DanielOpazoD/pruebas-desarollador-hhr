@@ -12,6 +12,7 @@ export { saveErrorLog, getErrorLogs, clearErrorLogs } from './indexeddb/indexedD
 export {
   getAllRecords,
   getRecordsForMonth,
+  getRecordsRange,
   getRecordForDate,
   saveRecord,
   deleteRecord,

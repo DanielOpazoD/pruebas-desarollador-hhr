@@ -5,18 +5,27 @@
 
 import React from 'react';
 import { SpecialtyStats } from '@/types/minsalTypes';
+import { DailyRecord } from '@/types';
+import {
+  buildSpecialtyTraceability,
+  SpecialtyTraceabilityType,
+} from '@/services/calculations/minsalStatsCalculator';
 import { TraceabilityModal } from './TraceabilityModal';
 
 interface SpecialtyBreakdownTableProps {
   data: SpecialtyStats[];
+  records?: DailyRecord[];
 }
 
-export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = ({ data = [] }) => {
+export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = ({
+  data = [],
+  records = [],
+}) => {
   const [modalConfig, setModalConfig] = React.useState<{
     isOpen: boolean;
     title: string;
     patients: import('@/types/minsalTypes').PatientTraceability[];
-    type: 'dias-cama' | 'egresos' | 'fallecidos' | 'traslados' | 'aerocardal' | 'fach';
+    type: SpecialtyTraceabilityType;
   }>({
     isOpen: false,
     title: '',
@@ -34,9 +43,12 @@ export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = (
 
   const handleOpenTraceability = (
     specialty: string,
-    type: 'dias-cama' | 'egresos' | 'fallecidos' | 'traslados' | 'aerocardal' | 'fach',
+    type: SpecialtyTraceabilityType,
     patients: import('@/types/minsalTypes').PatientTraceability[] = []
   ) => {
+    const resolvedPatients =
+      patients.length > 0 ? patients : buildSpecialtyTraceability(records, specialty, type);
+
     let titleType = '';
     switch (type) {
       case 'dias-cama':
@@ -62,7 +74,7 @@ export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = (
     setModalConfig({
       isOpen: true,
       title: `Detalle: ${titleType} - ${specialty}`,
-      patients,
+      patients: resolvedPatients,
       type,
     });
   };
@@ -91,125 +103,144 @@ export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = (
           </tr>
         </thead>
         <tbody>
-          {data.map((row, index) => (
-            <tr
-              key={row.specialty}
-              className={`border-b border-slate-100 ${
-                index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'
-              } hover:bg-sky-50 transition-colors`}
-            >
-              <td className="px-4 py-3 font-medium text-slate-800">
-                {row.specialty || 'Sin Especialidad'}
-              </td>
-              <td className="px-4 py-3 text-center">
-                <button
-                  onClick={() =>
-                    handleOpenTraceability(String(row.specialty), 'dias-cama', row.diasOcupadosList)
-                  }
-                  className="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 bg-sky-100 text-sky-700 rounded-full font-semibold hover:bg-sky-200 transition-colors cursor-pointer"
-                  title="Ver detalle de pacientes"
-                >
-                  {row.diasOcupados}
-                </button>
-              </td>
-              <td className="px-4 py-3 text-center">
-                <button
-                  onClick={() =>
-                    handleOpenTraceability(String(row.specialty), 'egresos', row.egresosList)
-                  }
-                  className={`font-medium hover:underline cursor-pointer ${
-                    row.egresos > 0 ? 'text-slate-700' : 'text-slate-400'
-                  }`}
-                  disabled={row.egresos === 0}
-                >
-                  {row.egresos}
-                </button>
-              </td>
-              <td className="px-4 py-3 text-center">
-                <button
-                  onClick={() =>
-                    handleOpenTraceability(String(row.specialty), 'fallecidos', row.fallecidosList)
-                  }
-                  className={`font-medium hover:underline cursor-pointer ${
-                    row.fallecidos > 0 ? 'text-red-600' : 'text-slate-400'
-                  }`}
-                  disabled={row.fallecidos === 0}
-                >
-                  {row.fallecidos}
-                </button>
-              </td>
-              <td className="px-4 py-3 text-center">
-                <button
-                  onClick={() =>
-                    handleOpenTraceability(String(row.specialty), 'traslados', row.trasladosList)
-                  }
-                  className={`font-medium hover:underline cursor-pointer ${
-                    row.traslados > 0 ? 'text-amber-600' : 'text-slate-400'
-                  }`}
-                  disabled={row.traslados === 0}
-                >
-                  {row.traslados}
-                </button>
-              </td>
-              <td className="px-4 py-3 text-center">
-                <button
-                  onClick={() =>
-                    handleOpenTraceability(String(row.specialty), 'aerocardal', row.aerocardalList)
-                  }
-                  className={`font-medium hover:underline cursor-pointer ${
-                    row.aerocardal > 0 ? 'text-cyan-700' : 'text-slate-400'
-                  }`}
-                  disabled={row.aerocardal === 0}
-                  title="Ver detalle Aerocardal"
-                >
-                  {row.aerocardal}
-                </button>
-              </td>
-              <td className="px-4 py-3 text-center">
-                <button
-                  onClick={() =>
-                    handleOpenTraceability(String(row.specialty), 'fach', row.fachList)
-                  }
-                  className={`font-medium hover:underline cursor-pointer ${
-                    row.fach > 0 ? 'text-indigo-700' : 'text-slate-400'
-                  }`}
-                  disabled={row.fach === 0}
-                  title="Ver detalle FACH"
-                >
-                  {row.fach}
-                </button>
-              </td>
-              <td className="px-4 py-3 text-center">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-sky-500 rounded-full"
-                      style={{ width: `${Math.min(row.contribucionRelativa, 100)}%` }}
-                    />
+          {data.map((row, index) => {
+            const egresos = row.egresos ?? 0;
+            const fallecidos = row.fallecidos ?? 0;
+            const traslados = row.traslados ?? 0;
+            const aerocardal = row.aerocardal ?? 0;
+            const fach = row.fach ?? 0;
+            return (
+              <tr
+                key={row.specialty}
+                className={`border-b border-slate-100 ${
+                  index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'
+                } hover:bg-sky-50 transition-colors`}
+              >
+                <td className="px-4 py-3 font-medium text-slate-800">
+                  {row.specialty || 'Sin Especialidad'}
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <button
+                    onClick={() =>
+                      handleOpenTraceability(
+                        String(row.specialty),
+                        'dias-cama',
+                        row.diasOcupadosList
+                      )
+                    }
+                    className="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 bg-sky-100 text-sky-700 rounded-full font-semibold hover:bg-sky-200 transition-colors cursor-pointer"
+                    title="Ver detalle de pacientes"
+                  >
+                    {row.diasOcupados}
+                  </button>
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <button
+                    onClick={() =>
+                      handleOpenTraceability(String(row.specialty), 'egresos', row.egresosList)
+                    }
+                    className={`font-medium hover:underline cursor-pointer ${
+                      egresos > 0 ? 'text-slate-700' : 'text-slate-400'
+                    }`}
+                    disabled={egresos === 0}
+                  >
+                    {egresos}
+                  </button>
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <button
+                    onClick={() =>
+                      handleOpenTraceability(
+                        String(row.specialty),
+                        'fallecidos',
+                        row.fallecidosList
+                      )
+                    }
+                    className={`font-medium hover:underline cursor-pointer ${
+                      fallecidos > 0 ? 'text-red-600' : 'text-slate-400'
+                    }`}
+                    disabled={fallecidos === 0}
+                  >
+                    {fallecidos}
+                  </button>
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <button
+                    onClick={() =>
+                      handleOpenTraceability(String(row.specialty), 'traslados', row.trasladosList)
+                    }
+                    className={`font-medium hover:underline cursor-pointer ${
+                      traslados > 0 ? 'text-amber-600' : 'text-slate-400'
+                    }`}
+                    disabled={traslados === 0}
+                  >
+                    {traslados}
+                  </button>
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <button
+                    onClick={() =>
+                      handleOpenTraceability(
+                        String(row.specialty),
+                        'aerocardal',
+                        row.aerocardalList
+                      )
+                    }
+                    className={`font-medium hover:underline cursor-pointer ${
+                      aerocardal > 0 ? 'text-cyan-700' : 'text-slate-400'
+                    }`}
+                    disabled={aerocardal === 0}
+                    title="Ver detalle Aerocardal"
+                  >
+                    {aerocardal}
+                  </button>
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <button
+                    onClick={() =>
+                      handleOpenTraceability(String(row.specialty), 'fach', row.fachList)
+                    }
+                    className={`font-medium hover:underline cursor-pointer ${
+                      fach > 0 ? 'text-indigo-700' : 'text-slate-400'
+                    }`}
+                    disabled={fach === 0}
+                    title="Ver detalle FACH"
+                  >
+                    {fach}
+                  </button>
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-sky-500 rounded-full"
+                        style={{ width: `${Math.min(row.contribucionRelativa, 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium text-slate-600 min-w-[3rem]">
+                      {row.contribucionRelativa.toFixed(1)}%
+                    </span>
                   </div>
-                  <span className="text-xs font-medium text-slate-600 min-w-[3rem]">
-                    {row.contribucionRelativa.toFixed(1)}%
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <span
+                    className={`font-medium ${
+                      row.tasaMortalidad > 5
+                        ? 'text-red-600'
+                        : row.tasaMortalidad > 0
+                          ? 'text-orange-600'
+                          : 'text-slate-400'
+                    }`}
+                  >
+                    {row.tasaMortalidad.toFixed(1)}%
                   </span>
-                </div>
-              </td>
-              <td className="px-4 py-3 text-center">
-                <span
-                  className={`font-medium ${
-                    row.tasaMortalidad > 5
-                      ? 'text-red-600'
-                      : row.tasaMortalidad > 0
-                        ? 'text-orange-600'
-                        : 'text-slate-400'
-                  }`}
-                >
-                  {row.tasaMortalidad.toFixed(1)}%
-                </span>
-              </td>
-              <td className="px-4 py-3 text-center text-slate-600">
-                {row.promedioDiasEstada.toFixed(1)} días
-              </td>
-            </tr>
-          ))}
+                </td>
+                <td className="px-4 py-3 text-center text-slate-600">
+                  {row.promedioDiasEstada.toFixed(1)} días
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 

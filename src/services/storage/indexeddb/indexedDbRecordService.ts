@@ -39,6 +39,23 @@ export const getRecordsForMonth = async (year: number, month: number): Promise<D
   }
 };
 
+export const getRecordsRange = async (
+  startDate: string,
+  endDate: string
+): Promise<DailyRecord[]> => {
+  try {
+    await ensureDbReady();
+    if (isDatabaseInFallbackMode()) {
+      return localPersistence.records.getRecordsRange(startDate, endDate);
+    }
+
+    return await db.dailyRecords.where('date').between(startDate, endDate, true, true).toArray();
+  } catch (error) {
+    console.error(`Failed to get records in range ${startDate} to ${endDate}:`, error);
+    return [];
+  }
+};
+
 export const getRecordForDate = async (date: string): Promise<DailyRecord | null> => {
   try {
     await ensureDbReady();
