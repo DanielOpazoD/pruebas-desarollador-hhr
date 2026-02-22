@@ -56,6 +56,7 @@ describe('censusModalBindingsController', () => {
     };
 
     expect(buildTransferModalBinding(state)).toEqual({
+      bedId: undefined,
       isOpen: true,
       isEditing: true,
       evacuationMethod: state.evacuationMethod,

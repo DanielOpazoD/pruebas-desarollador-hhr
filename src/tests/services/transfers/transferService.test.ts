@@ -10,6 +10,7 @@ import {
   changeTransferStatus,
   getActiveTransfers,
   getTransferById,
+  getLatestOpenTransferRequestByBedId,
   deleteTransferRequest,
   subscribeToTransfers,
   completeTransfer,
@@ -116,13 +117,13 @@ describe('Transfer Service', () => {
       vi.mocked(getDoc).mockResolvedValue({
         exists: () => true,
         data: () => ({
-          status: 'SENT',
+          status: 'RECEIVED',
           observations: 'Urgent transfer',
           statusHistory: [],
         }),
       } as unknown as Awaited<ReturnType<typeof getDoc>>);
 
-      await changeTransferStatus('transfer-123', 'SENT', 'user@hospital.cl');
+      await changeTransferStatus('transfer-123', 'RECEIVED', 'user@hospital.cl');
 
       expect(getDoc).toHaveBeenCalled();
       expect(setDoc).toHaveBeenCalled();
@@ -134,7 +135,7 @@ describe('Transfer Service', () => {
       } as unknown as Awaited<ReturnType<typeof getDoc>>);
 
       await expect(
-        changeTransferStatus('non-existent', 'SENT', 'user@hospital.cl')
+        changeTransferStatus('non-existent', 'RECEIVED', 'user@hospital.cl')
       ).rejects.toThrow('not found');
     });
   });
@@ -174,28 +175,34 @@ describe('Transfer Service', () => {
       expect(callback).toHaveBeenCalledWith([]);
     });
 
-    it('should filter transfers correctly in subscription', () => {
+    it('should merge active and history transfers in subscription', () => {
       const onSnapshotMock = vi.mocked(firestore.onSnapshot);
-      let callback:
-        | ((snapshot: { docs: Array<{ id: string; data: () => Record<string, unknown> }> }) => void)
-        | undefined;
-      onSnapshotMock.mockImplementationOnce((_q, next) => {
+      const callbacks: Array<
+        (snapshot: { docs: Array<{ id: string; data: () => Record<string, unknown> }> }) => void
+      > = [];
+      onSnapshotMock.mockImplementation((_q, next) => {
         if (typeof next !== 'function') return vi.fn();
-        callback = next;
+        callbacks.push(next);
         return vi.fn();
       });
 
-      const results: TransferRequest[] = [];
-      subscribeToTransfers(t => results.push(...t));
+      let latest: TransferRequest[] = [];
+      subscribeToTransfers(t => {
+        latest = t;
+      });
 
-      const mockSnapshot = {
+      const activeSnapshot = {
         docs: [
           {
             id: 'TR-ACTIVE',
             data: () => ({ status: 'REQUESTED', requestDate: '2025-01-01', statusHistory: [] }),
           },
+        ],
+      };
+      const historySnapshot = {
+        docs: [
           {
-            id: 'TR-OLD-COMPLETED',
+            id: 'TR-CLOSED',
             data: () => ({
               status: 'TRANSFERRED',
               requestDate: '2025-01-01',
@@ -205,48 +212,58 @@ describe('Transfer Service', () => {
         ],
       };
 
-      callback?.(mockSnapshot);
-      // Should only have TR-ACTIVE because TR-OLD-COMPLETED is not from "today" in mock scope
-      expect(results.some(t => t.id === 'TR-ACTIVE')).toBe(true);
-      expect(results.some(t => t.id === 'TR-OLD-COMPLETED')).toBe(false);
+      callbacks[0]?.(activeSnapshot);
+      callbacks[1]?.(historySnapshot);
+      expect(latest.some(t => t.id === 'TR-ACTIVE')).toBe(true);
+      expect(latest.some(t => t.id === 'TR-CLOSED')).toBe(true);
     });
 
-    it('should handle transfers with no status history in filter', () => {
+    it('should include history transfers even without status history', () => {
       const onSnapshotMock = vi.mocked(firestore.onSnapshot);
-      let callback:
-        | ((snapshot: { docs: Array<{ id: string; data: () => Record<string, unknown> }> }) => void)
-        | undefined;
-      onSnapshotMock.mockImplementationOnce((_q, next) => {
+      const callbacks: Array<
+        (snapshot: { docs: Array<{ id: string; data: () => Record<string, unknown> }> }) => void
+      > = [];
+      onSnapshotMock.mockImplementation((_q, next) => {
         if (typeof next !== 'function') return vi.fn();
-        callback = next;
+        callbacks.push(next);
         return vi.fn();
       });
 
-      const results: TransferRequest[] = [];
-      subscribeToTransfers(t => results.push(...t));
+      let latest: TransferRequest[] = [];
+      subscribeToTransfers(t => {
+        latest = t;
+      });
 
-      const mockSnapshot = {
+      const historySnapshot = {
         docs: [
           {
             id: 'TR-NO-HISTORY',
-            data: () => ({ status: 'TRANSFERRED', requestDate: '2025-01-01' }), // no statusHistory field
+            data: () => ({ status: 'TRANSFERRED', requestDate: '2025-01-01' }),
           },
         ],
       };
 
-      callback?.(mockSnapshot);
-      expect(results).toHaveLength(0); // Should be filtered out (not today, no history)
+      callbacks[0]?.({ docs: [] });
+      callbacks[1]?.(historySnapshot);
+      expect(latest.map(t => t.id)).toContain('TR-NO-HISTORY');
     });
 
     it('should handle subscription errors', () => {
       const onSnapshotMock = vi.mocked(firestore.onSnapshot);
       const callback = vi.fn();
 
-      onSnapshotMock.mockImplementationOnce((...args: unknown[]) => {
+      let subscriptionCall = 0;
+      onSnapshotMock.mockImplementation((...args: unknown[]) => {
         const onError = args[2];
-        if (typeof onError === 'function') {
+        if (subscriptionCall === 0 && typeof onError === 'function') {
           (onError as (error: Error) => void)(new Error('Sub error'));
+        } else {
+          const onNext = args[1];
+          if (typeof onNext === 'function') {
+            (onNext as (snapshot: { docs: [] }) => void)({ docs: [] });
+          }
         }
+        subscriptionCall += 1;
         return vi.fn();
       });
 
@@ -259,12 +276,96 @@ describe('Transfer Service', () => {
     it('should fetch and return active transfers', async () => {
       const getDocsMock = vi.mocked(firestore.getDocs);
       getDocsMock.mockResolvedValueOnce({
-        docs: [{ id: 'TR-1', data: () => ({ status: 'REQUESTED', requestDate: '2025-01-01' }) }],
+        docs: [{ id: 'TR-1', data: () => ({ status: 'SENT', requestDate: '2025-01-01' }) }],
       } as unknown as Awaited<ReturnType<typeof firestore.getDocs>>);
 
       const results = await getActiveTransfers();
       expect(results).toHaveLength(1);
-      expect(results[0].status).toBe('REQUESTED');
+      expect(results[0].status).toBe('RECEIVED');
+    });
+  });
+
+  describe('getLatestOpenTransferRequestByBedId', () => {
+    it('returns the most recent non-closed transfer request for the bed', async () => {
+      const getDocsMock = vi.mocked(firestore.getDocs);
+      getDocsMock.mockResolvedValueOnce({
+        docs: [
+          {
+            id: 'TR-CLOSED',
+            data: () => ({
+              bedId: 'BED_1',
+              status: 'TRANSFERRED',
+              archived: false,
+              requestDate: '2026-02-01',
+              updatedAt: '2026-02-01T10:00:00.000Z',
+              createdAt: '2026-02-01T09:00:00.000Z',
+              statusHistory: [],
+            }),
+          },
+          {
+            id: 'TR-OPEN-OLD',
+            data: () => ({
+              bedId: 'BED_1',
+              status: 'REQUESTED',
+              archived: false,
+              requestDate: '2026-02-02',
+              updatedAt: '2026-02-02T10:00:00.000Z',
+              createdAt: '2026-02-02T09:00:00.000Z',
+              statusHistory: [],
+            }),
+          },
+          {
+            id: 'TR-OPEN-NEW',
+            data: () => ({
+              bedId: 'BED_1',
+              status: 'ACCEPTED',
+              archived: false,
+              requestDate: '2026-02-03',
+              updatedAt: '2026-02-03T10:00:00.000Z',
+              createdAt: '2026-02-03T09:00:00.000Z',
+              statusHistory: [],
+            }),
+          },
+        ],
+      } as unknown as Awaited<ReturnType<typeof firestore.getDocs>>);
+
+      const result = await getLatestOpenTransferRequestByBedId('BED_1');
+      expect(result?.id).toBe('TR-OPEN-NEW');
+    });
+
+    it('returns null when there are no open requests', async () => {
+      const getDocsMock = vi.mocked(firestore.getDocs);
+      getDocsMock.mockResolvedValueOnce({
+        docs: [
+          {
+            id: 'TR-ARCHIVED',
+            data: () => ({
+              bedId: 'BED_2',
+              status: 'REQUESTED',
+              archived: true,
+              requestDate: '2026-02-01',
+              updatedAt: '2026-02-01T10:00:00.000Z',
+              createdAt: '2026-02-01T09:00:00.000Z',
+              statusHistory: [],
+            }),
+          },
+          {
+            id: 'TR-REJECTED',
+            data: () => ({
+              bedId: 'BED_2',
+              status: 'REJECTED',
+              archived: false,
+              requestDate: '2026-02-01',
+              updatedAt: '2026-02-01T10:00:00.000Z',
+              createdAt: '2026-02-01T09:00:00.000Z',
+              statusHistory: [],
+            }),
+          },
+        ],
+      } as unknown as Awaited<ReturnType<typeof firestore.getDocs>>);
+
+      const result = await getLatestOpenTransferRequestByBedId('BED_2');
+      expect(result).toBeNull();
     });
   });
 
@@ -276,7 +377,7 @@ describe('Transfer Service', () => {
 
       getDocMock.mockResolvedValueOnce({
         exists: () => true,
-        data: () => ({ status: 'SENT', statusHistory: [] }),
+        data: () => ({ status: 'RECEIVED', statusHistory: [] }),
       } as unknown as Awaited<ReturnType<typeof firestore.getDoc>>);
 
       await completeTransfer('TR-1', 'user-1');
@@ -303,8 +404,8 @@ describe('Transfer Service', () => {
       getDocMock.mockResolvedValueOnce({
         exists: () => true,
         data: () => ({
-          status: 'SENT',
-          statusHistory: [{ to: 'REQUESTED' }, { to: 'SENT' }],
+          status: 'RECEIVED',
+          statusHistory: [{ to: 'REQUESTED' }, { to: 'RECEIVED' }],
         }),
       } as unknown as Awaited<ReturnType<typeof firestore.getDoc>>);
 

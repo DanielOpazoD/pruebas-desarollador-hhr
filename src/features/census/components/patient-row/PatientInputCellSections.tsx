@@ -42,7 +42,7 @@ export const PatientInputIdentitySection: React.FC<PatientInputIdentitySectionBi
       admissionDate={shared.data.admissionDate}
       onChange={handleDebouncedText('rut')}
       onToggleType={onChange.toggleDocType}
-      readOnly={shared.isLocked}
+      readOnly={true}
       hasError={hasRutError}
     />
     <AgeInput

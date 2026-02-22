@@ -3,7 +3,7 @@
  * Main view for managing patient transfer requests
  */
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { TransferTable } from './components/TransferTable';
 import { TransferFormModal } from './components/TransferFormModal';
 import { StatusChangeModal } from './components/StatusChangeModal';
@@ -13,6 +13,7 @@ import { useTransferManagement } from '@/hooks/useTransferManagement';
 import { useTransferViewStates } from '@/hooks/useTransferViewStates';
 import { useDailyRecordData } from '@/context/DailyRecordContext';
 import { getHospitalConfigById } from '@/constants/hospitalConfigs';
+import type { TransferRequest, TransferStatus } from '@/types/transfers';
 
 const TransferQuestionnaireModal = React.lazy(() =>
   import('./components/TransferQuestionnaireModal').then(module => ({
@@ -27,6 +28,11 @@ const TransferDocumentPackageModal = React.lazy(() =>
 );
 
 export const TransferManagementView: React.FC = () => {
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+
   const {
     transfers,
     isLoading,
@@ -37,11 +43,11 @@ export const TransferManagementView: React.FC = () => {
     setTransferStatus,
     markAsTransferred,
     cancelTransfer,
+    deleteTransfer,
     undoTransfer,
     archiveTransfer,
     deleteHistoryEntry,
     getHospitalizedPatients,
-    activeCount,
   } = useTransferManagement();
 
   const { record } = useDailyRecordData();
@@ -63,6 +69,73 @@ export const TransferManagementView: React.FC = () => {
     cancelTransfer
   );
 
+  const monthLabels = useMemo(
+    () => ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+    []
+  );
+
+  const closedStatuses = useMemo<Set<TransferStatus>>(
+    () => new Set<TransferStatus>(['TRANSFERRED', 'CANCELLED', 'REJECTED', 'NO_RESPONSE']),
+    []
+  );
+
+  const parseDate = (value: string | undefined): Date | null => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const selectedPeriodStart = useMemo(
+    () => new Date(selectedYear, selectedMonth - 1, 1, 0, 0, 0, 0),
+    [selectedYear, selectedMonth]
+  );
+  const selectedPeriodEnd = useMemo(
+    () => new Date(selectedYear, selectedMonth, 0, 23, 59, 59, 999),
+    [selectedYear, selectedMonth]
+  );
+
+  const availableYears = useMemo(() => {
+    const years = new Set<number>([currentYear]);
+    transfers.forEach(transfer => {
+      const requestDate = parseDate(transfer.requestDate);
+      if (requestDate) years.add(requestDate.getFullYear());
+      const latestStatusDate = parseDate(transfer.statusHistory.at(-1)?.timestamp);
+      if (latestStatusDate) years.add(latestStatusDate.getFullYear());
+    });
+    return Array.from(years).sort((a, b) => b - a);
+  }, [currentYear, transfers]);
+
+  const filteredTransfers = useMemo<TransferRequest[]>(() => {
+    return transfers
+      .filter(transfer => {
+        const requestDate = parseDate(transfer.requestDate);
+        if (!requestDate) {
+          return false;
+        }
+
+        const isClosed = closedStatuses.has(transfer.status);
+        if (!isClosed) {
+          // Active/intermediate requests must carry over to following months.
+          return requestDate <= selectedPeriodEnd;
+        }
+
+        const requestInPeriod =
+          requestDate >= selectedPeriodStart && requestDate <= selectedPeriodEnd;
+        const latestStatusDate = parseDate(transfer.statusHistory.at(-1)?.timestamp);
+        const closedInPeriod = latestStatusDate
+          ? latestStatusDate >= selectedPeriodStart && latestStatusDate <= selectedPeriodEnd
+          : false;
+
+        return requestInPeriod || closedInPeriod;
+      })
+      .sort((a, b) => b.requestDate.localeCompare(a.requestDate));
+  }, [closedStatuses, selectedPeriodEnd, selectedPeriodStart, transfers]);
+
+  const filteredActiveCount = useMemo(
+    () => filteredTransfers.filter(transfer => !closedStatuses.has(transfer.status)).length,
+    [closedStatuses, filteredTransfers]
+  );
+
   return (
     <div className="p-4 max-w-7xl mx-auto animate-in fade-in duration-500">
       {/* Header */}
@@ -70,7 +143,7 @@ export const TransferManagementView: React.FC = () => {
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-gray-800">Gestión de Traslados</h1>
           <span className="px-3 py-1 text-sm font-medium bg-blue-100 text-blue-800 rounded-full shadow-sm">
-            {activeCount} activos
+            {filteredActiveCount} activos
           </span>
         </div>
         <button
@@ -89,8 +162,44 @@ export const TransferManagementView: React.FC = () => {
         </div>
       )}
 
+      <div className="mb-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          {availableYears.map(year => (
+            <button
+              key={year}
+              onClick={() => setSelectedYear(year)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                selectedYear === year
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {year}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-6 gap-1.5 md:grid-cols-12">
+          {monthLabels.map((label, index) => {
+            const monthValue = index + 1;
+            return (
+              <button
+                key={label}
+                onClick={() => setSelectedMonth(monthValue)}
+                className={`rounded-md px-2 py-1.5 text-[11px] font-semibold transition-all ${
+                  selectedMonth === monthValue
+                    ? 'bg-slate-800 text-white'
+                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Main Content */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-visible">
         {isLoading ? (
           <div className="text-center py-20">
             <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
@@ -98,7 +207,7 @@ export const TransferManagementView: React.FC = () => {
           </div>
         ) : (
           <TransferTable
-            transfers={transfers}
+            transfers={filteredTransfers}
             onEdit={handlers.handleEditTransfer}
             onStatusChange={handlers.handleStatusChange}
             onQuickStatusChange={setTransferStatus}
@@ -108,6 +217,7 @@ export const TransferManagementView: React.FC = () => {
             onViewDocs={handlers.handleViewDocs}
             onUndo={undoTransfer}
             onArchive={archiveTransfer}
+            onDelete={transfer => deleteTransfer(transfer.id)}
             onDeleteHistoryEntry={deleteHistoryEntry}
           />
         )}

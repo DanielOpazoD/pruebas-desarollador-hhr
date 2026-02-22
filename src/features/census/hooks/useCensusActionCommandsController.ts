@@ -93,6 +93,7 @@ export const useCensusActionCommandsController = ({
   const executeTransfer = useCensusTransferCommand({
     transferStateRef,
     stabilityRulesRef,
+    recordRef,
     addTransferRef,
     updateTransferRef,
     setTransferState,

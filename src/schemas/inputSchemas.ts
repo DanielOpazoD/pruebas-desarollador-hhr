@@ -13,6 +13,16 @@ import { isValidRut } from '@/utils/rutUtils';
 // ============================================================================
 
 export const PatientInputSchema = z.object({
+  firstName: z.string().max(60, 'Primer nombre demasiado largo').optional().or(z.literal('')),
+
+  lastName: z.string().max(60, 'Primer apellido demasiado largo').optional().or(z.literal('')),
+
+  secondLastName: z
+    .string()
+    .max(60, 'Segundo apellido demasiado largo')
+    .optional()
+    .or(z.literal('')),
+
   patientName: z
     .string()
     .min(1, 'El nombre es requerido')

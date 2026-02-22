@@ -13,11 +13,12 @@ import { TransferStatus } from '@/types/transfers';
  * Allowed status transitions
  */
 export const STATUS_TRANSITIONS: Record<TransferStatus, TransferStatus | null> = {
-  REQUESTED: 'SENT',
-  SENT: 'ACCEPTED',
+  REQUESTED: 'RECEIVED',
+  RECEIVED: 'ACCEPTED',
   ACCEPTED: 'TRANSFERRED',
-  TRANSFERRED: 'RECEIVED',
-  RECEIVED: null,
+  REJECTED: null,
+  NO_RESPONSE: null,
+  TRANSFERRED: null,
   CANCELLED: null,
 };
 
@@ -37,13 +38,22 @@ export const getNextStatus = (current: TransferStatus): TransferStatus | null =>
  * Runtime configuration can override this catalog via settings.
  */
 export const DESTINATION_HOSPITALS = [
-  { id: 'van_buren', name: 'Hospital Carlos Van Buren', city: 'Valparaíso' },
-  { id: 'san_jose', name: 'Hospital San José', city: 'Santiago' },
-  { id: 'san_borja', name: 'Hospital San Borja Arriarán', city: 'Santiago' },
-  { id: 'salvador', name: 'Hospital del Salvador', city: 'Santiago' },
-  { id: 'felix_bulnes', name: 'Hospital Félix Bulnes', city: 'Santiago' },
-  { id: 'sotero_del_rio', name: 'Hospital Sótero del Río', city: 'Santiago' },
-  { id: 'horwitz', name: 'Hospital Horwitz', city: 'Santiago' },
+  { id: 'salvador', name: 'Hospital Del Salvador', city: 'Santiago' },
+  { id: 'calvo_mackenna', name: 'Hospital de Niños Dr. Luis Calvo Mackenna', city: 'Santiago' },
+  { id: 'luis_tisne', name: 'Hospital Dr. Luis Tisne', city: 'Santiago' },
+  { id: 'hosmet', name: 'Hospital Metropolitano (HOSMET)', city: 'Santiago' },
+  {
+    id: 'int',
+    name: 'Instituto Nacional de Enfermedades Respiratorias y Cirugia Torácica (INT)',
+    city: 'Santiago',
+  },
+  {
+    id: 'inger',
+    name: 'Instituto Nacional Geriátrico Presidente Eduardo Frei Montalva (INGER)',
+    city: 'Santiago',
+  },
+  { id: 'inca', name: 'Instituto de Neurocirugía Dr. Alfonso Asenjo (INCA)', city: 'Santiago' },
+  { id: 'horwitz', name: 'Instituto Psiquiátrico Dr. José Horwitz Barak', city: 'Santiago' },
   { id: 'otro', name: 'Otro', city: '' },
 ] as const;
 
@@ -57,17 +67,23 @@ export type DestinationHospitalOption = (typeof DESTINATION_HOSPITALS)[number];
  * Common specialties for transfer requests
  */
 export const MEDICAL_SPECIALTIES = [
-  'Medicina Interna',
-  'Cirugía General',
-  'Traumatología',
-  'Cardiología',
-  'Neurología',
-  'Nefrología',
-  'UCI/UPC',
-  'Pediatría',
+  'Cirugia',
   'Ginecobstetricia',
-  'Oncología',
-  'Odontología',
+  'Psiquiatría',
+  'Medicina interna',
+  'Urología',
+  'Hematología',
+  'Neurocirugía',
+  'Traumatología',
+  'Hemodinamia',
+  'Otra',
+] as const;
+
+export const TRANSFER_BED_REQUIREMENTS = [
+  'Cama básica',
+  'Cama media',
+  'Cama UTI',
+  'Cama UCI',
   'Otra',
 ] as const;
 

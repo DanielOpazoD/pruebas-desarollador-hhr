@@ -33,6 +33,13 @@ describe('transferStatusInteractionController', () => {
   });
 
   it('exposes stable transfer status options order', () => {
-    expect(TRANSFER_STATUS_OPTIONS).toEqual(['REQUESTED', 'ACCEPTED', 'TRANSFERRED']);
+    expect(TRANSFER_STATUS_OPTIONS).toEqual([
+      'REQUESTED',
+      'RECEIVED',
+      'ACCEPTED',
+      'REJECTED',
+      'NO_RESPONSE',
+      'TRANSFERRED',
+    ]);
   });
 });

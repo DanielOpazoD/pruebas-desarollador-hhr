@@ -63,6 +63,7 @@ export const useCensusActionModalProps = ({
         onConfirm: actionCommands.executeDischarge,
       },
       transferProps: {
+        bedId: modalBindings.transfer.bedId,
         isOpen: modalBindings.transfer.isOpen,
         isEditing: modalBindings.transfer.isEditing,
         evacuationMethod: modalBindings.transfer.evacuationMethod,

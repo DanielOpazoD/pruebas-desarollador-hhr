@@ -126,6 +126,7 @@ export const useTransferManagement = (): UseTransferManagementReturn => {
           transferReason: data.transferReason,
           requestingDoctor: data.requestingDoctor,
           requiredSpecialty: data.requiredSpecialty,
+          requiredBedType: data.requiredBedType,
           observations: data.observations,
           customFields: data.customFields || {},
           status: 'REQUESTED',
@@ -319,20 +320,16 @@ export const useTransferManagement = (): UseTransferManagementReturn => {
     []
   );
 
-  // Filter out archived transfers and old completed ones (auto-cleanup next day)
-  const today = new Date().toISOString().split('T')[0];
-  const visibleTransfers = transfers.filter(t => {
-    // Always hide archived
-    if (t.archived) return false;
-    // Auto-hide transferred/cancelled from previous days
-    if ((t.status === 'TRANSFERRED' || t.status === 'CANCELLED') && t.updatedAt < today)
-      return false;
-    return true;
-  });
+  // Keep archived transfers hidden from operational views.
+  const isClosedTransferStatus = (status: TransferStatus): boolean =>
+    status === 'TRANSFERRED' ||
+    status === 'CANCELLED' ||
+    status === 'REJECTED' ||
+    status === 'NO_RESPONSE';
 
-  const activeCount = visibleTransfers.filter(
-    t => t.status !== 'TRANSFERRED' && t.status !== 'CANCELLED'
-  ).length;
+  const visibleTransfers = transfers.filter(t => !t.archived);
+
+  const activeCount = visibleTransfers.filter(t => !isClosedTransferStatus(t.status)).length;
 
   return {
     transfers: visibleTransfers,

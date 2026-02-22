@@ -29,6 +29,7 @@ export enum PatientStatus {
 }
 
 export type ShiftType = 'day' | 'night';
+export type PatientIdentityStatus = 'provisional' | 'official';
 
 // Fixed list of 18 beds + Extras
 export interface BedDefinition {
@@ -151,6 +152,10 @@ export interface PatientData {
   clinicalCrib?: PatientData;
 
   patientName: string;
+  firstName?: string;
+  lastName?: string;
+  secondLastName?: string;
+  identityStatus?: PatientIdentityStatus;
   rut: string;
   documentType?: 'RUT' | 'Pasaporte'; // Switcher
   age: string;

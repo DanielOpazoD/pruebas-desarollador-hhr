@@ -352,8 +352,7 @@ describe('PatientRow Component', () => {
       expect(document.querySelector('input[type="time"]')).toBeInTheDocument();
     });
 
-    it('triggers updatePatient on debounced name change', () => {
-      vi.useFakeTimers();
+    it('keeps patient name read-only in table (edition only via demographics)', () => {
       const { mockContext } = render(
         <table>
           <tbody>
@@ -369,20 +368,9 @@ describe('PatientRow Component', () => {
       );
 
       const nameInput = screen.getByDisplayValue('Juan Pérez');
+      expect(nameInput).toHaveAttribute('readonly');
       fireEvent.change(nameInput, { target: { value: 'Juan Actualizado' } });
-
-      // Should not be called immediately due to debounce
       expect(mockContext.updatePatient).not.toHaveBeenCalled();
-
-      // Fast forward timers
-      vi.advanceTimersByTime(500);
-
-      expect(mockContext.updatePatient).toHaveBeenCalledWith(
-        'R1',
-        'patientName',
-        'Juan Actualizado'
-      );
-      vi.useRealTimers();
     });
   });
 

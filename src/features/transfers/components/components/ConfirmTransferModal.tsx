@@ -119,7 +119,7 @@ export const ConfirmTransferModal: React.FC<ConfirmTransferModalProps> = ({
 
         {/* Status Flow Completed */}
         <div className="flex items-center justify-center gap-2 py-2">
-          {['REQUESTED', 'SENT', 'ACCEPTED', 'TRANSFERRED'].map((status, index) => (
+          {['REQUESTED', 'RECEIVED', 'ACCEPTED', 'TRANSFERRED'].map((status, index) => (
             <React.Fragment key={status}>
               <div
                 className={`px-2 py-1 rounded-lg text-xs font-medium ${

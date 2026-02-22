@@ -8,10 +8,32 @@ import { GlobalErrorBoundary } from '@/components/shared/GlobalErrorBoundary';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
+  throw new Error('Could not find root element to mount to');
 }
 
 const root = ReactDOM.createRoot(rootElement);
+
+const clearLocalServiceWorkers = async (): Promise<void> => {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+    return;
+  }
+
+  const isLocalHost =
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname === '0.0.0.0';
+
+  if (!isLocalHost) {
+    return;
+  }
+
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map(registration => registration.unregister()));
+  } catch (error) {
+    console.warn('[Index] Could not unregister local service workers', error);
+  }
+};
 
 const renderApp = () => {
   console.warn('[Index] 🚀 Rendering Application...');
@@ -26,7 +48,11 @@ const renderApp = () => {
   );
 };
 
-firebaseReady.then(renderApp).catch((error) => {
-  console.error('Firebase initialization failed', error);
-  mountConfigWarning('No se pudo inicializar Firebase. Revisa las variables de entorno en Netlify.');
-});
+clearLocalServiceWorkers()
+  .finally(() => firebaseReady.then(renderApp))
+  .catch(error => {
+    console.error('Firebase initialization failed', error);
+    mountConfigWarning(
+      'No se pudo inicializar Firebase. Revisa las variables de entorno en Netlify.'
+    );
+  });

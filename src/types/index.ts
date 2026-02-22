@@ -29,6 +29,7 @@ export {
   type Statistics,
   type DischargeType,
   type ShiftType,
+  type PatientIdentityStatus,
   type FhirResource,
   type DailyRecordPatch,
   type DailyRecordPatchPath,

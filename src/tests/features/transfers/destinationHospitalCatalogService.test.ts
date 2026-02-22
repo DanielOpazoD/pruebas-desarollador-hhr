@@ -23,6 +23,7 @@ describe('destinationHospitalCatalogService', () => {
     const catalog = await getDestinationHospitalCatalog();
 
     expect(catalog).toEqual([
+      ...DESTINATION_HOSPITALS,
       { id: 'hospital_a', name: 'Hospital A', city: '' },
       { id: 'hospital_b', name: 'Hospital B', city: '' },
     ]);

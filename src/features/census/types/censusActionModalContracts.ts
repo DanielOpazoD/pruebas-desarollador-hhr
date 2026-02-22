@@ -43,6 +43,7 @@ export interface DischargeModalProps {
 }
 
 export interface TransferModalProps {
+  bedId?: string;
   isOpen: boolean;
   isEditing: boolean;
   recordDate?: string;

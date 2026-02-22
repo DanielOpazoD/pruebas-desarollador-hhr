@@ -26,6 +26,7 @@ export interface DischargeModalBinding {
 }
 
 export interface TransferModalBinding {
+  bedId?: string;
   isOpen: boolean;
   isEditing: boolean;
   evacuationMethod: TransferState['evacuationMethod'];
@@ -63,6 +64,7 @@ export const buildDischargeModalBinding = (
 });
 
 export const buildTransferModalBinding = (transferState: TransferState): TransferModalBinding => ({
+  bedId: transferState.bedId || undefined,
   isOpen: transferState.isOpen,
   isEditing: !!transferState.recordId,
   evacuationMethod: transferState.evacuationMethod,

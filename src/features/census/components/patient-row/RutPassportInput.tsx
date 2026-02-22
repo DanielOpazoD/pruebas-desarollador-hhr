@@ -62,7 +62,7 @@ export const RutPassportInput: React.FC<RutPassportInputProps> = ({
         <DebouncedInput
           type="text"
           className={clsx(
-            'w-full p-0.5 h-7 border rounded focus:ring-2 focus:outline-none text-xs pr-1 group-hover/rut:pr-6 transition-all',
+            'w-full p-0.5 h-7 border rounded focus:ring-2 focus:outline-none text-xs pr-2 transition-all',
             isSubRow && 'h-6',
             isAutoLockedByRnPlaceholder && 'bg-slate-100 text-slate-500 cursor-not-allowed',
             documentType === 'Pasaporte'
@@ -90,7 +90,8 @@ export const RutPassportInput: React.FC<RutPassportInputProps> = ({
                   : '12.345.678-9'
           }
           value={isAutoLockedByRnPlaceholder ? '' : value || ''}
-          disabled={readOnly || isAutoLockedByRnPlaceholder}
+          disabled={isAutoLockedByRnPlaceholder}
+          readOnly={readOnly}
           onChange={val => {
             onChange(val);
           }}

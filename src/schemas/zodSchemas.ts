@@ -38,6 +38,33 @@ const nullableOptional = <T extends z.ZodTypeAny>(schema: T) =>
     .optional()
     .transform(v => v ?? undefined);
 
+const resolveLegacyNameParts = (
+  patientName: string
+): {
+  firstName: string;
+  lastName: string;
+  secondLastName: string;
+} => {
+  const normalizedName = patientName.trim().replace(/\s+/g, ' ');
+  if (!normalizedName) {
+    return { firstName: '', lastName: '', secondLastName: '' };
+  }
+
+  const segments = normalizedName.split(' ');
+  if (segments.length === 1) {
+    return { firstName: segments[0], lastName: '', secondLastName: '' };
+  }
+  if (segments.length === 2) {
+    return { firstName: segments[0], lastName: segments[1], secondLastName: '' };
+  }
+
+  return {
+    firstName: segments.slice(0, -2).join(' '),
+    lastName: segments[segments.length - 2],
+    secondLastName: segments[segments.length - 1],
+  };
+};
+
 // ============================================================================
 // Enums
 // ============================================================================
@@ -136,6 +163,10 @@ export const PatientDataSchema: z.ZodType<PatientData, z.ZodTypeDef, unknown> = 
         .optional()
         .transform(v => v ?? undefined),
       patientName: z.string().default(''),
+      firstName: z.string().default(''),
+      lastName: z.string().default(''),
+      secondLastName: z.string().default(''),
+      identityStatus: nullableOptional(z.enum(['provisional', 'official'])),
       rut: z.string().default(''),
       documentType: nullableOptional(
         z.preprocess(v => (v === '' ? undefined : v), z.enum(['RUT', 'Pasaporte']).optional())
@@ -193,6 +224,28 @@ export const PatientDataSchema: z.ZodType<PatientData, z.ZodTypeDef, unknown> = 
       fhir_resource: nullableOptional(FhirResourceSchema),
     })
     .passthrough()
+    .transform(patient => {
+      const inferredIdentityStatus =
+        patient.identityStatus ??
+        (patient.bedMode === 'Cuna' && !patient.rut?.trim() ? 'provisional' : 'official');
+
+      const hasNameParts = Boolean(
+        patient.firstName?.trim() || patient.lastName?.trim() || patient.secondLastName?.trim()
+      );
+
+      if (hasNameParts || !patient.patientName?.trim()) {
+        return {
+          ...patient,
+          identityStatus: inferredIdentityStatus,
+        };
+      }
+
+      return {
+        ...patient,
+        identityStatus: inferredIdentityStatus,
+        ...resolveLegacyNameParts(patient.patientName),
+      };
+    })
 );
 
 // ============================================================================

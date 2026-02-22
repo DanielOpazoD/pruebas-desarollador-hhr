@@ -29,12 +29,14 @@ export const PatientRowModals: React.FC<PatientRowModalsProps> = ({
   return (
     <>
       <DemographicsModal
+        key={`demographics-${demographicsBinding.targetBedId}-${showDemographics ? 'open' : 'closed'}-${data.patientName}-${data.rut}-${data.identityStatus || 'na'}`}
         isOpen={showDemographics}
         onClose={onCloseDemographics}
         data={data}
         onSave={demographicsBinding.onSave}
         bedId={demographicsBinding.targetBedId}
         recordDate={currentDateString}
+        isClinicalCribPatient={isSubRow}
       />
 
       {showExamRequest && (
