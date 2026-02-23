@@ -9,6 +9,66 @@ import { getForDate } from '@/services/repositories/dailyRecordRepositoryReadSer
 import { save } from '@/services/repositories/dailyRecordRepositoryWriteService';
 import { migrateLegacyData } from '@/services/repositories/dataMigration';
 
+/**
+ * Preserve CIE-10 fields from the previous local day into a new remote record.
+ *
+ * The official Firebase (source of truth for patient demographics) does NOT support
+ * CIE-10 codes. When a new day is initialized from the remote record, the CIE-10
+ * fields arrive as undefined. This function carries over cie10Code and cie10Description
+ * from the previous local day for patients that occupy the same bed with the same name.
+ *
+ * Match criteria: same bedId + same patientName (ensures the patient hasn't been
+ * discharged and replaced by someone else).
+ */
+const preserveCIE10FromPreviousDay = (
+  newBeds: Record<string, PatientData>,
+  prevBeds: Record<string, PatientData>
+): void => {
+  for (const bedId of Object.keys(newBeds)) {
+    const newPatient = newBeds[bedId];
+    const prevPatient = prevBeds[bedId];
+
+    if (!newPatient || !prevPatient) continue;
+
+    // Only carry over if it's the same patient (match by name)
+    const isSamePatient =
+      prevPatient.patientName &&
+      newPatient.patientName &&
+      prevPatient.patientName.trim().toLowerCase() === newPatient.patientName.trim().toLowerCase();
+
+    if (!isSamePatient) continue;
+
+    // Carry over CIE-10 fields if the new record doesn't already have them
+    if (!newPatient.cie10Code && prevPatient.cie10Code) {
+      newPatient.cie10Code = prevPatient.cie10Code;
+    }
+    if (!newPatient.cie10Description && prevPatient.cie10Description) {
+      newPatient.cie10Description = prevPatient.cie10Description;
+    }
+
+    // Also preserve CIE-10 on clinical cribs (sub-patients)
+    if (newPatient.clinicalCrib && prevPatient.clinicalCrib) {
+      const isSameCribPatient =
+        prevPatient.clinicalCrib.patientName &&
+        newPatient.clinicalCrib.patientName &&
+        prevPatient.clinicalCrib.patientName.trim().toLowerCase() ===
+          newPatient.clinicalCrib.patientName.trim().toLowerCase();
+
+      if (isSameCribPatient) {
+        if (!newPatient.clinicalCrib.cie10Code && prevPatient.clinicalCrib.cie10Code) {
+          newPatient.clinicalCrib.cie10Code = prevPatient.clinicalCrib.cie10Code;
+        }
+        if (
+          !newPatient.clinicalCrib.cie10Description &&
+          prevPatient.clinicalCrib.cie10Description
+        ) {
+          newPatient.clinicalCrib.cie10Description = prevPatient.clinicalCrib.cie10Description;
+        }
+      }
+    }
+  }
+};
+
 export const initializeDay = async (date: string, copyFromDate?: string): Promise<DailyRecord> => {
   const existing = await getForDate(date);
   if (existing) return existing;
@@ -18,6 +78,18 @@ export const initializeDay = async (date: string, copyFromDate?: string): Promis
       const remoteRecord = await getRecordFromFirestore(date);
       if (remoteRecord) {
         const migrated = migrateLegacyData(remoteRecord, date);
+
+        // Preserve local CIE-10 fields from previous day:
+        // The official Firebase doesn't support CIE-10 codes, so they arrive as undefined.
+        // Carry over cie10Code/cie10Description from the previous local day
+        // for patients in the same bed with the same name.
+        if (copyFromDate) {
+          const prevLocal = await getForDate(copyFromDate);
+          if (prevLocal) {
+            preserveCIE10FromPreviousDay(migrated.beds, prevLocal.beds);
+          }
+        }
+
         await saveToIndexedDB(migrated);
         return migrated;
       }
@@ -25,6 +97,14 @@ export const initializeDay = async (date: string, copyFromDate?: string): Promis
       const legacyRecord = await getLegacyRecord(date);
       if (legacyRecord) {
         const migrated = migrateLegacyData(legacyRecord, date);
+
+        if (copyFromDate) {
+          const prevLocal = await getForDate(copyFromDate);
+          if (prevLocal) {
+            preserveCIE10FromPreviousDay(migrated.beds, prevLocal.beds);
+          }
+        }
+
         await saveToIndexedDB(migrated);
         return migrated;
       }

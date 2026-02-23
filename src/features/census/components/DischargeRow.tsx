@@ -20,7 +20,7 @@ export const DischargeRow: React.FC<DischargeRowProps> = React.memo(
       deleteDischarge: onDelete,
     });
 
-    return <DischargeRowView viewModel={viewModel} recordDate={recordDate} />;
+    return <DischargeRowView viewModel={viewModel} recordDate={recordDate} dischargeItem={item} />;
   }
 );
 
