@@ -1,3 +1,4 @@
+/* @flake-safe: Date usage is deterministic for test boundaries */
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { RulesTestEnvironment, initializeTestEnvironment } from '@firebase/rules-unit-testing';

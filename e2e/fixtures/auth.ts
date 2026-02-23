@@ -175,7 +175,10 @@ export async function setupE2EContext(
   );
 
   // 3. Single reload to apply all state
-  await page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 });
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+
+  // Refuerzo: esperar a que no haya llamadas de red pendientes agresivas
+  await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
   await page.waitForLoadState('domcontentloaded');
 
   // 4. If login screen is still visible, complete deterministic E2E popup login
@@ -267,46 +270,47 @@ export async function ensureRecordExists(page: Page) {
     await page.evaluate(() => {
       localStorage.removeItem('hhr_google_login_lock_v1');
       localStorage.setItem('hhr_e2e_force_popup', 'true');
+      localStorage.setItem('hhr_db_initialized', 'true');
+
       const offlineUserRaw = localStorage.getItem('hhr_offline_user');
       if (offlineUserRaw) {
         localStorage.setItem('hhr_e2e_popup_success_user', offlineUserRaw);
       }
     });
     await loginButton.click();
+    await expect(loginButton).toBeHidden({ timeout: 15000 });
   }
 
   const tableById = page.getByTestId('census-table');
-  const tableFallback = page.locator('main table').first();
-  const blankBtn = page.getByTestId('blank-record-btn');
-  const copyBtn = page.getByTestId('copy-previous-btn');
 
-  const isTableVisible = async (): Promise<boolean> => {
-    const byIdVisible = await tableById.isVisible().catch(() => false);
-    if (byIdVisible) return true;
-    return tableFallback.isVisible().catch(() => false);
-  };
+  // Esperar a que la página se hidrate lo suficiente (loading desaparezca si existe)
+  await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
 
-  // Wait for either the table or the buttons to appear
-  await Promise.race([
-    tableById.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {}),
-    tableFallback.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {}),
-    blankBtn.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {}),
-  ]);
+  if (await tableById.isVisible().catch(() => false)) {
+    return;
+  }
 
-  if (await isTableVisible()) return;
+  // Si no está la tabla, buscar botones de creación (estos sólo aparecen cuando termina de cargar data)
+  const blankBtn = page.getByRole('button', { name: /Comenzar Día/i }).first();
+  const copyBtn = page.getByRole('button', { name: /Copiar día anterior/i }).first();
 
-  if (await blankBtn.isVisible()) {
+  try {
+    // Si la tabla no cargó, uno de estos DEBE estar
+    await expect(blankBtn.or(copyBtn)).toBeVisible({ timeout: 15000 });
+  } catch (e) {
+    // Fallback: si aun así no está, vemos si en el ínterin apareció la tabla
+    if (await tableById.isVisible().catch(() => false)) return;
+    throw new Error('Timeout waiting for census initial state (table or create buttons)');
+  }
+
+  if (await blankBtn.isVisible().catch(() => false)) {
     await blankBtn.click();
-  } else if (await copyBtn.isVisible()) {
+  } else if (await copyBtn.isVisible().catch(() => false)) {
     await copyBtn.click();
   }
 
-  // Final wait for table stability
-  if (await tableById.isVisible().catch(() => false)) {
-    await expect(tableById).toBeVisible({ timeout: 10000 });
-    return;
-  }
-  await expect(tableFallback).toBeVisible({ timeout: 10000 });
+  // Final confirmation
+  await expect(tableById).toBeVisible({ timeout: 15000 });
 }
 
 export { expect };

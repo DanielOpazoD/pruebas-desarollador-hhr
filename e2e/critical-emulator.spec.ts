@@ -5,13 +5,18 @@ import { setupE2EContext, ensureRecordExists } from './fixtures/auth';
 const CURRENT_DATE = process.env.E2E_FIXED_DATE ?? new Date().toISOString().slice(0, 10);
 
 const getPatientNameInput = (page: Page) =>
-  page.locator('tr:has-text("R1") input[name="patientName"]').first();
+  page
+    .getByTestId('census-table')
+    .locator('tr')
+    .filter({ hasText: 'R1' })
+    .locator('input[name="patientName"]')
+    .first();
 
 const bootstrapCensusSession = async (page: Page, role: 'editor' | 'viewer') => {
   await setupE2EContext(page, role, true, CURRENT_DATE);
   await page.goto(`/censo?date=${CURRENT_DATE}`);
   await ensureRecordExists(page);
-  await expect(page.locator('table')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId('census-table')).toBeVisible({ timeout: 15_000 });
 };
 
 test.describe('Critical Census Flows (Firestore emulator-backed runtime)', () => {

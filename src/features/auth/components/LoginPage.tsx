@@ -13,6 +13,7 @@ import {
 import { AlertCircle, Loader2, Palette } from 'lucide-react';
 import { saveAppSetting } from '@/services/settingsService';
 import { performClientHardReset } from '@/services/storage/indexedDBService';
+import { GamesMenu } from '@/features/games/components/GamesMenu';
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
@@ -191,14 +192,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     e.preventDefault();
     setIsDragging(false);
   }, []);
-
   const isAnyLoading = isGoogleLoading || isPassportLoading || isRedirectLoading;
   const currentHour = new Date().getHours();
   const isAutoDayWindow = currentHour >= 8 && currentHour < 20;
+
   const isDayGradient = backgroundMode === 'auto' ? isAutoDayWindow : backgroundMode === 'day';
   const loginBackgroundClass = isDayGradient
     ? 'bg-gradient-to-br from-slate-50 via-blue-50/50 to-slate-100'
-    : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950';
+    : 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-900';
 
   const toggleBackgroundMode = () => {
     setBackgroundMode(prev => {
@@ -210,8 +211,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
   return (
     <div
-      className={`min-h-screen ${loginBackgroundClass} flex items-center justify-center p-4 relative overflow-hidden`}
+      className={`min-h-screen ${loginBackgroundClass} flex items-center justify-center p-4 relative overflow-hidden transition-colors duration-1000`}
     >
+      <div className="absolute top-4 right-4 z-50">
+        <GamesMenu />
+      </div>
       <button
         type="button"
         onClick={toggleBackgroundMode}

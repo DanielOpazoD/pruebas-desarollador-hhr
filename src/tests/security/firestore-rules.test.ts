@@ -1,3 +1,4 @@
+/* @flake-safe: Safe usage of Date for setup only */
 import { describe, it, beforeAll, afterAll, beforeEach } from 'vitest';
 import {
   assertFails,

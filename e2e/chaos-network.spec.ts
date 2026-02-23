@@ -6,41 +6,54 @@ import { injectMockUser, injectMockData, ensureRecordExists } from './fixtures/a
  * Ensures that the app handles offline transitions gracefully without losing data.
  */
 test.describe('Chaos Network Simulation', () => {
-    test.beforeEach(async ({ page }) => {
-        await injectMockUser(page, 'editor');
-        await injectMockData(page);
-        await ensureRecordExists(page);
-    });
+  test.beforeEach(async ({ page }) => {
+    await injectMockUser(page, 'editor');
+    await injectMockData(page);
+    await ensureRecordExists(page);
+  });
 
-    test('should preserve data when switching between offline/online', async ({ page, context }) => {
-        const bedRow = page.locator('tr:has-text("R1")');
-        const nameInput = bedRow.locator('input[type="text"]').first();
+  test('should preserve data when switching between offline/online', async ({ page, context }) => {
+    const table = page.getByTestId('census-table').first();
+    await expect(table).toBeVisible({ timeout: 15000 });
 
-        // 1. Initial State: Online
-        await nameInput.fill('ONLINE_INITIAL');
-        await nameInput.blur();
+    const bedRow = table.locator('tr').filter({ hasText: 'R1' }).first();
+    const nameInput = bedRow.locator('input[type="text"]').first();
+    await expect(nameInput).toBeEnabled({ timeout: 10000 });
 
-        // 2. Go Offline
-        await context.setOffline(true);
+    // 1. Initial State: Online
+    await nameInput.fill('ONLINE_INITIAL');
+    await nameInput.blur();
 
-        // We trigger a change to force the UI to react to offline state
-        await nameInput.fill('OFFLINE_CHANGE');
-        await nameInput.blur();
+    // 2. Go Offline
+    await context.setOffline(true);
 
-        // Verify UI reflects offline or at least doesn't crash
-        await expect(nameInput).toHaveValue('OFFLINE_CHANGE');
+    // We trigger a change to force the UI to react to offline state
+    await nameInput.fill('OFFLINE_CHANGE');
+    await nameInput.blur();
 
-        // 3. Go back Online
-        await context.setOffline(false);
+    // Verify UI reflects offline or at least doesn't crash
+    await expect(nameInput).toHaveValue('OFFLINE_CHANGE');
 
-        // 4. Verify data remains and app is still functional
-        await nameInput.fill('ONLINE_RESUMED');
-        await nameInput.blur();
+    // 3. Go back Online
+    await context.setOffline(false);
 
-        await expect(nameInput).toHaveValue('ONLINE_RESUMED');
+    // 4. Verify data remains and app is still functional
+    await nameInput.fill('ONLINE_RESUMED');
+    await nameInput.blur();
 
-        // Refresh page to ensure LocalStorage persisted correctly
-        await page.reload();
-        await expect(nameInput).toHaveValue('ONLINE_RESUMED');
-    });
+    await expect(nameInput).toHaveValue('ONLINE_RESUMED');
+
+    // Refresh page to ensure LocalStorage persisted correctly
+    await page.reload({ waitUntil: 'domcontentloaded' });
+
+    const refreshedTable = page.getByTestId('census-table').first();
+    await expect(refreshedTable).toBeVisible({ timeout: 15000 });
+    const refreshedInput = refreshedTable
+      .locator('tr')
+      .filter({ hasText: 'R1' })
+      .locator('input[type="text"]')
+      .first();
+
+    await expect(refreshedInput).toHaveValue('ONLINE_RESUMED', { timeout: 10000 });
+  });
 });

@@ -8,6 +8,7 @@
 
 import { CIE10Entry } from './cie10SpanishDatabase';
 import { aiRequestManager } from '../ai/aiRequestManager';
+import { GoogleGenAI } from '@google/genai';
 
 let aiAvailabilityChecked = false;
 let aiIsAvailable = false;
@@ -119,12 +120,10 @@ async function searchWithLocalDevAPI(query: string, signal?: AbortSignal): Promi
   if (!apiKey || signal?.aborted) return [];
 
   try {
-    const { GoogleGenAI } = await import('@google/genai');
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3-flash-preview',
       contents: buildLocalPrompt(query),
-      config: { responseMimeType: 'application/json' },
     });
 
     return parseAIResults(response.text || '');

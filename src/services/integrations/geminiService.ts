@@ -1,13 +1,22 @@
-import { GoogleGenAI } from "@google/genai";
-import { DailyRecord } from "@/types";
-import { calculateStats } from "../calculations/statsCalculator";
-import { aiRequestManager } from "../ai/aiRequestManager";
+import { GoogleGenAI } from '@google/genai';
+import { DailyRecord } from '@/types';
+import { calculateStats } from '../calculations/statsCalculator';
+import { aiRequestManager } from '../ai/aiRequestManager';
+
+const getApiKey = () => {
+  return (
+    import.meta.env.VITE_LOCAL_GEMINI_API_KEY ||
+    import.meta.env.VITE_GEMINI_API_KEY ||
+    import.meta.env.VITE_API_KEY
+  );
+};
 
 const initializeGenAI = () => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key is missing. Please set REACT_APP_GEMINI_API_KEY in your environment.");
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    throw new Error('API Key is missing. Please set VITE_LOCAL_GEMINI_API_KEY in your .env.local.');
   }
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  return new GoogleGenAI({ apiKey });
 };
 
 export const generateShiftReport = async (record: DailyRecord): Promise<string | undefined> => {
@@ -24,7 +33,12 @@ export const generateShiftReport = async (record: DailyRecord): Promise<string |
       condition: b.status,
       age: b.age,
       devices: b.devices.join(', '),
-      daysAdmitted: b.admissionDate ? Math.floor((new Date(record.date).getTime() - new Date(b.admissionDate).getTime()) / (1000 * 3600 * 24)) : 0
+      daysAdmitted: b.admissionDate
+        ? Math.floor(
+            (new Date(record.date).getTime() - new Date(b.admissionDate).getTime()) /
+              (1000 * 3600 * 24)
+          )
+        : 0,
     }));
 
   const prompt = `
@@ -50,19 +64,16 @@ export const generateShiftReport = async (record: DailyRecord): Promise<string |
 
   try {
     // Use rate-limited request manager to prevent 429 errors
-    return await aiRequestManager.enqueue(
-      `shift-report-${record.date}`,
-      async () => {
-        const ai = initializeGenAI();
-        const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: prompt,
-        });
-        return response.text;
-      }
-    );
+    return await aiRequestManager.enqueue(`shift-report-${record.date}`, async () => {
+      const ai = initializeGenAI();
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: prompt,
+      });
+      return response.text;
+    });
   } catch (error) {
-    console.error("Error generating AI report:", error);
-    return "<p>No se pudo generar el reporte de IA. Verifique la conexión o la clave API.</p>";
+    console.error('Error generating AI report:', error);
+    return '<p>No se pudo generar el reporte de IA. Verifique la conexión o la clave API.</p>';
   }
 };
