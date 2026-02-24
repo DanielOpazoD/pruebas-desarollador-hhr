@@ -36,8 +36,6 @@ const TEMPLATE_PATH = '/docs/estadistico-egreso.pdf';
 
 // --- Constants ---
 const FONT_SIZE = 12; // Uniform size for all fields (20% larger than original 10pt)
-const FONT_SIZE_SMALL = 12;
-const FONT_SIZE_CODE = 12;
 
 // ── Color for filled text (dark black) ──
 const TEXT_COLOR = rgb(0, 0, 0);
@@ -132,14 +130,15 @@ const parseDate = (
 ): { dia: string; mes: string; anio: string } | null => {
   if (!dateStr) return null;
   const parts = dateStr.split('-');
-  if (parts.length === 3) {
-    return { dia: parts[0], mes: parts[1], anio: parts[2] };
-  }
-  // Try YYYY-MM-DD
-  if (parts.length === 3 && parts[0].length === 4) {
+  if (parts.length !== 3) return null;
+
+  // YYYY-MM-DD format (year first)
+  if (parts[0].length === 4) {
     return { dia: parts[2], mes: parts[1], anio: parts[0] };
   }
-  return null;
+
+  // DD-MM-YYYY format (day first)
+  return { dia: parts[0], mes: parts[1], anio: parts[2] };
 };
 
 /**
@@ -261,13 +260,9 @@ export const fillIEEHForm = async (
     const f = options.bold ? fontBold : font;
 
     // Force uppercase for all form text
-    let displayText = text.toUpperCase();
+    const displayText = text.toUpperCase();
 
-    // Truncate if too wide
-    while (f.widthOfTextAtSize(displayText, fontSize) > coords.maxWidth && displayText.length > 1) {
-      displayText = displayText.slice(0, -1);
-    }
-
+    // Draw without truncation — fields are sized to fit at 12pt
     page.drawText(displayText, {
       x: coords.x,
       y: coords.y,
@@ -291,92 +286,92 @@ export const fillIEEHForm = async (
 
   // #5: TIPO DE IDENTIFICACIÓN + RUN
   const tipoId = patient.documentType === 'RUT' ? '1' : '4'; // 1=RUN, 4=Pasaporte
-  drawText(tipoId, FIELD_COORDS.tipoIdentificacion, { fontSize: FONT_SIZE_CODE });
+  drawText(tipoId, FIELD_COORDS.tipoIdentificacion);
   if (patient.rut) {
-    drawText(patient.rut, FIELD_COORDS.runDigits, { fontSize: FONT_SIZE });
+    drawText(patient.rut, FIELD_COORDS.runDigits);
   }
 
   // #6: SEXO REGISTRAL
   const sexo = mapSex(patient.biologicalSex);
-  drawText(sexo, FIELD_COORDS.sexoRegistral, { fontSize: FONT_SIZE_CODE, bold: true });
+  drawText(sexo, FIELD_COORDS.sexoRegistral, { bold: true });
 
   // #7: FECHA DE NACIMIENTO
   const birthDate = parseDate(patient.birthDate);
   if (birthDate) {
-    drawText(birthDate.dia, FIELD_COORDS.nacDia, { fontSize: FONT_SIZE_CODE });
-    drawText(birthDate.mes, FIELD_COORDS.nacMes, { fontSize: FONT_SIZE_CODE });
-    drawText(birthDate.anio, FIELD_COORDS.nacAnio, { fontSize: FONT_SIZE_CODE });
+    drawText(birthDate.dia, FIELD_COORDS.nacDia);
+    drawText(birthDate.mes, FIELD_COORDS.nacMes);
+    drawText(birthDate.anio, FIELD_COORDS.nacAnio);
   }
 
   // #8: EDAD
   if (patient.age) {
     const ageNum = patient.age.replace(/\D/g, '');
-    drawText(ageNum, FIELD_COORDS.edad, { fontSize: FONT_SIZE_CODE });
+    drawText(ageNum, FIELD_COORDS.edad);
     // Unit: default to Años (1)
-    drawText('1', FIELD_COORDS.edadUnidad, { fontSize: FONT_SIZE_CODE });
+    drawText('1', FIELD_COORDS.edadUnidad);
   }
 
   // #9: PUEBLO INDÍGENA
   if (patient.isRapanui) {
-    drawText('1', FIELD_COORDS.puebloIndigena, { fontSize: FONT_SIZE_CODE }); // 1=Sí
+    drawText('1', FIELD_COORDS.puebloIndigena); // 1=Sí
   }
 
   // #18: PREVISIÓN
   const prevision = mapInsurance(patient.insurance);
-  drawText(prevision, FIELD_COORDS.prevision, { fontSize: FONT_SIZE_CODE });
+  drawText(prevision, FIELD_COORDS.prevision);
 
   // #22: PROCEDENCIA
   const procedencia = mapProcedencia(patient.admissionOrigin);
-  drawText(procedencia, FIELD_COORDS.procedencia, { fontSize: FONT_SIZE_CODE });
+  drawText(procedencia, FIELD_COORDS.procedencia);
 
   // #24: INGRESO
   const admDate = parseDate(patient.admissionDate);
   const admTime = parseTime(patient.admissionTime);
   if (admTime) {
-    drawText(admTime.hora, FIELD_COORDS.ingresoHora, { fontSize: FONT_SIZE_CODE });
-    drawText(admTime.min, FIELD_COORDS.ingresoMin, { fontSize: FONT_SIZE_CODE });
+    drawText(admTime.hora, FIELD_COORDS.ingresoHora);
+    drawText(admTime.min, FIELD_COORDS.ingresoMin);
   }
   if (admDate) {
-    drawText(admDate.dia, FIELD_COORDS.ingresoDia, { fontSize: FONT_SIZE_CODE });
-    drawText(admDate.mes, FIELD_COORDS.ingresoMes, { fontSize: FONT_SIZE_CODE });
-    drawText(admDate.anio, FIELD_COORDS.ingresoAnio, { fontSize: FONT_SIZE_CODE });
+    drawText(admDate.dia, FIELD_COORDS.ingresoDia);
+    drawText(admDate.mes, FIELD_COORDS.ingresoMes);
+    drawText(admDate.anio, FIELD_COORDS.ingresoAnio);
   }
 
   // #29: EGRESO
   const disDate = parseDate(discharge.dischargeDate);
   const disTime = parseTime(discharge.dischargeTime);
   if (disTime) {
-    drawText(disTime.hora, FIELD_COORDS.egresoHora, { fontSize: FONT_SIZE_CODE });
-    drawText(disTime.min, FIELD_COORDS.egresoMin, { fontSize: FONT_SIZE_CODE });
+    drawText(disTime.hora, FIELD_COORDS.egresoHora);
+    drawText(disTime.min, FIELD_COORDS.egresoMin);
   }
   if (disDate) {
-    drawText(disDate.dia, FIELD_COORDS.egresoDia, { fontSize: FONT_SIZE_CODE });
-    drawText(disDate.mes, FIELD_COORDS.egresoMes, { fontSize: FONT_SIZE_CODE });
-    drawText(disDate.anio, FIELD_COORDS.egresoAnio, { fontSize: FONT_SIZE_CODE });
+    drawText(disDate.dia, FIELD_COORDS.egresoDia);
+    drawText(disDate.mes, FIELD_COORDS.egresoMes);
+    drawText(disDate.anio, FIELD_COORDS.egresoAnio);
   }
 
   // #30: DÍAS DE ESTADA
   const days =
     discharge.daysOfStay ?? calculateDaysOfStay(patient.admissionDate, discharge.dischargeDate);
   if (days > 0) {
-    drawText(String(days), FIELD_COORDS.diasEstada, { fontSize: FONT_SIZE_CODE });
+    drawText(String(days), FIELD_COORDS.diasEstada);
   }
 
   // #31: CONDICIÓN AL EGRESO (1=Vivo by default)
-  drawText('1', FIELD_COORDS.condicionEgreso, { fontSize: FONT_SIZE_CODE });
+  drawText('1', FIELD_COORDS.condicionEgreso);
 
   // #33: DIAGNÓSTICO PRINCIPAL + CIE-10
   const diagnostico = patient.cie10Description || patient.pathology || '';
-  drawText(diagnostico, FIELD_COORDS.diagnosticoPrincipal, { fontSize: FONT_SIZE_SMALL });
+  drawText(diagnostico, FIELD_COORDS.diagnosticoPrincipal);
 
   if (patient.cie10Code) {
-    drawText(patient.cie10Code, FIELD_COORDS.codigoCIE10, { fontSize: FONT_SIZE_CODE, bold: true });
+    drawText(patient.cie10Code, FIELD_COORDS.codigoCIE10, { bold: true });
   }
 
   // #50: ESPECIALIDAD
   const specialtyStr = String(patient.specialty || '');
   if (specialtyStr && specialtyStr !== 'Vacío' && specialtyStr !== '') {
-    drawText(specialtyStr, FIELD_COORDS.especialidadMedico, { fontSize: FONT_SIZE });
+    drawText(specialtyStr, FIELD_COORDS.especialidadMedico);
   }
 
   // 4. Serialize and return
