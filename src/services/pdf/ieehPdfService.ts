@@ -58,71 +58,70 @@ export interface DischargeFormData {
  * PDF coordinate mapping for each field.
  * Y coordinates are from the BOTTOM of the page (PDF standard).
  * Page height = 935.43, so top of page ≈ Y=935
- * To convert from "pixels from top" to PDF Y: pdfY = 935 - pixelsFromTop
  *
- * The form uses a grid layout. Coordinates estimated from the 609.57×935.43 page.
+ * COORDINATES SOURCE: Extracted via PDF field mapping tool (2026-02-23).
+ * These replace the manually calibrated values from visual inspection.
  */
 const FIELD_COORDS = {
-  // ── #4: NOMBRE LEGAL DEL PACIENTE ──  (✅ verified)
-  primerApellido: { x: 85, y: 830, maxWidth: 160 },
-  segundoApellido: { x: 255, y: 830, maxWidth: 160 },
-  nombres: { x: 428, y: 830, maxWidth: 130 },
+  // ── #4: NOMBRE LEGAL DEL PACIENTE ──
+  primerApellido: { x: 57.49, y: 825.64, maxWidth: 137.83 },
+  segundoApellido: { x: 249.13, y: 824.9, maxWidth: 118.67 },
+  nombres: { x: 456.99, y: 824.9, maxWidth: 110.56 },
 
-  // ── #52: NOMBRE SOCIAL ──  (✅ verified)
-  nombreSocial: { x: 85, y: 800, maxWidth: 200 },
+  // ── #52: NOMBRE SOCIAL ──
+  nombreSocial: { x: 114.25, y: 805, maxWidth: 93.61 },
 
   // ── #5: TIPO DE IDENTIFICACIÓN + RUN ──
-  tipoIdentificacion: { x: 170, y: 785, maxWidth: 15 },
-  runDigits: { x: 85, y: 766, maxWidth: 200 },
+  tipoIdentificacion: { x: 111.3, y: 782.16, maxWidth: 11.06 },
+  runDigits: { x: 59.7, y: 757.84, maxWidth: 87.71 },
 
-  // ── #6: SEXO REGISTRAL ──  (✅ calibrated v5: X=385, Y=773)
-  sexoRegistral: { x: 385, y: 773, maxWidth: 15 },
+  // ── #6: SEXO REGISTRAL ──
+  sexoRegistral: { x: 305.15, y: 779.95, maxWidth: 11.79 },
 
-  // ── #7: FECHA DE NACIMIENTO ──  (corrected from dot cal: Y=800)
-  nacDia: { x: 460, y: 800, maxWidth: 25 },
-  nacMes: { x: 490, y: 800, maxWidth: 25 },
-  nacAnio: { x: 520, y: 800, maxWidth: 35 },
+  // ── #7: FECHA DE NACIMIENTO ──
+  nacDia: { x: 450.36, y: 799.84, maxWidth: 22.85 },
+  nacMes: { x: 489.42, y: 799.11, maxWidth: 21.38 },
+  nacAnio: { x: 524.07, y: 799.11, maxWidth: 50.86 },
 
-  // ── #8: EDAD ──  (✅ verified)
-  edad: { x: 105, y: 725, maxWidth: 50 },
-  edadUnidad: { x: 185, y: 725, maxWidth: 15 },
+  // ── #8: EDAD ──
+  edad: { x: 79.7, y: 721.41, maxWidth: 35.35 },
+  edadUnidad: { x: 181.07, y: 720.07, maxWidth: 10.67 },
 
-  // ── #53→#10: PUEBLO INDÍGENA ──  (✅ calibrated v3: moved to correct section)
-  puebloIndigena: { x: 525, y: 750, maxWidth: 15 },
+  // ── #10: PUEBLO INDÍGENA ──
+  puebloIndigena: { x: 523.87, y: 750.08, maxWidth: 22.68 },
 
-  // ── #18: PREVISIÓN ──  (corrected from dot cal: X=60)
-  prevision: { x: 60, y: 503, maxWidth: 15 },
+  // ── #18: PREVISIÓN ──
+  prevision: { x: 54.35, y: 516.72, maxWidth: 10.67 },
 
   // ── #22: PROCEDENCIA ──
-  procedencia: { x: 427, y: 453, maxWidth: 15 },
+  procedencia: { x: 225.75, y: 471.38, maxWidth: 10.67 },
 
-  // ── #24: INGRESO (hora, fecha) ──  (MAJOR FIX: X shifted ~130pt LEFT)
-  // Dot calibration: hora=110, min=140, dd=190, mm=210, aa=230, Y=428
-  ingresoHora: { x: 110, y: 428, maxWidth: 20 },
-  ingresoMin: { x: 140, y: 428, maxWidth: 20 },
-  ingresoDia: { x: 190, y: 428, maxWidth: 18 },
-  ingresoMes: { x: 210, y: 428, maxWidth: 18 },
-  ingresoAnio: { x: 230, y: 428, maxWidth: 30 },
+  // ── #24: INGRESO (hora, fecha) ──
+  ingresoHora: { x: 102.37, y: 426.71, maxWidth: 22.68 },
+  ingresoMin: { x: 136.39, y: 426.04, maxWidth: 21.34 },
+  ingresoDia: { x: 181.07, y: 426.04, maxWidth: 22.68 },
+  ingresoMes: { x: 215.08, y: 427.38, maxWidth: 23.34 },
+  ingresoAnio: { x: 249.76, y: 426.71, maxWidth: 22.01 },
 
-  // ── #29: EGRESO (hora, fecha) ──  (✅ calibrated v3: Y 348→336)
-  egresoHora: { x: 110, y: 336, maxWidth: 20 },
-  egresoMin: { x: 140, y: 336, maxWidth: 20 },
-  egresoDia: { x: 190, y: 336, maxWidth: 18 },
-  egresoMes: { x: 210, y: 336, maxWidth: 18 },
-  egresoAnio: { x: 230, y: 336, maxWidth: 30 },
+  // ── #29: EGRESO (hora, fecha) ──
+  egresoHora: { x: 92.37, y: 340.04, maxWidth: 21.34 },
+  egresoMin: { x: 125.05, y: 340.7, maxWidth: 23.34 },
+  egresoDia: { x: 170.4, y: 339.37, maxWidth: 22.68 },
+  egresoMes: { x: 205.08, y: 339.37, maxWidth: 23.34 },
+  egresoAnio: { x: 238.43, y: 338.7, maxWidth: 24.01 },
 
-  // ── #30: DÍAS DE ESTADA ──  (Y=328, previously had EGRESO here)
-  diasEstada: { x: 110, y: 320, maxWidth: 55 },
+  // ── #30: DÍAS DE ESTADA ──
+  diasEstada: { x: 104.37, y: 326.03, maxWidth: 45.35 },
 
   // ── #31: CONDICIÓN AL EGRESO ──
-  condicionEgreso: { x: 230, y: 320, maxWidth: 15 },
+  condicionEgreso: { x: 250.43, y: 327.37, maxWidth: 11.34 },
 
-  // ── #33: DIAGNÓSTICO PRINCIPAL ──  (Y corrected to 280 from dot cal)
-  diagnosticoPrincipal: { x: 150, y: 280, maxWidth: 380 },
-  codigoCIE10: { x: 548, y: 280, maxWidth: 55 },
+  // ── #33: DIAGNÓSTICO PRINCIPAL ──
+  diagnosticoPrincipal: { x: 167.06, y: 280.7, maxWidth: 341.47 },
+  codigoCIE10: { x: 529.2, y: 281.36, maxWidth: 46.68 },
 
-  // ── #50: ESPECIALIDAD MÉDICO ──  (Y=82, above the doctor name boxes)
-  especialidadMedico: { x: 430, y: 82, maxWidth: 170 },
+  // ── #50: ESPECIALIDAD MÉDICO ──
+  especialidadMedico: { x: 327.79, y: 76.01, maxWidth: 151.39 },
 } as const;
 
 /**

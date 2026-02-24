@@ -10,71 +10,69 @@ async function verify() {
     const page = pdfDoc.getPage(0);
     const RED = rgb(1, 0, 0);
 
-    // We are testing with font size 9
     const FZ = 9;
 
     const draw = (text, x, y, size = FZ, bold = false) => {
         page.drawText(text, { x, y, size, font: bold ? fontBold : font, color: RED });
     };
 
-    // #4 NOMBRE (✅ Y=830)
-    draw('OPAZO', 85, 830);
-    draw('DAMIANI', 255, 830);
-    draw('DANIEL', 428, 830);
+    // Coordinates extracted via PDF field mapping tool (2026-02-23)
+
+    // #4 NOMBRE
+    draw('OPAZO', 57.49, 825.64);
+    draw('DAMIANI', 249.13, 824.9);
+    draw('DANIEL', 456.99, 824.9);
     // #52 NOMBRE SOCIAL
-    draw('Danny', 85, 800);
+    draw('Danny', 114.25, 805);
     // #5 TIPO ID + RUN
-    draw('1', 170, 785);
-    draw('12.345.678-9', 85, 766);
-    // #6 SEXO REGISTRAL (checkbox square)
-    draw('M', 385, 773, FZ, true);
-    // #7 FECHA NAC 
-    draw('15', 460, 800);
-    draw('03', 490, 800);
-    draw('1990', 520, 800);
+    draw('1', 111.3, 782.16);
+    draw('12.345.678-9', 59.7, 757.84);
+    // #6 SEXO REGISTRAL
+    draw('M', 305.15, 779.95, FZ, true);
+    // #7 FECHA NAC
+    draw('15', 450.36, 799.84);
+    draw('03', 489.42, 799.11);
+    draw('1990', 524.07, 799.11);
     // #8 EDAD
-    draw('35', 105, 725);
-    draw('1', 185, 725);
-    // #10 PUEBLO INDÍGENA — "¿Pertenece?" checkbox (1=Sí)
-    // The Sí/No checkbox is around X=1050 (screen) ≈ X=520 (PDF), same Y row as #53
-    draw('1', 1050 / 2, 750);  // Sí=1
-    // and the specific pueblo: 3=Rapa Nui, positioned in the list to the right
-    draw('3', 1140 / 2, 735);  // Rapa Nui = 3 in the PUEBLOS INDÍGENAS numbered list
-    // #18 PREVISIÓN 
-    draw('1', 60, 503);
+    draw('35', 79.7, 721.41);
+    draw('1', 181.07, 720.07);
+    // #10 PUEBLO INDÍGENA
+    draw('3', 523.87, 750.08);
+    // #18 PREVISIÓN
+    draw('1', 54.35, 516.72);
     // #22 PROCEDENCIA
-    draw('1', 427, 453);
+    draw('1', 225.75, 471.38);
 
-    // #24 INGRESO (✅ Y=428)
-    draw('08', 110, 428);
-    draw('30', 140, 428);
-    draw('22', 190, 428);
-    draw('02', 210, 428);
-    draw('2025', 230, 428);
+    // #24 INGRESO
+    draw('08', 102.37, 426.71);
+    draw('30', 136.39, 426.04);
+    draw('22', 181.07, 426.04);
+    draw('02', 215.08, 427.38);
+    draw('2025', 249.76, 426.71);
 
-    // #29 EGRESO (Y lowered to 336 for perfect vertical centering in boxes)
-    draw('14', 110, 336);
-    draw('00', 140, 336);
-    draw('25', 190, 336);
-    draw('02', 210, 336);
-    draw('2025', 230, 336);
+    // #29 EGRESO
+    draw('14', 92.37, 340.04);
+    draw('00', 125.05, 340.7);
+    draw('25', 170.4, 339.37);
+    draw('02', 205.08, 339.37);
+    draw('2025', 238.43, 338.7);
 
-    // #30 DÍAS ESTADA (Y corrected: 328→320 based on subagent report)
-    draw('3', 110, 320);
+    // #30 DÍAS ESTADA
+    draw('3', 104.37, 326.03);
 
-    // #31 CONDICIÓN (Y corrected: 328→320)
-    draw('1', 230, 320);
+    // #31 CONDICIÓN
+    draw('1', 250.43, 327.37);
 
-    // #33 DIAGNÓSTICO + CIE-10 (✅ Y=280)
-    draw('DIABETES MELLITUS TIPO 2, NO INSULINODEPENDIENTE', 150, 280, 7); // kept a bit smaller for long text
-    draw('E11.9', 548, 280, FZ, true);
+    // #33 DIAGNÓSTICO + CIE-10
+    draw('DIABETES MELLITUS TIPO 2, NO INSULINODEPENDIENTE', 167.06, 280.7, 7);
+    draw('E11.9', 529.2, 281.36, FZ, true);
 
-    // #50 ESPECIALIDAD (✅ Y=82)
-    draw('MEDICINA INTERNA', 430, 82);
+    // #50 ESPECIALIDAD
+    draw('MEDICINA INTERNA', 327.79, 76.01);
 
     const result = await pdfDoc.save();
     fs.writeFileSync(path.join(__dirname, '..', 'docs', 'ieeh-test.pdf'), result);
-    console.log('✅ Test PDF generated with size 9 and corrected Y coords');
+    console.log('✅ Test PDF generated with precise tool-extracted coordinates');
 }
 
 verify().catch(console.error);
