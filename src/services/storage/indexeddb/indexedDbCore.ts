@@ -166,7 +166,9 @@ let onDatabaseRecreated: (() => void) | null = null;
 const INDEXED_DB_OPEN_TIMEOUT_MS = 7000;
 const INDEXED_DB_DELETE_TIMEOUT_MS = 5000;
 const INDEXED_DB_RECOVERY_RETRY_DELAYS_MS = [300, 1000, 3000] as const;
+const MAX_BACKGROUND_RECOVERY_ATTEMPTS = 3;
 let recoveryRetryTimer: ReturnType<typeof setTimeout> | null = null;
+let backgroundRecoveryAttempts = 0;
 
 const attachDatabaseEvents = (database: HangaRoaDatabase) => {
   database.on('blocked', () => {
@@ -174,7 +176,9 @@ const attachDatabaseEvents = (database: HangaRoaDatabase) => {
   });
 
   database.on('close', () => {
-    console.warn('[IndexedDB] 🚪 Database connection closed unexpectedly.');
+    if (!isUsingMock) {
+      console.warn('[IndexedDB] 🚪 Database connection closed unexpectedly.');
+    }
   });
 };
 
@@ -203,6 +207,15 @@ const assignMockTables = (mock: HangaRoaDatabase) => {
 const scheduleBackgroundRecoveryRetry = () => {
   if (recoveryRetryTimer || typeof window === 'undefined') return;
 
+  // Stop retrying after MAX_BACKGROUND_RECOVERY_ATTEMPTS
+  if (backgroundRecoveryAttempts >= MAX_BACKGROUND_RECOVERY_ATTEMPTS) {
+    console.warn(
+      `[IndexedDB] 🛑 Stopped background recovery after ${MAX_BACKGROUND_RECOVERY_ATTEMPTS} attempts. Using fallback mode.`
+    );
+    return;
+  }
+
+  backgroundRecoveryAttempts++;
   recoveryRetryTimer = setTimeout(() => {
     recoveryRetryTimer = null;
     void ensureDbReady({ allowRecoveryWhenMock: true });
