@@ -264,14 +264,14 @@ export const IEEHFormDialog: React.FC<IEEHFormDialogProps> = ({
 
           {/* ── SECTION 2: Intervención Quirúrgica ── */}
           <fieldset className="space-y-2">
-            <legend className="text-sm font-semibold text-slate-700 flex items-center gap-1">
-              <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-bold">
-                #39
-              </span>
-              Intervención Quirúrgica
-            </legend>
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-1.5 cursor-pointer">
+            <div className="flex items-center gap-3">
+              <legend className="text-sm font-semibold text-slate-700 flex items-center gap-1">
+                <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-bold">
+                  #39
+                </span>
+                Intervención Quirúrgica
+              </legend>
+              <label className="flex items-center gap-1 cursor-pointer">
                 <input
                   type="radio"
                   name="intervencion"
@@ -281,7 +281,7 @@ export const IEEHFormDialog: React.FC<IEEHFormDialogProps> = ({
                 />
                 <span className="text-sm">Sí</span>
               </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
+              <label className="flex items-center gap-1 cursor-pointer">
                 <input
                   type="radio"
                   name="intervencion"
@@ -308,14 +308,14 @@ export const IEEHFormDialog: React.FC<IEEHFormDialogProps> = ({
 
           {/* ── SECTION 3: Procedimiento ── */}
           <fieldset className="space-y-2">
-            <legend className="text-sm font-semibold text-slate-700 flex items-center gap-1">
-              <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[10px] font-bold">
-                #42
-              </span>
-              Procedimiento
-            </legend>
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-1.5 cursor-pointer">
+            <div className="flex items-center gap-3">
+              <legend className="text-sm font-semibold text-slate-700 flex items-center gap-1">
+                <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[10px] font-bold">
+                  #42
+                </span>
+                Procedimiento
+              </legend>
+              <label className="flex items-center gap-1 cursor-pointer">
                 <input
                   type="radio"
                   name="procedimiento"
@@ -325,7 +325,7 @@ export const IEEHFormDialog: React.FC<IEEHFormDialogProps> = ({
                 />
                 <span className="text-sm">Sí</span>
               </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
+              <label className="flex items-center gap-1 cursor-pointer">
                 <input
                   type="radio"
                   name="procedimiento"
@@ -361,6 +361,13 @@ export const IEEHFormDialog: React.FC<IEEHFormDialogProps> = ({
             <div className="grid grid-cols-3 gap-2">
               <input
                 type="text"
+                value={tratanteNombre}
+                onChange={e => setTratanteNombre(e.target.value)}
+                placeholder="Nombre"
+                className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-rose-500"
+              />
+              <input
+                type="text"
                 value={tratanteAp1}
                 onChange={e => setTratanteAp1(e.target.value)}
                 placeholder="Primer Apellido"
@@ -371,13 +378,6 @@ export const IEEHFormDialog: React.FC<IEEHFormDialogProps> = ({
                 value={tratanteAp2}
                 onChange={e => setTratanteAp2(e.target.value)}
                 placeholder="Segundo Apellido"
-                className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-rose-500"
-              />
-              <input
-                type="text"
-                value={tratanteNombre}
-                onChange={e => setTratanteNombre(e.target.value)}
-                placeholder="Nombre"
                 className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-rose-500"
               />
             </div>
