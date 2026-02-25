@@ -51,6 +51,17 @@ export interface DischargeFormData {
   daysOfStay?: number; // Días de estada (auto-calculated if not provided)
   establishmentName?: string;
   establishmentCode?: string;
+  // ── Dialog-provided overrides ──
+  diagnosticoPrincipal?: string; // Free-text diagnosis (overrides patient data)
+  cie10Code?: string; // CIE-10 code (overrides patient data)
+  intervencionQuirurgica?: string; // Surgery code number
+  intervencionQuirurgDescrip?: string; // Surgery description
+  procedimiento?: string; // Procedure code number
+  procedimientoDescrip?: string; // Procedure description
+  tratanteApellido1?: string;
+  tratanteApellido2?: string;
+  tratanteNombre?: string;
+  tratanteRut?: string;
 }
 
 /**
@@ -118,6 +129,20 @@ const FIELD_COORDS = {
   // ── #33: DIAGNÓSTICO PRINCIPAL ──
   diagnosticoPrincipal: { x: 167.08, y: 280.72, maxWidth: 341.48 },
   codigoCIE10: { x: 529.23, y: 281.38, maxWidth: 46.69 },
+
+  // ── #39: INTERVENCIÓN QUIRÚRGICA ──
+  intervencionQuirurgica: { x: 150.06, y: 156.68, maxWidth: 12.67 },
+  intervencionQuirurgDescrip: { x: 186.41, y: 148.68, maxWidth: 178.07 },
+
+  // ── #42: PROCEDIMIENTO ──
+  procedimiento: { x: 59.69, y: 99.34, maxWidth: 12.67 },
+  procedimientoDescrip: { x: 233.76, y: 114.68, maxWidth: 123.38 },
+
+  // ── #49: MÉDICO TRATANTE ── (Y≈56.67)
+  tratanteApellido1: { x: 30.01, y: 57.34, maxWidth: 104.04 },
+  tratanteApellido2: { x: 142.72, y: 56.67, maxWidth: 102.04 },
+  tratanteNombre: { x: 260.77, y: 56.67, maxWidth: 164.06 },
+  tratanteRut: { x: 58.69, y: 32, maxWidth: 92.7 },
 
   // ── #50: ESPECIALIDAD MÉDICO ──
   especialidadMedico: { x: 327.77, y: 76.61, maxWidth: 151.42 },
@@ -366,11 +391,44 @@ export const fillIEEHForm = async (
   drawText('1', FIELD_COORDS.condicionEgreso);
 
   // #33: DIAGNÓSTICO PRINCIPAL + CIE-10
-  const diagnostico = patient.cie10Description || patient.pathology || '';
+  // Dialog overrides take priority over patient data
+  const diagnostico =
+    discharge.diagnosticoPrincipal || patient.cie10Description || patient.pathology || '';
   drawText(diagnostico, FIELD_COORDS.diagnosticoPrincipal);
 
-  if (patient.cie10Code) {
-    drawText(patient.cie10Code, FIELD_COORDS.codigoCIE10, { bold: true });
+  const cie10 = discharge.cie10Code || patient.cie10Code || '';
+  if (cie10) {
+    drawText(cie10, FIELD_COORDS.codigoCIE10, { bold: true });
+  }
+
+  // #39: INTERVENCIÓN QUIRÚRGICA
+  if (discharge.intervencionQuirurgica) {
+    drawText(discharge.intervencionQuirurgica, FIELD_COORDS.intervencionQuirurgica);
+  }
+  if (discharge.intervencionQuirurgDescrip) {
+    drawText(discharge.intervencionQuirurgDescrip, FIELD_COORDS.intervencionQuirurgDescrip);
+  }
+
+  // #42: PROCEDIMIENTO
+  if (discharge.procedimiento) {
+    drawText(discharge.procedimiento, FIELD_COORDS.procedimiento);
+  }
+  if (discharge.procedimientoDescrip) {
+    drawText(discharge.procedimientoDescrip, FIELD_COORDS.procedimientoDescrip);
+  }
+
+  // #49: MÉDICO TRATANTE
+  if (discharge.tratanteApellido1) {
+    drawText(discharge.tratanteApellido1, FIELD_COORDS.tratanteApellido1);
+  }
+  if (discharge.tratanteApellido2) {
+    drawText(discharge.tratanteApellido2, FIELD_COORDS.tratanteApellido2);
+  }
+  if (discharge.tratanteNombre) {
+    drawText(discharge.tratanteNombre, FIELD_COORDS.tratanteNombre);
+  }
+  if (discharge.tratanteRut) {
+    drawText(discharge.tratanteRut, FIELD_COORDS.tratanteRut);
   }
 
   // #50: ESPECIALIDAD

@@ -1,0 +1,353 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { X, Search, Sparkles, Loader2, FileText } from 'lucide-react';
+import type { PatientData } from '@/types';
+import type { DischargeFormData } from '@/services/pdf/ieehPdfService';
+import { downloadIEEHForm } from '@/services/pdf/ieehPdfService';
+import { searchDiagnoses, forceAISearch } from '@/services/terminology/terminologyService';
+import type { TerminologyConcept } from '@/services/terminology/terminologyService';
+
+interface IEEHFormDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  patient: PatientData;
+  baseDischargeData: DischargeFormData;
+}
+
+export const IEEHFormDialog: React.FC<IEEHFormDialogProps> = ({
+  isOpen,
+  onClose,
+  patient,
+  baseDischargeData,
+}) => {
+  // ── Diagnosis fields ──
+  const [diagnostico, setDiagnostico] = useState('');
+  const [cie10Code, setCie10Code] = useState('');
+  const [cie10Display, setCie10Display] = useState('');
+
+  // ── CIE-10 Search ──
+  const [searchResults, setSearchResults] = useState<TerminologyConcept[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isAISearching, setIsAISearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortController = useRef<AbortController | null>(null);
+
+  // ── Surgery ──
+  const [intervencionCodigo, setIntervencionCodigo] = useState('');
+  const [intervencionDescrip, setIntervencionDescrip] = useState('');
+
+  // ── Procedure ──
+  const [procedimientoCodigo, setProcedimientoCodigo] = useState('');
+  const [procedimientoDescrip, setProcedimientoDescrip] = useState('');
+
+  // ── Treating Doctor ──
+  const [tratanteAp1, setTratanteAp1] = useState('');
+  const [tratanteAp2, setTratanteAp2] = useState('');
+  const [tratanteNombre, setTratanteNombre] = useState('');
+  const [tratanteRut, setTratanteRut] = useState('');
+
+  // ── State ──
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState('');
+
+  // Initialize from patient data
+  useEffect(() => {
+    if (isOpen) {
+      setDiagnostico(patient.cie10Description || patient.pathology || '');
+      setCie10Code(patient.cie10Code || '');
+      setCie10Display(patient.cie10Description || '');
+      setError('');
+    }
+  }, [isOpen, patient]);
+
+  // Debounced CIE-10 search
+  const handleDiagnosticoSearch = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+
+    abortController.current?.abort();
+    abortController.current = new AbortController();
+
+    setIsSearching(true);
+    try {
+      const results = await searchDiagnoses(query, abortController.current.signal);
+      setSearchResults(results);
+      setShowResults(results.length > 0);
+    } catch {
+      // Aborted or error
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  const handleDiagnosticoChange = (value: string) => {
+    setDiagnostico(value);
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(() => handleDiagnosticoSearch(value), 300);
+  };
+
+  const handleAISearch = async () => {
+    if (diagnostico.length < 2) return;
+
+    abortController.current?.abort();
+    abortController.current = new AbortController();
+
+    setIsAISearching(true);
+    try {
+      const results = await forceAISearch(diagnostico, abortController.current.signal);
+      setSearchResults(results);
+      setShowResults(results.length > 0);
+    } catch {
+      // Aborted
+    } finally {
+      setIsAISearching(false);
+    }
+  };
+
+  const selectCIE10 = (concept: TerminologyConcept) => {
+    setCie10Code(concept.code);
+    setCie10Display(concept.display);
+    setDiagnostico(concept.display);
+    setShowResults(false);
+  };
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    setError('');
+    try {
+      const fullDischargeData: DischargeFormData = {
+        ...baseDischargeData,
+        diagnosticoPrincipal: diagnostico || undefined,
+        cie10Code: cie10Code || undefined,
+        intervencionQuirurgica: intervencionCodigo || undefined,
+        intervencionQuirurgDescrip: intervencionDescrip || undefined,
+        procedimiento: procedimientoCodigo || undefined,
+        procedimientoDescrip: procedimientoDescrip || undefined,
+        tratanteApellido1: tratanteAp1 || undefined,
+        tratanteApellido2: tratanteAp2 || undefined,
+        tratanteNombre: tratanteNombre || undefined,
+        tratanteRut: tratanteRut || undefined,
+      };
+      await downloadIEEHForm(patient, fullDischargeData);
+      onClose();
+    } catch (err) {
+      console.error('[IEEH] Error generando formulario:', err);
+      setError('Error al generar el PDF. Revise la consola.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-xl">
+          <div className="flex items-center gap-2">
+            <FileText className="text-emerald-600" size={20} />
+            <h2 className="text-lg font-bold text-slate-800">
+              Egreso Estadístico — {patient.patientName || 'Paciente'}
+            </h2>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-200 transition-colors">
+            <X size={20} className="text-slate-500" />
+          </button>
+        </div>
+
+        <div className="px-6 py-4 space-y-5">
+          {/* ── SECTION 1: Diagnóstico Principal ── */}
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-semibold text-slate-700 flex items-center gap-1">
+              <span className="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded text-[10px] font-bold">
+                #33
+              </span>
+              Diagnóstico Principal
+            </legend>
+            <div className="relative">
+              <input
+                type="text"
+                value={diagnostico}
+                onChange={e => handleDiagnosticoChange(e.target.value)}
+                onFocus={() => searchResults.length > 0 && setShowResults(true)}
+                placeholder="Escriba el diagnóstico..."
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 pr-24"
+              />
+              <div className="absolute right-1 top-1 flex gap-1">
+                {isSearching && (
+                  <Loader2 size={14} className="animate-spin text-slate-400 mt-1.5" />
+                )}
+                <button
+                  type="button"
+                  onClick={handleAISearch}
+                  disabled={isAISearching || diagnostico.length < 2}
+                  className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-violet-50 text-violet-700 border border-violet-200 rounded hover:bg-violet-100 disabled:opacity-40 transition-colors"
+                >
+                  {isAISearching ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    <Sparkles size={12} />
+                  )}
+                  IA
+                </button>
+              </div>
+
+              {/* CIE-10 search results dropdown */}
+              {showResults && searchResults.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {searchResults.map(r => (
+                    <button
+                      key={r.code}
+                      type="button"
+                      onClick={() => selectCIE10(r)}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-emerald-50 border-b border-slate-100 last:border-0"
+                    >
+                      <span className="font-mono font-bold text-emerald-700">{r.code}</span>
+                      <span className="text-slate-500 mx-1">—</span>
+                      <span className="text-slate-700">{r.display}</span>
+                      {r.fromAI && <span className="ml-1 text-[10px] text-violet-500">⚡IA</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* CIE-10 Code display */}
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-slate-500">Código CIE-10:</label>
+              <input
+                type="text"
+                value={cie10Code}
+                onChange={e => setCie10Code(e.target.value.toUpperCase())}
+                placeholder="Ej: E11.9"
+                className="px-2 py-1 border border-slate-300 rounded text-sm font-mono font-bold w-28 focus:ring-2 focus:ring-emerald-500"
+              />
+              {cie10Display && cie10Display !== diagnostico && (
+                <span className="text-xs text-slate-400 truncate">{cie10Display}</span>
+              )}
+            </div>
+          </fieldset>
+
+          {/* ── SECTION 2: Intervención Quirúrgica ── */}
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-semibold text-slate-700 flex items-center gap-1">
+              <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-bold">
+                #39
+              </span>
+              Intervención Quirúrgica
+            </legend>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={intervencionCodigo}
+                onChange={e => setIntervencionCodigo(e.target.value)}
+                placeholder="Cód."
+                className="px-2 py-2 border border-slate-300 rounded-lg text-sm w-16 text-center focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="text"
+                value={intervencionDescrip}
+                onChange={e => setIntervencionDescrip(e.target.value)}
+                placeholder="Descripción de la intervención quirúrgica..."
+                className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </fieldset>
+
+          {/* ── SECTION 3: Procedimiento ── */}
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-semibold text-slate-700 flex items-center gap-1">
+              <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[10px] font-bold">
+                #42
+              </span>
+              Procedimiento
+            </legend>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={procedimientoCodigo}
+                onChange={e => setProcedimientoCodigo(e.target.value)}
+                placeholder="Cód."
+                className="px-2 py-2 border border-slate-300 rounded-lg text-sm w-16 text-center focus:ring-2 focus:ring-amber-500"
+              />
+              <input
+                type="text"
+                value={procedimientoDescrip}
+                onChange={e => setProcedimientoDescrip(e.target.value)}
+                placeholder="Descripción del procedimiento..."
+                className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+          </fieldset>
+
+          {/* ── SECTION 4: Médico Tratante ── */}
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-semibold text-slate-700 flex items-center gap-1">
+              <span className="bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded text-[10px] font-bold">
+                #49
+              </span>
+              Médico Tratante
+            </legend>
+            <div className="grid grid-cols-3 gap-2">
+              <input
+                type="text"
+                value={tratanteAp1}
+                onChange={e => setTratanteAp1(e.target.value)}
+                placeholder="Primer Apellido"
+                className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-rose-500"
+              />
+              <input
+                type="text"
+                value={tratanteAp2}
+                onChange={e => setTratanteAp2(e.target.value)}
+                placeholder="Segundo Apellido"
+                className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-rose-500"
+              />
+              <input
+                type="text"
+                value={tratanteNombre}
+                onChange={e => setTratanteNombre(e.target.value)}
+                placeholder="Nombre"
+                className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-rose-500"
+              />
+            </div>
+            <input
+              type="text"
+              value={tratanteRut}
+              onChange={e => setTratanteRut(e.target.value)}
+              placeholder="RUT del médico (ej: 12.345.678-9)"
+              className="px-3 py-2 border border-slate-300 rounded-lg text-sm w-64 focus:ring-2 focus:ring-rose-500"
+            />
+          </fieldset>
+
+          {/* Error */}
+          {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded-lg transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-sm"
+          >
+            {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
+            {isGenerating ? 'Generando...' : 'Generar PDF'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import clsx from 'clsx';
 import { CensusMovementPrimaryCells } from '@/features/census/components/CensusMovementPrimaryCells';
 import { CensusMovementDateActionsCells } from '@/features/census/components/CensusMovementDateActionsCells';
 import type { DischargeRowViewModel } from '@/features/census/types/censusMovementRowViewModelTypes';
 import type { DischargeData } from '@/types';
-import { downloadIEEHForm } from '@/services/pdf/ieehPdfService';
+import { IEEHFormDialog } from '@/features/census/components/IEEHFormDialog';
 import { FileText } from 'lucide-react';
 
 interface DischargeRowViewProps {
@@ -18,21 +18,7 @@ export const DischargeRowView: React.FC<DischargeRowViewProps> = ({
   recordDate,
   dischargeItem,
 }) => {
-  const handleGenerateIEEH = async () => {
-    if (!dischargeItem?.originalData) {
-      alert('No hay datos suficientes del paciente para generar el formulario IEEH.');
-      return;
-    }
-    try {
-      await downloadIEEHForm(dischargeItem.originalData, {
-        dischargeDate: dischargeItem.movementDate || recordDate,
-        dischargeTime: dischargeItem.time,
-      });
-    } catch (err) {
-      console.error('[IEEH] Error generando formulario:', err);
-      alert('Error al generar el formulario IEEH. Revise la consola para más detalles.');
-    }
-  };
+  const [showDialog, setShowDialog] = useState(false);
 
   return (
     <tr className="border-b border-slate-100 last:border-0 hover:bg-slate-50 print:border-slate-300">
@@ -59,13 +45,25 @@ export const DischargeRowView: React.FC<DischargeRowViewProps> = ({
         <td className="p-1 text-center print:hidden">
           <button
             type="button"
-            onClick={handleGenerateIEEH}
+            onClick={() => setShowDialog(true)}
             title="Generar Informe Estadístico de Egreso (IEEH)"
             className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded hover:bg-emerald-100 hover:border-emerald-300 transition-colors"
           >
             <FileText size={12} />
             IEEH
           </button>
+
+          {showDialog && (
+            <IEEHFormDialog
+              isOpen={showDialog}
+              onClose={() => setShowDialog(false)}
+              patient={dischargeItem.originalData}
+              baseDischargeData={{
+                dischargeDate: dischargeItem.movementDate || recordDate,
+                dischargeTime: dischargeItem.time,
+              }}
+            />
+          )}
         </td>
       )}
     </tr>
