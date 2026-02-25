@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import clsx from 'clsx';
 import { CensusMovementPrimaryCells } from '@/features/census/components/CensusMovementPrimaryCells';
 import { CensusMovementDateActionsCells } from '@/features/census/components/CensusMovementDateActionsCells';
@@ -40,7 +41,7 @@ export const DischargeRowView: React.FC<DischargeRowViewProps> = ({
         movementTime={viewModel.movementTime}
         actions={viewModel.actions}
       />
-      {/* IEEH PDF Button - only visible if patient snapshot exists */}
+      {/* IEEH PDF Button */}
       {dischargeItem?.originalData && (
         <td className="p-1 text-center print:hidden">
           <button
@@ -52,20 +53,24 @@ export const DischargeRowView: React.FC<DischargeRowViewProps> = ({
             <FileText size={12} />
             IEEH
           </button>
-
-          {showDialog && (
-            <IEEHFormDialog
-              isOpen={showDialog}
-              onClose={() => setShowDialog(false)}
-              patient={dischargeItem.originalData}
-              baseDischargeData={{
-                dischargeDate: dischargeItem.movementDate || recordDate,
-                dischargeTime: dischargeItem.time,
-              }}
-            />
-          )}
         </td>
       )}
+
+      {/* Dialog rendered via Portal at body level to avoid table clipping */}
+      {showDialog &&
+        dischargeItem?.originalData &&
+        createPortal(
+          <IEEHFormDialog
+            isOpen={showDialog}
+            onClose={() => setShowDialog(false)}
+            patient={dischargeItem.originalData}
+            baseDischargeData={{
+              dischargeDate: dischargeItem.movementDate || recordDate,
+              dischargeTime: dischargeItem.time,
+            }}
+          />,
+          document.body
+        )}
     </tr>
   );
 };
