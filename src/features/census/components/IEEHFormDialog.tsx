@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Search, Sparkles, Loader2, FileText } from 'lucide-react';
+import { X, Sparkles, Loader2, FileText } from 'lucide-react';
 import type { PatientData } from '@/types';
 import type { DischargeFormData } from '@/services/pdf/ieehPdfService';
 import { downloadIEEHForm } from '@/services/pdf/ieehPdfService';
@@ -33,11 +33,11 @@ export const IEEHFormDialog: React.FC<IEEHFormDialogProps> = ({
   const abortController = useRef<AbortController | null>(null);
 
   // ── Surgery ──
-  const [intervencionCodigo, setIntervencionCodigo] = useState('');
+  const [tieneIntervencion, setTieneIntervencion] = useState<boolean | null>(null);
   const [intervencionDescrip, setIntervencionDescrip] = useState('');
 
   // ── Procedure ──
-  const [procedimientoCodigo, setProcedimientoCodigo] = useState('');
+  const [tieneProcedimiento, setTieneProcedimiento] = useState<boolean | null>(null);
   const [procedimientoDescrip, setProcedimientoDescrip] = useState('');
 
   // ── Treating Doctor ──
@@ -122,10 +122,13 @@ export const IEEHFormDialog: React.FC<IEEHFormDialogProps> = ({
         ...baseDischargeData,
         diagnosticoPrincipal: diagnostico || undefined,
         cie10Code: cie10Code || undefined,
-        intervencionQuirurgica: intervencionCodigo || undefined,
-        intervencionQuirurgDescrip: intervencionDescrip || undefined,
-        procedimiento: procedimientoCodigo || undefined,
-        procedimientoDescrip: procedimientoDescrip || undefined,
+        intervencionQuirurgica:
+          tieneIntervencion != null ? (tieneIntervencion ? '1' : '2') : undefined,
+        intervencionQuirurgDescrip: tieneIntervencion
+          ? intervencionDescrip || undefined
+          : undefined,
+        procedimiento: tieneProcedimiento != null ? (tieneProcedimiento ? '1' : '2') : undefined,
+        procedimientoDescrip: tieneProcedimiento ? procedimientoDescrip || undefined : undefined,
         tratanteApellido1: tratanteAp1 || undefined,
         tratanteApellido2: tratanteAp2 || undefined,
         tratanteNombre: tratanteNombre || undefined,
@@ -240,22 +243,40 @@ export const IEEHFormDialog: React.FC<IEEHFormDialogProps> = ({
               </span>
               Intervención Quirúrgica
             </legend>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={intervencionCodigo}
-                onChange={e => setIntervencionCodigo(e.target.value)}
-                placeholder="Cód."
-                className="px-2 py-2 border border-slate-300 rounded-lg text-sm w-16 text-center focus:ring-2 focus:ring-blue-500"
-              />
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="radio"
+                  name="intervencion"
+                  checked={tieneIntervencion === true}
+                  onChange={() => setTieneIntervencion(true)}
+                  className="accent-blue-600"
+                />
+                <span className="text-sm">Sí</span>
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="radio"
+                  name="intervencion"
+                  checked={tieneIntervencion === false}
+                  onChange={() => {
+                    setTieneIntervencion(false);
+                    setIntervencionDescrip('');
+                  }}
+                  className="accent-blue-600"
+                />
+                <span className="text-sm">No</span>
+              </label>
+            </div>
+            {tieneIntervencion && (
               <input
                 type="text"
                 value={intervencionDescrip}
                 onChange={e => setIntervencionDescrip(e.target.value)}
                 placeholder="Descripción de la intervención quirúrgica..."
-                className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
               />
-            </div>
+            )}
           </fieldset>
 
           {/* ── SECTION 3: Procedimiento ── */}
@@ -266,22 +287,40 @@ export const IEEHFormDialog: React.FC<IEEHFormDialogProps> = ({
               </span>
               Procedimiento
             </legend>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={procedimientoCodigo}
-                onChange={e => setProcedimientoCodigo(e.target.value)}
-                placeholder="Cód."
-                className="px-2 py-2 border border-slate-300 rounded-lg text-sm w-16 text-center focus:ring-2 focus:ring-amber-500"
-              />
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="radio"
+                  name="procedimiento"
+                  checked={tieneProcedimiento === true}
+                  onChange={() => setTieneProcedimiento(true)}
+                  className="accent-amber-600"
+                />
+                <span className="text-sm">Sí</span>
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="radio"
+                  name="procedimiento"
+                  checked={tieneProcedimiento === false}
+                  onChange={() => {
+                    setTieneProcedimiento(false);
+                    setProcedimientoDescrip('');
+                  }}
+                  className="accent-amber-600"
+                />
+                <span className="text-sm">No</span>
+              </label>
+            </div>
+            {tieneProcedimiento && (
               <input
                 type="text"
                 value={procedimientoDescrip}
                 onChange={e => setProcedimientoDescrip(e.target.value)}
                 placeholder="Descripción del procedimiento..."
-                className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500"
               />
-            </div>
+            )}
           </fieldset>
 
           {/* ── SECTION 4: Médico Tratante ── */}
