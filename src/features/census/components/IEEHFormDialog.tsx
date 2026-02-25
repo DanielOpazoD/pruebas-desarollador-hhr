@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Sparkles, Loader2, FileText } from 'lucide-react';
-import type { PatientData } from '@/types';
+import type { PatientData, IeehData } from '@/types';
 import type { DischargeFormData } from '@/services/pdf/ieehPdfService';
 import { downloadIEEHForm } from '@/services/pdf/ieehPdfService';
 import { searchDiagnoses, forceAISearch } from '@/services/terminology/terminologyService';
@@ -11,6 +11,8 @@ interface IEEHFormDialogProps {
   onClose: () => void;
   patient: PatientData;
   baseDischargeData: DischargeFormData;
+  savedIeehData?: IeehData;
+  onSaveData?: (data: IeehData) => void;
 }
 
 export const IEEHFormDialog: React.FC<IEEHFormDialogProps> = ({
@@ -18,6 +20,8 @@ export const IEEHFormDialog: React.FC<IEEHFormDialogProps> = ({
   onClose,
   patient,
   baseDischargeData,
+  savedIeehData,
+  onSaveData,
 }) => {
   // ── Diagnosis fields ──
   const [diagnostico, setDiagnostico] = useState('');
@@ -53,15 +57,52 @@ export const IEEHFormDialog: React.FC<IEEHFormDialogProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState('');
 
-  // Initialize from patient data
+  // Initialize from patient data or saved IEEH data
   useEffect(() => {
     if (isOpen) {
-      setDiagnostico(patient.cie10Description || patient.pathology || '');
-      setCie10Code(patient.cie10Code || '');
-      setCie10Display(patient.cie10Description || '');
+      if (savedIeehData) {
+        setDiagnostico(savedIeehData.diagnosticoPrincipal || '');
+        setCie10Code(savedIeehData.cie10Code || '');
+        setCie10Display(savedIeehData.diagnosticoPrincipal || '');
+        setCondicionEgreso(savedIeehData.condicionEgreso || '1');
+
+        if (savedIeehData.intervencionQuirurgica) {
+          setTieneIntervencion(savedIeehData.intervencionQuirurgica === '1');
+        } else {
+          setTieneIntervencion(null);
+        }
+        setIntervencionDescrip(savedIeehData.intervencionQuirurgDescrip || '');
+
+        if (savedIeehData.procedimiento) {
+          setTieneProcedimiento(savedIeehData.procedimiento === '1');
+        } else {
+          setTieneProcedimiento(null);
+        }
+        setProcedimientoDescrip(savedIeehData.procedimientoDescrip || '');
+
+        setTratanteAp1(savedIeehData.tratanteApellido1 || '');
+        setTratanteAp2(savedIeehData.tratanteApellido2 || '');
+        setTratanteNombre(savedIeehData.tratanteNombre || '');
+        setTratanteRut(savedIeehData.tratanteRut || '');
+      } else {
+        setDiagnostico(patient.cie10Description || patient.pathology || '');
+        setCie10Code(patient.cie10Code || '');
+        setCie10Display(patient.cie10Description || '');
+
+        // Reset previously unset fields for new dialog
+        setCondicionEgreso('1');
+        setTieneIntervencion(null);
+        setIntervencionDescrip('');
+        setTieneProcedimiento(null);
+        setProcedimientoDescrip('');
+        setTratanteAp1('');
+        setTratanteAp2('');
+        setTratanteNombre('');
+        setTratanteRut('');
+      }
       setError('');
     }
-  }, [isOpen, patient]);
+  }, [isOpen, patient, savedIeehData]);
 
   // Debounced CIE-10 search
   const handleDiagnosticoSearch = useCallback(async (query: string) => {
@@ -138,6 +179,26 @@ export const IEEHFormDialog: React.FC<IEEHFormDialogProps> = ({
         tratanteNombre: tratanteNombre || undefined,
         tratanteRut: tratanteRut || undefined,
       };
+
+      if (onSaveData) {
+        onSaveData({
+          diagnosticoPrincipal: diagnostico || undefined,
+          cie10Code: cie10Code || undefined,
+          condicionEgreso,
+          intervencionQuirurgica:
+            tieneIntervencion != null ? (tieneIntervencion ? '1' : '2') : undefined,
+          intervencionQuirurgDescrip: tieneIntervencion
+            ? intervencionDescrip || undefined
+            : undefined,
+          procedimiento: tieneProcedimiento != null ? (tieneProcedimiento ? '1' : '2') : undefined,
+          procedimientoDescrip: tieneProcedimiento ? procedimientoDescrip || undefined : undefined,
+          tratanteApellido1: tratanteAp1 || undefined,
+          tratanteApellido2: tratanteAp2 || undefined,
+          tratanteNombre: tratanteNombre || undefined,
+          tratanteRut: tratanteRut || undefined,
+        });
+      }
+
       await downloadIEEHForm(patient, fullDischargeData);
       onClose();
     } catch (err) {

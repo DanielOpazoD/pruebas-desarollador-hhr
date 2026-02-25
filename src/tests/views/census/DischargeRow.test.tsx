@@ -13,6 +13,7 @@ describe('DischargeRow', () => {
     });
     const onUndo = vi.fn().mockResolvedValue(undefined);
     const onEdit = vi.fn();
+    const onUpdate = vi.fn();
     const onDelete = vi.fn().mockResolvedValue(undefined);
 
     render(
@@ -23,6 +24,7 @@ describe('DischargeRow', () => {
             recordDate="2026-02-14"
             onUndo={onUndo}
             onEdit={onEdit}
+            onUpdate={onUpdate}
             onDelete={onDelete}
           />
         </tbody>

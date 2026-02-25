@@ -21,7 +21,8 @@ export type UpdateDischargeAction = (
   dischargeType?: string,
   dischargeTypeOther?: string,
   time?: string,
-  movementDate?: string
+  movementDate?: string,
+  ieehData?: import('@/types').IeehData
 ) => void;
 
 export type DeleteDischargeAction = (id: string) => void;

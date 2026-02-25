@@ -100,7 +100,7 @@ export const usePatientDischarges = (
   );
 
   const updateDischarge: UpdateDischargeAction = useCallback(
-    (id, status, dischargeType, dischargeTypeOther, time, movementDate) => {
+    (id, status, dischargeType, dischargeTypeOther, time, movementDate, ieehData) => {
       executeMovementMutation(record =>
         resolveUpdateDischargeMovement({
           record,
@@ -110,6 +110,7 @@ export const usePatientDischarges = (
           dischargeTypeOther,
           time,
           movementDate,
+          ieehData,
         })
       );
     },

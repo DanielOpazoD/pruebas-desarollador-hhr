@@ -8,6 +8,7 @@ interface CensusMovementDateActionsCellsProps {
   movementDate?: string;
   movementTime?: string;
   actions: CensusMovementActionDescriptor[];
+  children?: React.ReactNode;
 }
 
 export const CensusMovementDateActionsCells: React.FC<CensusMovementDateActionsCellsProps> = ({
@@ -15,15 +16,16 @@ export const CensusMovementDateActionsCells: React.FC<CensusMovementDateActionsC
   movementDate,
   movementTime,
   actions,
+  children,
 }) => (
   <>
-    <td className="p-2 text-center">
+    <td className="p-2 text-center align-middle">
       <CensusMovementDateTimeCell
         recordDate={recordDate}
         movementDate={movementDate}
         movementTime={movementTime}
       />
     </td>
-    <CensusMovementActionsCell actions={actions} />
+    <CensusMovementActionsCell actions={actions}>{children}</CensusMovementActionsCell>
   </>
 );

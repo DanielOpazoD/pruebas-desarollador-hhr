@@ -16,7 +16,7 @@ import { useMovementSectionModel } from '@/features/census/hooks/useMovementSect
 
 export const DischargesSection: React.FC = () => {
   const { recordDate, discharges } = useCensusMovementData();
-  const { undoDischarge, deleteDischarge } = useDailyRecordMovementActions();
+  const { undoDischarge, deleteDischarge, updateDischarge } = useDailyRecordMovementActions();
   const { handleEditDischarge } = useCensusActionCommands();
   const sectionModel = useMovementSectionModel({
     items: discharges,
@@ -43,6 +43,17 @@ export const DischargesSection: React.FC = () => {
           recordDate={recordDate}
           onUndo={sectionModel.handleUndo}
           onEdit={handleEditDischarge}
+          onUpdate={async updatedItem => {
+            await updateDischarge(
+              updatedItem.id,
+              updatedItem.status,
+              updatedItem.dischargeType,
+              updatedItem.dischargeTypeOther,
+              updatedItem.time,
+              updatedItem.movementDate,
+              updatedItem.ieehData
+            );
+          }}
           onDelete={sectionModel.handleDelete}
         />
       )}

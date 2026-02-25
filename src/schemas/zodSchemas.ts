@@ -252,6 +252,20 @@ export const PatientDataSchema: z.ZodType<PatientData, z.ZodTypeDef, unknown> = 
 // Discharge & Transfer Schemas
 // ============================================================================
 
+export const IeehDataSchema = z.object({
+  diagnosticoPrincipal: nullableOptional(z.string()),
+  cie10Code: nullableOptional(z.string()),
+  condicionEgreso: nullableOptional(z.string()),
+  intervencionQuirurgica: nullableOptional(z.string()),
+  intervencionQuirurgDescrip: nullableOptional(z.string()),
+  procedimiento: nullableOptional(z.string()),
+  procedimientoDescrip: nullableOptional(z.string()),
+  tratanteApellido1: nullableOptional(z.string()),
+  tratanteApellido2: nullableOptional(z.string()),
+  tratanteNombre: nullableOptional(z.string()),
+  tratanteRut: nullableOptional(z.string()),
+});
+
 export const DischargeDataSchema: z.ZodType<DischargeData, z.ZodTypeDef, unknown> = z
   .object({
     id: z.string(),
@@ -272,6 +286,7 @@ export const DischargeDataSchema: z.ZodType<DischargeData, z.ZodTypeDef, unknown
     isRapanui: nullableOptional(z.boolean()),
     originalData: PatientDataSchema.optional(),
     isNested: z.boolean().optional(),
+    ieehData: IeehDataSchema.optional(),
   })
   .passthrough();
 

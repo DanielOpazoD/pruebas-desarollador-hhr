@@ -74,13 +74,13 @@ export interface DischargeFormData {
  * These replace the manually calibrated values from visual inspection.
  */
 const FIELD_COORDS = {
-  // ── #4: NOMBRE LEGAL DEL PACIENTE ── (Y=826.52)
-  primerApellido: { x: 50.84, y: 826.52, maxWidth: 137.82 },
-  segundoApellido: { x: 237.8, y: 826.52, maxWidth: 118.68 },
-  nombres: { x: 441.64, y: 826.52, maxWidth: 110.58 },
+  // ── #4: NOMBRE LEGAL DEL PACIENTE ──
+  primerApellido: { x: 50.84, y: 826.55, maxWidth: 137.82 },
+  segundoApellido: { x: 237.79, y: 826.55, maxWidth: 118.68 },
+  nombres: { x: 441.63, y: 826.55, maxWidth: 110.58 },
 
   // ── #52: NOMBRE SOCIAL ──
-  nombreSocial: { x: 114.24, y: 804.28, maxWidth: 93.63 },
+  nombreSocial: { x: 114.23, y: 804.28, maxWidth: 93.63 },
 
   // ── #5: TIPO DE IDENTIFICACIÓN + RUN ──
   tipoIdentificacion: { x: 111.31, y: 782.21, maxWidth: 11.03 },
@@ -89,7 +89,7 @@ const FIELD_COORDS = {
   // ── #6: SEXO REGISTRAL ──
   sexoRegistral: { x: 305.82, y: 781.46, maxWidth: 11.76 },
 
-  // ── #7: FECHA DE NACIMIENTO ── (Y=800.54)
+  // ── #7: FECHA DE NACIMIENTO ──
   nacDia: { x: 450.35, y: 800.54, maxWidth: 22.86 },
   nacMes: { x: 489.42, y: 800.54, maxWidth: 21.4 },
   nacAnio: { x: 524.05, y: 800.54, maxWidth: 50.84 },
@@ -107,46 +107,47 @@ const FIELD_COORDS = {
   // ── #22: PROCEDENCIA ──
   procedencia: { x: 225.78, y: 471.36, maxWidth: 10.67 },
 
-  // ── #24: INGRESO (hora, fecha) ── (Y=428.74)
-  ingresoHora: { x: 102.35, y: 428.74, maxWidth: 22.68 },
-  ingresoMin: { x: 136.36, y: 428.74, maxWidth: 21.33 },
-  ingresoDia: { x: 181.71, y: 428.74, maxWidth: 22.68 },
-  ingresoMes: { x: 215.73, y: 428.74, maxWidth: 23.35 },
-  ingresoAnio: { x: 249.74, y: 428.74, maxWidth: 22.01 },
+  // ── #24: INGRESO (hora, fecha) ──
+  ingresoHora: { x: 101.85, y: 426.73, maxWidth: 22.68 },
+  ingresoMin: { x: 135.87, y: 426.73, maxWidth: 21.33 },
+  ingresoDia: { x: 181.22, y: 426.73, maxWidth: 22.68 },
+  ingresoMes: { x: 215.23, y: 426.73, maxWidth: 23.35 },
+  ingresoAnio: { x: 249.24, y: 426.73, maxWidth: 22.01 },
 
-  // ── #29: EGRESO (hora, fecha) ── (Y=341.43)
-  egresoHora: { x: 91.68, y: 341.43, maxWidth: 21.33 },
-  egresoMin: { x: 124.35, y: 341.43, maxWidth: 23.35 },
-  egresoDia: { x: 169.03, y: 341.43, maxWidth: 22.68 },
-  egresoMes: { x: 204.39, y: 341.43, maxWidth: 23.35 },
-  egresoAnio: { x: 238.4, y: 341.43, maxWidth: 24.02 },
+  // ── #29: EGRESO (hora, fecha) ──
+  egresoHora: { x: 92.17, y: 339.45, maxWidth: 21.33 },
+  egresoMin: { x: 124.85, y: 339.45, maxWidth: 23.35 },
+  egresoDia: { x: 169.53, y: 339.45, maxWidth: 22.68 },
+  egresoMes: { x: 204.88, y: 339.45, maxWidth: 23.35 },
+  egresoAnio: { x: 238.9, y: 339.45, maxWidth: 24.02 },
 
-  // ── #30: DÍAS DE ESTADA ── (Y=326.75)
-  diasEstada: { x: 103.69, y: 326.75, maxWidth: 45.35 },
+  // ── #30: DÍAS DE ESTADA ──
+  diasEstada: { x: 115.58, y: 327.24, maxWidth: 25.53 },
 
-  // ── #31: CONDICIÓN AL EGRESO ── (Y=326.75)
+  // ── #31: CONDICIÓN AL EGRESO ──
   condicionEgreso: { x: 250.41, y: 326.75, maxWidth: 11.34 },
+  destinoAlAlta: { x: 280.77, y: 343.4, maxWidth: 12.01 },
 
   // ── #33: DIAGNÓSTICO PRINCIPAL ──
-  diagnosticoPrincipal: { x: 167.08, y: 280.72, maxWidth: 341.48 },
+  diagnosticoPrincipal: { x: 167.08, y: 282.54, maxWidth: 341.98 },
   codigoCIE10: { x: 529.23, y: 281.38, maxWidth: 46.69 },
 
   // ── #39: INTERVENCIÓN QUIRÚRGICA ──
-  intervencionQuirurgica: { x: 150.06, y: 156.68, maxWidth: 12.67 },
-  intervencionQuirurgDescrip: { x: 186.41, y: 148.68, maxWidth: 178.07 },
+  intervencionQuirurgica: { x: 150.08, y: 158.67, maxWidth: 11.19 },
+  intervencionQuirurgDescrip: { x: 186.41, y: 148.64, maxWidth: 178.06 },
 
   // ── #42: PROCEDIMIENTO ──
-  procedimiento: { x: 59.69, y: 99.34, maxWidth: 12.67 },
-  procedimientoDescrip: { x: 233.76, y: 114.68, maxWidth: 123.38 },
+  procedimiento: { x: 59.68, y: 100.83, maxWidth: 13.17 },
+  procedimientoDescrip: { x: 234.27, y: 116.67, maxWidth: 128.83 },
 
-  // ── #49: MÉDICO TRATANTE ── (Y≈56.67)
-  tratanteApellido1: { x: 30.01, y: 57.34, maxWidth: 104.04 },
-  tratanteApellido2: { x: 142.72, y: 56.67, maxWidth: 102.04 },
-  tratanteNombre: { x: 260.77, y: 56.67, maxWidth: 164.06 },
-  tratanteRut: { x: 58.69, y: 32, maxWidth: 92.7 },
+  // ── #49: MÉDICO TRATANTE ──
+  tratanteApellido1: { x: 29.99, y: 57.34, maxWidth: 104.05 },
+  tratanteApellido2: { x: 142.7, y: 56.69, maxWidth: 102.04 },
+  tratanteNombre: { x: 260.77, y: 56.59, maxWidth: 164.04 },
+  tratanteRut: { x: 58.7, y: 31.99, maxWidth: 92.72 },
 
   // ── #50: ESPECIALIDAD MÉDICO ──
-  especialidadMedico: { x: 327.77, y: 76.61, maxWidth: 151.42 },
+  especialidadMedico: { x: 325.78, y: 78.59, maxWidth: 154.89 },
 } as const;
 
 /**
@@ -221,6 +222,7 @@ const mapSex = (sex: string | undefined): string => {
 const mapProcedencia = (origin: string | undefined): string => {
   if (!origin) return '';
   const map: Record<string, string> = {
+    Urgencias: '1',
     Urgencia: '1',
     'Otra Procedencia': '2',
     'Atención especialidades': '3',
@@ -390,6 +392,9 @@ export const fillIEEHForm = async (
 
   // #31: CONDICIÓN AL EGRESO (1-7, dialog override or default 1=Domicilio)
   drawText(discharge.condicionEgreso || '1', FIELD_COORDS.condicionEgreso);
+  if (discharge.destination) {
+    drawText(discharge.destination, FIELD_COORDS.destinoAlAlta);
+  }
 
   // #33: DIAGNÓSTICO PRINCIPAL + CIE-10
   // Dialog overrides take priority over patient data

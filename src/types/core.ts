@@ -265,6 +265,20 @@ export type DeviceType =
 
 export type DischargeType = 'Domicilio (Habitual)' | 'Voluntaria' | 'Fuga' | 'Otra';
 
+export interface IeehData {
+  diagnosticoPrincipal?: string;
+  cie10Code?: string;
+  condicionEgreso?: string;
+  intervencionQuirurgica?: string;
+  intervencionQuirurgDescrip?: string;
+  procedimiento?: string;
+  procedimientoDescrip?: string;
+  tratanteApellido1?: string;
+  tratanteApellido2?: string;
+  tratanteNombre?: string;
+  tratanteRut?: string;
+}
+
 export interface DischargeData {
   id: string;
   movementDate?: string; // YYYY-MM-DD
@@ -284,6 +298,7 @@ export interface DischargeData {
   isRapanui?: boolean;
   originalData?: PatientData; // Snapshot for Undo
   isNested?: boolean; // Identifies if it was a clinical crib
+  ieehData?: IeehData; // Persisted IEEH PDF generation data
 }
 
 export interface TransferData {

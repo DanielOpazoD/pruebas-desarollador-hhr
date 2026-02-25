@@ -22,6 +22,7 @@ export {
   type DeviceInfo,
   type DeviceDetails,
   type DeviceInstance,
+  type IeehData,
   type DischargeData,
   type TransferData,
   type CMAData,
