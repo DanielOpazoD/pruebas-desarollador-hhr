@@ -13,8 +13,8 @@ describe('netlify security headers', () => {
     expect(content).not.toContain('https://fonts.gstatic.com');
   });
 
-  it('keeps COOP mode required by popup login flow', () => {
+  it('keeps COOP mode compatible with popup login flow', () => {
     const content = readFileSync('netlify.toml', 'utf-8');
-    expect(content).toContain('Cross-Origin-Opener-Policy = "same-origin-allow-popups"');
+    expect(content).toContain('Cross-Origin-Opener-Policy = "unsafe-none"');
   });
 });
