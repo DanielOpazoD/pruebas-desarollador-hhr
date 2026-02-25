@@ -61,25 +61,25 @@ export interface DischargeFormData {
  * These replace the manually calibrated values from visual inspection.
  */
 const FIELD_COORDS = {
-  // ── #4: NOMBRE LEGAL DEL PACIENTE ──
-  primerApellido: { x: 51.48, y: 827.86, maxWidth: 137.82 },
-  segundoApellido: { x: 238.46, y: 824.86, maxWidth: 118.68 },
-  nombres: { x: 442.32, y: 827.11, maxWidth: 110.58 },
+  // ── #4: NOMBRE LEGAL DEL PACIENTE ── (Y=826.52)
+  primerApellido: { x: 50.84, y: 826.52, maxWidth: 137.82 },
+  segundoApellido: { x: 237.8, y: 826.52, maxWidth: 118.68 },
+  nombres: { x: 441.64, y: 826.52, maxWidth: 110.58 },
 
   // ── #52: NOMBRE SOCIAL ──
-  nombreSocial: { x: 114.9, y: 804.28, maxWidth: 93.63 },
+  nombreSocial: { x: 114.24, y: 804.28, maxWidth: 93.63 },
 
   // ── #5: TIPO DE IDENTIFICACIÓN + RUN ──
   tipoIdentificacion: { x: 111.31, y: 782.21, maxWidth: 11.03 },
-  runDigits: { x: 57.01, y: 759.22, maxWidth: 87.72 },
+  runDigits: { x: 56.99, y: 759.19, maxWidth: 87.72 },
 
   // ── #6: SEXO REGISTRAL ──
   sexoRegistral: { x: 305.82, y: 781.46, maxWidth: 11.76 },
 
-  // ── #7: FECHA DE NACIMIENTO ──
+  // ── #7: FECHA DE NACIMIENTO ── (Y=800.54)
   nacDia: { x: 450.35, y: 800.54, maxWidth: 22.86 },
-  nacMes: { x: 489.42, y: 799.04, maxWidth: 21.4 },
-  nacAnio: { x: 524.05, y: 799.79, maxWidth: 50.84 },
+  nacMes: { x: 489.42, y: 800.54, maxWidth: 21.4 },
+  nacAnio: { x: 524.05, y: 800.54, maxWidth: 50.84 },
 
   // ── #8: EDAD ──
   edad: { x: 79, y: 722.06, maxWidth: 35.36 },
@@ -94,32 +94,32 @@ const FIELD_COORDS = {
   // ── #22: PROCEDENCIA ──
   procedencia: { x: 225.78, y: 471.36, maxWidth: 10.67 },
 
-  // ── #24: INGRESO (hora, fecha) ──
-  ingresoHora: { x: 102.35, y: 426.74, maxWidth: 22.68 },
-  ingresoMin: { x: 136.36, y: 426.74, maxWidth: 21.33 },
-  ingresoDia: { x: 181.71, y: 426.09, maxWidth: 22.68 },
-  ingresoMes: { x: 215.72, y: 427.4, maxWidth: 23.35 },
-  ingresoAnio: { x: 249.74, y: 426.09, maxWidth: 22.01 },
+  // ── #24: INGRESO (hora, fecha) ── (Y=428.74)
+  ingresoHora: { x: 102.35, y: 428.74, maxWidth: 22.68 },
+  ingresoMin: { x: 136.36, y: 428.74, maxWidth: 21.33 },
+  ingresoDia: { x: 181.71, y: 428.74, maxWidth: 22.68 },
+  ingresoMes: { x: 215.73, y: 428.74, maxWidth: 23.35 },
+  ingresoAnio: { x: 249.74, y: 428.74, maxWidth: 22.01 },
 
-  // ── #29: EGRESO (hora, fecha) ──
+  // ── #29: EGRESO (hora, fecha) ── (Y=341.43)
   egresoHora: { x: 91.68, y: 341.43, maxWidth: 21.33 },
-  egresoMin: { x: 124.36, y: 341.34, maxWidth: 23.35 },
-  egresoDia: { x: 169.04, y: 339.37, maxWidth: 22.68 },
+  egresoMin: { x: 124.35, y: 341.43, maxWidth: 23.35 },
+  egresoDia: { x: 169.03, y: 341.43, maxWidth: 22.68 },
   egresoMes: { x: 204.39, y: 341.43, maxWidth: 23.35 },
-  egresoAnio: { x: 238.4, y: 340.03, maxWidth: 24.02 },
+  egresoAnio: { x: 238.4, y: 341.43, maxWidth: 24.02 },
 
-  // ── #30: DÍAS DE ESTADA ──
+  // ── #30: DÍAS DE ESTADA ── (Y=326.75)
   diasEstada: { x: 103.69, y: 326.75, maxWidth: 45.35 },
 
-  // ── #31: CONDICIÓN AL EGRESO ──
-  condicionEgreso: { x: 250.41, y: 327.4, maxWidth: 11.34 },
+  // ── #31: CONDICIÓN AL EGRESO ── (Y=326.75)
+  condicionEgreso: { x: 250.41, y: 326.75, maxWidth: 11.34 },
 
   // ── #33: DIAGNÓSTICO PRINCIPAL ──
   diagnosticoPrincipal: { x: 167.08, y: 280.72, maxWidth: 341.48 },
   codigoCIE10: { x: 529.23, y: 281.38, maxWidth: 46.69 },
 
   // ── #50: ESPECIALIDAD MÉDICO ──
-  especialidadMedico: { x: 327.77, y: 76.62, maxWidth: 151.42 },
+  especialidadMedico: { x: 327.77, y: 76.61, maxWidth: 151.42 },
 } as const;
 
 /**
@@ -313,7 +313,7 @@ export const fillIEEHForm = async (
 
   // #9: PUEBLO INDÍGENA
   if (patient.isRapanui) {
-    drawText('1', FIELD_COORDS.puebloIndigena); // 1=Sí
+    drawText('3', FIELD_COORDS.puebloIndigena); // 3=Rapa Nui
   }
 
   // #18: PREVISIÓN
