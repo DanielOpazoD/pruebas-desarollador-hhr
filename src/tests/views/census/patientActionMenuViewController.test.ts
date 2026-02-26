@@ -11,6 +11,7 @@ describe('patientActionMenuViewController', () => {
       readOnly: false,
       hasHistoryAction: true,
       hasExamRequestAction: true,
+      hasImagingRequestAction: true,
     });
 
     expect(view).toEqual({
@@ -19,6 +20,7 @@ describe('patientActionMenuViewController', () => {
       showHistoryAction: true,
       showClinicalSection: true,
       showExamRequestAction: true,
+      showImagingRequestAction: true,
     });
   });
 
@@ -28,6 +30,7 @@ describe('patientActionMenuViewController', () => {
       readOnly: false,
       hasHistoryAction: true,
       hasExamRequestAction: true,
+      hasImagingRequestAction: true,
     });
 
     expect(view.showDemographicsAction).toBe(false);
@@ -35,6 +38,7 @@ describe('patientActionMenuViewController', () => {
     expect(view.showHistoryAction).toBe(true);
     expect(view.showClinicalSection).toBe(false);
     expect(view.showExamRequestAction).toBe(false);
+    expect(view.showImagingRequestAction).toBe(false);
   });
 
   it('hides trigger and demographics in read-only mode', () => {
@@ -43,6 +47,7 @@ describe('patientActionMenuViewController', () => {
       readOnly: true,
       hasHistoryAction: false,
       hasExamRequestAction: true,
+      hasImagingRequestAction: true,
     });
 
     expect(view.showDemographicsAction).toBe(false);
@@ -50,6 +55,7 @@ describe('patientActionMenuViewController', () => {
     expect(view.showHistoryAction).toBe(false);
     expect(view.showClinicalSection).toBe(false);
     expect(view.showExamRequestAction).toBe(false);
+    expect(view.showImagingRequestAction).toBe(false);
   });
 
   it('resolves panel anchor class from row menu alignment', () => {

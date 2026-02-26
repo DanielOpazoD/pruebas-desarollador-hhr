@@ -9,6 +9,7 @@ export interface PatientActionMenuCallbacks {
   onAction: (action: PatientRowAction) => void;
   onViewDemographics: () => void;
   onViewExamRequest?: () => void;
+  onViewImagingRequest?: () => void;
   onViewHistory?: () => void;
 }
 

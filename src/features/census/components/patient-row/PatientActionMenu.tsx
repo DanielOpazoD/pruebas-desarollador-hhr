@@ -16,6 +16,7 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
   onAction,
   onViewDemographics,
   onViewExamRequest,
+  onViewImagingRequest,
   onViewHistory,
   readOnly = false,
   align = 'top',
@@ -30,12 +31,14 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
     handleAction,
     handleViewHistory,
     handleViewExamRequest,
+    handleViewImagingRequest,
   } = usePatientActionMenu({
     isBlocked,
     readOnly,
     onAction,
     onViewHistory,
     onViewExamRequest,
+    onViewImagingRequest,
   });
 
   return (
@@ -72,6 +75,7 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
         onAction={handleAction}
         onViewHistory={handleViewHistory}
         onViewExamRequest={handleViewExamRequest}
+        onViewImagingRequest={handleViewImagingRequest}
       />
     </div>
   );

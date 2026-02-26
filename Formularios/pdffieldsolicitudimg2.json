@@ -1,0 +1,155 @@
+[
+  {
+    "id": "f67ec167-7b26-4b3f-a2ba-d5e5b189f0c0",
+    "variableName": "primerApellido",
+    "page": 1,
+    "pdfCoordinates": {
+      "x": 201.1,
+      "y": 766.71,
+      "width": 69.16,
+      "height": 11.42
+    },
+    "percentageCoordinates": {
+      "x": 32.86,
+      "y": 16.87,
+      "width": 11.3,
+      "height": 1.22
+    }
+  },
+  {
+    "id": "4483df32-4eba-4184-a366-4bf53e047dd9",
+    "variableName": "segundoApellido",
+    "page": 1,
+    "pdfCoordinates": {
+      "x": 275.46,
+      "y": 766.71,
+      "width": 88.68,
+      "height": 11.42
+    },
+    "percentageCoordinates": {
+      "x": 45.01,
+      "y": 16.87,
+      "width": 14.49,
+      "height": 1.22
+    }
+  },
+  {
+    "id": "db6a5bcb-1b61-4582-b7e8-40d94cd6e159",
+    "variableName": "edad",
+    "page": 1,
+    "pdfCoordinates": {
+      "x": 229.74,
+      "y": 750.58,
+      "width": 52.39,
+      "height": 13.41
+    },
+    "percentageCoordinates": {
+      "x": 37.54,
+      "y": 18.38,
+      "width": 8.56,
+      "height": 1.43
+    }
+  },
+  {
+    "id": "019639dd-7dc5-4f5f-8acb-b3ffb5cf8086",
+    "variableName": "diagnostico",
+    "page": 1,
+    "pdfCoordinates": {
+      "x": 131.64,
+      "y": 733.82,
+      "width": 206.24,
+      "height": 12.73
+    },
+    "percentageCoordinates": {
+      "x": 21.51,
+      "y": 20.24,
+      "width": 33.7,
+      "height": 1.36
+    }
+  },
+  {
+    "id": "fbb67d1f-9cd1-4961-9f86-80e7b7c13f77",
+    "variableName": "nombres",
+    "page": 1,
+    "pdfCoordinates": {
+      "x": 117.57,
+      "y": 766.71,
+      "width": 78.58,
+      "height": 11.42
+    },
+    "percentageCoordinates": {
+      "x": 19.21,
+      "y": 16.87,
+      "width": 12.84,
+      "height": 1.22
+    }
+  },
+  {
+    "id": "ec1ee90f-14d5-4a0e-9440-a40b8eb93375",
+    "variableName": "patient.birthDate",
+    "page": 1,
+    "pdfCoordinates": {
+      "x": 472.95,
+      "y": 750.58,
+      "width": 88.68,
+      "height": 13.41
+    },
+    "percentageCoordinates": {
+      "x": 77.28,
+      "y": 18.38,
+      "width": 14.49,
+      "height": 1.43
+    }
+  },
+  {
+    "id": "8b3d708b-93f4-4fa8-bd76-bfa23ad79d00",
+    "variableName": "patient.rut",
+    "page": 1,
+    "pdfCoordinates": {
+      "x": 60.47,
+      "y": 750.58,
+      "width": 135.01,
+      "height": 13.41
+    },
+    "percentageCoordinates": {
+      "x": 9.88,
+      "y": 18.38,
+      "width": 22.06,
+      "height": 1.43
+    }
+  },
+  {
+    "id": "b4f07eb6-4e9f-4caa-8063-743933afee18",
+    "variableName": "getTodayISO",
+    "page": 1,
+    "pdfCoordinates": {
+      "x": 139.04,
+      "y": 786.2,
+      "width": 59.79,
+      "height": 12.07
+    },
+    "percentageCoordinates": {
+      "x": 22.72,
+      "y": 14.71,
+      "width": 9.77,
+      "height": 1.29
+    }
+  },
+  {
+    "id": "9709c510-c00a-4943-9259-6afa8647f59c",
+    "variableName": "NombreyapellidoMed",
+    "page": 1,
+    "pdfCoordinates": {
+      "x": 315,
+      "y": 108,
+      "width": 145.33,
+      "height": 26.67
+    },
+    "percentageCoordinates": {
+      "x": 51.47,
+      "y": 85.61,
+      "width": 23.75,
+      "height": 2.85
+    }
+  }
+]

@@ -20,6 +20,7 @@ interface PatientActionMenuPanelProps {
   onAction: (action: PatientRowAction) => void;
   onViewHistory: () => void;
   onViewExamRequest: () => void;
+  onViewImagingRequest: () => void;
 }
 
 export const PatientActionMenuPanel: React.FC<PatientActionMenuPanelProps> = ({
@@ -31,6 +32,7 @@ export const PatientActionMenuPanel: React.FC<PatientActionMenuPanelProps> = ({
   onAction,
   onViewHistory,
   onViewExamRequest,
+  onViewImagingRequest,
 }) => {
   if (!isOpen) {
     return null;
@@ -60,8 +62,10 @@ export const PatientActionMenuPanel: React.FC<PatientActionMenuPanelProps> = ({
           <PatientActionMenuClinicalSection
             clinicalActions={model.clinicalActions}
             showExamRequestAction={model.showExamRequestAction}
+            showImagingRequestAction={model.showImagingRequestAction}
             onAction={onAction}
             onViewExamRequest={onViewExamRequest}
+            onViewImagingRequest={onViewImagingRequest}
           />
         )}
       </div>

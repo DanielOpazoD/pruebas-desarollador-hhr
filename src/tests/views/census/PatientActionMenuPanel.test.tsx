@@ -17,12 +17,14 @@ describe('PatientActionMenuPanel', () => {
           showHistoryAction: true,
           showClinicalSection: true,
           showExamRequestAction: true,
+          showImagingRequestAction: true,
         }}
         utilityActions={[]}
         onClose={vi.fn()}
         onAction={vi.fn()}
         onViewHistory={vi.fn()}
         onViewExamRequest={vi.fn()}
+        onViewImagingRequest={vi.fn()}
       />
     );
 
@@ -45,6 +47,7 @@ describe('PatientActionMenuPanel', () => {
           showHistoryAction: true,
           showClinicalSection: true,
           showExamRequestAction: true,
+          showImagingRequestAction: true,
         }}
         utilityActions={[
           {
@@ -60,6 +63,7 @@ describe('PatientActionMenuPanel', () => {
         onAction={onAction}
         onViewHistory={onViewHistory}
         onViewExamRequest={onViewExamRequest}
+        onViewImagingRequest={vi.fn()}
       />
     );
 

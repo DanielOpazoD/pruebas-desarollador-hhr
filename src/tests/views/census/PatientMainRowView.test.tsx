@@ -56,6 +56,7 @@ describe('PatientMainRowView', () => {
     onAction: vi.fn(),
     onOpenDemographics: vi.fn(),
     onOpenExamRequest: vi.fn(),
+    onOpenImagingRequest: vi.fn(),
     onOpenHistory: vi.fn(),
     onToggleMode: vi.fn(),
     onToggleCompanion: vi.fn(),

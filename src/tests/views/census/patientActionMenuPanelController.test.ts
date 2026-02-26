@@ -11,6 +11,7 @@ describe('patientActionMenuPanelController', () => {
         showHistoryAction: true,
         showClinicalSection: true,
         showExamRequestAction: false,
+        showImagingRequestAction: true,
       },
       utilityActions: [
         {

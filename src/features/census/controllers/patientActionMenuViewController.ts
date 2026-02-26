@@ -3,6 +3,7 @@ export interface ResolvePatientActionMenuViewParams {
   readOnly: boolean;
   hasHistoryAction: boolean;
   hasExamRequestAction: boolean;
+  hasImagingRequestAction: boolean;
 }
 
 export interface PatientActionMenuViewState {
@@ -11,6 +12,7 @@ export interface PatientActionMenuViewState {
   showHistoryAction: boolean;
   showClinicalSection: boolean;
   showExamRequestAction: boolean;
+  showImagingRequestAction: boolean;
 }
 
 export const resolvePatientActionMenuViewState = ({
@@ -18,6 +20,7 @@ export const resolvePatientActionMenuViewState = ({
   readOnly,
   hasHistoryAction,
   hasExamRequestAction,
+  hasImagingRequestAction,
 }: ResolvePatientActionMenuViewParams): PatientActionMenuViewState => {
   const showMenuTrigger = !readOnly;
   const showDemographicsAction = !isBlocked && !readOnly;
@@ -30,6 +33,7 @@ export const resolvePatientActionMenuViewState = ({
     showHistoryAction,
     showClinicalSection,
     showExamRequestAction: showClinicalSection && hasExamRequestAction,
+    showImagingRequestAction: showClinicalSection && hasImagingRequestAction,
   };
 };
 

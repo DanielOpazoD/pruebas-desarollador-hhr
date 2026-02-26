@@ -1,20 +1,24 @@
 import React from 'react';
-import { FileText } from 'lucide-react';
+import { FileText, Image } from 'lucide-react';
 import type { ClinicalActionConfig } from '@/features/census/components/patient-row/patientActionMenuConfig';
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';
 
 interface PatientActionMenuClinicalSectionProps {
   clinicalActions: readonly ClinicalActionConfig[];
   showExamRequestAction: boolean;
+  showImagingRequestAction: boolean;
   onAction: (action: PatientRowAction) => void;
   onViewExamRequest: () => void;
+  onViewImagingRequest: () => void;
 }
 
 export const PatientActionMenuClinicalSection: React.FC<PatientActionMenuClinicalSectionProps> = ({
   clinicalActions,
   showExamRequestAction,
+  showImagingRequestAction,
   onAction,
   onViewExamRequest,
+  onViewImagingRequest,
 }) => (
   <div className="py-1">
     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 py-1 block">
@@ -47,6 +51,15 @@ export const PatientActionMenuClinicalSection: React.FC<PatientActionMenuClinica
           <span className="text-sm">Solicitud Exámenes</span>
         </button>
       </>
+    )}
+    {showImagingRequestAction && (
+      <button
+        onClick={onViewImagingRequest}
+        className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-slate-700 group"
+      >
+        <Image size={16} className="text-slate-400 group-hover:text-blue-600 transition-colors" />
+        <span className="text-sm">Solicitud de Imágenes</span>
+      </button>
     )}
   </div>
 );

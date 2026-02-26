@@ -15,6 +15,7 @@ export const PatientMainRowActionCell: React.FC<PatientMainRowActionCellProps> =
   onAction,
   onViewDemographics,
   onViewExamRequest,
+  onViewImagingRequest,
   onViewHistory,
 }) => (
   <td className="p-0 text-center border-r border-slate-200 relative w-10 print:hidden">
@@ -23,6 +24,7 @@ export const PatientMainRowActionCell: React.FC<PatientMainRowActionCellProps> =
       onAction={onAction}
       onViewDemographics={onViewDemographics}
       onViewExamRequest={onViewExamRequest}
+      onViewImagingRequest={onViewImagingRequest}
       onViewHistory={onViewHistory}
       readOnly={readOnly}
       align={align}

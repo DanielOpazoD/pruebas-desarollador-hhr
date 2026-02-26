@@ -27,7 +27,10 @@ export interface PatientInputCellsProps {
 
 export interface PatientMainRowViewProps
   extends
-    Omit<PatientActionMenuCallbacks, 'onViewDemographics' | 'onViewExamRequest' | 'onViewHistory'>,
+    Omit<
+      PatientActionMenuCallbacks,
+      'onViewDemographics' | 'onViewExamRequest' | 'onViewImagingRequest' | 'onViewHistory'
+    >,
     PatientBedConfigCallbacks {
   bed: BedDefinition;
   bedType: BedType;
@@ -45,6 +48,7 @@ export interface PatientMainRowViewProps
   mainRowViewState: PatientMainRowViewState;
   onOpenDemographics: () => void;
   onOpenExamRequest: () => void;
+  onOpenImagingRequest: () => void;
   onOpenHistory: () => void;
   onToggleBedType: () => void;
   onChange: MainPatientInputChangeHandlers;
@@ -66,9 +70,11 @@ export interface PatientRowModalsProps {
   isSubRow: boolean;
   showDemographics: boolean;
   showExamRequest: boolean;
+  showImagingRequest: boolean;
   showHistory: boolean;
   onCloseDemographics: () => void;
   onCloseExamRequest: () => void;
+  onCloseImagingRequest: () => void;
   onCloseHistory: () => void;
   onSaveDemographics: (fields: Partial<PatientData>) => void;
   onSaveCribDemographics: (fields: Partial<PatientData>) => void;

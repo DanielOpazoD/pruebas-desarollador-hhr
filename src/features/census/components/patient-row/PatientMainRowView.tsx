@@ -24,6 +24,7 @@ export const PatientMainRowView: React.FC<PatientMainRowViewProps> = ({
   onAction,
   onOpenDemographics,
   onOpenExamRequest,
+  onOpenImagingRequest,
   onOpenHistory,
   onToggleMode,
   onToggleCompanion,
@@ -47,6 +48,11 @@ export const PatientMainRowView: React.FC<PatientMainRowViewProps> = ({
         onViewDemographics={onOpenDemographics}
         onViewExamRequest={
           mainRowViewState.rowActionsAvailability.canOpenExamRequest ? onOpenExamRequest : undefined
+        }
+        onViewImagingRequest={
+          mainRowViewState.rowActionsAvailability.canOpenExamRequest
+            ? onOpenImagingRequest
+            : undefined
         }
         onViewHistory={
           mainRowViewState.rowActionsAvailability.canOpenHistory ? onOpenHistory : undefined

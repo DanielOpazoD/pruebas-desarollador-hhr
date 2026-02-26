@@ -14,6 +14,7 @@ export interface PatientActionMenuPanelModel {
   showHistoryAction: boolean;
   showClinicalSection: boolean;
   showExamRequestAction: boolean;
+  showImagingRequestAction: boolean;
   utilityActions: UtilityActionConfig[];
   clinicalActions: readonly ClinicalActionConfig[];
 }
@@ -25,6 +26,7 @@ export const resolvePatientActionMenuPanelModel = ({
   showHistoryAction: viewState.showHistoryAction,
   showClinicalSection: viewState.showClinicalSection,
   showExamRequestAction: viewState.showExamRequestAction,
+  showImagingRequestAction: viewState.showImagingRequestAction,
   utilityActions,
   clinicalActions: CLINICAL_ACTIONS,
 });
