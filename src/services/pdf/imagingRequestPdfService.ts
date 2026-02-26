@@ -30,7 +30,7 @@ const TEXT_COLOR = rgb(0, 0, 0);
  * Y coordinates are from the BOTTOM of the page (PDF standard).
  * Extracted via PDF field mapping tool.
  */
-const FIELD_COORDS = {
+export const SOLICITUD_FIELD_COORDS = {
   // Patient name fields
   nombres: { x: 117.57, y: 766.71, maxWidth: 78.58 },
   primerApellido: { x: 201.1, y: 766.71, maxWidth: 69.16 },
@@ -72,7 +72,7 @@ export const ENCUESTA_FIELD_COORDS = {
 /**
  * Split a full name into components: [nombres, primerApellido, segundoApellido]
  */
-const splitPatientName = (fullName: string | undefined): [string, string, string] => {
+export const splitPatientName = (fullName: string | undefined): [string, string, string] => {
   if (!fullName) return ['', '', ''];
   const parts = fullName.trim().split(/\s+/);
   if (parts.length === 1) return [parts[0], '', ''];
@@ -87,7 +87,7 @@ const splitPatientName = (fullName: string | undefined): [string, string, string
 /**
  * Format a date string to DD-MM-YYYY
  */
-const formatDate = (dateStr: string | undefined): string => {
+export const formatDate = (dateStr: string | undefined): string => {
   if (!dateStr) return '';
   // Already DD-MM-YYYY
   if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) return dateStr;
@@ -102,7 +102,7 @@ const formatDate = (dateStr: string | undefined): string => {
 /**
  * Calculate age from birthDate
  */
-const calculateAge = (birthDate: string | undefined): string => {
+export const calculateAge = (birthDate: string | undefined): string => {
   if (!birthDate) return '';
   try {
     const parts = birthDate.includes('-') ? birthDate.split('-') : [];
@@ -187,22 +187,22 @@ export const fillImagingRequestForm = async (
   const [nombres, primerApellido, segundoApellido] = splitPatientName(patient.patientName);
 
   // 5. Fill fields
-  drawText(nombres, FIELD_COORDS.nombres);
-  drawText(primerApellido, FIELD_COORDS.primerApellido);
-  drawText(segundoApellido, FIELD_COORDS.segundoApellido);
-  drawText(patient.rut || '', FIELD_COORDS.rut);
-  drawText(calculateAge(patient.birthDate), FIELD_COORDS.edad);
-  drawText(formatDate(patient.birthDate), FIELD_COORDS.fechaNacimiento);
+  drawText(nombres, SOLICITUD_FIELD_COORDS.nombres);
+  drawText(primerApellido, SOLICITUD_FIELD_COORDS.primerApellido);
+  drawText(segundoApellido, SOLICITUD_FIELD_COORDS.segundoApellido);
+  drawText(patient.rut || '', SOLICITUD_FIELD_COORDS.rut);
+  drawText(calculateAge(patient.birthDate), SOLICITUD_FIELD_COORDS.edad);
+  drawText(formatDate(patient.birthDate), SOLICITUD_FIELD_COORDS.fechaNacimiento);
 
   // Diagnosis: Try pathology first, then cie10Description
   const diagValue = patient.pathology || patient.cie10Description || '';
-  drawText(diagValue, FIELD_COORDS.diagnostico);
+  drawText(diagValue, SOLICITUD_FIELD_COORDS.diagnostico);
 
-  drawText(getTodayFormatted(), FIELD_COORDS.fechaSolicitud);
+  drawText(getTodayFormatted(), SOLICITUD_FIELD_COORDS.fechaSolicitud);
 
   // Requesting Physician
   if (requestingPhysician) {
-    drawText(requestingPhysician, FIELD_COORDS.medicoTratante);
+    drawText(requestingPhysician, SOLICITUD_FIELD_COORDS.medicoTratante);
   }
 
   // 6. Draw Custom 'X' or Text Marks

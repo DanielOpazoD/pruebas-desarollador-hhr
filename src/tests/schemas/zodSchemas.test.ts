@@ -14,6 +14,7 @@ import {
   DeviceInfoSchema,
   DeviceDetailsSchema,
   BedTypeSchema,
+  IeehDataSchema,
   safeParseDailyRecord,
   parseDailyRecordWithDefaults,
 } from '@/schemas/zodSchemas';
@@ -179,6 +180,33 @@ describe('zodSchemas', () => {
         customField: 'custom value',
       });
       expect((patient as unknown as { customField?: string }).customField).toBe('custom value');
+    });
+  });
+
+  describe('IeehDataSchema', () => {
+    it('should parse an empty object due to nullableOptional', () => {
+      const parsed = IeehDataSchema.parse({});
+      expect(parsed).toEqual({});
+    });
+
+    it('should parse valid strings normally', () => {
+      const parsed = IeehDataSchema.parse({
+        diagnosticoPrincipal: 'Neumonía',
+        procedimiento: 'Cirugía menor',
+      });
+      expect(parsed.diagnosticoPrincipal).toBe('Neumonía');
+      expect(parsed.procedimiento).toBe('Cirugía menor');
+    });
+
+    it('should drop null values and proceed without throwing', () => {
+      const parsed = IeehDataSchema.parse({
+        diagnosticoPrincipal: 'Neumonía',
+        procedimiento: null,
+        intervencionQuirurgica: null,
+      });
+      expect(parsed.diagnosticoPrincipal).toBe('Neumonía');
+      expect(parsed.procedimiento).toBeUndefined(); // nullableOptional strips nulls
+      expect(parsed.intervencionQuirurgica).toBeUndefined();
     });
   });
 
