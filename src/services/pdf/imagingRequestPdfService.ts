@@ -18,8 +18,8 @@ export interface CustomMark {
 }
 
 // ── Template PDF paths ──
-const SOLICITUD_TEMPLATE_PATH = '/docs/solicitud-imagen.pdf';
-export const ENCUESTA_CONTRASTE_PATH = '/docs/encuesta-contraste.pdf';
+export const SOLICITUD_TEMPLATE_PATH = '/docs/solicitud-imagen.pdf';
+export const ENCUESTA_TEMPLATE_PATH = '/docs/encuesta-contraste.pdf';
 
 // --- Constants ---
 const FONT_SIZE = 10;
@@ -56,16 +56,32 @@ const FIELD_COORDS = {
 };
 
 /**
+ * PDF coordinate mapping for "Encuesta Medio Contraste" form fields.
+ */
+export const ENCUESTA_FIELD_COORDS = {
+  nombres: { x: 99.57, y: 646.73, maxWidth: 50.58 },
+  primerApellido: { x: 166.44, y: 646.73, maxWidth: 69.16 },
+  segundoApellido: { x: 255.46, y: 646.73, maxWidth: 66.01 },
+  edad: { x: 359.08, y: 646.73, maxWidth: 52.39 },
+  rut: { x: 423.13, y: 646.73, maxWidth: 135.01 },
+  fechaNacimiento: { x: 164.95, y: 586.44, maxWidth: 88.68 },
+  diagnostico: { x: 112.31, y: 486.26, maxWidth: 206.24 },
+  medicoTratante: { x: 409.0, y: 615.4, maxWidth: 150.02 },
+};
+
+/**
  * Split a full name into components: [nombres, primerApellido, segundoApellido]
  */
 const splitPatientName = (fullName: string | undefined): [string, string, string] => {
   if (!fullName) return ['', '', ''];
   const parts = fullName.trim().split(/\s+/);
   if (parts.length === 1) return [parts[0], '', ''];
-  if (parts.length === 2) return [parts[1], parts[0], ''];
-  if (parts.length === 3) return [parts[2], parts[0], parts[1]];
-  // 4+ parts: first two are apellidos, rest are nombres
-  return [parts.slice(2).join(' '), parts[0], parts[1]];
+  if (parts.length === 2) return [parts[0], parts[1], ''];
+  if (parts.length === 3) return [parts[0], parts[1], parts[2]];
+  // out of 4+ parts, we assume the last two are the surnames and everything else are names.
+  const secApe = parts.pop() || '';
+  const primApe = parts.pop() || '';
+  return [parts.join(' '), primApe, secApe];
 };
 
 /**
@@ -325,6 +341,121 @@ export const printImagingRequestForm = async (
     const link = document.createElement('a');
     link.href = url;
     link.download = `IMPRIMIR_Solicitud_${patient.patientName}.pdf`;
+    link.click();
+  }
+};
+
+/**
+ * Fill the Encuesta Medio Contraste form with patient data
+ */
+export const fillImagingEncuestaForm = async (
+  patient: PatientData,
+  requestingPhysician: string = '',
+  marks: CustomMark[] = []
+): Promise<Uint8Array> => {
+  const response = await fetch(ENCUESTA_TEMPLATE_PATH);
+  const templateBytes = await response.arrayBuffer();
+  const pdfDoc = await PDFDocument.load(templateBytes);
+
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const page = pdfDoc.getPage(0);
+
+  const drawText = (text: string, coords: { x: number; y: number; maxWidth: number }) => {
+    if (!text) return;
+    const displayText = text.toUpperCase();
+    let finalText = displayText;
+    const textWidth = font.widthOfTextAtSize(displayText, FONT_SIZE);
+    if (textWidth > coords.maxWidth) {
+      let truncated = displayText;
+      while (
+        font.widthOfTextAtSize(truncated + '…', FONT_SIZE) > coords.maxWidth &&
+        truncated.length > 0
+      ) {
+        truncated = truncated.slice(0, -1);
+      }
+      finalText = truncated + '…';
+    }
+    page.drawText(finalText, {
+      x: coords.x,
+      y: coords.y,
+      size: FONT_SIZE,
+      font,
+      color: TEXT_COLOR,
+    });
+  };
+
+  const [nombres, primerApellido, segundoApellido] = splitPatientName(patient.patientName);
+
+  drawText(nombres, ENCUESTA_FIELD_COORDS.nombres);
+  drawText(primerApellido, ENCUESTA_FIELD_COORDS.primerApellido);
+  drawText(segundoApellido, ENCUESTA_FIELD_COORDS.segundoApellido);
+  drawText(patient.rut || '', ENCUESTA_FIELD_COORDS.rut);
+  drawText(calculateAge(patient.birthDate), ENCUESTA_FIELD_COORDS.edad);
+  drawText(formatDate(patient.birthDate), ENCUESTA_FIELD_COORDS.fechaNacimiento);
+
+  const diagValue = patient.pathology || patient.cie10Description || '';
+  drawText(diagValue, ENCUESTA_FIELD_COORDS.diagnostico);
+
+  if (requestingPhysician) {
+    drawText(requestingPhysician, ENCUESTA_FIELD_COORDS.medicoTratante);
+  }
+
+  marks.forEach(mark => {
+    const xPos = page.getWidth() * (mark.x / 100);
+    const yPos = page.getHeight() * (1 - mark.y / 100);
+
+    if (mark.text) {
+      page.drawText(mark.text.toUpperCase(), {
+        x: xPos,
+        y: yPos - 3,
+        size: FONT_SIZE,
+        font,
+        color: TEXT_COLOR,
+      });
+    } else {
+      page.drawText('X', {
+        x: xPos - 4,
+        y: yPos - 4,
+        size: 14,
+        font,
+        color: TEXT_COLOR,
+      });
+    }
+  });
+
+  const pdfBytes = await pdfDoc.save();
+  return pdfBytes as unknown as Uint8Array;
+};
+
+/**
+ * Print the Encuesta Medio Contraste directly
+ */
+export const printImagingEncuestaForm = async (
+  patient: PatientData,
+  requestingPhysician: string = '',
+  marks: CustomMark[] = []
+): Promise<void> => {
+  const filledBytes = await fillImagingEncuestaForm(patient, requestingPhysician, marks);
+
+  const printDoc = await PDFDocument.load(filledBytes);
+  printDoc.catalog.set(
+    PDFName.of('OpenAction'),
+    printDoc.context.obj({
+      Type: 'Action',
+      S: 'JavaScript',
+      JS: 'this.print({bUI: true, bSilent: false, bShrinkToFit: true});',
+    })
+  );
+
+  const finalBytes = await printDoc.save();
+  const blob = new Blob([finalBytes as BlobPart], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+
+  const newWindow = window.open(url, '_blank');
+  if (!newWindow) {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `IMPRIMIR_Encuesta_${patient.patientName}.pdf`;
     link.click();
   }
 };

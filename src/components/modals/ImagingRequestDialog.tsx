@@ -3,7 +3,7 @@ import { FileText, ClipboardList, ShieldCheck, Printer, Target, Undo2, Type } fr
 import type { PatientData } from '@/types';
 import {
   printImagingRequestForm,
-  ENCUESTA_CONTRASTE_PATH,
+  printImagingEncuestaForm,
   CustomMark,
 } from '@/services/pdf/imagingRequestPdfService';
 import { BaseModal } from '@/components/shared/BaseModal';
@@ -54,9 +54,13 @@ const splitPatientName = (fullName: string | undefined): [string, string, string
   if (!fullName) return ['', '', ''];
   const parts = fullName.trim().split(/\s+/);
   if (parts.length === 1) return [parts[0], '', ''];
-  if (parts.length === 2) return [parts[1], parts[0], ''];
-  if (parts.length === 3) return [parts[2], parts[0], parts[1]];
-  return [parts.slice(2).join(' '), parts[0], parts[1]];
+  if (parts.length === 2) return [parts[0], parts[1], ''];
+  if (parts.length === 3) return [parts[0], parts[1], parts[2]];
+
+  // 4 or more words: assume last two words are surnames
+  const secApe = parts.pop() || '';
+  const primApe = parts.pop() || '';
+  return [parts.join(' '), primApe, secApe];
 };
 
 const getTodayFormatted = (): string => {
@@ -112,7 +116,7 @@ export const ImagingRequestDialog: React.FC<ImagingRequestDialogProps> = ({
       if (selectedDoc === 'solicitud') {
         await printImagingRequestForm(patient, debouncedPhysician, marks);
       } else if (selectedDoc === 'encuesta') {
-        window.open(ENCUESTA_CONTRASTE_PATH, '_blank');
+        await printImagingEncuestaForm(patient, debouncedPhysician, marks);
       }
     } catch (err) {
       console.error('[ImagingDialog] Error printing:', err);
@@ -123,7 +127,7 @@ export const ImagingRequestDialog: React.FC<ImagingRequestDialogProps> = ({
   };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (selectedDoc !== 'solicitud') return;
+    if (selectedDoc !== 'solicitud' && selectedDoc !== 'encuesta') return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -153,7 +157,7 @@ export const ImagingRequestDialog: React.FC<ImagingRequestDialogProps> = ({
     {
       id: 'encuesta' as const,
       title: 'Encuesta Medio Contraste',
-      subtitle: 'Visualización y descargas',
+      subtitle: 'Con autocompletado y marcado interactivo',
       icon: ClipboardList,
       disabled: false,
     },
@@ -316,80 +320,139 @@ export const ImagingRequestDialog: React.FC<ImagingRequestDialogProps> = ({
           {/* Interactive Canvas Viewer */}
           <div className="flex-1 relative bg-slate-200/50 overflow-y-auto">
             <div className="min-h-full flex items-center justify-center p-4 py-8">
-              {selectedDoc === 'encuesta' ? (
-                <iframe
-                  src={ENCUESTA_CONTRASTE_PATH}
-                  className="w-full max-w-[800px] aspect-[1/1.414] bg-white shadow-xl rounded-sm border-0"
-                  title="Encuesta de Imagenología"
-                />
+              {selectedDoc === 'consentimiento' ? (
+                <div className="text-slate-500 font-medium pb-12 flex flex-col items-center justify-center h-full">
+                  <ShieldCheck size={48} className="text-slate-300 mb-4" />
+                  <p>Este documento estará disponible próximamente.</p>
+                </div>
               ) : (
                 <div
                   className="relative w-full max-w-[800px] mx-auto bg-white shadow-xl rounded-sm overflow-hidden cursor-crosshair select-none"
                   onClick={handleCanvasClick}
-                  style={{ aspectRatio: '612 / 936' }} // Exact PDF Dimensions
+                  style={{ aspectRatio: selectedDoc === 'solicitud' ? '612 / 936' : '612 / 792' }}
                 >
                   <img
-                    src="/docs/solicitud_imagenologia.png"
+                    src={
+                      selectedDoc === 'solicitud'
+                        ? '/docs/solicitud_imagenologia.png'
+                        : '/docs/encuesta_imagenologia.png'
+                    }
                     alt="Base del Formulario"
                     className="w-full h-full object-contain pointer-events-none"
                     draggable={false}
                   />
 
-                  {/* Patient Data Overlays (using exact JSON percentages) */}
-                  <div
-                    className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
-                    style={{ left: '19.21%', top: '16.87%' }}
-                  >
-                    {nombres}
-                  </div>
-                  <div
-                    className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
-                    style={{ left: '32.86%', top: '16.87%' }}
-                  >
-                    {primerApellido}
-                  </div>
-                  <div
-                    className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
-                    style={{ left: '45.01%', top: '16.87%' }}
-                  >
-                    {segundoApellido}
-                  </div>
-                  <div
-                    className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
-                    style={{ left: '9.88%', top: '18.38%' }}
-                  >
-                    {patient.rut}
-                  </div>
-                  <div
-                    className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
-                    style={{ left: '37.54%', top: '18.38%' }}
-                  >
-                    {ageStr}
-                  </div>
-                  <div
-                    className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
-                    style={{ left: '77.28%', top: '18.38%' }}
-                  >
-                    {birthStr}
-                  </div>
-                  <div
-                    className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none font-medium truncate"
-                    style={{ left: '21.51%', top: '20.24%', maxWidth: '33%' }}
-                  >
-                    {diagValue}
-                  </div>
-                  <div
-                    className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
-                    style={{ left: '22.72%', top: '14.71%' }}
-                  >
-                    {todayStr}
-                  </div>
-                  <div
-                    className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none font-bold"
-                    style={{ left: '51.47%', top: '85.61%' }}
-                  >
-                    {debouncedPhysician}
-                  </div>
+                  {selectedDoc === 'solicitud' && (
+                    <>
+                      <div
+                        className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
+                        style={{ left: '19.21%', top: '16.87%' }}
+                      >
+                        {nombres}
+                      </div>
+                      <div
+                        className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
+                        style={{ left: '32.86%', top: '16.87%' }}
+                      >
+                        {primerApellido}
+                      </div>
+                      <div
+                        className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
+                        style={{ left: '45.01%', top: '16.87%' }}
+                      >
+                        {segundoApellido}
+                      </div>
+                      <div
+                        className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
+                        style={{ left: '9.88%', top: '18.38%' }}
+                      >
+                        {patient.rut}
+                      </div>
+                      <div
+                        className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
+                        style={{ left: '37.54%', top: '18.38%' }}
+                      >
+                        {ageStr}
+                      </div>
+                      <div
+                        className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
+                        style={{ left: '77.28%', top: '18.38%' }}
+                      >
+                        {birthStr}
+                      </div>
+                      <div
+                        className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none font-medium truncate"
+                        style={{ left: '21.51%', top: '20.24%', maxWidth: '33%' }}
+                      >
+                        {diagValue}
+                      </div>
+                      <div
+                        className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
+                        style={{ left: '22.72%', top: '14.71%' }}
+                      >
+                        {todayStr}
+                      </div>
+                      <div
+                        className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none font-bold"
+                        style={{ left: '51.47%', top: '85.61%' }}
+                      >
+                        {debouncedPhysician}
+                      </div>
+                    </>
+                  )}
+
+                  {selectedDoc === 'encuesta' && (
+                    <>
+                      <div
+                        className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
+                        style={{ left: '16.27%', top: '17.12%' }}
+                      >
+                        {nombres}
+                      </div>
+                      <div
+                        className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
+                        style={{ left: '27.20%', top: '17.12%' }}
+                      >
+                        {primerApellido}
+                      </div>
+                      <div
+                        className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
+                        style={{ left: '41.74%', top: '17.12%' }}
+                      >
+                        {segundoApellido}
+                      </div>
+                      <div
+                        className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
+                        style={{ left: '69.14%', top: '17.12%' }}
+                      >
+                        {patient.rut}
+                      </div>
+                      <div
+                        className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
+                        style={{ left: '58.67%', top: '17.12%' }}
+                      >
+                        {ageStr}
+                      </div>
+                      <div
+                        className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none"
+                        style={{ left: '26.95%', top: '24.52%' }}
+                      >
+                        {birthStr}
+                      </div>
+                      <div
+                        className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none font-medium truncate"
+                        style={{ left: '18.35%', top: '37.24%', maxWidth: '40%' }}
+                      >
+                        {diagValue}
+                      </div>
+                      <div
+                        className="absolute font-sans text-xs sm:text-sm text-black pointer-events-none font-bold"
+                        style={{ left: '66.83%', top: '20.80%' }}
+                      >
+                        {debouncedPhysician}
+                      </div>
+                    </>
+                  )}
 
                   {/* Active Text Input */}
                   {activeText && (
