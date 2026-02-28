@@ -33,6 +33,7 @@ Capa de persistencia concreta: IndexedDB, localStorage, Firestore bridge y sincr
 - `unifiedLocalService.ts` conserva compatibilidad útil para acceso local no-demo.
 - `localStorageService.ts` sigue existiendo solo como gateway legacy mínimo y deprecated.
 - `legacyFirebaseService.ts` concentra la compatibilidad histórica de lectura desde rutas Firestore antiguas.
+- `legacyFirebaseRecordService.ts` se mantiene como fachada pública interna para record reads, rangos, suscripciones y discovery, con módulos especializados por responsabilidad.
 - Paths legacy todavía soportados para `DailyRecord`:
   - `hospitals/hanga_roa/dailyRecords/{date}`
   - `hospitals/hhr/dailyRecords/{date}`

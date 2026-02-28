@@ -42,6 +42,7 @@ Capa de datos e integración: repositorios, persistencia, exportadores, integrac
   - `authFallback.ts` para redirect/bootstrap
   - `authSession.ts` para suscripción de sesión activa
   - `authAccessResolution.ts` para autorización y resolución de rol
+  - `authPolicy.ts` como fachada de whitelist/roles apoyada en helpers internos de caché y lookup
 - **Excel runtime centralizado** en `exporters/excelUtils.ts` para cargar primero el build browser-min (`exceljs/dist/exceljs.min.js`) y evitar crecimiento innecesario del bundle principal.
 
 ## Ejemplo
@@ -58,3 +59,4 @@ await DailyRecordRepository.save(record);
 - Mantener contratos de entrada/salida tipados (preferir `types`/`schemas`).
 - En integraciones externas complejas, usar una fachada pública pequeña y mover auth, payload builders y folder/file helpers a módulos internos específicos.
 - Mantener `authService.ts` como fachada pública; evitar que la UI importe módulos internos de `auth/` directamente.
+- Mantener `authPolicy.ts` y `authService.ts` estables aunque la resolución de roles se siga particionando internamente.
