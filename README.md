@@ -208,6 +208,37 @@ La pipeline en `.github/workflows/ci-cd.yml` bloquea merge si falla alguno:
 - E2E críticos con emulador (`test:e2e:critical:ci`)
 - Build de producción (`build`)
 
+## Baseline de Calidad
+
+Snapshot vigente al `2026-02-28` en [reports/quality-metrics.md](reports/quality-metrics.md):
+
+- `948` archivos fuente
+- `96780` líneas fuente
+- `0` módulos sobredimensionados
+- `0` violaciones de deuda entre carpetas
+- `0` explicit `any` en código fuente
+- `478` archivos de test
+- `1` archivo marcado con flake-risk
+
+Validación usada para esta línea base:
+
+```bash
+npm run typecheck
+npm run lint -- --max-warnings 0
+npm run check:quality
+npm run test:ci:unit
+npm run report:quality-metrics
+```
+
+### Próximo hotspot recomendado
+
+Hotspots secundarios:
+
+- `src/services/integrations/whatsapp/whatsappService.ts`
+- `src/services/auth/passportService.ts`
+- `src/hooks/useAuthState.ts`
+- `src/features/auth/components/LoginPage.tsx`
+
 ## Convenciones de Calidad (resumen)
 
 - Controladores (`controllers`) y hooks no deben importar implementaciones de componentes.

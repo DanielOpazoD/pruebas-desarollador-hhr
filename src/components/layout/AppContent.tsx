@@ -4,7 +4,6 @@ import { DateStrip } from '@/components/layout/DateStrip';
 import { SettingsModal } from '@/components/modals/SettingsModal';
 import { TestAgent } from '@/components/debug/TestAgent';
 import { SyncWatcher } from '@/components/shared/SyncWatcher';
-import { DemoModePanel } from '@/components/debug/DemoModePanel';
 import { BookmarkBar } from '@/components/bookmarks/BookmarkBar';
 import StorageStatusBadge from '@/components/layout/StorageStatusBadge';
 import { PinLockScreen } from '@/components/security/PinLockScreen';
@@ -177,7 +176,6 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
         <SettingsModal
           isOpen={ui.settingsModal.isOpen}
           onClose={ui.settingsModal.close}
-          onGenerateDemo={ui.demoModal.open}
           onRunTest={() => ui.setIsTestAgentRunning(true)}
           canDownloadPassport={auth.canDownloadPassport}
           onDownloadPassport={auth.handleDownloadPassport}
@@ -218,7 +216,6 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
         {!sharedCensus.isSharedCensusMode && (
           <>
             <SyncWatcher />
-            <DemoModePanel isOpen={ui.demoModal.isOpen} onClose={ui.demoModal.close} />
           </>
         )}
 

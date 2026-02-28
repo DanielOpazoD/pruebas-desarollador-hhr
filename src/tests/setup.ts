@@ -351,8 +351,6 @@ vi.mock('@/services/repositories/DailyRecordRepository', () => ({
   deleteDay: vi.fn(),
   getAllDates: vi.fn().mockResolvedValue([]),
   getAvailableDates: vi.fn().mockResolvedValue([]),
-  setDemoModeActive: vi.fn(),
-  isDemoModeActive: vi.fn().mockReturnValue(false),
   setFirestoreEnabled: vi.fn(),
   copyPatientToDate: vi.fn().mockResolvedValue(true),
 }));

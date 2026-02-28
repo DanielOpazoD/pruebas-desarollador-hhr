@@ -3,7 +3,7 @@ import { BEDS } from '@/constants';
 import { getRecordFromFirestore } from '@/services/storage/firestoreService';
 import { getLegacyRecord } from '@/services/storage/legacyFirebaseService';
 import { saveRecord as saveToIndexedDB } from '@/services/storage/indexedDBService';
-import { isDemoModeActive, isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
+import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { clonePatient, createEmptyPatient } from '@/services/factories/patientFactory';
 import { getForDate } from '@/services/repositories/dailyRecordRepositoryReadService';
 import { save } from '@/services/repositories/dailyRecordRepositoryWriteService';
@@ -73,7 +73,7 @@ export const initializeDay = async (date: string, copyFromDate?: string): Promis
   const existing = await getForDate(date);
   if (existing) return existing;
 
-  if (!isDemoModeActive() && isFirestoreEnabled()) {
+  if (isFirestoreEnabled()) {
     try {
       const remoteRecord = await getRecordFromFirestore(date);
       if (remoteRecord) {

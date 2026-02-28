@@ -53,7 +53,6 @@ describe('DailyRecordContext', () => {
     },
     refresh: vi.fn(),
     createDay: vi.fn(),
-    generateDemo: vi.fn(),
     resetDay: vi.fn(),
     updatePatient: vi.fn(),
     updatePatientMultiple: vi.fn(),

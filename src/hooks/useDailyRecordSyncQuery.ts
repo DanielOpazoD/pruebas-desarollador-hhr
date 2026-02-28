@@ -11,7 +11,6 @@ import {
   usePatchDailyRecordMutation,
   useInitializeDailyRecordMutation,
   useDeleteDailyRecordMutation,
-  useGenerateDemoMutation,
 } from './useDailyRecordQuery';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../config/queryClient';
@@ -51,7 +50,6 @@ export const useDailyRecordSyncQuery = (
   const patchMutation = usePatchDailyRecordMutation(currentDateString);
   const initMutation = useInitializeDailyRecordMutation();
   const deleteMutation = useDeleteDailyRecordMutation();
-  const demoMutation = useGenerateDemoMutation();
   const pendingRefetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearPendingRefetchTimeout = useCallback(() => {
@@ -87,19 +85,11 @@ export const useDailyRecordSyncQuery = (
           isError: deleteMutation.isError,
           isSuccess: deleteMutation.isSuccess,
         },
-        {
-          isPending: demoMutation.isPending,
-          isError: demoMutation.isError,
-          isSuccess: demoMutation.isSuccess,
-        },
       ]),
     [
       deleteMutation.isError,
       deleteMutation.isPending,
       deleteMutation.isSuccess,
-      demoMutation.isError,
-      demoMutation.isPending,
-      demoMutation.isSuccess,
       initMutation.isError,
       initMutation.isPending,
       initMutation.isSuccess,
@@ -202,11 +192,6 @@ export const useDailyRecordSyncQuery = (
     success('Registro eliminado', 'El registro del día ha sido eliminado.');
   }, [currentDateString, deleteMutation, success]);
 
-  const generateDemo = useCallback(async () => {
-    await demoMutation.mutateAsync(currentDateString);
-    success('Demo Generada', 'Se han cargado datos de prueba.');
-  }, [currentDateString, demoMutation, success]);
-
   return {
     record: record ?? null,
     setRecord,
@@ -218,6 +203,5 @@ export const useDailyRecordSyncQuery = (
     refresh,
     createDay,
     resetDay,
-    generateDemo,
   };
 };

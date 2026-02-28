@@ -2,9 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DailyRecord, PatientData, PatientStatus, Specialty } from '@/types';
 
 vi.mock('@/services/storage/indexedDBService', () => ({
-  getDemoRecordForDate: vi.fn(),
   getRecordForDate: vi.fn(),
-  saveDemoRecord: vi.fn(),
   saveRecord: vi.fn(),
 }));
 
@@ -20,7 +18,6 @@ vi.mock('@/services/storage/syncQueueService', () => ({
 }));
 
 vi.mock('@/services/repositories/repositoryConfig', () => ({
-  isDemoModeActive: vi.fn(() => false),
   isFirestoreEnabled: vi.fn(() => true),
 }));
 

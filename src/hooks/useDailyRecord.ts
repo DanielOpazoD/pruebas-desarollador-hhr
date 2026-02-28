@@ -54,7 +54,7 @@ export const useDailyRecord = (
   // ========================================================================
   // Orchestrated Sub-hooks
   // ========================================================================
-  const { createDay, generateDemo, resetDay } = usePersistence({
+  const { createDay, resetDay } = usePersistence({
     currentDateString,
     markLocalChange,
     setRecord,
@@ -117,7 +117,6 @@ export const useDailyRecord = (
 
       // Day Lifecycle
       createDay,
-      generateDemo,
       resetDay,
       refresh,
 
@@ -183,7 +182,6 @@ export const useDailyRecord = (
       inventory,
       stabilityRules,
       createDay,
-      generateDemo,
       resetDay,
       refresh,
       validateRecordSchema,

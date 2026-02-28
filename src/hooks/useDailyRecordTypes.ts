@@ -47,7 +47,6 @@ export interface UseDailyRecordSyncResult {
   // Day Lifecycle (Consolidated)
   createDay: (copyFromPrevious: boolean, specificDate?: string) => Promise<void>;
   resetDay: () => Promise<void>;
-  generateDemo: () => Promise<void>;
 }
 
 // DailyRecordPatch and related types have been moved to types/core.ts
@@ -72,7 +71,6 @@ export interface DailyRecordDataContextType {
 export interface DailyRecordActionsContextType extends PatientMovementActions {
   // Day Management
   createDay: (copyFromPrevious: boolean, specificDate?: string) => void;
-  generateDemo: () => void;
   resetDay: () => Promise<void>;
   refresh: () => void;
 

@@ -34,14 +34,6 @@ export {
   saveStoredNurses,
   clearAllData,
   isLocalStorageAvailable,
-  // Demo mode data
-  getDemoRecords,
-  saveDemoRecord,
-  saveDemoRecords,
-  getDemoRecordForDate,
-  getAllDemoDates,
-  clearAllDemoData,
-  getPreviousDemoDayRecord,
 } from './storage/unifiedLocalService';
 
 // Local Settings (IndexedDB)
@@ -72,8 +64,6 @@ export {
 export {
   setFirestoreEnabled,
   isFirestoreEnabled,
-  setDemoModeActive,
-  isDemoModeActive,
   getForDate,
   getPreviousDay,
   save,
@@ -125,13 +115,6 @@ export {
   getTodayISO,
   formatDateForDisplay,
 } from '@/utils/dateUtils';
-
-export {
-  generateDemoRecord,
-  generateDemoForDay,
-  generateDemoForWeek,
-  generateDemoForMonth,
-} from './utils/demoDataGenerator';
 
 // ============================================================
 // ERROR HANDLING

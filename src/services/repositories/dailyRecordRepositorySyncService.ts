@@ -1,22 +1,14 @@
 import { DailyRecord } from '@/types';
-import {
-  getDemoRecordForDate,
-  saveRecord as saveToIndexedDB,
-} from '@/services/storage/indexedDBService';
+import { saveRecord as saveToIndexedDB } from '@/services/storage/indexedDBService';
 import { getRecordFromFirestore, subscribeToRecord } from '@/services/storage/firestoreService';
 import { getLegacyRecord } from '@/services/storage/legacyFirebaseService';
-import { isDemoModeActive, isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
+import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { migrateLegacyData } from '@/services/repositories/dataMigration';
 
 export const subscribe = (
   date: string,
   callback: (r: DailyRecord | null, hasPendingWrites: boolean) => void
 ): (() => void) => {
-  if (isDemoModeActive()) {
-    getDemoRecordForDate(date).then(r => callback(r, false));
-    return () => {};
-  }
-
   return subscribeToRecord(date, async (record, hasPendingWrites) => {
     const migrated = record ? migrateLegacyData(record, date) : null;
     if (migrated && !hasPendingWrites) {
@@ -27,7 +19,7 @@ export const subscribe = (
 };
 
 export const syncWithFirestore = async (date: string): Promise<DailyRecord | null> => {
-  if (isDemoModeActive() || !isFirestoreEnabled()) return null;
+  if (!isFirestoreEnabled()) return null;
 
   try {
     const record = await getRecordFromFirestore(date);

@@ -31,9 +31,6 @@ export {
   useDailyRecordHandoffActions,
 } from './DailyRecordContext';
 
-// Demo Mode
-export { DemoModeProvider, useDemoMode } from './DemoModeContext';
-
 // Authentication & Roles
 export { AuthProvider, useAuth, useCanEdit } from './AuthContext';
 export type { UserRole, AuthContextType } from './AuthContext';

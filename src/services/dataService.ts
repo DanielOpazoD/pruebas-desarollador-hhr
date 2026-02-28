@@ -10,7 +10,6 @@
  * - calculations/statsCalculator
  * - repositories/DailyRecordRepository
  * - utils/dateUtils
- * - utils/demoDataGenerator
  */
 
 // ============================================================================
@@ -39,11 +38,6 @@ export { calculateStats, type CensusStatistics } from './calculations/statsCalcu
 // Date Formatting
 // ============================================================================
 export { formatDateDDMMYYYY, getTodayISO, formatDateForDisplay } from '@/utils/dateUtils';
-
-// ============================================================================
-// Demo Data
-// ============================================================================
-export { generateDemoRecord } from './utils/demoDataGenerator';
 
 // ============================================================================
 // Repository (for backwards compatibility)

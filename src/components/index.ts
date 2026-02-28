@@ -25,9 +25,6 @@ export { BookmarkBar } from './bookmarks/BookmarkBar';
 export type { ModuleType } from '@/constants/navigationConfig';
 
 // ============================================================
-// DEBUG COMPONENTS (debug/)
-// ============================================================
-export { DemoModePanel } from './debug/DemoModePanel';
 export { TestAgent } from './debug/TestAgent';
 
 // ============================================================

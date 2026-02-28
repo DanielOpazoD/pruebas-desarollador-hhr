@@ -1,9 +1,7 @@
 import { DailyRecord, DailyRecordPatch, PatientData } from '@/types';
 import { CURRENT_SCHEMA_VERSION } from '@/constants/version';
 import {
-  getDemoRecordForDate,
   getRecordForDate as getRecordFromIndexedDB,
-  saveDemoRecord,
   saveRecord as saveToIndexedDB,
 } from '@/services/storage/indexedDBService';
 import { isRetryableSyncError, queueSyncTask } from '@/services/storage/syncQueueService';
@@ -12,7 +10,7 @@ import {
   saveRecordToFirestore,
   updateRecordPartial as updateRecordPartialToFirestore,
 } from '@/services/storage/firestoreService';
-import { isDemoModeActive, isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
+import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { normalizeDailyRecordInvariants } from '@/utils/recordInvariants';
 import { validateAndSalvageRecord } from '@/services/repositories/helpers/validationHelper';
 import { applyPatches } from '@/utils/patchUtils';
@@ -80,18 +78,6 @@ export const save = async (record: DailyRecord, expectedLastUpdated?: string): P
   let savedRemotely = false;
   let queuedForRetry = false;
   let autoMerged = false;
-
-  if (isDemoModeActive()) {
-    await saveDemoRecord(command.record);
-    createSaveDailyRecordResult({
-      date: command.date,
-      savedLocally: true,
-      savedRemotely: false,
-      queuedForRetry: false,
-      autoMerged: false,
-    });
-    return;
-  }
 
   const recordWithSchemaDefaults = validateAndSalvageRecord(command.record, command.date);
 
@@ -228,9 +214,7 @@ export const updatePartial = async (date: string, partialData: DailyRecordPatch)
   let queuedForRetry = false;
   let autoMerged = false;
 
-  const current = isDemoModeActive()
-    ? await getDemoRecordForDate(command.date)
-    : await getRecordFromIndexedDB(command.date);
+  const current = await getRecordFromIndexedDB(command.date);
 
   if (!current) {
     console.warn(
@@ -255,18 +239,6 @@ export const updatePartial = async (date: string, partialData: DailyRecordPatch)
 
   const validatedRecord = validateAndSalvageRecord(updated, command.date);
 
-  if (isDemoModeActive()) {
-    await saveDemoRecord(validatedRecord);
-    createUpdatePartialDailyRecordResult({
-      date: command.date,
-      savedLocally: true,
-      updatedRemotely: false,
-      queuedForRetry: false,
-      autoMerged: false,
-      patchedFields: Object.keys(mergedPatches).length,
-    });
-    return;
-  }
   await saveToIndexedDB(validatedRecord);
 
   if (isFirestoreEnabled()) {

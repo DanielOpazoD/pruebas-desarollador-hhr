@@ -38,7 +38,6 @@ import { DailyRecordContextType } from '@/hooks/useDailyRecordTypes';
 // Providers
 import { DailyRecordProvider } from '@/context/DailyRecordContext';
 import { StaffProvider } from '@/context/StaffContext';
-import { DemoModeProvider } from '@/context/DemoModeContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { AuditProvider } from '@/context/AuditContext';
 import { UIProvider } from '@/context/UIContext';
@@ -142,7 +141,6 @@ export const createMockDailyRecordContext = (
 
   // Day Management
   createDay: vi.fn(),
-  generateDemo: vi.fn(),
   resetDay: vi.fn().mockResolvedValue(undefined),
   refresh: vi.fn(),
 
@@ -218,7 +216,6 @@ export const createMockUIState = (overrides: Partial<UseUIStateReturn> = {}): Us
   setCensusViewMode: vi.fn(),
   settingsModal: createMockModal(),
   bedManagerModal: createMockModal(),
-  demoModal: createMockModal(),
   isTestAgentRunning: false,
   setIsTestAgentRunning: vi.fn(),
   selectedShift: 'day',
@@ -284,11 +281,9 @@ function customRender(
           <AuthProvider>
             <VersionProvider>
               <AuditProvider userId="test-user">
-                <DemoModeProvider>
-                  <StaffProvider>
-                    <DailyRecordProvider value={mockContext}>{children}</DailyRecordProvider>
-                  </StaffProvider>
-                </DemoModeProvider>
+                <StaffProvider>
+                  <DailyRecordProvider value={mockContext}>{children}</DailyRecordProvider>
+                </StaffProvider>
               </AuditProvider>
             </VersionProvider>
           </AuthProvider>

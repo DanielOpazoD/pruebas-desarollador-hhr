@@ -4,7 +4,6 @@
     "src/services/auth/authService.ts": 610,
     "src/services/pdf/handoffPdfSections.ts": 590,
     "src/types/core.ts": 555,
-    "src/services/utils/demoDataGenerator.ts": 550,
     "src/utils/dateUtils.ts": 545,
     "src/services/exporters/censusMasterWorkbook.ts": 545,
     "src/features/cudyr/services/cudyrExportService.ts": 520,

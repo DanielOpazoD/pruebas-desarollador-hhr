@@ -2,12 +2,11 @@
  * Daily Record Repository
  * Provides a unified interface for accessing and persisting daily records.
  * Abstracts localStorage and Firestore operations.
- * Supports demo mode with isolated storage.
  */
 
 import { DailyRecord } from '@/types';
 import { DailyRecordPatch } from '@/types';
-import { deleteRecord as deleteFromIndexedDB, deleteDemoRecord } from '../storage/indexedDBService';
+import { deleteRecord as deleteFromIndexedDB } from '../storage/indexedDBService';
 import {
   deleteRecordFromFirestore,
   getRecordFromFirestore,
@@ -21,13 +20,8 @@ import {
 // Configuration (imported from repositoryConfig)
 // ============================================================================
 
-export {
-  setFirestoreEnabled,
-  isFirestoreEnabled,
-  setDemoModeActive,
-  isDemoModeActive,
-} from './repositoryConfig';
-import { isFirestoreEnabled, isDemoModeActive } from './repositoryConfig';
+export { setFirestoreEnabled, isFirestoreEnabled } from './repositoryConfig';
+import { isFirestoreEnabled } from './repositoryConfig';
 
 // Re-export from dedicated modules
 export { CatalogRepository } from './CatalogRepository';
@@ -137,28 +131,19 @@ export const initializeDay = async (date: string, copyFromDate?: string) => {
 export const deleteDay = async (date: string): Promise<void> => {
   const command = createDeleteDayCommand(date);
 
-  if (isDemoModeActive()) {
-    await deleteDemoRecord(command.date);
-  } else {
-    // 1. Local Delete (IndexedDB)
-    await deleteFromIndexedDB(command.date);
+  // 1. Local Delete (IndexedDB)
+  await deleteFromIndexedDB(command.date);
 
-    // 2. Soft Delete in Firestore (Move to trash)
-    if (isFirestoreEnabled()) {
-      try {
-        const record = await getRecordFromFirestore(command.date);
-        if (record) {
-          // Create a snapshot in the deletedRecords collection
-          // Note: This requires a new helper in firestoreService or direct access
-          // For now, I'll use saveRecordToFirestore with a custom path if possible,
-          // or just implement moveRecordToTrash in firestoreService.
-          await moveRecordToTrash(record);
-        }
-        await deleteRecordFromFirestore(command.date);
-      } catch (error) {
-        console.error('Failed to soft-delete from Firestore:', error);
-        // Fallback to hard delete if move fails? No, better to keep it and report error.
+  // 2. Soft Delete in Firestore (Move to trash)
+  if (isFirestoreEnabled()) {
+    try {
+      const record = await getRecordFromFirestore(command.date);
+      if (record) {
+        await moveRecordToTrash(record);
       }
+      await deleteRecordFromFirestore(command.date);
+    } catch (error) {
+      console.error('Failed to soft-delete from Firestore:', error);
     }
   }
 };

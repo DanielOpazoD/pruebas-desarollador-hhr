@@ -6,21 +6,21 @@ Implementar Repository Pattern para ocultar detalles de almacenamiento/sincroniz
 
 ## Mapa
 
-| Archivo                                          | Rol                                           |
-| ------------------------------------------------ | --------------------------------------------- |
-| `DailyRecordRepository.ts`                       | API unificada del registro diario             |
-| `dailyRecordRepositoryReadService.ts`            | Lecturas                                      |
-| `dailyRecordRepositoryWriteService.ts`           | Escrituras                                    |
-| `dailyRecordRepositorySyncService.ts`            | Suscripción/sync con Firestore                |
-| `dailyRecordRepositoryInitializationService.ts`  | Inicialización de días/copia de paciente      |
-| `repositoryConfig.ts`                            | Flags de repo (`firestoreEnabled`, demo mode) |
-| `CatalogRepository.ts`                           | Catálogos                                     |
-| `PatientMasterRepository.ts`                     | Base maestra de pacientes                     |
-| `PrintTemplateRepository.ts`                     | Plantillas de impresión                       |
-| `dataMigration.ts` / `patientMasterMigration.ts` | Migraciones                                   |
-| `monthIntegrity.ts`                              | Integridad mensual                            |
-| `contracts/*.ts`                                 | Contratos estrictos de entrada/salida         |
-| `index.ts`                                       | Barrel export                                 |
+| Archivo                                          | Rol                                      |
+| ------------------------------------------------ | ---------------------------------------- |
+| `DailyRecordRepository.ts`                       | API unificada del registro diario        |
+| `dailyRecordRepositoryReadService.ts`            | Lecturas                                 |
+| `dailyRecordRepositoryWriteService.ts`           | Escrituras                               |
+| `dailyRecordRepositorySyncService.ts`            | Suscripción/sync con Firestore           |
+| `dailyRecordRepositoryInitializationService.ts`  | Inicialización de días/copia de paciente |
+| `repositoryConfig.ts`                            | Flags de repo (`firestoreEnabled`)       |
+| `CatalogRepository.ts`                           | Catálogos                                |
+| `PatientMasterRepository.ts`                     | Base maestra de pacientes                |
+| `PrintTemplateRepository.ts`                     | Plantillas de impresión                  |
+| `dataMigration.ts` / `patientMasterMigration.ts` | Migraciones                              |
+| `monthIntegrity.ts`                              | Integridad mensual                       |
+| `contracts/*.ts`                                 | Contratos estrictos de entrada/salida    |
+| `index.ts`                                       | Barrel export                            |
 
 ## Patrón de uso
 

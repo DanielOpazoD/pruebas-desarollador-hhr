@@ -16,7 +16,7 @@ import {
   subscribeToProfessionalsCatalog,
 } from '../storage/firestoreService';
 import { getLegacyNurseCatalog, getLegacyTensCatalog } from '../storage/legacyFirebaseService';
-import { isFirestoreEnabled, isDemoModeActive } from '@/services/repositories/repositoryConfig';
+import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { ProfessionalCatalogItem } from '@/types';
 import {
   normalizeProfessionalCatalog,
@@ -50,7 +50,7 @@ export const getNurses = async (): Promise<string[]> => {
   if (localList.length > 0) return localList;
 
   // 2. Try Beta Firestore
-  if (isFirestoreEnabled() && !isDemoModeActive()) {
+  if (isFirestoreEnabled()) {
     try {
       const remoteList = await getNurseCatalogFromFirestore();
       if (remoteList.length > 0) {
@@ -81,7 +81,7 @@ export const getNurses = async (): Promise<string[]> => {
 export const saveNurses = async (nurses: string[]): Promise<void> => {
   const normalized = normalizeStringCatalog(nurses);
   await saveCatalog('nurses', normalized);
-  if (isFirestoreEnabled() && !isDemoModeActive()) {
+  if (isFirestoreEnabled()) {
     await saveNurseCatalogToFirestore(normalized);
   }
 };
@@ -91,7 +91,6 @@ export const saveNurses = async (nurses: string[]): Promise<void> => {
  */
 export const subscribeNurses = (callback: (nurses: string[]) => void): (() => void) => {
   assertCatalogSubscriptionCallback(callback, 'nurses');
-  if (isDemoModeActive()) return () => {};
   return subscribeToNurseCatalog(async nurses => {
     const normalized = normalizeStringCatalog(nurses);
     await saveCatalog('nurses', normalized);
@@ -112,7 +111,7 @@ export const getTens = async (): Promise<string[]> => {
   if (localList.length > 0) return localList;
 
   // 2. Try Beta Firestore
-  if (isFirestoreEnabled() && !isDemoModeActive()) {
+  if (isFirestoreEnabled()) {
     try {
       const remoteList = await getTensCatalogFromFirestore();
       if (remoteList.length > 0) {
@@ -143,7 +142,7 @@ export const getTens = async (): Promise<string[]> => {
 export const saveTens = async (tens: string[]): Promise<void> => {
   const normalized = normalizeStringCatalog(tens);
   await saveCatalog('tens', normalized);
-  if (isFirestoreEnabled() && !isDemoModeActive()) {
+  if (isFirestoreEnabled()) {
     await saveTensCatalogToFirestore(normalized);
   }
 };
@@ -153,7 +152,6 @@ export const saveTens = async (tens: string[]): Promise<void> => {
  */
 export const subscribeTens = (callback: (tens: string[]) => void): (() => void) => {
   assertCatalogSubscriptionCallback(callback, 'tens');
-  if (isDemoModeActive()) return () => {};
   return subscribeToTensCatalog(async tens => {
     const normalized = normalizeStringCatalog(tens);
     await saveCatalog('tens', normalized);
@@ -175,7 +173,7 @@ export const getProfessionals = async (): Promise<ProfessionalCatalogItem[]> => 
   if (parsedList.length > 0) return parsedList;
 
   // 2. Try Beta Firestore
-  if (isFirestoreEnabled() && !isDemoModeActive()) {
+  if (isFirestoreEnabled()) {
     try {
       const remoteList = await getProfessionalsCatalogFromFirestore();
       if (remoteList.length > 0) {
@@ -198,7 +196,7 @@ export const saveProfessionals = async (
 ): Promise<void> => {
   const normalized = normalizeProfessionalCatalog(professionals);
   await saveCatalogValues<ProfessionalCatalogItem>('professionals', normalized);
-  if (isFirestoreEnabled() && !isDemoModeActive()) {
+  if (isFirestoreEnabled()) {
     await saveProfessionalsCatalogToFirestore(normalized);
   }
 };
@@ -210,7 +208,6 @@ export const subscribeProfessionals = (
   callback: (professionals: ProfessionalCatalogItem[]) => void
 ): (() => void) => {
   assertCatalogSubscriptionCallback(callback, 'professionals');
-  if (isDemoModeActive()) return () => {};
   return subscribeToProfessionalsCatalog(async professionals => {
     const normalized = normalizeProfessionalCatalog(professionals);
     await saveCatalogValues<ProfessionalCatalogItem>('professionals', normalized);

@@ -8,7 +8,7 @@ import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils
 import { useDailyRecordSyncQuery } from '@/hooks/useDailyRecordSyncQuery';
 import { DailyRecord } from '@/types';
 import { clearAllRecords, getRecordForDate } from '@/services/storage/indexedDBService';
-import { setDemoModeActive, setFirestoreEnabled } from '@/services/repositories/repositoryConfig';
+import { setFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 
 const runEmulatorUiTests =
   process.env.RUN_FIRESTORE_EMULATOR_TESTS === '1' ||
@@ -135,7 +135,6 @@ describeUiEmulator('UI sync flow with Firestore emulator', () => {
     vi.clearAllMocks();
     await testEnv.clearFirestore();
     await clearAllRecords();
-    setDemoModeActive(false);
     setFirestoreEnabled(true);
 
     activeDb = testEnv

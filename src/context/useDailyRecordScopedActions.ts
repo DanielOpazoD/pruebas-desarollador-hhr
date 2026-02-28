@@ -4,7 +4,7 @@ import { useRequiredDailyRecordActionsContext } from '@/context/dailyRecordActio
 
 type DailyRecordDayActions = Pick<
   DailyRecordActionsContextType,
-  'createDay' | 'generateDemo' | 'resetDay' | 'refresh'
+  'createDay' | 'resetDay' | 'refresh'
 >;
 type DailyRecordBedActions = Pick<
   DailyRecordActionsContextType,
@@ -67,11 +67,10 @@ export const useDailyRecordDayActions = (): DailyRecordDayActions => {
   return useMemo(
     () => ({
       createDay: actions.createDay,
-      generateDemo: actions.generateDemo,
       resetDay: actions.resetDay,
       refresh: actions.refresh,
     }),
-    [actions.createDay, actions.generateDemo, actions.refresh, actions.resetDay]
+    [actions.createDay, actions.refresh, actions.resetDay]
   );
 };
 

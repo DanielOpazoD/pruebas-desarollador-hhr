@@ -11,7 +11,6 @@ import { getVisibleModules } from '@/utils/permissions';
 import { NavbarMenu } from './NavbarMenu';
 import { NavbarTabs } from './NavbarTabs';
 import { UserMenu } from './UserMenu';
-import { DemoModeBadge } from './DemoModeBadge';
 import { SyncStatusIndicator } from './SyncStatusIndicator';
 
 import { ModuleType } from '@/constants/navigationConfig';
@@ -132,7 +131,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             {!isSharedMode && (
               <>
                 <SyncStatusIndicator />
-                <DemoModeBadge />
               </>
             )}
 

@@ -3,9 +3,6 @@ import {
   getRecordForDate as getRecordFromIndexedDB,
   getPreviousDayRecord as getPreviousDayFromIndexedDB,
   getAllDates as getAllDatesFromIndexedDB,
-  getAllDemoRecords as getAllDemoRecordsFromIndexedDB,
-  getDemoRecordForDate,
-  getPreviousDemoDayRecord,
   saveRecord as saveToIndexedDB,
 } from '@/services/storage/indexedDBService';
 import {
@@ -14,7 +11,7 @@ import {
 } from '@/services/storage/firestoreService';
 import { getLegacyRecord } from '@/services/storage/legacyFirebaseService';
 import { logLegacyInfo } from '@/services/storage/legacyfirebase/legacyFirebaseLogger';
-import { isDemoModeActive, isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
+import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { migrateLegacyData } from '@/services/repositories/dataMigration';
 import {
   createDailyRecordReadResult,
@@ -48,11 +45,6 @@ export const getForDateWithMeta = async (
       const migrated = migrateLegacyData(override[query.date], query.date);
       return createDailyRecordReadResult(query.date, migrated, 'e2e');
     }
-  }
-
-  if (isDemoModeActive()) {
-    const demoRecord = await getDemoRecordForDate(query.date);
-    return createDailyRecordReadResult(query.date, demoRecord, 'demo');
   }
 
   const localRecord = await getRecordFromIndexedDB(query.date);
@@ -94,11 +86,6 @@ export const getForDateWithMeta = async (
 };
 
 export const getAvailableDates = async (): Promise<string[]> => {
-  if (isDemoModeActive()) {
-    const records = await getAllDemoRecordsFromIndexedDB();
-    return Object.keys(records).sort().reverse();
-  }
-
   const localDates = await getAllDatesFromIndexedDB();
 
   if (isFirestoreEnabled()) {
@@ -116,10 +103,6 @@ export const getAvailableDates = async (): Promise<string[]> => {
 
 export const getPreviousDay = async (date: string): Promise<DailyRecord | null> => {
   const query = createGetPreviousDayQuery(date);
-
-  if (isDemoModeActive()) {
-    return await getPreviousDemoDayRecord(query.date);
-  }
 
   const localRecord = await getPreviousDayFromIndexedDB(query.date);
   if (localRecord) {

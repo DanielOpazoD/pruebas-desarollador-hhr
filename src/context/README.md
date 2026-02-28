@@ -19,7 +19,6 @@ Providers de estado global y contratos para features transversales.
 | `HospitalContext.tsx`               | Contexto de hospital activo/configuración                                |
 | `CensusContext.tsx`                 | Agrega `dailyRecord + dateNav + fileOps + email` para la vista principal |
 | `TableConfigContext.tsx`            | Configuración de columnas y tabla                                        |
-| `DemoModeContext.tsx`               | Estado de demo mode                                                      |
 | `AuditContext.tsx`                  | Contexto para trazabilidad/auditoría                                     |
 | `useDailyRecordFragmentedValues.ts` | Selector/memoización para fragmentar `DailyRecordContext`                |
 | `uiContracts.ts`                    | Tipos/contratos para UI runtime y notificaciones                         |

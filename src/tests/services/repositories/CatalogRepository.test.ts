@@ -23,7 +23,6 @@ vi.mock('@/services/storage/firestoreService', () => ({
 }));
 vi.mock('@/services/repositories/repositoryConfig', () => ({
   isFirestoreEnabled: vi.fn(() => true),
-  isDemoModeActive: vi.fn(() => false),
 }));
 vi.mock('@/services/storage/legacyFirebaseService', () => ({
   getLegacyNurseCatalog: vi.fn().mockResolvedValue([]),

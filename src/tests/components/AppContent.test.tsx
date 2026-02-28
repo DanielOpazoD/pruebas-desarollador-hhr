@@ -39,10 +39,6 @@ vi.mock('@/components/shared/SyncWatcher', () => ({
   SyncWatcher: () => <div data-testid="sync-watcher">SyncWatcher</div>,
 }));
 
-vi.mock('@/components/debug/DemoModePanel', () => ({
-  DemoModePanel: () => <div data-testid="demo-mode-panel">DemoModePanel</div>,
-}));
-
 vi.mock('@/components/bookmarks/BookmarkBar', () => ({
   BookmarkBar: () => <div data-testid="bookmark-bar">BookmarkBar</div>,
 }));
@@ -94,7 +90,6 @@ describe('AppContent', () => {
     setCensusViewMode: vi.fn(),
     bedManagerModal: { isOpen: false, open: vi.fn(), close: vi.fn() },
     settingsModal: { isOpen: false, open: vi.fn(), close: vi.fn() },
-    demoModal: { isOpen: false, open: vi.fn(), close: vi.fn() },
     showPrintButton: true,
     showBookmarksBar: true,
     setShowBookmarksBar: vi.fn(),
@@ -287,7 +282,6 @@ describe('AppContent', () => {
     const uiWithModals = {
       ...mockUI,
       settingsModal: { isOpen: true, close: vi.fn(), open: vi.fn() },
-      demoModal: { isOpen: true, close: vi.fn(), open: vi.fn() },
       isTestAgentRunning: true,
     };
 
@@ -295,10 +289,9 @@ describe('AppContent', () => {
 
     expect(screen.getByTestId('settings-modal')).toBeInTheDocument();
     expect(screen.getByTestId('test-agent')).toBeInTheDocument();
-    expect(screen.getByTestId('demo-mode-panel')).toBeInTheDocument();
   });
 
-  it('excludes SyncWatcher and DemoModePanel in shared mode', () => {
+  it('excludes SyncWatcher in shared mode', () => {
     const sharedContext = {
       ...mockCensusContext,
       sharedCensus: { isSharedCensusMode: true },
@@ -308,6 +301,5 @@ describe('AppContent', () => {
     render(<AppContent ui={mockUI} />);
 
     expect(screen.queryByTestId('sync-watcher')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('demo-mode-panel')).not.toBeInTheDocument();
   });
 });

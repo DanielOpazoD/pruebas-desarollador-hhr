@@ -7,7 +7,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../config/queryClient';
 import { DailyRecord } from '@/types';
 import { useRepositories } from '@/services/RepositoryContext';
-import { generateDemoRecord } from '@/services/utils/demoDataGenerator';
 import { useEffect } from 'react';
 import { DailyRecordPatch } from './useDailyRecordTypes';
 import { applyPatches } from '@/utils/patchUtils';
@@ -261,25 +260,6 @@ export const useDeleteDailyRecordMutation = () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.dailyRecord.byDate(date),
       });
-    },
-  });
-};
-
-/**
- * Hook for generating demo data.
- */
-export const useGenerateDemoMutation = () => {
-  const queryClient = useQueryClient();
-  const { dailyRecord } = useRepositories();
-
-  return useMutation({
-    mutationFn: async (date: string) => {
-      const demoRecord = generateDemoRecord(date);
-      await dailyRecord.save(demoRecord);
-      return demoRecord;
-    },
-    onSuccess: record => {
-      queryClient.setQueryData(queryKeys.dailyRecord.byDate(record.date), record);
     },
   });
 };

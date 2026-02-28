@@ -15,22 +15,22 @@ flowchart TB
         TQ["TanStack Query<br/>(Cache & Sync)"]
         IDB[("IndexedDB<br/>(Dexie.js)")]
     end
-    
+
     subgraph Firebase["☁️ Firebase"]
         FS[("Firestore<br/>Real-time DB")]
         AUTH["Firebase Auth"]
         STORAGE["Cloud Storage<br/>(PDFs, Excels)"]
     end
-    
+
     subgraph Serverless["⚡ Netlify Functions"]
         GMAIL["Gmail API<br/>(Censo Email)"]
         WAPROXY["WhatsApp Proxy"]
     end
-    
+
     subgraph External["🔗 Externos"]
         WABOT["WhatsApp Bot<br/>(Railway)"]
     end
-    
+
     UI --> CTX --> TQ
     TQ <-->|Optimistic Updates| IDB
     TQ <-->|Real-time Subscriptions| FS
@@ -59,19 +59,19 @@ Para resumen ejecutivo y stack, ver este documento.
 
 ## 📦 Stack Tecnológico
 
-| Capa | Tecnología | Versión |
-|------|------------|---------|
-| **UI** | React | 19.2.1 |
-| **Language** | TypeScript | 5.8.2 |
-| **Build** | Vite | 6.2.0 |
-| **State Management** | TanStack Query | 5.90.12 |
-| **Styling** | Vanilla CSS | - |
-| **Database** | Firestore | 12.6.0 |
-| **Local Storage** | IndexedDB (Dexie.js) | 4.2.1 |
-| **Auth** | Firebase Auth | 12.6.0 |
-| **Validation** | Zod | 3.25.76 |
-| **Testing** | Vitest + Playwright | 4.0.15 / 1.57.0 |
-| **Hosting** | Netlify | - |
+| Capa                 | Tecnología           | Versión         |
+| -------------------- | -------------------- | --------------- |
+| **UI**               | React                | 19.2.1          |
+| **Language**         | TypeScript           | 5.8.2           |
+| **Build**            | Vite                 | 6.2.0           |
+| **State Management** | TanStack Query       | 5.90.12         |
+| **Styling**          | Vanilla CSS          | -               |
+| **Database**         | Firestore            | 12.6.0          |
+| **Local Storage**    | IndexedDB (Dexie.js) | 4.2.1           |
+| **Auth**             | Firebase Auth        | 12.6.0          |
+| **Validation**       | Zod                  | 3.25.76         |
+| **Testing**          | Vitest + Playwright  | 4.0.15 / 1.57.0 |
+| **Hosting**          | Netlify              | -               |
 
 ---
 
@@ -127,16 +127,16 @@ sequenceDiagram
     U->>V: Acción (ej: Editar paciente)
     V->>C: Dispatch action
     C->>TQ: mutate()
-    
+
     Note over TQ: Optimistic Update
     TQ->>IDB: Guardar local (inmediato)
     TQ-->>V: UI actualizada
-    
+
     TQ->>R: Sync remoto
     R->>FS: setDoc()
     FS-->>R: Confirmación
     R-->>TQ: onSettled()
-    
+
     alt Error de red
         TQ->>TQ: Rollback
         TQ-->>V: Restaurar estado previo
@@ -219,15 +219,34 @@ sequenceDiagram
 
 ## 🧭 Cómo leer esta arquitectura (para novatos)
 
-1) **Empieza por el flujo de datos**: mira “Flujo de Datos” y “Flujos Críticos” para entender qué pasa cuando el usuario guarda o edita.
-2) **Ubica la capa donde ocurre cada cosa**: UI/Views dispara acciones, Hooks coordinan, Repositories persisten, Storage escribe/lee.
-3) **Aprende los contratos de datos**: estos “acuerdos” evitan errores al mover datos entre capas.
-4) **Revisa estabilidad y seguridad**: mira “Enfoque de Estabilidad” y “Seguridad” para entender por qué el sistema no se cae y protege datos.
-5) **Si algo falla**: busca en “Observabilidad” y “Flujos Críticos” para ubicar el punto de diagnóstico.
+1. **Empieza por el flujo de datos**: mira “Flujo de Datos” y “Flujos Críticos” para entender qué pasa cuando el usuario guarda o edita.
+2. **Ubica la capa donde ocurre cada cosa**: UI/Views dispara acciones, Hooks coordinan, Repositories persisten, Storage escribe/lee.
+3. **Aprende los contratos de datos**: estos “acuerdos” evitan errores al mover datos entre capas.
+4. **Revisa estabilidad y seguridad**: mira “Enfoque de Estabilidad” y “Seguridad” para entender por qué el sistema no se cae y protege datos.
+5. **Si algo falla**: busca en “Observabilidad” y “Flujos Críticos” para ubicar el punto de diagnóstico.
 
 ---
 
 ## ✅ Checklist de Consistencia (ARCHITECTURE vs docs/architecture)
+
+## Línea Base de Calidad
+
+Snapshot regenerado el `2026-02-28`:
+
+- Módulos sobredimensionados: `0`
+- Violaciones de deuda entre carpetas: `0`
+- Explicit `any` en source: `0`
+
+Fuente de verdad:
+
+- [reports/quality-metrics.md](reports/quality-metrics.md)
+
+## Próximo Hotspot Recomendado
+
+Motivo:
+
+- concentra catálogos demo, reglas clínicas sintéticas, randomización, continuidad temporal y builders de paciente en un solo archivo.
+- es el hotspot con mayor tamaño bruto actual en `src/` y su costo de cambio es más alto que otros candidatos que son grandes pero más cohesivos.
 
 - **Principios**: offline-first, integridad clínica, concurrencia, recuperación.
 - **Capas**: UI → Contexts/Hooks → Repos → Storage.
@@ -241,28 +260,36 @@ sequenceDiagram
 ## 🧱 Patrones de Diseño
 
 ### 1. Repository Pattern
+
 Abstrae la complejidad de elegir entre almacenamiento local (IDB) o remoto (Firestore).
+
 ```typescript
 import { DailyRecordRepository } from '@/services/repositories/DailyRecordRepository';
 const record = await DailyRecordRepository.getForDate('2026-01-08');
 ```
 
 ### 2. Export & Backup Manager
+
 Manejador centralizado para la generación de documentos y su respaldo automático en la nube.
+
 ```typescript
 const { handleBackupHandoff } = useExportManager();
 // Gatilla PDF local + Backup Cloud automáticamente
 ```
 
 ### 3. TanStack Query Hooks
+
 Gestiona el ciclo de vida de los datos, revalidación y estados de carga.
+
 ```typescript
 const { data } = useDailyRecordQuery(dateString);
 const mutation = useSaveDailyRecordMutation();
 ```
 
 ### 4. Interoperabilidad (HL7 FHIR)
+
 Utiliza transformadores para convertir datos del dominio HHR a recursos estándar FHIR R4 (Core-CL).
+
 ```typescript
 import { mapPatientToFhir } from '@/services/utils/fhirMappers';
 const fhirPatient = mapPatientToFhir(localPatient);
@@ -278,4 +305,4 @@ const fhirPatient = mapPatientToFhir(localPatient);
 
 ---
 
-*Última actualización: 08 de Febrero 2026*
+_Última actualización: 08 de Febrero 2026_

@@ -7,14 +7,9 @@ import React from 'react';
 import { Cloud, RefreshCw, Check, AlertTriangle } from 'lucide-react';
 import clsx from 'clsx';
 import { useDailyRecordStatus } from '@/context/DailyRecordContext';
-import { useDemoMode } from '@/context/DemoModeContext';
 
 export const SyncStatusIndicator: React.FC = () => {
   const { syncStatus, lastSyncTime } = useDailyRecordStatus();
-  const { isActive: isDemoMode } = useDemoMode();
-
-  // Don't show in demo mode (already has its own badge)
-  if (isDemoMode) return null;
 
   const getStatusConfig = () => {
     switch (syncStatus) {

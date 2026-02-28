@@ -8,7 +8,6 @@ import {
   getForDate,
   save,
   setFirestoreEnabled,
-  setDemoModeActive,
   updatePartial,
   initializeDay,
   deleteDay,
@@ -96,7 +95,6 @@ describe('DailyRecordRepository (Expanded)', () => {
     await clearAllRecords();
 
     setFirestoreEnabled(true);
-    setDemoModeActive(false);
   });
 
   describe('updatePartial', () => {
@@ -209,16 +207,6 @@ describe('DailyRecordRepository (Expanded)', () => {
 
       const result = await getForDate('2024-12-28');
       expect(result?.date).toBe('2024-12-28');
-    });
-
-    it('uses demo storage in demo mode', async () => {
-      setDemoModeActive(true);
-      const demoDate = '2025-01-15';
-      const demoRecord = createMockRecord(demoDate);
-      await save(demoRecord);
-
-      const result = await getForDate(demoDate);
-      expect(result?.date).toBe(demoDate);
     });
   });
 

@@ -25,14 +25,7 @@ import { AppContent } from '@/components/layout/AppContent';
 import { CensusProvider, CensusContextType } from '@/context/CensusContext';
 import { VersionProvider } from '@/context/VersionContext';
 import { VersionMismatchOverlay } from '@/components/shared/VersionMismatchOverlay';
-import {
-  AuditProvider,
-  DemoModeProvider,
-  useAuth,
-  AuthContextType,
-  AuthProvider,
-  UIProvider,
-} from './context';
+import { AuditProvider, useAuth, AuthContextType, AuthProvider, UIProvider } from './context';
 import { HospitalProvider } from './context/HospitalContext';
 import { RepositoryProvider, defaultRepositories } from '@/services/RepositoryContext';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -206,11 +199,9 @@ export default function ProvidedApp() {
         <RepositoryProvider value={defaultRepositories}>
           <HospitalProvider>
             <UIProvider>
-              <DemoModeProvider>
-                <AuditProvider userId="anon">
-                  <AppWithErrorBoundary />
-                </AuditProvider>
-              </DemoModeProvider>
+              <AuditProvider userId="anon">
+                <AppWithErrorBoundary />
+              </AuditProvider>
             </UIProvider>
           </HospitalProvider>
         </RepositoryProvider>

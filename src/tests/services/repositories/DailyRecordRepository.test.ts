@@ -36,11 +36,6 @@ vi.mock('@/services/storage/indexedDBService', () => ({
   deleteRecord: vi.fn(),
   getAllRecords: vi.fn().mockResolvedValue([]),
   getAllDates: vi.fn().mockResolvedValue([]),
-  getAllDemoRecords: vi.fn().mockResolvedValue([]),
-  saveDemoRecord: vi.fn(),
-  getDemoRecordForDate: vi.fn().mockResolvedValue(null),
-  getPreviousDemoDayRecord: vi.fn().mockResolvedValue(null),
-  deleteDemoRecord: vi.fn(),
   saveCatalog: vi.fn(),
   getCatalog: vi.fn().mockResolvedValue([]),
   isIndexedDBAvailable: vi.fn().mockReturnValue(true),
@@ -130,7 +125,6 @@ describe('DailyRecordRepository', () => {
     vi.mocked(firestoreService.saveRecordToFirestore).mockReset();
     vi.mocked(firestoreService.updateRecordPartial).mockReset();
 
-    Repository.setDemoModeActive(false);
     Repository.setFirestoreEnabled(true);
     // Default mock implementations for common lookups
     vi.mocked(idbService.getRecordForDate).mockResolvedValue(null);
@@ -158,18 +152,6 @@ describe('DailyRecordRepository', () => {
         beds: expect.any(Object),
       });
       expect(idbService.saveRecord).toHaveBeenCalled(); // Should cache locally
-    });
-
-    it('should use demo storage if demo mode active', async () => {
-      Repository.setDemoModeActive(true);
-      vi.mocked(idbService.getDemoRecordForDate).mockResolvedValue(mockRecord);
-
-      const result = await Repository.getForDate(mockDate);
-      expect(result).toMatchObject({
-        ...mockRecord,
-        beds: expect.any(Object),
-      });
-      expect(idbService.getDemoRecordForDate).toHaveBeenCalledWith(mockDate);
     });
 
     it('should return source metadata via getForDateWithMeta', async () => {
@@ -378,13 +360,6 @@ describe('DailyRecordRepository', () => {
       expect(Repository.isFirestoreEnabled()).toBe(false);
       Repository.setFirestoreEnabled(true);
       expect(Repository.isFirestoreEnabled()).toBe(true);
-    });
-
-    it('should allow toggling demo mode', () => {
-      Repository.setDemoModeActive(true);
-      expect(Repository.isDemoModeActive()).toBe(true);
-      Repository.setDemoModeActive(false);
-      expect(Repository.isDemoModeActive()).toBe(false);
     });
   });
 

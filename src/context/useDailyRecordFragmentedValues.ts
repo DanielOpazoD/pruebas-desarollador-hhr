@@ -110,7 +110,6 @@ export const useDailyRecordFragmentedValues = (
     () =>
       ({
         createDay: value?.createDay,
-        generateDemo: value?.generateDemo,
         resetDay: value?.resetDay,
         refresh: value?.refresh,
         validateRecordSchema: value?.validateRecordSchema,
@@ -155,7 +154,6 @@ export const useDailyRecordFragmentedValues = (
       }) as DailyRecordActionsContextType,
     [
       value?.createDay,
-      value?.generateDemo,
       value?.resetDay,
       value?.refresh,
       value?.validateRecordSchema,
