@@ -3,7 +3,6 @@ import { safeJsonParse } from '@/utils/jsonUtils';
 
 export const STORAGE_KEY = 'hanga_roa_hospital_data';
 export const NURSES_STORAGE_KEY = 'hanga_roa_nurses_list';
-export const DEMO_STORAGE_KEY = 'hhr_demo_records';
 
 export const DEFAULT_NURSES = ['Enfermero/a 1', 'Enfermero/a 2'];
 

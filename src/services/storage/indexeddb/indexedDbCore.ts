@@ -9,7 +9,6 @@ import { CatalogRecord } from './indexedDbCatalogContracts';
 
 export class HangaRoaDatabase extends Dexie {
   dailyRecords!: Table<DailyRecord>;
-  demoRecords!: Table<DailyRecord>;
   catalogs!: Table<CatalogRecord>;
   errorLogs!: Table<ErrorLog>;
   auditLogs!: Table<AuditLogEntry>;
@@ -19,9 +18,8 @@ export class HangaRoaDatabase extends Dexie {
   constructor() {
     super('HangaRoaDB');
 
-    this.version(7).stores({
+    this.version(8).stores({
       dailyRecords: 'date',
-      demoRecords: 'date',
       catalogs: 'id',
       errorLogs: 'id, timestamp, severity',
       auditLogs: 'id, timestamp, action, entityId, recordDate',
@@ -34,7 +32,6 @@ export class HangaRoaDatabase extends Dexie {
 export const createMockDatabase = (): HangaRoaDatabase => {
   const memoryStore: Record<string, Map<string, unknown>> = {
     dailyRecords: new Map<string, unknown>(),
-    demoRecords: new Map<string, unknown>(),
     catalogs: new Map<string, unknown>(),
     errorLogs: new Map<string, unknown>(),
     auditLogs: new Map<string, unknown>(),
@@ -147,7 +144,6 @@ export const createMockDatabase = (): HangaRoaDatabase => {
 
   return {
     dailyRecords: createMockTable('dailyRecords'),
-    demoRecords: createMockTable('demoRecords'),
     catalogs: createMockTable('catalogs'),
     errorLogs: createMockTable('errorLogs'),
     auditLogs: createMockTable('auditLogs'),
@@ -196,7 +192,6 @@ const initializeDatabase = () => {
 
 const assignMockTables = (mock: HangaRoaDatabase) => {
   db.dailyRecords = mock.dailyRecords;
-  db.demoRecords = mock.demoRecords;
   db.catalogs = mock.catalogs;
   db.errorLogs = mock.errorLogs;
   db.auditLogs = mock.auditLogs;

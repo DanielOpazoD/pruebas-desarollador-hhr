@@ -1,7 +1,6 @@
 import { DailyRecord } from '@/types';
 import { safeJsonParse } from '@/utils/jsonUtils';
 import {
-  DEMO_STORAGE_KEY,
   STORAGE_KEY,
   getClosestPreviousRecord,
   hasBrowserLocalStorage,
@@ -69,7 +68,6 @@ const createRecordStore = (key: string) => ({
 });
 
 const records = createRecordStore(STORAGE_KEY);
-const demoRecords = createRecordStore(DEMO_STORAGE_KEY);
 
 const settings = {
   get: <T>(id: string, defaultValue: T): T => {
@@ -98,6 +96,5 @@ const settings = {
 
 export const localPersistence = {
   records,
-  demoRecords,
   settings,
 };

@@ -127,13 +127,11 @@ describe('indexedDBService', () => {
       const nurses = ['Alice'];
       const tens = ['Bob'];
       const auditLogs = [{ id: 'a1', timestamp: FIXED_ISO_TIMESTAMP }];
-      const demoRecords = { 'demo-date': mockRecord };
 
       localStorage.setItem('hanga_roa_hospital_data', JSON.stringify(records));
       localStorage.setItem('hanga_roa_nurses_list', JSON.stringify(nurses));
       localStorage.setItem('hanga_roa_tens_list', JSON.stringify(tens));
       localStorage.setItem('hanga_roa_audit_logs', JSON.stringify(auditLogs));
-      localStorage.setItem('hhr_demo_records', JSON.stringify(demoRecords));
 
       const migrated = await idbService.migrateFromLocalStorage();
       expect(migrated).toBe(true);
@@ -143,8 +141,6 @@ describe('indexedDBService', () => {
       expect(await idbService.getCatalog('tens')).toEqual(['Bob']);
       const logs = await idbService.getAuditLogs();
       expect(logs).toHaveLength(1);
-      const demo = await idbService.getAllDemoRecords();
-      expect(Object.keys(demo)).toHaveLength(1);
     });
 
     it('should not migrate if flag is set', async () => {
@@ -188,41 +184,6 @@ describe('indexedDBService', () => {
       }
       const logs = await idbService.getAuditLogs(3);
       expect(logs).toHaveLength(3);
-    });
-  });
-
-  describe('Demo Records', () => {
-    it('should save and retrieve demo records', async () => {
-      await idbService.saveDemoRecord(mockRecord);
-      const retrieved = await idbService.getDemoRecordForDate(mockRecord.date);
-      expect(retrieved?.date).toBe(mockRecord.date);
-    });
-
-    it('should get all demo records', async () => {
-      await idbService.saveDemoRecord(mockRecord);
-      const all = await idbService.getAllDemoRecords();
-      expect(all[mockRecord.date]).toBeDefined();
-    });
-
-    it('should delete demo record', async () => {
-      await idbService.saveDemoRecord(mockRecord);
-      await idbService.deleteDemoRecord(mockRecord.date);
-      const retrieved = await idbService.getDemoRecordForDate(mockRecord.date);
-      expect(retrieved).toBeNull();
-    });
-
-    it('should get previous demo day record', async () => {
-      await idbService.saveDemoRecord({ ...mockRecord, date: '2025-01-01' });
-      await idbService.saveDemoRecord({ ...mockRecord, date: '2025-01-05' });
-      const prev = await idbService.getPreviousDemoDayRecord('2025-01-06');
-      expect(prev?.date).toBe('2025-01-05');
-    });
-
-    it('should clear all demo records', async () => {
-      await idbService.saveDemoRecord(mockRecord);
-      await idbService.clearAllDemoRecords();
-      const all = await idbService.getAllDemoRecords();
-      expect(Object.keys(all)).toHaveLength(0);
     });
   });
 

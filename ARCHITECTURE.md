@@ -233,9 +233,12 @@ sequenceDiagram
 
 Snapshot regenerado el `2026-02-28`:
 
+- Archivos fuente: `944`
+- Líneas fuente: `95691`
 - Módulos sobredimensionados: `0`
 - Violaciones de deuda entre carpetas: `0`
 - Explicit `any` en source: `0`
+- Archivos de test: `476`
 
 Fuente de verdad:
 
@@ -245,8 +248,8 @@ Fuente de verdad:
 
 Motivo:
 
-- concentra catálogos demo, reglas clínicas sintéticas, randomización, continuidad temporal y builders de paciente en un solo archivo.
-- es el hotspot con mayor tamaño bruto actual en `src/` y su costo de cambio es más alto que otros candidatos que son grandes pero más cohesivos.
+- el siguiente foco real está en servicios grandes y cohesionados parcialmente, no en módulos demo ya retirados.
+- los candidatos con mejor retorno actual son integraciones y autenticación, donde sigue habiendo mezcla de responsabilidades y superficie operativa alta.
 
 - **Principios**: offline-first, integridad clínica, concurrencia, recuperación.
 - **Capas**: UI → Contexts/Hooks → Repos → Storage.

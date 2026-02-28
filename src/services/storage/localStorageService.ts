@@ -25,14 +25,3 @@ export {
   clearAllData,
   isLocalStorageAvailable,
 } from './localstorage/localStorageMaintenanceService';
-
-export {
-  getDemoRecords,
-  saveDemoRecord,
-  saveDemoRecords,
-  getDemoRecordForDate,
-  getAllDemoDates,
-  deleteDemoRecord,
-  clearAllDemoData,
-  getPreviousDemoDayRecord,
-} from './localstorage/localStorageDemoService';

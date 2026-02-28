@@ -1,11 +1,32 @@
 import { handler as sendCensusEmailHandler } from '../netlify/functions/send-census-email';
-import { generateDemoRecord, formatDateDDMMYYYY } from '../services';
+import { formatDateDDMMYYYY } from '../services';
+import type { DailyRecord } from '../src/types';
 import { getTodayISO } from '../utils/dateUtils';
+
+const buildRecord = (date: string): DailyRecord => ({
+  date,
+  beds: {},
+  discharges: [],
+  transfers: [],
+  cma: [],
+  lastUpdated: `${date}T00:00:00.000Z`,
+  nurses: [],
+  nursesDayShift: [],
+  nursesNightShift: [],
+  tensDayShift: [],
+  tensNightShift: [],
+  activeExtraBeds: [],
+  handoffDayChecklist: {},
+  handoffNightChecklist: {},
+  handoffNovedadesDayShift: '',
+  handoffNovedadesNightShift: '',
+  medicalHandoffNovedades: '',
+  medicalHandoffDoctor: '',
+});
 
 const run = async () => {
   const today = getTodayISO();
-  const demoRecord = generateDemoRecord(today);
-  const records = [demoRecord];
+  const records = [buildRecord(today)];
   type HandlerEvent = Parameters<typeof sendCensusEmailHandler>[0];
 
   const event: HandlerEvent = {

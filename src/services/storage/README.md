@@ -6,25 +6,32 @@ Capa de persistencia concreta: IndexedDB, localStorage, Firestore bridge y sincr
 
 ## Mapa
 
-| Path/Archivo                                  | Propósito                                                   |
-| --------------------------------------------- | ----------------------------------------------------------- |
-| `indexedDBService.ts`                         | API de alto nivel para IndexedDB                            |
-| `localStorageService.ts`                      | Facade localStorage (legacy/deprecado)                      |
-| `unifiedLocalService.ts`                      | Facade de compatibilidad sobre persistencia local unificada |
-| `firestoreService.ts`                         | Operaciones Firestore de registro diario                    |
-| `syncQueueService.ts`                         | Cola de sincronización offline/online                       |
-| `syncQueueTypes.ts`                           | Tipos de cola de sincronización                             |
-| `tableConfigService.ts`                       | Persistencia de configuración de tablas                     |
-| `uiSettingsService.ts`                        | Persistencia de preferencias UI                             |
-| `localpersistence/localPersistenceService.ts` | Fallback local unificado (records/settings/demo)            |
-| `index.ts`                                    | Exports de storage                                          |
-| `indexeddb/` / `localstorage/` / `firestore/` | Implementaciones más finas por backend                      |
+| Path/Archivo                                  | Propósito                                             |
+| --------------------------------------------- | ----------------------------------------------------- |
+| `indexedDBService.ts`                         | API de alto nivel para IndexedDB                      |
+| `localStorageService.ts`                      | Gateway legacy mínimo para records/nurses/maintenance |
+| `unifiedLocalService.ts`                      | Facade de compatibilidad local no-demo                |
+| `firestoreService.ts`                         | Operaciones Firestore de registro diario              |
+| `syncQueueService.ts`                         | Cola de sincronización offline/online                 |
+| `syncQueueTypes.ts`                           | Tipos de cola de sincronización                       |
+| `tableConfigService.ts`                       | Persistencia de configuración de tablas               |
+| `uiSettingsService.ts`                        | Persistencia de preferencias UI                       |
+| `localpersistence/localPersistenceService.ts` | Fallback local unificado (records/settings)           |
+| `index.ts`                                    | Exports de storage                                    |
+| `indexeddb/` / `localstorage/` / `firestore/` | Implementaciones más finas por backend                |
 
 ## Estrategia
 
 - Offline-first con IndexedDB.
 - Fallback controlado en caso de fallo de DB local.
 - Sincronización diferida con Firestore.
+- No existe almacenamiento demo soportado en esta capa.
+
+## Compatibilidad
+
+- `indexedDBService.ts` es la fachada principal para persistencia local real.
+- `unifiedLocalService.ts` conserva compatibilidad útil para acceso local no-demo.
+- `localStorageService.ts` sigue existiendo solo como gateway legacy mínimo y deprecated.
 
 ## Recomendación
 

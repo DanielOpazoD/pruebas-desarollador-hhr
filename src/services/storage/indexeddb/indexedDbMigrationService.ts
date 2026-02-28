@@ -9,7 +9,6 @@ const STORAGE_KEY = 'hanga_roa_hospital_data';
 const NURSES_KEY = 'hanga_roa_nurses_list';
 const TENS_KEY = 'hanga_roa_tens_list';
 const AUDIT_KEY = 'hanga_roa_audit_logs';
-const DEMO_KEY = 'hhr_demo_records';
 const MIGRATION_FLAG = 'indexeddb_migration_complete';
 
 const canUseLocalStorage = () => typeof window !== 'undefined' && !!window.localStorage;
@@ -54,16 +53,6 @@ export const migrateFromLocalStorage = async (): Promise<boolean> => {
         await db.auditLogs.bulkPut(logs);
       }
     }
-
-    const demoData = localStorage.getItem(DEMO_KEY);
-    if (demoData) {
-      const records = safeJsonParse<Record<string, DailyRecord>>(demoData, {});
-      const recordArray = Object.values(records);
-      if (recordArray.length > 0) {
-        await db.demoRecords.bulkPut(recordArray);
-      }
-    }
-
     localStorage.setItem(MIGRATION_FLAG, 'true');
     return true;
   } catch (error) {

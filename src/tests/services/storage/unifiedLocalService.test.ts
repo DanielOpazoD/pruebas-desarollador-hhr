@@ -1,23 +1,18 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { DailyRecord } from '@/types';
 import {
   clearAllData,
-  clearAllDemoData,
   getAllDates,
-  getAllDemoDates,
-  getDemoRecordForDate,
   getRecordForDate,
   getStoredNurses,
   getStoredRecords,
   NURSES_STORAGE_KEY,
   STORAGE_KEY,
   isLocalStorageAvailable,
-  saveDemoRecord,
-  saveDemoRecords,
   saveRecordLocal,
   saveStoredNurses,
 } from '@/services/storage/unifiedLocalService';
+import type { DailyRecord } from '@/types';
 
 const buildRecord = (date: string): DailyRecord => ({
   date,
@@ -31,9 +26,8 @@ const buildRecord = (date: string): DailyRecord => ({
 });
 
 describe('unifiedLocalService', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     localStorage.clear();
-    await clearAllDemoData();
   });
 
   it('saves and reads records via unified local facade', async () => {
@@ -53,17 +47,6 @@ describe('unifiedLocalService', () => {
     await saveStoredNurses(['Nurse A', 'Nurse B']);
     const nurses = await getStoredNurses();
     expect(nurses).toEqual(['Nurse A', 'Nurse B']);
-  });
-
-  it('saves and reads demo records via unified local facade', async () => {
-    await saveDemoRecord(buildRecord('2026-02-10'));
-    await saveDemoRecords([buildRecord('2026-02-11'), buildRecord('2026-02-12')]);
-
-    const dates = await getAllDemoDates();
-    const record = await getDemoRecordForDate('2026-02-12');
-
-    expect(dates).toEqual(['2026-02-12', '2026-02-11', '2026-02-10']);
-    expect(record?.date).toBe('2026-02-12');
   });
 
   it('keeps localStorage maintenance API for compatibility', () => {

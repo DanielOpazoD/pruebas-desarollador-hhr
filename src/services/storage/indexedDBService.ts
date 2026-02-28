@@ -19,12 +19,6 @@ export {
   getAllDates,
   getPreviousDayRecord,
   clearAllRecords,
-  saveDemoRecord,
-  getDemoRecordForDate,
-  getAllDemoRecords,
-  deleteDemoRecord,
-  clearAllDemoRecords,
-  getPreviousDemoDayRecord,
 } from './indexeddb/indexedDbRecordService';
 
 export {

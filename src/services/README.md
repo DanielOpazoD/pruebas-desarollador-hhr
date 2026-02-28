@@ -6,22 +6,22 @@ Capa de datos e integración: repositorios, persistencia, exportadores, integrac
 
 ## Mapa por subdirectorio
 
-| Subdirectorio                                                 | Rol                                                   |
-| ------------------------------------------------------------- | ----------------------------------------------------- |
-| `repositories/`                                               | Repository Pattern para `DailyRecord` y catálogos     |
-| `storage/`                                                    | IndexedDB, localStorage, Firestore sync y colas       |
-| `integrations/`                                               | Conectores a servicios externos (email, IA, etc.)     |
-| `exporters/`                                                  | Exportación Excel/reportes                            |
-| `admin/`                                                      | Servicios de auditoría, mantenimiento y salud         |
-| `transfers/`                                                  | Generación documental y soporte de traslados          |
-| `auth/`                                                       | Servicios de autenticación/pasaporte offline          |
-| `backup/`                                                     | Respaldo y restauración                               |
-| `terminology/`                                                | Normalización y búsquedas semánticas clínicas         |
-| `utils/`                                                      | Utilidades de servicio (logging, feature flags, etc.) |
-| `pdf/`                                                        | Generadores PDF                                       |
-| `security/`                                                   | Helpers de contraseña/export seguro                   |
-| `calculations/`                                               | Cálculos estadísticos                                 |
-| `bookmarks/`, `census/`, `config/`, `email/`, `google/`, etc. | Servicios especializados por dominio                  |
+| Subdirectorio                                                 | Rol                                                             |
+| ------------------------------------------------------------- | --------------------------------------------------------------- |
+| `repositories/`                                               | Repository Pattern para `DailyRecord` y catálogos               |
+| `storage/`                                                    | IndexedDB, fallback local legacy mínimo, Firestore sync y colas |
+| `integrations/`                                               | Conectores a servicios externos (email, IA, etc.)               |
+| `exporters/`                                                  | Exportación Excel/reportes                                      |
+| `admin/`                                                      | Servicios de auditoría, mantenimiento y salud                   |
+| `transfers/`                                                  | Generación documental y soporte de traslados                    |
+| `auth/`                                                       | Servicios de autenticación/pasaporte offline                    |
+| `backup/`                                                     | Respaldo y restauración                                         |
+| `terminology/`                                                | Normalización y búsquedas semánticas clínicas                   |
+| `utils/`                                                      | Utilidades de servicio (logging, feature flags, etc.)           |
+| `pdf/`                                                        | Generadores PDF                                                 |
+| `security/`                                                   | Helpers de contraseña/export seguro                             |
+| `calculations/`                                               | Cálculos estadísticos                                           |
+| `bookmarks/`, `census/`, `config/`, `email/`, `google/`, etc. | Servicios especializados por dominio                            |
 
 ## Archivos raíz relevantes
 
