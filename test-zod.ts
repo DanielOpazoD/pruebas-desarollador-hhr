@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 export const IeehDataSchema = z.object({
   diagnosticoPrincipal: z.string().optional(),
   cie10Code: z.string().optional(),
@@ -12,19 +13,8 @@ export const IeehDataSchema = z.object({
   tratanteNombre: z.string().optional(),
   tratanteRut: z.string().optional(),
 });
-const base = {
-  id: 'test',
-  bedName: 'A',
-  bedId: '1',
-  bedType: 'BASICA',
-  patientName: 'John',
-  rut: '123',
-  diagnosis: 'None',
-  time: '10:00',
-  status: 'Vivo',
-  dischargeType: 'Domicilio (Habitual)',
-};
-console.log(
+
+console.warn(
   IeehDataSchema.safeParse({ diagnosticoPrincipal: 'Test', condicionEgreso: '2' }).success
 );
-console.log(IeehDataSchema.safeParse({ diagnosticoPrincipal: '' }).success);
+console.warn(IeehDataSchema.safeParse({ diagnosticoPrincipal: '' }).success);

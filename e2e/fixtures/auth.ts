@@ -297,7 +297,7 @@ export async function ensureRecordExists(page: Page) {
   try {
     // Si la tabla no cargó, uno de estos DEBE estar
     await expect(blankBtn.or(copyBtn)).toBeVisible({ timeout: 15000 });
-  } catch (e) {
+  } catch {
     // Fallback: si aun así no está, vemos si en el ínterin apareció la tabla
     if (await tableById.isVisible().catch(() => false)) return;
     throw new Error('Timeout waiting for census initial state (table or create buttons)');

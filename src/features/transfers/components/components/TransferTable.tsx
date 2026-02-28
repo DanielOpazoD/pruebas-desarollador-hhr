@@ -39,14 +39,6 @@ export const TransferTable: React.FC<TransferTableProps> = ({
   onDelete,
   onDeleteHistoryEntry,
 }) => {
-  if (transfers.length === 0) {
-    return (
-      <div className="text-center py-12 text-gray-500">
-        No hay solicitudes de traslado para este período
-      </div>
-    );
-  }
-
   const isActive = (status: string) =>
     status !== 'TRANSFERRED' &&
     status !== 'CANCELLED' &&
@@ -84,6 +76,14 @@ export const TransferTable: React.FC<TransferTableProps> = ({
     setPendingDeleteTransfer(null);
     setOpenActionsMenu(null);
   };
+
+  if (transfers.length === 0) {
+    return (
+      <div className="text-center py-12 text-gray-500">
+        No hay solicitudes de traslado para este período
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-x-auto overflow-y-visible bg-white rounded-lg shadow">

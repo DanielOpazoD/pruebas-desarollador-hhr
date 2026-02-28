@@ -12,7 +12,7 @@ export const MarioGame: React.FC = () => {
 
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'MARIO_LEVEL_WON') {
-        console.log('🎮 Mario HTML5 Progress Saved:', event.data.data);
+        console.warn('Mario HTML5 progress saved:', event.data.data);
         // Si futuramente deciden usar Firestore, esta sería la entrada para lanzar el fetch o mutación.
       }
     };

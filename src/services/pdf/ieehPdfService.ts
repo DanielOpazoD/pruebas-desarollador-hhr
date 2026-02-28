@@ -33,6 +33,7 @@ import { PatientData } from '@/types';
 import { splitPatientName, calculateAge, formatDateToCL } from '@/utils/clinicalUtils';
 import { saveAndDownloadPdf } from './pdfBase';
 import { FIELD_COORDS, mapInsurance, mapSex, mapProcedencia } from './ieehPdfCoordinates';
+import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 
 // ── Template PDF path (loaded as asset via fetch) ──
 const TEMPLATE_PATH = '/docs/estadistico-egreso.pdf';
@@ -91,6 +92,29 @@ const parseTime = (timeStr: string | undefined): { hora: string; min: string } |
     return { hora: parts[0], min: parts[1] };
   }
   return null;
+};
+
+const resolveDischargeDiagnosis = (
+  patient: PatientData,
+  discharge: DischargeFormData
+): { diagnostico: string; cie10: string } => ({
+  diagnostico:
+    discharge.diagnosticoPrincipal || patient.cie10Description || patient.pathology || '',
+  cie10: discharge.cie10Code || patient.cie10Code || '',
+});
+
+const drawOptionalText = (
+  drawText: (
+    text: string,
+    coords: { x: number; y: number; maxWidth: number },
+    options?: { fontSize?: number; bold?: boolean }
+  ) => void,
+  text: string | undefined,
+  coords: { x: number; y: number; maxWidth: number },
+  options?: { fontSize?: number; bold?: boolean }
+) => {
+  if (!text) return;
+  drawText(text, coords, options);
 };
 
 /**
@@ -257,44 +281,29 @@ export const fillIEEHForm = async (
 
   // #33: DIAGNÓSTICO PRINCIPAL + CIE-10
   // Dialog overrides take priority over patient data
-  const diagnostico =
-    discharge.diagnosticoPrincipal || patient.cie10Description || patient.pathology || '';
+  const { diagnostico, cie10 } = resolveDischargeDiagnosis(patient, discharge);
   drawText(diagnostico, FIELD_COORDS.diagnosticoPrincipal);
-
-  const cie10 = discharge.cie10Code || patient.cie10Code || '';
   if (cie10) {
     drawText(cie10, FIELD_COORDS.codigoCIE10, { bold: true });
   }
 
   // #39: INTERVENCIÓN QUIRÚRGICA
-  if (discharge.intervencionQuirurgica) {
-    drawText(discharge.intervencionQuirurgica, FIELD_COORDS.intervencionQuirurgica);
-  }
-  if (discharge.intervencionQuirurgDescrip) {
-    drawText(discharge.intervencionQuirurgDescrip, FIELD_COORDS.intervencionQuirurgDescrip);
-  }
+  drawOptionalText(drawText, discharge.intervencionQuirurgica, FIELD_COORDS.intervencionQuirurgica);
+  drawOptionalText(
+    drawText,
+    discharge.intervencionQuirurgDescrip,
+    FIELD_COORDS.intervencionQuirurgDescrip
+  );
 
   // #42: PROCEDIMIENTO
-  if (discharge.procedimiento) {
-    drawText(discharge.procedimiento, FIELD_COORDS.procedimiento);
-  }
-  if (discharge.procedimientoDescrip) {
-    drawText(discharge.procedimientoDescrip, FIELD_COORDS.procedimientoDescrip);
-  }
+  drawOptionalText(drawText, discharge.procedimiento, FIELD_COORDS.procedimiento);
+  drawOptionalText(drawText, discharge.procedimientoDescrip, FIELD_COORDS.procedimientoDescrip);
 
   // #49: MÉDICO TRATANTE
-  if (discharge.tratanteApellido1) {
-    drawText(discharge.tratanteApellido1, FIELD_COORDS.tratanteApellido1);
-  }
-  if (discharge.tratanteApellido2) {
-    drawText(discharge.tratanteApellido2, FIELD_COORDS.tratanteApellido2);
-  }
-  if (discharge.tratanteNombre) {
-    drawText(discharge.tratanteNombre, FIELD_COORDS.tratanteNombre);
-  }
-  if (discharge.tratanteRut) {
-    drawText(discharge.tratanteRut, FIELD_COORDS.tratanteRut);
-  }
+  drawOptionalText(drawText, discharge.tratanteApellido1, FIELD_COORDS.tratanteApellido1);
+  drawOptionalText(drawText, discharge.tratanteApellido2, FIELD_COORDS.tratanteApellido2);
+  drawOptionalText(drawText, discharge.tratanteNombre, FIELD_COORDS.tratanteNombre);
+  drawOptionalText(drawText, discharge.tratanteRut, FIELD_COORDS.tratanteRut);
 
   // #50: ESPECIALIDAD
   const specialtyStr = String(patient.specialty || '');
@@ -336,5 +345,5 @@ export const previewIEEHForm = async (
   const pdfBytes = await fillIEEHForm(patient, discharge);
   const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
   const url = URL.createObjectURL(blob);
-  window.open(url, '_blank');
+  defaultBrowserWindowRuntime.open(url, '_blank');
 };

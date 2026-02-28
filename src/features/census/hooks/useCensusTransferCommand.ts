@@ -14,6 +14,7 @@ import { useSingleFlightAsyncCommand } from '@/features/census/hooks/useSingleFl
 import type { TransferExecutionInput } from '@/features/census/domain/movements/contracts';
 import type { TransferState } from '@/features/census/types/censusActionTypes';
 import { useAuth } from '@/context/AuthContext';
+import { useLatestRef } from '@/hooks/useLatestRef';
 import {
   createTransferRequest,
   getLatestOpenTransferRequestByBedId,
@@ -78,6 +79,46 @@ interface UseCensusTransferCommandParams extends Pick<
   notifyError: (notification: CensusActionNotification) => void;
 }
 
+const syncTransferRequest = async ({
+  bedId,
+  patient,
+  recordDate,
+  data,
+  destinationHospital,
+  createdByEmail,
+}: {
+  bedId: string;
+  patient: PatientData;
+  recordDate?: string;
+  data?: TransferExecutionInput;
+  destinationHospital: string;
+  createdByEmail: string;
+}) => {
+  const linkedRequest = await getLatestOpenTransferRequestByBedId(bedId);
+  if (linkedRequest) {
+    return;
+  }
+
+  const requestDate = (data?.movementDate || recordDate || new Date().toISOString()).split('T')[0];
+
+  await createTransferRequest({
+    patientId: bedId,
+    bedId,
+    patientSnapshot: buildPatientSnapshot(patient, recordDate || requestDate),
+    destinationHospital,
+    transferReason: 'Traslado registrado desde Censo Diario',
+    requestingDoctor: '',
+    observations:
+      'Solicitud creada automáticamente desde Censo Diario para completar gestión posterior.',
+    customFields: {
+      source: 'census_transfer_autocreate',
+    },
+    status: 'REQUESTED',
+    requestDate,
+    createdBy: createdByEmail,
+  });
+};
+
 export const useCensusTransferCommand = ({
   transferStateRef,
   stabilityRulesRef,
@@ -90,88 +131,64 @@ export const useCensusTransferCommand = ({
 }: UseCensusTransferCommandParams) => {
   const { runSingleFlight: runTransferSingleFlight } = useSingleFlightAsyncCommand();
   const { user } = useAuth();
+  const createdByEmail = user?.email ?? 'census-auto@local';
+  const executeTransferImplRef = useLatestRef((data?: TransferExecutionInput) => {
+    const started = runTransferSingleFlight(async () => {
+      const transferState = transferStateRef.current;
+      const record = recordRef.current;
+      const bedId = transferState.bedId;
+      const patient = bedId ? record?.beds?.[bedId] : undefined;
+      const destinationHospital = resolveDestinationHospital(
+        transferState.receivingCenter,
+        transferState.receivingCenterOther
+      );
+
+      const result = executeTransferController({
+        transferState,
+        data,
+        stabilityRules: stabilityRulesRef.current,
+        nowTime: getCurrentTime(),
+        actions: buildTransferRuntimeActions(addTransferRef.current, updateTransferRef.current),
+      });
+
+      if (!result.ok) {
+        notifyError(buildTransferErrorNotification(result.error.code, result.error.message));
+        return;
+      }
+
+      setTransferState(prev => applyTransferPatch(prev, result.value.closeModalPatch));
+
+      if (!transferState.recordId && bedId && patient && destinationHospital) {
+        try {
+          await syncTransferRequest({
+            bedId,
+            patient,
+            recordDate: record?.date,
+            data,
+            destinationHospital,
+            createdByEmail,
+          });
+        } catch (syncError) {
+          console.error(
+            '[Transfer Sync] Failed to sync census transfer with transfer management',
+            syncError
+          );
+          notifyError({
+            title: 'Traslado registrado con advertencia',
+            message:
+              'Se registró el traslado en Censo, pero no se pudo sincronizar automáticamente con Gestión de Traslados.',
+          });
+        }
+      }
+    });
+
+    if (!started) return;
+  });
 
   return useCallback(
     (data?: TransferExecutionInput) => {
-      const started = runTransferSingleFlight(async () => {
-        const transferState = transferStateRef.current;
-        const record = recordRef.current;
-        const bedId = transferState.bedId;
-        const patient = bedId ? record?.beds?.[bedId] : undefined;
-        const destinationHospital = resolveDestinationHospital(
-          transferState.receivingCenter,
-          transferState.receivingCenterOther
-        );
-
-        const result = executeTransferController({
-          transferState,
-          data,
-          stabilityRules: stabilityRulesRef.current,
-          nowTime: getCurrentTime(),
-          actions: buildTransferRuntimeActions(addTransferRef.current, updateTransferRef.current),
-        });
-
-        if (!result.ok) {
-          notifyError(buildTransferErrorNotification(result.error.code, result.error.message));
-          return;
-        }
-
-        setTransferState(prev => applyTransferPatch(prev, result.value.closeModalPatch));
-
-        if (!transferState.recordId && bedId && patient && destinationHospital) {
-          try {
-            const linkedRequest = await getLatestOpenTransferRequestByBedId(bedId);
-            if (!linkedRequest) {
-              const requestDate = (
-                data?.movementDate ||
-                record?.date ||
-                new Date().toISOString()
-              ).split('T')[0];
-
-              await createTransferRequest({
-                patientId: bedId,
-                bedId,
-                patientSnapshot: buildPatientSnapshot(patient, record?.date || requestDate),
-                destinationHospital,
-                transferReason: 'Traslado registrado desde Censo Diario',
-                requestingDoctor: '',
-                observations:
-                  'Solicitud creada automáticamente desde Censo Diario para completar gestión posterior.',
-                customFields: {
-                  source: 'census_transfer_autocreate',
-                },
-                status: 'REQUESTED',
-                requestDate,
-                createdBy: user?.email || 'census-auto@local',
-              });
-            }
-          } catch (syncError) {
-            console.error(
-              '[Transfer Sync] Failed to sync census transfer with transfer management',
-              syncError
-            );
-            notifyError({
-              title: 'Traslado registrado con advertencia',
-              message:
-                'Se registró el traslado en Censo, pero no se pudo sincronizar automáticamente con Gestión de Traslados.',
-            });
-          }
-        }
-      });
-
-      if (!started) return;
+      executeTransferImplRef.current(data);
     },
-    [
-      addTransferRef,
-      getCurrentTime,
-      notifyError,
-      runTransferSingleFlight,
-      setTransferState,
-      stabilityRulesRef,
-      recordRef,
-      transferStateRef,
-      user?.email,
-      updateTransferRef,
-    ]
+    [executeTransferImplRef]
   );
 };

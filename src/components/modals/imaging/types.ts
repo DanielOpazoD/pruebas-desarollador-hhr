@@ -1,5 +1,4 @@
 import type { PatientData } from '@/types';
-import { CustomMark } from '@/services/pdf/imagingRequestPdfService';
 import { LucideIcon } from 'lucide-react';
 
 export type DocumentOption = 'solicitud' | 'encuesta' | 'consentimiento';

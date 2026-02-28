@@ -2,10 +2,11 @@
   "features": {
     "admin": ["handoff"],
     "analytics": [],
-    "auth": [],
+    "auth": ["games"],
     "backup": [],
     "census": ["analytics"],
     "cudyr": [],
+    "games": [],
     "handoff": ["cudyr"],
     "transfers": [],
     "whatsapp": []

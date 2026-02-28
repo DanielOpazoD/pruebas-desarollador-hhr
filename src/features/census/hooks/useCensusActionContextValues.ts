@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import type {
   CensusActionCommandsContextType,
   CensusActionStateContextType,
 } from '@/features/census/types/censusActionContextTypes';
+import { useLatestRef } from '@/hooks/useLatestRef';
 
 interface UseCensusActionContextValuesParams {
   actionState: CensusActionStateContextType['actionState'];
@@ -38,6 +39,55 @@ export const useCensusActionContextValues = ({
   handleEditTransfer,
   handleRowAction,
 }: UseCensusActionContextValuesParams): UseCensusActionContextValuesResult => {
+  const executeMoveOrCopyRef = useLatestRef(executeMoveOrCopy);
+  const executeDischargeRef = useLatestRef(executeDischarge);
+  const handleEditDischargeRef = useLatestRef(handleEditDischarge);
+  const executeTransferRef = useLatestRef(executeTransfer);
+  const handleEditTransferRef = useLatestRef(handleEditTransfer);
+  const handleRowActionRef = useLatestRef(handleRowAction);
+
+  const stableExecuteMoveOrCopy = useCallback(
+    (targetDate?: string) => executeMoveOrCopyRef.current(targetDate),
+    [executeMoveOrCopyRef]
+  );
+  const stableExecuteDischarge = useCallback(
+    (
+      data?: CensusActionCommandsContextType['executeDischarge'] extends (arg: infer T) => void
+        ? T
+        : never
+    ) => executeDischargeRef.current(data),
+    [executeDischargeRef]
+  );
+  const stableHandleEditDischarge = useCallback(
+    (
+      data: CensusActionCommandsContextType['handleEditDischarge'] extends (arg: infer T) => void
+        ? T
+        : never
+    ) => handleEditDischargeRef.current(data),
+    [handleEditDischargeRef]
+  );
+  const stableExecuteTransfer = useCallback(
+    (
+      data?: CensusActionCommandsContextType['executeTransfer'] extends (arg: infer T) => void
+        ? T
+        : never
+    ) => executeTransferRef.current(data),
+    [executeTransferRef]
+  );
+  const stableHandleEditTransfer = useCallback(
+    (
+      data: CensusActionCommandsContextType['handleEditTransfer'] extends (arg: infer T) => void
+        ? T
+        : never
+    ) => handleEditTransferRef.current(data),
+    [handleEditTransferRef]
+  );
+  const stableHandleRowAction = useCallback(
+    (...args: Parameters<CensusActionCommandsContextType['handleRowAction']>) =>
+      handleRowActionRef.current(...args),
+    [handleRowActionRef]
+  );
+
   const stateValue = useMemo<CensusActionStateContextType>(
     () => ({
       actionState,
@@ -59,20 +109,20 @@ export const useCensusActionContextValues = ({
 
   const commandsValue = useMemo<CensusActionCommandsContextType>(
     () => ({
-      executeMoveOrCopy,
-      executeDischarge,
-      handleEditDischarge,
-      executeTransfer,
-      handleEditTransfer,
-      handleRowAction,
+      executeMoveOrCopy: stableExecuteMoveOrCopy,
+      executeDischarge: stableExecuteDischarge,
+      handleEditDischarge: stableHandleEditDischarge,
+      executeTransfer: stableExecuteTransfer,
+      handleEditTransfer: stableHandleEditTransfer,
+      handleRowAction: stableHandleRowAction,
     }),
     [
-      executeMoveOrCopy,
-      executeDischarge,
-      handleEditDischarge,
-      executeTransfer,
-      handleEditTransfer,
-      handleRowAction,
+      stableExecuteMoveOrCopy,
+      stableExecuteDischarge,
+      stableHandleEditDischarge,
+      stableExecuteTransfer,
+      stableHandleEditTransfer,
+      stableHandleRowAction,
     ]
   );
 

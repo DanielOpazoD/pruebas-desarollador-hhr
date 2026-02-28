@@ -13,7 +13,7 @@ import {
 import { AlertCircle, Loader2, Palette } from 'lucide-react';
 import { saveAppSetting } from '@/services/settingsService';
 import { performClientHardReset } from '@/services/storage/indexedDBService';
-import { GamesMenu } from '@/features/games/components/GamesMenu';
+import { GamesMenu } from '@/features/games';
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
