@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   onAuthChange,
   signOut,
@@ -9,13 +9,12 @@ import { AuthUser, UserRole } from '@/types';
 export type { UserRole };
 import {
   createHandleLogout,
-  getAuthBootstrapTimeoutMs,
   getE2EBootstrapUser,
-  subscribeToResolvedAuthState,
+  useFirebaseConnectionStatus,
   useInactivityLogout,
   useOnlineStatus,
+  useResolvedAuthBootstrap,
 } from '@/hooks/useAuthStateSupport';
-import { clearAuthBootstrapPending } from '@/services/auth/authBootstrapState';
 
 // UserRole and AuthUser are now imported from @/types
 
@@ -57,55 +56,18 @@ export const useAuthState = (): UseAuthStateReturn => {
   const [e2eBootstrapUser] = useState<AuthUser | null>(() => getE2EBootstrapUser());
   const [user, setUser] = useState<AuthUser | null>(e2eBootstrapUser);
   const [authLoading, setAuthLoading] = useState(!e2eBootstrapUser);
-  const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
   const isOnline = useOnlineStatus();
   const handleLogout = useMemo(() => createHandleLogout(user, signOut, setUser), [user]);
+  const isFirebaseConnected = useFirebaseConnectionStatus(user, isOnline, hasActiveFirebaseSession);
 
   useInactivityLogout(user, handleLogout);
-
-  useEffect(() => {
-    if (e2eBootstrapUser) return;
-
-    let unsubscribe: (() => void) | undefined;
-    const timeoutMs = getAuthBootstrapTimeoutMs();
-    const safetyTimeout = setTimeout(() => {
-      console.warn(
-        `[useAuthState] ⚠️ Auth initialization timed out (${timeoutMs}ms) - forcing load completion`
-      );
-      clearAuthBootstrapPending();
-      setAuthLoading(false);
-    }, timeoutMs);
-
-    subscribeToResolvedAuthState({
-      handleSignInRedirectResult,
-      onAuthChange,
-      setUser,
-      setAuthLoading,
-    }).then(unsub => {
-      if (unsub) unsubscribe = unsub;
-    });
-
-    return () => {
-      clearTimeout(safetyTimeout);
-      if (unsubscribe) unsubscribe();
-    };
-  }, [e2eBootstrapUser]);
-
-  useEffect(() => {
-    const checkConnection = () => {
-      const hasSession = hasActiveFirebaseSession();
-      setIsFirebaseConnected(isOnline && (hasSession || !!user));
-    };
-
-    checkConnection();
-    const interval = setInterval(checkConnection, 1000);
-    const timeout = setTimeout(() => clearInterval(interval), 10000);
-
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
-    };
-  }, [user, isOnline]);
+  useResolvedAuthBootstrap({
+    e2eBootstrapUser,
+    handleSignInRedirectResult,
+    onAuthChange,
+    setUser,
+    setAuthLoading,
+  });
 
   const role: UserRole = user?.role || 'viewer';
   const isEditor = role === 'editor' || role === 'admin' || role === 'nurse_hospital';

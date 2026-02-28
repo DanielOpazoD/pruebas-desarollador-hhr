@@ -36,6 +36,32 @@ export const useOnlineStatus = (): boolean => {
   return isOnline;
 };
 
+export const useFirebaseConnectionStatus = (
+  user: AuthUser | null,
+  isOnline: boolean,
+  hasActiveFirebaseSession: () => boolean
+): boolean => {
+  const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
+
+  useEffect(() => {
+    const checkConnection = () => {
+      const hasSession = hasActiveFirebaseSession();
+      setIsFirebaseConnected(isOnline && (hasSession || !!user));
+    };
+
+    checkConnection();
+    const interval = setInterval(checkConnection, 1000);
+    const timeout = setTimeout(() => clearInterval(interval), 10000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [user, isOnline, hasActiveFirebaseSession]);
+
+  return isFirebaseConnected;
+};
+
 export const createHandleLogout =
   (
     user: AuthUser | null,
@@ -142,4 +168,46 @@ export const subscribeToResolvedAuthState = async ({
     clearAuthBootstrapPending();
     setAuthLoading(false);
   });
+};
+
+export const useResolvedAuthBootstrap = ({
+  e2eBootstrapUser,
+  handleSignInRedirectResult,
+  onAuthChange,
+  setUser,
+  setAuthLoading,
+}: {
+  e2eBootstrapUser: AuthUser | null;
+  handleSignInRedirectResult: () => Promise<AuthUser | null>;
+  onAuthChange: (callback: (user: AuthUser | null) => void | Promise<void>) => () => void;
+  setUser: (user: AuthUser | null) => void;
+  setAuthLoading: (value: boolean) => void;
+}): void => {
+  useEffect(() => {
+    if (e2eBootstrapUser) return;
+
+    let unsubscribe: (() => void) | undefined;
+    const timeoutMs = getAuthBootstrapTimeoutMs();
+    const safetyTimeout = setTimeout(() => {
+      console.warn(
+        `[useAuthState] ⚠️ Auth initialization timed out (${timeoutMs}ms) - forcing load completion`
+      );
+      clearAuthBootstrapPending();
+      setAuthLoading(false);
+    }, timeoutMs);
+
+    subscribeToResolvedAuthState({
+      handleSignInRedirectResult,
+      onAuthChange,
+      setUser,
+      setAuthLoading,
+    }).then(unsub => {
+      if (unsub) unsubscribe = unsub;
+    });
+
+    return () => {
+      clearTimeout(safetyTimeout);
+      if (unsubscribe) unsubscribe();
+    };
+  }, [e2eBootstrapUser, handleSignInRedirectResult, onAuthChange, setAuthLoading, setUser]);
 };

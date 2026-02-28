@@ -1,33 +1,12 @@
 import { useMemo, useState } from 'react';
 import { signInWithGoogle, signInWithGoogleRedirect } from '@/services/auth/authService';
 import { isPopupRecoverableAuthError } from '@/services/auth/authErrorPolicy';
+import {
+  getLoginRuntimePolicy,
+  getRedirectErrorMessage,
+} from '@/features/auth/components/loginRuntimePolicy';
 
 type BackgroundMode = 'auto' | 'day' | 'night';
-
-const getLoginRuntimePolicy = () => {
-  const preferRedirectOnLocalhost =
-    String(import.meta.env.VITE_AUTH_PREFER_REDIRECT_ON_LOCALHOST || '').toLowerCase() === 'true';
-  const isLocalhostRuntime =
-    typeof window !== 'undefined' &&
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  const forcePopupForE2E =
-    import.meta.env.VITE_E2E_MODE === 'true' &&
-    typeof window !== 'undefined' &&
-    window.localStorage?.getItem('hhr_e2e_force_popup') === 'true';
-  const autoRedirectFallbackEnabled =
-    String(import.meta.env.VITE_AUTH_AUTO_REDIRECT_FALLBACK || 'true').toLowerCase() !== 'false';
-
-  return {
-    preferRedirectOnLocalhost,
-    isLocalhostRuntime,
-    forcePopupForE2E,
-    shouldAutoFallbackToRedirect:
-      autoRedirectFallbackEnabled && !isLocalhostRuntime && !forcePopupForE2E,
-  };
-};
-
-const getRedirectErrorMessage = (error: unknown): string =>
-  error instanceof Error ? error.message : 'No fue posible iniciar por redirección.';
 
 export interface LoginPageControllerState {
   error: string | null;

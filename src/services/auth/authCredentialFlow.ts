@@ -1,0 +1,70 @@
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
+} from 'firebase/auth';
+
+import { auth } from '@/firebaseConfig';
+import { AuthUser, UserRole } from '@/types';
+import { checkEmailInFirestore } from '@/services/auth/authPolicy';
+import { toAuthUser } from '@/services/auth/authShared';
+
+const EMAIL_SIGN_IN_ERRORS: Record<string, string> = {
+  'auth/user-not-found': 'Usuario no encontrado',
+  'auth/wrong-password': 'Contraseña incorrecta',
+  'auth/invalid-email': 'Email inválido',
+  'auth/user-disabled': 'Usuario deshabilitado',
+  'auth/too-many-requests': 'Demasiados intentos. Intente más tarde.',
+  'auth/invalid-credential': 'Credenciales inválidas',
+};
+
+const CREATE_USER_ERRORS: Record<string, string> = {
+  'auth/email-already-in-use': 'Este email ya está registrado',
+  'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres',
+  'auth/invalid-email': 'Email inválido',
+};
+
+const toCredentialErrorMessage = (
+  error: unknown,
+  fallbackMessage: string,
+  errorMap: Record<string, string>
+): string => {
+  const authError = error as { code?: string };
+  return authError.code ? errorMap[authError.code] || fallbackMessage : fallbackMessage;
+};
+
+export const signIn = async (email: string, password: string): Promise<AuthUser> => {
+  try {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+
+    const { allowed, role } = await checkEmailInFirestore(result.user.email || '');
+    if (!allowed) {
+      await firebaseSignOut(auth);
+      throw new Error(
+        'Acceso no autorizado. Su correo no está en la lista de usuarios permitidos.'
+      );
+    }
+
+    return toAuthUser(result.user, role);
+  } catch (error: unknown) {
+    const authError = error as { message?: string };
+    if (authError.message?.includes('no autorizado')) {
+      throw error;
+    }
+
+    throw new Error(
+      toCredentialErrorMessage(error, 'Error de autenticación', EMAIL_SIGN_IN_ERRORS)
+    );
+  }
+};
+
+export const createUser = async (email: string, password: string): Promise<AuthUser> => {
+  try {
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    return toAuthUser(result.user);
+  } catch (error: unknown) {
+    throw new Error(toCredentialErrorMessage(error, 'Error al crear usuario', CREATE_USER_ERRORS));
+  }
+};
+
+export type { UserRole };

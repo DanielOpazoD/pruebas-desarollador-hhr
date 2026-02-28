@@ -38,7 +38,9 @@ Capa de datos e integración: repositorios, persistencia, exportadores, integrac
 - **Service split por responsabilidad** (`read/write/sync/init` en repositorio diario).
 - **Storage abstraction** con estrategia offline-first y fallback.
 - **Auth por flujo y resolución**:
-  - `authFlow.ts` para popup/email y creación de usuario
+  - `authFlow.ts` como fachada pública del login
+  - `authCredentialFlow.ts` para email/password y creación de usuario
+  - `authGoogleFlow.ts` para popup, lock multi-tab y ramas E2E
   - `authFallback.ts` para redirect/bootstrap
   - `authSession.ts` para suscripción de sesión activa
   - `authAccessResolution.ts` para autorización y resolución de rol
