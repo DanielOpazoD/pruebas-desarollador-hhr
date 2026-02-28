@@ -1,10 +1,4 @@
-import {
-  getRedirectResult,
-  signInAnonymously,
-  signInWithRedirect,
-  signOut as firebaseSignOut,
-  User,
-} from 'firebase/auth';
+import { getRedirectResult, signInWithRedirect, signOut as firebaseSignOut } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
 import { AuthUser } from '@/types';
 import { checkSharedCensusAccess, isSharedCensusMode } from '@/services/auth/sharedCensusAuth';
@@ -19,29 +13,6 @@ import {
   clearAuthBootstrapPending,
   markAuthBootstrapPending,
 } from '@/services/auth/authBootstrapState';
-
-export const signInAnonymouslyForPassport = async (): Promise<string | null> => {
-  try {
-    if (auth.currentUser) {
-      return auth.currentUser.uid;
-    }
-
-    const timeoutPromise = new Promise<null>((_, reject) => {
-      setTimeout(() => reject(new Error('Auth timeout')), 2500);
-    });
-
-    const authPromise = signInAnonymously(auth);
-    const result = (await Promise.race([authPromise, timeoutPromise])) as { user: User } | null;
-
-    if (result?.user) {
-      return result.user.uid;
-    }
-    return null;
-  } catch (error) {
-    console.warn('[Auth] Anonymous sign-in skipped or failed (likely offline):', error);
-    return null;
-  }
-};
 
 export const hasActiveFirebaseSession = (): boolean => auth.currentUser !== null;
 

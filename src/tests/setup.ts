@@ -37,7 +37,6 @@ const noisyConsolePatterns = [
   'Clipboard error',
   'Validation failed for admissionDate:',
   'Failed to create history snapshot:',
-  '[Passport] Invalid file extension:',
   '⚠️ DailyRecord validation failed:',
   '❌ Error saving to Firestore:',
   '[Firestore] Concurrency conflict.',
@@ -430,7 +429,6 @@ const mockAuthService = {
   getCurrentUser: vi.fn(() => mockUser),
   isCurrentUserAllowed: vi.fn().mockResolvedValue(true),
   createUser: vi.fn(),
-  signInAnonymouslyForPassport: vi.fn().mockResolvedValue('anonymous-uid'),
   hasActiveFirebaseSession: vi.fn().mockReturnValue(true),
 };
 
@@ -447,11 +445,8 @@ const mockAuthContextValue = {
   isAuthenticated: true,
   isEditor: true,
   isViewer: false,
-  isOfflineMode: false,
   isFirebaseConnected: true,
   signOut: vi.fn().mockResolvedValue(undefined),
-  canDownloadPassport: true,
-  handleDownloadPassport: vi.fn().mockResolvedValue(true),
 };
 
 vi.mock('@/context/AuthContext', () => ({

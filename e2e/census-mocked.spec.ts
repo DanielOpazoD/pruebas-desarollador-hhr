@@ -155,7 +155,7 @@ test.describe('Logout Flow', () => {
       await expect(page.locator('text=Acceso al Sistema')).toBeVisible({ timeout: 10000 });
 
       // localStorage should be cleared
-      const afterLogout = await page.evaluate(() => localStorage.getItem('hhr_offline_user'));
+      const afterLogout = await page.evaluate(() => localStorage.getItem('hhr_e2e_bootstrap_user'));
       expect(afterLogout).toBeNull();
     }
   });

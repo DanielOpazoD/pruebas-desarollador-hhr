@@ -144,9 +144,6 @@ describe('AppContent', () => {
     role: 'admin',
     signOut: vi.fn(),
     isFirebaseConnected: true,
-    canDownloadPassport: true,
-    handleDownloadPassport: vi.fn(),
-    isOfflineMode: false,
   };
 
   beforeEach(() => {

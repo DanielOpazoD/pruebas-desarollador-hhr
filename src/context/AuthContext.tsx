@@ -3,7 +3,7 @@
  * Manages authentication state and user roles across the application.
  * Uses useAuthState hook internally as the single source of truth.
  *
- * Supports both Firebase auth and offline passport authentication.
+ * Supports Firebase auth and signature-mode access.
  * Roles: 'viewer' (read-only) | 'editor' (full access) | 'admin' (full access + admin features)
  */
 
@@ -23,12 +23,8 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isEditor: boolean;
   isViewer: boolean;
-  isOfflineMode: boolean;
   isFirebaseConnected: boolean;
   signOut: () => Promise<void>;
-  // Passport utilities
-  canDownloadPassport: boolean;
-  handleDownloadPassport: (role: UserRole) => Promise<boolean>;
 }
 
 // ============================================================================
@@ -61,11 +57,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       isAuthenticated: authState.user !== null,
       isEditor: authState.isEditor,
       isViewer: authState.isViewer,
-      isOfflineMode: authState.isOfflineMode,
       isFirebaseConnected: authState.isFirebaseConnected,
       signOut: authState.handleLogout,
-      canDownloadPassport: authState.canDownloadPassport,
-      handleDownloadPassport: authState.handleDownloadPassport,
     }),
     [
       authState.user,
@@ -73,11 +66,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       authState.authLoading,
       authState.isEditor,
       authState.isViewer,
-      authState.isOfflineMode,
       authState.isFirebaseConnected,
       authState.handleLogout,
-      authState.canDownloadPassport,
-      authState.handleDownloadPassport,
     ]
   );
 

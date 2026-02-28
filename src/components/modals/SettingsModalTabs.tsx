@@ -2,7 +2,6 @@ import React from 'react';
 import {
   Bot,
   Download,
-  FileKey,
   MousePointer2,
   Move,
   PanelsTopLeft,
@@ -16,7 +15,6 @@ import {
 } from 'lucide-react';
 import { Button, ModalSection } from '@/core/ui';
 import { SecuritySettings } from './SecuritySettings';
-import { UserRole } from '@/types';
 
 export type SettingsTabId = 'visual' | 'table' | 'security' | 'diagnostics';
 
@@ -254,25 +252,7 @@ export const SettingsTableTab: React.FC<TableTabProps> = ({
   </ModalSection>
 );
 
-interface SecurityTabProps {
-  canDownloadPassport: boolean;
-  handlePassportDownload: () => Promise<void>;
-  isGenerating: boolean;
-  isOfflineMode: boolean;
-  onDownloadPassport?: (role: UserRole) => Promise<boolean>;
-  selectedPassportRole: 'admin' | 'nurse_hospital';
-  setSelectedPassportRole: (role: 'admin' | 'nurse_hospital') => void;
-}
-
-export const SettingsSecurityTab: React.FC<SecurityTabProps> = ({
-  canDownloadPassport,
-  handlePassportDownload,
-  isGenerating,
-  isOfflineMode,
-  onDownloadPassport,
-  selectedPassportRole,
-  setSelectedPassportRole,
-}) => (
+export const SettingsSecurityTab: React.FC = () => (
   <div className="space-y-4">
     <ModalSection
       title="Seguridad y Bloqueo"
@@ -282,71 +262,6 @@ export const SettingsSecurityTab: React.FC<SecurityTabProps> = ({
     >
       <SecuritySettings />
     </ModalSection>
-
-    {canDownloadPassport && !isOfflineMode && onDownloadPassport ? (
-      <ModalSection
-        title="Pasaporte Offline"
-        icon={<FileKey size={16} />}
-        description={
-          <>
-            Genere un archivo para acceder al sistema <strong>sin internet</strong>.
-            <br />
-            <span className="font-bold text-emerald-700 text-[10px]">
-              Válido por 3 años. Solo administradores pueden generarlo.
-            </span>
-          </>
-        }
-        variant="success"
-      >
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant={selectedPassportRole === 'admin' ? 'primary' : 'outline'}
-              onClick={() => setSelectedPassportRole('admin')}
-              className={`${
-                selectedPassportRole === 'admin' ? 'border-emerald-600 bg-emerald-600' : ''
-              }`}
-              icon={<FileKey size={14} />}
-            >
-              Admin
-            </Button>
-            <Button
-              variant={selectedPassportRole === 'nurse_hospital' ? 'primary' : 'outline'}
-              onClick={() => setSelectedPassportRole('nurse_hospital')}
-              className={`${
-                selectedPassportRole === 'nurse_hospital' ? 'border-emerald-600 bg-emerald-600' : ''
-              }`}
-              icon={<FileKey size={14} />}
-            >
-              Enfermería
-            </Button>
-          </div>
-
-          <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
-            <p className="mb-3 text-sm font-bold text-emerald-800">Salida</p>
-            <Button
-              onClick={handlePassportDownload}
-              isLoading={isGenerating}
-              variant="primary"
-              className="w-full border-emerald-600 bg-emerald-600 hover:bg-emerald-700"
-              icon={<Download size={16} />}
-            >
-              Descargar Pasaporte {selectedPassportRole === 'admin' ? 'Admin' : 'Enfermería'}
-            </Button>
-          </div>
-        </div>
-      </ModalSection>
-    ) : (
-      <ModalSection
-        title="Pasaporte Offline"
-        icon={<FileKey size={16} />}
-        description="Esta cuenta no puede generar pasaportes offline o ya está usando uno."
-      >
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-          No hay acciones disponibles en esta sección para la sesión actual.
-        </div>
-      </ModalSection>
-    )}
   </div>
 );
 

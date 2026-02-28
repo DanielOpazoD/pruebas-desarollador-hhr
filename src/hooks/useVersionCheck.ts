@@ -60,11 +60,7 @@ const refreshServiceWorker = async (): Promise<void> => {
  * Clears localStorage except for critical keys that should persist.
  */
 const clearStaleLocalStorage = (): void => {
-  // Keys to preserve across version updates
-  const keysToPreserve = [
-    'hhr_offline_user', // Passport user data
-    'hhr_passport_token', // Passport token
-  ];
+  const keysToPreserve: string[] = [];
 
   const preserved: Record<string, string | null> = {};
 

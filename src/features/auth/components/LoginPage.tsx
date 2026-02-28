@@ -1,17 +1,7 @@
-import React, { useState, useCallback } from 'react';
-import {
-  signInWithGoogle,
-  signInAnonymouslyForPassport,
-  signInWithGoogleRedirect,
-} from '@/services/auth/authService';
+import React, { useState } from 'react';
+import { signInWithGoogle, signInWithGoogleRedirect } from '@/services/auth/authService';
 import { isPopupRecoverableAuthError } from '@/services/auth/authErrorPolicy';
-import {
-  parsePassportFile,
-  validatePassport,
-  storePassportLocally,
-} from '@/services/auth/passportService';
 import { AlertCircle, Loader2, Palette } from 'lucide-react';
-import { saveAppSetting } from '@/services/settingsService';
 import { performClientHardReset } from '@/services/storage/indexedDBService';
 import { GamesMenu } from '@/features/games';
 
@@ -50,12 +40,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isRedirectLoading, setIsRedirectLoading] = useState(false);
-  const [isPassportLoading, setIsPassportLoading] = useState(false);
   const [backgroundMode, setBackgroundMode] = useState<'auto' | 'day' | 'night'>('auto');
   const [showAlternateAccess, setShowAlternateAccess] = useState(false);
-  const [_isDragging, setIsDragging] = useState(false);
-
-  const _fileInputRef = React.useRef<HTMLInputElement>(null);
   const preferRedirectOnLocalhost =
     String(import.meta.env.VITE_AUTH_PREFER_REDIRECT_ON_LOCALHOST || '').toLowerCase() === 'true';
   const isLocalhostRuntime =
@@ -119,80 +105,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     }
   };
 
-  // ========== PASSPORT HANDLING ==========
-  const handlePassportFile = useCallback(
-    async (file: File) => {
-      setError(null);
-      setIsPassportLoading(true);
-
-      try {
-        const passport = await parsePassportFile(file);
-
-        if (!passport) {
-          setError('Archivo pasaporte inválido (.hhr)');
-          return;
-        }
-
-        const result = await validatePassport(passport);
-
-        if (!result.valid) {
-          setError(result.error || 'Pasaporte inválido.');
-          return;
-        }
-
-        await storePassportLocally(passport);
-        await saveAppSetting('hhr_offline_user', result.user);
-        localStorage.setItem('hhr_offline_user', JSON.stringify(result.user));
-
-        // Trigger login immediately for a fast offline experience
-        onLoginSuccess();
-
-        // Fire anonymous sign-in in the background (don't await it to avoid blocking)
-        signInAnonymouslyForPassport().catch(err =>
-          console.warn('[LoginPage] Background anonymous sign-in failed:', err)
-        );
-      } catch (err) {
-        console.error('[LoginPage] Passport error:', err);
-        setError('Error al procesar el pasaporte.');
-      } finally {
-        setIsPassportLoading(false);
-      }
-    },
-    [onLoginSuccess]
-  );
-
-  const _handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handlePassportFile(file);
-    }
-  };
-
-  const _handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragging(false);
-
-      const file = e.dataTransfer.files[0];
-      if (file && file.name.endsWith('.hhr')) {
-        handlePassportFile(file);
-      } else {
-        setError('Por favor, suba un archivo .hhr válido.');
-      }
-    },
-    [handlePassportFile]
-  );
-
-  const _handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
-
-  const _handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  }, []);
-  const isAnyLoading = isGoogleLoading || isPassportLoading || isRedirectLoading;
+  const isAnyLoading = isGoogleLoading || isRedirectLoading;
   const currentHour = new Date().getHours();
   const isAutoDayWindow = currentHour >= 8 && currentHour < 20;
 
@@ -333,39 +246,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               </div>
             </div>
           )}
-
-          {/* Passport Offline Access - HIDDEN
-                    <div className="mt-10 flex flex-col items-center">
-                        <div
-                            onDrop={handleDrop}
-                            onDragOver={handleDragOver}
-                            onDragLeave={handleDragLeave}
-                            onClick={() => fileInputRef.current?.click()}
-                            className={`p-4 rounded-full transition-all cursor-pointer border-2
-                                ${isDragging
-                                    ? 'bg-medical-50 border-medical-400 scale-110'
-                                    : 'bg-slate-50 border-transparent hover:bg-slate-100 hover:border-slate-200'
-                                }
-                                ${isPassportLoading ? 'opacity-50 pointer-events-none' : ''}
-                            `}
-                            title="Acceso Offline con Pasaporte (.hhr)"
-                        >
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept=".hhr"
-                                onChange={handleFileSelect}
-                                className="hidden"
-                            />
-                            {isPassportLoading ? (
-                                <Loader2 className="w-6 h-6 text-medical-500 animate-spin" />
-                            ) : (
-                                <FileKey className={`w-6 h-6 ${isDragging ? 'text-medical-600' : 'text-slate-400'}`} />
-                            )}
-                        </div>
-                        <p className="mt-2 text-[10px] text-slate-400 font-medium">MODO OFFLINE</p>
-                    </div>
-                    */}
         </div>
 
         {/* Version/Footer */}

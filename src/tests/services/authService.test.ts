@@ -274,34 +274,6 @@ describe('authService', () => {
     });
   });
 
-  describe('signInAnonymouslyForPassport', () => {
-    it('should return uid if user already signed in', async () => {
-      const auth = (await import('@/firebaseConfig')).auth;
-      Object.defineProperty(auth, 'currentUser', {
-        value: { uid: 'existing-123' },
-        configurable: true,
-      });
-
-      const result = await (
-        await import('@/services/auth/authService')
-      ).signInAnonymouslyForPassport();
-      expect(result).toBe('existing-123');
-    });
-
-    it('should sign in anonymously if not signed in', async () => {
-      const auth = (await import('@/firebaseConfig')).auth;
-      Object.defineProperty(auth, 'currentUser', { value: null, configurable: true });
-      vi.mocked(firebaseAuth.signInAnonymously).mockResolvedValue({
-        user: { uid: 'anon-456' },
-      } as unknown as firebaseAuth.UserCredential);
-
-      const result = await (
-        await import('@/services/auth/authService')
-      ).signInAnonymouslyForPassport();
-      expect(result).toBe('anon-456');
-    });
-  });
-
   describe('handleSignInRedirectResult', () => {
     it('should return null if no result', async () => {
       vi.mocked(firebaseAuth.getRedirectResult).mockResolvedValue(null);

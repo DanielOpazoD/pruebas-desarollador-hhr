@@ -14,7 +14,7 @@ Capa de datos e integración: repositorios, persistencia, exportadores, integrac
 | `exporters/`                                                  | Exportación Excel/reportes                                      |
 | `admin/`                                                      | Servicios de auditoría, mantenimiento y salud                   |
 | `transfers/`                                                  | Generación documental y soporte de traslados                    |
-| `auth/`                                                       | Servicios de autenticación/pasaporte offline                    |
+| `auth/`                                                       | Servicios de autenticación y políticas de acceso                |
 | `backup/`                                                     | Respaldo y restauración                                         |
 | `terminology/`                                                | Normalización y búsquedas semánticas clínicas                   |
 | `utils/`                                                      | Utilidades de servicio (logging, feature flags, etc.)           |

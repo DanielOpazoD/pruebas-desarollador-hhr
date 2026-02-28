@@ -7,8 +7,6 @@
 import { expect, Page } from '@playwright/test';
 
 const E2E_DEFAULT_DATE = process.env.E2E_FIXED_DATE ?? '2026-01-01';
-const PASSPORT_ISSUED_AT = `${E2E_DEFAULT_DATE}T00:00:00.000Z`;
-const PASSPORT_EXPIRES_AT = '2027-01-01T00:00:00.000Z';
 const RECORD_LAST_UPDATED = `${E2E_DEFAULT_DATE}T00:00:00.000Z`;
 
 // Mock user data for different roles
@@ -60,45 +58,15 @@ export async function setupE2EContext(
       user,
       dateStr,
       populate,
-      issuedAt,
-      expiresAtStr,
       lastUpdated,
     }: {
       user: typeof mockUser;
       dateStr: string;
       populate: boolean;
-      issuedAt: string;
-      expiresAtStr: string;
       lastUpdated: string;
     }) => {
-      // --- Passport Generation Logic ---
-      const SIGNATURE_KEY = 'HHR-2024-OFFLINE-PASSPORT-SECRET-KEY';
-      const PASSPORT_VERSION = 1;
-      const dataToSign = `${user.email}|${user.role}|${user.displayName}|${issuedAt}|${expiresAtStr}`;
-
-      // Mock HMAC-like hash
-      let hash = 0;
-      const combined = dataToSign + SIGNATURE_KEY;
-      for (let i = 0; i < combined.length; i++) {
-        const char = combined.charCodeAt(i);
-        hash = (hash << 5) - hash + char;
-        hash = hash & hash;
-      }
-      const hex = Math.abs(hash).toString(16).padStart(8, '0');
-      const signature = `v${PASSPORT_VERSION}-${hex}-e2e-test`;
-
-      const mockPassport = {
-        email: user.email,
-        role: user.role,
-        displayName: user.displayName,
-        issuedAt,
-        expiresAt: expiresAtStr,
-        signature,
-      };
-
       // Store auth
-      localStorage.setItem('hhr_offline_user', JSON.stringify(user));
-      localStorage.setItem('hhr_offline_passport', JSON.stringify(mockPassport));
+      localStorage.setItem('hhr_e2e_bootstrap_user', JSON.stringify(user));
 
       // Store Record Data
       const STORAGE_KEY = 'hanga_roa_hospital_data';
@@ -168,8 +136,6 @@ export async function setupE2EContext(
       user: mockUser,
       dateStr: targetDate,
       populate: populateWithPatient,
-      issuedAt: PASSPORT_ISSUED_AT,
-      expiresAtStr: PASSPORT_EXPIRES_AT,
       lastUpdated: RECORD_LAST_UPDATED,
     }
   );
@@ -255,8 +221,7 @@ export async function injectMockData(
  */
 export async function clearAuth(page: Page) {
   await page.evaluate(() => {
-    localStorage.removeItem('hhr_offline_user');
-    localStorage.removeItem('hhr_offline_passport');
+    localStorage.removeItem('hhr_e2e_bootstrap_user');
   });
 }
 
@@ -272,9 +237,9 @@ export async function ensureRecordExists(page: Page) {
       localStorage.setItem('hhr_e2e_force_popup', 'true');
       localStorage.setItem('hhr_db_initialized', 'true');
 
-      const offlineUserRaw = localStorage.getItem('hhr_offline_user');
-      if (offlineUserRaw) {
-        localStorage.setItem('hhr_e2e_popup_success_user', offlineUserRaw);
+      const bootstrapUserRaw = localStorage.getItem('hhr_e2e_bootstrap_user');
+      if (bootstrapUserRaw) {
+        localStorage.setItem('hhr_e2e_popup_success_user', bootstrapUserRaw);
       }
     });
     await loginButton.click();

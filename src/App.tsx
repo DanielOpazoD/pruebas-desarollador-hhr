@@ -138,7 +138,7 @@ function AppInner({ auth, dateNav, sharedCensus }: AppInnerProps) {
 
   const dailyRecordHook = useDailyRecord(
     dateNav.currentDateString,
-    auth.isOfflineMode,
+    false,
     auth.isFirebaseConnected
   );
   const { record } = dailyRecordHook;

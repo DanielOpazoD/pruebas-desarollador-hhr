@@ -52,11 +52,8 @@ describe('Flicker-Free Login Flow', () => {
       role: 'viewer',
       isEditor: false,
       isViewer: true,
-      isOfflineMode: false,
       isFirebaseConnected: false,
       handleLogout: vi.fn(),
-      handleDownloadPassport: vi.fn(),
-      canDownloadPassport: false,
     });
 
     const { rerender } = render(<App />);
@@ -80,11 +77,8 @@ describe('Flicker-Free Login Flow', () => {
       role: 'admin',
       isEditor: true,
       isViewer: false,
-      isOfflineMode: false,
       isFirebaseConnected: true,
       handleLogout: vi.fn(),
-      handleDownloadPassport: vi.fn(),
-      canDownloadPassport: true,
     });
 
     await act(async () => {

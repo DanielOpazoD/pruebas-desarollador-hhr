@@ -3,7 +3,6 @@ import { Settings } from 'lucide-react';
 import { Modal } from '@/core/ui';
 import { useTableConfig } from '@/context/TableConfigContext';
 import { useUISettings } from '@/context/UISettingsContext';
-import { UserRole } from '@/types';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 import {
   settingsTabs,
@@ -18,19 +17,9 @@ interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRunTest: () => void;
-  canDownloadPassport?: boolean;
-  onDownloadPassport?: (role: UserRole) => Promise<boolean>;
-  isOfflineMode?: boolean;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({
-  isOpen,
-  onClose,
-  onRunTest,
-  canDownloadPassport = false,
-  onDownloadPassport,
-  isOfflineMode = false,
-}) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onRunTest }) => {
   const {
     config,
     exportConfig,
@@ -43,24 +32,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const { settings, updateSetting } = useUISettings();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<SettingsTabId>('visual');
-  const [selectedPassportRole, setSelectedPassportRole] = useState<'admin' | 'nurse_hospital'>(
-    'admin'
-  );
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  const handlePassportDownload = async () => {
-    if (!onDownloadPassport) return;
-
-    setIsGenerating(true);
-    try {
-      const success = await onDownloadPassport(selectedPassportRole);
-      if (success) onClose();
-    } catch (error) {
-      console.error('Error generando pasaporte:', error);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
@@ -143,17 +114,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               updatePageMargin={updatePageMargin}
             />
           )}
-          {activeTab === 'security' && (
-            <SettingsSecurityTab
-              canDownloadPassport={canDownloadPassport}
-              handlePassportDownload={handlePassportDownload}
-              isGenerating={isGenerating}
-              isOfflineMode={isOfflineMode}
-              onDownloadPassport={onDownloadPassport}
-              selectedPassportRole={selectedPassportRole}
-              setSelectedPassportRole={setSelectedPassportRole}
-            />
-          )}
+          {activeTab === 'security' && <SettingsSecurityTab />}
           {activeTab === 'diagnostics' && (
             <SettingsDiagnosticsTab onClose={onClose} onRunTest={onRunTest} />
           )}

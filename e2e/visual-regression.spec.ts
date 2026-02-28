@@ -108,14 +108,7 @@ async function injectVRTData(page: Page) {
         email: 'hospitalizados@hospitalhangaroa.cl',
         role: 'nurse_hospital',
       };
-      const mockPassport = {
-        email: 'hospitalizados@hospitalhangaroa.cl',
-        role: 'nurse_hospital',
-        timestamp: Date.now(),
-      };
-
-      localStorage.setItem('hhr_offline_user', JSON.stringify(mockUser));
-      localStorage.setItem('hhr_offline_passport', JSON.stringify(mockPassport));
+      localStorage.setItem('hhr_e2e_bootstrap_user', JSON.stringify(mockUser));
 
       console.warn(`[E2E] addInitScript injected override for ${dateStr}`);
     },

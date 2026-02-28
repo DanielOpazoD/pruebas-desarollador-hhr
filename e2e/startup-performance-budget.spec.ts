@@ -79,7 +79,7 @@ test.describe('Startup performance budget', () => {
           [dateStr]: record,
         };
         localStorage.setItem(
-          'hhr_offline_user',
+          'hhr_e2e_bootstrap_user',
           JSON.stringify({
             uid: 'perf-user',
             email: 'perf@hospital.cl',

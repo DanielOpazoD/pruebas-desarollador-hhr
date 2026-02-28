@@ -177,9 +177,6 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
           isOpen={ui.settingsModal.isOpen}
           onClose={ui.settingsModal.close}
           onRunTest={() => ui.setIsTestAgentRunning(true)}
-          canDownloadPassport={auth.canDownloadPassport}
-          onDownloadPassport={auth.handleDownloadPassport}
-          isOfflineMode={auth.isOfflineMode}
         />
 
         {censusEmail.showEmailConfig && (

@@ -3,20 +3,11 @@ import {
   onAuthChange,
   signOut,
   hasActiveFirebaseSession,
-  signInAnonymouslyForPassport,
   handleSignInRedirectResult,
 } from '@/services/auth/authService';
 import { AuthUser, UserRole } from '@/types';
 export type { UserRole };
-import {
-  getStoredPassport,
-  validatePassport,
-  clearStoredPassport,
-  isEligibleForPassport,
-  downloadPassport,
-} from '@/services/auth/passportService';
 import { logUserLogout, logUserLogin } from '@/services/admin/auditService';
-import { getAppSetting, saveAppSetting } from '@/services/settingsService';
 import { safeJsonParse } from '@/utils/jsonUtils';
 import {
   clearAuthBootstrapPending,
@@ -36,7 +27,7 @@ export interface UseAuthStateReturn {
   authLoading: boolean;
   /** True if connected to Firebase (either real or anonymous auth) */
   isFirebaseConnected: boolean;
-  /** Signs out the current user (clears Firebase and passport auth) */
+  /** Signs out the current user */
   handleLogout: (reason?: 'manual' | 'automatic') => Promise<void>;
 
   // Role-based properties
@@ -48,14 +39,6 @@ export interface UseAuthStateReturn {
   isViewer: boolean;
   /** Alias for isEditor - true if user can modify data */
   canEdit: boolean;
-
-  // Offline passport properties
-  /** True if using offline passport authentication (no Firebase) */
-  isOfflineMode: boolean;
-  /** True if current user can generate offline passports (admin only) */
-  canDownloadPassport: boolean;
-  /** Downloads a passport file for offline access with specified role */
-  handleDownloadPassport: (role: UserRole) => Promise<boolean>;
 }
 
 import { SESSION_TIMEOUT_MS, ACTIVITY_EVENTS } from '@/constants/security';
@@ -65,7 +48,7 @@ const getE2EBootstrapUser = (): AuthUser | null => {
     return null;
   }
 
-  const storedUser = localStorage.getItem('hhr_offline_user');
+  const storedUser = localStorage.getItem('hhr_e2e_bootstrap_user');
   return safeJsonParse<AuthUser | null>(storedUser, null);
 };
 
@@ -73,12 +56,7 @@ const getE2EBootstrapUser = (): AuthUser | null => {
  * useAuthState Hook
  *
  * Central hook for managing authentication state throughout the application.
- * Supports dual authentication modes:
- *
- * 1. **Firebase Auth**: Standard email/password authentication with real-time sync
- * 2. **Offline Passport**: Encrypted token-based auth for offline/island access
- *
- * The hook automatically detects stored passports on mount and validates them.
+ * Supports Firebase auth plus anonymous signature-mode access.
  * Firebase connection status is monitored to enable/disable sync features.
  *
  * @returns Authentication state, user info, role flags, and auth actions
@@ -88,7 +66,6 @@ export const useAuthState = (): UseAuthStateReturn => {
   const [user, setUser] = useState<AuthUser | null>(e2eBootstrapUser);
   const [authLoading, setAuthLoading] = useState(!e2eBootstrapUser);
   const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
-  const [isOfflineMode, setIsOfflineMode] = useState(Boolean(e2eBootstrapUser));
   const [isOnline, setIsOnline] = useState(window.navigator.onLine);
 
   // ========================================================================
@@ -96,7 +73,7 @@ export const useAuthState = (): UseAuthStateReturn => {
   // ========================================================================
 
   /**
-   * Performs a full sign-out, clearing both Firebase sessions and local passport tokens.
+   * Performs a full sign-out of the current Firebase session.
    *
    * @param reason - Whether the logout was 'manual' (user clicked) or 'automatic' (session timeout).
    */
@@ -107,17 +84,13 @@ export const useAuthState = (): UseAuthStateReturn => {
         await logUserLogout(user.email, reason);
       }
 
-      // Clear offline data
-      await clearStoredPassport();
-      await saveAppSetting('hhr_offline_user', null);
-      localStorage.removeItem('hhr_offline_user'); // Cleanup
-
       // Reset login flag for audit tracking
       if (typeof sessionStorage !== 'undefined') {
         sessionStorage.removeItem('hhr_logged_this_session');
       }
-
-      setIsOfflineMode(false);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('hhr_e2e_bootstrap_user');
+      }
 
       // Firebase sign out (may fail if offline, that's ok)
       try {
@@ -165,19 +138,11 @@ export const useAuthState = (): UseAuthStateReturn => {
 
   // Network status listeners
   useEffect(() => {
-    const handleOnline = async () => {
-      // console.debug('[useAuthState] Network is ONLINE');
+    const handleOnline = () => {
       setIsOnline(true);
-      const storedUser = await getAppSetting<AuthUser | null>('hhr_offline_user', null);
-      if (storedUser) {
-        signInAnonymouslyForPassport().catch((err: unknown) =>
-          console.warn('[useAuthState] Proactive re-auth failed:', err)
-        );
-      }
     };
 
     const handleOffline = () => {
-      // console.debug('[useAuthState] Network is OFFLINE');
       setIsOnline(false);
     };
 
@@ -190,123 +155,40 @@ export const useAuthState = (): UseAuthStateReturn => {
     };
   }, []);
 
-  // Check for offline passport user on mount
   useEffect(() => {
     if (e2eBootstrapUser) return;
 
-    // console.debug('[useAuthState] 🚀 Initializing Auth System...');
-
-    const checkOfflineUser = async () => {
-      // console.debug('[useAuthState] 🔍 Checking local storage for offline user...');
-      try {
-        let offlineUser = await getAppSetting<AuthUser | null>('hhr_offline_user', null);
-
-        // Fallback for migration
-        if (!offlineUser) {
-          const legacy =
-            typeof window !== 'undefined' ? localStorage.getItem('hhr_offline_user') : null;
-          const parsedLegacy = safeJsonParse<AuthUser | null>(legacy, null);
-          if (parsedLegacy) {
-            offlineUser = parsedLegacy;
-            await saveAppSetting('hhr_offline_user', offlineUser);
-          }
-        }
-
-        if (offlineUser) {
-          const passport = await getStoredPassport();
-          if (passport) {
-            const result = await validatePassport(passport);
-            if (result.valid) {
-              // console.debug('[useAuthState] ✅ Valid offline passport found');
-              setUser(offlineUser);
-              setIsOfflineMode(true);
-              setAuthLoading(false);
-              return true;
-            } else {
-              console.warn('[useAuthState] ❌ Stored passport is invalid:', result.error);
-              await clearStoredPassport();
-              await saveAppSetting('hhr_offline_user', null);
-              if (typeof window !== 'undefined' && window.localStorage) {
-                localStorage.removeItem('hhr_offline_user');
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('[useAuthState] ‼️ Error checking offline user:', error);
-      }
-      return false;
-    };
-
     const initAuth = async () => {
-      // console.debug('[useAuthState] 📡 Subscribing to Firebase Auth changes...');
-
-      // 1. Check for redirect result (returns from Google redirect)
       try {
         const redirectUser = await handleSignInRedirectResult();
         if (redirectUser) {
-          // console.debug('[useAuthState] ✅ User restored via redirect result:', redirectUser.email);
           setUser(redirectUser);
           setAuthLoading(false);
           clearAuthBootstrapPending();
-          // Subscription will pick up the rest
         }
       } catch (error) {
         console.warn('[useAuthState] Redirect result check error:', error);
       }
 
-      // 2. Subscribe to Firebase Auth changes
       const unsubscribe = onAuthChange(async authUser => {
-        // console.debug('[useAuthState] 🔔 Auth State Change received:', authUser ? authUser.email : 'NULL');
-
         if (authUser) {
-          const isAnonymousUser = authUser.email === null;
-          const email = authUser.email;
-
-          if (!isAnonymousUser && email) {
+          if (authUser.email) {
             if (
               typeof sessionStorage !== 'undefined' &&
               !sessionStorage.getItem('hhr_logged_this_session')
             ) {
-              logUserLogin(email);
+              logUserLogin(authUser.email);
               sessionStorage.setItem('hhr_logged_this_session', 'true');
             }
           }
-
-          if (isAnonymousUser) {
-            const passportUser = await getAppSetting<AuthUser | null>('hhr_offline_user', null);
-            if (passportUser) {
-              setUser(passportUser);
-              setIsOfflineMode(false);
-            } else {
-              setUser(authUser);
-              setIsOfflineMode(false);
-            }
-          } else {
-            // console.debug('[useAuthState] 👤 Real Google user detected. Overriding any local passport.');
-            setUser(authUser);
-            setIsOfflineMode(false);
-            await saveAppSetting('hhr_offline_user', null);
-            if (typeof window !== 'undefined' && window.localStorage) {
-              localStorage.removeItem('hhr_offline_user');
-            }
-            await clearStoredPassport();
-          }
+          setUser(authUser);
         } else {
-          // console.debug('[useAuthState] 👤 Firebase user is NULL, checking offline fallback...');
-          // Keep loading while a redirect login is still pending to avoid bouncing to login screen.
           if (isAuthBootstrapPending()) {
             return;
           }
-
-          // Only check offline if Firebase reports no user
-          const hasOffline = await checkOfflineUser();
-          if (!hasOffline) {
-            setUser(null);
-          }
+          setUser(null);
         }
 
-        // console.debug('[useAuthState] ✨ Auth transition finished');
         clearAuthBootstrapPending();
         setAuthLoading(false);
       });
@@ -341,7 +223,7 @@ export const useAuthState = (): UseAuthStateReturn => {
   useEffect(() => {
     const checkConnection = () => {
       const hasSession = hasActiveFirebaseSession();
-      setIsFirebaseConnected(isOnline && (hasSession || (!!user && !isOfflineMode)));
+      setIsFirebaseConnected(isOnline && (hasSession || !!user));
     };
 
     checkConnection();
@@ -352,28 +234,12 @@ export const useAuthState = (): UseAuthStateReturn => {
       clearInterval(interval);
       clearTimeout(timeout);
     };
-  }, [user, isOfflineMode, isOnline]);
-
-  /**
-   * Generates and downloads a passport file for the current user.
-   * Only admin can generate passports.
-   *
-   * @param role - The role to assign
-   * @returns True if the download was successful, false otherwise.
-   */
-  const handleDownloadPassport = useCallback(
-    async (role: UserRole) => {
-      if (!user) return false;
-      return await downloadPassport(user, role);
-    },
-    [user]
-  );
+  }, [user, isOnline]);
 
   const role: UserRole = user?.role || 'viewer';
   const isEditor = role === 'editor' || role === 'admin' || role === 'nurse_hospital';
   const isViewer = !isEditor;
   const canEdit = isEditor;
-  const canDownloadPassport = isEligibleForPassport(user);
 
   return {
     user,
@@ -384,8 +250,5 @@ export const useAuthState = (): UseAuthStateReturn => {
     isEditor,
     isViewer,
     canEdit,
-    isOfflineMode,
-    canDownloadPassport,
-    handleDownloadPassport,
   };
 };
