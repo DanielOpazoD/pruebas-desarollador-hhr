@@ -87,11 +87,6 @@ export {
 } from './exporters/exportService';
 
 // ============================================================
-// AI (GEMINI)
-// ============================================================
-export { generateShiftReport } from './integrations/geminiService';
-
-// ============================================================
 // INTEGRATIONS
 // ============================================================
 export { triggerCensusEmail } from './integrations/censusEmailService';

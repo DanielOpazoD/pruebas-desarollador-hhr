@@ -38,6 +38,11 @@ coverage/
 playwright-report/
 test-results/
 reports/
+lint_output.txt
+test-results.json
+firestore-debug.log
+~$*.xlsx
+~$*.docx
 
 # Temporary coverage/test output files
 coverage_*.txt

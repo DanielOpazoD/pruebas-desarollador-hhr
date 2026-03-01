@@ -15,10 +15,7 @@ let aiIsAvailable = false;
 
 const getLocalDevApiKey = (): string | undefined => {
   if (!import.meta.env.DEV) return undefined;
-  const key =
-    import.meta.env.VITE_LOCAL_GEMINI_API_KEY ||
-    import.meta.env.VITE_GEMINI_API_KEY ||
-    import.meta.env.VITE_API_KEY;
+  const key = import.meta.env.VITE_LOCAL_GEMINI_API_KEY;
   return key && key.trim().length > 0 ? key.trim() : undefined;
 };
 

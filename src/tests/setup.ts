@@ -25,7 +25,6 @@ const noisyConsolePatterns = [
   'Failed to fetch audit logs for date:',
   'Error loading table config:',
   'Error fetching nurse catalog from Firestore:',
-  'Error generating AI report:',
   'Error listing backup files:',
   'Error checking backup existence:',
   'Error fetching backup file:',

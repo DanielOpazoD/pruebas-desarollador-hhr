@@ -103,8 +103,6 @@ describe('Búsqueda IA CIE-10 (cie10AISearch)', () => {
       } as Response);
 
       vi.stubEnv('VITE_LOCAL_GEMINI_API_KEY', '');
-      vi.stubEnv('VITE_GEMINI_API_KEY', '');
-      vi.stubEnv('VITE_API_KEY', '');
 
       const results = await cie10Module.searchCIE10WithAI('query-sin-key');
       vi.unstubAllEnvs();
