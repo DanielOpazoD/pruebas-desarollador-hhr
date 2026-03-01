@@ -13,7 +13,7 @@ import { getMonthRecordsFromFirestore } from '../storage/firestoreService';
 import { getRecordsForMonth } from '../storage/indexedDBService';
 import { isFirestoreEnabled } from '../repositories/DailyRecordRepository';
 import { buildCensusMasterWorkbook, getCensusMasterFilename } from './censusMasterWorkbook';
-import { validateExcelExport, XLSX_MIME_TYPE } from './excelValidation';
+import { downloadWorkbookFile } from './excelFileDownload';
 
 /**
  * Generate and download the Census Master Excel file for a given month.
@@ -71,24 +71,13 @@ export const generateCensusMasterExcel = async (
 
     // Generate the workbook (without encryption - xlsx-populate doesn't work in browsers)
     const workbook = await buildCensusMasterWorkbook(monthRecords);
-    const buffer = await workbook.xlsx.writeBuffer();
     const filename = getCensusMasterFilename(limitDateStr);
-
-    // Validate before creating blob and downloading
-    const validation = validateExcelExport(buffer, filename);
-    if (!validation.valid) {
-      console.error(`❌ Validación de Excel fallida: ${validation.error}`);
-      alert(
-        `Error al generar el archivo Excel:\n${validation.error}\n\nPor favor, recarga la página e intenta de nuevo.`
-      );
-      return;
-    }
-
-    const blob = new Blob([buffer], { type: XLSX_MIME_TYPE });
-    const { saveAs } = await import('file-saver');
-    saveAs(blob, filename);
-
-    console.warn(`📥 Archivo descargado: ${filename} (${buffer.byteLength} bytes)`);
+    await downloadWorkbookFile({
+      workbook,
+      filename,
+      invalidAlertMessage: 'Error al generar el archivo Excel:',
+      successLogMessage: byteLength => `📥 Archivo descargado: ${filename} (${byteLength} bytes)`,
+    });
   } catch (error) {
     console.error('❌ Error generando Excel:', error);
     const message = error instanceof Error ? error.message : 'Error desconocido';

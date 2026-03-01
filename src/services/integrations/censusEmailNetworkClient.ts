@@ -1,27 +1,11 @@
-const REQUEST_TIMEOUT_MS = 15000;
-const MAX_ATTEMPTS = 2;
-
-const isRetryableStatus = (status: number): boolean => status === 429 || status >= 500;
-
-const isRetryableError = (error: unknown): boolean => {
-  if (error instanceof TypeError) {
-    return true;
-  }
-  if (error instanceof DOMException) {
-    return error.name === 'AbortError';
-  }
-  return false;
-};
-
-const normalizeFetchErrorMessage = (error: unknown): string => {
-  if (error instanceof DOMException && error.name === 'AbortError') {
-    return 'Tiempo de espera agotado al enviar el correo.';
-  }
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-  return 'No se pudo enviar el correo.';
-};
+import {
+  getCensusEmailRequestMaxAttempts,
+  getCensusEmailRequestTimeoutMs,
+  isRetryableError,
+  isRetryableStatus,
+  normalizeFetchErrorMessage,
+} from '@/services/integrations/censusEmailRequestPolicy';
+import { sendCensusEmailTransportRequest } from '@/services/integrations/censusEmailTransport';
 
 export interface SendCensusEmailRequestOptions {
   endpoint: string;
@@ -38,25 +22,28 @@ export const sendCensusEmailRequest = async ({
   userRole,
   fetchImpl = fetch,
 }: SendCensusEmailRequestOptions): Promise<Response> => {
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+  const maxAttempts = getCensusEmailRequestMaxAttempts();
+  const timeoutMs = getCensusEmailRequestTimeoutMs();
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-      const response = await fetchImpl(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-email': userEmail || '',
-          'x-user-role': userRole || '',
+      const response = await sendCensusEmailTransportRequest(
+        {
+          endpoint,
+          body,
+          userEmail,
+          userRole,
+          signal: controller.signal,
         },
-        body,
-        signal: controller.signal,
-      });
+        fetchImpl
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
-        if (attempt < MAX_ATTEMPTS && isRetryableStatus(response.status)) {
+        if (attempt < maxAttempts && isRetryableStatus(response.status)) {
           continue;
         }
         throw new Error(errorText || 'No se pudo enviar el correo.');
@@ -64,7 +51,7 @@ export const sendCensusEmailRequest = async ({
 
       return response;
     } catch (error) {
-      if (attempt < MAX_ATTEMPTS && isRetryableError(error)) {
+      if (attempt < maxAttempts && isRetryableError(error)) {
         continue;
       }
       throw new Error(normalizeFetchErrorMessage(error));

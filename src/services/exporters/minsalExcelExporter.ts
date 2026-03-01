@@ -4,8 +4,8 @@
  */
 
 import { MinsalStatistics, DailyStatsSnapshot } from '@/types/minsalTypes';
-import { validateExcelExport, XLSX_MIME_TYPE } from './excelValidation';
 import { createWorkbook } from './excelUtils';
+import { downloadWorkbookFile } from './excelFileDownload';
 
 /**
  * Export MINSAL statistics to Excel workbook
@@ -14,7 +14,7 @@ export async function exportMinsalToExcel(
   stats: MinsalStatistics,
   trendData: DailyStatsSnapshot[]
 ): Promise<void> {
-  const [workbook, { saveAs }] = await Promise.all([createWorkbook(), import('file-saver')]);
+  const workbook = await createWorkbook();
   workbook.creator = 'Hospital Hanga Roa';
   workbook.created = new Date();
 
@@ -172,23 +172,14 @@ export async function exportMinsalToExcel(
     { width: 12 },
   ];
 
-  // Generate and save file
-  const buffer = await workbook.xlsx.writeBuffer();
   const fileName = `Estadisticas_MINSAL_${stats.periodStart}_${stats.periodEnd}.xlsx`;
-
-  // Validate before creating blob and downloading
-  const validation = validateExcelExport(buffer, fileName);
-  if (!validation.valid) {
-    console.error(`❌ Validación de Excel fallida: ${validation.error}`);
-    alert(
-      `Error al generar el archivo Excel:\n${validation.error}\n\nPor favor, recarga la página e intenta de nuevo.`
-    );
-    return;
-  }
-
-  const blob = new Blob([buffer], { type: XLSX_MIME_TYPE });
-  saveAs(blob, fileName);
-  console.warn(`📥 MINSAL Excel descargado: ${fileName} (${buffer.byteLength} bytes)`);
+  await downloadWorkbookFile({
+    workbook,
+    filename: fileName,
+    invalidAlertMessage: 'Error al generar el archivo Excel:',
+    successLogMessage: byteLength =>
+      `📥 MINSAL Excel descargado: ${fileName} (${byteLength} bytes)`,
+  });
 }
 
 export default exportMinsalToExcel;

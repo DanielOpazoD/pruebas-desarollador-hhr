@@ -8,6 +8,7 @@ import {
   resolveCensusEmailRuntimePolicy,
 } from '@/services/integrations/censusEmailRuntimePolicy';
 import { sendCensusEmailRequest } from '@/services/integrations/censusEmailNetworkClient';
+import { buildCensusEmailRequestBody } from '@/services/integrations/censusEmailRequestPayload';
 
 interface TriggerEmailParams {
   date: string;
@@ -111,7 +112,7 @@ export const triggerCensusEmail = async (params: TriggerEmailParams): Promise<Em
     endpoint: ENDPOINT,
     userEmail,
     userRole,
-    body: JSON.stringify({
+    body: buildCensusEmailRequestBody({
       date,
       records,
       recipients: finalRecipients,
