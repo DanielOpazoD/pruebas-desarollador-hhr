@@ -2,6 +2,7 @@ import { CURRENT_SCHEMA_VERSION } from '@/constants/version';
 import { DailyRecord, DailyRecordPatch, PatientData } from '@/types';
 import { getRecordFromFirestore } from '@/services/storage/firestoreService';
 import { isRetryableSyncError, queueSyncTask } from '@/services/storage/syncQueueService';
+import { saveRecord as saveToIndexedDB } from '@/services/storage/indexedDBService';
 import { normalizeDailyRecordInvariants } from '@/utils/recordInvariants';
 import { validateAndSalvageRecord } from '@/services/repositories/helpers/validationHelper';
 import { applyPatches } from '@/utils/patchUtils';
@@ -14,6 +15,23 @@ import {
 import { mapPatientToFhir } from '@/services/utils/fhirMappers';
 import { logError } from '@/services/utils/errorService';
 import { PatientMasterRepository } from '@/services/repositories/PatientMasterRepository';
+import { resolveDailyRecordConflictWithTrace } from '@/services/repositories/conflictResolutionMatrix';
+import { buildConflictAuditSummary } from '@/services/repositories/conflictResolutionAuditSummary';
+import { logRepositoryConflictAutoMerged } from '@/services/repositories/ports/repositoryAuditPort';
+
+export interface ConflictAutoMergeRecoveryResult {
+  status: 'auto_merged' | 'not_possible';
+}
+
+export interface RemoteWriteRecoveryResult {
+  status: 'auto_merged' | 'queued_for_retry' | 'unrecoverable' | 'throw';
+  queuedForRetry: boolean;
+  autoMerged: boolean;
+  error?: unknown;
+}
+
+const isConcurrencyError = (error: unknown): boolean =>
+  error instanceof Error && error.name === 'ConcurrencyError';
 
 export const prepareDailyRecordForPersistence = (
   record: DailyRecord,
@@ -118,6 +136,90 @@ export const queueRetryForRecord = async (record: DailyRecord): Promise<boolean>
 };
 
 export const shouldQueueRetryableError = (error: unknown): boolean => isRetryableSyncError(error);
+
+export const attemptConflictAutoMergeRecovery = async (
+  date: string,
+  localRecord: DailyRecord,
+  changedPaths: string[]
+): Promise<ConflictAutoMergeRecoveryResult> => {
+  try {
+    const remoteRecord = await getRecordFromFirestore(date);
+    if (!remoteRecord) {
+      return { status: 'not_possible' };
+    }
+
+    const { record: merged, trace } = resolveDailyRecordConflictWithTrace(
+      remoteRecord,
+      localRecord,
+      {
+        changedPaths: changedPaths.length > 0 ? changedPaths : ['*'],
+      }
+    );
+
+    const auditDetails = buildConflictAuditSummary(
+      changedPaths.length > 0 ? changedPaths : ['*'],
+      trace.policyVersion,
+      trace.entries
+    );
+
+    await saveToIndexedDB(merged);
+    await queueSyncTask('UPDATE_DAILY_RECORD', merged);
+    await logRepositoryConflictAutoMerged(date, auditDetails);
+    return { status: 'auto_merged' };
+  } catch (mergeError) {
+    console.warn('[Repository] Auto-merge conflict fallback failed:', mergeError);
+    return { status: 'not_possible' };
+  }
+};
+
+export const resolveRemoteWriteRecovery = async (
+  date: string,
+  record: DailyRecord,
+  changedPaths: string[],
+  error: unknown
+): Promise<RemoteWriteRecoveryResult> => {
+  if (error instanceof DataRegressionError || error instanceof VersionMismatchError) {
+    return {
+      status: 'throw',
+      queuedForRetry: false,
+      autoMerged: false,
+      error,
+    };
+  }
+
+  if (isConcurrencyError(error)) {
+    const mergeResult = await attemptConflictAutoMergeRecovery(date, record, changedPaths);
+    if (mergeResult.status === 'auto_merged') {
+      return {
+        status: 'auto_merged',
+        queuedForRetry: true,
+        autoMerged: true,
+      };
+    }
+
+    return {
+      status: 'throw',
+      queuedForRetry: false,
+      autoMerged: false,
+      error,
+    };
+  }
+
+  if (shouldQueueRetryableError(error)) {
+    await queueRetryForRecord(record);
+    return {
+      status: 'queued_for_retry',
+      queuedForRetry: true,
+      autoMerged: false,
+    };
+  }
+
+  return {
+    status: 'unrecoverable',
+    queuedForRetry: false,
+    autoMerged: false,
+  };
+};
 
 export const syncPatientsToMasterInBackground = (record: DailyRecord): void => {
   setTimeout(async () => {

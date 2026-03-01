@@ -99,10 +99,38 @@ export const saveRecordToFirestore = async (
 
 export const updateRecordPartial = async (
   date: string,
-  partialData: DailyRecordPatch
+  partialData: DailyRecordPatch,
+  expectedLastUpdated?: string
 ): Promise<void> => {
   try {
     const docRef = getRecordDocRef(date);
+
+    if (expectedLastUpdated) {
+      try {
+        const remoteDoc = await getDoc(docRef);
+        if (remoteDoc.exists()) {
+          const remoteData = remoteDoc.data();
+          const remoteLastUpdated =
+            remoteData.lastUpdated instanceof Timestamp
+              ? remoteData.lastUpdated.toDate().toISOString()
+              : (remoteData.lastUpdated as string);
+
+          if (remoteLastUpdated && new Date(remoteLastUpdated) > new Date(expectedLastUpdated)) {
+            console.warn(
+              `[Firestore] Partial update concurrency conflict. Remote: ${remoteLastUpdated}, Local base: ${expectedLastUpdated}`
+            );
+            throw new ConcurrencyError(
+              'El registro ha sido modificado por otro usuario. Por favor recarga la página.'
+            );
+          }
+        }
+      } catch (err) {
+        if (err instanceof ConcurrencyError) throw err;
+        console.warn(
+          '[Firestore] Could not verify partial update concurrency (likely offline), proceeding.'
+        );
+      }
+    }
 
     await saveHistorySnapshot(date);
 

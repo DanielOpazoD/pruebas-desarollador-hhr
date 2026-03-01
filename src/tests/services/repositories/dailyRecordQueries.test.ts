@@ -41,8 +41,15 @@ describe('dailyRecordQueries contracts', () => {
 
   it('creates read result when record and query date match', () => {
     const record = createMockRecord('2026-02-19');
-    const result = createDailyRecordReadResult('2026-02-19', record, 'firestore');
+    const result = createDailyRecordReadResult('2026-02-19', record, 'firestore', {
+      compatibilityTier: 'current_firestore',
+      compatibilityIntensity: 'normalized_only',
+      migrationRulesApplied: ['schema_defaults_applied'],
+    });
     expect(result.source).toBe('firestore');
     expect(result.record?.date).toBe('2026-02-19');
+    expect(result.compatibilityTier).toBe('current_firestore');
+    expect(result.compatibilityIntensity).toBe('normalized_only');
+    expect(result.migrationRulesApplied).toContain('schema_defaults_applied');
   });
 });

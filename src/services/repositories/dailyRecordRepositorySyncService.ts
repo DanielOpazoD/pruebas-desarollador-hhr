@@ -1,9 +1,28 @@
 import { DailyRecord } from '@/types';
-import { saveRecord as saveToIndexedDB } from '@/services/storage/indexedDBService';
+import {
+  getRecordForDate as getRecordFromIndexedDB,
+  saveRecord as saveToIndexedDB,
+} from '@/services/storage/indexedDBService';
 import { subscribeToRecord } from '@/services/storage/firestoreService';
 import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { migrateLegacyData } from '@/services/repositories/dataMigration';
 import { loadRemoteRecordWithFallback } from '@/services/repositories/dailyRecordRemoteLoader';
+import { shouldKeepLocalRecordOverRemote } from '@/services/repositories/dailyRecordSyncCompatibility';
+
+const resolveIncomingRemoteRecord = async (
+  date: string,
+  remoteRecord: DailyRecord | null
+): Promise<DailyRecord | null> => {
+  if (!remoteRecord) return null;
+
+  const localRecord = await getRecordFromIndexedDB(date);
+  if (shouldKeepLocalRecordOverRemote(localRecord, remoteRecord)) {
+    return localRecord;
+  }
+
+  await saveToIndexedDB(remoteRecord);
+  return remoteRecord;
+};
 
 export const subscribe = (
   date: string,
@@ -12,7 +31,9 @@ export const subscribe = (
   return subscribeToRecord(date, async (record, hasPendingWrites) => {
     const migrated = record ? migrateLegacyData(record, date) : null;
     if (migrated && !hasPendingWrites) {
-      await saveToIndexedDB(migrated);
+      const resolvedRecord = await resolveIncomingRemoteRecord(date, migrated);
+      callback(resolvedRecord, hasPendingWrites);
+      return;
     }
     callback(migrated, hasPendingWrites);
   });
@@ -23,6 +44,13 @@ export const syncWithFirestore = async (date: string): Promise<DailyRecord | nul
 
   try {
     const remoteResult = await loadRemoteRecordWithFallback(date);
+    if (!remoteResult.record) return null;
+
+    const localRecord = await getRecordFromIndexedDB(date);
+    if (shouldKeepLocalRecordOverRemote(localRecord, remoteResult.record)) {
+      return localRecord;
+    }
+
     return remoteResult.record;
   } catch (err) {
     console.warn(`[Repository] Sync failed for ${date}:`, err);

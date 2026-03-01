@@ -1,0 +1,44 @@
+import { DailyRecord } from '@/types';
+import {
+  DailyRecordRemoteCompatibilityTier,
+  DailyRecordRemoteLoadResult,
+} from '@/services/repositories/dailyRecordRemoteLoader';
+import { MigrationCompatibilityIntensity } from '@/services/repositories/dataMigrationContracts';
+
+export type DailyRecordInitializationSeedSource =
+  | 'copy_source'
+  | 'remote_firestore'
+  | 'remote_legacy'
+  | 'fresh';
+
+export interface DailyRecordInitializationSeed {
+  record: DailyRecord | null;
+  source: DailyRecordInitializationSeedSource;
+  compatibilityTier: DailyRecordRemoteCompatibilityTier | 'local_runtime';
+  compatibilityIntensity: MigrationCompatibilityIntensity;
+}
+
+export const createRemoteInitializationSeed = (
+  remoteResult: DailyRecordRemoteLoadResult
+): DailyRecordInitializationSeed => ({
+  record: remoteResult.record,
+  source: remoteResult.source === 'legacy' ? 'remote_legacy' : 'remote_firestore',
+  compatibilityTier: remoteResult.compatibilityTier,
+  compatibilityIntensity: remoteResult.compatibilityIntensity,
+});
+
+export const createCopySourceInitializationSeed = (
+  record: DailyRecord
+): DailyRecordInitializationSeed => ({
+  record,
+  source: 'copy_source',
+  compatibilityTier: 'local_runtime',
+  compatibilityIntensity: 'none',
+});
+
+export const createFreshInitializationSeed = (): DailyRecordInitializationSeed => ({
+  record: null,
+  source: 'fresh',
+  compatibilityTier: 'none',
+  compatibilityIntensity: 'none',
+});

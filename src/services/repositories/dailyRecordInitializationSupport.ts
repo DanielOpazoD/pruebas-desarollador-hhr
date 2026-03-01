@@ -45,6 +45,18 @@ export const preserveCIE10FromPreviousDay = (
   }
 };
 
+export const enrichInitializationRecordFromCopySource = (
+  remoteRecord: DailyRecord,
+  copySourceRecord: DailyRecord | null
+): DailyRecord => {
+  if (!copySourceRecord) {
+    return remoteRecord;
+  }
+
+  preserveCIE10FromPreviousDay(remoteRecord.beds, copySourceRecord.beds);
+  return remoteRecord;
+};
+
 const clonePatientForNewDay = (prevPatient: PatientData): PatientData => {
   const clonedPatient = clonePatient(prevPatient);
   clonedPatient.cudyr = undefined;

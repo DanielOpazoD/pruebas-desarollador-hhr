@@ -216,4 +216,46 @@ describe('dailyRecordRepositoryWriteService outbox fallback', () => {
       })
     );
   });
+
+  it('throws partial update concurrency error when auto-merge recovery is not possible', async () => {
+    const current = buildRecord('2026-02-14');
+    current.beds = { R1: buildPatient('R1', 'Paciente local') };
+
+    const concurrencyError = new Error('Concurrency conflict');
+    concurrencyError.name = 'ConcurrencyError';
+
+    vi.mocked(getRecordFromIndexedDB).mockResolvedValueOnce(current);
+    vi.mocked(updateRecordPartialToFirestore).mockRejectedValueOnce(concurrencyError);
+    vi.mocked(getRecordFromFirestore).mockResolvedValueOnce(null);
+
+    await expect(
+      updatePartial('2026-02-14', {
+        'beds.R1.patientName': 'Paciente actualizado',
+      })
+    ).rejects.toBe(concurrencyError);
+
+    expect(queueSyncTask).not.toHaveBeenCalledWith(
+      'UPDATE_DAILY_RECORD',
+      expect.objectContaining({ date: '2026-02-14' })
+    );
+    expect(logRepositoryConflictAutoMerged).not.toHaveBeenCalled();
+  });
+
+  it('passes local lastUpdated as concurrency base for partial remote update', async () => {
+    const current = buildRecord('2026-02-13');
+    current.lastUpdated = '2026-02-13T08:00:00.000Z';
+    current.beds = { R1: buildPatient('R1', 'Paciente local') };
+
+    vi.mocked(getRecordFromIndexedDB).mockResolvedValueOnce(current);
+
+    await updatePartial('2026-02-13', {
+      'beds.R1.patientName': 'Paciente remoto seguro',
+    });
+
+    expect(updateRecordPartialToFirestore).toHaveBeenCalledWith(
+      '2026-02-13',
+      expect.any(Object),
+      '2026-02-13T08:00:00.000Z'
+    );
+  });
 });

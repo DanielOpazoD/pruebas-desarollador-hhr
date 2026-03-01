@@ -3,17 +3,11 @@ import {
   getRecordForDate as getRecordFromIndexedDB,
   saveRecord as saveToIndexedDB,
 } from '@/services/storage/indexedDBService';
-import { queueSyncTask } from '@/services/storage/syncQueueService';
 import {
-  getRecordFromFirestore,
   saveRecordToFirestore,
   updateRecordPartial as updateRecordPartialToFirestore,
 } from '@/services/storage/firestoreService';
 import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
-import { DataRegressionError, VersionMismatchError } from '@/utils/integrityGuard';
-import { resolveDailyRecordConflictWithTrace } from '@/services/repositories/conflictResolutionMatrix';
-import { buildConflictAuditSummary } from '@/services/repositories/conflictResolutionAuditSummary';
-import { logRepositoryConflictAutoMerged } from '@/services/repositories/ports/repositoryAuditPort';
 import {
   createPartialUpdateDailyRecordCommand,
   createSaveDailyRecordCommand,
@@ -24,50 +18,11 @@ import {
 } from '@/services/repositories/contracts/dailyRecordResults';
 import {
   assertRemoteSaveCompatibility,
+  resolveRemoteWriteRecovery,
   prepareDailyRecordForPersistence,
   preparePatchedRecordForPersistence,
-  queueRetryForRecord,
-  shouldQueueRetryableError,
   syncPatientsToMasterInBackground,
 } from '@/services/repositories/dailyRecordWriteSupport';
-
-const isConcurrencyError = (error: unknown): boolean =>
-  error instanceof Error && error.name === 'ConcurrencyError';
-
-const autoMergeAndQueueConflict = async (
-  date: string,
-  localRecord: DailyRecord,
-  changedPaths: string[]
-): Promise<boolean> => {
-  try {
-    const remoteRecord = await getRecordFromFirestore(date);
-    if (!remoteRecord) {
-      return false;
-    }
-
-    const { record: merged, trace } = resolveDailyRecordConflictWithTrace(
-      remoteRecord,
-      localRecord,
-      {
-        changedPaths: changedPaths.length > 0 ? changedPaths : ['*'],
-      }
-    );
-
-    const auditDetails = buildConflictAuditSummary(
-      changedPaths.length > 0 ? changedPaths : ['*'],
-      trace.policyVersion,
-      trace.entries
-    );
-
-    await saveToIndexedDB(merged);
-    await queueSyncTask('UPDATE_DAILY_RECORD', merged);
-    await logRepositoryConflictAutoMerged(date, auditDetails);
-    return true;
-  } catch (mergeError) {
-    console.warn('[Repository] Auto-merge conflict fallback failed:', mergeError);
-    return false;
-  }
-};
 
 export const save = async (record: DailyRecord, expectedLastUpdated?: string): Promise<void> => {
   const command = createSaveDailyRecordCommand(record, expectedLastUpdated);
@@ -81,7 +36,12 @@ export const save = async (record: DailyRecord, expectedLastUpdated?: string): P
     try {
       await assertRemoteSaveCompatibility(command.date, validatedRecord);
     } catch (err) {
-      if (err instanceof DataRegressionError || err instanceof VersionMismatchError) throw err;
+      if (
+        err instanceof Error &&
+        (err.name === 'DataRegressionError' || err.name === 'VersionMismatchError')
+      ) {
+        throw err;
+      }
       console.warn('[Repository] Could not perform integrity check, proceeding:', err);
     }
   }
@@ -91,32 +51,25 @@ export const save = async (record: DailyRecord, expectedLastUpdated?: string): P
   if (isFirestoreEnabled()) {
     try {
       await saveRecordToFirestore(validatedRecord, command.expectedLastUpdated);
+      savedRemotely = true;
     } catch (err) {
       console.warn('Firestore sync failed, data saved in IndexedDB:', err);
-      if (err instanceof Error && (isConcurrencyError(err) || err instanceof DataRegressionError)) {
-        if (isConcurrencyError(err)) {
-          const merged = await autoMergeAndQueueConflict(command.date, validatedRecord, ['*']);
-          if (merged) {
-            autoMerged = true;
-            createSaveDailyRecordResult({
-              date: command.date,
-              savedLocally: true,
-              savedRemotely: false,
-              queuedForRetry: true,
-              autoMerged,
-            });
-            return;
-          }
-        }
-        throw err;
+      const recovery = await resolveRemoteWriteRecovery(command.date, validatedRecord, ['*'], err);
+      if (recovery.status === 'throw') {
+        throw recovery.error;
       }
-
-      if (shouldQueueRetryableError(err)) {
-        queuedForRetry = await queueRetryForRecord(validatedRecord);
+      queuedForRetry = recovery.queuedForRetry;
+      autoMerged = recovery.autoMerged;
+      if (recovery.status === 'auto_merged') {
+        createSaveDailyRecordResult({
+          date: command.date,
+          savedLocally: true,
+          savedRemotely: false,
+          queuedForRetry,
+          autoMerged,
+        });
+        return;
       }
-    }
-    if (!queuedForRetry && !autoMerged) {
-      savedRemotely = true;
     }
   }
 
@@ -156,25 +109,31 @@ export const updatePartial = async (date: string, partialData: DailyRecordPatch)
 
   if (isFirestoreEnabled()) {
     try {
-      await updateRecordPartialToFirestore(command.date, mergedPatches);
+      await updateRecordPartialToFirestore(command.date, mergedPatches, current.lastUpdated);
       updatedRemotely = true;
     } catch (err) {
       console.warn('[Repository] Firestore partial update failed:', err);
-      if (isConcurrencyError(err)) {
-        await autoMergeAndQueueConflict(command.date, validatedRecord, Object.keys(mergedPatches));
-        autoMerged = true;
+      const recovery = await resolveRemoteWriteRecovery(
+        command.date,
+        validatedRecord,
+        Object.keys(mergedPatches),
+        err
+      );
+      if (recovery.status === 'throw') {
+        throw recovery.error;
+      }
+      queuedForRetry = recovery.queuedForRetry;
+      autoMerged = recovery.autoMerged;
+      if (recovery.status === 'auto_merged') {
         createUpdatePartialDailyRecordResult({
           date: command.date,
           savedLocally: true,
           updatedRemotely: false,
-          queuedForRetry: true,
+          queuedForRetry,
           autoMerged,
           patchedFields: Object.keys(mergedPatches).length,
         });
         return;
-      }
-      if (shouldQueueRetryableError(err)) {
-        queuedForRetry = await queueRetryForRecord(validatedRecord);
       }
     }
   }

@@ -1,4 +1,8 @@
 import { DailyRecord } from '@/types';
+import {
+  LegacyMigrationRule,
+  MigrationCompatibilityIntensity,
+} from '@/services/repositories/dataMigrationContracts';
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -23,6 +27,9 @@ export interface DailyRecordReadResult {
   date: string;
   record: DailyRecord | null;
   source: DailyRecordReadSource;
+  compatibilityTier: 'local_runtime' | 'current_firestore' | 'legacy_firestore' | 'none';
+  compatibilityIntensity: MigrationCompatibilityIntensity;
+  migrationRulesApplied: LegacyMigrationRule[];
 }
 
 const assertDate = (date: string, operation: string): void => {
@@ -50,7 +57,13 @@ export const createGetPreviousDayQuery = (date: string): GetPreviousDayQuery => 
 export const createDailyRecordReadResult = (
   date: string,
   record: DailyRecord | null,
-  source: DailyRecordReadSource
+  source: DailyRecordReadSource,
+  options: Partial<
+    Pick<
+      DailyRecordReadResult,
+      'compatibilityTier' | 'compatibilityIntensity' | 'migrationRulesApplied'
+    >
+  > = {}
 ): DailyRecordReadResult => {
   assertDate(date, 'createDailyRecordReadResult');
   if (record && record.date !== date) {
@@ -63,5 +76,8 @@ export const createDailyRecordReadResult = (
     date,
     record,
     source,
+    compatibilityTier: options.compatibilityTier || 'none',
+    compatibilityIntensity: options.compatibilityIntensity || 'none',
+    migrationRulesApplied: options.migrationRulesApplied || [],
   };
 };

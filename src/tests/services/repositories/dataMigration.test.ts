@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { migrateLegacyData } from '@/services/repositories/dataMigration';
+import {
+  migrateLegacyData,
+  migrateLegacyDataWithReport,
+} from '@/services/repositories/dataMigration';
 import type { DailyRecord } from '@/types';
 import { DataFactory } from '@/tests/factories/DataFactory';
 
@@ -90,5 +93,40 @@ describe('Data Migration Service - Staff Fields', () => {
     expect(migrated.schemaVersion).toBe(1);
     expect(migrated.beds.R1.patientName).toBe('Paciente Legacy');
     expect(Object.keys(migrated.beds).length).toBeGreaterThan(1);
+  });
+
+  it('should report the legacy compatibility rules that were applied', () => {
+    const record = createBaseRecord({
+      nurseName: 'Nurse Legacy',
+      tens: ['TENS 1'],
+      beds: {
+        R1: {
+          ...DataFactory.createMockPatient('R1'),
+          patientName: 'Paciente Legacy',
+        },
+      },
+      schemaVersion: 0,
+    });
+
+    const migrated = migrateLegacyDataWithReport(record, mockDate);
+
+    expect(migrated.record.schemaVersion).toBe(1);
+    expect(migrated.appliedRules).toContain('schema_defaults_applied');
+    expect(migrated.appliedRules).toContain('record_invariants_normalized');
+    expect(migrated.appliedRules).toContain('legacy_single_nurse_promoted');
+    expect(migrated.appliedRules).toContain('legacy_tens_promoted_to_day_shift');
+    expect(migrated.appliedRules).toContain('schema_version_floor_enforced');
+    expect(migrated.compatibilityIntensity).toBe('legacy_schema_bridge');
+  });
+
+  it('classifies normalized current records as normalized_only compatibility', () => {
+    const record = createBaseRecord({
+      beds: {},
+      schemaVersion: 1,
+    });
+
+    const migrated = migrateLegacyDataWithReport(record, mockDate);
+
+    expect(migrated.compatibilityIntensity).toBe('normalized_only');
   });
 });

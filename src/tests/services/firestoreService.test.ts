@@ -15,6 +15,7 @@ import {
   moveRecordToTrash,
   subscribeToTensCatalog,
   isFirestoreAvailable,
+  ConcurrencyError,
 } from '@/services/storage/firestoreService';
 import * as firestore from 'firebase/firestore';
 import { DailyRecord } from '@/types';
@@ -109,6 +110,28 @@ describe('firestoreService', () => {
     } as unknown as PartialUpdatePatch);
 
     expect(updateDocMock).toHaveBeenCalled();
+  });
+
+  it('should reject partial update when remote record is newer than local base', async () => {
+    const getDocMock = vi.mocked(firestore.getDoc);
+
+    getDocMock.mockResolvedValueOnce({
+      exists: () => true,
+      id: 'mock-id',
+      data: () => ({
+        lastUpdated: Timestamp.now(),
+      }),
+    } as unknown as DocumentSnapshot<DocumentData>);
+
+    await expect(
+      updateRecordPartial(
+        mockDate,
+        {
+          'beds.BED_01.patientName': 'Jane Doe',
+        } as unknown as PartialUpdatePatch,
+        '2026-02-19T00:00:00.000Z'
+      )
+    ).rejects.toBeInstanceOf(ConcurrencyError);
   });
 
   it('should sanitize corrupted array data from Firestore (object with numeric keys)', async () => {

@@ -7,7 +7,10 @@ import {
 import { getAvailableDatesFromFirestore } from '@/services/storage/firestoreService';
 import { logLegacyInfo } from '@/services/storage/legacyfirebase/legacyFirebaseLogger';
 import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
-import { migrateLegacyData } from '@/services/repositories/dataMigration';
+import {
+  migrateLegacyData,
+  migrateLegacyDataWithReport,
+} from '@/services/repositories/dataMigration';
 import { loadRemoteRecordWithFallback } from '@/services/repositories/dailyRecordRemoteLoader';
 import {
   createDailyRecordReadResult,
@@ -38,15 +41,23 @@ export const getForDateWithMeta = async (
     const override = window.__HHR_E2E_OVERRIDE__;
     if (override[query.date]) {
       console.warn(`[E2E] Using override record for ${query.date}`);
-      const migrated = migrateLegacyData(override[query.date], query.date);
-      return createDailyRecordReadResult(query.date, migrated, 'e2e');
+      const migrated = migrateLegacyDataWithReport(override[query.date], query.date);
+      return createDailyRecordReadResult(query.date, migrated.record, 'e2e', {
+        compatibilityTier: 'local_runtime',
+        compatibilityIntensity: migrated.compatibilityIntensity,
+        migrationRulesApplied: migrated.appliedRules,
+      });
     }
   }
 
   const localRecord = await getRecordFromIndexedDB(query.date);
   if (localRecord) {
-    const migrated = migrateLegacyData(localRecord, query.date);
-    return createDailyRecordReadResult(query.date, migrated, 'indexeddb');
+    const migrated = migrateLegacyDataWithReport(localRecord, query.date);
+    return createDailyRecordReadResult(query.date, migrated.record, 'indexeddb', {
+      compatibilityTier: 'local_runtime',
+      compatibilityIntensity: migrated.compatibilityIntensity,
+      migrationRulesApplied: migrated.appliedRules,
+    });
   }
 
   if (query.syncFromRemote && isFirestoreEnabled()) {
@@ -63,7 +74,11 @@ export const getForDateWithMeta = async (
         if (isRepositoryDebugEnabled() && remoteResult.source === 'legacy') {
           logLegacyInfo(`[Repository] Found legacy record for ${query.date}. Migrating to Beta.`);
         }
-        return createDailyRecordReadResult(query.date, remoteResult.record, remoteResult.source);
+        return createDailyRecordReadResult(query.date, remoteResult.record, remoteResult.source, {
+          compatibilityTier: remoteResult.compatibilityTier,
+          compatibilityIntensity: remoteResult.compatibilityIntensity,
+          migrationRulesApplied: remoteResult.migrationRulesApplied,
+        });
       }
     } catch (err) {
       console.warn(`[Repository] getForDate: Remote fetch failed for ${query.date}:`, err);

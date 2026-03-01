@@ -1,57 +1,68 @@
 import { DailyRecord } from '@/types';
-import { getRecordFromFirestore } from '@/services/storage/firestoreService';
-import { getLegacyRecord } from '@/services/storage/legacyFirebaseService';
 import { saveRecord as saveToIndexedDB } from '@/services/storage/indexedDBService';
 import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { clonePatient } from '@/services/factories/patientFactory';
 import { getForDate } from '@/services/repositories/dailyRecordRepositoryReadService';
 import { save } from '@/services/repositories/dailyRecordRepositoryWriteService';
-import { migrateLegacyData } from '@/services/repositories/dataMigration';
+import { loadRemoteRecordWithFallback } from '@/services/repositories/dailyRecordRemoteLoader';
 import {
   buildInitializedDayRecord,
-  preserveCIE10FromPreviousDay,
+  enrichInitializationRecordFromCopySource,
 } from '@/services/repositories/dailyRecordInitializationSupport';
+import {
+  createCopySourceInitializationSeed,
+  createFreshInitializationSeed,
+  createRemoteInitializationSeed,
+  DailyRecordInitializationSeed,
+} from '@/services/repositories/dailyRecordInitializationSeed';
 
 const loadCopySourceRecord = async (copyFromDate?: string): Promise<DailyRecord | null> => {
   if (!copyFromDate) return null;
   return getForDate(copyFromDate);
 };
 
-const cacheMigratedInitializationRecord = async (
-  rawRecord: DailyRecord,
+const loadRemoteInitializationSeed = async (
   date: string,
   copySourceRecord: DailyRecord | null
-): Promise<DailyRecord> => {
-  const migrated = migrateLegacyData(rawRecord, date);
-
-  if (copySourceRecord) {
-    preserveCIE10FromPreviousDay(migrated.beds, copySourceRecord.beds);
-  }
-
-  await saveToIndexedDB(migrated);
-  return migrated;
-};
-
-const loadRemoteInitializationRecord = async (
-  date: string,
-  copySourceRecord: DailyRecord | null
-): Promise<DailyRecord | null> => {
+): Promise<DailyRecordInitializationSeed | null> => {
   try {
-    const remoteRecord = await getRecordFromFirestore(date);
-    if (remoteRecord) {
-      return cacheMigratedInitializationRecord(remoteRecord, date, copySourceRecord);
+    const remoteResult = await loadRemoteRecordWithFallback(date);
+    if (!remoteResult.record) return null;
+
+    const enrichedRecord = enrichInitializationRecordFromCopySource(
+      remoteResult.record,
+      copySourceRecord
+    );
+    if (copySourceRecord) {
+      await saveToIndexedDB(enrichedRecord);
     }
 
-    const legacyRecord = await getLegacyRecord(date);
-    if (legacyRecord) {
-      return cacheMigratedInitializationRecord(legacyRecord, date, copySourceRecord);
-    }
-
-    return null;
+    return createRemoteInitializationSeed({
+      ...remoteResult,
+      record: enrichedRecord,
+    });
   } catch (err) {
     console.warn(`[Repository] Failed to check remote sources for ${date} during init:`, err);
     return null;
   }
+};
+
+const resolveInitializationSeed = async (
+  date: string,
+  copySourceRecord: DailyRecord | null
+): Promise<DailyRecordInitializationSeed> => {
+  if (isFirestoreEnabled()) {
+    const remoteSeed = await loadRemoteInitializationSeed(date, copySourceRecord);
+    if (remoteSeed?.record) {
+      return remoteSeed;
+    }
+  }
+
+  if (copySourceRecord) {
+    return createCopySourceInitializationSeed(copySourceRecord);
+  }
+
+  return createFreshInitializationSeed();
 };
 
 export const initializeDay = async (date: string, copyFromDate?: string): Promise<DailyRecord> => {
@@ -59,15 +70,13 @@ export const initializeDay = async (date: string, copyFromDate?: string): Promis
   if (existing) return existing;
 
   const copySourceRecord = await loadCopySourceRecord(copyFromDate);
+  const initializationSeed = await resolveInitializationSeed(date, copySourceRecord);
 
-  if (isFirestoreEnabled()) {
-    const remoteInitializationRecord = await loadRemoteInitializationRecord(date, copySourceRecord);
-    if (remoteInitializationRecord) {
-      return remoteInitializationRecord;
-    }
+  if (initializationSeed.record && initializationSeed.source !== 'copy_source') {
+    return initializationSeed.record;
   }
 
-  const newRecord = buildInitializedDayRecord(date, copySourceRecord);
+  const newRecord = buildInitializedDayRecord(date, initializationSeed.record);
 
   await save(newRecord);
   return newRecord;

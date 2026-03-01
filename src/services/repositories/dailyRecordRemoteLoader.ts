@@ -2,42 +2,88 @@ import { DailyRecord } from '@/types';
 import { saveRecord as saveToIndexedDB } from '@/services/storage/indexedDBService';
 import { getRecordFromFirestore } from '@/services/storage/firestoreService';
 import { getLegacyRecord } from '@/services/storage/legacyFirebaseService';
-import { migrateLegacyData } from '@/services/repositories/dataMigration';
+import { migrateLegacyDataWithReport } from '@/services/repositories/dataMigration';
+import {
+  LegacyMigrationRule,
+  MigrationCompatibilityIntensity,
+} from '@/services/repositories/dataMigrationContracts';
 
 export type DailyRecordRemoteSource = 'firestore' | 'legacy' | 'not_found';
+export type DailyRecordRemoteCompatibilityTier = 'current_firestore' | 'legacy_firestore' | 'none';
 
 export interface DailyRecordRemoteLoadResult {
   record: DailyRecord | null;
   source: DailyRecordRemoteSource;
+  compatibilityTier: DailyRecordRemoteCompatibilityTier;
+  compatibilityIntensity: MigrationCompatibilityIntensity;
+  migrationRulesApplied: LegacyMigrationRule[];
+  cachedLocally: boolean;
 }
 
-const cacheRemoteRecord = async (record: DailyRecord, date: string): Promise<DailyRecord> => {
-  const migrated = migrateLegacyData(record, date);
-  await saveToIndexedDB(migrated);
-  return migrated;
+const cacheRemoteRecord = async (
+  record: DailyRecord,
+  date: string
+): Promise<{
+  record: DailyRecord;
+  migrationRulesApplied: LegacyMigrationRule[];
+  compatibilityIntensity: MigrationCompatibilityIntensity;
+}> => {
+  const migrated = migrateLegacyDataWithReport(record, date);
+  await saveToIndexedDB(migrated.record);
+  return {
+    record: migrated.record,
+    migrationRulesApplied: migrated.appliedRules,
+    compatibilityIntensity: migrated.compatibilityIntensity,
+  };
 };
+
+const createRemoteLoadResult = (
+  source: DailyRecordRemoteSource,
+  record: DailyRecord | null,
+  migrationRulesApplied: LegacyMigrationRule[] = [],
+  compatibilityIntensity: MigrationCompatibilityIntensity = 'none'
+): DailyRecordRemoteLoadResult => ({
+  record,
+  source,
+  compatibilityTier:
+    source === 'firestore'
+      ? 'current_firestore'
+      : source === 'legacy'
+        ? 'legacy_firestore'
+        : 'none',
+  compatibilityIntensity,
+  migrationRulesApplied,
+  cachedLocally: Boolean(record),
+});
 
 export const loadRemoteRecordWithFallback = async (
   date: string
 ): Promise<DailyRecordRemoteLoadResult> => {
   const remoteRecord = await getRecordFromFirestore(date);
   if (remoteRecord) {
+    const cachedRemoteRecord = await cacheRemoteRecord(remoteRecord, date);
     return {
-      record: await cacheRemoteRecord(remoteRecord, date),
-      source: 'firestore',
+      ...createRemoteLoadResult(
+        'firestore',
+        cachedRemoteRecord.record,
+        cachedRemoteRecord.migrationRulesApplied,
+        cachedRemoteRecord.compatibilityIntensity
+      ),
     };
   }
 
   const legacyRecord = await getLegacyRecord(date);
   if (legacyRecord) {
+    const cachedLegacyRecord = await cacheRemoteRecord(legacyRecord, date);
     return {
-      record: await cacheRemoteRecord(legacyRecord, date),
-      source: 'legacy',
+      ...createRemoteLoadResult(
+        'legacy',
+        cachedLegacyRecord.record,
+        cachedLegacyRecord.migrationRulesApplied,
+        cachedLegacyRecord.compatibilityIntensity
+      ),
     };
   }
 
-  return {
-    record: null,
-    source: 'not_found',
-  };
+  return createRemoteLoadResult('not_found', null);
 };

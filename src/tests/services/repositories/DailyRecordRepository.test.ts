@@ -161,6 +161,8 @@ describe('DailyRecordRepository', () => {
       const result = await Repository.getForDateWithMeta(mockDate);
 
       expect(result.source).toBe('indexeddb');
+      expect(result.compatibilityTier).toBe('local_runtime');
+      expect(result.compatibilityIntensity).toBe('normalized_only');
       expect(result.record?.date).toBe(mockDate);
     });
   });
@@ -251,6 +253,53 @@ describe('DailyRecordRepository', () => {
       expect(idbService.saveRecord).toHaveBeenCalled(); // Since initializeDay calls save
     });
 
+    it('should preserve CIE-10 from copy source when remote initialization record already exists', async () => {
+      const copySourceRecord = {
+        ...mockRecord,
+        date: '2024-12-31',
+        beds: {
+          R1: buildPatient({
+            bedId: 'R1',
+            patientName: 'Paciente remoto',
+            cie10Code: 'I48.0',
+            cie10Description: 'Fibrilacion auricular',
+          }),
+        },
+      };
+      const remoteRecord = {
+        ...mockRecord,
+        beds: {
+          R1: buildPatient({
+            bedId: 'R1',
+            patientName: 'Paciente remoto',
+            cie10Code: undefined,
+            cie10Description: undefined,
+          }),
+        },
+      };
+
+      vi.mocked(idbService.getRecordForDate).mockResolvedValueOnce(null);
+      vi.mocked(firestoreService.getRecordFromFirestore)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(remoteRecord);
+      vi.mocked(idbService.getRecordForDate).mockResolvedValueOnce(copySourceRecord);
+
+      const result = await Repository.initializeDay(mockDate, '2024-12-31');
+
+      expect(result.beds.R1.cie10Code).toBe('I48.0');
+      expect(result.beds.R1.cie10Description).toBe('Fibrilacion auricular');
+      expect(idbService.saveRecord).toHaveBeenCalledWith(
+        expect.objectContaining({
+          beds: expect.objectContaining({
+            R1: expect.objectContaining({
+              cie10Code: 'I48.0',
+              cie10Description: 'Fibrilacion auricular',
+            }),
+          }),
+        })
+      );
+    });
+
     it('should fallback to legacy Firebase paths during initialization when Firestore has no record', async () => {
       vi.mocked(idbService.getRecordForDate).mockResolvedValueOnce(null);
       vi.mocked(firestoreService.getRecordFromFirestore).mockResolvedValueOnce(null);
@@ -290,7 +339,8 @@ describe('DailyRecordRepository', () => {
       expect(idbService.getRecordForDate).toHaveBeenCalledWith(mockDate);
       expect(firestoreService.updateRecordPartial).toHaveBeenCalledWith(
         mockDate,
-        expect.anything()
+        expect.anything(),
+        mockRecord.lastUpdated
       );
     });
   });
@@ -320,6 +370,24 @@ describe('DailyRecordRepository', () => {
       });
       expect(legacyFirebaseService.getLegacyRecord).toHaveBeenCalledWith(mockDate);
       expect(idbService.saveRecord).toHaveBeenCalled();
+    });
+
+    it('should keep the newer local record when remote sync returns older data', async () => {
+      const newerLocalRecord = {
+        ...mockRecord,
+        lastUpdated: `${mockDate}T12:00:00.000Z`,
+      };
+      const olderRemoteRecord = {
+        ...mockRecord,
+        lastUpdated: `${mockDate}T08:00:00.000Z`,
+      };
+
+      vi.mocked(idbService.getRecordForDate).mockResolvedValueOnce(newerLocalRecord);
+      vi.mocked(firestoreService.getRecordFromFirestore).mockResolvedValueOnce(olderRemoteRecord);
+
+      const result = await Repository.syncWithFirestore(mockDate);
+
+      expect(result?.lastUpdated).toBe(`${mockDate}T12:00:00.000Z`);
     });
   });
 
