@@ -235,4 +235,53 @@ describe('useTransferViewStates', () => {
       'Error al generar documentos. Por favor intente nuevamente.'
     );
   });
+
+  it('should alert when no documents could be prepared', async () => {
+    const mockTransfer = {
+      id: 'test-1',
+      bedId: 'R1',
+      patientSnapshot: {
+        name: 'Paciente',
+        rut: '1-9',
+        age: '20',
+        diagnosis: 'Dx',
+        admissionDate: '2024-12-27',
+      },
+    } as unknown as TransferRequest;
+
+    vi.mocked(generateTransferDocuments).mockResolvedValueOnce([]);
+
+    const { result } = renderHook(() =>
+      useTransferViewStates(
+        {
+          date: '2024-12-28',
+          beds: { R1: { birthDate: '2000-01-01' } },
+        } as unknown as DailyRecord,
+        mockUpdateTransfer,
+        mockCreateTransfer,
+        mockAdvanceStatus,
+        mockMarkAsTransferred,
+        mockCancelTransfer
+      )
+    );
+
+    act(() => {
+      result.current.handlers.handleGenerateDocs(mockTransfer);
+    });
+
+    const emptyResponses: QuestionnaireResponse = {
+      responses: [],
+      completedAt: '2026-02-20T00:00:00.000Z',
+      completedBy: 'test-user',
+    };
+
+    await act(async () => {
+      await result.current.handlers.handleQuestionnaireComplete(emptyResponses);
+    });
+
+    expect(mockRuntimeAlert).toHaveBeenCalledWith(
+      'No fue posible preparar los documentos en este momento. Verifique las plantillas o intente nuevamente en unos segundos.'
+    );
+    expect(result.current.modals.package).toBe(false);
+  });
 });

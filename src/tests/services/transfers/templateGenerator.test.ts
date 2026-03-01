@@ -1,6 +1,22 @@
-import { describe, it, expect } from 'vitest';
-import { mapDataToTags } from '@/services/transfers/templateGeneratorService';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+  mapDataToTags,
+  fetchTemplateFromStorage,
+} from '@/services/transfers/templateGeneratorService';
 import { TransferPatientData, QuestionnaireResponse } from '@/types/transferDocuments';
+
+const mockGetBlob = vi.fn();
+const mockRef = vi.fn((_storage, path: string) => ({ fullPath: path }));
+const mockGetStorageInstance = vi.fn().mockResolvedValue({});
+
+vi.mock('firebase/storage', () => ({
+  ref: mockRef,
+  getBlob: mockGetBlob,
+}));
+
+vi.mock('@/firebaseConfig', () => ({
+  getStorageInstance: mockGetStorageInstance,
+}));
 
 describe('templateGeneratorService - mapDataToTags', () => {
   const mockPatient: TransferPatientData = {
@@ -129,5 +145,43 @@ describe('templateGeneratorService - mapDataToTags', () => {
       const tags = mapDataToTags(mockPatient, mockResponses);
       expect(tags.sintomasCovid).toBe('Tos, Fiebre');
     });
+  });
+});
+
+describe('templateGeneratorService - fetchTemplateFromStorage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('returns blob when Firebase Storage resolves the template', async () => {
+    const blob = new Blob(['ok'], {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+    mockGetBlob.mockResolvedValueOnce(blob);
+
+    const result = await fetchTemplateFromStorage('HSalvador/tapa-traslado.docx');
+
+    expect(result).toBe(blob);
+    expect(mockRef).toHaveBeenCalledWith({}, 'templates/HSalvador/tapa-traslado.docx');
+  });
+
+  it('returns null when Firebase Storage rejects', async () => {
+    mockGetBlob.mockRejectedValueOnce(new Error('storage/unauthorized'));
+
+    await expect(fetchTemplateFromStorage('HSalvador/tapa-traslado.docx')).resolves.toBeNull();
+  });
+
+  it('returns null when Firebase Storage hangs beyond timeout', async () => {
+    vi.useFakeTimers();
+    mockGetBlob.mockImplementationOnce(() => new Promise(() => {}));
+
+    const promise = fetchTemplateFromStorage('HSalvador/tapa-traslado.docx');
+    await vi.advanceTimersByTimeAsync(2600);
+
+    await expect(promise).resolves.toBeNull();
   });
 });

@@ -149,6 +149,14 @@ export const useTransferViewStates = (
         const { generateTransferDocuments } =
           await import('@/services/transfers/documentGeneratorService');
         const documents = await generateTransferDocuments(patientData, responses, hospital);
+
+        if (documents.length === 0) {
+          defaultBrowserWindowRuntime.alert(
+            'No fue posible preparar los documentos en este momento. Verifique las plantillas o intente nuevamente en unos segundos.'
+          );
+          return;
+        }
+
         setGeneratedDocs(documents);
         setPatientDataForDocs(patientData);
         setIsQuestionnaireOpen(false);
