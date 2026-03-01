@@ -48,6 +48,9 @@ export const mapDataToTags = (
 
   // Use diagnosis from responses if available (it allows editing in the modal), otherwise fallback to patientData
   const currentDiagnosis = responses.diagnosis || patientData.diagnosis || 'No especificado';
+  const fechaIngreso = patientData.admissionDate
+    ? new Date(patientData.admissionDate).toLocaleDateString('es-CL')
+    : 'No registrado';
 
   const tags: Record<string, string | number | boolean> = {
     // Patient Data - multiple variations for flexibility
@@ -76,9 +79,10 @@ export const mapDataToTags = (
     CAMA: patientData.bedName,
     cama: patientData.bedName,
 
-    paciente_fecha_ingreso: patientData.admissionDate
-      ? new Date(patientData.admissionDate).toLocaleDateString('es-CL')
-      : 'No registrado',
+    paciente_fecha_ingreso: fechaIngreso,
+    iaas_fecha_ingreso: fechaIngreso,
+    fecha_ingreso: fechaIngreso,
+    FECHA_INGRESO: fechaIngreso,
 
     // Dates - multiple variations
     fecha_solicitud: fechaActual,

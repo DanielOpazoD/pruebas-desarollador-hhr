@@ -48,6 +48,7 @@ feature/
 
 - Gestión de solicitud/confirmación/cancelación de traslados.
 - Integración con generación documental y Google Drive.
+- Documentación específica del módulo en [transfers/README.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/features/transfers/README.md).
 
 ### `admin/`
 

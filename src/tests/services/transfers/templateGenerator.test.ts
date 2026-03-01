@@ -5,9 +5,11 @@ import {
 } from '@/services/transfers/templateGeneratorService';
 import { TransferPatientData, QuestionnaireResponse } from '@/types/transferDocuments';
 
-const mockGetBlob = vi.fn();
-const mockRef = vi.fn((_storage, path: string) => ({ fullPath: path }));
-const mockGetStorageInstance = vi.fn().mockResolvedValue({});
+const { mockGetBlob, mockRef, mockGetStorageInstance } = vi.hoisted(() => ({
+  mockGetBlob: vi.fn(),
+  mockRef: vi.fn((_storage, path: string) => ({ fullPath: path })),
+  mockGetStorageInstance: vi.fn().mockResolvedValue({}),
+}));
 
 vi.mock('firebase/storage', () => ({
   ref: mockRef,
@@ -52,6 +54,15 @@ describe('templateGeneratorService - mapDataToTags', () => {
       expect(tags.rut).toBe('12.345.678-9');
       // Debe usar el diagnóstico editado del cuestionario
       expect(tags.paciente_diagnostico).toBe('NEUMONIA BACTERIANA EDITADA');
+    });
+
+    it('debe mapear la fecha de ingreso para plantillas IAAS', () => {
+      const tags = mapDataToTags(mockPatient, mockResponses);
+      const expectedAdmissionDate = new Date(
+        mockPatient.admissionDate as string
+      ).toLocaleDateString('es-CL');
+      expect(tags.iaas_fecha_ingreso).toBe(expectedAdmissionDate);
+      expect(tags.paciente_fecha_ingreso).toBe(expectedAdmissionDate);
     });
 
     it('debe calcular o usar la edad correctamente', () => {

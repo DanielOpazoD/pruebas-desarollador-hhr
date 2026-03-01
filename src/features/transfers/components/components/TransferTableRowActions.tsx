@@ -1,0 +1,103 @@
+import React from 'react';
+import clsx from 'clsx';
+import { Archive, Eye, FileDown, Undo2, XCircle } from 'lucide-react';
+import type { TransferRequest } from '@/types/transfers';
+import type { TransferRowActionState } from '../controllers/transferTableController';
+
+interface TransferTableRowActionsProps {
+  transfer: TransferRequest;
+  actionState: TransferRowActionState;
+  hasDocumentSupport: boolean;
+  onGenerateDocs: (transfer: TransferRequest) => void;
+  onViewDocs: (transfer: TransferRequest) => void;
+  onUndo: (transfer: TransferRequest) => void;
+  onArchive: (transfer: TransferRequest) => void;
+  onOpenCloseMenu: (event: React.MouseEvent<HTMLButtonElement>) => void;
+}
+
+export const TransferTableRowActions: React.FC<TransferTableRowActionsProps> = ({
+  transfer,
+  actionState,
+  hasDocumentSupport,
+  onGenerateDocs,
+  onViewDocs,
+  onUndo,
+  onArchive,
+  onOpenCloseMenu,
+}) => (
+  <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
+    {actionState.canPrepareDocuments && (
+      <button
+        onClick={() => onGenerateDocs(transfer)}
+        disabled={!hasDocumentSupport}
+        className={clsx(
+          'flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-semibold transition-all',
+          !hasDocumentSupport && 'cursor-not-allowed opacity-50',
+          transfer.questionnaireResponses
+            ? 'border border-indigo-100 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+            : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+        )}
+        title={
+          !hasDocumentSupport
+            ? 'Este hospital aún no tiene formularios configurados'
+            : transfer.questionnaireResponses
+              ? 'Seguir editando datos'
+              : 'Preparar datos para documentos'
+        }
+      >
+        <FileDown size={14} />
+        {transfer.questionnaireResponses ? 'Editar' : 'Preparar docs'}
+      </button>
+    )}
+
+    {actionState.canViewDocuments && (
+      <button
+        onClick={() => onViewDocs(transfer)}
+        disabled={!hasDocumentSupport}
+        className={clsx(
+          'flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-semibold transition-all shadow-sm',
+          !hasDocumentSupport
+            ? 'cursor-not-allowed bg-slate-100 text-slate-400 shadow-none'
+            : 'bg-slate-900 text-white hover:bg-slate-800'
+        )}
+        title={
+          hasDocumentSupport
+            ? 'Ver documentos generados'
+            : 'Este hospital aún no tiene formularios configurados'
+        }
+      >
+        <Eye size={14} /> Ver docs
+      </button>
+    )}
+
+    {actionState.canUndoTransfer && (
+      <button
+        onClick={() => onUndo(transfer)}
+        className="flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] font-semibold text-amber-700 transition-all hover:bg-amber-100"
+        title="Deshacer traslado (volver a estado anterior)"
+      >
+        <Undo2 size={14} /> Deshacer
+      </button>
+    )}
+
+    {actionState.canArchiveTransfer && (
+      <button
+        onClick={() => onArchive(transfer)}
+        className="flex items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2 py-1.5 text-[11px] font-semibold text-slate-600 transition-all hover:bg-slate-200"
+        title="Archivar (quitar de la lista)"
+      >
+        <Archive size={14} /> Archivar
+      </button>
+    )}
+
+    <div className="relative ml-auto" data-transfer-actions-root="true">
+      <button
+        onClick={onOpenCloseMenu}
+        className="shrink-0 rounded-md p-1 text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700"
+        title="Opciones de cierre"
+      >
+        <XCircle size={16} />
+      </button>
+    </div>
+  </div>
+);

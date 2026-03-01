@@ -5,6 +5,10 @@ import { TransferDocumentPackageModal } from '@/features/transfers/components/co
 
 const mockAlert = vi.fn();
 const mockOpen = vi.fn();
+const mockConfirm = vi.fn();
+const mockSuccess = vi.fn();
+const mockInfo = vi.fn();
+const mockWarning = vi.fn();
 
 vi.mock('@/shared/runtime/browserWindowRuntime', () => ({
   defaultBrowserWindowRuntime: {
@@ -13,9 +17,22 @@ vi.mock('@/shared/runtime/browserWindowRuntime', () => ({
   },
 }));
 
+vi.mock('@/context/UIContext', () => ({
+  useConfirmDialog: () => ({
+    confirm: (...args: unknown[]) => mockConfirm(...args),
+  }),
+  useNotification: () => ({
+    success: (...args: unknown[]) => mockSuccess(...args),
+    info: (...args: unknown[]) => mockInfo(...args),
+    warning: (...args: unknown[]) => mockWarning(...args),
+  }),
+}));
+
 const uploadToTransferFolder = vi.fn();
 const makeFilePubliclyEditable = vi.fn();
 const isGoogleDriveEditingConfigured = vi.fn();
+const downloadDocument = vi.fn();
+const downloadAllDocuments = vi.fn();
 
 vi.mock('@/services/google/googleDriveService', () => ({
   uploadToTransferFolder: (...args: unknown[]) => uploadToTransferFolder(...args),
@@ -26,10 +43,18 @@ vi.mock('@/services/google/googleDriveAuth', () => ({
   isGoogleDriveEditingConfigured: () => isGoogleDriveEditingConfigured(),
 }));
 
+vi.mock('@/services/transfers/documentGeneratorService', () => ({
+  downloadDocument: (...args: unknown[]) => downloadDocument(...args),
+  downloadAllDocuments: (...args: unknown[]) => downloadAllDocuments(...args),
+}));
+
 describe('TransferDocumentPackageModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     isGoogleDriveEditingConfigured.mockReturnValue(true);
+    downloadDocument.mockResolvedValue('saved');
+    downloadAllDocuments.mockResolvedValue('directory');
+    mockConfirm.mockResolvedValue(true);
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -104,6 +129,55 @@ describe('TransferDocumentPackageModal', () => {
     render(<TransferDocumentPackageModal {...baseProps} />);
 
     expect(screen.getByRole('button', { name: /cloud no disp\./i })).toBeDisabled();
-    expect(screen.getByText(/falta configurar vite_google_client_id/i)).toBeInTheDocument();
+  });
+
+  it('removes the cloud info panel copy', () => {
+    render(<TransferDocumentPackageModal {...baseProps} />);
+
+    expect(screen.queryByText(/información de edición/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/sincronización segura con google workspace/i)
+    ).not.toBeInTheDocument();
+  });
+
+  it('downloads a single document through the transfer generator service', async () => {
+    render(<TransferDocumentPackageModal {...baseProps} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /^descargar$/i }));
+
+    await waitFor(() => {
+      expect(downloadDocument).toHaveBeenCalledWith(baseProps.documents[0]);
+    });
+    expect(mockSuccess).toHaveBeenCalledWith('Documento guardado', 'epicrisis.docx');
+  });
+
+  it('downloads all documents together through the transfer generator service', async () => {
+    render(<TransferDocumentPackageModal {...baseProps} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /descargar todo/i }));
+
+    await waitFor(() => {
+      expect(downloadAllDocuments).toHaveBeenCalledWith(baseProps.documents);
+    });
+    expect(mockConfirm).toHaveBeenCalled();
+    expect(mockSuccess).toHaveBeenCalledWith(
+      'Documentos guardados',
+      '1 archivo(s) guardados en la carpeta seleccionada.'
+    );
+  });
+
+  it('shows a clear message when bulk download falls back to zip', async () => {
+    downloadAllDocuments.mockResolvedValue('zip');
+
+    render(<TransferDocumentPackageModal {...baseProps} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /descargar todo/i }));
+
+    await waitFor(() => {
+      expect(mockInfo).toHaveBeenCalledWith(
+        'Descarga como ZIP',
+        'Tu navegador no permite elegir una carpeta para varios archivos. Se descargó un ZIP con todos los documentos.'
+      );
+    });
   });
 });

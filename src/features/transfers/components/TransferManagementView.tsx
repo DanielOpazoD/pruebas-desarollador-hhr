@@ -4,6 +4,7 @@
  */
 
 import React, { useMemo, useState } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { TransferTable } from './components/TransferTable';
 import { TransferFormModal } from './components/TransferFormModal';
 import { StatusChangeModal } from './components/StatusChangeModal';
@@ -14,6 +15,10 @@ import { useTransferViewStates } from '@/hooks/useTransferViewStates';
 import { useDailyRecordData } from '@/context/DailyRecordContext';
 import { getHospitalConfigById } from '@/constants/hospitalConfigs';
 import type { TransferRequest, TransferStatus } from '@/types/transfers';
+import {
+  ACTIVE_TRANSFER_STATUSES,
+  FINALIZED_TRANSFER_STATUSES,
+} from './controllers/transferTableController';
 
 const TransferQuestionnaireModal = React.lazy(() =>
   import('./components/TransferQuestionnaireModal').then(module => ({
@@ -32,6 +37,7 @@ export const TransferManagementView: React.FC = () => {
   const currentYear = currentDate.getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+  const [showFinalizedTransfers, setShowFinalizedTransfers] = useState(false);
 
   const {
     transfers,
@@ -75,7 +81,7 @@ export const TransferManagementView: React.FC = () => {
   );
 
   const closedStatuses = useMemo<Set<TransferStatus>>(
-    () => new Set<TransferStatus>(['TRANSFERRED', 'CANCELLED', 'REJECTED', 'NO_RESPONSE']),
+    () => new Set<TransferStatus>(FINALIZED_TRANSFER_STATUSES),
     []
   );
 
@@ -134,6 +140,17 @@ export const TransferManagementView: React.FC = () => {
   const filteredActiveCount = useMemo(
     () => filteredTransfers.filter(transfer => !closedStatuses.has(transfer.status)).length,
     [closedStatuses, filteredTransfers]
+  );
+
+  const activeTransfers = useMemo(
+    () => filteredTransfers.filter(transfer => ACTIVE_TRANSFER_STATUSES.includes(transfer.status)),
+    [filteredTransfers]
+  );
+
+  const finalizedTransfers = useMemo(
+    () =>
+      filteredTransfers.filter(transfer => FINALIZED_TRANSFER_STATUSES.includes(transfer.status)),
+    [filteredTransfers]
   );
 
   return (
@@ -207,7 +224,7 @@ export const TransferManagementView: React.FC = () => {
           </div>
         ) : (
           <TransferTable
-            transfers={filteredTransfers}
+            transfers={activeTransfers}
             onEdit={handlers.handleEditTransfer}
             onStatusChange={handlers.handleStatusChange}
             onQuickStatusChange={setTransferStatus}
@@ -219,7 +236,60 @@ export const TransferManagementView: React.FC = () => {
             onArchive={archiveTransfer}
             onDelete={transfer => deleteTransfer(transfer.id)}
             onDeleteHistoryEntry={deleteHistoryEntry}
+            emptyMessage="No hay solicitudes activas de traslado para este período"
           />
+        )}
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowFinalizedTransfers(prev => !prev)}
+          className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-slate-50"
+        >
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">Gestión de Traslados Finalizados</h2>
+            <p className="text-sm text-slate-500">
+              Traslados efectivos y cancelados justificados del mes seleccionado
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+              {finalizedTransfers.length} finalizados
+            </span>
+            {showFinalizedTransfers ? (
+              <ChevronDown size={18} className="text-slate-500" />
+            ) : (
+              <ChevronRight size={18} className="text-slate-500" />
+            )}
+          </div>
+        </button>
+
+        {showFinalizedTransfers && (
+          <div className="border-t border-slate-100">
+            {isLoading ? (
+              <div className="text-center py-10 text-slate-400">
+                Cargando traslados finalizados...
+              </div>
+            ) : (
+              <TransferTable
+                transfers={finalizedTransfers}
+                mode="finalized"
+                onEdit={handlers.handleEditTransfer}
+                onStatusChange={handlers.handleStatusChange}
+                onQuickStatusChange={setTransferStatus}
+                onMarkTransferred={handlers.handleMarkTransferred}
+                onCancel={handlers.handleCancel}
+                onGenerateDocs={handlers.handleGenerateDocs}
+                onViewDocs={handlers.handleViewDocs}
+                onUndo={undoTransfer}
+                onArchive={archiveTransfer}
+                onDelete={transfer => deleteTransfer(transfer.id)}
+                onDeleteHistoryEntry={deleteHistoryEntry}
+                emptyMessage="No hay traslados finalizados para este período"
+              />
+            )}
+          </div>
         )}
       </div>
 

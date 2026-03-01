@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Download, Edit3, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import { FileText, Download, Edit3, CheckCircle2, Loader2 } from 'lucide-react';
 import { HospitalConfig, GeneratedDocument, TransferPatientData } from '@/types/transferDocuments';
 import {
   uploadToTransferFolder,
@@ -7,8 +7,9 @@ import {
 } from '@/services/google/googleDriveService';
 import { isGoogleDriveEditingConfigured } from '@/services/google/googleDriveAuth';
 import clsx from 'clsx';
-import { BaseModal, ModalSection } from '@/components/shared/BaseModal';
+import { BaseModal } from '@/components/shared/BaseModal';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
+import { useConfirmDialog, useNotification } from '@/context/UIContext';
 
 interface TransferDocumentPackageModalProps {
   isOpen: boolean;
@@ -27,7 +28,10 @@ export const TransferDocumentPackageModal: React.FC<TransferDocumentPackageModal
   documents,
 }) => {
   const [isUploading, setIsUploading] = useState<string | null>(null);
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const isCloudEditingConfigured = isGoogleDriveEditingConfigured();
+  const { confirm } = useConfirmDialog();
+  const { success, info, warning } = useNotification();
 
   const handleEdit = async (doc: GeneratedDocument) => {
     if (!isCloudEditingConfigured) {
@@ -74,30 +78,91 @@ export const TransferDocumentPackageModal: React.FC<TransferDocumentPackageModal
         </div>
       }
       icon={<CheckCircle2 size={18} className="text-emerald-600" />}
-      size="full"
+      size="5xl"
       variant="white"
+      scrollableBody={false}
+      bodyClassName="p-4 space-y-4"
     >
-      <div className="space-y-6">
-        <div className="grid gap-3">
+      <div className="space-y-4">
+        <div className="flex justify-end">
+          <button
+            onClick={async () => {
+              const shouldContinue = await confirm({
+                title: 'Guardar todos los documentos',
+                message:
+                  'Se abrirá un selector para elegir la carpeta de destino. Luego el navegador puede pedir una autorización adicional para guardar los archivos ahí.',
+                confirmText: 'Continuar',
+                cancelText: 'Cancelar',
+                variant: 'info',
+              });
+
+              if (!shouldContinue) {
+                return;
+              }
+
+              setIsDownloadingAll(true);
+              try {
+                const { downloadAllDocuments } =
+                  await import('@/services/transfers/documentGeneratorService');
+                const result = await downloadAllDocuments(documents);
+                if (result === 'directory') {
+                  success(
+                    'Documentos guardados',
+                    `${documents.length} archivo(s) guardados en la carpeta seleccionada.`
+                  );
+                }
+                if (result === 'zip') {
+                  info(
+                    'Descarga como ZIP',
+                    'Tu navegador no permite elegir una carpeta para varios archivos. Se descargó un ZIP con todos los documentos.'
+                  );
+                }
+                if (result === 'cancelled') {
+                  warning('Guardado cancelado', 'No se guardaron los documentos.');
+                }
+              } finally {
+                setIsDownloadingAll(false);
+              }
+            }}
+            disabled={!!isUploading || isDownloadingAll || documents.length === 0}
+            className={clsx(
+              'flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all',
+              !!isUploading || isDownloadingAll || documents.length === 0
+                ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 active:scale-95'
+            )}
+          >
+            {isDownloadingAll ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Download size={14} />
+            )}
+            {isDownloadingAll ? 'PREPARANDO ARCHIVOS...' : 'DESCARGAR TODO'}
+          </button>
+        </div>
+
+        <div className="grid gap-2.5">
           {documents.map(doc => (
             <div
               key={doc.templateId}
-              className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between group hover:bg-white hover:border-blue-200 transition-all hover:shadow-sm"
+              className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center justify-between gap-3 group hover:bg-white hover:border-blue-200 transition-all hover:shadow-sm"
             >
               <div className="flex items-center gap-4 shrink min-w-0">
                 <div
                   className={clsx(
-                    'w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm',
+                    'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm',
                     doc.mimeType.includes('spreadsheet')
                       ? 'bg-emerald-50 text-emerald-600'
                       : 'bg-blue-50 text-blue-600'
                   )}
                 >
-                  <FileText size={24} />
+                  <FileText size={20} />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-bold text-slate-800 truncate text-sm">{doc.fileName}</h3>
-                  <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mt-1 truncate">
+                  <h3 className="font-bold text-slate-800 truncate text-[15px] leading-tight">
+                    {doc.fileName}
+                  </h3>
+                  <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mt-0.5 truncate">
                     {doc.templateId.replace(/-/g, ' ')}
                   </p>
                 </div>
@@ -106,9 +171,9 @@ export const TransferDocumentPackageModal: React.FC<TransferDocumentPackageModal
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => handleEdit(doc)}
-                  disabled={!!isUploading || !isCloudEditingConfigured}
+                  disabled={!!isUploading || isDownloadingAll || !isCloudEditingConfigured}
                   className={clsx(
-                    'flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border min-w-[120px] justify-center',
+                    'flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border min-w-[108px] justify-center',
                     isUploading === doc.templateId
                       ? 'bg-blue-50 text-blue-400 border-blue-50'
                       : !isCloudEditingConfigured
@@ -136,12 +201,20 @@ export const TransferDocumentPackageModal: React.FC<TransferDocumentPackageModal
                   onClick={async () => {
                     const { downloadDocument } =
                       await import('@/services/transfers/documentGeneratorService');
-                    downloadDocument(doc);
+                    const result = await downloadDocument(doc);
+                    if (result === 'saved') {
+                      success('Documento guardado', doc.fileName);
+                    }
+                    if (result === 'cancelled') {
+                      info('Guardado cancelado', 'No se descargó el documento.');
+                    }
                   }}
-                  disabled={!!isUploading}
+                  disabled={!!isUploading || isDownloadingAll}
                   className={clsx(
-                    'flex items-center gap-2 px-5 py-2 text-[10px] font-black uppercase tracking-widest bg-slate-900 text-white rounded-xl transition-all shadow-lg shadow-slate-200',
-                    isUploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-black active:scale-95'
+                    'flex items-center gap-1.5 px-4 py-2 text-[10px] font-black uppercase tracking-widest bg-slate-900 text-white rounded-xl transition-all shadow-lg shadow-slate-200',
+                    !!isUploading || isDownloadingAll
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'hover:bg-black active:scale-95'
                   )}
                 >
                   <Download size={14} />
@@ -152,33 +225,10 @@ export const TransferDocumentPackageModal: React.FC<TransferDocumentPackageModal
           ))}
         </div>
 
-        <ModalSection
-          title="Información de Edición"
-          icon={<AlertCircle size={16} />}
-          variant={isCloudEditingConfigured ? 'info' : 'warning'}
-          description={
-            isCloudEditingConfigured
-              ? "El botón 'Editar Cloud' sube el documento a Google Drive para edición colaborativa en tiempo real. Los cambios se guardan automáticamente en la nube."
-              : 'La edición en nube todavía no está configurada en este entorno. Por ahora, descarga el archivo para editarlo localmente.'
-          }
-        >
-          {isCloudEditingConfigured ? (
-            <div className="flex items-center gap-2 text-[10px] font-bold text-blue-600/70 uppercase tracking-widest bg-blue-50/50 p-2 rounded-lg border border-blue-100/50">
-              <CheckCircle2 size={12} />
-              Sincronización segura con Google Workspace
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 text-[10px] font-bold text-amber-700 uppercase tracking-widest bg-amber-50/80 p-2 rounded-lg border border-amber-200/80">
-              <AlertCircle size={12} />
-              Falta configurar VITE_GOOGLE_CLIENT_ID
-            </div>
-          )}
-        </ModalSection>
-
-        <div className="flex justify-end pt-2">
+        <div className="flex justify-end pt-1">
           <button
             onClick={onClose}
-            className="px-8 py-2.5 bg-slate-100 text-slate-500 font-black text-xs uppercase tracking-widest rounded-xl hover:bg-slate-200 transition-all active:scale-95"
+            className="px-7 py-2 bg-slate-100 text-slate-500 font-black text-[11px] uppercase tracking-widest rounded-xl hover:bg-slate-200 transition-all active:scale-95"
           >
             Finalizar Proceso
           </button>

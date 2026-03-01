@@ -1,13 +1,17 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { TransferRequest, TransferFormData } from '@/types/transfers';
 import {
   QuestionnaireResponse,
   TransferPatientData,
   GeneratedDocument,
 } from '@/types/transferDocuments';
-import { getHospitalConfigById } from '@/constants/hospitalConfigs';
+import { getHospitalConfigByDestinationName } from '@/constants/hospitalConfigs';
 import { DailyRecord } from '@/types';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
+import {
+  prepareTransferDocumentPackage,
+  type TransferDocumentPackageCacheEntry,
+} from '@/hooks/controllers/transferDocumentPackageController';
 
 export const useTransferViewStates = (
   record: DailyRecord | null,
@@ -17,6 +21,9 @@ export const useTransferViewStates = (
   markAsTransferred: (transfer: TransferRequest, method: string) => Promise<void>,
   cancelTransfer: (transfer: TransferRequest, reason: string) => Promise<void>
 ) => {
+  const generatedPackageCacheRef = useRef<Map<string, TransferDocumentPackageCacheEntry>>(
+    new Map()
+  );
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
@@ -28,6 +35,51 @@ export const useTransferViewStates = (
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedDocs, setGeneratedDocs] = useState<GeneratedDocument[]>([]);
   const [patientDataForDocs, setPatientDataForDocs] = useState<TransferPatientData | null>(null);
+
+  const generateDocumentPackage = useCallback(
+    async (
+      transfer: TransferRequest,
+      hospitalId: string,
+      responses: QuestionnaireResponse,
+      options?: { persistResponses?: boolean }
+    ) => {
+      setIsGenerating(true);
+      try {
+        const result = await prepareTransferDocumentPackage({
+          cache: generatedPackageCacheRef.current,
+          record,
+          transfer,
+          hospitalId,
+          responses,
+          updateTransfer,
+          persistResponses: options?.persistResponses,
+        });
+
+        if (result.kind === 'empty') {
+          defaultBrowserWindowRuntime.alert(
+            'No fue posible preparar los documentos en este momento. Verifique las plantillas o intente nuevamente en unos segundos.'
+          );
+          return;
+        }
+
+        if (result.kind === 'error') {
+          console.error('Error generating documents:', result.error);
+          defaultBrowserWindowRuntime.alert(
+            'Error al generar documentos. Por favor intente nuevamente.'
+          );
+          return;
+        }
+
+        setGeneratedDocs(result.documents);
+        setPatientDataForDocs(result.patientData);
+        setIsQuestionnaireOpen(false);
+        setIsPackageModalOpen(true);
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [record, updateTransfer]
+  );
 
   const handleNewRequest = useCallback(() => {
     setSelectedTransfer(null);
@@ -102,8 +154,15 @@ export const useTransferViewStates = (
   };
 
   const handleGenerateDocs = useCallback((transfer: TransferRequest) => {
+    const hospitalConfig = getHospitalConfigByDestinationName(transfer.destinationHospital);
+    if (!hospitalConfig) {
+      defaultBrowserWindowRuntime.alert(
+        'Este hospital todavía no tiene formularios de traslado configurados.'
+      );
+      return;
+    }
     setSelectedTransfer(transfer);
-    setSelectedHospitalId('hospital-salvador');
+    setSelectedHospitalId(hospitalConfig.id);
     setIsQuestionnaireOpen(true);
   }, []);
 
@@ -115,72 +174,30 @@ export const useTransferViewStates = (
   const handleQuestionnaireComplete = useCallback(
     async (responses: QuestionnaireResponse) => {
       if (!selectedTransfer || !selectedHospitalId) return;
-
-      const hospital = getHospitalConfigById(selectedHospitalId);
-      if (!hospital) return;
-
-      setIsGenerating(true);
-      try {
-        await updateTransfer(selectedTransfer.id, {
-          questionnaireResponses: responses,
-        });
-
-        // Access birthDate from patientSnapshot which may have extended fields
-        const currentPatient = record?.beds[selectedTransfer.bedId];
-        const snapshotBirthDate =
-          'birthDate' in selectedTransfer.patientSnapshot
-            ? (selectedTransfer.patientSnapshot.birthDate as string)
-            : undefined;
-        const birthDate = snapshotBirthDate || currentPatient?.birthDate || '';
-
-        const patientData: TransferPatientData = {
-          patientName: selectedTransfer.patientSnapshot.name,
-          rut: selectedTransfer.patientSnapshot.rut || '',
-          birthDate: birthDate,
-          age: selectedTransfer.patientSnapshot.age,
-          diagnosis: selectedTransfer.patientSnapshot.diagnosis,
-          admissionDate: selectedTransfer.patientSnapshot.admissionDate,
-          bedName: selectedTransfer.bedId.replace('BED_', ''),
-          bedType: 'Básica',
-          isUPC: false,
-          originHospital: 'Hospital Hanga Roa',
-        };
-
-        const { generateTransferDocuments } =
-          await import('@/services/transfers/documentGeneratorService');
-        const documents = await generateTransferDocuments(patientData, responses, hospital);
-
-        if (documents.length === 0) {
-          defaultBrowserWindowRuntime.alert(
-            'No fue posible preparar los documentos en este momento. Verifique las plantillas o intente nuevamente en unos segundos.'
-          );
-          return;
-        }
-
-        setGeneratedDocs(documents);
-        setPatientDataForDocs(patientData);
-        setIsQuestionnaireOpen(false);
-        setIsPackageModalOpen(true);
-      } catch (error) {
-        console.error('Error generating documents:', error);
-        defaultBrowserWindowRuntime.alert(
-          'Error al generar documentos. Por favor intente nuevamente.'
-        );
-      } finally {
-        setIsGenerating(false);
-      }
+      await generateDocumentPackage(selectedTransfer, selectedHospitalId, responses, {
+        persistResponses: true,
+      });
     },
-    [selectedTransfer, selectedHospitalId, updateTransfer, record]
+    [generateDocumentPackage, selectedTransfer, selectedHospitalId]
   );
 
   const handleViewDocs = useCallback(
     async (transfer: TransferRequest) => {
       if (!transfer.questionnaireResponses) return;
+      const hospitalConfig = getHospitalConfigByDestinationName(transfer.destinationHospital);
+      if (!hospitalConfig) {
+        defaultBrowserWindowRuntime.alert(
+          'Este hospital todavía no tiene formularios de traslado configurados.'
+        );
+        return;
+      }
       setSelectedTransfer(transfer);
-      setSelectedHospitalId('hospital-salvador');
-      await handleQuestionnaireComplete(transfer.questionnaireResponses);
+      setSelectedHospitalId(hospitalConfig.id);
+      await generateDocumentPackage(transfer, hospitalConfig.id, transfer.questionnaireResponses, {
+        persistResponses: false,
+      });
     },
-    [handleQuestionnaireComplete]
+    [generateDocumentPackage]
   );
 
   const handleClosePackageModal = useCallback(() => {

@@ -36,6 +36,7 @@ Lógica de aplicación reusable y composición de casos de uso. Es el puente ent
 - **Command Hooks**: ejecutan comandos tipados y notifican errores.
 - **Controller-backed hooks**: validación/transformación extraída a `controllers`.
 - **LatestRef pattern**: evita stale closures en callbacks largos.
+- `useTransferViewStates.ts` ahora delega preparación/caché documental a [controllers/transferDocumentPackageController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/transferDocumentPackageController.ts) para mantener el hook enfocado en estado de modales y selección.
 
 ## Ejemplo
 

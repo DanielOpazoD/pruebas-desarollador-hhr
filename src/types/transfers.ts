@@ -118,6 +118,7 @@ export interface TransferRequest {
 export interface TransferFormData {
   patientId: string;
   bedId: string;
+  requestDate?: string;
   destinationHospital: string;
   transferReason: string;
   requestingDoctor: string;

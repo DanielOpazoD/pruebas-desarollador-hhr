@@ -27,6 +27,7 @@ import {
   useDailyRecordBedActions,
   useDailyRecordMovementActions,
 } from '@/context/useDailyRecordScopedActions';
+import { getLocalDateInputValue } from '@/features/transfers/utils/localDate';
 
 interface UseTransferManagementReturn {
   // State
@@ -130,7 +131,7 @@ export const useTransferManagement = (): UseTransferManagementReturn => {
           observations: data.observations,
           customFields: data.customFields || {},
           status: 'REQUESTED',
-          requestDate: new Date().toISOString().split('T')[0],
+          requestDate: data.requestDate || getLocalDateInputValue(),
           createdBy: user.email,
         });
         setError(null);

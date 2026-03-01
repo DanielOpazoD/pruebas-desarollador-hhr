@@ -9,6 +9,9 @@ vi.mock('@/constants/hospitalConfigs', () => ({
   getHospitalConfigById: vi
     .fn()
     .mockReturnValue({ id: 'hospital-salvador', name: 'Hospital Salvador' }),
+  getHospitalConfigByDestinationName: vi
+    .fn()
+    .mockReturnValue({ id: 'hospital-salvador', name: 'Hospital Salvador' }),
 }));
 
 vi.mock('@/services/transfers/documentGeneratorService', () => ({
@@ -283,5 +286,125 @@ describe('useTransferViewStates', () => {
       'No fue posible preparar los documentos en este momento. Verifique las plantillas o intente nuevamente en unos segundos.'
     );
     expect(result.current.modals.package).toBe(false);
+  });
+
+  it('should view existing documents without persisting questionnaire responses again', async () => {
+    const generatedDocs = [
+      {
+        templateId: 'tapa-traslado',
+        fileName: 'traslado.docx',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        blob: new Blob(['demo']),
+        generatedAt: '2026-03-01T00:00:00.000Z',
+      },
+    ];
+
+    vi.mocked(generateTransferDocuments).mockResolvedValue(generatedDocs);
+
+    const mockTransfer = {
+      id: 'test-1',
+      bedId: 'R1',
+      patientSnapshot: {
+        name: 'Paciente',
+        rut: '1-9',
+        age: '20',
+        diagnosis: 'Dx',
+        admissionDate: '2024-12-27',
+      },
+      destinationHospital: 'Hospital Salvador',
+      customFields: {},
+      questionnaireResponses: {
+        responses: [],
+        completedAt: '2026-02-20T00:00:00.000Z',
+        completedBy: 'test-user',
+      },
+    } as unknown as TransferRequest;
+
+    const { result } = renderHook(() =>
+      useTransferViewStates(
+        {
+          date: '2024-12-28',
+          beds: { R1: { birthDate: '2000-01-01' } },
+        } as unknown as DailyRecord,
+        mockUpdateTransfer,
+        mockCreateTransfer,
+        mockAdvanceStatus,
+        mockMarkAsTransferred,
+        mockCancelTransfer
+      )
+    );
+
+    await act(async () => {
+      await result.current.handlers.handleViewDocs(mockTransfer);
+    });
+
+    expect(mockUpdateTransfer).not.toHaveBeenCalled();
+    expect(vi.mocked(generateTransferDocuments)).toHaveBeenCalledTimes(1);
+    expect(result.current.modals.package).toBe(true);
+  });
+
+  it('should reuse generated documents when viewing again without changes', async () => {
+    const generatedDocs = [
+      {
+        templateId: 'tapa-traslado',
+        fileName: 'traslado.docx',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        blob: new Blob(['demo']),
+        generatedAt: '2026-03-01T00:00:00.000Z',
+      },
+    ];
+
+    vi.mocked(generateTransferDocuments).mockResolvedValue(generatedDocs);
+
+    const responses: QuestionnaireResponse = {
+      responses: [],
+      completedAt: '2026-02-20T00:00:00.000Z',
+      completedBy: 'test-user',
+    };
+
+    const mockTransfer = {
+      id: 'test-1',
+      bedId: 'R1',
+      patientSnapshot: {
+        name: 'Paciente',
+        rut: '1-9',
+        age: '20',
+        diagnosis: 'Dx',
+        admissionDate: '2024-12-27',
+      },
+      destinationHospital: 'Hospital Salvador',
+      customFields: {},
+      questionnaireResponses: responses,
+    } as unknown as TransferRequest;
+
+    const { result } = renderHook(() =>
+      useTransferViewStates(
+        {
+          date: '2024-12-28',
+          beds: { R1: { birthDate: '2000-01-01' } },
+        } as unknown as DailyRecord,
+        mockUpdateTransfer,
+        mockCreateTransfer,
+        mockAdvanceStatus,
+        mockMarkAsTransferred,
+        mockCancelTransfer
+      )
+    );
+
+    await act(async () => {
+      await result.current.handlers.handleViewDocs(mockTransfer);
+    });
+
+    act(() => {
+      result.current.handlers.handleClosePackageModal();
+    });
+
+    await act(async () => {
+      await result.current.handlers.handleViewDocs(mockTransfer);
+    });
+
+    expect(vi.mocked(generateTransferDocuments)).toHaveBeenCalledTimes(1);
+    expect(mockUpdateTransfer).not.toHaveBeenCalled();
+    expect(result.current.modals.package).toBe(true);
   });
 });

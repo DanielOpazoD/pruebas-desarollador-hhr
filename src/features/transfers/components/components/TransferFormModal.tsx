@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FilePlus, User } from 'lucide-react';
+import { CalendarDays, FilePlus, User } from 'lucide-react';
 import { TransferRequest, TransferFormData } from '@/types/transfers';
 import {
   DESTINATION_HOSPITALS,
@@ -11,6 +11,7 @@ import { PatientSelector } from './PatientSelector';
 import { BaseModal, ModalSection } from '@/components/shared/BaseModal';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 import { getDestinationHospitalCatalog } from '@/features/transfers/services/destinationHospitalCatalogService';
+import { getLocalDateInputValue } from '@/features/transfers/utils/localDate';
 
 interface Patient {
   id: string;
@@ -45,6 +46,7 @@ export const TransferFormModal: React.FC<TransferFormModalProps> = ({
   const [requiredSpecialtyOther, setRequiredSpecialtyOther] = useState('');
   const [requiredBedType, setRequiredBedType] = useState('');
   const [requiredBedTypeOther, setRequiredBedTypeOther] = useState('');
+  const [requestDate, setRequestDate] = useState(transfer?.requestDate || getLocalDateInputValue());
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -67,8 +69,11 @@ export const TransferFormModal: React.FC<TransferFormModalProps> = ({
 
   useEffect(() => {
     if (!transfer) {
+      setRequestDate(getLocalDateInputValue());
       return;
     }
+
+    setRequestDate(transfer.requestDate || getLocalDateInputValue());
 
     const destinationExists = destinationHospitals.some(
       hospital => hospital.name === transfer.destinationHospital
@@ -125,6 +130,7 @@ export const TransferFormModal: React.FC<TransferFormModalProps> = ({
       await onSave({
         patientId: selectedPatientId,
         bedId: selectedPatientId,
+        requestDate,
         destinationHospital: destinationHospitalValue,
         transferReason: 'Derivación a especialidad',
         requiredSpecialty: requiredSpecialtyValue || undefined,
@@ -146,12 +152,19 @@ export const TransferFormModal: React.FC<TransferFormModalProps> = ({
       size="md"
       variant="white"
       headerIconColor="text-indigo-600"
+      scrollableBody={false}
+      bodyClassName="p-5 space-y-4"
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Patient Section */}
-        <ModalSection title="Información del Paciente" icon={<User size={16} />} variant="info">
+        <ModalSection
+          title="Información del Paciente"
+          icon={<User size={16} />}
+          variant="info"
+          className="p-3"
+        >
           {!isEditing ? (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <PatientSelector
                 patients={patients}
                 selectedPatientId={selectedPatientId}
@@ -159,24 +172,24 @@ export const TransferFormModal: React.FC<TransferFormModalProps> = ({
                 disabled={isSaving}
               />
               {selectedPatient && (
-                <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl animate-fade-in">
+                <div className="p-2.5 bg-blue-50 border border-blue-100 rounded-xl animate-fade-in">
                   <p className="text-[11px] font-black text-blue-700 uppercase tracking-widest leading-none mb-1">
                     Paciente Seleccionado
                   </p>
-                  <p className="text-sm font-bold text-slate-800">{selectedPatient.name}</p>
-                  <p className="text-[10px] text-slate-500 font-medium">
+                  <p className="text-sm font-medium text-slate-800">{selectedPatient.name}</p>
+                  <p className="text-sm text-slate-500 font-medium leading-snug">
                     Cama {selectedPatient.bedId.replace('BED_', '')} • {selectedPatient.diagnosis}
                   </p>
                 </div>
               )}
             </div>
           ) : (
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">
                 Paciente Hospitalizado
               </p>
-              <p className="text-sm font-bold text-slate-800">{transfer.patientSnapshot.name}</p>
-              <p className="text-[10px] text-slate-500 font-medium">
+              <p className="text-sm font-medium text-slate-800">{transfer.patientSnapshot.name}</p>
+              <p className="text-sm text-slate-500 font-medium leading-snug">
                 {transfer.patientSnapshot.rut} • Cama {transfer.bedId.replace('BED_', '')}
               </p>
             </div>
@@ -184,7 +197,27 @@ export const TransferFormModal: React.FC<TransferFormModalProps> = ({
         </ModalSection>
 
         {/* Destination Section */}
-        <div className="space-y-4">
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+              Fecha de Solicitud
+            </label>
+            <div className="relative">
+              <CalendarDays
+                size={15}
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                type="date"
+                className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-medium"
+                value={requestDate}
+                onChange={e => setRequestDate(e.target.value)}
+                disabled={isSaving}
+                required
+              />
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
               Hospital Destino *
