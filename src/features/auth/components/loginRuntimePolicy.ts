@@ -1,17 +1,16 @@
+import { getAuthRedirectRuntimeSupport } from '@/services/auth/authRedirectRuntime';
+
 type LoginRuntimePolicy = {
   preferRedirectOnLocalhost: boolean;
   isLocalhostRuntime: boolean;
   forcePopupForE2E: boolean;
   shouldAutoFallbackToRedirect: boolean;
+  canUseRedirectAuth: boolean;
+  redirectDisabledReason: string | null;
 };
 
 export const getLoginRuntimePolicy = (): LoginRuntimePolicy => {
-  const preferRedirectOnLocalhost =
-    String(import.meta.env.VITE_AUTH_PREFER_REDIRECT_ON_LOCALHOST || 'false').toLowerCase() ===
-    'true';
-  const isLocalhostRuntime =
-    typeof window !== 'undefined' &&
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const redirectRuntimeSupport = getAuthRedirectRuntimeSupport();
   const forcePopupForE2E =
     import.meta.env.VITE_E2E_MODE === 'true' &&
     typeof window !== 'undefined' &&
@@ -20,11 +19,13 @@ export const getLoginRuntimePolicy = (): LoginRuntimePolicy => {
     String(import.meta.env.VITE_AUTH_AUTO_REDIRECT_FALLBACK || 'true').toLowerCase() !== 'false';
 
   return {
-    preferRedirectOnLocalhost,
-    isLocalhostRuntime,
+    preferRedirectOnLocalhost: redirectRuntimeSupport.preferRedirectOnLocalhost,
+    isLocalhostRuntime: redirectRuntimeSupport.isLocalhostRuntime,
     forcePopupForE2E,
     shouldAutoFallbackToRedirect:
-      autoRedirectFallbackEnabled && !forcePopupForE2E && !isLocalhostRuntime,
+      autoRedirectFallbackEnabled && !forcePopupForE2E && redirectRuntimeSupport.canUseRedirectAuth,
+    canUseRedirectAuth: redirectRuntimeSupport.canUseRedirectAuth,
+    redirectDisabledReason: redirectRuntimeSupport.redirectDisabledReason,
   };
 };
 

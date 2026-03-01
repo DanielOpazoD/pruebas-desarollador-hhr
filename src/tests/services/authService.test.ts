@@ -55,11 +55,11 @@ describe('authService', () => {
   const AUTH_BOOTSTRAP_PENDING_KEY = 'hhr_auth_bootstrap_pending_v1';
   const GOOGLE_LOGIN_LOCK_KEY = 'hhr_google_login_lock_v1';
   const originalLocation = window.location;
-  const setPathname = (pathname: string) => {
+  const setLocation = (pathname: string, hostname = originalLocation.hostname) => {
     Reflect.deleteProperty(window, 'location');
     Object.defineProperty(window, 'location', {
       configurable: true,
-      value: { ...originalLocation, pathname },
+      value: { ...originalLocation, pathname, hostname },
     });
   };
 
@@ -70,7 +70,7 @@ describe('authService', () => {
     mockCheckSharedCensusAccessCallable.mockResolvedValue({
       data: { authorized: true, role: 'viewer' },
     });
-    setPathname('/');
+    setLocation('/');
   });
 
   afterEach(() => {
@@ -177,7 +177,7 @@ describe('authService', () => {
     });
 
     it('should reject shared-census login when callable denies access', async () => {
-      setPathname('/censo-compartido');
+      setLocation('/censo-compartido');
       mockCheckSharedCensusAccessCallable.mockResolvedValue({
         data: { authorized: false, role: 'viewer' },
       });
@@ -304,7 +304,7 @@ describe('authService', () => {
 
     it('should return user for shared census mode', async () => {
       // Mock window.location.pathname
-      setPathname('/censo-compartido/test');
+      setLocation('/censo-compartido/test');
       mockCheckSharedCensusAccessCallable.mockResolvedValue({
         data: { authorized: true, role: 'viewer' },
       });
@@ -338,10 +338,17 @@ describe('authService', () => {
 
   describe('signInWithGoogleRedirect', () => {
     it('should mark bootstrap as pending before redirect starts', async () => {
+      setLocation('/', 'app.hhr.test');
+
       await signInWithGoogleRedirect();
 
       expect(firebaseAuth.signInWithRedirect).toHaveBeenCalled();
       expect(localStorage.getItem(AUTH_BOOTSTRAP_PENDING_KEY)).not.toBeNull();
+    });
+
+    it('should reject redirect flow on localhost when runtime policy disables it', async () => {
+      await expect(signInWithGoogleRedirect()).rejects.toThrow(/deshabilitado en localhost/i);
+      expect(firebaseAuth.signInWithRedirect).not.toHaveBeenCalled();
     });
   });
 });

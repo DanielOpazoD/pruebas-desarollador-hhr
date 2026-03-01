@@ -29,6 +29,14 @@ export const useLoginPageController = (onLoginSuccess: () => void): LoginPageCon
   const loginRuntimePolicy = useMemo(() => getLoginRuntimePolicy(), []);
 
   const runRedirectFlow = async () => {
+    if (!loginRuntimePolicy.canUseRedirectAuth) {
+      setError(
+        loginRuntimePolicy.redirectDisabledReason ||
+          'El acceso alternativo por redirección no está disponible en este entorno.'
+      );
+      return;
+    }
+
     setIsRedirectLoading(true);
     try {
       await signInWithGoogleRedirect();

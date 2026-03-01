@@ -6,6 +6,10 @@ import { ErrorLog } from '@/services/logging/errorLogTypes';
 
 import { SyncTask } from '../syncQueueTypes';
 import { CatalogRecord } from './indexedDbCatalogContracts';
+import {
+  shouldScheduleBackgroundIndexedDbRecovery,
+  shouldUseStickyIndexedDbFallback,
+} from './indexedDbRecoveryPolicy';
 
 export class HangaRoaDatabase extends Dexie {
   dailyRecords!: Table<DailyRecord>;
@@ -165,6 +169,8 @@ const INDEXED_DB_RECOVERY_RETRY_DELAYS_MS = [300, 1000, 3000] as const;
 const MAX_BACKGROUND_RECOVERY_ATTEMPTS = 3;
 let recoveryRetryTimer: ReturnType<typeof setTimeout> | null = null;
 let backgroundRecoveryAttempts = 0;
+let stickyFallbackMode = false;
+let stickyFallbackWarningShown = false;
 
 const attachDatabaseEvents = (database: HangaRoaDatabase) => {
   database.on('blocked', () => {
@@ -202,8 +208,21 @@ const assignMockTables = (mock: HangaRoaDatabase) => {
 const scheduleBackgroundRecoveryRetry = () => {
   if (recoveryRetryTimer || typeof window === 'undefined') return;
 
-  // Stop retrying after MAX_BACKGROUND_RECOVERY_ATTEMPTS
-  if (backgroundRecoveryAttempts >= MAX_BACKGROUND_RECOVERY_ATTEMPTS) {
+  if (
+    !shouldScheduleBackgroundIndexedDbRecovery(
+      backgroundRecoveryAttempts,
+      MAX_BACKGROUND_RECOVERY_ATTEMPTS,
+      stickyFallbackMode
+    )
+  ) {
+    if (stickyFallbackMode && !stickyFallbackWarningShown) {
+      stickyFallbackWarningShown = true;
+      console.warn(
+        '[IndexedDB] 🛑 Recovery disabled for this session after persistent backing-store failure. Using fallback mode.'
+      );
+      return;
+    }
+
     console.warn(
       `[IndexedDB] 🛑 Stopped background recovery after ${MAX_BACKGROUND_RECOVERY_ATTEMPTS} attempts. Using fallback mode.`
     );
@@ -245,6 +264,10 @@ export const ensureDbReady = async (options: EnsureDbReadyOptions = {}): Promise
 
   if (isUsingMock && !allowRecoveryWhenMock) return;
   if (isUsingMock && allowRecoveryWhenMock) {
+    if (stickyFallbackMode) {
+      return;
+    }
+
     try {
       db = new HangaRoaDatabase();
       attachDatabaseEvents(db);
@@ -307,6 +330,10 @@ export const ensureDbReady = async (options: EnsureDbReadyOptions = {}): Promise
     if (!opened) {
       throw openError || new Error('IndexedDB open failed');
     }
+
+    stickyFallbackMode = false;
+    stickyFallbackWarningShown = false;
+    backgroundRecoveryAttempts = 0;
   } catch (error: unknown) {
     const errorName =
       error && typeof error === 'object' && 'name' in error ? String(error.name) : 'Unknown';
@@ -336,14 +363,19 @@ export const ensureDbReady = async (options: EnsureDbReadyOptions = {}): Promise
         await tryOpenWithTimeout();
 
         isUsingMock = false;
+        stickyFallbackMode = false;
+        stickyFallbackWarningShown = false;
+        backgroundRecoveryAttempts = 0;
         onDatabaseRecreated?.();
         return;
       } catch (recoveryError) {
         console.error('[IndexedDB] ❌ Recovery failed:', recoveryError);
+        stickyFallbackMode = stickyFallbackMode || shouldUseStickyIndexedDbFallback(recoveryError);
       }
     }
 
     console.error('[IndexedDB] 💨 Falling back to degraded local storage mode');
+    stickyFallbackMode = stickyFallbackMode || shouldUseStickyIndexedDbFallback(error);
     isUsingMock = true;
     assignMockTables(createMockDatabase());
     scheduleBackgroundRecoveryRetry();
