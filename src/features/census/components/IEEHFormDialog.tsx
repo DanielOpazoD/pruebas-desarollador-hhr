@@ -91,8 +91,6 @@ export const IEEHFormDialog: React.FC<IEEHFormDialogProps> = props => {
 
           <BinaryTextSection
             legendLabel="Intervención Quirúrgica"
-            badgeLabel="#39"
-            badgeToneClassName="bg-blue-100 text-blue-700"
             name="intervencion"
             enabled={tieneIntervencion === true}
             placeholder="Descripción de la intervención quirúrgica..."
@@ -107,8 +105,6 @@ export const IEEHFormDialog: React.FC<IEEHFormDialogProps> = props => {
 
           <BinaryTextSection
             legendLabel="Procedimiento"
-            badgeLabel="#42"
-            badgeToneClassName="bg-amber-100 text-amber-700"
             name="procedimiento"
             enabled={tieneProcedimiento === true}
             placeholder="Descripción del procedimiento..."

@@ -58,7 +58,7 @@ describe('IEEHFormDialog Component', () => {
     );
 
     expect(screen.getByPlaceholderText(/Escriba el diagnóstico/i)).toHaveValue('DESC CIE10 BASE');
-    expect(screen.getByPlaceholderText(/Ej: E11.9/i)).toHaveValue('A00');
+    expect(screen.getByDisplayValue('A00')).toHaveValue('A00');
   });
 
   it('updates surgery description when selecting "Sí"', async () => {

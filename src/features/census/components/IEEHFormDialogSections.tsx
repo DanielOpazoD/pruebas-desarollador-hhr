@@ -13,13 +13,6 @@ const dischargeConditionOptions = [
   '7. Hospitalización domiciliaria',
 ];
 
-const IeehFieldBadge: React.FC<{ toneClassName: string; label: string }> = ({
-  toneClassName,
-  label,
-}) => (
-  <span className={`${toneClassName} px-1.5 py-0.5 rounded text-[10px] font-bold`}>{label}</span>
-);
-
 export const IEEHDialogHeader: React.FC<{
   patientName: string;
   onClose: () => void;
@@ -63,10 +56,7 @@ export const DiagnosticoPrincipalSection: React.FC<{
   selectCIE10,
 }) => (
   <fieldset className="space-y-2">
-    <legend className="text-sm font-semibold text-slate-700 flex items-center gap-1">
-      <IeehFieldBadge toneClassName="bg-emerald-100 text-emerald-700" label="#33" />
-      Diagnóstico Principal
-    </legend>
+    <legend className="text-sm font-semibold text-slate-700">Diagnóstico Principal</legend>
     <div className="relative">
       <input
         type="text"
@@ -114,7 +104,7 @@ export const DiagnosticoPrincipalSection: React.FC<{
         type="text"
         value={cie10Code}
         readOnly
-        placeholder="Ej: E11.9"
+        placeholder=""
         className="px-2 py-1 border border-slate-300 rounded text-sm font-mono font-bold w-28 bg-slate-50 text-slate-500 cursor-not-allowed"
       />
       {cie10Display && cie10Display !== diagnostico && (
@@ -129,10 +119,7 @@ export const CondicionEgresoSection: React.FC<{
   setCondicionEgreso: (value: string) => void;
 }> = ({ condicionEgreso, setCondicionEgreso }) => (
   <fieldset className="space-y-2">
-    <legend className="text-sm font-semibold text-slate-700 flex items-center gap-1">
-      <IeehFieldBadge toneClassName="bg-slate-200 text-slate-700" label="#31" />
-      Condición al Egreso
-    </legend>
+    <legend className="text-sm font-semibold text-slate-700">Condición al Egreso</legend>
     <select
       value={condicionEgreso}
       onChange={e => setCondicionEgreso(e.target.value)}
@@ -152,8 +139,6 @@ export const CondicionEgresoSection: React.FC<{
 
 export const BinaryTextSection: React.FC<{
   legendLabel: string;
-  badgeLabel: string;
-  badgeToneClassName: string;
   name: string;
   enabled: boolean;
   placeholder: string;
@@ -161,24 +146,10 @@ export const BinaryTextSection: React.FC<{
   onEnable: () => void;
   onDisable: () => void;
   onChange: (value: string) => void;
-}> = ({
-  legendLabel,
-  badgeLabel,
-  badgeToneClassName,
-  name,
-  enabled,
-  placeholder,
-  value,
-  onEnable,
-  onDisable,
-  onChange,
-}) => (
+}> = ({ legendLabel, name, enabled, placeholder, value, onEnable, onDisable, onChange }) => (
   <fieldset className="space-y-2">
     <div className="flex items-center gap-3">
-      <legend className="text-sm font-semibold text-slate-700 flex items-center gap-1">
-        <IeehFieldBadge toneClassName={badgeToneClassName} label={badgeLabel} />
-        {legendLabel}
-      </legend>
+      <legend className="text-sm font-semibold text-slate-700">{legendLabel}</legend>
       <label className="flex items-center gap-1 cursor-pointer">
         <input
           type="radio"
@@ -232,10 +203,7 @@ export const MedicoTratanteSection: React.FC<{
   setTratanteRut,
 }) => (
   <fieldset className="space-y-2">
-    <legend className="text-sm font-semibold text-slate-700 flex items-center gap-1">
-      <IeehFieldBadge toneClassName="bg-rose-100 text-rose-700" label="#49" />
-      Médico Tratante
-    </legend>
+    <legend className="text-sm font-semibold text-slate-700">Médico Tratante</legend>
     <div className="grid grid-cols-3 gap-2">
       <input
         type="text"
