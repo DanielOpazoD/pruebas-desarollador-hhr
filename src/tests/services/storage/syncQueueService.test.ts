@@ -1,12 +1,21 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { hospitalDB } from '@/services/storage/indexedDBService';
+import { logError } from '@/services/utils/errorService';
 
 vi.mock('@/services/infrastructure/db', () => ({
   db: {
     setDoc: vi.fn().mockResolvedValue(undefined),
   },
 }));
+
+vi.mock('@/services/utils/errorService', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/services/utils/errorService')>();
+  return {
+    ...actual,
+    logError: vi.fn(),
+  };
+});
 
 import { db } from '@/services/infrastructure/db';
 import {
@@ -108,5 +117,51 @@ describe('syncQueueService', () => {
     expect(tasks).toHaveLength(1);
     expect(tasks[0].status).toBe('CONFLICT');
     expect(tasks[0].lastErrorCategory).toBe('conflict');
+  });
+
+  it('does not process tasks scheduled for a future retry window', async () => {
+    await queueSyncTask('UPDATE_DAILY_RECORD', makeRecord('2025-01-07', 'v1'));
+    await hospitalDB.syncQueue
+      .where('status')
+      .equals('PENDING')
+      .modify(task => {
+        task.nextAttemptAt = Date.now() + 60_000;
+      });
+
+    await processSyncQueue();
+
+    expect(vi.mocked(db.setDoc)).not.toHaveBeenCalled();
+    const tasks = await hospitalDB.syncQueue.toArray();
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0].status).toBe('PENDING');
+  });
+
+  it('marks task as failed after exhausting max retries', async () => {
+    vi.mocked(db.setDoc).mockRejectedValue(new Error('Network down'));
+
+    await queueSyncTask('UPDATE_DAILY_RECORD', makeRecord('2025-01-08', 'v1'));
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      await hospitalDB.syncQueue
+        .where('status')
+        .equals('PENDING')
+        .modify(task => {
+          task.nextAttemptAt = 0;
+        });
+      await processSyncQueue();
+    }
+
+    const tasks = await hospitalDB.syncQueue.toArray();
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0].status).toBe('FAILED');
+    expect(tasks[0].retryCount).toBe(5);
+    expect(vi.mocked(logError)).toHaveBeenCalledWith(
+      'Sync task permanently failed',
+      expect.any(Error),
+      expect.objectContaining({
+        type: 'UPDATE_DAILY_RECORD',
+        retryCount: 5,
+      })
+    );
   });
 });

@@ -266,4 +266,29 @@ describe('dailyRecordRepositoryWriteService outbox fallback', () => {
       '2026-02-13T08:00:00.000Z'
     );
   });
+
+  it('adds clinical crib fhir patch when nested crib data changes', async () => {
+    const current = buildRecord('2026-02-12');
+    current.beds = {
+      R1: {
+        ...buildPatient('R1', 'Madre'),
+        clinicalCrib: buildPatient('C1', 'Recien nacido'),
+      },
+    };
+
+    vi.mocked(getRecordFromIndexedDB).mockResolvedValueOnce(current);
+
+    await updatePartial('2026-02-12', {
+      'beds.R1.clinicalCrib.patientName': 'Recien nacido actualizado',
+    });
+
+    expect(updateRecordPartialToFirestore).toHaveBeenCalledWith(
+      '2026-02-12',
+      expect.objectContaining({
+        'beds.R1.clinicalCrib.patientName': 'Recien nacido actualizado',
+        'beds.R1.clinicalCrib.fhir_resource': expect.any(Object),
+      }),
+      current.lastUpdated
+    );
+  });
 });

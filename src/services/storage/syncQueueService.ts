@@ -54,6 +54,13 @@ const buildTaskErrorMeta = (error: unknown) => {
   };
 };
 
+const updateTaskState = async (
+  taskId: number,
+  patch: Partial<SyncTask> & { status: SyncTask['status'] }
+): Promise<void> => {
+  await indexedDB.syncQueue.update(taskId, patch);
+};
+
 const updateExistingTask = async (
   taskId: number,
   payload: unknown,
@@ -90,6 +97,8 @@ const runTask = async (task: SyncTask): Promise<void> => {
     case 'UPDATE_DAILY_RECORD':
       await syncDailyRecord(task.payload as DailyRecord);
       break;
+    default:
+      throw new Error(`[SyncQueue] Unsupported task type: ${String(task.type)}`);
   }
 };
 
@@ -97,7 +106,7 @@ const markTaskConflict = async (
   taskId: number,
   errorMeta: ReturnType<typeof buildTaskErrorMeta>['errorMeta']
 ) => {
-  await indexedDB.syncQueue.update(taskId, {
+  await updateTaskState(taskId, {
     status: 'CONFLICT',
     ...errorMeta,
   });
@@ -108,7 +117,7 @@ const markTaskFailed = async (
   retryCount: number,
   errorMeta: ReturnType<typeof buildTaskErrorMeta>['errorMeta']
 ) => {
-  await indexedDB.syncQueue.update(taskId, {
+  await updateTaskState(taskId, {
     status: 'FAILED',
     retryCount,
     ...errorMeta,
@@ -120,7 +129,7 @@ const rescheduleTask = async (
   retryCount: number,
   errorMeta: ReturnType<typeof buildTaskErrorMeta>['errorMeta']
 ) => {
-  await indexedDB.syncQueue.update(taskId, {
+  await updateTaskState(taskId, {
     status: 'PENDING',
     retryCount,
     nextAttemptAt: Date.now() + computeBackoffMs(retryCount),
@@ -140,6 +149,63 @@ const getTaskKey = (type: SyncTask['type'], payload: unknown): string | undefine
     return record?.date ? `daily:${record.date}` : undefined;
   }
   return undefined;
+};
+
+const buildTelemetryFromRows = (rows: SyncTask[], now: number): SyncQueueTelemetry => {
+  const pendingRows = rows.filter(row => row.status === 'PENDING');
+  const oldestTimestamp = pendingRows.reduce<number>(
+    (acc, row) => (row.timestamp < acc ? row.timestamp : acc),
+    Number.POSITIVE_INFINITY
+  );
+
+  return {
+    pending: pendingRows.length,
+    failed: rows.filter(row => row.status === 'FAILED').length,
+    conflict: rows.filter(row => row.status === 'CONFLICT').length,
+    retrying: pendingRows.filter(row => row.retryCount > 0).length,
+    oldestPendingAgeMs:
+      Number.isFinite(oldestTimestamp) && oldestTimestamp > 0
+        ? Math.max(0, now - oldestTimestamp)
+        : 0,
+  };
+};
+
+const getReadyPendingTasks = async (now: number): Promise<SyncTask[]> => {
+  const tasks = await indexedDB.syncQueue.where('status').equals('PENDING').sortBy('timestamp');
+  return tasks.filter(task => (task.nextAttemptAt || 0) <= now);
+};
+
+const handleTaskFailure = async (task: SyncTask, error: unknown): Promise<void> => {
+  if (!task.id) {
+    return;
+  }
+
+  const { classification, errorMeta } = buildTaskErrorMeta(error);
+  console.error(`[SyncQueue] Task ${task.id} failed:`, error);
+
+  if (classification.category === 'conflict') {
+    await markTaskConflict(task.id, errorMeta);
+    return;
+  }
+
+  if (!classification.retryable) {
+    await markTaskFailed(task.id, task.retryCount, errorMeta);
+    return;
+  }
+
+  const newRetryCount = task.retryCount + 1;
+  if (newRetryCount >= MAX_RETRIES) {
+    await markTaskFailed(task.id, newRetryCount, errorMeta);
+    logError('Sync task permanently failed', error instanceof Error ? error : undefined, {
+      taskId: task.id,
+      type: task.type,
+      key: task.key,
+      retryCount: newRetryCount,
+    });
+    return;
+  }
+
+  await rescheduleTask(task.id, newRetryCount, errorMeta);
 };
 
 export const isConflictSyncError = (error: unknown): boolean => {
@@ -179,24 +245,8 @@ export interface SyncQueueTelemetry {
 export const getSyncQueueTelemetry = async (): Promise<SyncQueueTelemetry> => {
   try {
     await ensureDbReady();
-    const now = Date.now();
     const rows = await indexedDB.syncQueue.toArray();
-    const pendingRows = rows.filter(row => row.status === 'PENDING');
-
-    const pending = pendingRows.length;
-    const failed = rows.filter(row => row.status === 'FAILED').length;
-    const conflict = rows.filter(row => row.status === 'CONFLICT').length;
-    const retrying = pendingRows.filter(row => row.retryCount > 0).length;
-    const oldestTimestamp = pendingRows.reduce<number>(
-      (acc, row) => (row.timestamp < acc ? row.timestamp : acc),
-      Number.POSITIVE_INFINITY
-    );
-    const oldestPendingAgeMs =
-      Number.isFinite(oldestTimestamp) && oldestTimestamp > 0
-        ? Math.max(0, now - oldestTimestamp)
-        : 0;
-
-    return { pending, failed, conflict, retrying, oldestPendingAgeMs };
+    return buildTelemetryFromRows(rows, Date.now());
   } catch (error) {
     console.warn('[SyncQueue] Failed to read queue telemetry:', error);
     return { pending: 0, failed: 0, conflict: 0, retrying: 0, oldestPendingAgeMs: 0 };
@@ -239,10 +289,7 @@ export const processSyncQueue = async (): Promise<void> => {
   try {
     await ensureDbReady();
 
-    const now = Date.now();
-    const tasks = await indexedDB.syncQueue.where('status').equals('PENDING').sortBy('timestamp');
-
-    const readyTasks = tasks.filter(task => (task.nextAttemptAt || 0) <= now);
+    const readyTasks = await getReadyPendingTasks(Date.now());
     if (readyTasks.length === 0) {
       return;
     }
@@ -253,38 +300,13 @@ export const processSyncQueue = async (): Promise<void> => {
       if (!task.id) continue;
 
       try {
-        await indexedDB.syncQueue.update(task.id, { status: 'PROCESSING' });
+        await updateTaskState(task.id, { status: 'PROCESSING' });
         await runTask(task);
 
         await indexedDB.syncQueue.delete(task.id);
         console.warn(`[SyncQueue] Task ${task.id} completed successfully.`);
       } catch (error) {
-        const { classification, errorMeta } = buildTaskErrorMeta(error);
-        console.error(`[SyncQueue] Task ${task.id} failed:`, error);
-
-        if (classification.category === 'conflict') {
-          await markTaskConflict(task.id, errorMeta);
-          continue;
-        }
-
-        if (!classification.retryable) {
-          await markTaskFailed(task.id, task.retryCount, errorMeta);
-          continue;
-        }
-
-        const newRetryCount = task.retryCount + 1;
-
-        if (newRetryCount >= MAX_RETRIES) {
-          await markTaskFailed(task.id, newRetryCount, errorMeta);
-          logError('Sync task permanently failed', error instanceof Error ? error : undefined, {
-            taskId: task.id,
-            type: task.type,
-            key: task.key,
-            retryCount: newRetryCount,
-          });
-        } else {
-          await rescheduleTask(task.id, newRetryCount, errorMeta);
-        }
+        await handleTaskFailure(task, error);
       }
     }
   } finally {

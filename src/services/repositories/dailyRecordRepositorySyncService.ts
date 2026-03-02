@@ -7,21 +7,23 @@ import { subscribeToRecord } from '@/services/storage/firestoreService';
 import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { migrateLegacyData } from '@/services/repositories/dataMigration';
 import { loadRemoteRecordWithFallback } from '@/services/repositories/dailyRecordRemoteLoader';
-import { shouldKeepLocalRecordOverRemote } from '@/services/repositories/dailyRecordSyncCompatibility';
+import { resolvePreferredDailyRecord } from '@/services/repositories/dailyRecordSyncCompatibility';
 
 const resolveIncomingRemoteRecord = async (
   date: string,
   remoteRecord: DailyRecord | null
 ): Promise<DailyRecord | null> => {
-  if (!remoteRecord) return null;
-
   const localRecord = await getRecordFromIndexedDB(date);
-  if (shouldKeepLocalRecordOverRemote(localRecord, remoteRecord)) {
-    return localRecord;
+  const preferredRecord = resolvePreferredDailyRecord(localRecord, remoteRecord);
+  if (!preferredRecord) {
+    return null;
   }
 
-  await saveToIndexedDB(remoteRecord);
-  return remoteRecord;
+  if (preferredRecord === remoteRecord) {
+    await saveToIndexedDB(remoteRecord);
+  }
+
+  return preferredRecord;
 };
 
 export const subscribe = (
@@ -44,14 +46,7 @@ export const syncWithFirestore = async (date: string): Promise<DailyRecord | nul
 
   try {
     const remoteResult = await loadRemoteRecordWithFallback(date);
-    if (!remoteResult.record) return null;
-
-    const localRecord = await getRecordFromIndexedDB(date);
-    if (shouldKeepLocalRecordOverRemote(localRecord, remoteResult.record)) {
-      return localRecord;
-    }
-
-    return remoteResult.record;
+    return resolveIncomingRemoteRecord(date, remoteResult.record);
   } catch (err) {
     console.warn(`[Repository] Sync failed for ${date}:`, err);
   }

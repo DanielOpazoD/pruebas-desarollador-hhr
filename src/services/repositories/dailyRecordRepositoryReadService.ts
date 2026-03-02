@@ -18,6 +18,7 @@ import {
   createGetDailyRecordQuery,
   createGetPreviousDayQuery,
 } from '@/services/repositories/contracts/dailyRecordQueries';
+import { mergeAvailableDates } from '@/services/repositories/dailyRecordSyncCompatibility';
 
 const isRepositoryDebugEnabled = () =>
   import.meta.env.DEV &&
@@ -114,8 +115,7 @@ export const getAvailableDates = async (): Promise<string[]> => {
   if (isFirestoreEnabled()) {
     try {
       const remoteDates = await getAvailableDatesFromFirestore();
-      const allDates = Array.from(new Set([...localDates, ...remoteDates]));
-      return allDates.sort().reverse();
+      return mergeAvailableDates(localDates, remoteDates);
     } catch (err) {
       console.warn('[Repository] Failed to fetch remote dates:', err);
     }

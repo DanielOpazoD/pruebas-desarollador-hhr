@@ -33,16 +33,85 @@ export interface RemoteWriteRecoveryResult {
 const isConcurrencyError = (error: unknown): boolean =>
   error instanceof Error && error.name === 'ConcurrencyError';
 
+const ensureDateTimestamp = (record: DailyRecord): void => {
+  if (record.dateTimestamp || !record.date) {
+    return;
+  }
+
+  const dateObj = new Date(`${record.date}T00:00:00`);
+  record.dateTimestamp = dateObj.getTime();
+};
+
+const syncPatientFhirResource = (patient: PatientData | undefined): void => {
+  if (!patient?.patientName?.trim()) {
+    return;
+  }
+
+  patient.fhir_resource = mapPatientToFhir(patient);
+};
+
+const syncBedFhirResources = (record: DailyRecord): void => {
+  Object.values(record.beds).forEach(patient => {
+    syncPatientFhirResource(patient);
+    syncPatientFhirResource(patient.clinicalCrib);
+  });
+};
+
+const getTouchedBedIds = (patch: DailyRecordPatch): string[] =>
+  Array.from(
+    new Set(
+      Object.keys(patch)
+        .filter(key => key.startsWith('beds.'))
+        .map(key => key.split('.')[1])
+        .filter((bedId): bedId is string => Boolean(bedId))
+    )
+  );
+
+const addFhirPatchForTouchedBeds = (
+  mergedPatches: DailyRecordPatch,
+  validatedRecord: DailyRecord,
+  touchedBedIds: string[]
+): void => {
+  touchedBedIds.forEach(bedId => {
+    const patient = validatedRecord.beds[bedId];
+    if (!patient) {
+      return;
+    }
+
+    if (patient.patientName?.trim()) {
+      mergedPatches[`beds.${bedId}.fhir_resource`] = mapPatientToFhir(patient);
+    }
+
+    if (patient.clinicalCrib?.patientName?.trim()) {
+      mergedPatches[`beds.${bedId}.clinicalCrib.fhir_resource`] = mapPatientToFhir(
+        patient.clinicalCrib
+      );
+    }
+  });
+};
+
+const collectPatientsForMasterSync = (record: DailyRecord): PatientData[] => {
+  const patientsToSync: PatientData[] = [];
+
+  Object.values(record.beds).forEach(patient => {
+    if (patient.patientName?.trim() && patient.rut?.trim()) {
+      patientsToSync.push(patient);
+    }
+
+    if (patient.clinicalCrib?.patientName?.trim() && patient.clinicalCrib.rut?.trim()) {
+      patientsToSync.push(patient.clinicalCrib);
+    }
+  });
+
+  return patientsToSync;
+};
+
 export const prepareDailyRecordForPersistence = (
   record: DailyRecord,
   date: string
 ): DailyRecord => {
   const recordWithSchemaDefaults = validateAndSalvageRecord(record, date);
-
-  if (!recordWithSchemaDefaults.dateTimestamp && recordWithSchemaDefaults.date) {
-    const dateObj = new Date(`${recordWithSchemaDefaults.date}T00:00:00`);
-    recordWithSchemaDefaults.dateTimestamp = dateObj.getTime();
-  }
+  ensureDateTimestamp(recordWithSchemaDefaults);
 
   const normalized = normalizeDailyRecordInvariants(recordWithSchemaDefaults);
   const validatedRecord = normalized.record;
@@ -53,16 +122,7 @@ export const prepareDailyRecordForPersistence = (
     });
   }
 
-  Object.keys(validatedRecord.beds).forEach(bedId => {
-    const patient = validatedRecord.beds[bedId];
-    if (patient && patient.patientName && patient.patientName.trim()) {
-      patient.fhir_resource = mapPatientToFhir(patient);
-      if (patient.clinicalCrib && patient.clinicalCrib.patientName) {
-        patient.clinicalCrib.fhir_resource = mapPatientToFhir(patient.clinicalCrib);
-      }
-    }
-  });
-
+  syncBedFhirResources(validatedRecord);
   validatedRecord.schemaVersion = CURRENT_SCHEMA_VERSION;
   return validatedRecord;
 };
@@ -89,16 +149,7 @@ export const preparePatchedRecordForPersistence = (
   updated.lastUpdated = new Date().toISOString();
 
   const validatedRecord = validateAndSalvageRecord(updated, date);
-
-  Object.keys(mergedPatches).forEach(key => {
-    if (!key.startsWith('beds.')) return;
-    const bedId = key.split('.')[1];
-    const patient = validatedRecord.beds[bedId];
-    if (!patient || !patient.patientName) return;
-
-    const fhirPath = `beds.${bedId}.fhir_resource` as keyof DailyRecordPatch;
-    mergedPatches[fhirPath] = mapPatientToFhir(patient);
-  });
+  addFhirPatchForTouchedBeds(mergedPatches, validatedRecord, getTouchedBedIds(mergedPatches));
 
   return {
     record: validatedRecord,
@@ -164,7 +215,11 @@ export const attemptConflictAutoMergeRecovery = async (
 
     await saveToIndexedDB(merged);
     await queueSyncTask('UPDATE_DAILY_RECORD', merged);
-    await logRepositoryConflictAutoMerged(date, auditDetails);
+    try {
+      await logRepositoryConflictAutoMerged(date, auditDetails);
+    } catch (auditError) {
+      console.warn('[Repository] Conflict auto-merge audit log failed:', auditError);
+    }
     return { status: 'auto_merged' };
   } catch (mergeError) {
     console.warn('[Repository] Auto-merge conflict fallback failed:', mergeError);
@@ -224,16 +279,7 @@ export const resolveRemoteWriteRecovery = async (
 export const syncPatientsToMasterInBackground = (record: DailyRecord): void => {
   setTimeout(async () => {
     try {
-      const patientsToSync: PatientData[] = [];
-
-      Object.values(record.beds).forEach(patient => {
-        if (patient.patientName?.trim() && patient.rut?.trim()) {
-          patientsToSync.push(patient);
-        }
-        if (patient.clinicalCrib?.patientName?.trim() && patient.clinicalCrib?.rut?.trim()) {
-          patientsToSync.push(patient.clinicalCrib);
-        }
-      });
+      const patientsToSync = collectPatientsForMasterSync(record);
 
       if (patientsToSync.length === 0) return;
 
