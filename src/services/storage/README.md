@@ -14,6 +14,7 @@ Capa de persistencia concreta: IndexedDB, localStorage, Firestore bridge y sincr
 | `firestoreService.ts`                         | Operaciones Firestore de registro diario              |
 | `syncQueueService.ts`                         | Cola de sincronización offline/online                 |
 | `syncQueueTypes.ts`                           | Tipos de cola de sincronización                       |
+| `sync/`                                       | Engine, runtime, transport y store del outbox         |
 | `tableConfigService.ts`                       | Persistencia de configuración de tablas               |
 | `uiSettingsService.ts`                        | Persistencia de preferencias UI                       |
 | `localpersistence/localPersistenceService.ts` | Fallback local unificado (records/settings)           |
@@ -22,6 +23,7 @@ Capa de persistencia concreta: IndexedDB, localStorage, Firestore bridge y sincr
 
 `firestoreService.ts` se mantiene como fachada pública curada; la construcción de rangos mensuales y helpers de escritura vive en `firestore/firestoreQuerySupport.ts` y `firestore/firestoreWriteSupport.ts`.
 `syncQueueService.ts` es la única fuente soportada para telemetría (`getSyncQueueTelemetry()`), stats (`getSyncQueueStats()`) y operaciones recientes (`listRecentSyncQueueOperations()`).
+El outbox ahora se arma sobre un engine con puertos (`sync/syncQueueEngine.ts`, `sync/syncQueuePorts.ts`) para separar runtime navegador, store Dexie y transporte Firestore.
 
 ## Estrategia
 
@@ -39,6 +41,8 @@ Capa de persistencia concreta: IndexedDB, localStorage, Firestore bridge y sincr
 - `localStorageService.ts` sigue existiendo solo como gateway legacy mínimo y deprecated.
 - `legacyFirebaseService.ts` concentra la compatibilidad histórica de lectura desde rutas Firestore antiguas.
 - `legacyFirebaseRecordService.ts` se mantiene como fachada pública interna para record reads, rangos, suscripciones y discovery, con módulos especializados por responsabilidad.
+- La compatibilidad legacy ya no participa del camino caliente de `DailyRecord`; se importa
+  explícitamente desde `legacyRecordBridgeService.ts` cuando se requiere migración controlada.
 - Paths legacy todavía soportados para `DailyRecord`:
   - `hospitals/hanga_roa/dailyRecords/{date}`
   - `hospitals/hhr/dailyRecords/{date}`
