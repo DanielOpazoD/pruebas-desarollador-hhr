@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { hospitalDB } from '@/services/storage/indexedDBService';
 import {
   getSyncQueueTelemetry,
+  listRecentSyncQueueOperations,
   processSyncQueue,
   queueSyncTask,
 } from '@/services/storage/syncQueueService';
@@ -59,6 +60,7 @@ describe('syncQueueService load baseline', () => {
     expect(telemetry.pending).toBe(0);
     expect(telemetry.failed).toBe(0);
     expect(telemetry.conflict).toBe(0);
+    expect(telemetry.batchSize).toBeGreaterThan(0);
     expect(vi.mocked(db.setDoc)).toHaveBeenCalledTimes(total);
     expect(elapsedMs).toBeLessThan(MAX_FLUSH_MS);
   });
@@ -95,5 +97,11 @@ describe('syncQueueService load baseline', () => {
     expect(telemetry.pending).toBe(0);
     expect(telemetry.failed).toBe(0);
     expect(telemetry.conflict).toBe(0);
+
+    const recentOperations = await listRecentSyncQueueOperations(5);
+    expect(Array.isArray(recentOperations)).toBe(true);
+    if (recentOperations[0]) {
+      expect(recentOperations[0]).toHaveProperty('status');
+    }
   });
 });
