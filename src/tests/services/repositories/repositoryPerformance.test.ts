@@ -1,0 +1,39 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  clearRepositoryPerformanceMetrics,
+  getRepositoryPerformanceSummary,
+  measureRepositoryOperation,
+} from '@/services/repositories/repositoryPerformance';
+
+describe('repositoryPerformance', () => {
+  beforeEach(() => {
+    clearRepositoryPerformanceMetrics();
+  });
+
+  it('records warning operations and exposes recent warning summaries', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await measureRepositoryOperation('fast-op', async () => 'ok', { thresholdMs: 9999 });
+    await measureRepositoryOperation(
+      'slow-op',
+      async () => {
+        await new Promise(resolve => setTimeout(resolve, 5));
+        return 'ok';
+      },
+      { thresholdMs: 0, context: 'daily-record' }
+    );
+
+    const summary = getRepositoryPerformanceSummary();
+    expect(summary.totalRecorded).toBe(2);
+    expect(summary.warningCount).toBe(1);
+    expect(summary.slowestOperation).toBe('slow-op');
+    expect(summary.latestWarningAt).toBeTruthy();
+    expect(summary.recentWarningOperations[0]).toMatchObject({
+      operation: 'slow-op',
+      context: 'daily-record',
+    });
+    expect(warnSpy).toHaveBeenCalled();
+
+    warnSpy.mockRestore();
+  });
+});

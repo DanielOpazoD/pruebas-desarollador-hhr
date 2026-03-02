@@ -9,6 +9,10 @@ export interface SystemHealthThresholds {
   criticalPendingMutations: number;
   warningLocalErrorCount: number;
   criticalLocalErrorCount: number;
+  warningRepositoryWarningCount: number;
+  criticalRepositoryWarningCount: number;
+  warningSlowRepositoryOperationMs: number;
+  criticalSlowRepositoryOperationMs: number;
 }
 
 export const DEFAULT_SYSTEM_HEALTH_THRESHOLDS: SystemHealthThresholds = {
@@ -20,6 +24,10 @@ export const DEFAULT_SYSTEM_HEALTH_THRESHOLDS: SystemHealthThresholds = {
   criticalPendingMutations: 8,
   warningLocalErrorCount: 1,
   criticalLocalErrorCount: 15,
+  warningRepositoryWarningCount: 1,
+  criticalRepositoryWarningCount: 5,
+  warningSlowRepositoryOperationMs: 350,
+  criticalSlowRepositoryOperationMs: 800,
 };
 
 export interface SystemHealthState {
@@ -52,6 +60,10 @@ export const evaluateSystemHealthState = (
     reasons.push('mutaciones pendientes acumuladas');
   if (status.localErrorCount >= thresholds.warningLocalErrorCount)
     reasons.push('errores locales acumulados');
+  if (status.degradedLocalPersistence) reasons.push('persistencia local degradada');
+  if (status.repositoryWarningCount > 0) reasons.push('operaciones lentas del repositorio');
+  if (status.slowestRepositoryOperationMs >= thresholds.warningSlowRepositoryOperationMs)
+    reasons.push('operaciones criticas con latencia elevada');
 
   const hasCriticalSync =
     status.failedSyncTasks > 0 ||
@@ -60,7 +72,10 @@ export const evaluateSystemHealthState = (
     oldestPendingAgeMs >= thresholds.criticalOldestPendingAgeMs;
   const hasCriticalVolume =
     status.pendingMutations >= thresholds.criticalPendingMutations ||
-    status.localErrorCount >= thresholds.criticalLocalErrorCount;
+    status.localErrorCount >= thresholds.criticalLocalErrorCount ||
+    status.degradedLocalPersistence ||
+    status.repositoryWarningCount >= thresholds.criticalRepositoryWarningCount ||
+    status.slowestRepositoryOperationMs >= thresholds.criticalSlowRepositoryOperationMs;
 
   if (hasCriticalSync || hasCriticalVolume) {
     return {
@@ -85,7 +100,9 @@ export const evaluateSystemHealthState = (
     status.pendingSyncTasks > 0 ||
     retryingSyncTasks >= thresholds.warningRetryingSyncTasks ||
     oldestPendingAgeMs >= thresholds.warningOldestPendingAgeMs ||
-    status.localErrorCount >= thresholds.warningLocalErrorCount;
+    status.localErrorCount >= thresholds.warningLocalErrorCount ||
+    status.repositoryWarningCount >= thresholds.warningRepositoryWarningCount ||
+    status.slowestRepositoryOperationMs >= thresholds.warningSlowRepositoryOperationMs;
 
   if (hasWarning) {
     return {

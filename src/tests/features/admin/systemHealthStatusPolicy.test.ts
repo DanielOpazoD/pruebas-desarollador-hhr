@@ -19,6 +19,9 @@ const baseStatus = (): UserHealthStatus => ({
   retryingSyncTasks: 0,
   oldestPendingAgeMs: 0,
   localErrorCount: 0,
+  degradedLocalPersistence: false,
+  repositoryWarningCount: 0,
+  slowestRepositoryOperationMs: 0,
   appVersion: 'v1',
   platform: 'MacIntel',
   userAgent: 'Vitest',
@@ -58,5 +61,25 @@ describe('systemHealthStatusPolicy', () => {
 
     const result = evaluateSystemHealthState(status);
     expect(result.level).toBe('critical');
+  });
+
+  it('returns critical when local persistence is degraded', () => {
+    const status = baseStatus();
+    status.degradedLocalPersistence = true;
+
+    const result = evaluateSystemHealthState(status);
+    expect(result.level).toBe('critical');
+    expect(result.reasons).toContain('persistencia local degradada');
+  });
+
+  it('returns warning when repository operations get slow', () => {
+    const status = baseStatus();
+    status.repositoryWarningCount = 1;
+    status.slowestRepositoryOperationMs =
+      DEFAULT_SYSTEM_HEALTH_THRESHOLDS.warningSlowRepositoryOperationMs;
+
+    const result = evaluateSystemHealthState(status);
+    expect(result.level).toBe('warning');
+    expect(result.reasons).toContain('operaciones lentas del repositorio');
   });
 });

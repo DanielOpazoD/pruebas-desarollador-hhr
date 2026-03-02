@@ -5,7 +5,9 @@ import { useIsMutating } from '@tanstack/react-query';
 import { fetchErrorLogs } from '@/services/errorLogService';
 import { reportUserHealth, UserHealthStatus } from '@/services/admin/healthService';
 import { getSyncQueueTelemetry } from '@/services/storage/syncQueueService';
-import { CURRENT_SCHEMA_VERSION } from '@/constants/version';
+import { isDatabaseInFallbackMode } from '@/services/storage/indexedDBService';
+import { getRepositoryPerformanceSummary } from '@/services/repositories/repositoryPerformance';
+import { buildUserHealthStatus } from '@/hooks/controllers/systemHealthReporterController';
 
 const REPORT_INTERVAL_MS = 2 * 60 * 1000; // Report every 2 minutes
 
@@ -34,25 +36,30 @@ export const useSystemHealthReporter = () => {
         const retryingSyncTasks = syncTelemetry.retrying;
         const oldestPendingAgeMs = syncTelemetry.oldestPendingAgeMs;
         const syncBatchSize = syncTelemetry.batchSize;
+        const repositoryPerformance = getRepositoryPerformanceSummary();
 
-        const status: UserHealthStatus = {
+        const status: UserHealthStatus = buildUserHealthStatus({
           uid: user.uid,
-          email: user.email || 'unknown',
-          displayName: user.displayName || 'Usuario',
-          lastSeen: new Date().toISOString(),
-          isOnline: isFirebaseConnected && navigator.onLine,
+          email: user.email,
+          displayName: user.displayName,
+          isFirebaseConnected,
           isOutdated: !!isOutdated,
-          pendingMutations: mutatingCount + pendingSyncTasks,
-          pendingSyncTasks,
-          failedSyncTasks,
-          conflictSyncTasks,
-          retryingSyncTasks,
-          oldestPendingAgeMs,
+          mutatingCount,
           localErrorCount,
-          appVersion: `v${CURRENT_SCHEMA_VERSION} (sync-batch:${syncBatchSize})`,
+          degradedLocalPersistence: isDatabaseInFallbackMode(),
+          navigatorOnline: navigator.onLine,
           platform: navigator.platform,
           userAgent: navigator.userAgent,
-        };
+          syncTelemetry: {
+            pending: pendingSyncTasks,
+            failed: failedSyncTasks,
+            conflict: conflictSyncTasks,
+            retrying: retryingSyncTasks,
+            oldestPendingAgeMs,
+            batchSize: syncBatchSize,
+          },
+          repositoryPerformance,
+        });
 
         await reportUserHealth(status);
         lastReportTime.current = Date.now();

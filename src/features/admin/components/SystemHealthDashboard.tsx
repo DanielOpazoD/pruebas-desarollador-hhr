@@ -12,7 +12,11 @@ import {
   WifiOff,
   AlertTriangle,
 } from 'lucide-react';
-import { subscribeToSystemHealth, UserHealthStatus } from '@/services/admin/healthService';
+import {
+  buildSystemHealthSummary,
+  subscribeToSystemHealth,
+  UserHealthStatus,
+} from '@/services/admin/healthService';
 import clsx from 'clsx';
 import { evaluateSystemHealthState } from './systemHealthStatusPolicy';
 import { DailyOpsChecklistCard } from './DailyOpsChecklistCard';
@@ -36,11 +40,48 @@ export const SystemHealthDashboard = () => {
       u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.displayName.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const summary = buildSystemHealthSummary(stats);
 
   return (
     <div className="max-w-7xl mx-auto space-y-4">
       <DailyOpsChecklistCard />
       <SystemHealthAlertsPanel stats={stats} />
+
+      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3">
+        <div className="card p-3">
+          <p className="text-[10px] uppercase font-bold text-slate-400">Usuarios</p>
+          <p className="text-2xl font-black text-slate-900">{summary.totalUsers}</p>
+        </div>
+        <div className="card p-3">
+          <p className="text-[10px] uppercase font-bold text-slate-400">Offline</p>
+          <p className="text-2xl font-black text-red-600">{summary.offlineUsers}</p>
+        </div>
+        <div className="card p-3">
+          <p className="text-[10px] uppercase font-bold text-slate-400">Persistencia degradada</p>
+          <p className="text-2xl font-black text-amber-600">
+            {summary.degradedLocalPersistenceUsers}
+          </p>
+        </div>
+        <div className="card p-3">
+          <p className="text-[10px] uppercase font-bold text-slate-400">Sync fallido</p>
+          <p className="text-2xl font-black text-red-600">
+            {summary.totalFailedSyncTasks + summary.totalConflictSyncTasks}
+          </p>
+          <p className="text-[10px] text-slate-400">{summary.usersWithSyncFailures} usuarios</p>
+        </div>
+        <div className="card p-3">
+          <p className="text-[10px] uppercase font-bold text-slate-400">Errores locales</p>
+          <p className="text-2xl font-black text-slate-900">{summary.totalLocalErrorCount}</p>
+        </div>
+        <div className="card p-3">
+          <p className="text-[10px] uppercase font-bold text-slate-400">Repo warnings</p>
+          <p className="text-2xl font-black text-slate-900">{summary.totalRepositoryWarnings}</p>
+          <p className="text-[10px] text-slate-400">
+            {summary.usersWithRepositoryWarnings} usuarios, max{' '}
+            {summary.maxSlowRepositoryOperationMs} ms
+          </p>
+        </div>
+      </div>
 
       <div className="flex justify-end">
         <div className="relative w-full md:w-64">

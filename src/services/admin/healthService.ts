@@ -18,9 +18,29 @@ export interface UserHealthStatus {
   retryingSyncTasks: number;
   oldestPendingAgeMs: number;
   localErrorCount: number;
+  degradedLocalPersistence: boolean;
+  repositoryWarningCount: number;
+  slowestRepositoryOperationMs: number;
   appVersion: string;
   platform: string;
   userAgent: string;
+}
+
+export interface SystemHealthSummary {
+  totalUsers: number;
+  onlineUsers: number;
+  offlineUsers: number;
+  outdatedUsers: number;
+  degradedLocalPersistenceUsers: number;
+  usersWithRepositoryWarnings: number;
+  usersWithSyncFailures: number;
+  totalPendingSyncTasks: number;
+  totalFailedSyncTasks: number;
+  totalConflictSyncTasks: number;
+  totalLocalErrorCount: number;
+  totalRepositoryWarnings: number;
+  maxSlowRepositoryOperationMs: number;
+  oldestObservedPendingAgeMs: number;
 }
 
 const toNumber = (value: unknown, fallback = 0): number => {
@@ -48,9 +68,37 @@ export const normalizeUserHealthStatus = (raw: Partial<UserHealthStatus>): UserH
   retryingSyncTasks: toNumber(raw.retryingSyncTasks),
   oldestPendingAgeMs: toNumber(raw.oldestPendingAgeMs),
   localErrorCount: toNumber(raw.localErrorCount),
+  degradedLocalPersistence: toBoolean(raw.degradedLocalPersistence, false),
+  repositoryWarningCount: toNumber(raw.repositoryWarningCount),
+  slowestRepositoryOperationMs: toNumber(raw.slowestRepositoryOperationMs),
   appVersion: toStringValue(raw.appVersion, 'unknown'),
   platform: toStringValue(raw.platform, 'unknown'),
   userAgent: toStringValue(raw.userAgent, 'unknown'),
+});
+
+export const buildSystemHealthSummary = (statuses: UserHealthStatus[]): SystemHealthSummary => ({
+  totalUsers: statuses.length,
+  onlineUsers: statuses.filter(status => status.isOnline).length,
+  offlineUsers: statuses.filter(status => !status.isOnline).length,
+  outdatedUsers: statuses.filter(status => status.isOutdated).length,
+  degradedLocalPersistenceUsers: statuses.filter(status => status.degradedLocalPersistence).length,
+  usersWithRepositoryWarnings: statuses.filter(status => status.repositoryWarningCount > 0).length,
+  usersWithSyncFailures: statuses.filter(
+    status => status.failedSyncTasks > 0 || status.conflictSyncTasks > 0
+  ).length,
+  totalPendingSyncTasks: statuses.reduce((sum, status) => sum + status.pendingSyncTasks, 0),
+  totalFailedSyncTasks: statuses.reduce((sum, status) => sum + status.failedSyncTasks, 0),
+  totalConflictSyncTasks: statuses.reduce((sum, status) => sum + status.conflictSyncTasks, 0),
+  totalLocalErrorCount: statuses.reduce((sum, status) => sum + status.localErrorCount, 0),
+  totalRepositoryWarnings: statuses.reduce((sum, status) => sum + status.repositoryWarningCount, 0),
+  maxSlowRepositoryOperationMs: statuses.reduce(
+    (max, status) => Math.max(max, status.slowestRepositoryOperationMs),
+    0
+  ),
+  oldestObservedPendingAgeMs: statuses.reduce(
+    (max, status) => Math.max(max, status.oldestPendingAgeMs),
+    0
+  ),
 });
 
 export const reportUserHealth = async (status: UserHealthStatus): Promise<void> => {

@@ -6,6 +6,7 @@ import path from 'node:path';
 const workspaceRoot = process.cwd();
 const versionFilePath = path.join(workspaceRoot, 'src/constants/version.ts');
 const governanceFilePath = path.join(workspaceRoot, 'src/services/repositories/schemaGovernance.ts');
+const repositoryReadmePath = path.join(workspaceRoot, 'src/services/repositories/README.md');
 
 const fail = message => {
   console.error(`[schema-governance] ${message}`);
@@ -22,6 +23,7 @@ const readFile = filePath => {
 
 const versionContent = readFile(versionFilePath);
 const governanceContent = readFile(governanceFilePath);
+const repositoryReadmeContent = readFile(repositoryReadmePath);
 
 const currentMatch = versionContent.match(/export const CURRENT_SCHEMA_VERSION\s*=\s*(\d+)\s*;/);
 const legacyMatch = versionContent.match(/export const LEGACY_SCHEMA_VERSION\s*=\s*(\d+)\s*;/);
@@ -63,6 +65,17 @@ const extra = configuredKeys.filter(key => !expectedKeys.includes(key));
 if (missing.length > 0 || extra.length > 0) {
   fail(
     `Invalid migrator registry. Missing [${missing.join(', ')}], extra [${extra.join(', ')}], expected [${expectedKeys.join(', ')}], configured [${configuredKeys.join(', ')}]`
+  );
+}
+
+const requiredReadmeTerms = ['schemaEvolutionPolicy.ts', 'migrationLedger.ts', 'dataMigration.ts'];
+const missingReadmeTerms = requiredReadmeTerms.filter(
+  term => !repositoryReadmeContent.includes(term)
+);
+
+if (missingReadmeTerms.length > 0) {
+  fail(
+    `Repository README is out of date. Missing schema governance references: ${missingReadmeTerms.join(', ')}`
   );
 }
 

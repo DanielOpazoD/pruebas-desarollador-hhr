@@ -6,13 +6,6 @@
 
 import { DailyRecord } from '@/types';
 import { DailyRecordPatch } from '@/types';
-import { deleteRecord as deleteFromIndexedDB } from '../storage/indexedDBService';
-import {
-  deleteRecordFromFirestore,
-  getRecordFromFirestore,
-  moveRecordToTrash,
-} from '../storage/firestoreService';
-import { softDeleteDailyRecordRemote } from './dailyRecordRepositoryLifecycleSupport';
 // import {
 //     getActiveHospitalId
 // } from '@/constants/firestorePaths';
@@ -48,21 +41,14 @@ import {
   initializeDay as initializeDayFromInitializationService,
 } from './dailyRecordRepositoryInitializationService';
 import {
-  createDeleteDayCommand,
-  createInitializeDayCommand,
-  createCopyPatientToDateCommand,
-} from './contracts/dailyRecordLifecycleCommands';
-import {
-  createGetDailyRecordQuery,
-  createGetPreviousDayQuery,
-} from './contracts/dailyRecordQueries';
-import {
-  createPartialUpdateDailyRecordCommand,
-  createSaveDailyRecordCommand,
-} from './contracts/dailyRecordCommands';
-
-const buildDailyRecordQuery = (date: string, syncFromRemote = true) =>
-  createGetDailyRecordQuery(date, syncFromRemote);
+  buildCopyPatientToDateCommand,
+  buildDailyRecordQuery,
+  buildInitializeDayCommand,
+  buildPartialUpdateDailyRecordCommand,
+  buildPreviousDayQuery,
+  buildSaveDailyRecordCommand,
+  deleteDailyRecordAcrossStores,
+} from './dailyRecordRepositoryFacadeSupport';
 
 // ============================================================================
 // Repository Interface
@@ -103,19 +89,19 @@ export const getForDateWithMeta = async (date: string, syncFromRemote: boolean =
 };
 
 export const getPreviousDay = async (date: string) => {
-  const query = createGetPreviousDayQuery(date);
+  const query = buildPreviousDayQuery(date);
   return getPreviousDayFromReadService(query.date);
 };
 export const getAvailableDates = getAvailableDatesFromReadService;
 export const bridgeLegacyRecord = bridgeLegacyRecordForDateFromReadService;
 
 export const save = async (record: DailyRecord, expectedLastUpdated?: string) => {
-  const command = createSaveDailyRecordCommand(record, expectedLastUpdated);
+  const command = buildSaveDailyRecordCommand(record, expectedLastUpdated);
   return saveFromWriteService(command.record, command.expectedLastUpdated);
 };
 
 export const updatePartial = async (date: string, patches: DailyRecordPatch) => {
-  const command = createPartialUpdateDailyRecordCommand(date, patches);
+  const command = buildPartialUpdateDailyRecordCommand(date, patches);
   return updatePartialFromWriteService(command.date, command.patch);
 };
 export const subscribe = (
@@ -128,7 +114,7 @@ export const subscribe = (
 export const syncWithFirestore = syncWithFirestoreFromSyncService;
 
 export const initializeDay = async (date: string, copyFromDate?: string) => {
-  const command = createInitializeDayCommand(date, copyFromDate);
+  const command = buildInitializeDayCommand(date, copyFromDate);
   return initializeDayFromInitializationService(command.date, command.copyFromDate);
 };
 
@@ -136,14 +122,7 @@ export const initializeDay = async (date: string, copyFromDate?: string) => {
  * Deletes a daily record from both local and remote storage.
  */
 export const deleteDay = async (date: string): Promise<void> => {
-  const command = createDeleteDayCommand(date);
-  await deleteFromIndexedDB(command.date);
-  await softDeleteDailyRecordRemote(command.date, {
-    isRemoteEnabled: isFirestoreEnabled(),
-    loadRecord: getRecordFromFirestore,
-    moveToTrash: moveRecordToTrash,
-    deleteRemote: deleteRecordFromFirestore,
-  });
+  await deleteDailyRecordAcrossStores(date);
 };
 
 export const copyPatientToDate = async (
@@ -152,7 +131,7 @@ export const copyPatientToDate = async (
   targetDate: string,
   targetBedId: string
 ) => {
-  const command = createCopyPatientToDateCommand(sourceDate, sourceBedId, targetDate, targetBedId);
+  const command = buildCopyPatientToDateCommand(sourceDate, sourceBedId, targetDate, targetBedId);
   return copyPatientToDateFromInitializationService(
     command.sourceDate,
     command.sourceBedId,
@@ -168,7 +147,7 @@ export const copyPatientToDate = async (
 export const DailyRecordRepository: IDailyRecordRepository & {
   syncWithFirestore: typeof syncWithFirestore;
   bridgeLegacyRecord: typeof bridgeLegacyRecord;
-} = {
+} = Object.freeze({
   getForDate,
   getPreviousDay,
   save,
@@ -180,4 +159,4 @@ export const DailyRecordRepository: IDailyRecordRepository & {
   syncWithFirestore,
   getAllDates: getAvailableDates,
   bridgeLegacyRecord,
-};
+});

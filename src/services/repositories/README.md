@@ -74,3 +74,16 @@ de entrada (fecha, límites, RUT, IDs) antes de delegar en storage.
   - tests de `dailyRecordRemoteLoader`
   - tests de `DailyRecordRepository`
   - al menos una prueba de integración de sync
+
+## Contrato y límites
+
+- `DailyRecordRepository.ts` debe seguir siendo una fachada mínima; la lógica de lectura,
+  escritura, sync, lifecycle e inicialización vive en servicios dedicados.
+- Los bridges legacy se invocan solo de forma explícita desde `legacyRecordBridgeService.ts`.
+- Cambios en schema/versionado deben tocar en conjunto:
+  - `schemaEvolutionPolicy.ts`
+  - `migrationLedger.ts`
+  - `schemaGovernance.ts`
+  - `dataMigration.ts`
+- Si una operación crítica cambia de costo esperado, debe actualizarse la medición en
+  `repositoryPerformance.ts` y regenerarse `reports/operational-health.md`.

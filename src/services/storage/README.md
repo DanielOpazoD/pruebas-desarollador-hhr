@@ -57,6 +57,17 @@ Cambios en esta capa requieren:
 1. tests de servicios,
 2. verificación de degradación/fallback,
 3. revisión de impacto en `DailyRecordRepository`.
+4. si tocan `sync/` o `firestore/`, actualizar `reports/operational-health.md`
+   y mantener `firestoreService.ts`/`syncQueueService.ts` como fachadas curadas.
+
+## Contrato y límites
+
+- `firestoreService.ts` no debe reabsorber helpers de rango, concurrencia o snapshots.
+- `syncQueueService.ts` es el único punto de acceso soportado para telemetría, stats
+  y operaciones recientes; la UI no debe leer Dexie directo para esta información.
+- Los puertos de `sync/` deben permanecer agnósticos de React/UI.
+- `legacyFirebase*` y `localStorageService.ts` son compatibilidad controlada; no deben
+  reingresar al camino caliente del registro diario.
 
 ## Operación
 

@@ -4,6 +4,7 @@ import {
   subscribeToSystemHealth,
   getSystemHealthSnapshot,
   normalizeUserHealthStatus,
+  buildSystemHealthSummary,
   UserHealthStatus,
 } from '@/services/admin/healthService';
 
@@ -37,6 +38,9 @@ describe('healthService', () => {
     retryingSyncTasks: 0,
     oldestPendingAgeMs: 0,
     localErrorCount: 0,
+    degradedLocalPersistence: false,
+    repositoryWarningCount: 0,
+    slowestRepositoryOperationMs: 0,
     appVersion: '1.0.0',
     platform: 'MacIntel',
     userAgent: 'Mozilla/5.0',
@@ -150,6 +154,36 @@ describe('healthService', () => {
       expect(normalized.email).toBe('unknown@local');
       expect(normalized.pendingMutations).toBe(0);
       expect(normalized.isOnline).toBe(false);
+    });
+  });
+
+  describe('buildSystemHealthSummary', () => {
+    it('aggregates operational health totals', () => {
+      const summary = buildSystemHealthSummary([
+        mockStatus,
+        {
+          ...mockStatus,
+          uid: 'u2',
+          isOnline: false,
+          degradedLocalPersistence: true,
+          failedSyncTasks: 2,
+          conflictSyncTasks: 1,
+          localErrorCount: 3,
+          repositoryWarningCount: 4,
+          slowestRepositoryOperationMs: 280,
+        },
+      ]);
+
+      expect(summary.totalUsers).toBe(2);
+      expect(summary.offlineUsers).toBe(1);
+      expect(summary.degradedLocalPersistenceUsers).toBe(1);
+      expect(summary.usersWithSyncFailures).toBe(1);
+      expect(summary.usersWithRepositoryWarnings).toBe(1);
+      expect(summary.totalFailedSyncTasks).toBe(2);
+      expect(summary.totalConflictSyncTasks).toBe(1);
+      expect(summary.totalRepositoryWarnings).toBe(4);
+      expect(summary.maxSlowRepositoryOperationMs).toBe(280);
+      expect(summary.oldestObservedPendingAgeMs).toBe(0);
     });
   });
 });
