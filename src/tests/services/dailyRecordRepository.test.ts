@@ -109,7 +109,8 @@ describe('DailyRecordRepository (Expanded)', () => {
       expect(updated?.beds.R1.patientName).toBe('New');
       expect(firestoreService.updateRecordPartial).toHaveBeenCalledWith(
         '2024-12-28',
-        expect.objectContaining({ 'beds.R1.patientName': 'New' })
+        expect.objectContaining({ 'beds.R1.patientName': 'New' }),
+        expect.any(String)
       );
     });
 

@@ -24,49 +24,80 @@ import {
   syncPatientsToMasterInBackground,
 } from '@/services/repositories/dailyRecordWriteSupport';
 
+interface RemoteWriteState {
+  savedRemotely: boolean;
+  queuedForRetry: boolean;
+  autoMerged: boolean;
+}
+
+const createRemoteWriteState = (): RemoteWriteState => ({
+  savedRemotely: false,
+  queuedForRetry: false,
+  autoMerged: false,
+});
+
+const runRemoteSaveIntegrityCheck = async (date: string, record: DailyRecord): Promise<void> => {
+  if (!isFirestoreEnabled()) return;
+
+  try {
+    await assertRemoteSaveCompatibility(date, record);
+  } catch (err) {
+    if (
+      err instanceof Error &&
+      (err.name === 'DataRegressionError' || err.name === 'VersionMismatchError')
+    ) {
+      throw err;
+    }
+    console.warn('[Repository] Could not perform integrity check, proceeding:', err);
+  }
+};
+
+const applyRemoteRecovery = async (
+  date: string,
+  record: DailyRecord,
+  fields: string[],
+  error: unknown,
+  state: RemoteWriteState
+): Promise<'continue' | 'return'> => {
+  const recovery = await resolveRemoteWriteRecovery(date, record, fields, error);
+  if (recovery.status === 'throw') {
+    throw recovery.error;
+  }
+
+  state.queuedForRetry = recovery.queuedForRetry;
+  state.autoMerged = recovery.autoMerged;
+  return recovery.status === 'auto_merged' ? 'return' : 'continue';
+};
+
 export const save = async (record: DailyRecord, expectedLastUpdated?: string): Promise<void> => {
   const command = createSaveDailyRecordCommand(record, expectedLastUpdated);
-  let savedRemotely = false;
-  let queuedForRetry = false;
-  let autoMerged = false;
-
+  const remoteState = createRemoteWriteState();
   const validatedRecord = prepareDailyRecordForPersistence(command.record, command.date);
 
-  if (isFirestoreEnabled()) {
-    try {
-      await assertRemoteSaveCompatibility(command.date, validatedRecord);
-    } catch (err) {
-      if (
-        err instanceof Error &&
-        (err.name === 'DataRegressionError' || err.name === 'VersionMismatchError')
-      ) {
-        throw err;
-      }
-      console.warn('[Repository] Could not perform integrity check, proceeding:', err);
-    }
-  }
+  await runRemoteSaveIntegrityCheck(command.date, validatedRecord);
 
   await saveToIndexedDB(validatedRecord);
 
   if (isFirestoreEnabled()) {
     try {
       await saveRecordToFirestore(validatedRecord, command.expectedLastUpdated);
-      savedRemotely = true;
+      remoteState.savedRemotely = true;
     } catch (err) {
       console.warn('Firestore sync failed, data saved in IndexedDB:', err);
-      const recovery = await resolveRemoteWriteRecovery(command.date, validatedRecord, ['*'], err);
-      if (recovery.status === 'throw') {
-        throw recovery.error;
-      }
-      queuedForRetry = recovery.queuedForRetry;
-      autoMerged = recovery.autoMerged;
-      if (recovery.status === 'auto_merged') {
+      const nextAction = await applyRemoteRecovery(
+        command.date,
+        validatedRecord,
+        ['*'],
+        err,
+        remoteState
+      );
+      if (nextAction === 'return') {
         createSaveDailyRecordResult({
           date: command.date,
           savedLocally: true,
           savedRemotely: false,
-          queuedForRetry,
-          autoMerged,
+          queuedForRetry: remoteState.queuedForRetry,
+          autoMerged: remoteState.autoMerged,
         });
         return;
       }
@@ -78,18 +109,15 @@ export const save = async (record: DailyRecord, expectedLastUpdated?: string): P
   createSaveDailyRecordResult({
     date: command.date,
     savedLocally: true,
-    savedRemotely,
-    queuedForRetry,
-    autoMerged,
+    savedRemotely: remoteState.savedRemotely,
+    queuedForRetry: remoteState.queuedForRetry,
+    autoMerged: remoteState.autoMerged,
   });
 };
 
 export const updatePartial = async (date: string, partialData: DailyRecordPatch): Promise<void> => {
   const command = createPartialUpdateDailyRecordCommand(date, partialData);
-  let updatedRemotely = false;
-  let queuedForRetry = false;
-  let autoMerged = false;
-
+  const remoteState = createRemoteWriteState();
   const current = await getRecordFromIndexedDB(command.date);
 
   if (!current) {
@@ -110,27 +138,23 @@ export const updatePartial = async (date: string, partialData: DailyRecordPatch)
   if (isFirestoreEnabled()) {
     try {
       await updateRecordPartialToFirestore(command.date, mergedPatches, current.lastUpdated);
-      updatedRemotely = true;
+      remoteState.savedRemotely = true;
     } catch (err) {
       console.warn('[Repository] Firestore partial update failed:', err);
-      const recovery = await resolveRemoteWriteRecovery(
+      const nextAction = await applyRemoteRecovery(
         command.date,
         validatedRecord,
         Object.keys(mergedPatches),
-        err
+        err,
+        remoteState
       );
-      if (recovery.status === 'throw') {
-        throw recovery.error;
-      }
-      queuedForRetry = recovery.queuedForRetry;
-      autoMerged = recovery.autoMerged;
-      if (recovery.status === 'auto_merged') {
+      if (nextAction === 'return') {
         createUpdatePartialDailyRecordResult({
           date: command.date,
           savedLocally: true,
           updatedRemotely: false,
-          queuedForRetry,
-          autoMerged,
+          queuedForRetry: remoteState.queuedForRetry,
+          autoMerged: remoteState.autoMerged,
           patchedFields: Object.keys(mergedPatches).length,
         });
         return;
@@ -141,9 +165,9 @@ export const updatePartial = async (date: string, partialData: DailyRecordPatch)
   createUpdatePartialDailyRecordResult({
     date: command.date,
     savedLocally: true,
-    updatedRemotely,
-    queuedForRetry,
-    autoMerged,
+    updatedRemotely: remoteState.savedRemotely,
+    queuedForRetry: remoteState.queuedForRetry,
+    autoMerged: remoteState.autoMerged,
     patchedFields: Object.keys(mergedPatches).length,
   });
 };
