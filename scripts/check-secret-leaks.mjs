@@ -18,10 +18,9 @@ const forbiddenPathMatches = trackedFiles.filter(file =>
 const checks = [
   {
     id: 'dotenv-gemini-key',
-    description: 'Environment files must not contain hardcoded Gemini API keys.',
+    description: 'Environment files must not contain hardcoded Gemini API keys in client or local-dev vars.',
     appliesTo: file => /(^|\/)\.env(\.|$)/.test(file),
-    regex:
-      /\b(?:VITE_LOCAL_GEMINI_API_KEY|VITE_GEMINI_API_KEY|GEMINI_API_KEY|VITE_API_KEY|API_KEY)\s*=\s*AIza[0-9A-Za-z_-]{35}/g,
+    regex: /\b(?:VITE_LOCAL_GEMINI_API_KEY|GEMINI_API_KEY|API_KEY)\s*=\s*AIza[0-9A-Za-z_-]{35}/g,
   },
   {
     id: 'client-inline-googlegenai-key',
@@ -31,9 +30,9 @@ const checks = [
   },
   {
     id: 'vite-define-client-ai-key',
-    description: 'Vite define config must not inject Gemini/API keys into import.meta.env for client bundles.',
+    description: 'Vite define config must not inject client AI keys into import.meta.env for bundles.',
     appliesTo: file => file === 'vite.config.ts',
-    regex: /import\.meta\.env\.(VITE_GEMINI_API_KEY|VITE_API_KEY)/g,
+    regex: /import\.meta\.env\.VITE_LOCAL_GEMINI_API_KEY/g,
   },
 ];
 

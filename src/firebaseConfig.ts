@@ -24,10 +24,24 @@ import {
 import {
   getFirebaseStartupFailureMessage,
   getFirebaseStartupWarningCopy,
-  type FirebaseStartupWarningCopy,
 } from '@/services/auth/firebaseStartupUiPolicy';
+import { mountFirebaseConfigWarning } from '@/services/auth/firebaseStartupWarningRenderer';
 
 const CACHED_CONFIG_KEY = 'hhr_firebase_config';
+const FIREBASE_READY_TIMEOUT_MS = 10000;
+
+const parseEmulatorHost = (rawHost: string): { host: string; port: number } | null => {
+  const [host, portRaw] = rawHost.split(':');
+  const port = Number(portRaw);
+  if (!host || !Number.isFinite(port)) return null;
+  return { host, port };
+};
+
+const readDevFirebaseApiKey = (): string => {
+  const encodedKey = import.meta.env.VITE_FIREBASE_API_KEY_B64 || '';
+  const plainKey = import.meta.env.VITE_FIREBASE_API_KEY || '';
+  return encodedKey ? decodeBase64(encodedKey) : plainKey;
+};
 
 const decodeBase64 = (rawValue: string) => {
   const value = rawValue?.trim();
@@ -51,35 +65,14 @@ const decodeBase64 = (rawValue: string) => {
   }
 };
 
-const mountConfigWarning = (message: string, warningCopy?: FirebaseStartupWarningCopy) => {
-  console.warn(message);
-
-  if (typeof document === 'undefined') return;
-  const root = document.getElementById('root');
-  if (!root) return;
-
-  const resolvedWarningCopy = warningCopy || getFirebaseStartupWarningCopy();
-
-  root.innerHTML = `
-        <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f8fafc;color:#0f172a;">
-            <div style="max-width:520px;padding:24px;border-radius:12px;background:white;box-shadow:0 10px 40px rgba(15,23,42,0.12);font-family:Inter,sans-serif;">
-                <h1 style="font-size:20px;font-weight:700;margin:0 0 12px 0;">${resolvedWarningCopy.title}</h1>
-                <p style="margin:0 0 8px 0;line-height:1.5;">${resolvedWarningCopy.summary}</p>
-                <ol style="margin:0 0 12px 20px;line-height:1.5;">
-                    ${resolvedWarningCopy.steps.map(step => `<li>${step.replaceAll('VITE_FIREBASE_API_KEY', '<code>VITE_FIREBASE_API_KEY</code>').replaceAll('VITE_FIREBASE_API_KEY_B64', '<code>VITE_FIREBASE_API_KEY_B64</code>').replaceAll('VITE_FIREBASE_AUTH_DOMAIN', '<code>VITE_FIREBASE_AUTH_DOMAIN</code>').replaceAll('VITE_FIREBASE_PROJECT_ID', '<code>VITE_FIREBASE_PROJECT_ID</code>').replaceAll('VITE_FIREBASE_APP_ID', '<code>VITE_FIREBASE_APP_ID</code>')}</li>`).join('')}
-                </ol>
-                <p style="margin:0;color:#475569;font-size:14px;">${resolvedWarningCopy.footnote}</p>
-            </div>
-        </div>
-    `;
-};
-
 const warnWithFirebaseDiagnostics = (
   diagnostics: FirebaseRuntimeConfigDiagnostics,
   fallbackMessage?: string
 ) => {
-  const warningCopy = getFirebaseStartupWarningCopy(diagnostics);
-  mountConfigWarning(fallbackMessage || getFirebaseStartupFailureMessage(diagnostics), warningCopy);
+  mountFirebaseConfigWarning(
+    fallbackMessage || getFirebaseStartupFailureMessage(diagnostics),
+    getFirebaseStartupWarningCopy(diagnostics)
+  );
 };
 
 const saveCachedConfig = (config: FirebaseOptions) => {
@@ -131,10 +124,8 @@ const buildDevConfig = (): FirebaseOptions => {
     mode: import.meta.env.MODE,
   });
 
-  const apiKey = encodedKey ? decodeBase64(encodedKey) : plainKey;
-
   return {
-    apiKey,
+    apiKey: readDevFirebaseApiKey(),
     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
     projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
     storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
@@ -226,9 +217,13 @@ export const getFunctionsInstance = async (): Promise<Functions> => {
   if (import.meta.env.DEV && !functionsEmulatorConnected) {
     const functionsEmulatorHost = import.meta.env.VITE_FUNCTIONS_EMULATOR_HOST;
     if (functionsEmulatorHost) {
+      const emulatorHost = parseEmulatorHost(functionsEmulatorHost);
+      if (!emulatorHost) {
+        console.warn('[FirebaseConfig] Invalid functions emulator host:', functionsEmulatorHost);
+        return functions;
+      }
       const { connectFunctionsEmulator } = await import('firebase/functions');
-      const [host, port] = functionsEmulatorHost.split(':');
-      connectFunctionsEmulator(functions, host, Number(port));
+      connectFunctionsEmulator(functions, emulatorHost.host, emulatorHost.port);
       functionsEmulatorConnected = true;
     }
   }
@@ -240,9 +235,11 @@ export const firebaseReady = (async () => {
   // eslint-disable-next-line no-console
   console.log('[FirebaseConfig] 🚀 Starting Firebase Ready sequence...');
 
-  // Safety timeout for the entire initialization
   const timeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('Firebase initialization timed out')), 10000)
+    setTimeout(
+      () => reject(new Error('Firebase initialization timed out')),
+      FIREBASE_READY_TIMEOUT_MS
+    )
   );
 
   try {
@@ -299,8 +296,12 @@ export const firebaseReady = (async () => {
       }
 
       if (import.meta.env.DEV && firestoreEmulatorHost) {
-        const [host, port] = firestoreEmulatorHost.split(':');
-        connectFirestoreEmulator(db, host, Number(port));
+        const emulatorHost = parseEmulatorHost(firestoreEmulatorHost);
+        if (emulatorHost) {
+          connectFirestoreEmulator(db, emulatorHost.host, emulatorHost.port);
+        } else {
+          console.warn('[FirebaseConfig] Invalid Firestore emulator host:', firestoreEmulatorHost);
+        }
       }
 
       return { app, auth, db };
@@ -310,11 +311,10 @@ export const firebaseReady = (async () => {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[FirebaseConfig] ❌ Critical initialization error:', message);
-    // We throw here because without Firebase the app can't function properly
-    // but it will be caught by anyone awaiting firebaseReady
     throw err;
   }
 })();
 
-export { app, auth, db, storage, functions, mountConfigWarning };
+export { app, auth, db, storage, functions };
+export { mountFirebaseConfigWarning as mountConfigWarning };
 export default app;

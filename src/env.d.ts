@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_FIREBASE_API_KEY: string;
+  readonly VITE_FIREBASE_API_KEY_B64?: string;
   readonly VITE_FIREBASE_AUTH_DOMAIN: string;
   readonly VITE_FIREBASE_PROJECT_ID: string;
   readonly VITE_FIREBASE_STORAGE_BUCKET: string;
@@ -12,6 +13,14 @@ interface ImportMetaEnv {
   readonly VITE_ALLOW_DEV_EMAIL_SEND?: string;
   readonly VITE_CENSUS_EMAIL_ENDPOINT?: string;
   readonly VITE_GOOGLE_CLIENT_ID?: string;
+  readonly VITE_FUNCTIONS_EMULATOR_HOST?: string;
+  readonly VITE_AUTH_EMULATOR_HOST?: string;
+  readonly VITE_FIRESTORE_EMULATOR_HOST?: string;
+  readonly VITE_AUTH_PREFER_REDIRECT_ON_LOCALHOST?: string;
+  readonly VITE_AUTH_AUTO_REDIRECT_FALLBACK?: string;
+  readonly VITE_DEBUG_LEGACY_FIREBASE?: string;
+  readonly VITE_DEBUG_REPOSITORY?: string;
+  readonly VITE_WHATSAPP_BOT_URL?: string;
 }
 
 interface _ImportMeta {

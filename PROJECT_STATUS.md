@@ -1,92 +1,40 @@
 # HHR Hospital Tracker - Estado del Proyecto
 
-> **Última actualización:** 2026-02-08
-> **Nota global:** 6.9 / 7.0
-> **Resumen reciente:** Completada la "Fase 3: Optimización de Clase Mundial". Se logró una política **Zero-Any** (tipado estricto 100%), se consolidó el sistema de diseño **@core/ui** con estética premium, y se desacopló la lógica de negocio en una capa de dominio pura (`CensusManager`). La estabilidad y testabilidad del sistema están en su punto más alto.
+> **Última actualización:** 2026-03-02
+> **Evaluación técnica de referencia:** 6.1 / 7.0
 
----
+## Resumen
 
-## 📊 Tests
+El proyecto se encuentra en un estado **bueno y operable**, con una base técnica robusta para un sistema clínico: tipado estricto en código fuente, checks de arquitectura, suite amplia de tests y cobertura de flujos críticos con emuladores y E2E.
 
-### Unit & Integration Tests (Vitest)
+Las mejoras recientes se han concentrado en:
 
-| Categoría                       |  Tests   | Estado |
-| ------------------------------- | :------: | :----: |
-| Core & Services                 |   ~350   |   ✅   |
-| Features (Cudyr, Handoff, etc.) |   ~500   |   ✅   |
-| Hooks                           |   ~300   |   ✅   |
-| UI & Components                 |   ~150   |   ✅   |
-| Validation & Utils              |   ~50    |   ✅   |
-| **Total**                       | **2989** |   ✅   |
+- eliminar rutas Gemini cliente no utilizadas;
+- modularizar `functions/index.js` en dominios internos;
+- reducir imports de compatibilidad desde `dataService.ts`;
+- limpiar artefactos trackeados y endurecer la higiene del repositorio.
 
-_Nota: 1345 pasados, 13 saltados (Firestore Rules)._
+## Fortalezas actuales
 
-### E2E Tests (Playwright)
+- Arquitectura orientada por features y servicios.
+- Controles automáticos de calidad y boundaries.
+- Estrategia offline-first con respaldo de Firestore/IndexedDB.
+- Suite de tests amplia para riesgos clínicos y operativos.
 
-| Archivo               |  Tests  | Estado |
-| --------------------- | :-----: | :----: |
-| comprehensive.spec.ts |    4    |   ✅   |
-| hospitalDay.spec.ts   |    2    |   ✅   |
-| patient-flow.spec.ts  |    4    |   ✅   |
-| **Total**             | **~20** |   ✅   |
+## Deuda técnica principal
 
----
+- Complejidad estructural alta en módulos críticos de runtime y storage.
+- Compatibilidad legacy todavía necesaria, con costo de mantenimiento asociado.
+- Documentación técnica histórica que puede desalinearse si no se regenera con disciplina.
+- Features experimentales presentes en el repo, aunque ya no expuestas en el acceso principal.
 
-## �️ Pilares de Optimización (Fase 3)
+## Próximo foco recomendado
 
-| Pilar                    | Estado  | Descripción                                                                                                        |
-| ------------------------ | :-----: | ------------------------------------------------------------------------------------------------------------------ |
-| **1. Zero-Any Policy**   | ✅ 100% | Erradicación total de `any` en servicios críticos. Tipado estricto para robustez total.                            |
-| **2. @core/ui Kit**      | ✅ 100% | Sistema de diseño propio con componentes atómicos (`Button`, `Modal`, `Input`) y estética _Glassmorphism_ premium. |
-| **3. Pure Domain Logic** | ✅ 100% | Extracción de reglas de negocio a clases puras (`CensusManager.ts`) desacopladas de React.                         |
-| **4. Performance**       | 🟡 20%  | Auditoría de re-renders y virtualización de listas (Próximo paso).                                                 |
+1. Seguir reduciendo dependencias sobre fachadas legacy.
+2. Limpiar y aislar código experimental/no clínico del flujo principal.
+3. Mantener la documentación basada en artefactos generados, no en snapshots manuales.
 
----
+## Fuente de verdad
 
-## �🏗️ Arquitectura
-
-- **Mapeo FHIR:** Implementado y testeado para interoperabilidad nacional.
-- **Auditoría:** Dashboard de estadísticas de auditoría funcional al 100%.
-- **Sincronización:** Sistema de _Optimistic Updates_ con rollback automático de errores.
-
----
-
-## 📁 Estructura General
-
-- `src/features/`: Organización modular por funcionalidad del hospital.
-- `src/services/`: Capa de persistencia y lógica de negocio pura.
-- `src/tests/`: Suite completa de validación.
-
----
-
-## 🔧 Configuración Activa
-
-| Herramienta | Versión |
-| ----------- | ------- |
-| React       | 19.2    |
-| Vite        | 6.4     |
-| Vitest      | 4.0     |
-| Tailwind    | 4.x     |
-
----
-
-## 📈 Métricas Reales
-
-| Métrica              | Valor |
-| -------------------- | :---: |
-| Unit tests (pasando) | 2689  |
-| Cobertura estimada   |  75%  |
-| Estabilidad E2E      | Alta  |
-
----
-
-## 🚀 Próximas Mejoras (Prioridad)
-
-1. 🟢 **P1:** Optimización de renderizado en la tabla principal del Censo (virtualización).
-2. 🟢 **P1:** Mejora de la experiencia de usuario en tablets (responsive audit).
-3. 🟠 **P2:** Integración profunda con servicios de salud nacionales vía FHIR.
-4. 🟡 **P3:** Dashboard de predicción de ocupación basado en histórico.
-
----
-
-_Hito alcanzado: 100% de éxito en integración continua y tests unitarios._
+- Métricas actuales: [reports/quality-metrics.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/reports/quality-metrics.md)
+- Pipeline activa: [ci-cd.yml](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/.github/workflows/ci-cd.yml)

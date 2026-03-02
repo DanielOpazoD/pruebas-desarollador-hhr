@@ -30,6 +30,15 @@ Si necesitas `3005`:
 npm run dev -- --port 3005
 ```
 
+### Variables de entorno
+
+- `VITE_FIREBASE_*`: configuración cliente de Firebase para desarrollo local.
+- `VITE_FIREBASE_API_KEY_B64`: alternativa opcional a la API key plana.
+- `VITE_FUNCTIONS_EMULATOR_HOST`, `VITE_AUTH_EMULATOR_HOST`, `VITE_FIRESTORE_EMULATOR_HOST`: solo para emuladores locales.
+- `VITE_LOCAL_GEMINI_API_KEY`: solo fallback local de CIE-10 en `localhost`.
+- `GEMINI_API_KEY`, `API_KEY`, `GMAIL_*`: uso server-side en Netlify Functions, nunca como `VITE_*`.
+- `VITE_ALLOW_DEV_EMAIL_SEND`: habilita pruebas reales de email solo en desarrollo local.
+
 ### Build y preview
 
 ```bash
@@ -210,14 +219,9 @@ La pipeline en `.github/workflows/ci-cd.yml` bloquea merge si falla alguno:
 
 ## Baseline de Calidad
 
-Snapshot vigente al `2026-03-01` en [reports/quality-metrics.md](reports/quality-metrics.md):
+Snapshot vigente en [reports/quality-metrics.md](reports/quality-metrics.md).
 
-- `979` archivos fuente
-- `95398` líneas fuente
-- `0` módulos sobredimensionados
-- `0` violaciones de deuda entre carpetas
-- `0` explicit `any` en código fuente
-- `474` archivos de test
+Para evitar desalineación, los conteos exactos de archivos, líneas y tests deben leerse desde ese reporte generado.
 
 ## Notas Operativas Recientes
 
