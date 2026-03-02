@@ -1,6 +1,6 @@
 import type { Workbook } from 'exceljs';
 
-import { getRecordForDate } from '../dataService';
+import { getForDate as getRecordForDate } from '../repositories/DailyRecordRepository';
 import { getAllRecords } from '../storage/indexedDBService';
 import {
   buildCensusDailyRawWorkbook,

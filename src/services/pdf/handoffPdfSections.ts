@@ -1,7 +1,7 @@
 import type { jsPDF } from 'jspdf';
 import { DailyRecord, PatientData, ShiftType, DeviceDetails } from '@/types';
 import { BEDS } from '@/constants';
-import { formatDateDDMMYYYY } from '../dataService';
+import { formatDateDDMMYYYY } from '@/utils/dateUtils';
 import { calculateHospitalizedDays } from './handoffPdfUtils';
 export { addCudyrTable } from './handoffPdfCudyrSection';
 export {

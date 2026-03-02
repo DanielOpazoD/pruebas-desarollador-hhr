@@ -1,6 +1,6 @@
 import { DailyRecord, DischargeData, PatientData, TransferData } from '@/types';
 import { BEDS, CSV_HEADERS } from '@/constants';
-import { formatDateDDMMYYYY } from '@/services/dataService';
+import { formatDateDDMMYYYY } from '@/utils/dateUtils';
 
 const escapeCsvValue = (value: unknown): string => {
   if (value === null || value === undefined) return '';

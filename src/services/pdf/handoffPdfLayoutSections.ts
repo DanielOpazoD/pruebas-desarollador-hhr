@@ -1,6 +1,6 @@
 import type { jsPDF } from 'jspdf';
 import { DailyRecord, ShiftType } from '@/types';
-import { formatDateDDMMYYYY } from '../dataService';
+import { formatDateDDMMYYYY } from '@/utils/dateUtils';
 import { getBase64ImageFromURL, getHandoffStaffInfo, Schedule } from './handoffPdfUtils';
 
 export const addHandoffHeader = async (

@@ -3,6 +3,7 @@
  *
  * This file provides backwards compatibility for existing imports.
  * All functionality has been refactored into focused modules.
+ * Prefer importing from dedicated modules in new code. Keep this surface small.
  *
  * New code should import directly from the specific modules:
  * - storage/unifiedLocalService
@@ -12,9 +13,6 @@
  * - utils/dateUtils
  */
 
-// ============================================================================
-// Storage
-// ============================================================================
 export {
   getStoredRecords,
   saveRecordLocal,
@@ -23,25 +21,9 @@ export {
 } from './storage/unifiedLocalService';
 
 export { STORAGE_KEY, NURSES_STORAGE_KEY } from './storage/unifiedLocalService';
-
-// ============================================================================
-// Factories
-// ============================================================================
 export { createEmptyPatient, clonePatient } from './factories/patientFactory';
-
-// ============================================================================
-// Calculations
-// ============================================================================
 export { calculateStats, type CensusStatistics } from './calculations/statsCalculator';
-
-// ============================================================================
-// Date Formatting
-// ============================================================================
 export { formatDateDDMMYYYY, getTodayISO, formatDateForDisplay } from '@/utils/dateUtils';
-
-// ============================================================================
-// Repository (for backwards compatibility)
-// ============================================================================
 export {
   getForDate as getRecordForDate,
   getPreviousDay as getPreviousDayRecord,

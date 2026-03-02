@@ -58,6 +58,23 @@ import {
   createSaveDailyRecordCommand,
 } from './contracts/dailyRecordCommands';
 
+const buildDailyRecordQuery = (date: string, syncFromRemote = true) =>
+  createGetDailyRecordQuery(date, syncFromRemote);
+
+const softDeleteRemoteRecord = async (date: string): Promise<void> => {
+  if (!isFirestoreEnabled()) return;
+
+  try {
+    const record = await getRecordFromFirestore(date);
+    if (record) {
+      await moveRecordToTrash(record);
+    }
+    await deleteRecordFromFirestore(date);
+  } catch (error) {
+    console.error('Failed to soft-delete from Firestore:', error);
+  }
+};
+
 // ============================================================================
 // Repository Interface
 // ============================================================================
@@ -87,12 +104,12 @@ export interface IDailyRecordRepository {
 // ============================================================================
 
 export const getForDate = async (date: string, syncFromRemote: boolean = true) => {
-  const query = createGetDailyRecordQuery(date, syncFromRemote);
+  const query = buildDailyRecordQuery(date, syncFromRemote);
   return getForDateFromReadService(query.date, query.syncFromRemote);
 };
 
 export const getForDateWithMeta = async (date: string, syncFromRemote: boolean = true) => {
-  const query = createGetDailyRecordQuery(date, syncFromRemote);
+  const query = buildDailyRecordQuery(date, syncFromRemote);
   return getForDateWithMetaFromReadService(query.date, query.syncFromRemote);
 };
 
@@ -115,7 +132,7 @@ export const subscribe = (
   date: string,
   callback: (r: DailyRecord | null, hasPendingWrites: boolean) => void
 ) => {
-  const query = createGetDailyRecordQuery(date, true);
+  const query = buildDailyRecordQuery(date, true);
   return subscribeFromSyncService(query.date, callback);
 };
 export const syncWithFirestore = syncWithFirestoreFromSyncService;
@@ -130,22 +147,8 @@ export const initializeDay = async (date: string, copyFromDate?: string) => {
  */
 export const deleteDay = async (date: string): Promise<void> => {
   const command = createDeleteDayCommand(date);
-
-  // 1. Local Delete (IndexedDB)
   await deleteFromIndexedDB(command.date);
-
-  // 2. Soft Delete in Firestore (Move to trash)
-  if (isFirestoreEnabled()) {
-    try {
-      const record = await getRecordFromFirestore(command.date);
-      if (record) {
-        await moveRecordToTrash(record);
-      }
-      await deleteRecordFromFirestore(command.date);
-    } catch (error) {
-      console.error('Failed to soft-delete from Firestore:', error);
-    }
-  }
+  await softDeleteRemoteRecord(command.date);
 };
 
 export const copyPatientToDate = async (

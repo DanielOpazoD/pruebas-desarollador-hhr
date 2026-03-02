@@ -9,7 +9,7 @@
 import { db } from '../infrastructure/db';
 import { hospitalDB as indexedDB } from './indexedDBService';
 import { ensureDbReady } from './indexeddb/indexedDbCore';
-import { SyncTask } from './syncQueueTypes';
+import type { SyncTask } from './syncQueueTypes';
 import { DailyRecord } from '@/types';
 import { getDailyRecordsPath } from '@/constants/firestorePaths';
 import { logError } from '@/services/utils/errorService';
@@ -19,6 +19,114 @@ const MAX_RETRIES = 5;
 const BASE_RETRY_DELAY_MS = 1000;
 const MAX_RETRY_DELAY_MS = 30000;
 let isProcessing = false;
+let onlineListenerRegistered = false;
+
+const isBrowserOnline = (): boolean => typeof navigator !== 'undefined' && navigator.onLine;
+
+const triggerSyncQueueProcessing = (): void => {
+  if (!isBrowserOnline()) return;
+  void processSyncQueue();
+};
+
+const clearTaskErrorState = () => ({
+  status: 'PENDING' as const,
+  nextAttemptAt: 0,
+  error: undefined,
+  lastErrorCode: undefined,
+  lastErrorCategory: undefined,
+  lastErrorSeverity: undefined,
+  lastErrorAction: undefined,
+  lastErrorAt: undefined,
+});
+
+const buildTaskErrorMeta = (error: unknown) => {
+  const classification = classifySyncError(error);
+  return {
+    classification,
+    errorMeta: {
+      error: buildSyncErrorSummary(classification),
+      lastErrorCode: classification.code,
+      lastErrorCategory: classification.category,
+      lastErrorSeverity: classification.severity,
+      lastErrorAction: classification.recommendedAction,
+      lastErrorAt: Date.now(),
+    } as const,
+  };
+};
+
+const updateExistingTask = async (
+  taskId: number,
+  payload: unknown,
+  timestamp: number
+): Promise<void> => {
+  await indexedDB.syncQueue.update(taskId, {
+    payload,
+    timestamp,
+    ...clearTaskErrorState(),
+  });
+  triggerSyncQueueProcessing();
+};
+
+const addNewTask = async (
+  type: SyncTask['type'],
+  payload: unknown,
+  timestamp: number,
+  key?: string
+): Promise<void> => {
+  await indexedDB.syncQueue.add({
+    opId: `${type}:${key ?? 'global'}:${timestamp}`,
+    type,
+    payload,
+    timestamp,
+    retryCount: 0,
+    key,
+    ...clearTaskErrorState(),
+  });
+  triggerSyncQueueProcessing();
+};
+
+const runTask = async (task: SyncTask): Promise<void> => {
+  switch (task.type) {
+    case 'UPDATE_DAILY_RECORD':
+      await syncDailyRecord(task.payload as DailyRecord);
+      break;
+  }
+};
+
+const markTaskConflict = async (
+  taskId: number,
+  errorMeta: ReturnType<typeof buildTaskErrorMeta>['errorMeta']
+) => {
+  await indexedDB.syncQueue.update(taskId, {
+    status: 'CONFLICT',
+    ...errorMeta,
+  });
+};
+
+const markTaskFailed = async (
+  taskId: number,
+  retryCount: number,
+  errorMeta: ReturnType<typeof buildTaskErrorMeta>['errorMeta']
+) => {
+  await indexedDB.syncQueue.update(taskId, {
+    status: 'FAILED',
+    retryCount,
+    ...errorMeta,
+  });
+};
+
+const rescheduleTask = async (
+  taskId: number,
+  retryCount: number,
+  errorMeta: ReturnType<typeof buildTaskErrorMeta>['errorMeta']
+) => {
+  await indexedDB.syncQueue.update(taskId, {
+    status: 'PENDING',
+    retryCount,
+    nextAttemptAt: Date.now() + computeBackoffMs(retryCount),
+    ...errorMeta,
+  });
+};
 
 const computeBackoffMs = (attempt: number): number => {
   const jitter = Math.random() * 500;
@@ -110,40 +218,12 @@ export const queueSyncTask = async (type: SyncTask['type'], payload: unknown): P
       const match = existing.find(task => task.key === key && task.status !== 'FAILED');
 
       if (match?.id) {
-        await indexedDB.syncQueue.update(match.id, {
-          payload,
-          timestamp: now,
-          status: 'PENDING',
-          nextAttemptAt: 0,
-          error: undefined,
-          lastErrorCode: undefined,
-          lastErrorCategory: undefined,
-          lastErrorSeverity: undefined,
-          lastErrorAction: undefined,
-          lastErrorAt: undefined,
-        });
-        if (typeof navigator !== 'undefined' && navigator.onLine) {
-          void processSyncQueue();
-        }
+        await updateExistingTask(match.id, payload, now);
         return;
       }
     }
 
-    await indexedDB.syncQueue.add({
-      opId: `${type}:${key ?? 'global'}:${now}`,
-      type,
-      payload,
-      timestamp: now,
-      retryCount: 0,
-      status: 'PENDING',
-      nextAttemptAt: 0,
-      key,
-    });
-
-    // Trigger processing immediately if online
-    if (typeof navigator !== 'undefined' && navigator.onLine) {
-      void processSyncQueue();
-    }
+    await addNewTask(type, payload, now, key);
   } catch (error) {
     console.error('[SyncQueue] Failed to queue task:', error);
   }
@@ -173,58 +253,29 @@ export const processSyncQueue = async (): Promise<void> => {
       if (!task.id) continue;
 
       try {
-        // Mark as processing
         await indexedDB.syncQueue.update(task.id, { status: 'PROCESSING' });
+        await runTask(task);
 
-        // Execute task based on type
-        switch (task.type) {
-          case 'UPDATE_DAILY_RECORD':
-            await syncDailyRecord(task.payload as DailyRecord);
-            break;
-          // Add other cases here
-        }
-
-        // Task successful - remove from queue
         await indexedDB.syncQueue.delete(task.id);
         console.warn(`[SyncQueue] Task ${task.id} completed successfully.`);
       } catch (error) {
-        const classification = classifySyncError(error);
-        const errorMessage = buildSyncErrorSummary(classification);
-        const errorMeta = {
-          error: errorMessage,
-          lastErrorCode: classification.code,
-          lastErrorCategory: classification.category,
-          lastErrorSeverity: classification.severity,
-          lastErrorAction: classification.recommendedAction,
-          lastErrorAt: Date.now(),
-        } as const;
+        const { classification, errorMeta } = buildTaskErrorMeta(error);
         console.error(`[SyncQueue] Task ${task.id} failed:`, error);
 
         if (classification.category === 'conflict') {
-          await indexedDB.syncQueue.update(task.id, {
-            status: 'CONFLICT',
-            ...errorMeta,
-          });
+          await markTaskConflict(task.id, errorMeta);
           continue;
         }
 
         if (!classification.retryable) {
-          await indexedDB.syncQueue.update(task.id, {
-            status: 'FAILED',
-            ...errorMeta,
-          });
+          await markTaskFailed(task.id, task.retryCount, errorMeta);
           continue;
         }
 
         const newRetryCount = task.retryCount + 1;
 
         if (newRetryCount >= MAX_RETRIES) {
-          // Max retries reached - mark as failed (dead letter)
-          await indexedDB.syncQueue.update(task.id, {
-            status: 'FAILED',
-            ...errorMeta,
-            retryCount: newRetryCount,
-          });
+          await markTaskFailed(task.id, newRetryCount, errorMeta);
           logError('Sync task permanently failed', error instanceof Error ? error : undefined, {
             taskId: task.id,
             type: task.type,
@@ -232,13 +283,7 @@ export const processSyncQueue = async (): Promise<void> => {
             retryCount: newRetryCount,
           });
         } else {
-          const delay = computeBackoffMs(newRetryCount);
-          await indexedDB.syncQueue.update(task.id, {
-            status: 'PENDING',
-            retryCount: newRetryCount,
-            ...errorMeta,
-            nextAttemptAt: Date.now() + delay,
-          });
+          await rescheduleTask(task.id, newRetryCount, errorMeta);
         }
       }
     }
@@ -255,10 +300,16 @@ async function syncDailyRecord(record: DailyRecord): Promise<void> {
   await db.setDoc(path, record.date, record, { merge: true });
 }
 
-// Auto-start processing when coming online
-if (typeof window !== 'undefined') {
+export const ensureSyncQueueOnlineListener = (): void => {
+  if (onlineListenerRegistered || typeof window === 'undefined') return;
+
   window.addEventListener('online', () => {
     console.warn('[SyncQueue] Online detected, flushing queue...');
-    processSyncQueue();
+    triggerSyncQueueProcessing();
   });
-}
+
+  onlineListenerRegistered = true;
+};
+
+// Auto-start processing when coming online.
+ensureSyncQueueOnlineListener();
