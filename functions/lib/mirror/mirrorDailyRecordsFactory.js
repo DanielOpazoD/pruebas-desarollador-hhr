@@ -1,5 +1,9 @@
 const functions = require('firebase-functions/v1');
 const { HOSPITAL_ID } = require('./mirrorConfig');
+const {
+  canParseMirrorRecordDate,
+  shouldSkipMirroringDailyRecord,
+} = require('./mirrorRuntimeSupport');
 
 const createMirrorDailyRecords = ({ dbBeta, admin }) =>
   functions.firestore
@@ -13,9 +17,8 @@ const createMirrorDailyRecords = ({ dbBeta, admin }) =>
       }
 
       try {
-        const docDate = new Date(`${docId}T00:00:00`);
-        const hoursElapsed = (Date.now() - docDate.getTime()) / (1000 * 60 * 60);
-        if (hoursElapsed > 48) {
+        const docDate = canParseMirrorRecordDate(docId);
+        if (docDate && shouldSkipMirroringDailyRecord({ docId, now: Date.now() })) {
           return null;
         }
       } catch (dateError) {
@@ -42,9 +45,15 @@ const createMirrorDailyRecords = ({ dbBeta, admin }) =>
           const betaLastUpdated = betaData.lastUpdated?.toMillis
             ? betaData.lastUpdated.toMillis()
             : 0;
-          const now = Date.now();
-
-          if (now - betaSyncedAt < 5000 || sourceLastUpdated === betaLastUpdated) {
+          if (
+            shouldSkipMirroringDailyRecord({
+              docId,
+              sourceLastUpdatedMs: sourceLastUpdated,
+              betaSyncedAtMs: betaSyncedAt,
+              betaLastUpdatedMs: betaLastUpdated,
+              now: Date.now(),
+            })
+          ) {
             return null;
           }
         }

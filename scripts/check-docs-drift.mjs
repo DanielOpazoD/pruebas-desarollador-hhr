@@ -13,6 +13,7 @@ const checks = [
       'schemaEvolutionPolicy.ts',
       'migrationLedger.ts',
       'dailyRecordAggregate.ts',
+      'reports/schema-evolution.md',
     ],
   },
   {

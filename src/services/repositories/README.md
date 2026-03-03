@@ -67,6 +67,8 @@ de entrada (fecha, límites, RUT, IDs) antes de delegar en storage.
   - versión actual soportada por runtime
   - compatibilidad hacia adelante
   - qué cambios requieren bridge legacy o migración normal
+- `reports/schema-evolution.md` y `reports/schema-evolution.json` entregan un snapshot
+  legible del ledger de evolución para soporte y revisión técnica.
 - `dailyRecordAggregate.ts` expone facetas del dominio (`clinical`, `staffing`, `movements`,
   `handoff`, `metadata`) para bajar acoplamiento sobre el contrato monolítico de `DailyRecord`.
 - Si se cambia cualquier regla de compatibilidad, deben actualizarse:

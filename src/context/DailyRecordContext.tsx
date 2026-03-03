@@ -20,6 +20,7 @@ import {
   DailyRecordActionsContext,
   useRequiredDailyRecordActionsContext,
 } from './dailyRecordActionsContext';
+import { useRequiredContextValue } from './contextHookSupport';
 
 // 1. Specialized Contexts
 const DailyRecordDataContext = createContext<DailyRecordDataContextType | undefined>(undefined);
@@ -109,10 +110,7 @@ export const DailyRecordProvider: React.FC<{
  * Re-renders when ANY part of the record or sync status changes.
  */
 export const useDailyRecordData = () => {
-  const context = useContext(DailyRecordDataContext);
-  if (context === undefined)
-    throw new Error('useDailyRecordData must be used within a DailyRecordProvider');
-  return context;
+  return useRequiredContextValue(DailyRecordDataContext, 'useDailyRecordData');
 };
 
 /**
@@ -120,30 +118,21 @@ export const useDailyRecordData = () => {
  * Re-renders only when record.beds changes.
  */
 export const useDailyRecordBeds = () => {
-  const context = useContext(DailyRecordBedsContext);
-  if (context === undefined)
-    throw new Error('useDailyRecordBeds must be used within a DailyRecordProvider');
-  return context;
+  return useRequiredContextValue(DailyRecordBedsContext, 'useDailyRecordBeds');
 };
 
 /**
  * Access only movement data (discharges, transfers, cma).
  */
 export const useDailyRecordMovements = () => {
-  const context = useContext(DailyRecordMovementsContext);
-  if (context === undefined)
-    throw new Error('useDailyRecordMovements must be used within a DailyRecordProvider');
-  return context;
+  return useRequiredContextValue(DailyRecordMovementsContext, 'useDailyRecordMovements');
 };
 
 /**
  * Access only sync status.
  */
 export const useDailyRecordSync = () => {
-  const context = useContext(DailyRecordSyncContext);
-  if (context === undefined)
-    throw new Error('useDailyRecordSync must be used within a DailyRecordProvider');
-  return context;
+  return useRequiredContextValue(DailyRecordSyncContext, 'useDailyRecordSync');
 };
 
 /**
@@ -166,40 +155,28 @@ export const useDailyRecordStatus = () => {
  * Access stability rules.
  */
 export const useDailyRecordStability = () => {
-  const context = useContext(DailyRecordStabilityContext);
-  if (context === undefined)
-    throw new Error('useDailyRecordStability must be used within a DailyRecordProvider');
-  return context;
+  return useRequiredContextValue(DailyRecordStabilityContext, 'useDailyRecordStability');
 };
 
 /**
  * Access inventory stats.
  */
 export const useDailyRecordInventory = () => {
-  const context = useContext(DailyRecordInventoryContext);
-  if (context === undefined)
-    throw new Error('useDailyRecordInventory must be used within a DailyRecordProvider');
-  return context;
+  return useRequiredContextValue(DailyRecordInventoryContext, 'useDailyRecordInventory');
 };
 
 /**
  * Access staff data.
  */
 export const useDailyRecordStaff = () => {
-  const context = useContext(DailyRecordStaffContext);
-  if (context === undefined)
-    throw new Error('useDailyRecordStaff must be used within a DailyRecordProvider');
-  return context;
+  return useRequiredContextValue(DailyRecordStaffContext, 'useDailyRecordStaff');
 };
 
 /**
  * Access bed type overrides.
  */
 export const useDailyRecordOverrides = () => {
-  const context = useContext(DailyRecordOverridesContext);
-  if (context === undefined)
-    throw new Error('useDailyRecordOverrides must be used within a DailyRecordProvider');
-  return context || {};
+  return useRequiredContextValue(DailyRecordOverridesContext, 'useDailyRecordOverrides') || {};
 };
 
 /**

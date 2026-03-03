@@ -9,6 +9,11 @@ import {
   deliverCensusEmailWithLink,
   generateCensusShareLink,
 } from '@/hooks/controllers/censusEmailDeliveryController';
+import {
+  buildClipboardCopyMessage,
+  canRunCensusEmailAction,
+  resolveShareLinkRole,
+} from '@/hooks/controllers/censusEmailActionController';
 
 export type CensusEmailSendStatus = 'idle' | 'loading' | 'success' | 'error';
 
@@ -65,13 +70,14 @@ export const useCensusEmailActions = ({
   browserRuntime,
 }: UseCensusEmailActionsParams): UseCensusEmailActionsResult => {
   const generateShareLink = useCallback(
-    async (_accessRole: CensusAccessRole = 'viewer'): Promise<string | null> =>
+    async (accessRole: CensusAccessRole = 'viewer'): Promise<string | null> =>
+      // Role kept explicit even if current browser-runtime flow doesn't specialize the token yet.
       generateCensusShareLink(browserRuntime, alert),
     [alert, browserRuntime]
   );
 
   const sendEmail = useCallback(async () => {
-    if (status === 'loading' || status === 'success') return;
+    if (!canRunCensusEmailAction(status)) return;
     await deliverCensusEmail({
       record,
       currentDateString,
@@ -117,7 +123,7 @@ export const useCensusEmailActions = ({
 
   const sendEmailWithLink = useCallback(
     async (accessRole: CensusAccessRole = 'viewer') => {
-      if (status === 'loading' || status === 'success') return;
+      if (!canRunCensusEmailAction(status)) return;
       await deliverCensusEmailWithLink({
         record,
         currentDateString,
@@ -127,7 +133,7 @@ export const useCensusEmailActions = ({
         recipients,
         message,
         browserRuntime,
-        accessRole,
+        accessRole: resolveShareLinkRole(accessRole),
         confirm,
         alert,
         setStatus,
@@ -154,11 +160,11 @@ export const useCensusEmailActions = ({
 
   const copyShareLink = useCallback(
     async (accessRole: CensusAccessRole = 'viewer') => {
-      const link = await generateShareLink(accessRole);
+      const link = await generateShareLink(resolveShareLinkRole(accessRole));
       if (link) {
         try {
           await browserRuntime.writeClipboard(link);
-          await alert('Copiado al portapapeles: ' + link, 'Link Copiado');
+          await alert(buildClipboardCopyMessage(link), 'Link Copiado');
         } catch (err) {
           console.error('Clipboard error', err);
           await alert('No se pudo copiar el link. Intenta manualmente: ' + link);
