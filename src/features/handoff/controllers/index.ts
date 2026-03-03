@@ -14,5 +14,8 @@ export {
 export {
   buildMedicalHandoffSignatureLink,
   resolveMedicalHandoffScope,
+  resolveScopedMedicalHandoffSentAt,
+  resolveScopedMedicalSignature,
+  resolveScopedMedicalSignatureToken,
 } from './medicalHandoffScopeController';
 export type { MedicalHandoffScope } from './medicalHandoffScopeController';

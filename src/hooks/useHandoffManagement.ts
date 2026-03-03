@@ -9,6 +9,12 @@ import {
 } from '@/services/integrations/whatsapp/whatsappService';
 import { useAuditContext } from '@/context/AuditContext';
 import { getAttributedAuthors } from '@/services/admin/attributionService';
+import type { MedicalHandoffScope } from '@/features/handoff/controllers';
+import {
+  buildMedicalHandoffSignatureLink,
+  resolveScopedMedicalSignatureToken,
+} from '@/features/handoff/controllers';
+import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 
 export interface HandoffManagementActions {
   updateHandoffChecklist: (shift: 'day' | 'night', field: string, value: boolean | string) => void;
@@ -18,12 +24,21 @@ export interface HandoffManagementActions {
     type: 'delivers' | 'receives' | 'tens',
     staffList: string[]
   ) => void;
-  updateMedicalSignature: (doctorName: string) => Promise<void>;
+  updateMedicalSignature: (doctorName: string, scope?: MedicalHandoffScope) => Promise<void>;
   updateMedicalHandoffDoctor: (doctorName: string) => Promise<void>;
-  markMedicalHandoffAsSent: (doctorName?: string) => Promise<void>;
+  markMedicalHandoffAsSent: (doctorName?: string, scope?: MedicalHandoffScope) => Promise<void>;
+  ensureMedicalHandoffSignatureLink: (scope?: MedicalHandoffScope) => Promise<string>;
   resetMedicalHandoffState: () => Promise<void>;
   sendMedicalHandoff: (templateContent: string, targetGroupId: string) => Promise<void>;
 }
+
+const generateMedicalSignatureLinkToken = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `sig_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
+};
 
 export const useHandoffManagement = (
   record: DailyRecord | null,
@@ -145,17 +160,24 @@ export const useHandoffManagement = (
   );
 
   const updateMedicalSignature = useCallback(
-    async (doctorName: string) => {
+    async (doctorName: string, scope: MedicalHandoffScope = 'all') => {
       const currentRecord = recordRef.current;
       if (!currentRecord) return;
 
       const updatedRecord = { ...currentRecord };
       const signedAt = new Date().toISOString();
-
-      updatedRecord.medicalSignature = {
+      const signature = {
         doctorName,
         signedAt,
       };
+
+      updatedRecord.medicalSignatureByScope = {
+        ...(updatedRecord.medicalSignatureByScope || {}),
+        [scope]: signature,
+      };
+      if (scope === 'all') {
+        updatedRecord.medicalSignature = signature;
+      }
 
       updatedRecord.lastUpdated = new Date().toISOString();
       await saveAndUpdate(updatedRecord);
@@ -168,6 +190,7 @@ export const useHandoffManagement = (
         {
           doctorName,
           signedAt,
+          scope,
         },
         undefined,
         currentRecord.date
@@ -190,17 +213,68 @@ export const useHandoffManagement = (
   );
 
   const markMedicalHandoffAsSent = useCallback(
-    (doctorName?: string) => {
+    (doctorName?: string, scope: MedicalHandoffScope = 'all') => {
       const currentRecord = recordRef.current;
       if (!currentRecord) return Promise.resolve();
 
+      const sentAt = new Date().toISOString();
       const updates: Partial<DailyRecord> = {
-        medicalHandoffSentAt: new Date().toISOString(),
+        medicalHandoffSentAtByScope: {
+          ...(currentRecord.medicalHandoffSentAtByScope || {}),
+          [scope]: sentAt,
+        },
       };
+      if (scope === 'all') {
+        updates.medicalHandoffSentAt = sentAt;
+      }
       if (doctorName) {
         updates.medicalHandoffDoctor = doctorName;
       }
       return patchRecord(updates);
+    },
+    [patchRecord]
+  );
+
+  const ensureMedicalHandoffSignatureLink = useCallback(
+    async (scope: MedicalHandoffScope = 'all'): Promise<string> => {
+      const currentRecord = recordRef.current;
+      if (!currentRecord) {
+        throw new Error('No hay entrega médica disponible para compartir.');
+      }
+
+      const existingToken = resolveScopedMedicalSignatureToken(currentRecord, scope);
+      if (existingToken) {
+        return buildMedicalHandoffSignatureLink(
+          defaultBrowserWindowRuntime.getLocationOrigin(),
+          currentRecord.date,
+          scope,
+          existingToken
+        );
+      }
+
+      const nextToken = generateMedicalSignatureLinkToken();
+      await patchRecord({
+        medicalSignatureLinkTokenByScope: {
+          ...(currentRecord.medicalSignatureLinkTokenByScope || {}),
+          [scope]: nextToken,
+        },
+      });
+
+      const refreshedRecord = {
+        ...currentRecord,
+        medicalSignatureLinkTokenByScope: {
+          ...(currentRecord.medicalSignatureLinkTokenByScope || {}),
+          [scope]: nextToken,
+        },
+      };
+      recordRef.current = refreshedRecord;
+
+      return buildMedicalHandoffSignatureLink(
+        defaultBrowserWindowRuntime.getLocationOrigin(),
+        currentRecord.date,
+        scope,
+        nextToken
+      );
     },
     [patchRecord]
   );
@@ -222,6 +296,14 @@ export const useHandoffManagement = (
       clearedFields.push('firma');
     }
 
+    if (updatedRecord.medicalHandoffSentAtByScope) {
+      updatedRecord.medicalHandoffSentAtByScope = {};
+    }
+
+    if (updatedRecord.medicalSignatureByScope) {
+      updatedRecord.medicalSignatureByScope = {};
+    }
+
     updatedRecord.lastUpdated = new Date().toISOString();
     await saveAndUpdate(updatedRecord);
 
@@ -233,6 +315,14 @@ export const useHandoffManagement = (
         clearedFields,
         hadMedicalHandoffSentAt: Boolean(currentRecord.medicalHandoffSentAt),
         hadMedicalSignature: Boolean(currentRecord.medicalSignature),
+        hadScopedMedicalHandoffSentAt: Boolean(
+          currentRecord.medicalHandoffSentAtByScope &&
+          Object.keys(currentRecord.medicalHandoffSentAtByScope).length > 0
+        ),
+        hadScopedMedicalSignature: Boolean(
+          currentRecord.medicalSignatureByScope &&
+          Object.keys(currentRecord.medicalSignatureByScope).length > 0
+        ),
         doctorName: currentRecord.medicalHandoffDoctor || '',
       },
       undefined,
@@ -266,7 +356,7 @@ export const useHandoffManagement = (
         // 3. Format Message
         const [year, month, day] = currentRecord.date.split('-');
         const dateStr = `${day}-${month}-${year}`;
-        const handoffUrl = `${window.location.origin}?mode=signature&date=${currentRecord.date}`;
+        const handoffUrl = await ensureMedicalHandoffSignatureLink('all');
 
         const message = formatHandoffMessage(templateContent, {
           date: dateStr,
@@ -288,9 +378,14 @@ export const useHandoffManagement = (
         success('WhatsApp Enviado', 'Entrega médica enviada correctamente.');
 
         // 5. Atomic Patch Update
+        const sentAt = new Date().toISOString();
         await patchRecord({
           medicalHandoffDoctor: doctorName,
-          medicalHandoffSentAt: new Date().toISOString(),
+          medicalHandoffSentAt: sentAt,
+          medicalHandoffSentAtByScope: {
+            ...(currentRecord.medicalHandoffSentAtByScope || {}),
+            all: sentAt,
+          },
         });
       } catch (err: unknown) {
         console.error('WhatsApp Logic Error:', err);
@@ -309,6 +404,7 @@ export const useHandoffManagement = (
       updateMedicalSignature,
       updateMedicalHandoffDoctor,
       markMedicalHandoffAsSent,
+      ensureMedicalHandoffSignatureLink,
       resetMedicalHandoffState,
       sendMedicalHandoff,
     }),
@@ -319,6 +415,7 @@ export const useHandoffManagement = (
       updateMedicalSignature,
       updateMedicalHandoffDoctor,
       markMedicalHandoffAsSent,
+      ensureMedicalHandoffSignatureLink,
       resetMedicalHandoffState,
       sendMedicalHandoff,
     ]

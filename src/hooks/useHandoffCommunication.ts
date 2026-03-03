@@ -8,10 +8,7 @@ import {
   defaultBrowserWindowRuntime,
   writeClipboardText,
 } from '@/shared/runtime/browserWindowRuntime';
-import {
-  buildMedicalHandoffSignatureLink,
-  type MedicalHandoffScope,
-} from '@/features/handoff/controllers';
+import { type MedicalHandoffScope } from '@/features/handoff/controllers';
 
 /**
  * useHandoffCommunication Hook
@@ -22,6 +19,7 @@ export const useHandoffCommunication = (
   record: DailyRecord | null,
   visibleBeds: { id: string }[],
   sendMedicalHandoff: (content: string, groupId: string) => Promise<void>,
+  ensureMedicalHandoffSignatureLink: (scope?: MedicalHandoffScope) => Promise<string>,
   onSuccess: (message: string, description?: string) => void
 ) => {
   const [whatsappSending, setWhatsappSending] = useState(false);
@@ -31,28 +29,23 @@ export const useHandoffCommunication = (
    * Copies the unique signature link to the system clipboard.
    */
   const handleShareLink = useCallback(
-    (scope: MedicalHandoffScope = 'all') => {
+    async (scope: MedicalHandoffScope = 'all') => {
       if (!record) return;
-      const url = buildMedicalHandoffSignatureLink(
-        defaultBrowserWindowRuntime.getLocationOrigin(),
-        record.date,
-        scope
-      );
-      void writeClipboardText(url)
-        .then(() => {
-          const scopeLabel =
-            scope === 'upc' ? 'UPC' : scope === 'no-upc' ? 'No UPC' : 'todos los pacientes';
-          onSuccess(
-            'Enlace copiado',
-            `El link para firma médica de ${scopeLabel} ha sido copiado al portapapeles.`
-          );
-        })
-        .catch((error: unknown) => {
-          const err = error as Error;
-          onSuccess(err.message || 'No se pudo copiar el enlace al portapapeles.');
-        });
+      try {
+        const url = await ensureMedicalHandoffSignatureLink(scope);
+        await writeClipboardText(url);
+        const scopeLabel =
+          scope === 'upc' ? 'UPC' : scope === 'no-upc' ? 'No UPC' : 'todos los pacientes';
+        onSuccess(
+          'Enlace copiado',
+          `El link para firma médica de ${scopeLabel} ha sido copiado al portapapeles.`
+        );
+      } catch (error: unknown) {
+        const err = error as Error;
+        onSuccess(err.message || 'No se pudo copiar el enlace al portapapeles.');
+      }
     },
-    [record, onSuccess]
+    [ensureMedicalHandoffSignatureLink, onSuccess, record]
   );
 
   /**
@@ -109,7 +102,7 @@ export const useHandoffCommunication = (
 
       const [year, month, day] = record.date.split('-');
       const dateStr = `${day}-${month}-${year}`;
-      const handoffUrl = `${defaultBrowserWindowRuntime.getLocationOrigin()}?mode=signature&date=${dateStr}`;
+      const handoffUrl = await ensureMedicalHandoffSignatureLink('all');
 
       const message =
         `\uD83C\uDFE5 Hospital Hanga Roa\n` +
@@ -136,7 +129,7 @@ export const useHandoffCommunication = (
       console.error('Error in manual WhatsApp:', err);
       onSuccess(err.message || 'Error al preparar WhatsApp');
     }
-  }, [record, visibleBeds, onSuccess]);
+  }, [ensureMedicalHandoffSignatureLink, record, visibleBeds, onSuccess]);
 
   return {
     whatsappSending,

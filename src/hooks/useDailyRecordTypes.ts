@@ -13,6 +13,7 @@ import {
   DailyRecordPatch,
 } from '@/types';
 import type { PatientMovementActions } from '@/types/movements';
+import type { MedicalHandoffScope } from '@/features/handoff/controllers';
 export type { DailyRecordPatch };
 
 // ============================================================================
@@ -130,9 +131,10 @@ export interface DailyRecordActionsContextType extends PatientMovementActions {
     type: 'delivers' | 'receives' | 'tens',
     staffList: string[]
   ) => void;
-  updateMedicalSignature: (doctorName: string) => Promise<void>;
+  updateMedicalSignature: (doctorName: string, scope?: MedicalHandoffScope) => Promise<void>;
   updateMedicalHandoffDoctor: (doctorName: string) => Promise<void>;
-  markMedicalHandoffAsSent: (doctorName?: string) => Promise<void>;
+  markMedicalHandoffAsSent: (doctorName?: string, scope?: MedicalHandoffScope) => Promise<void>;
+  ensureMedicalHandoffSignatureLink: (scope?: MedicalHandoffScope) => Promise<string>;
   resetMedicalHandoffState: () => Promise<void>;
   sendMedicalHandoff: (templateContent: string, targetGroupId: string) => Promise<void>;
 }

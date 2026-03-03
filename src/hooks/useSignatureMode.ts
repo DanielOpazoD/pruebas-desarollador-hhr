@@ -2,10 +2,7 @@
  * useSignatureMode
  * Handles URL-based signature mode for medical handoffs
  */
-import { useEffect, useMemo, useRef } from 'react';
-import { signInAnonymously } from 'firebase/auth';
-import { auth } from '@/firebaseConfig';
-import { AuthUser } from '@/services/auth/authService';
+import { useMemo } from 'react';
 
 interface SignatureModeResult {
   isSignatureMode: boolean;
@@ -15,27 +12,13 @@ interface SignatureModeResult {
 
 export function useSignatureMode(
   navDateString: string,
-  user: AuthUser | null,
-  authLoading: boolean
+  _user: unknown,
+  _authLoading: boolean
 ): SignatureModeResult {
   // Parse URL params
   const urlParams = useMemo(() => new URLSearchParams(window.location.search), []);
   const isSignatureMode = urlParams.get('mode') === 'signature';
   const signatureDate = urlParams.get('date');
-
-  // Anonymous login for signature mode
-  const isSigningInRef = useRef(false);
-  useEffect(() => {
-    // ONLY sign in anonymously if we are in signature mode and there is no active user yet
-    if (isSignatureMode && !user && !authLoading && !isSigningInRef.current) {
-      isSigningInRef.current = true;
-      // console.debug("[useSignatureMode] 👤 No user found in signature mode, signing in anonymously...");
-      signInAnonymously(auth).catch(err => {
-        console.error('Anonymous auth failed', err);
-        isSigningInRef.current = false;
-      });
-    }
-  }, [isSignatureMode, user, authLoading]);
 
   // Determine effective date
   const currentDateString = useMemo(() => {

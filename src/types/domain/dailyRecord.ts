@@ -62,11 +62,23 @@ export interface DailyRecord {
   // ===== Medical Handoff Signature =====
   medicalHandoffDoctor?: string; // Doctor delivering the shift
   medicalHandoffSentAt?: string; // Timestamp when the share link was clicked
+  medicalHandoffSentAtByScope?: Partial<Record<'all' | 'upc' | 'no-upc', string>>;
+  medicalSignatureLinkTokenByScope?: Partial<Record<'all' | 'upc' | 'no-upc', string>>;
   medicalSignature?: {
     doctorName: string;
     signedAt: string; // ISO timestamp
     userAgent?: string; // Optional device info
   };
+  medicalSignatureByScope?: Partial<
+    Record<
+      'all' | 'upc' | 'no-upc',
+      {
+        doctorName: string;
+        signedAt: string;
+        userAgent?: string;
+      }
+    >
+  >;
 
   // ===== CUDYR Lock (Prevents new patients from being added to CUDYR after cutoff) =====
   /** Whether CUDYR editing is locked for this day */
@@ -113,7 +125,10 @@ type TopLevelPath = keyof Pick<
   | 'medicalHandoffNovedades'
   | 'medicalHandoffDoctor'
   | 'medicalHandoffSentAt'
+  | 'medicalHandoffSentAtByScope'
+  | 'medicalSignatureLinkTokenByScope'
   | 'medicalSignature'
+  | 'medicalSignatureByScope'
   | 'cudyrLocked'
   | 'cudyrLockedAt'
   | 'cudyrLockedBy'
@@ -127,7 +142,16 @@ type HandoffStaffPath =
   | `handoffDayReceives`
   | `handoffNightDelivers`
   | `handoffNightReceives`;
-type MedicalSignaturePath = `medicalSignature` | `medicalSignature.${string}`;
+type MedicalSignaturePath =
+  | `medicalSignature`
+  | `medicalSignature.${string}`
+  | `medicalSignatureByScope`
+  | `medicalSignatureByScope.${string}`
+  | `medicalSignatureByScope.${string}.${string}`
+  | `medicalHandoffSentAtByScope`
+  | `medicalHandoffSentAtByScope.${string}`
+  | `medicalSignatureLinkTokenByScope`
+  | `medicalSignatureLinkTokenByScope.${string}`;
 
 /**
  * Union of all valid patch paths.

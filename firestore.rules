@@ -210,7 +210,15 @@ service cloud.firestore {
     // Check if the update is only for medical signature fields
     function isMedicalUpdate() {
       let affectedKeys = request.resource.data.diff(resource.data).affectedKeys();
-      return affectedKeys.hasOnly(['medicalSignature', 'medicalHandoffDoctor', 'medicalHandoffSentAt', 'lastUpdated']);
+      return affectedKeys.hasOnly([
+        'medicalSignature',
+        'medicalSignatureByScope',
+        'medicalHandoffDoctor',
+        'medicalHandoffSentAt',
+        'medicalHandoffSentAtByScope',
+        'medicalSignatureLinkTokenByScope',
+        'lastUpdated'
+      ]);
     }
     
     // ============================================

@@ -55,7 +55,7 @@ export const useHandoffLogic = ({
   const { record } = useDailyRecordData();
   const { updatePatient, updatePatientMultiple, updateClinicalCrib, updateClinicalCribMultiple } =
     useDailyRecordBedActions();
-  const { sendMedicalHandoff } = useDailyRecordHandoffActions();
+  const { sendMedicalHandoff, ensureMedicalHandoffSignatureLink } = useDailyRecordHandoffActions();
 
   const isMedical = type === 'medical';
 
@@ -66,6 +66,7 @@ export const useHandoffLogic = ({
     record,
     visibility.visibleBeds,
     sendMedicalHandoff,
+    ensureMedicalHandoffSignatureLink,
     onSuccess
   );
 

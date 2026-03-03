@@ -3,138 +3,188 @@ import { renderHook, act } from '@testing-library/react';
 
 // Mock dependencies before importing the hook
 vi.mock('@/context/UIContext', () => ({
-    useNotification: () => ({
-        success: vi.fn(),
-        error: vi.fn(),
-    }),
+  useNotification: () => ({
+    success: vi.fn(),
+    error: vi.fn(),
+  }),
 }));
 
 vi.mock('@/context/AuditContext', () => ({
-    useAuditContext: () => ({
-        logEvent: vi.fn(),
-        logDebouncedEvent: vi.fn(),
-        userId: 'test-user',
-    }),
+  useAuditContext: () => ({
+    logEvent: vi.fn(),
+    logDebouncedEvent: vi.fn(),
+    userId: 'test-user',
+  }),
 }));
 
 vi.mock('@/services/repositories/DailyRecordRepository', () => ({
-    getPreviousDay: vi.fn().mockResolvedValue(null),
+  getPreviousDay: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock('@/services/integrations/whatsapp/whatsappService', () => ({
-    formatHandoffMessage: vi.fn().mockReturnValue('Test message'),
-    sendWhatsAppMessage: vi.fn().mockResolvedValue({ success: true }),
+  formatHandoffMessage: vi.fn().mockReturnValue('Test message'),
+  sendWhatsAppMessage: vi.fn().mockResolvedValue({ success: true }),
 }));
 
 vi.mock('@/services/admin/attributionService', () => ({
-    getAttributedAuthors: vi.fn().mockReturnValue([]),
+  getAttributedAuthors: vi.fn().mockReturnValue([]),
 }));
 
 import { useHandoffManagement } from '@/hooks/useHandoffManagement';
 import { DailyRecord, DailyRecordPatch } from '@/types';
 
 describe('useHandoffManagement', () => {
-    let mockRecord: DailyRecord;
-    let mockSaveAndUpdate: (updatedRecord: DailyRecord) => Promise<void>;
-    let mockPatchRecord: (partial: DailyRecordPatch) => Promise<void>;
+  let mockRecord: DailyRecord;
+  let mockSaveAndUpdate: (updatedRecord: DailyRecord) => Promise<void>;
+  let mockPatchRecord: (partial: DailyRecordPatch) => Promise<void>;
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-        mockSaveAndUpdate = vi.fn().mockResolvedValue(undefined);
-        mockPatchRecord = vi.fn().mockResolvedValue(undefined);
-        mockRecord = {
-            date: '2024-12-28',
-            beds: { 'R1': { patientName: 'Test' } },
-            handoffDayChecklist: {},
-            handoffNightChecklist: {},
-            handoffNovedadesDayShift: '',
-            handoffNovedadesNightShift: '',
-        } as unknown as DailyRecord;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSaveAndUpdate = vi.fn().mockResolvedValue(undefined);
+    mockPatchRecord = vi.fn().mockResolvedValue(undefined);
+    mockRecord = {
+      date: '2024-12-28',
+      beds: { R1: { patientName: 'Test' } },
+      handoffDayChecklist: {},
+      handoffNightChecklist: {},
+      handoffNovedadesDayShift: '',
+      handoffNovedadesNightShift: '',
+    } as unknown as DailyRecord;
+  });
+
+  it('should return all management functions', () => {
+    const { result } = renderHook(() =>
+      useHandoffManagement(mockRecord, mockSaveAndUpdate, mockPatchRecord)
+    );
+
+    expect(typeof result.current.updateHandoffChecklist).toBe('function');
+    expect(typeof result.current.updateHandoffNovedades).toBe('function');
+    expect(typeof result.current.updateHandoffStaff).toBe('function');
+    expect(typeof result.current.updateMedicalSignature).toBe('function');
+    expect(typeof result.current.updateMedicalHandoffDoctor).toBe('function');
+    expect(typeof result.current.markMedicalHandoffAsSent).toBe('function');
+    expect(typeof result.current.ensureMedicalHandoffSignatureLink).toBe('function');
+    expect(typeof result.current.sendMedicalHandoff).toBe('function');
+  });
+
+  it('should not update checklist when record is null', () => {
+    const { result } = renderHook(() =>
+      useHandoffManagement(null, mockSaveAndUpdate, mockPatchRecord)
+    );
+
+    act(() => {
+      result.current.updateHandoffChecklist('day', 'checked', true);
     });
 
-    it('should return all management functions', () => {
-        const { result } = renderHook(() =>
-            useHandoffManagement(mockRecord, mockSaveAndUpdate, mockPatchRecord)
-        );
+    expect(mockSaveAndUpdate).not.toHaveBeenCalled();
+  });
 
-        expect(typeof result.current.updateHandoffChecklist).toBe('function');
-        expect(typeof result.current.updateHandoffNovedades).toBe('function');
-        expect(typeof result.current.updateHandoffStaff).toBe('function');
-        expect(typeof result.current.updateMedicalSignature).toBe('function');
-        expect(typeof result.current.updateMedicalHandoffDoctor).toBe('function');
-        expect(typeof result.current.markMedicalHandoffAsSent).toBe('function');
-        expect(typeof result.current.sendMedicalHandoff).toBe('function');
+  it('should update day checklist', () => {
+    const { result } = renderHook(() =>
+      useHandoffManagement(mockRecord, mockSaveAndUpdate, mockPatchRecord)
+    );
+
+    act(() => {
+      result.current.updateHandoffChecklist('day', 'checked', true);
     });
 
-    it('should not update checklist when record is null', () => {
-        const { result } = renderHook(() =>
-            useHandoffManagement(null, mockSaveAndUpdate, mockPatchRecord)
-        );
+    expect(mockSaveAndUpdate).toHaveBeenCalled();
+  });
 
-        act(() => {
-            result.current.updateHandoffChecklist('day', 'checked', true);
-        });
+  it('should update night checklist', () => {
+    const { result } = renderHook(() =>
+      useHandoffManagement(mockRecord, mockSaveAndUpdate, mockPatchRecord)
+    );
 
-        expect(mockSaveAndUpdate).not.toHaveBeenCalled();
+    act(() => {
+      result.current.updateHandoffChecklist('night', 'checked', true);
     });
 
-    it('should update day checklist', () => {
-        const { result } = renderHook(() =>
-            useHandoffManagement(mockRecord, mockSaveAndUpdate, mockPatchRecord)
-        );
+    expect(mockSaveAndUpdate).toHaveBeenCalled();
+  });
 
-        act(() => {
-            result.current.updateHandoffChecklist('day', 'checked', true);
-        });
+  it('should update novedades for day shift', () => {
+    const { result } = renderHook(() =>
+      useHandoffManagement(mockRecord, mockSaveAndUpdate, mockPatchRecord)
+    );
 
-        expect(mockSaveAndUpdate).toHaveBeenCalled();
+    act(() => {
+      result.current.updateHandoffNovedades('day', 'Test novedades');
     });
 
-    it('should update night checklist', () => {
-        const { result } = renderHook(() =>
-            useHandoffManagement(mockRecord, mockSaveAndUpdate, mockPatchRecord)
-        );
+    expect(mockSaveAndUpdate).toHaveBeenCalled();
+  });
 
-        act(() => {
-            result.current.updateHandoffChecklist('night', 'checked', true);
-        });
+  it('should update staff list', () => {
+    const { result } = renderHook(() =>
+      useHandoffManagement(mockRecord, mockSaveAndUpdate, mockPatchRecord)
+    );
 
-        expect(mockSaveAndUpdate).toHaveBeenCalled();
+    act(() => {
+      result.current.updateHandoffStaff('day', 'delivers', ['Nurse 1', 'Nurse 2']);
     });
 
-    it('should update novedades for day shift', () => {
-        const { result } = renderHook(() =>
-            useHandoffManagement(mockRecord, mockSaveAndUpdate, mockPatchRecord)
-        );
+    expect(mockSaveAndUpdate).toHaveBeenCalled();
+  });
 
-        act(() => {
-            result.current.updateHandoffNovedades('day', 'Test novedades');
-        });
+  it('should mark medical handoff as sent', async () => {
+    const { result } = renderHook(() =>
+      useHandoffManagement(mockRecord, mockSaveAndUpdate, mockPatchRecord)
+    );
 
-        expect(mockSaveAndUpdate).toHaveBeenCalled();
+    await act(async () => {
+      await result.current.markMedicalHandoffAsSent('Dr. Test');
     });
 
-    it('should update staff list', () => {
-        const { result } = renderHook(() =>
-            useHandoffManagement(mockRecord, mockSaveAndUpdate, mockPatchRecord)
-        );
+    expect(mockPatchRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        medicalHandoffDoctor: 'Dr. Test',
+        medicalHandoffSentAt: expect.any(String),
+        medicalHandoffSentAtByScope: expect.objectContaining({
+          all: expect.any(String),
+        }),
+      })
+    );
+  });
 
-        act(() => {
-            result.current.updateHandoffStaff('day', 'delivers', ['Nurse 1', 'Nurse 2']);
-        });
+  it('should scope sent timestamp when sending filtered medical handoff', async () => {
+    const { result } = renderHook(() =>
+      useHandoffManagement(mockRecord, mockSaveAndUpdate, mockPatchRecord)
+    );
 
-        expect(mockSaveAndUpdate).toHaveBeenCalled();
+    await act(async () => {
+      await result.current.markMedicalHandoffAsSent('Dr. UPC', 'upc');
     });
 
-    it('should mark medical handoff as sent', async () => {
-        const { result } = renderHook(() =>
-            useHandoffManagement(mockRecord, mockSaveAndUpdate, mockPatchRecord)
-        );
+    expect(mockPatchRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        medicalHandoffDoctor: 'Dr. UPC',
+        medicalHandoffSentAtByScope: expect.objectContaining({
+          upc: expect.any(String),
+        }),
+      })
+    );
+  });
 
-        await act(async () => {
-            await result.current.markMedicalHandoffAsSent('Dr. Test');
-        });
+  it('should create and persist a signature token before returning the share link', async () => {
+    const { result } = renderHook(() =>
+      useHandoffManagement(mockRecord, mockSaveAndUpdate, mockPatchRecord)
+    );
 
-        expect(mockPatchRecord).toHaveBeenCalled();
+    let link = '';
+    await act(async () => {
+      link = await result.current.ensureMedicalHandoffSignatureLink('upc');
     });
+
+    expect(mockPatchRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        medicalSignatureLinkTokenByScope: expect.objectContaining({
+          upc: expect.any(String),
+        }),
+      })
+    );
+    expect(link).toContain('mode=signature');
+    expect(link).toContain('scope=upc');
+    expect(link).toContain('token=');
+  });
 });

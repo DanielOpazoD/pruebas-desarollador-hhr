@@ -1,0 +1,85 @@
+import type { DailyRecord } from '@/types';
+import type { DailyRecordContextType } from '@/hooks/useDailyRecordTypes';
+import type { MedicalHandoffScope } from '@/features/handoff/controllers';
+
+const noop = () => {};
+const asyncNoop = async () => {};
+
+const buildEmptyInventory = () => ({
+  occupiedCount: 0,
+  blockedCount: 0,
+  availableCount: 0,
+  occupancyRate: 0,
+  occupiedBeds: [],
+  freeBeds: [],
+  blockedBeds: [],
+  isFull: false,
+});
+
+const buildEmptyStabilityRules = () => ({
+  isDateLocked: true,
+  isDayShiftLocked: true,
+  isNightShiftLocked: true,
+  canEditField: () => false,
+  canPerformActions: false,
+  lockReason: 'Modo público de solo lectura.',
+});
+
+export const createPublicMedicalSignatureContextValue = ({
+  record,
+  onSign,
+}: {
+  record: DailyRecord | null;
+  onSign: (doctorName: string, scope?: MedicalHandoffScope) => Promise<void>;
+}): DailyRecordContextType => ({
+  record,
+  syncStatus: 'saved',
+  lastSyncTime: record?.lastUpdated ? new Date(record.lastUpdated) : null,
+  inventory: buildEmptyInventory(),
+  stabilityRules: buildEmptyStabilityRules(),
+  createDay: noop,
+  resetDay: asyncNoop,
+  refresh: noop,
+  validateRecordSchema: () => ({
+    isValid: true,
+    errors: [],
+  }),
+  canMovePatient: () => ({ canMove: false, reason: 'Modo solo lectura.' }),
+  canDischargePatient: () => false,
+  updatePatient: noop,
+  updatePatientMultiple: noop,
+  updateClinicalCrib: noop,
+  updateClinicalCribMultiple: noop,
+  updateClinicalCribCudyr: noop,
+  updateCudyr: noop,
+  clearPatient: noop,
+  clearAllBeds: noop,
+  moveOrCopyPatient: noop,
+  toggleBlockBed: noop,
+  updateBlockedReason: noop,
+  toggleExtraBed: noop,
+  toggleBedType: noop,
+  copyPatientToDate: asyncNoop,
+  updateNurse: noop,
+  updateTens: noop,
+  addDischarge: noop,
+  updateDischarge: noop,
+  deleteDischarge: noop,
+  undoDischarge: noop,
+  addTransfer: noop,
+  updateTransfer: noop,
+  deleteTransfer: noop,
+  undoTransfer: noop,
+  addCMA: noop,
+  deleteCMA: noop,
+  updateCMA: noop,
+  updateHandoffChecklist: noop,
+  updateHandoffNovedades: noop,
+  updateHandoffStaff: noop,
+  updateMedicalSignature: onSign,
+  updateMedicalHandoffDoctor: asyncNoop,
+  markMedicalHandoffAsSent: asyncNoop,
+  ensureMedicalHandoffSignatureLink: async () => '',
+  resetMedicalHandoffState: asyncNoop,
+  sendMedicalHandoff: asyncNoop,
+});

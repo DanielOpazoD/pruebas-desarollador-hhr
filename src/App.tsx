@@ -20,6 +20,7 @@ import {
 import { UseDateNavigationReturn } from '@/hooks/useDateNavigation';
 import { useStorageMigration } from '@/hooks/useStorageMigration';
 import { LoginPage } from '@/features/auth';
+import { MedicalSignatureView } from '@/features/admin';
 import { GlobalErrorBoundary } from '@/components/shared/GlobalErrorBoundary';
 import { AppContent } from '@/components/layout/AppContent';
 import { CensusProvider, CensusContextType } from '@/context/CensusContext';
@@ -88,6 +89,15 @@ function App() {
     auth.isLoading
   );
   const sharedCensus = useSharedCensusMode();
+
+  if (isSignatureMode) {
+    return (
+      <VersionProvider>
+        <VersionMismatchOverlay />
+        <MedicalSignatureView />
+      </VersionProvider>
+    );
+  }
 
   // Loading state
   if (auth.isLoading || (sharedCensus.isSharedCensusMode && sharedCensus.isLoading)) {

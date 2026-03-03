@@ -21,6 +21,8 @@ import { useUIState, UseUIStateReturn } from '@/hooks/useUIState';
 import { useAuth } from '@/context';
 import {
   resolveMedicalHandoffScope,
+  resolveScopedMedicalHandoffSentAt,
+  resolveScopedMedicalSignature,
   type MedicalHandoffScope,
   resolveHandoffDocumentTitle,
   resolveHandoffNovedadesValue,
@@ -109,6 +111,12 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
     return visibleBeds;
   }, [isMedical, scopedMedicalScope, visibleBeds, record]);
   const effectiveVisibleBeds = isMedical ? filteredMedicalBeds : visibleBeds;
+  const scopedMedicalSignature = isMedical
+    ? resolveScopedMedicalSignature(record, scopedMedicalScope)
+    : null;
+  const scopedMedicalHandoffSentAt = isMedical
+    ? resolveScopedMedicalHandoffSentAt(record, scopedMedicalScope)
+    : null;
   const hasAnyVisiblePatients = effectiveVisibleBeds.some(bed => {
     const patient = record?.beds[bed.id];
     return patient?.patientName && shouldShowPatient(bed.id);
@@ -198,8 +206,8 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
         selectedShift={selectedShift}
         setSelectedShift={setSelectedShift}
         readOnly={readOnly}
-        medicalSignature={record.medicalSignature}
-        medicalHandoffSentAt={record.medicalHandoffSentAt}
+        medicalSignature={scopedMedicalSignature}
+        medicalHandoffSentAt={scopedMedicalHandoffSentAt}
         onSendWhatsApp={handleSendWhatsAppManual}
         onShareLink={handleShareLink}
         extraAction={
@@ -218,7 +226,11 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
       {/* Medical Handoff Header (Doctor to Doctor) */}
       {isMedical && (
         <MedicalHandoffHeader
-          record={record}
+          record={{
+            ...record,
+            medicalSignature: scopedMedicalSignature || undefined,
+            medicalHandoffSentAt: scopedMedicalHandoffSentAt || undefined,
+          }}
           visibleBeds={effectiveVisibleBeds}
           readOnly={readOnly}
           canRestoreSignatures={role === 'admin'}

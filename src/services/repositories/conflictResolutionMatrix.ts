@@ -153,6 +153,27 @@ const resolveWholeRecord = (
       traceContext,
       'medicalSignature'
     ) as DailyRecord['medicalSignature'],
+    medicalSignatureByScope: mergeObject(
+      remote.medicalSignatureByScope as unknown as Record<string, unknown> | undefined,
+      local.medicalSignatureByScope as unknown as Record<string, unknown> | undefined,
+      preferLocal,
+      traceContext,
+      'medicalSignatureByScope'
+    ) as DailyRecord['medicalSignatureByScope'],
+    medicalHandoffSentAtByScope: mergeObject(
+      remote.medicalHandoffSentAtByScope as unknown as Record<string, unknown> | undefined,
+      local.medicalHandoffSentAtByScope as unknown as Record<string, unknown> | undefined,
+      preferLocal,
+      traceContext,
+      'medicalHandoffSentAtByScope'
+    ) as DailyRecord['medicalHandoffSentAtByScope'],
+    medicalSignatureLinkTokenByScope: mergeObject(
+      remote.medicalSignatureLinkTokenByScope as unknown as Record<string, unknown> | undefined,
+      local.medicalSignatureLinkTokenByScope as unknown as Record<string, unknown> | undefined,
+      preferLocal,
+      traceContext,
+      'medicalSignatureLinkTokenByScope'
+    ) as DailyRecord['medicalSignatureLinkTokenByScope'],
     lastUpdated: toIso(Math.max(remoteTs, localTs)),
   };
 

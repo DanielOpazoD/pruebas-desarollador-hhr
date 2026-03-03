@@ -26,6 +26,7 @@ import { getMessageTemplates } from '@/services/integrations/whatsapp/whatsappSe
 
 describe('useHandoffCommunication', () => {
   const onSuccess = vi.fn();
+  const ensureMedicalHandoffSignatureLink = vi.fn();
   const createRecord = (overrides?: Partial<DailyRecord>): DailyRecord =>
     DataFactory.createMockDailyRecord('2026-02-15', {
       beds: {},
@@ -40,13 +41,22 @@ describe('useHandoffCommunication', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    ensureMedicalHandoffSignatureLink.mockResolvedValue(
+      'https://hhr.test?mode=signature&date=2026-02-15&scope=all&token=test-token'
+    );
   });
 
   it('copies signature link using runtime clipboard adapter', async () => {
     mockWriteClipboardText.mockResolvedValue(undefined);
 
     const { result } = renderHook(() =>
-      useHandoffCommunication(createRecord(), [], vi.fn(), onSuccess)
+      useHandoffCommunication(
+        createRecord(),
+        [],
+        vi.fn(),
+        ensureMedicalHandoffSignatureLink,
+        onSuccess
+      )
     );
 
     act(() => {
@@ -55,7 +65,7 @@ describe('useHandoffCommunication', () => {
 
     await waitFor(() => {
       expect(mockWriteClipboardText).toHaveBeenCalledWith(
-        'https://hhr.test?mode=signature&date=2026-02-15&scope=all'
+        'https://hhr.test?mode=signature&date=2026-02-15&scope=all&token=test-token'
       );
       expect(onSuccess).toHaveBeenCalledWith(
         'Enlace copiado',
@@ -66,9 +76,18 @@ describe('useHandoffCommunication', () => {
 
   it('copies differentiated UPC signature link', async () => {
     mockWriteClipboardText.mockResolvedValue(undefined);
+    ensureMedicalHandoffSignatureLink.mockResolvedValue(
+      'https://hhr.test?mode=signature&date=2026-02-15&scope=upc&token=upc-token'
+    );
 
     const { result } = renderHook(() =>
-      useHandoffCommunication(createRecord(), [], vi.fn(), onSuccess)
+      useHandoffCommunication(
+        createRecord(),
+        [],
+        vi.fn(),
+        ensureMedicalHandoffSignatureLink,
+        onSuccess
+      )
     );
 
     act(() => {
@@ -77,7 +96,7 @@ describe('useHandoffCommunication', () => {
 
     await waitFor(() => {
       expect(mockWriteClipboardText).toHaveBeenCalledWith(
-        'https://hhr.test?mode=signature&date=2026-02-15&scope=upc'
+        'https://hhr.test?mode=signature&date=2026-02-15&scope=upc&token=upc-token'
       );
       expect(onSuccess).toHaveBeenCalledWith(
         'Enlace copiado',
@@ -90,7 +109,13 @@ describe('useHandoffCommunication', () => {
     mockWriteClipboardText.mockRejectedValue(new Error('Clipboard blocked'));
 
     const { result } = renderHook(() =>
-      useHandoffCommunication(createRecord(), [], vi.fn(), onSuccess)
+      useHandoffCommunication(
+        createRecord(),
+        [],
+        vi.fn(),
+        ensureMedicalHandoffSignatureLink,
+        onSuccess
+      )
     );
 
     act(() => {
@@ -116,7 +141,13 @@ describe('useHandoffCommunication', () => {
     });
 
     const { result } = renderHook(() =>
-      useHandoffCommunication(record, [{ id: 'B1' }], vi.fn(), onSuccess)
+      useHandoffCommunication(
+        record,
+        [{ id: 'B1' }],
+        vi.fn(),
+        ensureMedicalHandoffSignatureLink,
+        onSuccess
+      )
     );
 
     await act(async () => {

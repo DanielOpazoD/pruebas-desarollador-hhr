@@ -55,6 +55,7 @@ type DailyRecordHandoffActions = Pick<
   | 'updateMedicalSignature'
   | 'updateMedicalHandoffDoctor'
   | 'markMedicalHandoffAsSent'
+  | 'ensureMedicalHandoffSignatureLink'
   | 'resetMedicalHandoffState'
   | 'sendMedicalHandoff'
 >;
@@ -188,10 +189,12 @@ export const useDailyRecordHandoffActions = (): DailyRecordHandoffActions => {
       updateMedicalSignature: actions.updateMedicalSignature,
       updateMedicalHandoffDoctor: actions.updateMedicalHandoffDoctor,
       markMedicalHandoffAsSent: actions.markMedicalHandoffAsSent,
+      ensureMedicalHandoffSignatureLink: actions.ensureMedicalHandoffSignatureLink,
       resetMedicalHandoffState: actions.resetMedicalHandoffState,
       sendMedicalHandoff: actions.sendMedicalHandoff,
     }),
     [
+      actions.ensureMedicalHandoffSignatureLink,
       actions.markMedicalHandoffAsSent,
       actions.resetMedicalHandoffState,
       actions.sendMedicalHandoff,

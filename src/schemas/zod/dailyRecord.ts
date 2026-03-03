@@ -58,11 +58,50 @@ export const DailyRecordSchema: z.ZodType<DailyRecord, z.ZodTypeDef, unknown> = 
     medicalHandoffNovedades: z.string().optional(),
     medicalHandoffDoctor: z.string().optional(),
     medicalHandoffSentAt: z.string().optional(),
+    medicalHandoffSentAtByScope: z
+      .object({
+        all: z.string().optional(),
+        upc: z.string().optional(),
+        'no-upc': z.string().optional(),
+      })
+      .optional(),
+    medicalSignatureLinkTokenByScope: z
+      .object({
+        all: z.string().optional(),
+        upc: z.string().optional(),
+        'no-upc': z.string().optional(),
+      })
+      .optional(),
     medicalSignature: z
       .object({
         doctorName: z.string(),
         signedAt: z.string(),
         userAgent: z.string().optional(),
+      })
+      .optional(),
+    medicalSignatureByScope: z
+      .object({
+        all: z
+          .object({
+            doctorName: z.string(),
+            signedAt: z.string(),
+            userAgent: z.string().optional(),
+          })
+          .optional(),
+        upc: z
+          .object({
+            doctorName: z.string(),
+            signedAt: z.string(),
+            userAgent: z.string().optional(),
+          })
+          .optional(),
+        'no-upc': z
+          .object({
+            doctorName: z.string(),
+            signedAt: z.string(),
+            userAgent: z.string().optional(),
+          })
+          .optional(),
       })
       .optional(),
     cudyrLocked: z.boolean().optional(),

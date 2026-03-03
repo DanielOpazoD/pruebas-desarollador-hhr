@@ -155,6 +155,23 @@ describe('Handoff → Signature Integration', () => {
       const updated = mockSaveAndUpdate.mock.calls[0][0];
       expect(updated.medicalSignature.doctorName).toBe('Dr. House');
       expect(updated.medicalSignature.signedAt).toBeDefined();
+      expect(updated.medicalSignatureByScope?.all?.doctorName).toBe('Dr. House');
+    });
+
+    it('should store scoped medical signature without leaking into all-scope signature', async () => {
+      const { result } = renderHook(() =>
+        useHandoffManagement(mockRecord, saveAndUpdateFn, patchRecordFn)
+      );
+
+      await act(async () => {
+        await result.current.updateMedicalSignature('Dr. UPC', 'upc');
+      });
+
+      expect(mockSaveAndUpdate).toHaveBeenCalled();
+      const updated = mockSaveAndUpdate.mock.calls[0][0];
+      expect(updated.medicalSignature).toBeUndefined();
+      expect(updated.medicalSignatureByScope?.upc?.doctorName).toBe('Dr. UPC');
+      expect(updated.medicalSignatureByScope?.all).toBeUndefined();
     });
 
     it('should send medical handoff via WhatsApp and patch the record', async () => {
@@ -179,6 +196,9 @@ describe('Handoff → Signature Integration', () => {
       expect(mockPatchRecord).toHaveBeenCalledWith(
         expect.objectContaining({
           medicalHandoffSentAt: expect.any(String),
+          medicalHandoffSentAtByScope: expect.objectContaining({
+            all: expect.any(String),
+          }),
           medicalHandoffDoctor: 'Dr. Smith',
         })
       );

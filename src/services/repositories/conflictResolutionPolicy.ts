@@ -80,6 +80,9 @@ export const RECORD_STRUCTURAL_FIELDS = new Set([
   'handoffDayChecklist',
   'handoffNightChecklist',
   'medicalSignature',
+  'medicalSignatureByScope',
+  'medicalHandoffSentAtByScope',
+  'medicalSignatureLinkTokenByScope',
   'lastUpdated',
 ]);
 
