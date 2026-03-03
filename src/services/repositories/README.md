@@ -6,24 +6,25 @@ Implementar Repository Pattern para ocultar detalles de almacenamiento/sincroniz
 
 ## Mapa
 
-| Archivo                                              | Rol                                      |
-| ---------------------------------------------------- | ---------------------------------------- |
-| `DailyRecordRepository.ts`                           | API unificada del registro diario        |
-| `dailyRecordRepositoryReadService.ts`                | Lecturas                                 |
-| `dailyRecordRepositoryWriteService.ts`               | Escrituras                               |
-| `dailyRecordRepositorySyncService.ts`                | Suscripción/sync con Firestore           |
-| `dailyRecordRepositoryInitializationService.ts`      | Inicialización de días/copia de paciente |
-| `repositoryConfig.ts`                                | Flags de repo (`firestoreEnabled`)       |
-| `CatalogRepository.ts`                               | Catálogos                                |
-| `PatientMasterRepository.ts`                         | Base maestra de pacientes                |
-| `PrintTemplateRepository.ts`                         | Plantillas de impresión                  |
-| `dataMigration.ts` / `patientMasterMigration.ts`     | Migraciones                              |
-| `schemaGovernance.ts` / `schemaEvolutionPolicy.ts`   | Política de versionado y compatibilidad  |
-| `legacyRecordBridgeService.ts`                       | Importación explícita desde rutas legacy |
-| `legacyBridgeGovernance.ts` / `legacyBridgeAudit.ts` | Gobernanza y auditoría del bridge legacy |
-| `monthIntegrity.ts`                                  | Integridad mensual                       |
-| `contracts/*.ts`                                     | Contratos estrictos de entrada/salida    |
-| `index.ts`                                           | Barrel export                            |
+| Archivo                                                          | Rol                                      |
+| ---------------------------------------------------------------- | ---------------------------------------- |
+| `DailyRecordRepository.ts`                                       | API unificada del registro diario        |
+| `dailyRecordRepositoryReadService.ts`                            | Lecturas                                 |
+| `dailyRecordRepositoryWriteService.ts`                           | Escrituras                               |
+| `dailyRecordRepositorySyncService.ts`                            | Suscripción/sync con Firestore           |
+| `dailyRecordRepositoryInitializationService.ts`                  | Inicialización de días/copia de paciente |
+| `repositoryConfig.ts`                                            | Flags de repo (`firestoreEnabled`)       |
+| `CatalogRepository.ts`                                           | Catálogos                                |
+| `PatientMasterRepository.ts`                                     | Base maestra de pacientes                |
+| `PrintTemplateRepository.ts`                                     | Plantillas de impresión                  |
+| `dataMigration.ts` / `patientMasterMigration.ts`                 | Migraciones                              |
+| `schemaGovernance.ts` / `schemaEvolutionPolicy.ts`               | Política de versionado y compatibilidad  |
+| `runtimeCompatibilityPolicy.ts` / `runtimeContractGovernance.ts` | Compatibilidad runtime end-to-end        |
+| `legacyRecordBridgeService.ts`                                   | Importación explícita desde rutas legacy |
+| `legacyBridgeGovernance.ts` / `legacyBridgeAudit.ts`             | Gobernanza y auditoría del bridge legacy |
+| `monthIntegrity.ts`                                              | Integridad mensual                       |
+| `contracts/*.ts`                                                 | Contratos estrictos de entrada/salida    |
+| `index.ts`                                                       | Barrel export                            |
 
 ## Patrón de uso
 
@@ -74,6 +75,9 @@ de entrada (fecha, límites, RUT, IDs) antes de delegar en storage.
   - qué cambios requieren bridge legacy o migración normal
 - `runtimeCompatibilityPolicy.ts` formaliza la compatibilidad entre cliente, schema y contrato
   backend para evitar drift silencioso entre despliegues.
+- `runtimeContractGovernance.ts` cruza contrato cliente/backend, schema vigente, legacy floor,
+  migradores disponibles y ledger de evolución; `reports/runtime-contracts.md` publica ese
+  snapshot como artefacto derivado.
 - `reports/schema-evolution.md` y `reports/schema-evolution.json` entregan un snapshot
   legible del ledger de evolución para soporte y revisión técnica.
 - `dailyRecordAggregate.ts` expone facetas del dominio (`clinical`, `staffing`, `movements`,
@@ -108,5 +112,11 @@ de entrada (fecha, límites, RUT, IDs) antes de delegar en storage.
   - `migrationLedger.ts`
   - `schemaGovernance.ts`
   - `dataMigration.ts`
+- Cambios en contrato runtime/backend deben tocar en conjunto:
+  - `src/constants/runtimeContracts.ts`
+  - `functions/lib/runtime/runtimeContract.js`
+  - `runtimeCompatibilityPolicy.ts`
+  - `runtimeContractGovernance.ts`
+  - `reports/runtime-contracts.md`
 - Si una operación crítica cambia de costo esperado, debe actualizarse la medición en
   `repositoryPerformance.ts` y regenerarse `reports/operational-health.md`.

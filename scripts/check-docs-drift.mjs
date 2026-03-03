@@ -14,6 +14,8 @@ const checks = [
       'reports/legacy-bridge-governance.md',
       'schemaEvolutionPolicy.ts',
       'migrationLedger.ts',
+      'runtimeContractGovernance.ts',
+      'reports/runtime-contracts.md',
       'dailyRecordAggregate.ts',
       'reports/schema-evolution.md',
     ],

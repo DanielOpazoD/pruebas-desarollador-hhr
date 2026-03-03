@@ -9,6 +9,7 @@ describe('runtimeCompatibilityPolicy', () => {
     const snapshot = getRuntimeCompatibilitySnapshot();
     expect(snapshot.clientRuntimeContractVersion).toBeGreaterThan(0);
     expect(snapshot.backendRuntimeContractVersion).toBeGreaterThan(0);
+    expect(snapshot.minSupportedClientRuntimeContractVersion).toBeGreaterThan(0);
     expect(snapshot.currentSchemaVersion).toBeGreaterThanOrEqual(snapshot.legacySchemaVersion);
   });
 
