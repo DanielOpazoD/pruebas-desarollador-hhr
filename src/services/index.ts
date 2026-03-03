@@ -1,46 +1,16 @@
 /**
- * Services Index
+ * Services compatibility barrel.
  *
- * Keep this surface intentionally curated. Prefer domain-local imports for
- * new code instead of expanding this barrel with internal-only helpers.
+ * This file exists only for a narrow app-level surface. New code should
+ * prefer direct domain imports (`@/services/auth/...`, `@/services/storage/...`,
+ * `@/services/repositories/...`) instead of growing this compatibility layer.
  */
 
-// ============================================================
-// AUTHENTICATION
-// ============================================================
 export { signIn, createUser, signOut, onAuthChange, getCurrentUser } from './auth/authService';
 export type { AuthUser } from './auth/authService';
 
-// ============================================================
-// DATA PERSISTENCE - Unified Local
-// ============================================================
-export {
-  STORAGE_KEY,
-  NURSES_STORAGE_KEY,
-  getStoredRecords,
-  saveRecordLocal,
-  getRecordForDate,
-  getAllDates,
-  getPreviousDayRecord,
-  getStoredNurses,
-  saveStoredNurses,
-  clearAllData,
-  isLocalStorageAvailable,
-} from './storage/unifiedLocalService';
-
-// Local Settings (IndexedDB)
 export { getAppSetting, saveAppSetting } from './settingsService';
 
-// Legacy re-export from dataService (for backward compatibility)
-export {
-  getStoredRecords as getStoredData,
-  STORAGE_KEY as DATA_STORAGE_KEY,
-  formatDateDDMMYYYY,
-} from './dataService';
-
-// ============================================================
-// DATA PERSISTENCE - Firestore (Cloud)
-// ============================================================
 export {
   saveRecordToFirestore,
   getRecordFromFirestore,
@@ -50,17 +20,20 @@ export {
   isFirestoreAvailable,
 } from './storage/firestoreService';
 
-// ============================================================
-// REPOSITORY PATTERN
-// ============================================================
 export {
   setFirestoreEnabled,
   isFirestoreEnabled,
   getForDate,
+  getForDateWithMeta,
+  getAvailableDates,
   getPreviousDay,
   save,
+  updatePartial,
   subscribe,
+  syncWithFirestore,
   initializeDay,
+  copyPatientToDate,
+  bridgeLegacyRecord,
   DailyRecordRepository,
 } from './repositories/DailyRecordRepository';
 export { ensureMonthIntegrity } from './repositories/monthIntegrity';
@@ -68,69 +41,4 @@ export { migrateFromDailyRecords } from './repositories/patientMasterMigration';
 export type { IDailyRecordRepository } from './repositories/DailyRecordRepository';
 export type { MonthIntegrityResult } from './repositories/monthIntegrity';
 
-// ============================================================
-// EXPORT / IMPORT
-// ============================================================
-export {
-  exportDataJSON,
-  exportDataCSV,
-  importDataJSON,
-  importDataCSV,
-} from './exporters/exportService';
-
-// ============================================================
-// INTEGRATIONS
-// ============================================================
 export { triggerCensusEmail } from './integrations/censusEmailService';
-
-// ============================================================
-// FACTORIES
-// ============================================================
-export { createEmptyPatient, clonePatient } from './factories/patientFactory';
-
-// ============================================================
-// CALCULATIONS
-// ============================================================
-export { calculateStats } from './calculations/statsCalculator';
-export type { CensusStatistics } from './calculations/statsCalculator';
-
-// ============================================================
-// UTILITIES
-// ============================================================
-export {
-  formatDateDDMMYYYY as formatDate,
-  getTodayISO,
-  formatDateForDisplay,
-} from '@/utils/dateUtils';
-
-// ============================================================
-// ERROR HANDLING
-// ============================================================
-export {
-  errorService,
-  logError,
-  logFirebaseError,
-  getUserFriendlyErrorMessage,
-  withRetry,
-  isRetryableError,
-} from './utils/errorService';
-export type {
-  ErrorSeverity,
-  ErrorLog,
-  LogLevel as ErrorLogLevel,
-  RetryConfig,
-} from './utils/errorService';
-
-export { fetchErrorLogs, purgeErrorLogs } from './errorLogService';
-
-// ============================================================
-// LOGGING
-// ============================================================
-export { logger, log } from './utils/loggerService';
-export type { LogLevel, LogEntry } from './utils/loggerService';
-
-// ============================================================
-// FEATURE FLAGS
-// ============================================================
-export { featureFlags, isFeatureEnabled, FEATURE_FLAGS } from './utils/featureFlags';
-export type { FeatureFlag } from './utils/featureFlags';

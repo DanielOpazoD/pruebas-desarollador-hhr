@@ -25,6 +25,7 @@ Capa de persistencia concreta: IndexedDB, localStorage, Firestore bridge y sincr
 `syncQueueService.ts` es la única fuente soportada para telemetría (`getSyncQueueTelemetry()`), stats (`getSyncQueueStats()`) y operaciones recientes (`listRecentSyncQueueOperations()`).
 El outbox ahora se arma sobre un engine con puertos (`sync/syncQueueEngine.ts`, `sync/syncQueuePorts.ts`) para separar runtime navegador, store Dexie y transporte Firestore.
 `sync/syncDomainPolicy.ts` clasifica tareas por contexto (`clinical`, `staffing`, `movements`, `handoff`, `metadata`) para aplicar budgets de retry y métricas de conflicto más específicas.
+`storage/index.ts` queda como barrel de compatibilidad mínima; nuevos imports deben ir a `firestoreService.ts`, `indexedDBService.ts` o `syncQueueService.ts` directamente.
 
 ## Estrategia
 

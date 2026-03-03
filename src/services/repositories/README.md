@@ -98,6 +98,8 @@ de entrada (fecha, límites, RUT, IDs) antes de delegar en storage.
 
 - `DailyRecordRepository.ts` debe seguir siendo una fachada mínima; la lógica de lectura,
   escritura, sync, lifecycle e inicialización vive en servicios dedicados.
+- `repositories/index.ts` debe permanecer explícito y pequeño; código nuevo debe importar
+  desde el módulo concreto del repositorio en vez de expandir el barrel.
 - Los servicios `dailyRecord*DomainService.ts` son internos al paquete `repositories`;
   nuevos consumidores deben preferir la fachada del repositorio o los soportes existentes,
   no importarlos desde UI o features.
