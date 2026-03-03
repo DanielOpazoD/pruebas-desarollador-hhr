@@ -1,5 +1,5 @@
 import { CURRENT_SCHEMA_VERSION } from '@/constants/version';
-import { DailyRecord, DailyRecordPatch, PatientData } from '@/types';
+import { DailyRecord, DailyRecordPatch } from '@/types';
 import { getRecordFromFirestore } from '@/services/storage/firestoreService';
 import { isRetryableSyncError, queueSyncTask } from '@/services/storage/syncQueueService';
 import { saveRecord as saveToIndexedDB } from '@/services/storage/indexedDBService';
@@ -18,7 +18,10 @@ import { PatientMasterRepository } from '@/services/repositories/PatientMasterRe
 import { resolveDailyRecordConflictWithTrace } from '@/services/repositories/conflictResolutionMatrix';
 import { buildConflictAuditSummary } from '@/services/repositories/conflictResolutionAuditSummary';
 import { logRepositoryConflictAutoMerged } from '@/services/repositories/ports/repositoryAuditPort';
-import { createDailyRecordAggregate } from '@/services/repositories/dailyRecordAggregate';
+import {
+  collectDailyRecordPatientsForMasterSync,
+  syncDailyRecordClinicalResources,
+} from '@/services/repositories/dailyRecordDomainServices';
 
 export interface ConflictAutoMergeRecoveryResult {
   status: 'auto_merged' | 'not_possible';
@@ -41,21 +44,6 @@ const ensureDateTimestamp = (record: DailyRecord): void => {
 
   const dateObj = new Date(`${record.date}T00:00:00`);
   record.dateTimestamp = dateObj.getTime();
-};
-
-const syncPatientFhirResource = (patient: PatientData | undefined): void => {
-  if (!patient?.patientName?.trim()) {
-    return;
-  }
-
-  patient.fhir_resource = mapPatientToFhir(patient);
-};
-
-const syncBedFhirResources = (record: DailyRecord): void => {
-  createDailyRecordAggregate(record).clinical.forEachPatient(patient => {
-    syncPatientFhirResource(patient);
-    syncPatientFhirResource(patient.clinicalCrib);
-  });
 };
 
 const getTouchedBedIds = (patch: DailyRecordPatch): string[] =>
@@ -91,22 +79,6 @@ const addFhirPatchForTouchedBeds = (
   });
 };
 
-const collectPatientsForMasterSync = (record: DailyRecord): PatientData[] => {
-  const patientsToSync: PatientData[] = [];
-
-  createDailyRecordAggregate(record).clinical.forEachPatient(patient => {
-    if (patient.patientName?.trim() && patient.rut?.trim()) {
-      patientsToSync.push(patient);
-    }
-
-    if (patient.clinicalCrib?.patientName?.trim() && patient.clinicalCrib.rut?.trim()) {
-      patientsToSync.push(patient.clinicalCrib);
-    }
-  });
-
-  return patientsToSync;
-};
-
 export const prepareDailyRecordForPersistence = (
   record: DailyRecord,
   date: string
@@ -123,7 +95,7 @@ export const prepareDailyRecordForPersistence = (
     });
   }
 
-  syncBedFhirResources(validatedRecord);
+  syncDailyRecordClinicalResources(validatedRecord);
   validatedRecord.schemaVersion = CURRENT_SCHEMA_VERSION;
   return validatedRecord;
 };
@@ -280,8 +252,7 @@ export const resolveRemoteWriteRecovery = async (
 export const syncPatientsToMasterInBackground = (record: DailyRecord): void => {
   setTimeout(async () => {
     try {
-      const patientsToSync = collectPatientsForMasterSync(record);
-
+      const patientsToSync = collectDailyRecordPatientsForMasterSync(record);
       if (patientsToSync.length === 0) return;
 
       await Promise.all(

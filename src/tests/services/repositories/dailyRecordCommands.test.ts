@@ -25,6 +25,7 @@ describe('dailyRecordCommands contracts', () => {
     );
     expect(command.date).toBe('2026-02-19');
     expect(command.record.date).toBe('2026-02-19');
+    expect(command.contexts).toEqual(['clinical', 'staffing', 'movements', 'handoff', 'metadata']);
   });
 
   it('rejects save command with invalid date', () => {
@@ -39,6 +40,7 @@ describe('dailyRecordCommands contracts', () => {
     });
     expect(command.date).toBe('2026-02-19');
     expect(command.patch['beds.R1.pathology']).toBe('DX');
+    expect(command.contexts).toEqual(['clinical']);
   });
 
   it('rejects partial update command when patch is empty', () => {

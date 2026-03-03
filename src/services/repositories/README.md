@@ -67,10 +67,15 @@ de entrada (fecha, límites, RUT, IDs) antes de delegar en storage.
   - versión actual soportada por runtime
   - compatibilidad hacia adelante
   - qué cambios requieren bridge legacy o migración normal
+- `runtimeCompatibilityPolicy.ts` formaliza la compatibilidad entre cliente, schema y contrato
+  backend para evitar drift silencioso entre despliegues.
 - `reports/schema-evolution.md` y `reports/schema-evolution.json` entregan un snapshot
   legible del ledger de evolución para soporte y revisión técnica.
 - `dailyRecordAggregate.ts` expone facetas del dominio (`clinical`, `staffing`, `movements`,
   `handoff`, `metadata`) para bajar acoplamiento sobre el contrato monolítico de `DailyRecord`.
+- `contracts/dailyRecordDomainContracts.ts` y `dailyRecordDomainServices.ts` separan
+  la escritura por contexto clínico y evitan que FHIR/master sync queden pegados a la
+  fachada del repositorio.
 - Si se cambia cualquier regla de compatibilidad, deben actualizarse:
   - tests de `dataMigration`
   - tests de `dailyRecordRemoteLoader`

@@ -1,5 +1,6 @@
 const admin = require('firebase-admin');
 const functions = require('firebase-functions/v1');
+const { HOSPITAL_CAPACITY } = require('./runtime/runtimeConfig');
 
 admin.initializeApp();
 
@@ -50,8 +51,6 @@ if (serviceAccountCredentials) {
 }
 
 const dbBeta = secondaryApp ? secondaryApp.firestore() : null;
-const HOSPITAL_CAPACITY = 38;
-
 module.exports = {
   admin,
   dbBeta,

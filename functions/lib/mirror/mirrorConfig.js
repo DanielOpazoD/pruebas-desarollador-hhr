@@ -1,4 +1,4 @@
-const HOSPITAL_ID = 'hanga_roa';
+const { HOSPITAL_ID } = require('../runtime/runtimeConfig');
 
 module.exports = {
   HOSPITAL_ID,

@@ -2,6 +2,7 @@ import type { UserHealthStatus } from '@/services/admin/healthService';
 import type { SyncQueueTelemetry } from '@/services/storage/syncQueueService';
 import type { RepositoryPerformanceSummary } from '@/services/repositories/repositoryPerformance';
 import { CURRENT_SCHEMA_VERSION } from '@/constants/version';
+import { BACKEND_RUNTIME_CONTRACT_VERSION } from '@/constants/runtimeContracts';
 
 export interface BuildUserHealthStatusOptions {
   uid: string;
@@ -36,7 +37,7 @@ export const buildUserHealthStatus = (options: BuildUserHealthStatusOptions): Us
   degradedLocalPersistence: options.degradedLocalPersistence,
   repositoryWarningCount: options.repositoryPerformance.warningCount,
   slowestRepositoryOperationMs: options.repositoryPerformance.slowestOperationMs,
-  appVersion: `v${CURRENT_SCHEMA_VERSION} (sync-batch:${options.syncTelemetry.batchSize})`,
+  appVersion: `v${CURRENT_SCHEMA_VERSION} (sync-batch:${options.syncTelemetry.batchSize}, backend-contract:${BACKEND_RUNTIME_CONTRACT_VERSION})`,
   platform: options.platform,
   userAgent: options.userAgent,
 });

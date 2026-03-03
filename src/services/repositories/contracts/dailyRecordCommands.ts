@@ -1,4 +1,9 @@
 import { DailyRecord, DailyRecordPatch } from '@/types';
+import {
+  classifyDailyRecordPatchContexts,
+  classifyDailyRecordSaveContexts,
+  type DailyRecordDomainContext,
+} from './dailyRecordDomainContracts';
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -6,11 +11,13 @@ export interface SaveDailyRecordCommand {
   date: string;
   record: DailyRecord;
   expectedLastUpdated?: string;
+  contexts: DailyRecordDomainContext[];
 }
 
 export interface PartialUpdateDailyRecordCommand {
   date: string;
   patch: DailyRecordPatch;
+  contexts: DailyRecordDomainContext[];
 }
 
 const assertDate = (date: string, operation: string): void => {
@@ -28,6 +35,7 @@ export const createSaveDailyRecordCommand = (
     date: record.date,
     record,
     expectedLastUpdated,
+    contexts: classifyDailyRecordSaveContexts(),
   };
 };
 
@@ -42,5 +50,6 @@ export const createPartialUpdateDailyRecordCommand = (
   return {
     date,
     patch,
+    contexts: classifyDailyRecordPatchContexts(patch),
   };
 };

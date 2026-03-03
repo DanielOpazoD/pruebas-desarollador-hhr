@@ -1,5 +1,6 @@
 const functions = require('firebase-functions/v1');
 const { calculateMinsalStatistics } = require('./minsal/minsalStatsCalculator');
+const { assertSupportedHospitalId } = require('./runtime/hospitalPolicy');
 
 const createMinsalFunctions = ({ admin, hospitalCapacity, hasCallableClinicalAccess }) => ({
   calculateMinsalStats: functions.https.onCall(async (data, context) => {
@@ -24,6 +25,12 @@ const createMinsalFunctions = ({ admin, hospitalCapacity, hasCallableClinicalAcc
         'invalid-argument',
         'Missing required parameters: hospitalId, startDate, endDate.'
       );
+    }
+
+    try {
+      assertSupportedHospitalId(hospitalId);
+    } catch (error) {
+      throw new functions.https.HttpsError('permission-denied', error.message);
     }
 
     const recordsRef = admin
