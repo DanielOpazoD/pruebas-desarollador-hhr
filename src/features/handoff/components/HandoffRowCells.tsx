@@ -139,7 +139,7 @@ export const HandoffDiagnosisCell: React.FC<HandoffDiagnosisCellProps> = ({
           )}
         </div>
 
-        {!showEvents && (
+        {!showEvents && !isMedical && (
           <div className="animate-in fade-in slide-in-from-top-1 duration-200 flex justify-start">
             <MedicalBadge variant={statusVariant} className="text-center">
               {patient.status}

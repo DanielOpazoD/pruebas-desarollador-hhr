@@ -158,6 +158,7 @@ export const useDailyRecord = (
         updateMedicalSignature: handoffManagement.updateMedicalSignature,
         updateMedicalHandoffDoctor: handoffManagement.updateMedicalHandoffDoctor,
         markMedicalHandoffAsSent: handoffManagement.markMedicalHandoffAsSent,
+        resetMedicalHandoffState: handoffManagement.resetMedicalHandoffState,
         sendMedicalHandoff: handoffManagement.sendMedicalHandoff,
       }),
     [

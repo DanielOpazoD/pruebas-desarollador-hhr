@@ -1,37 +1,62 @@
 import React from 'react';
-import { RefreshCcw } from 'lucide-react';
+import { Plane, RefreshCcw } from 'lucide-react';
 import { MedicalBadge } from '@/components/ui/base/MedicalBadge';
 import { BedType } from '@/types';
 import { isIntensiveBedType } from '@/utils/bedTypeUtils';
+import { useBedActiveTransferQuery } from '@/features/census/components/patient-row/useBedActiveTransferQuery';
 
 interface PatientMainRowBedTypeCellProps {
+  bedId: string;
   bedType: BedType;
+  hasPatient: boolean;
   canToggleBedType: boolean;
   onToggleBedType: () => void;
 }
 
 export const PatientMainRowBedTypeCell: React.FC<PatientMainRowBedTypeCellProps> = ({
+  bedId,
   bedType,
+  hasPatient,
   canToggleBedType,
   onToggleBedType,
-}) => (
-  <td className="p-0 border-r border-slate-100 text-center w-16 relative group/tipo-cell">
-    <div className="flex flex-col items-center gap-1 py-1">
-      <MedicalBadge
-        variant={isIntensiveBedType(bedType) ? 'pink' : 'blue'}
-        className="w-10 justify-center mx-auto"
-      >
-        {bedType}
-      </MedicalBadge>
-    </div>
-    {canToggleBedType && (
-      <button
-        onClick={onToggleBedType}
-        className="absolute top-0.5 right-0.5 p-0.5 rounded-full text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition-all opacity-0 group-hover/tipo-cell:opacity-100"
-        title="Cambiar nivel de cuidado (UCI/UTI)"
-      >
-        <RefreshCcw size={10} className="animate-hover-spin" />
-      </button>
-    )}
-  </td>
-);
+}) => {
+  const activeTransferQuery = useBedActiveTransferQuery(bedId, hasPatient);
+  const activeTransfer = activeTransferQuery.data;
+  const hasActiveTransfer = Boolean(activeTransfer);
+  const isAcceptedTransfer = activeTransfer?.status === 'ACCEPTED';
+
+  return (
+    <td className="p-0 border-r border-slate-100 text-center w-16 relative group/tipo-cell">
+      {hasActiveTransfer && (
+        <div
+          className={
+            isAcceptedTransfer
+              ? 'absolute top-0.5 left-0.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-sm ring-1 ring-emerald-200'
+              : 'absolute top-0.5 left-0.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-slate-100 text-slate-500 shadow-sm ring-1 ring-slate-200'
+          }
+          title={isAcceptedTransfer ? 'Traslado aceptado' : 'Gestión de traslado activa'}
+          aria-label={isAcceptedTransfer ? 'Traslado aceptado' : 'Gestión de traslado activa'}
+        >
+          <Plane size={10} />
+        </div>
+      )}
+      <div className="flex flex-col items-center gap-1 py-1">
+        <MedicalBadge
+          variant={isIntensiveBedType(bedType) ? 'pink' : 'blue'}
+          className="w-10 justify-center mx-auto"
+        >
+          {bedType}
+        </MedicalBadge>
+      </div>
+      {canToggleBedType && (
+        <button
+          onClick={onToggleBedType}
+          className="absolute top-0.5 right-0.5 p-0.5 rounded-full text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition-all opacity-0 group-hover/tipo-cell:opacity-100"
+          title="Cambiar nivel de cuidado (UCI/UTI)"
+        >
+          <RefreshCcw size={10} className="animate-hover-spin" />
+        </button>
+      )}
+    </td>
+  );
+};

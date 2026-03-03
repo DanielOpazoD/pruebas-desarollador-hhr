@@ -18,7 +18,10 @@ import { useHandoffLogic } from '@/hooks';
 import { useAuditContext } from '@/context/AuditContext';
 import { getAttributedAuthors } from '@/services/admin/attributionService';
 import { useUIState, UseUIStateReturn } from '@/hooks/useUIState';
+import { useAuth } from '@/context';
 import {
+  resolveMedicalHandoffScope,
+  type MedicalHandoffScope,
   resolveHandoffDocumentTitle,
   resolveHandoffNovedadesValue,
   resolveHandoffTableHeaderClass,
@@ -30,12 +33,14 @@ interface HandoffViewProps {
   type?: 'nursing' | 'medical';
   readOnly?: boolean;
   ui?: UseUIStateReturn;
+  medicalScope?: MedicalHandoffScope;
 }
 
 export const HandoffView: React.FC<HandoffViewProps> = ({
   type = 'nursing',
   readOnly = false,
   ui: propUi,
+  medicalScope = 'all',
 }) => {
   const { record } = useDailyRecordData();
   const {
@@ -44,10 +49,12 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
     updateHandoffStaff,
     updateMedicalHandoffDoctor,
     markMedicalHandoffAsSent,
+    resetMedicalHandoffState,
   } = useDailyRecordHandoffActions();
   const { nursesList } = useStaffContext();
   const { success } = useNotification();
   const { logEvent } = useAuditContext();
+  const { role } = useAuth();
   const logEventRef = useRef(logEvent);
   const recordRef = useRef(record);
 
@@ -88,6 +95,23 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
     selectedShift: ui.selectedShift,
     setSelectedShift: ui.setSelectedShift,
     onSuccess: success,
+  });
+
+  const scopedMedicalScope = resolveMedicalHandoffScope(medicalScope);
+  const filteredMedicalBeds = React.useMemo(() => {
+    if (!isMedical) return visibleBeds;
+    if (scopedMedicalScope === 'upc') {
+      return visibleBeds.filter(bed => record?.beds[bed.id]?.isUPC);
+    }
+    if (scopedMedicalScope === 'no-upc') {
+      return visibleBeds.filter(bed => !record?.beds[bed.id]?.isUPC);
+    }
+    return visibleBeds;
+  }, [isMedical, scopedMedicalScope, visibleBeds, record]);
+  const effectiveVisibleBeds = isMedical ? filteredMedicalBeds : visibleBeds;
+  const hasAnyVisiblePatients = effectiveVisibleBeds.some(bed => {
+    const patient = record?.beds[bed.id];
+    return patient?.patientName && shouldShowPatient(bed.id);
   });
 
   // MINSAL Traceability: Log when clinical data is viewed
@@ -195,10 +219,12 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
       {isMedical && (
         <MedicalHandoffHeader
           record={record}
-          visibleBeds={visibleBeds}
+          visibleBeds={effectiveVisibleBeds}
           readOnly={readOnly}
+          canRestoreSignatures={role === 'admin'}
           updateMedicalHandoffDoctor={updateMedicalHandoffDoctor}
           markMedicalHandoffAsSent={markMedicalHandoffAsSent}
+          resetMedicalHandoffState={resetMedicalHandoffState}
         />
       )}
 
@@ -218,7 +244,7 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
       {/* Patient Table - Tabbed UPC/Non-UPC for Medical Handoff */}
       {isMedical ? (
         <MedicalHandoffTabs
-          visibleBeds={visibleBeds}
+          visibleBeds={effectiveVisibleBeds}
           record={record}
           noteField={noteField}
           onNoteChange={handleNursingNoteChange}
@@ -226,6 +252,8 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
           readOnly={readOnly}
           isMedical={isMedical}
           shouldShowPatient={shouldShowPatient}
+          fixedScope={scopedMedicalScope === 'all' ? null : scopedMedicalScope}
+          hasAnyPatients={hasAnyVisiblePatients}
         />
       ) : (
         <HandoffPatientTable

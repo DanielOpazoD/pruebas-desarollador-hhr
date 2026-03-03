@@ -55,11 +55,33 @@ describe('useHandoffCommunication', () => {
 
     await waitFor(() => {
       expect(mockWriteClipboardText).toHaveBeenCalledWith(
-        'https://hhr.test?mode=signature&date=2026-02-15'
+        'https://hhr.test?mode=signature&date=2026-02-15&scope=all'
       );
       expect(onSuccess).toHaveBeenCalledWith(
         'Enlace copiado',
-        'El link para firma médica ha sido copiado al portapapeles.'
+        'El link para firma médica de todos los pacientes ha sido copiado al portapapeles.'
+      );
+    });
+  });
+
+  it('copies differentiated UPC signature link', async () => {
+    mockWriteClipboardText.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() =>
+      useHandoffCommunication(createRecord(), [], vi.fn(), onSuccess)
+    );
+
+    act(() => {
+      result.current.handleShareLink('upc');
+    });
+
+    await waitFor(() => {
+      expect(mockWriteClipboardText).toHaveBeenCalledWith(
+        'https://hhr.test?mode=signature&date=2026-02-15&scope=upc'
+      );
+      expect(onSuccess).toHaveBeenCalledWith(
+        'Enlace copiado',
+        'El link para firma médica de UPC ha sido copiado al portapapeles.'
       );
     });
   });

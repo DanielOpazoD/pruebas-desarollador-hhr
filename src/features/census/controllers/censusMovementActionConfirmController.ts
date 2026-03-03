@@ -53,6 +53,18 @@ export const DISCHARGE_UNDO_CONFIRM_DIALOG: MovementConfirmDialog = {
   variant: 'warning',
 };
 
+export const buildDischargeWithActiveTransferConfirmDialog = (
+  patientName?: string
+): MovementConfirmDialog => ({
+  title: 'Traslado en curso',
+  message: patientName
+    ? `El paciente ${patientName} tiene una gestión de traslado activa. La acción más probable en este caso es usar el botón "Trasladar" para registrar el traslado efectivo. ¿Deseas darlo de alta de todas formas?`
+    : 'Este paciente tiene una gestión de traslado activa. La acción más probable en este caso es usar el botón "Trasladar" para registrar el traslado efectivo. ¿Deseas darlo de alta de todas formas?',
+  confirmText: 'Dar de alta igualmente',
+  cancelText: 'Cancelar',
+  variant: 'warning',
+});
+
 export const DISCHARGE_DELETE_CONFIRM_DIALOG: MovementConfirmDialog = {
   title: 'Eliminar alta',
   message: 'Esta acción eliminará el registro de alta. ¿Deseas continuar?',

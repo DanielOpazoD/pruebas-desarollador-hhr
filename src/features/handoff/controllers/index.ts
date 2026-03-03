@@ -11,3 +11,8 @@ export {
   resolveHandoffTitle,
   shouldShowNightCudyrActions,
 } from './handoffViewController';
+export {
+  buildMedicalHandoffSignatureLink,
+  resolveMedicalHandoffScope,
+} from './medicalHandoffScopeController';
+export type { MedicalHandoffScope } from './medicalHandoffScopeController';

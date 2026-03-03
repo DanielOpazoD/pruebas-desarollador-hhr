@@ -77,7 +77,9 @@ export const PatientMainRowView: React.FC<PatientMainRowViewProps> = ({
       />
 
       <PatientMainRowBedTypeCell
+        bedId={bed.id}
         bedType={bedType}
+        hasPatient={Boolean(data.patientName)}
         canToggleBedType={mainRowViewState.canToggleBedType}
         onToggleBedType={onToggleBedType}
       />

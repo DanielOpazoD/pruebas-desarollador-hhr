@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   LogOut,
   GitBranch,
+  History,
   Activity,
   Trash2,
   FileText,
@@ -71,6 +72,7 @@ export const actionIcons: Record<AuditAction, React.ReactNode> = {
   BED_UNBLOCKED: React.createElement(CheckCircle2, { size: 14 }),
   EXTRA_BED_TOGGLED: React.createElement(Zap, { size: 14 }),
   MEDICAL_HANDOFF_SIGNED: React.createElement(User, { size: 14 }),
+  MEDICAL_HANDOFF_RESTORED: React.createElement(History, { size: 14 }),
   DATA_IMPORTED: React.createElement(Upload, { size: 14 }),
   DATA_EXPORTED: React.createElement(Download, { size: 14 }),
   PATIENT_NOTE_UPDATED: React.createElement(FileText, { size: 14 }),
@@ -106,6 +108,7 @@ export const actionColors: Record<AuditAction, string> = {
   BED_UNBLOCKED: 'bg-emerald-50 text-emerald-700 border-emerald-100',
   EXTRA_BED_TOGGLED: 'bg-cyan-50 text-cyan-700 border-cyan-100',
   MEDICAL_HANDOFF_SIGNED: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+  MEDICAL_HANDOFF_RESTORED: 'bg-orange-50 text-orange-700 border-orange-100',
   DATA_IMPORTED: 'bg-indigo-50 text-indigo-700 border-indigo-100',
   DATA_EXPORTED: 'bg-emerald-50 text-emerald-700 border-emerald-100',
   PATIENT_NOTE_UPDATED: 'bg-blue-50 text-blue-700 border-blue-100',
@@ -153,6 +156,8 @@ export const renderHumanDetails = (log: AuditLogEntry) => {
       return `Cama extra ${details.bedId || log.entityId} ${details.active ? 'activada' : 'desactivada'}.`;
     case 'MEDICAL_HANDOFF_SIGNED':
       return `Se registró la firma médica de ${(details.doctorName as string) || 'un profesional'}.`;
+    case 'MEDICAL_HANDOFF_RESTORED':
+      return `Se restauró la entrega médica eliminando ${Array.isArray(details.clearedFields) ? (details.clearedFields as string[]).join(', ') : 'firmas previas'}.`;
     case 'VIEW_NURSING_HANDOFF':
       return `Visualización de la entrega de turno de enfermería(${details.shift || 'turno'}).`;
     case 'VIEW_MEDICAL_HANDOFF':

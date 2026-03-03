@@ -65,6 +65,8 @@ export const generateSummary = (
       return `${details.active ? 'Activada' : 'Desactivada'} cama extra: ${bedId}`;
     case 'MEDICAL_HANDOFF_SIGNED':
       return `Entrega médica firmada: ${(details.doctorName as string) || 'Médico'}`;
+    case 'MEDICAL_HANDOFF_RESTORED':
+      return `Entrega médica restaurada: ${Array.isArray(details.clearedFields) ? (details.clearedFields as string[]).join(', ') : 'firmas eliminadas'}`;
     case 'CONFLICT_AUTO_MERGED':
       return `Auto-merge de conflicto: ${entityId} (${(details.entryCount as number) ?? 0} decisiones)`;
     default:

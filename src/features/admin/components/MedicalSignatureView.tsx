@@ -4,12 +4,17 @@ import { useDailyRecordHandoffActions } from '@/context/useDailyRecordScopedActi
 import { HandoffView } from '@/features/handoff';
 import { PenTool, CheckCircle } from 'lucide-react';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
+import { resolveMedicalHandoffScope } from '@/features/handoff/controllers';
 
 export const MedicalSignatureView: React.FC = () => {
   const { record } = useDailyRecordData();
   const { updateMedicalSignature } = useDailyRecordHandoffActions();
   const [doctorName, setDoctorName] = useState('');
   const [isSignedLocal, setIsSignedLocal] = useState(false);
+  const locationHref = defaultBrowserWindowRuntime.getLocationHref();
+  const medicalScope = resolveMedicalHandoffScope(
+    locationHref ? new URL(locationHref).searchParams.get('scope') : null
+  );
 
   // If record is loading or null
   if (!record) {
@@ -43,7 +48,7 @@ export const MedicalSignatureView: React.FC = () => {
     <div className="min-h-screen bg-slate-50 pb-32">
       {/* Read Only View */}
       <div className="pointer-events-none select-none">
-        <HandoffView type="medical" readOnly={true} />
+        <HandoffView type="medical" readOnly={true} medicalScope={medicalScope} />
       </div>
 
       {/* Signature Footer */}

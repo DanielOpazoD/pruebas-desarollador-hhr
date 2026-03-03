@@ -190,6 +190,7 @@ export const createMockDailyRecordContext = (
   updateMedicalSignature: vi.fn().mockResolvedValue(undefined),
   updateMedicalHandoffDoctor: vi.fn().mockResolvedValue(undefined),
   markMedicalHandoffAsSent: vi.fn().mockResolvedValue(undefined),
+  resetMedicalHandoffState: vi.fn().mockResolvedValue(undefined),
   sendMedicalHandoff: vi.fn().mockResolvedValue(undefined),
 
   // Validation helpers

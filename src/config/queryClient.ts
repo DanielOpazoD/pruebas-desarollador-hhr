@@ -78,4 +78,8 @@ export const queryKeys = {
     remoteStats: (hospitalId: string, startDate: string, endDate: string) =>
       ['analytics', 'remoteStats', hospitalId, startDate, endDate] as const,
   },
+  transfers: {
+    all: ['transfers'] as const,
+    activeByBed: (bedId: string) => ['transfers', 'activeByBed', bedId] as const,
+  },
 } as const;

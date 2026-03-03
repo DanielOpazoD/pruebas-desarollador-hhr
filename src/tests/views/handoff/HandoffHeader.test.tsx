@@ -6,75 +6,88 @@ import React from 'react';
 import { HandoffHeader } from '@/features/handoff/components/HandoffHeader';
 
 describe('HandoffHeader', () => {
-    const defaultProps = {
-        isMedical: false,
-        selectedShift: 'day' as const,
-        setSelectedShift: vi.fn(),
-        readOnly: false,
-        onSendWhatsApp: vi.fn(),
-        onShareLink: vi.fn()
-    };
+  const defaultProps = {
+    isMedical: false,
+    selectedShift: 'day' as const,
+    setSelectedShift: vi.fn(),
+    readOnly: false,
+    onSendWhatsApp: vi.fn(),
+    onShareLink: vi.fn(),
+  };
 
-    it('renders correctly in nursing mode', () => {
-        render(<HandoffHeader {...defaultProps} />);
+  it('renders correctly in nursing mode', () => {
+    render(<HandoffHeader {...defaultProps} />);
 
-        expect(screen.getByText(/Entrega de Turno Enfermería/i)).toBeInTheDocument();
-        expect(screen.getByText(/Turno Largo/i)).toBeInTheDocument();
-        expect(screen.getByText(/Turno Noche/i)).toBeInTheDocument();
-    });
+    expect(screen.getByText(/Entrega de Turno Enfermería/i)).toBeInTheDocument();
+    expect(screen.getByText(/Turno Largo/i)).toBeInTheDocument();
+    expect(screen.getByText(/Turno Noche/i)).toBeInTheDocument();
+  });
 
-    it('toggles shift on button click in nursing mode', () => {
-        render(<HandoffHeader {...defaultProps} />);
+  it('toggles shift on button click in nursing mode', () => {
+    render(<HandoffHeader {...defaultProps} />);
 
-        const nightButton = screen.getByText(/Turno Noche/i);
-        fireEvent.click(nightButton);
+    const nightButton = screen.getByText(/Turno Noche/i);
+    fireEvent.click(nightButton);
 
-        expect(defaultProps.setSelectedShift).toHaveBeenCalledWith('night');
-    });
+    expect(defaultProps.setSelectedShift).toHaveBeenCalledWith('night');
+  });
 
-    it('renders correctly in medical mode', () => {
-        render(<HandoffHeader {...defaultProps} isMedical={true} />);
+  it('renders correctly in medical mode', () => {
+    render(<HandoffHeader {...defaultProps} isMedical={true} />);
 
-        expect(screen.getByText('Entrega de Turno')).toBeInTheDocument();
-        // Shift buttons should NOT be present in medical mode
-        expect(screen.queryByText(/Turno Largo/i)).not.toBeInTheDocument();
-        expect(screen.queryByText(/Turno Noche/i)).not.toBeInTheDocument();
-    });
+    expect(screen.getByText('Entrega de Turno')).toBeInTheDocument();
+    // Shift buttons should NOT be present in medical mode
+    expect(screen.queryByText(/Turno Largo/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Turno Noche/i)).not.toBeInTheDocument();
+  });
 
-    it('shows action buttons in medical mode when not readOnly', () => {
-        render(<HandoffHeader {...defaultProps} isMedical={true} />);
+  it('shows action buttons in medical mode when not readOnly', () => {
+    render(<HandoffHeader {...defaultProps} isMedical={true} />);
 
-        expect(screen.getByLabelText(/Enviar entrega por WhatsApp/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/Generar link para firma del médico/i)).toBeInTheDocument();
-    });
+    expect(screen.getByLabelText(/Enviar entrega por WhatsApp/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Generar link para firma del médico/i)).toBeInTheDocument();
+  });
 
-    it('calls actions on button clicks', () => {
-        render(<HandoffHeader {...defaultProps} isMedical={true} />);
+  it('calls actions on button clicks', () => {
+    render(<HandoffHeader {...defaultProps} isMedical={true} />);
 
-        fireEvent.click(screen.getByLabelText(/Enviar entrega por WhatsApp/i));
-        expect(defaultProps.onSendWhatsApp).toHaveBeenCalled();
+    fireEvent.click(screen.getByLabelText(/Enviar entrega por WhatsApp/i));
+    expect(defaultProps.onSendWhatsApp).toHaveBeenCalled();
 
-        fireEvent.click(screen.getByLabelText(/Generar link para firma del médico/i));
-        expect(defaultProps.onShareLink).toHaveBeenCalled();
-    });
+    fireEvent.click(screen.getByLabelText(/Generar link para firma del médico/i));
+    fireEvent.click(screen.getByText(/Copiar link: todos/i));
+    expect(defaultProps.onShareLink).toHaveBeenCalledWith('all');
+  });
 
-    it('disables WhatsApp button if signature is present', () => {
-        render(
-            <HandoffHeader
-                {...defaultProps}
-                isMedical={true}
-                medicalSignature={{ doctorName: 'Dr. House', signedAt: '2024-12-11 10:00' }}
-            />
-        );
+  it('allows selecting differentiated medical signature links', () => {
+    render(<HandoffHeader {...defaultProps} isMedical={true} />);
 
-        const wsButton = screen.getByLabelText(/Enviar entrega por WhatsApp/i);
-        expect(wsButton).toBeDisabled();
-    });
+    fireEvent.click(screen.getByLabelText(/Generar link para firma del médico/i));
+    fireEvent.click(screen.getByText(/Copiar link: UPC/i));
+    expect(defaultProps.onShareLink).toHaveBeenCalledWith('upc');
 
-    it('hides action buttons in readOnly mode', () => {
-        render(<HandoffHeader {...defaultProps} isMedical={true} readOnly={true} />);
+    fireEvent.click(screen.getByLabelText(/Generar link para firma del médico/i));
+    fireEvent.click(screen.getByText(/Copiar link: No UPC/i));
+    expect(defaultProps.onShareLink).toHaveBeenCalledWith('no-upc');
+  });
 
-        expect(screen.queryByLabelText(/Enviar entrega por WhatsApp/i)).not.toBeInTheDocument();
-        expect(screen.queryByLabelText(/Generar link para firma del médico/i)).not.toBeInTheDocument();
-    });
+  it('disables WhatsApp button if signature is present', () => {
+    render(
+      <HandoffHeader
+        {...defaultProps}
+        isMedical={true}
+        medicalSignature={{ doctorName: 'Dr. House', signedAt: '2024-12-11 10:00' }}
+      />
+    );
+
+    const wsButton = screen.getByLabelText(/Enviar entrega por WhatsApp/i);
+    expect(wsButton).toBeDisabled();
+  });
+
+  it('hides action buttons in readOnly mode', () => {
+    render(<HandoffHeader {...defaultProps} isMedical={true} readOnly={true} />);
+
+    expect(screen.queryByLabelText(/Enviar entrega por WhatsApp/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Generar link para firma del médico/i)).not.toBeInTheDocument();
+  });
 });

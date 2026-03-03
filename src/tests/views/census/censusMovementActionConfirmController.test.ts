@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  buildDischargeWithActiveTransferConfirmDialog,
   DISCHARGE_DELETE_CONFIRM_DIALOG,
   DISCHARGE_UNDO_CONFIRM_DIALOG,
   TRANSFER_DELETE_CONFIRM_DIALOG,
@@ -81,5 +82,26 @@ describe('censusMovementActionConfirmController', () => {
       cancelText: 'Cancelar',
       variant: 'warning',
     });
+  });
+
+  it('builds the active-transfer discharge warning with patient name', () => {
+    const dialog = buildDischargeWithActiveTransferConfirmDialog('Juan Perez');
+
+    expect(dialog).toEqual({
+      title: 'Traslado en curso',
+      message:
+        'El paciente Juan Perez tiene una gestión de traslado activa. La acción más probable en este caso es usar el botón "Trasladar" para registrar el traslado efectivo. ¿Deseas darlo de alta de todas formas?',
+      confirmText: 'Dar de alta igualmente',
+      cancelText: 'Cancelar',
+      variant: 'warning',
+    });
+  });
+
+  it('builds the active-transfer discharge warning without patient name', () => {
+    const dialog = buildDischargeWithActiveTransferConfirmDialog();
+
+    expect(dialog.message).toContain('Este paciente tiene una gestión de traslado activa.');
+    expect(dialog.message).toContain('usar el botón "Trasladar"');
+    expect(dialog.message).toContain('registrar el traslado efectivo');
   });
 });

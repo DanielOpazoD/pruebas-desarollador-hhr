@@ -13,6 +13,7 @@ export const IMPORTANT_ACTIONS: AuditAction[] = [
   'NURSE_HANDOFF_MODIFIED',
   'MEDICAL_HANDOFF_MODIFIED',
   'HANDOFF_NOVEDADES_MODIFIED',
+  'MEDICAL_HANDOFF_RESTORED',
 ];
 
 export const AUDIT_ACTION_LABELS: Record<string, string> = {
@@ -35,6 +36,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   BED_UNBLOCKED: 'Cama Desbloqueada',
   EXTRA_BED_TOGGLED: 'Cama Extra Toggled',
   MEDICAL_HANDOFF_SIGNED: 'Firma Entrega Médica',
+  MEDICAL_HANDOFF_RESTORED: 'Restauración Entrega Médica',
   VIEW_CUDYR: 'Visualización CUDYR',
   VIEW_NURSING_HANDOFF: 'Visualización Entrega Enfermería',
   VIEW_MEDICAL_HANDOFF: 'Visualización Entrega Médica',

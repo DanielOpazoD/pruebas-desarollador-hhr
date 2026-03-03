@@ -149,6 +149,7 @@ export const useDailyRecordFragmentedValues = (
         updateMedicalSignature: value?.updateMedicalSignature,
         updateMedicalHandoffDoctor: value?.updateMedicalHandoffDoctor,
         markMedicalHandoffAsSent: value?.markMedicalHandoffAsSent,
+        resetMedicalHandoffState: value?.resetMedicalHandoffState,
         sendMedicalHandoff: value?.sendMedicalHandoff,
         copyPatientToDate: value?.copyPatientToDate,
       }) as DailyRecordActionsContextType,
@@ -193,6 +194,7 @@ export const useDailyRecordFragmentedValues = (
       value?.updateMedicalSignature,
       value?.updateMedicalHandoffDoctor,
       value?.markMedicalHandoffAsSent,
+      value?.resetMedicalHandoffState,
       value?.sendMedicalHandoff,
       value?.copyPatientToDate,
     ]

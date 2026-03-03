@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { MONTH_NAMES } from '@/constants';
 import { Copy, Calendar, Plus, ChevronDown, ShieldCheck } from 'lucide-react';
 import clsx from 'clsx';
+import {
+  COPY_PREVIOUS_DAY_UNLOCK_HOUR,
+  resolveCreateDayCopyAvailability,
+} from '@/features/census/controllers/censusCreateDayAvailabilityController';
 
 interface EmptyDayPromptProps {
   selectedDay: number;
   selectedMonth: number;
+  currentDateString: string;
   previousRecordAvailable: boolean;
   previousRecordDate?: string; // YYYY-MM-DD format
   availableDates?: string[]; // All dates with records
@@ -16,6 +21,7 @@ interface EmptyDayPromptProps {
 export const EmptyDayPrompt: React.FC<EmptyDayPromptProps> = ({
   selectedDay,
   selectedMonth,
+  currentDateString,
   previousRecordAvailable,
   previousRecordDate,
   availableDates = [],
@@ -25,6 +31,30 @@ export const EmptyDayPrompt: React.FC<EmptyDayPromptProps> = ({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isConfirmingBlank, setIsConfirmingBlank] = useState(false);
   const [blankConfirmationText, setBlankConfirmationText] = useState('');
+  const [now, setNow] = useState(() => new Date());
+
+  const copyAvailability = useMemo(
+    () => resolveCreateDayCopyAvailability(currentDateString, now),
+    [currentDateString, now]
+  );
+
+  useEffect(() => {
+    if (!copyAvailability.isCopyLocked) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [copyAvailability.isCopyLocked]);
+
+  useEffect(() => {
+    if (copyAvailability.isCopyLocked && showDatePicker) {
+      setShowDatePicker(false);
+    }
+  }, [copyAvailability.isCopyLocked, showDatePicker]);
 
   // Format date for display (DD de Mes)
   const formatDate = (dateStr: string) => {
@@ -58,7 +88,13 @@ export const EmptyDayPrompt: React.FC<EmptyDayPromptProps> = ({
               {/* Main Copy Button */}
               <button
                 onClick={() => onCreateDay(true, previousRecordDate)}
-                className="btn group !p-6 !h-auto border-2 border-slate-300 text-medical-700 hover:bg-medical-50 bg-white shadow-sm flex-col rounded-r-none border-r-0"
+                disabled={copyAvailability.isCopyLocked}
+                className={clsx(
+                  'btn group !p-6 !h-auto border-2 border-slate-300 text-medical-700 bg-white shadow-sm flex-col rounded-r-none border-r-0',
+                  copyAvailability.isCopyLocked
+                    ? 'cursor-not-allowed opacity-60'
+                    : 'hover:bg-medical-50'
+                )}
                 style={{ width: '230px' }}
                 data-testid="copy-previous-btn"
               >
@@ -66,9 +102,18 @@ export const EmptyDayPrompt: React.FC<EmptyDayPromptProps> = ({
                   <Copy size={20} />
                   <span>Copiar del {formatDate(previousRecordDate)}</span>
                 </div>
-                <span className="text-xs font-normal text-medical-600/80">
-                  Incluye pacientes, camas y entregas de turno
-                </span>
+                {copyAvailability.isCopyLocked ? (
+                  <span className="text-xs text-center font-semibold text-amber-700 leading-snug">
+                    Disponible hoy desde las {COPY_PREVIOUS_DAY_UNLOCK_HOUR}:00 hrs.
+                    <span className="block text-[11px] font-normal text-amber-600">
+                      Se habilita en {copyAvailability.countdownLabel}
+                    </span>
+                  </span>
+                ) : (
+                  <span className="text-xs font-normal text-medical-600/80">
+                    Incluye pacientes, camas y entregas de turno
+                  </span>
+                )}
               </button>
 
               {/* Subtle "+" expander for other dates */}
@@ -77,10 +122,17 @@ export const EmptyDayPrompt: React.FC<EmptyDayPromptProps> = ({
                   <button
                     onClick={e => {
                       e.stopPropagation();
+                      if (copyAvailability.isCopyLocked) {
+                        return;
+                      }
                       setShowDatePicker(!showDatePicker);
                     }}
+                    disabled={copyAvailability.isCopyLocked}
                     className={clsx(
-                      'border-2 border-slate-300 text-slate-400 hover:bg-slate-50 hover:text-slate-600 bg-white shadow-sm rounded-l-none px-2 transition-colors',
+                      'border-2 border-slate-300 text-slate-400 bg-white shadow-sm rounded-l-none px-2 transition-colors',
+                      copyAvailability.isCopyLocked
+                        ? 'cursor-not-allowed opacity-60'
+                        : 'hover:bg-slate-50 hover:text-slate-600',
                       showDatePicker && 'bg-medical-50 text-medical-600'
                     )}
                     title="Seleccionar otra fecha"

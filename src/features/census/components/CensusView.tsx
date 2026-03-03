@@ -55,6 +55,7 @@ const CensusViewContent: React.FC<CensusViewProps> = ({
       <EmptyDayPrompt
         selectedDay={selectedDay}
         selectedMonth={selectedMonth}
+        currentDateString={currentDateString}
         previousRecordAvailable={previousRecordAvailable}
         previousRecordDate={previousRecordDate}
         availableDates={availableDates}

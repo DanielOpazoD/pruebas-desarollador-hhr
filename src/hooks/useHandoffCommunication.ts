@@ -8,6 +8,10 @@ import {
   defaultBrowserWindowRuntime,
   writeClipboardText,
 } from '@/shared/runtime/browserWindowRuntime';
+import {
+  buildMedicalHandoffSignatureLink,
+  type MedicalHandoffScope,
+} from '@/features/handoff/controllers';
 
 /**
  * useHandoffCommunication Hook
@@ -26,18 +30,30 @@ export const useHandoffCommunication = (
   /**
    * Copies the unique signature link to the system clipboard.
    */
-  const handleShareLink = useCallback(() => {
-    if (!record) return;
-    const url = `${defaultBrowserWindowRuntime.getLocationOrigin()}?mode=signature&date=${record.date}`;
-    void writeClipboardText(url)
-      .then(() => {
-        onSuccess('Enlace copiado', 'El link para firma médica ha sido copiado al portapapeles.');
-      })
-      .catch((error: unknown) => {
-        const err = error as Error;
-        onSuccess(err.message || 'No se pudo copiar el enlace al portapapeles.');
-      });
-  }, [record, onSuccess]);
+  const handleShareLink = useCallback(
+    (scope: MedicalHandoffScope = 'all') => {
+      if (!record) return;
+      const url = buildMedicalHandoffSignatureLink(
+        defaultBrowserWindowRuntime.getLocationOrigin(),
+        record.date,
+        scope
+      );
+      void writeClipboardText(url)
+        .then(() => {
+          const scopeLabel =
+            scope === 'upc' ? 'UPC' : scope === 'no-upc' ? 'No UPC' : 'todos los pacientes';
+          onSuccess(
+            'Enlace copiado',
+            `El link para firma médica de ${scopeLabel} ha sido copiado al portapapeles.`
+          );
+        })
+        .catch((error: unknown) => {
+          const err = error as Error;
+          onSuccess(err.message || 'No se pudo copiar el enlace al portapapeles.');
+        });
+    },
+    [record, onSuccess]
+  );
 
   /**
    * Sends the medical handoff summary via WhatsApp service.

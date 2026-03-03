@@ -82,9 +82,11 @@ export const useCensusActionCommandsController = ({
 
   const executeDischarge = useCensusDischargeCommand({
     dischargeStateRef,
+    recordRef,
     stabilityRulesRef,
     addDischargeRef,
     updateDischargeRef,
+    confirmRef,
     setDischargeState,
     getCurrentTime,
     notifyError,

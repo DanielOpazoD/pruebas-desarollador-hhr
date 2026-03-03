@@ -133,6 +133,7 @@ export interface DailyRecordActionsContextType extends PatientMovementActions {
   updateMedicalSignature: (doctorName: string) => Promise<void>;
   updateMedicalHandoffDoctor: (doctorName: string) => Promise<void>;
   markMedicalHandoffAsSent: (doctorName?: string) => Promise<void>;
+  resetMedicalHandoffState: () => Promise<void>;
   sendMedicalHandoff: (templateContent: string, targetGroupId: string) => Promise<void>;
 }
 
