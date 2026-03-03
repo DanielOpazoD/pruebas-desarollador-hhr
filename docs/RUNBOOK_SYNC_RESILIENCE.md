@@ -25,6 +25,8 @@ Umbrales operativos:
 
 - `warning`: `oldestPendingAgeMs >= 5 min` o `retryingSyncTasks >= 1`
 - `critical`: `oldestPendingAgeMs >= 15 min` o `retryingSyncTasks >= 3` o `failed/conflict > 0`
+- Snapshot técnico base: `reports/operational-health.md`
+- Budgets completos: `docs/RUNBOOK_OPERATIONAL_BUDGETS.md`
 
 ## Procedimiento 1: IndexedDB bloqueado
 
@@ -108,6 +110,27 @@ Verificación:
 - Registro final consistente en UI.
 - `conflictSyncTasks` vuelve a 0 tras flush.
 
+## Conflictos por contexto
+
+Si el conflicto fue clasificado por contexto, priorizar esta revisión:
+
+- `clinical`: validar que camas, pacientes y crib clínico preserven la última edición segura.
+- `staffing`: confirmar tens/enfermeras y camas extra activas del turno.
+- `movements`: revisar altas, traslados y CMA antes de reintentar.
+- `handoff`: confirmar notas/responsables de entrega antes de cerrar.
+- `metadata`: revisar `lastUpdated`, `schemaVersion`, `dateTimestamp` y reapertura.
+- `unknown`: escalar a ingeniería con paths afectados y evidencia.
+
+Referencia: `reports/operational-health.md` y `conflictos por contexto` allí listados.
+
+## Legacy bridge controlado
+
+Si el incidente involucra carga histórica o migración:
+
+1. revisar `reports/legacy-bridge-governance.md`
+2. confirmar que el `legacy bridge` no se reinsertó en el hot path
+3. usar solo entrypoints explícitas de bridge, nunca lecturas directas legacy
+
 ## Diagnóstico local (desarrollo/soporte técnico)
 
 Comandos:
@@ -115,6 +138,8 @@ Comandos:
 ```bash
 npm run typecheck
 npm run check:quality
+npm run check:operational-runbooks
+npm run report:operational-health
 npm run test:rules:ci
 npm run test -- src/tests/integration/sync-resilience.test.ts
 npm run test -- src/tests/integration/sync-ui-resilience.test.tsx

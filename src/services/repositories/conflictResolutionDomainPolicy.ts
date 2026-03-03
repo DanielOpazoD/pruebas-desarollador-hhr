@@ -6,6 +6,24 @@ export type ConflictDomainContext =
   | 'metadata'
   | 'unknown';
 
+export const ALL_CONFLICT_DOMAIN_CONTEXTS: readonly ConflictDomainContext[] = [
+  'clinical',
+  'staffing',
+  'movements',
+  'handoff',
+  'metadata',
+  'unknown',
+] as const;
+
+export const CONFLICT_CONTEXT_RUNBOOK_ACTIONS: Record<ConflictDomainContext, string> = {
+  clinical: 'Validar que el merge preserve camas y pacientes antes de reintentar.',
+  staffing: 'Confirmar staffing y turnos antes de aplicar la resolución sugerida.',
+  movements: 'Corroborar altas, traslados y CMA contra el registro remoto.',
+  handoff: 'Revisar notas de entrega y responsables del turno antes de confirmar.',
+  metadata: 'Alinear timestamps, schemaVersion y campos de control antes de reabrir.',
+  unknown: 'Inspeccionar paths afectados y escalar si el contexto no se puede clasificar.',
+};
+
 export const resolveConflictDomainContextForPath = (path: string): ConflictDomainContext => {
   if (path.startsWith('beds.')) return 'clinical';
   if (
@@ -35,7 +53,7 @@ export const classifyConflictChangedContexts = (
   changedPaths: string[]
 ): ConflictDomainContext[] => {
   if (changedPaths.length === 0 || changedPaths.includes('*')) {
-    return ['clinical', 'staffing', 'movements', 'handoff', 'metadata'];
+    return [...ALL_CONFLICT_DOMAIN_CONTEXTS].filter(context => context !== 'unknown');
   }
 
   return Array.from(new Set(changedPaths.map(resolveConflictDomainContextForPath)));

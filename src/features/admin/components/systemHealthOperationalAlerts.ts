@@ -1,8 +1,10 @@
+import { evaluateSystemHealthState } from '@/features/admin/components/systemHealthStatusPolicy';
+import type { UserHealthStatus } from '@/services/admin/healthService';
 import {
   DEFAULT_SYSTEM_HEALTH_THRESHOLDS,
-  evaluateSystemHealthState,
-} from '@/features/admin/components/systemHealthStatusPolicy';
-import { UserHealthStatus } from '@/services/admin/healthService';
+  PROLONGED_OFFLINE_USER_AGE_MS,
+  SYSTEM_HEALTH_ALERT_SLA_MINUTES,
+} from '@/services/admin/systemHealthOperationalBudgets';
 
 export type OperationalAlertSeverity = 'warning' | 'critical';
 
@@ -65,7 +67,7 @@ export const buildOperationalAlerts = (
   const prolongedOfflineUsers = statuses.filter(status => {
     if (status.isOnline) return false;
     const ageMs = nowMs - new Date(status.lastSeen).getTime();
-    return Number.isFinite(ageMs) && ageMs >= 15 * 60 * 1000;
+    return Number.isFinite(ageMs) && ageMs >= PROLONGED_OFFLINE_USER_AGE_MS;
   });
 
   const alerts: OperationalAlert[] = [];
@@ -78,7 +80,7 @@ export const buildOperationalAlerts = (
       severity: 'critical',
       recommendedAction:
         'Contactar al usuario y ejecutar limpieza local + reintento de sincronizacion en menos de 10 minutos.',
-      slaMinutes: 10,
+      slaMinutes: SYSTEM_HEALTH_ALERT_SLA_MINUTES.criticalUsers,
       affectedUsers: uniqueEmails(criticalUsers),
       affectedCount: criticalUsers.length,
     });
@@ -92,7 +94,7 @@ export const buildOperationalAlerts = (
       severity: 'critical',
       recommendedAction:
         'Verificar permisos Firestore/Storage y reintentar cola. Si persiste, escalar a soporte tecnico.',
-      slaMinutes: 10,
+      slaMinutes: SYSTEM_HEALTH_ALERT_SLA_MINUTES.failedSync,
       affectedUsers: uniqueEmails(failedSyncUsers),
       affectedCount: failedSyncUsers.length,
     });
@@ -106,7 +108,7 @@ export const buildOperationalAlerts = (
       severity: 'critical',
       recommendedAction:
         'Revisar panel de conflictos, confirmar merge sugerido y reintentar sincronizacion inmediatamente.',
-      slaMinutes: 15,
+      slaMinutes: SYSTEM_HEALTH_ALERT_SLA_MINUTES.syncConflicts,
       affectedUsers: uniqueEmails(conflictUsers),
       affectedCount: conflictUsers.length,
     });
@@ -120,7 +122,7 @@ export const buildOperationalAlerts = (
       severity: 'warning',
       recommendedAction:
         'Solicitar reintento de cola y validar conectividad de red del equipo afectado.',
-      slaMinutes: 30,
+      slaMinutes: SYSTEM_HEALTH_ALERT_SLA_MINUTES.staleQueue,
       affectedUsers: uniqueEmails(staleQueueUsers),
       affectedCount: staleQueueUsers.length,
     });
@@ -134,7 +136,7 @@ export const buildOperationalAlerts = (
       severity: 'warning',
       recommendedAction:
         'Validar conectividad local y confirmar que no existan cambios pendientes antes de cerrar sesion.',
-      slaMinutes: 30,
+      slaMinutes: SYSTEM_HEALTH_ALERT_SLA_MINUTES.offlineUsers,
       affectedUsers: uniqueEmails(prolongedOfflineUsers),
       affectedCount: prolongedOfflineUsers.length,
     });
@@ -148,7 +150,7 @@ export const buildOperationalAlerts = (
       severity: 'warning',
       recommendedAction:
         'Monitorear evolucion y escalar si la alerta permanece por mas de 30 minutos.',
-      slaMinutes: 45,
+      slaMinutes: SYSTEM_HEALTH_ALERT_SLA_MINUTES.warningUsers,
       affectedUsers: uniqueEmails(warningUsers),
       affectedCount: warningUsers.length,
     });

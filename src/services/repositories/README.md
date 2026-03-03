@@ -109,6 +109,7 @@ de entrada (fecha, límites, RUT, IDs) antes de delegar en storage.
   - `legacyBridgeGovernance.ts`
   - `legacyRecordBridgeService.ts`
   - `reports/legacy-bridge-governance.md`
+  - `reports/operational-health.md`
 - Cambios en schema/versionado deben tocar en conjunto:
   - `schemaEvolutionPolicy.ts`
   - `migrationLedger.ts`
@@ -122,3 +123,5 @@ de entrada (fecha, límites, RUT, IDs) antes de delegar en storage.
   - `reports/runtime-contracts.md`
 - Si una operación crítica cambia de costo esperado, debe actualizarse la medición en
   `repositoryPerformance.ts` y regenerarse `reports/operational-health.md`.
+- Si cambia la clasificación o remediación de conflictos por contexto, debe actualizarse también
+  `docs/RUNBOOK_OPERATIONAL_BUDGETS.md`.

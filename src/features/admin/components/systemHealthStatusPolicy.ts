@@ -1,34 +1,8 @@
-import { UserHealthStatus } from '@/services/admin/healthService';
-
-export interface SystemHealthThresholds {
-  warningOldestPendingAgeMs: number;
-  criticalOldestPendingAgeMs: number;
-  warningRetryingSyncTasks: number;
-  criticalRetryingSyncTasks: number;
-  warningPendingMutations: number;
-  criticalPendingMutations: number;
-  warningLocalErrorCount: number;
-  criticalLocalErrorCount: number;
-  warningRepositoryWarningCount: number;
-  criticalRepositoryWarningCount: number;
-  warningSlowRepositoryOperationMs: number;
-  criticalSlowRepositoryOperationMs: number;
-}
-
-export const DEFAULT_SYSTEM_HEALTH_THRESHOLDS: SystemHealthThresholds = {
-  warningOldestPendingAgeMs: 5 * 60 * 1000,
-  criticalOldestPendingAgeMs: 15 * 60 * 1000,
-  warningRetryingSyncTasks: 1,
-  criticalRetryingSyncTasks: 3,
-  warningPendingMutations: 1,
-  criticalPendingMutations: 8,
-  warningLocalErrorCount: 1,
-  criticalLocalErrorCount: 15,
-  warningRepositoryWarningCount: 1,
-  criticalRepositoryWarningCount: 5,
-  warningSlowRepositoryOperationMs: 350,
-  criticalSlowRepositoryOperationMs: 800,
-};
+import type { UserHealthStatus } from '@/services/admin/healthService';
+import {
+  DEFAULT_SYSTEM_HEALTH_THRESHOLDS,
+  type SystemHealthThresholds,
+} from '@/services/admin/systemHealthOperationalBudgets';
 
 export interface SystemHealthState {
   level: 'healthy' | 'warning' | 'critical';
@@ -131,3 +105,6 @@ export const evaluateSystemHealthState = (
     recommendedActions: ['Sin accion correctiva requerida.'],
   };
 };
+
+export { DEFAULT_SYSTEM_HEALTH_THRESHOLDS };
+export type { SystemHealthThresholds };

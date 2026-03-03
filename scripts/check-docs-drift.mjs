@@ -18,6 +18,8 @@ const checks = [
       'reports/runtime-contracts.md',
       'dailyRecordAggregate.ts',
       'reports/schema-evolution.md',
+      'docs/RUNBOOK_OPERATIONAL_BUDGETS.md',
+      'reports/operational-health.md',
     ],
   },
   {
@@ -27,6 +29,9 @@ const checks = [
       'firestore/firestoreQuerySupport.ts',
       'firestore/firestoreWriteSupport.ts',
       'syncQueueService.ts',
+      'docs/RUNBOOK_OPERATIONAL_BUDGETS.md',
+      'check:operational-runbooks',
+      'reports/operational-health.md',
     ],
   },
 ];

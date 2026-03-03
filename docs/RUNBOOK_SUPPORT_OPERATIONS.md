@@ -23,6 +23,7 @@ Este runbook complementa `docs/RUNBOOK_SYNC_RESILIENCE.md` con una pauta más op
 2. Validar que no existan usuarios con estado crítico por más de 15 minutos.
 3. Confirmar que no hay alertas repetidas de `permission-denied` en consola.
 4. Registrar incidentes abiertos/cerrados del día.
+5. Revisar `reports/operational-health.md` y `reports/legacy-bridge-governance.md` antes de cambios manuales.
 
 ## Controles Nuevos (Auth + Legacy)
 
@@ -164,6 +165,9 @@ Criterio de cierre:
 ## Comandos de Diagnóstico Técnico
 
 ```bash
+npm run report:legacy-bridge
+npm run report:operational-health
+npm run check:operational-runbooks
 npm run typecheck
 npm run check:quality
 npm run test:resilience
@@ -177,6 +181,12 @@ npm run test:e2e:critical:ci
 npm run test:e2e -- e2e/auth-multi-tab-lock.spec.ts
 npm run test -- src/tests/security/netlifyHeadersStatic.test.ts
 ```
+
+## Legacy bridge
+
+- Tratar `legacy bridge` como compatibilidad administrada, no como fallback general.
+- Antes de usarlo, confirmar fase actual en `reports/legacy-bridge-governance.md`.
+- Si aparece uso nuevo o inesperado del bridge, abrir incidente técnico y registrar entrypoint afectada.
 
 Parámetros opcionales para carga de cola:
 

@@ -1,0 +1,81 @@
+#!/usr/bin/env node
+
+import fs from 'node:fs';
+import path from 'node:path';
+
+const workspaceRoot = process.cwd();
+
+const fail = message => {
+  console.error(`[operational-runbooks] ${message}`);
+  process.exit(1);
+};
+
+const read = relativePath => fs.readFileSync(path.join(workspaceRoot, relativePath), 'utf8');
+
+const requiredDocs = [
+  {
+    file: 'docs/RUNBOOK_SYNC_RESILIENCE.md',
+    patterns: [
+      'reports/operational-health.md',
+      'legacy bridge',
+      'conflictos por contexto',
+      'RUNBOOK_OPERATIONAL_BUDGETS.md',
+    ],
+  },
+  {
+    file: 'docs/RUNBOOK_SUPPORT_OPERATIONS.md',
+    patterns: [
+      'report:operational-health',
+      'report:legacy-bridge',
+      'check:operational-runbooks',
+      'legacy bridge',
+    ],
+  },
+  {
+    file: 'docs/RUNBOOK_OPERATIONAL_BUDGETS.md',
+    patterns: [
+      'warningOldestPendingAgeMs',
+      'criticalOldestPendingAgeMs',
+      'legacy-bridge-governance.md',
+      'reports/operational-health.md',
+    ],
+  },
+];
+
+for (const doc of requiredDocs) {
+  const content = read(doc.file);
+  const missing = doc.patterns.filter(pattern => !content.includes(pattern));
+  if (missing.length > 0) {
+    fail(`${doc.file} is missing references to: ${missing.join(', ')}`);
+  }
+}
+
+const report = JSON.parse(read('reports/operational-health.json'));
+const requiredKeys = [
+  'systemHealth',
+  'syncQueue',
+  'syncDomainProfiles',
+  'conflictContexts',
+  'legacyBridge',
+  'localPersistence',
+  'repositoryPerformance',
+  'runbooks',
+];
+const missingKeys = requiredKeys.filter(key => !(key in report));
+if (missingKeys.length > 0) {
+  fail(`reports/operational-health.json is missing keys: ${missingKeys.join(', ')}`);
+}
+
+if (!Array.isArray(report.syncDomainProfiles) || report.syncDomainProfiles.length === 0) {
+  fail('reports/operational-health.json must include syncDomainProfiles entries');
+}
+
+if (!report.legacyBridge || typeof report.legacyBridge !== 'object') {
+  fail('reports/operational-health.json must include legacyBridge summary');
+}
+
+if (!Array.isArray(report.runbooks) || report.runbooks.length < 3) {
+  fail('reports/operational-health.json must list the operational runbooks');
+}
+
+console.log('[operational-runbooks] OK');

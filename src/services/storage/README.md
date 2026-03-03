@@ -60,6 +60,9 @@ Cambios en esta capa requieren:
 2. verificación de degradación/fallback,
 3. revisión de impacto en `DailyRecordRepository`.
 4. si tocan `sync/` o `firestore/`, actualizar `reports/operational-health.md`
+5. mantener alineados `docs/RUNBOOK_SYNC_RESILIENCE.md`,
+   `docs/RUNBOOK_OPERATIONAL_BUDGETS.md` y `npm run check:operational-runbooks`
+   cuando cambien budgets, degradación local o criterios de alerta.
    y mantener `firestoreService.ts`/`syncQueueService.ts` como fachadas curadas.
 
 ## Contrato y límites
@@ -79,5 +82,6 @@ Cambios en esta capa requieren:
 ## Operación
 
 - Runbook soporte sync/resiliencia: `docs/RUNBOOK_SYNC_RESILIENCE.md`
+- Budgets y thresholds operativos: `docs/RUNBOOK_OPERATIONAL_BUDGETS.md`
 - Si IndexedDB cae en modo degradado persistente, el sistema reduce ruido de reintentos y mantiene el fallback activo durante la sesión.
 - Los avisos visibles priorizan lenguaje no técnico y reservan acciones avanzadas solo para casos persistentes.
