@@ -8,6 +8,12 @@ import type {
   SyncTransportPort,
 } from '@/services/storage/sync/syncQueuePorts';
 import { measureRepositoryOperation } from '@/services/repositories/repositoryPerformance';
+import {
+  buildSyncQueueDomainMetrics,
+  normalizeSyncTaskContexts,
+  resolveSyncDomainRetryProfile,
+  type SyncQueueDomainMetrics,
+} from '@/services/storage/sync/syncDomainPolicy';
 
 export interface SyncQueueTelemetry {
   pending: number;
@@ -27,6 +33,9 @@ export interface SyncQueueOperationSnapshot {
   nextAttemptAt?: number;
   error?: string;
   key?: string;
+  contexts?: SyncTask['contexts'];
+  origin?: SyncTask['origin'];
+  recoveryPolicy?: SyncTask['recoveryPolicy'];
 }
 
 interface CreateSyncQueueEngineOptions {
@@ -49,6 +58,16 @@ const clearTaskErrorState = () => ({
   lastErrorAction: undefined,
   lastErrorAt: undefined,
 });
+
+const buildTaskContextMeta = (task: Pick<SyncTask, 'contexts' | 'recoveryPolicy'>) => {
+  const contexts = normalizeSyncTaskContexts(task.contexts);
+  const domainProfile = resolveSyncDomainRetryProfile(contexts);
+  return {
+    contexts,
+    recoveryPolicy: task.recoveryPolicy || domainProfile.id,
+    domainProfile,
+  };
+};
 
 const buildTaskErrorMeta = (error: unknown) => {
   const classification = classifySyncError(error);
@@ -133,10 +152,17 @@ export const createSyncQueueEngine = ({
     }
 
     const { classification, errorMeta } = buildTaskErrorMeta(error);
+    const { contexts, recoveryPolicy, domainProfile } = buildTaskContextMeta(task);
     console.error(`[SyncQueue] Task ${task.id} failed:`, error);
 
     if (classification.category === 'conflict') {
-      await updateTaskState(task.id, { status: 'CONFLICT', ...errorMeta });
+      await updateTaskState(task.id, {
+        status: 'CONFLICT',
+        contexts,
+        recoveryPolicy,
+        ...errorMeta,
+        lastErrorAction: domainProfile.conflictAction,
+      });
       return;
     }
 
@@ -144,16 +170,21 @@ export const createSyncQueueEngine = ({
       await updateTaskState(task.id, {
         status: 'FAILED',
         retryCount: task.retryCount,
+        contexts,
+        recoveryPolicy,
         ...errorMeta,
       });
       return;
     }
 
     const newRetryCount = task.retryCount + 1;
-    if (newRetryCount >= maxRetries) {
+    const retryBudget = Math.min(maxRetries, domainProfile.retryBudget);
+    if (newRetryCount >= retryBudget) {
       await updateTaskState(task.id, {
         status: 'FAILED',
         retryCount: newRetryCount,
+        contexts,
+        recoveryPolicy,
         ...errorMeta,
       });
       logError('Sync task permanently failed', error instanceof Error ? error : undefined, {
@@ -161,6 +192,8 @@ export const createSyncQueueEngine = ({
         type: task.type,
         key: task.key,
         retryCount: newRetryCount,
+        contexts,
+        recoveryPolicy,
       });
       return;
     }
@@ -168,14 +201,25 @@ export const createSyncQueueEngine = ({
     await updateTaskState(task.id, {
       status: 'PENDING',
       retryCount: newRetryCount,
-      nextAttemptAt: Date.now() + computeBackoffMs(newRetryCount),
+      nextAttemptAt:
+        Date.now() + computeBackoffMs(newRetryCount) * Math.max(1, domainProfile.delayMultiplier),
+      contexts,
+      recoveryPolicy,
       ...errorMeta,
     });
   };
 
-  const queueTask = async (type: SyncTask['type'], payload: unknown): Promise<void> => {
+  const queueTask = async (
+    type: SyncTask['type'],
+    payload: unknown,
+    meta?: Pick<SyncTask, 'contexts' | 'origin' | 'recoveryPolicy'>
+  ): Promise<void> => {
     const key = getTaskKey(type, payload);
     const now = Date.now();
+    const contextMeta = buildTaskContextMeta({
+      contexts: meta?.contexts,
+      recoveryPolicy: meta?.recoveryPolicy,
+    });
 
     if (key) {
       const existing = await store.findReusableTask(type, key);
@@ -185,6 +229,9 @@ export const createSyncQueueEngine = ({
           timestamp: now,
           retryCount: 0,
           key,
+          contexts: contextMeta.contexts,
+          origin: meta?.origin || existing.origin || 'direct_queue',
+          recoveryPolicy: contextMeta.recoveryPolicy,
           ...clearTaskErrorState(),
         });
         triggerProcessing();
@@ -199,6 +246,9 @@ export const createSyncQueueEngine = ({
       timestamp: now,
       retryCount: 0,
       key,
+      contexts: contextMeta.contexts,
+      origin: meta?.origin || 'direct_queue',
+      recoveryPolicy: contextMeta.recoveryPolicy,
       ...clearTaskErrorState(),
     });
     triggerProcessing();
@@ -229,7 +279,15 @@ export const createSyncQueueEngine = ({
       nextAttemptAt: row.nextAttemptAt,
       error: row.error,
       key: row.key,
+      contexts: row.contexts,
+      origin: row.origin,
+      recoveryPolicy: row.recoveryPolicy,
     }));
+  };
+
+  const getDomainMetrics = async (): Promise<SyncQueueDomainMetrics> => {
+    const rows = await store.listAll();
+    return buildSyncQueueDomainMetrics(rows);
   };
 
   const processQueue = async (): Promise<void> => {
@@ -283,8 +341,11 @@ export const createSyncQueueEngine = ({
     queueTask,
     processQueue,
     getTelemetry,
+    getDomainMetrics,
     getStats,
     listRecentOperations,
     ensureOnlineListener,
   };
 };
+
+export type { SyncQueueDomainMetrics } from '@/services/storage/sync/syncDomainPolicy';

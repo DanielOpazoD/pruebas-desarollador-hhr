@@ -24,6 +24,7 @@ Capa de persistencia concreta: IndexedDB, localStorage, Firestore bridge y sincr
 `firestoreService.ts` se mantiene como fachada pública curada; la construcción de rangos mensuales y helpers de escritura vive en `firestore/firestoreQuerySupport.ts` y `firestore/firestoreWriteSupport.ts`.
 `syncQueueService.ts` es la única fuente soportada para telemetría (`getSyncQueueTelemetry()`), stats (`getSyncQueueStats()`) y operaciones recientes (`listRecentSyncQueueOperations()`).
 El outbox ahora se arma sobre un engine con puertos (`sync/syncQueueEngine.ts`, `sync/syncQueuePorts.ts`) para separar runtime navegador, store Dexie y transporte Firestore.
+`sync/syncDomainPolicy.ts` clasifica tareas por contexto (`clinical`, `staffing`, `movements`, `handoff`, `metadata`) para aplicar budgets de retry y métricas de conflicto más específicas.
 
 ## Estrategia
 
@@ -65,6 +66,11 @@ Cambios en esta capa requieren:
 - `firestoreService.ts` no debe reabsorber helpers de rango, concurrencia o snapshots.
 - `syncQueueService.ts` es el único punto de acceso soportado para telemetría, stats
   y operaciones recientes; la UI no debe leer Dexie directo para esta información.
+- Si cambia la policy domain-aware de sync, deben actualizarse en conjunto:
+  - `sync/syncDomainPolicy.ts`
+  - `syncQueueTypes.ts`
+  - `syncQueueService.ts`
+  - tests de `syncQueueService` y `sync-resilience`
 - Los puertos de `sync/` deben permanecer agnósticos de React/UI.
 - `legacyFirebase*` y `localStorageService.ts` son compatibilidad controlada; no deben
   reingresar al camino caliente del registro diario.

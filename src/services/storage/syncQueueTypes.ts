@@ -1,6 +1,8 @@
 /**
  * Sync queue task contracts shared by storage services.
  */
+import type { SyncDomainContext, SyncTaskOrigin } from '@/services/storage/sync/syncDomainPolicy';
+
 export interface SyncTask {
   id?: number;
   opId: string;
@@ -17,4 +19,7 @@ export interface SyncTask {
   lastErrorAction?: string;
   lastErrorAt?: number;
   key?: string;
+  contexts?: SyncDomainContext[];
+  origin?: SyncTaskOrigin;
+  recoveryPolicy?: string;
 }

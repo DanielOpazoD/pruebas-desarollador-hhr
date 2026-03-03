@@ -16,6 +16,7 @@ import { logError } from '@/services/utils/errorService';
 import { PatientMasterRepository } from '@/services/repositories/PatientMasterRepository';
 import { resolveDailyRecordConflictWithTrace } from '@/services/repositories/conflictResolutionMatrix';
 import { buildConflictAuditSummary } from '@/services/repositories/conflictResolutionAuditSummary';
+import { classifyConflictChangedContexts } from '@/services/repositories/conflictResolutionDomainPolicy';
 import { logRepositoryConflictAutoMerged } from '@/services/repositories/ports/repositoryAuditPort';
 import {
   addClinicalFhirPatchesForTouchedBeds,
@@ -115,9 +116,20 @@ export const assertRemoteSaveCompatibility = async (
 };
 
 export const queueRetryForRecord = async (record: DailyRecord): Promise<boolean> => {
-  await queueSyncTask('UPDATE_DAILY_RECORD', record);
+  await queueSyncTask('UPDATE_DAILY_RECORD', record, {
+    contexts: ['clinical', 'staffing', 'movements', 'handoff', 'metadata'],
+    origin: 'full_save_retry',
+  });
   return true;
 };
+
+const buildRecoveryTaskMeta = (
+  changedPaths: string[],
+  origin: 'full_save_retry' | 'partial_update_retry' | 'conflict_auto_merge'
+) => ({
+  contexts: classifyConflictChangedContexts(changedPaths.length > 0 ? changedPaths : ['*']),
+  origin,
+});
 
 export const shouldQueueRetryableError = (error: unknown): boolean => isRetryableSyncError(error);
 
@@ -147,7 +159,11 @@ export const attemptConflictAutoMergeRecovery = async (
     );
 
     await saveToIndexedDB(merged);
-    await queueSyncTask('UPDATE_DAILY_RECORD', merged);
+    await queueSyncTask(
+      'UPDATE_DAILY_RECORD',
+      merged,
+      buildRecoveryTaskMeta(changedPaths, 'conflict_auto_merge')
+    );
     try {
       await logRepositoryConflictAutoMerged(date, auditDetails);
     } catch (auditError) {
@@ -194,7 +210,16 @@ export const resolveRemoteWriteRecovery = async (
   }
 
   if (shouldQueueRetryableError(error)) {
-    await queueRetryForRecord(record);
+    await queueSyncTask(
+      'UPDATE_DAILY_RECORD',
+      record,
+      buildRecoveryTaskMeta(
+        changedPaths,
+        changedPaths.length === 0 || changedPaths.includes('*')
+          ? 'full_save_retry'
+          : 'partial_update_retry'
+      )
+    );
     return {
       status: 'queued_for_retry',
       queuedForRetry: true,

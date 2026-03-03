@@ -100,7 +100,11 @@ describe('dailyRecordRepositoryWriteService outbox fallback', () => {
     expect(saveToIndexedDB).toHaveBeenCalled();
     expect(queueSyncTask).toHaveBeenCalledWith(
       'UPDATE_DAILY_RECORD',
-      expect.objectContaining({ date: '2026-02-19' })
+      expect.objectContaining({ date: '2026-02-19' }),
+      expect.objectContaining({
+        contexts: ['clinical', 'staffing', 'movements', 'handoff', 'metadata'],
+        origin: 'full_save_retry',
+      })
     );
   });
 
@@ -127,6 +131,10 @@ describe('dailyRecordRepositoryWriteService outbox fallback', () => {
         beds: expect.objectContaining({
           R1: expect.objectContaining({ patientName: 'Paciente Nuevo' }),
         }),
+      }),
+      expect.objectContaining({
+        contexts: ['clinical'],
+        origin: 'partial_update_retry',
       })
     );
   });
@@ -166,6 +174,10 @@ describe('dailyRecordRepositoryWriteService outbox fallback', () => {
         beds: expect.objectContaining({
           R1: expect.objectContaining({ pathology: 'Diag local' }),
         }),
+      }),
+      expect.objectContaining({
+        contexts: ['clinical', 'staffing', 'movements', 'handoff', 'metadata'],
+        origin: 'conflict_auto_merge',
       })
     );
     expect(logRepositoryConflictAutoMerged).toHaveBeenCalledWith(
@@ -211,6 +223,10 @@ describe('dailyRecordRepositoryWriteService outbox fallback', () => {
         beds: expect.objectContaining({
           R1: expect.objectContaining({ pathology: 'Diagnostico local' }),
         }),
+      }),
+      expect.objectContaining({
+        contexts: ['clinical'],
+        origin: 'conflict_auto_merge',
       })
     );
     expect(logRepositoryConflictAutoMerged).toHaveBeenCalledWith(

@@ -13,6 +13,7 @@ import { createDexieSyncQueueStore } from './sync/dexieSyncQueueStore';
 import { createFirestoreSyncTransport } from './sync/firestoreSyncTransport';
 import {
   createSyncQueueEngine,
+  type SyncQueueDomainMetrics,
   type SyncQueueOperationSnapshot,
   type SyncQueueTelemetry,
 } from './sync/syncQueueEngine';
@@ -81,10 +82,35 @@ export const listRecentSyncQueueOperations = async (
   }
 };
 
-export const queueSyncTask = async (type: SyncTask['type'], payload: unknown): Promise<void> => {
+export const getSyncQueueDomainMetrics = async (): Promise<SyncQueueDomainMetrics> => {
   try {
     await ensureDbReady();
-    await syncQueueEngine.queueTask(type, payload);
+    return await syncQueueEngine.getDomainMetrics();
+  } catch (error) {
+    console.warn('[SyncQueue] Failed to read domain metrics:', error);
+    return {
+      byContext: {
+        clinical: { pending: 0, failed: 0, conflict: 0, retrying: 0 },
+        staffing: { pending: 0, failed: 0, conflict: 0, retrying: 0 },
+        movements: { pending: 0, failed: 0, conflict: 0, retrying: 0 },
+        handoff: { pending: 0, failed: 0, conflict: 0, retrying: 0 },
+        metadata: { pending: 0, failed: 0, conflict: 0, retrying: 0 },
+        unknown: { pending: 0, failed: 0, conflict: 0, retrying: 0 },
+      },
+      byOrigin: {},
+      byRecoveryPolicy: {},
+    };
+  }
+};
+
+export const queueSyncTask = async (
+  type: SyncTask['type'],
+  payload: unknown,
+  meta?: Pick<SyncTask, 'contexts' | 'origin' | 'recoveryPolicy'>
+): Promise<void> => {
+  try {
+    await ensureDbReady();
+    await syncQueueEngine.queueTask(type, payload, meta);
   } catch (error) {
     console.error('[SyncQueue] Failed to queue task:', error);
   }
@@ -101,4 +127,4 @@ export const ensureSyncQueueOnlineListener = (): void => {
 
 ensureSyncQueueOnlineListener();
 
-export type { SyncQueueOperationSnapshot, SyncQueueTelemetry };
+export type { SyncQueueDomainMetrics, SyncQueueOperationSnapshot, SyncQueueTelemetry };
