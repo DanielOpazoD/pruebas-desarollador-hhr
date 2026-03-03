@@ -73,9 +73,12 @@ de entrada (fecha, límites, RUT, IDs) antes de delegar en storage.
   legible del ledger de evolución para soporte y revisión técnica.
 - `dailyRecordAggregate.ts` expone facetas del dominio (`clinical`, `staffing`, `movements`,
   `handoff`, `metadata`) para bajar acoplamiento sobre el contrato monolítico de `DailyRecord`.
-- `contracts/dailyRecordDomainContracts.ts` y `dailyRecordDomainServices.ts` separan
-  la escritura por contexto clínico y evitan que FHIR/master sync queden pegados a la
-  fachada del repositorio.
+- `dailyRecordClinicalDomainService.ts`, `dailyRecordStaffingDomainService.ts`,
+  `dailyRecordHandoffDomainService.ts`, `dailyRecordMovementsDomainService.ts` y
+  `dailyRecordMetadataDomainService.ts` concentran reglas por contexto y mantienen
+  `dailyRecordInitializationSupport.ts` y `dailyRecordWriteSupport.ts` como orquestadores.
+- `contracts/dailyRecordDomainContracts.ts` y `dailyRecordDomainServices.ts` exponen
+  clasificación y reexports curados para que los contextos internos no ensanchen la API pública.
 - Si se cambia cualquier regla de compatibilidad, deben actualizarse:
   - tests de `dataMigration`
   - tests de `dailyRecordRemoteLoader`
@@ -86,6 +89,9 @@ de entrada (fecha, límites, RUT, IDs) antes de delegar en storage.
 
 - `DailyRecordRepository.ts` debe seguir siendo una fachada mínima; la lógica de lectura,
   escritura, sync, lifecycle e inicialización vive en servicios dedicados.
+- Los servicios `dailyRecord*DomainService.ts` son internos al paquete `repositories`;
+  nuevos consumidores deben preferir la fachada del repositorio o los soportes existentes,
+  no importarlos desde UI o features.
 - Los bridges legacy se invocan solo de forma explícita desde `legacyRecordBridgeService.ts`.
 - Cambios en schema/versionado deben tocar en conjunto:
   - `schemaEvolutionPolicy.ts`

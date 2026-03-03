@@ -171,8 +171,9 @@ describe('dailyRecordRepositoryWriteService outbox fallback', () => {
     expect(logRepositoryConflictAutoMerged).toHaveBeenCalledWith(
       '2026-02-16',
       expect.objectContaining({
-        policyVersion: '2026-02-v2',
+        policyVersion: '2026-03-v3',
         changedPaths: ['*'],
+        impactedContexts: ['clinical', 'staffing', 'movements', 'handoff', 'metadata'],
         assessment: expect.objectContaining({
           riskLevel: 'high',
           reviewRecommended: true,
@@ -215,8 +216,9 @@ describe('dailyRecordRepositoryWriteService outbox fallback', () => {
     expect(logRepositoryConflictAutoMerged).toHaveBeenCalledWith(
       '2026-02-15',
       expect.objectContaining({
-        policyVersion: '2026-02-v2',
-        changedPaths: expect.arrayContaining(['beds.R1.pathology']),
+        policyVersion: '2026-03-v3',
+        changedPaths: expect.arrayContaining(['beds.R1.pathology', 'beds.R1.fhir_resource']),
+        impactedContexts: ['clinical'],
         assessment: expect.objectContaining({
           riskLevel: 'low',
           reviewRecommended: false,

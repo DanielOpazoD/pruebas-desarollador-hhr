@@ -12,15 +12,17 @@ import {
   DataRegressionError,
   VersionMismatchError,
 } from '@/utils/integrityGuard';
-import { mapPatientToFhir } from '@/services/utils/fhirMappers';
 import { logError } from '@/services/utils/errorService';
 import { PatientMasterRepository } from '@/services/repositories/PatientMasterRepository';
 import { resolveDailyRecordConflictWithTrace } from '@/services/repositories/conflictResolutionMatrix';
 import { buildConflictAuditSummary } from '@/services/repositories/conflictResolutionAuditSummary';
 import { logRepositoryConflictAutoMerged } from '@/services/repositories/ports/repositoryAuditPort';
 import {
+  addClinicalFhirPatchesForTouchedBeds,
   collectDailyRecordPatientsForMasterSync,
+  ensureDailyRecordDateTimestamp,
   syncDailyRecordClinicalResources,
+  touchDailyRecordLastUpdated,
 } from '@/services/repositories/dailyRecordDomainServices';
 
 export interface ConflictAutoMergeRecoveryResult {
@@ -37,54 +39,12 @@ export interface RemoteWriteRecoveryResult {
 const isConcurrencyError = (error: unknown): boolean =>
   error instanceof Error && error.name === 'ConcurrencyError';
 
-const ensureDateTimestamp = (record: DailyRecord): void => {
-  if (record.dateTimestamp || !record.date) {
-    return;
-  }
-
-  const dateObj = new Date(`${record.date}T00:00:00`);
-  record.dateTimestamp = dateObj.getTime();
-};
-
-const getTouchedBedIds = (patch: DailyRecordPatch): string[] =>
-  Array.from(
-    new Set(
-      Object.keys(patch)
-        .filter(key => key.startsWith('beds.'))
-        .map(key => key.split('.')[1])
-        .filter((bedId): bedId is string => Boolean(bedId))
-    )
-  );
-
-const addFhirPatchForTouchedBeds = (
-  mergedPatches: DailyRecordPatch,
-  validatedRecord: DailyRecord,
-  touchedBedIds: string[]
-): void => {
-  touchedBedIds.forEach(bedId => {
-    const patient = validatedRecord.beds[bedId];
-    if (!patient) {
-      return;
-    }
-
-    if (patient.patientName?.trim()) {
-      mergedPatches[`beds.${bedId}.fhir_resource`] = mapPatientToFhir(patient);
-    }
-
-    if (patient.clinicalCrib?.patientName?.trim()) {
-      mergedPatches[`beds.${bedId}.clinicalCrib.fhir_resource`] = mapPatientToFhir(
-        patient.clinicalCrib
-      );
-    }
-  });
-};
-
 export const prepareDailyRecordForPersistence = (
   record: DailyRecord,
   date: string
 ): DailyRecord => {
   const recordWithSchemaDefaults = validateAndSalvageRecord(record, date);
-  ensureDateTimestamp(recordWithSchemaDefaults);
+  ensureDailyRecordDateTimestamp(recordWithSchemaDefaults);
 
   const normalized = normalizeDailyRecordInvariants(recordWithSchemaDefaults);
   const validatedRecord = normalized.record;
@@ -119,10 +79,10 @@ export const preparePatchedRecordForPersistence = (
   }
 
   const updated = applyPatches(current, mergedPatches);
-  updated.lastUpdated = new Date().toISOString();
+  touchDailyRecordLastUpdated(updated);
 
   const validatedRecord = validateAndSalvageRecord(updated, date);
-  addFhirPatchForTouchedBeds(mergedPatches, validatedRecord, getTouchedBedIds(mergedPatches));
+  addClinicalFhirPatchesForTouchedBeds(mergedPatches, validatedRecord);
 
   return {
     record: validatedRecord,
