@@ -7,6 +7,7 @@ import { getCudyrMonthlyTotals } from '@/services/cudyr/cudyrSummary';
 import type { CudyrMonthlySummary } from '@/services/cudyr/cudyrSummary';
 import { createWorkbook } from '@/services/exporters/excelUtils';
 import { saveAs } from 'file-saver';
+import { getRecordFromFirestore } from '@/services/storage/firestoreService';
 
 // Mock dependencies
 vi.mock('file-saver', () => ({
@@ -24,6 +25,10 @@ vi.mock('@/services/exporters/excelUtils', () => ({
 
 vi.mock('@/services/cudyr/cudyrSummary', () => ({
   getCudyrMonthlyTotals: vi.fn(),
+}));
+
+vi.mock('@/services/storage/firestoreService', () => ({
+  getRecordFromFirestore: vi.fn(),
 }));
 
 describe('cudyrExportService', () => {
@@ -81,6 +86,7 @@ describe('cudyrExportService', () => {
       month: 1,
     } as unknown as CudyrMonthlySummary;
     vi.mocked(getCudyrMonthlyTotals).mockResolvedValue(emptySummary);
+    vi.mocked(getRecordFromFirestore).mockResolvedValue(null);
   });
 
   it('should generate monthly excel and trigger saveAs', async () => {
@@ -114,6 +120,35 @@ describe('cudyrExportService', () => {
     const blob = await generateCudyrMonthlyExcelBlob(2025, 1);
     expect(blob).toBeInstanceOf(Blob);
     expect(mockWorkbook.xlsx.writeBuffer).toHaveBeenCalled();
+  });
+
+  it('hydrates the current/end date from Firestore before building the summary', async () => {
+    const localRecord = {
+      date: '2025-01-05',
+      beds: {},
+      activeExtraBeds: [],
+      discharges: [],
+      transfers: [],
+      cma: [],
+      lastUpdated: '2025-01-05T08:00:00.000Z',
+    } as const;
+    const remoteRecord = {
+      ...localRecord,
+      lastUpdated: '2025-01-05T10:00:00.000Z',
+    };
+
+    vi.mocked(getRecordFromFirestore).mockResolvedValue(remoteRecord as never);
+
+    await generateCudyrMonthlyExcelBlob(2025, 1, '2025-01-05', localRecord as never);
+
+    expect(getRecordFromFirestore).toHaveBeenCalledWith('2025-01-05');
+    expect(getCudyrMonthlyTotals).toHaveBeenCalledWith(
+      2025,
+      1,
+      '2025-01-05',
+      expect.any(Function),
+      expect.objectContaining({ lastUpdated: '2025-01-05T10:00:00.000Z' })
+    );
   });
 
   it('should handle period with no data', async () => {

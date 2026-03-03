@@ -1,28 +1,40 @@
 /**
  * CUDYR Excel Export Service
  * Orchestrates monthly summary fetch + workbook generation + output delivery.
+ * Rehydrates the export range from Firestore before building the workbook.
  */
 
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebaseConfig';
-import { getDailyRecordsPath } from '@/constants/firestorePaths';
 import type { DailyRecord } from '@/types';
 import { getCudyrMonthlyTotals } from './cudyrSummary';
 import { validateExcelExport, XLSX_MIME_TYPE } from '@/services/exporters/excelValidation';
 import { buildCudyrWorkbook } from './cudyrWorkbookBuilder';
+import { getRecordFromFirestore } from '@/services/storage/firestoreService';
+import { resolvePreferredDailyRecord } from '@/services/repositories/dailyRecordSyncCompatibility';
 
 const fetchDailyRecord = async (dateStr: string): Promise<DailyRecord | null> => {
   try {
-    const docRef = doc(db, getDailyRecordsPath(), dateStr);
-    const snapshot = await getDoc(docRef);
-    if (snapshot.exists()) {
-      return snapshot.data() as DailyRecord;
-    }
-    return null;
+    return await getRecordFromFirestore(dateStr);
   } catch (error) {
     console.warn(`[CudyrExport] Failed to fetch record for ${dateStr}:`, error);
     return null;
   }
+};
+
+const resolveCurrentRecordForExport = async (
+  endDate: string | undefined,
+  currentRecord?: DailyRecord | null
+): Promise<DailyRecord | null | undefined> => {
+  if (!endDate && !currentRecord) {
+    return currentRecord;
+  }
+
+  const targetDate = endDate ?? currentRecord?.date;
+  if (!targetDate) {
+    return currentRecord;
+  }
+
+  const remoteRecord = await fetchDailyRecord(targetDate);
+  return resolvePreferredDailyRecord(currentRecord ?? null, remoteRecord);
 };
 
 const buildMonthlyWorkbook = async (
@@ -31,12 +43,13 @@ const buildMonthlyWorkbook = async (
   endDate?: string,
   currentRecord?: DailyRecord | null
 ) => {
+  const hydratedCurrentRecord = await resolveCurrentRecordForExport(endDate, currentRecord);
   const monthlySummary = await getCudyrMonthlyTotals(
     year,
     month,
     endDate,
     fetchDailyRecord,
-    currentRecord
+    hydratedCurrentRecord
   );
 
   return buildCudyrWorkbook({
