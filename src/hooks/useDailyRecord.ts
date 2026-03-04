@@ -17,10 +17,15 @@ import { useCMA } from './useCMA';
 import { useHandoffManagement } from './useHandoffManagement';
 import { useStabilityRules } from './useStabilityRules';
 import { useRepositories } from '@/services/RepositoryContext';
+import { useNotification } from '@/context/UIContext';
 import {
   buildDailyRecordContextValue,
   resolveCopyPatientRequest,
 } from '@/hooks/controllers/dailyRecordController';
+import {
+  hasCriticalLegacyRepairSignal,
+  getLegacyRepairWarningMessage,
+} from '@/hooks/controllers/legacyRepairWarningController';
 
 // Types
 import { DailyRecordContextType } from './useDailyRecordTypes';
@@ -35,6 +40,7 @@ export const useDailyRecord = (
   isFirebaseConnected: boolean = false
 ): DailyRecordContextType => {
   const { dailyRecord } = useRepositories();
+  const { warning } = useNotification();
 
   // ========================================================================
   // Sync & State Management
@@ -93,19 +99,22 @@ export const useDailyRecord = (
       if (!copyRequest) return;
 
       try {
-        await dailyRecord.copyPatientToDate(
+        const copyResult = await dailyRecord.copyPatientToDateDetailed(
           copyRequest.sourceDate,
           copyRequest.sourceBedId,
           copyRequest.targetDate,
           copyRequest.targetBedId
         );
+        if (hasCriticalLegacyRepairSignal(copyResult)) {
+          warning('Se corrigieron datos heredados', getLegacyRepairWarningMessage('copy_patient'));
+        }
         await refresh();
       } catch (error) {
         console.error('Error copying patient to date:', error);
         throw error;
       }
     },
-    [refresh, dailyRecord]
+    [refresh, dailyRecord, warning]
   );
 
   // ========================================================================

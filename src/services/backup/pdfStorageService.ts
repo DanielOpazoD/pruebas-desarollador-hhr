@@ -23,11 +23,15 @@ import {
   isExpectedStorageLookupMiss,
   shouldLogStorageError,
   resolveStorageLookupStatus,
-  type StorageLookupStatus,
 } from './storageErrorPolicy';
 import { isBackupDateValidationError, parseBackupDateParts } from './storageContracts';
 import { measureStorageOperation } from './storageObservability';
 import { assertStorageAvailable } from './storageAvailability';
+import {
+  createStorageLookupResult,
+  type StorageLookupResult,
+  withStorageLookupTimeout,
+} from './storageLookupContracts';
 
 // ============= Types =============
 
@@ -41,11 +45,6 @@ export interface PdfFolder {
   type: 'year' | 'month';
   children?: PdfFolder[];
   fileCount?: number;
-}
-
-export interface StorageLookupResult {
-  exists: boolean;
-  status: StorageLookupStatus;
 }
 
 // ============= Constants =============
@@ -187,15 +186,7 @@ export const pdfExistsDetailed = async (
 ): Promise<StorageLookupResult> => {
   // console.debug(`[PdfStorage] 🔍 Checking existence: ${date} ${shiftType}`);
 
-  // Create a timeout promise
   const TIMEOUT_MS = 4000;
-  const timeoutPromise = new Promise<StorageLookupResult>(resolve =>
-    setTimeout(() => {
-      console.warn(`[PdfStorage] ⏱️ Timeout check for ${date}`);
-      resolve({ exists: false, status: 'timeout' });
-    }, TIMEOUT_MS)
-  );
-
   const checkPromise = measureStorageOperation(
     'pdfExists',
     async (): Promise<StorageLookupResult> => {
@@ -208,27 +199,29 @@ export const pdfExistsDetailed = async (
 
         await getMetadata(storageRef);
         // console.debug(`[PdfStorage] ✅ Found: ${filePath}`);
-        return { exists: true, status: 'available' };
+        return createStorageLookupResult(true, 'available');
       } catch (error: unknown) {
         if (isExpectedStorageLookupMiss(error) || isBackupDateValidationError(error)) {
-          return {
-            exists: false,
-            status: resolveStorageLookupStatus(error, {
+          return createStorageLookupResult(
+            false,
+            resolveStorageLookupStatus(error, {
               invalidDate: isBackupDateValidationError(error),
-            }),
-          };
+            })
+          );
         }
         if (shouldLogStorageError(error)) {
           const storageError = error as { message?: string };
           console.warn(`[PdfStorage] ❌ Error (possibly CORS):`, storageError.message || error);
         }
-        return { exists: false, status: resolveStorageLookupStatus(error) };
+        return createStorageLookupResult(false, resolveStorageLookupStatus(error));
       }
     },
     { context: `${date}:${shiftType}` }
   );
 
-  return await Promise.race([checkPromise, timeoutPromise]);
+  return withStorageLookupTimeout(checkPromise, TIMEOUT_MS, () => {
+    console.warn(`[PdfStorage] ⏱️ Timeout check for ${date}`);
+  });
 };
 
 /**

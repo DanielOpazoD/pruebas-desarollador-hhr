@@ -64,6 +64,10 @@ service cloud.firestore {
       return isAdmin() || isNurse();
     }
 
+    function canReportSystemHealth() {
+      return isAdmin() || isNurse();
+    }
+
     function isEditorRole() {
       return isAuthenticated() && (
         request.auth.token.role == 'editor' ||
@@ -156,7 +160,7 @@ service cloud.firestore {
     // - numeric counters are bounded to non-negative values
     function isValidSystemHealthWrite(userId) {
       let payload = request.resource.data;
-      return isAuthenticated() &&
+      return canReportSystemHealth() &&
              request.auth.uid == userId &&
              payload.keys().hasOnly([
                'uid',
@@ -172,6 +176,9 @@ service cloud.firestore {
                'retryingSyncTasks',
                'oldestPendingAgeMs',
                'localErrorCount',
+               'degradedLocalPersistence',
+               'repositoryWarningCount',
+               'slowestRepositoryOperationMs',
                'appVersion',
                'platform',
                'userAgent'
@@ -189,6 +196,9 @@ service cloud.firestore {
              (payload.retryingSyncTasks == null || (payload.retryingSyncTasks is int && payload.retryingSyncTasks >= 0 && payload.retryingSyncTasks <= 10000)) &&
              (payload.oldestPendingAgeMs == null || (payload.oldestPendingAgeMs is int && payload.oldestPendingAgeMs >= 0 && payload.oldestPendingAgeMs <= 864000000)) &&
              (payload.localErrorCount == null || (payload.localErrorCount is int && payload.localErrorCount >= 0 && payload.localErrorCount <= 10000)) &&
+             (payload.degradedLocalPersistence == null || payload.degradedLocalPersistence is bool) &&
+             (payload.repositoryWarningCount == null || (payload.repositoryWarningCount is int && payload.repositoryWarningCount >= 0 && payload.repositoryWarningCount <= 10000)) &&
+             (payload.slowestRepositoryOperationMs == null || (payload.slowestRepositoryOperationMs is int && payload.slowestRepositoryOperationMs >= 0 && payload.slowestRepositoryOperationMs <= 864000000)) &&
              (payload.appVersion == null || payload.appVersion is string) &&
              (payload.platform == null || payload.platform is string) &&
              (payload.userAgent == null || payload.userAgent is string);
@@ -436,7 +446,7 @@ service cloud.firestore {
     // SYSTEM HEALTH
     // ============================================
     match /stats/system_health/users/{userId} {
-      allow read: if isAdmin();
+      allow read: if canReportSystemHealth();
       allow create, update: if isValidSystemHealthWrite(userId);
       allow delete: if false;
     }

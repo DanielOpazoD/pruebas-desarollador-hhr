@@ -32,15 +32,20 @@ import {
 export { bridgeLegacyRecordsRange } from './legacyRecordBridgeService';
 import {
   save as saveFromWriteService,
+  saveDetailed as saveDetailedFromWriteService,
   updatePartial as updatePartialFromWriteService,
+  updatePartialDetailed as updatePartialDetailedFromWriteService,
 } from './dailyRecordRepositoryWriteService';
 import {
   subscribe as subscribeFromSyncService,
   syncWithFirestore as syncWithFirestoreFromSyncService,
+  syncWithFirestoreDetailed as syncWithFirestoreDetailedFromSyncService,
 } from './dailyRecordRepositorySyncService';
 import {
   copyPatientToDate as copyPatientToDateFromInitializationService,
   initializeDay as initializeDayFromInitializationService,
+  copyPatientToDateDetailed as copyPatientToDateDetailedFromInitializationService,
+  initializeDayDetailed as initializeDayDetailedFromInitializationService,
 } from './dailyRecordRepositoryInitializationService';
 import {
   buildCopyPatientToDateCommand,
@@ -61,20 +66,25 @@ export interface IDailyRecordRepository {
   getPreviousDay(date: string): Promise<DailyRecord | null>;
   getPreviousDayWithMeta(date: string): Promise<DailyRecordReadResult>;
   save(record: DailyRecord, expectedLastUpdated?: string): Promise<void>;
+  saveDetailed: typeof saveDetailed;
   subscribe(
     date: string,
     callback: (r: DailyRecord | null, hasPendingWrites: boolean) => void
   ): () => void;
   initializeDay(date: string, copyFromDate?: string): Promise<DailyRecord>;
+  initializeDayDetailed: typeof initializeDayDetailed;
   deleteDay(date: string): Promise<void>;
   getAllDates(): Promise<string[]>;
   updatePartial(date: string, patches: DailyRecordPatch): Promise<void>;
+  updatePartialDetailed: typeof updatePartialDetailed;
+  syncWithFirestoreDetailed: typeof syncWithFirestoreDetailed;
   copyPatientToDate(
     sourceDate: string,
     sourceBedId: string,
     targetDate: string,
     targetBedId: string
   ): Promise<void>;
+  copyPatientToDateDetailed: typeof copyPatientToDateDetailed;
 }
 
 // ============================================================================
@@ -107,9 +117,18 @@ export const save = async (record: DailyRecord, expectedLastUpdated?: string) =>
   return saveFromWriteService(command.record, command.expectedLastUpdated);
 };
 
+export const saveDetailed = async (record: DailyRecord, expectedLastUpdated?: string) => {
+  const command = buildSaveDailyRecordCommand(record, expectedLastUpdated);
+  return saveDetailedFromWriteService(command.record, command.expectedLastUpdated);
+};
+
 export const updatePartial = async (date: string, patches: DailyRecordPatch) => {
   const command = buildPartialUpdateDailyRecordCommand(date, patches);
   return updatePartialFromWriteService(command.date, command.patch);
+};
+export const updatePartialDetailed = async (date: string, patches: DailyRecordPatch) => {
+  const command = buildPartialUpdateDailyRecordCommand(date, patches);
+  return updatePartialDetailedFromWriteService(command.date, command.patch);
 };
 export const subscribe = (
   date: string,
@@ -119,10 +138,16 @@ export const subscribe = (
   return subscribeFromSyncService(query.date, callback);
 };
 export const syncWithFirestore = syncWithFirestoreFromSyncService;
+export const syncWithFirestoreDetailed = syncWithFirestoreDetailedFromSyncService;
 
 export const initializeDay = async (date: string, copyFromDate?: string) => {
   const command = buildInitializeDayCommand(date, copyFromDate);
   return initializeDayFromInitializationService(command.date, command.copyFromDate);
+};
+
+export const initializeDayDetailed = async (date: string, copyFromDate?: string) => {
+  const command = buildInitializeDayCommand(date, copyFromDate);
+  return initializeDayDetailedFromInitializationService(command.date, command.copyFromDate);
 };
 
 /**
@@ -147,6 +172,21 @@ export const copyPatientToDate = async (
   );
 };
 
+export const copyPatientToDateDetailed = async (
+  sourceDate: string,
+  sourceBedId: string,
+  targetDate: string,
+  targetBedId: string
+) => {
+  const command = buildCopyPatientToDateCommand(sourceDate, sourceBedId, targetDate, targetBedId);
+  return copyPatientToDateDetailedFromInitializationService(
+    command.sourceDate,
+    command.sourceBedId,
+    command.targetDate,
+    command.targetBedId
+  );
+};
+
 // ============================================================================
 // Repository Object Export (Alternative API)
 // ============================================================================
@@ -159,12 +199,17 @@ export const DailyRecordRepository: IDailyRecordRepository & {
   getPreviousDay,
   getPreviousDayWithMeta,
   save,
+  saveDetailed,
   subscribe,
   initializeDay,
+  initializeDayDetailed,
   deleteDay,
   updatePartial,
+  updatePartialDetailed,
   copyPatientToDate,
+  copyPatientToDateDetailed,
   syncWithFirestore,
+  syncWithFirestoreDetailed,
   getAllDates: getAvailableDates,
   bridgeLegacyRecord,
 });

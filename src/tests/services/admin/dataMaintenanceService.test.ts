@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { DailyRecord } from '@/types';
 
 const mockGetRecordsForMonth = vi.fn();
 const mockGetRecordsRange = vi.fn();
@@ -6,6 +7,7 @@ const mockSaveRecords = vi.fn();
 const mockGetRemoteRecordsRange = vi.fn();
 const mockLogAuditEvent = vi.fn();
 const mockSaveAs = vi.fn();
+const mockRepositorySave = vi.fn();
 
 vi.mock('@/services/storage/indexedDBService', () => ({
   getRecordsForMonth: mockGetRecordsForMonth,
@@ -29,6 +31,10 @@ vi.mock('@/services/repositories/repositoryConfig', () => ({
   isFirestoreEnabled: () => true,
 }));
 
+vi.mock('@/services/repositories/DailyRecordRepository', () => ({
+  saveDetailed: mockRepositorySave,
+}));
+
 vi.mock('file-saver', () => ({
   saveAs: mockSaveAs,
 }));
@@ -36,6 +42,7 @@ vi.mock('file-saver', () => ({
 describe('dataMaintenanceService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRepositorySave.mockResolvedValue(undefined);
   });
 
   it('exports year-to-date records using a bounded date range', async () => {
@@ -151,5 +158,51 @@ describe('dataMaintenanceService', () => {
     expect(mockGetRemoteRecordsRange).toHaveBeenCalledWith('2026-03-01', '2026-03-31');
     expect(mockSaveRecords).toHaveBeenCalledTimes(1);
     expect(mockSaveAs.mock.calls.at(-1)?.[1]).toContain('Respaldo HHR Marzo 2026.json');
+  });
+
+  it('repairs legacy records during backup import and reports repaired count', async () => {
+    const { importRecordsFromBackup } = await import('@/services/admin/dataMaintenanceService');
+
+    const result = await importRecordsFromBackup({
+      version: '1.0',
+      exportDate: '2026-03-03T10:00:00.000Z',
+      year: 2026,
+      month: 3,
+      recordCount: 1,
+      records: [
+        {
+          date: '2026-03-03',
+          beds: {
+            R1: {
+              patientName: 'Paciente Legacy',
+              status: 'ESTADO_INVALIDO',
+              clinicalEvents: [null],
+            },
+          },
+          discharges: [],
+          transfers: [],
+          cma: [],
+          activeExtraBeds: [],
+          lastUpdated: '2026-03-03T10:00:00.000Z',
+        } as unknown as DailyRecord,
+      ],
+    });
+
+    expect(result).toEqual({ success: 1, failed: 0, repaired: 1, outcome: 'repaired' });
+    expect(mockRepositorySave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        date: '2026-03-03',
+        beds: expect.objectContaining({
+          R1: expect.objectContaining({ patientName: 'Paciente Legacy' }),
+        }),
+      })
+    );
+    expect(mockLogAuditEvent).toHaveBeenCalledWith(
+      'admin@hanga.roa',
+      'DATA_IMPORTED',
+      'dailyRecord',
+      '2026-3',
+      expect.objectContaining({ repairedCount: 1, outcome: 'repaired' })
+    );
   });
 });

@@ -3,6 +3,7 @@ import type { SyncQueueTelemetry } from '@/services/storage/syncQueueService';
 import type { RepositoryPerformanceSummary } from '@/services/repositories/repositoryPerformance';
 import { CURRENT_SCHEMA_VERSION } from '@/constants/version';
 import { BACKEND_RUNTIME_CONTRACT_VERSION } from '@/constants/runtimeContracts';
+import type { UserRole } from '@/types';
 
 export interface BuildUserHealthStatusOptions {
   uid: string;
@@ -19,6 +20,11 @@ export interface BuildUserHealthStatusOptions {
   syncTelemetry: SyncQueueTelemetry;
   repositoryPerformance: RepositoryPerformanceSummary;
 }
+
+const HEALTH_REPORTER_ROLES = new Set<UserRole>(['admin', 'nurse_hospital']);
+
+export const canReportSystemHealthForRole = (role: UserRole | undefined): boolean =>
+  !!role && HEALTH_REPORTER_ROLES.has(role);
 
 export const buildUserHealthStatus = (options: BuildUserHealthStatusOptions): UserHealthStatus => ({
   uid: options.uid,

@@ -1,3 +1,5 @@
+import type { DailyRecord } from '@/types';
+
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 const assertDate = (date: string, operation: string): void => {
@@ -8,6 +10,7 @@ const assertDate = (date: string, operation: string): void => {
 
 export interface SaveDailyRecordResult {
   date: string;
+  outcome: 'clean' | 'queued' | 'auto_merged';
   savedLocally: boolean;
   savedRemotely: boolean;
   queuedForRetry: boolean;
@@ -16,11 +19,18 @@ export interface SaveDailyRecordResult {
 
 export interface UpdatePartialDailyRecordResult {
   date: string;
+  outcome: 'clean' | 'queued' | 'auto_merged' | 'blocked';
   savedLocally: boolean;
   updatedRemotely: boolean;
   queuedForRetry: boolean;
   autoMerged: boolean;
   patchedFields: number;
+}
+
+export interface SyncDailyRecordResult {
+  date: string;
+  outcome: 'clean' | 'missing' | 'blocked';
+  record: DailyRecord | null;
 }
 
 export const createSaveDailyRecordResult = (
@@ -39,5 +49,12 @@ export const createUpdatePartialDailyRecordResult = (
       `[RepositoryContract] updatePartial result requires patchedFields >= 1. Received: ${input.patchedFields}`
     );
   }
+  return input;
+};
+
+export const createSyncDailyRecordResult = (
+  input: SyncDailyRecordResult
+): SyncDailyRecordResult => {
+  assertDate(input.date, 'sync result');
   return input;
 };

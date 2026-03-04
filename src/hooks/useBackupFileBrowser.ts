@@ -9,6 +9,7 @@ import { StoredPdfFile } from '@/services/backup/pdfStorageService';
 import { useAuth } from '@/context/AuthContext';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 import { runMonthlyBackfill } from '@/services/backup/monthlyBackfillService';
+import { getStorageListNotice } from '@/services/backup/storageUiPolicy';
 
 export type BackupType = 'handoff' | 'census' | 'cudyr';
 
@@ -54,32 +55,13 @@ export const useBackupFileBrowser = (initialBackupType: BackupType = 'handoff') 
     }
     lastReportSignatureRef.current = signature;
 
-    const degradedCount =
-      storageReport.skippedRestricted +
-      storageReport.skippedUnknown +
-      storageReport.skippedUnparsed;
-
-    if (storageReport.timedOut) {
-      warning(
-        'Carga parcial de respaldos',
-        'La consulta a Storage tardó demasiado. La lista puede estar incompleta.'
-      );
+    const notice = getStorageListNotice(storageReport);
+    if (notice?.channel === 'warning') {
+      warning(notice.title, notice.message);
       return;
     }
-
-    if (storageReport.skippedRestricted > 0) {
-      warning(
-        'Archivos no visibles por permisos',
-        `${storageReport.skippedRestricted} archivo(s) no pudieron leerse por restricciones de acceso.`
-      );
-      return;
-    }
-
-    if (degradedCount > 0) {
-      info(
-        'Carga parcial de respaldos',
-        `${degradedCount} archivo(s) fueron omitidos por datos o metadata incompatibles.`
-      );
+    if (notice?.channel === 'info') {
+      info(notice.title, notice.message);
     }
   }, [info, storageReport, warning]);
 

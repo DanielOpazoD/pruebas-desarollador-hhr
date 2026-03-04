@@ -11,8 +11,30 @@ vi.mock('@/services/repositories/DailyRecordRepository', () => {
   const mockImpl = {
     getForDate: vi.fn(),
     save: vi.fn().mockResolvedValue(undefined),
+    saveDetailed: vi.fn().mockResolvedValue({
+      date: '2025-12-27',
+      outcome: 'clean',
+      savedLocally: true,
+      savedRemotely: true,
+      queuedForRetry: false,
+      autoMerged: false,
+    }),
     subscribe: vi.fn(() => vi.fn()),
     updatePartial: vi.fn().mockResolvedValue(undefined),
+    updatePartialDetailed: vi.fn().mockResolvedValue({
+      date: '2025-12-27',
+      outcome: 'clean',
+      savedLocally: true,
+      updatedRemotely: true,
+      queuedForRetry: false,
+      autoMerged: false,
+      patchedFields: 1,
+    }),
+    syncWithFirestoreDetailed: vi.fn().mockResolvedValue({
+      date: '2025-12-27',
+      outcome: 'clean',
+      record: null,
+    }),
   };
   return {
     ...mockImpl,
@@ -71,6 +93,22 @@ describe('useDailyRecordSyncQuery', () => {
     const updatedRecord = { ...mockRecord, lastUpdated: 'new-date' };
     await result.current.saveAndUpdate(updatedRecord);
 
-    expect(DailyRecordRepository.save).toHaveBeenCalledWith(updatedRecord);
+    expect(DailyRecordRepository.saveDetailed).toHaveBeenCalledWith(updatedRecord);
+  });
+
+  it('refreshes through detailed sync before refetching', async () => {
+    vi.mocked(DailyRecordRepository.getForDate).mockResolvedValue(mockRecord);
+
+    const { result } = renderHook(() => useDailyRecordSyncQuery(mockDate), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.record).not.toBeNull());
+
+    result.current.refresh();
+
+    await waitFor(() => {
+      expect(DailyRecordRepository.syncWithFirestoreDetailed).toHaveBeenCalledWith(mockDate);
+    });
   });
 });

@@ -2,6 +2,11 @@ import React from 'react';
 import * as ExportService from '@/services/exporters/exportService';
 import { DailyRecord } from '@/types';
 import { useNotification } from '@/context/UIContext';
+import { buildJsonImportNotifications } from '@/hooks/controllers/fileImportFeedbackController';
+import {
+  isJsonImportFile,
+  shouldRefreshAfterJsonImport,
+} from '@/hooks/controllers/fileOperationsController';
 
 export interface UseFileOperationsReturn {
   handleExportJSON: () => void;
@@ -39,27 +44,22 @@ export const useFileOperations = (
   };
 
   const handleImportFile = async (file: File) => {
-    if (file.name.endsWith('.json')) {
+    if (isJsonImportFile(file)) {
       try {
         const result = await ExportService.importDataJSONDetailed(file);
         if (result.success) {
-          success(
-            'Datos importados correctamente',
-            `${result.importedCount} registro(s) importado(s).`
-          );
-          if (result.repairedCount > 0) {
-            warning(
-              'Se corrigieron datos heredados',
-              `${result.repairedCount} registro(s) fueron reparados automáticamente durante la importación.`
-            );
+          for (const notification of buildJsonImportNotifications(result)) {
+            if (notification.channel === 'success') {
+              success(notification.title, notification.message);
+            } else if (notification.channel === 'warning') {
+              warning(notification.title, notification.message);
+            } else {
+              error(notification.title, notification.message);
+            }
           }
-          if (result.skippedEntries.length > 0) {
-            error(
-              'Algunos registros no se importaron',
-              result.skippedEntries.slice(0, 5).join(', ')
-            );
+          if (shouldRefreshAfterJsonImport(result)) {
+            onRefresh();
           }
-          onRefresh();
         } else {
           error('Error al importar datos', 'Import Error');
         }

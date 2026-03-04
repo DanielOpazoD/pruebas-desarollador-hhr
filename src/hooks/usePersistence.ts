@@ -4,28 +4,15 @@ import { logDailyRecordCreated, logDailyRecordDeleted } from '@/services/admin/a
 import {
   getForDateWithMeta,
   getPreviousDayWithMeta,
-  initializeDay,
+  initializeDayDetailed,
   deleteDay,
 } from '@/services/repositories/DailyRecordRepository';
 import { DailyRecord } from '@/types';
 import { getUserFriendlyErrorMessage } from '@/services/utils/errorService';
-
-const shouldWarnLegacyRepair = (
-  meta: {
-    compatibilityIntensity: string;
-    migrationRulesApplied: string[];
-  } | null
-): boolean =>
-  Boolean(
-    meta &&
-    meta.compatibilityIntensity !== 'none' &&
-    meta.migrationRulesApplied.some(
-      rule =>
-        rule === 'legacy_nulls_normalized' ||
-        rule === 'salvage_patient_fallback_applied' ||
-        rule === 'schema_defaults_applied'
-    )
-  );
+import {
+  hasCriticalLegacyRepairSignal,
+  getLegacyRepairWarningMessage,
+} from '@/hooks/controllers/legacyRepairWarningController';
 
 interface UsePersistenceProps {
   currentDateString: string;
@@ -83,17 +70,18 @@ export const usePersistence = ({
           }
         }
 
-        const newRecord = await initializeDay(currentDateString, prevDate);
+        const initResult = await initializeDayDetailed(currentDateString, prevDate);
+        const newRecord = initResult.record;
         markLocalChange();
         setRecord(newRecord);
 
         const sourceMsg = prevDate ? `Copiado desde ${prevDate}` : 'Registro en blanco';
         success('Día creado', sourceMsg);
-        if (shouldWarnLegacyRepair(copySourceMeta)) {
-          warning(
-            'Se corrigieron datos heredados',
-            'La copia se realizó correctamente, pero se repararon datos antiguos incompatibles.'
-          );
+        if (
+          hasCriticalLegacyRepairSignal(copySourceMeta) ||
+          hasCriticalLegacyRepairSignal(initResult)
+        ) {
+          warning('Se corrigieron datos heredados', getLegacyRepairWarningMessage('copy_day'));
         }
 
         logDailyRecordCreated(

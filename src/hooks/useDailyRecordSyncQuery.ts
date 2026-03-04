@@ -19,7 +19,11 @@ import { DailyRecord } from '@/types';
 import { useRepositories } from '@/services/RepositoryContext';
 import { useNotification } from '@/context/UIContext';
 import { useVersion } from '@/context/VersionContext';
-import { resolveSaveErrorFeedback } from '@/hooks/controllers/dailyRecordSyncNotificationController';
+import {
+  resolvePatchOutcomeFeedback,
+  resolveSaveErrorFeedback,
+  resolveSaveOutcomeFeedback,
+} from '@/hooks/controllers/dailyRecordSyncNotificationController';
 import {
   buildCreateDaySuccessMessage,
   resolveCreateDaySourceDate,
@@ -117,7 +121,11 @@ export const useDailyRecordSyncQuery = (
   const saveAndUpdate = useCallback(
     async (updatedRecord: DailyRecord) => {
       try {
-        await saveMutation.mutateAsync(updatedRecord);
+        const payload = await saveMutation.mutateAsync(updatedRecord);
+        const feedback = resolveSaveOutcomeFeedback(payload.result);
+        if (feedback) {
+          warning(feedback.title, feedback.message);
+        }
       } catch (err) {
         const feedback = resolveSaveErrorFeedback(err);
         if (feedback) {
@@ -143,9 +151,13 @@ export const useDailyRecordSyncQuery = (
 
   const patchRecord = useCallback(
     async (partial: DailyRecordPatch) => {
-      await patchMutation.mutateAsync(partial);
+      const payload = await patchMutation.mutateAsync(partial);
+      const feedback = resolvePatchOutcomeFeedback(payload.result);
+      if (feedback) {
+        warning(feedback.title, feedback.message);
+      }
     },
-    [patchMutation]
+    [patchMutation, warning]
   );
 
   const setRecord = useCallback(
@@ -163,8 +175,16 @@ export const useDailyRecordSyncQuery = (
   }, []);
 
   const refresh = useCallback(() => {
-    refetch();
-  }, [refetch]);
+    void dailyRecord.syncWithFirestoreDetailed(currentDateString).then(result => {
+      if (result?.outcome === 'blocked') {
+        warning(
+          'Sincronización bloqueada',
+          'No se pudo actualizar desde Firestore. Se mantendrá la copia local.'
+        );
+      }
+      refetch();
+    });
+  }, [currentDateString, dailyRecord, refetch, warning]);
 
   const createDay = useCallback(
     async (copyFromPrevious: boolean, specificDate?: string) => {

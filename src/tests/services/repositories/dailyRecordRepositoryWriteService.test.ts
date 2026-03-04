@@ -43,7 +43,12 @@ vi.mock('@/services/repositories/ports/repositoryAuditPort', () => ({
   logRepositoryConflictAutoMerged: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { save, updatePartial } from '@/services/repositories/dailyRecordRepositoryWriteService';
+import {
+  save,
+  saveDetailed,
+  updatePartial,
+  updatePartialDetailed,
+} from '@/services/repositories/dailyRecordRepositoryWriteService';
 import {
   getRecordForDate as getRecordFromIndexedDB,
   saveRecord as saveToIndexedDB,
@@ -108,6 +113,16 @@ describe('dailyRecordRepositoryWriteService outbox fallback', () => {
     );
   });
 
+  it('returns queued outcome through saveDetailed', async () => {
+    vi.mocked(saveRecordToFirestore).mockRejectedValueOnce(new Error('Network timeout'));
+    vi.mocked(isRetryableSyncError).mockReturnValue(true);
+
+    const result = await saveDetailed(buildRecord('2026-02-20'));
+
+    expect(result.outcome).toBe('queued');
+    expect(result.queuedForRetry).toBe(true);
+  });
+
   it('queues merged record when partial update fails with retryable error', async () => {
     const existing = buildRecord('2026-02-18');
     existing.beds = {
@@ -137,6 +152,17 @@ describe('dailyRecordRepositoryWriteService outbox fallback', () => {
         origin: 'partial_update_retry',
       })
     );
+  });
+
+  it('returns blocked outcome when partial update has no local record', async () => {
+    vi.mocked(getRecordFromIndexedDB).mockResolvedValueOnce(null);
+
+    const result = await updatePartialDetailed('2026-02-18', {
+      'beds.R1.patientName': 'Paciente Nuevo',
+    });
+
+    expect(result.outcome).toBe('blocked');
+    expect(result.savedLocally).toBe(false);
   });
 
   it('does not queue task when Firestore error is non-retryable', async () => {

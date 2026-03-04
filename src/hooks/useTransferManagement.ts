@@ -4,13 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  TransferRequest,
-  TransferFormData,
-  PatientSnapshot,
-  TransferStatus,
-} from '@/types/transfers';
-import { PatientData } from '@/types';
+import { TransferRequest, TransferFormData, TransferStatus } from '@/types/transfers';
 import {
   subscribeToTransfers,
   createTransferRequest,
@@ -28,6 +22,20 @@ import {
   useDailyRecordMovementActions,
 } from '@/context/useDailyRecordScopedActions';
 import { getLocalDateInputValue } from '@/features/transfers/utils/localDate';
+import {
+  buildCreateTransferPayload,
+  buildHospitalizedPatients,
+  countActiveTransfers,
+  filterVisibleTransfers,
+  resolvePreviousTransferStatus,
+} from '@/hooks/controllers/transferManagementController';
+import {
+  buildTransferCompletionTimestamp,
+  getTransferActionErrorMessage,
+  getTransferAuthError,
+  getTransferCreationPreconditionError,
+  getTransferStatusAdvanceError,
+} from '@/hooks/controllers/transferManagementFeedbackController';
 
 interface UseTransferManagementReturn {
   // State
@@ -62,6 +70,22 @@ export const useTransferManagement = (): UseTransferManagementReturn => {
   const { addTransfer } = useDailyRecordMovementActions();
   const { clearPatient } = useDailyRecordBedActions();
 
+  const runTransferAction = useCallback(
+    async (
+      action: Parameters<typeof getTransferActionErrorMessage>[0],
+      task: () => Promise<void>
+    ) => {
+      try {
+        await task();
+        setError(null);
+      } catch (err) {
+        console.error(`Error in transfer action "${action}":`, err);
+        setError(getTransferActionErrorMessage(action));
+      }
+    },
+    []
+  );
+
   // Subscribe to transfers on mount
   useEffect(() => {
     // isLoading initialized to true
@@ -75,140 +99,97 @@ export const useTransferManagement = (): UseTransferManagementReturn => {
 
   // Get list of hospitalized patients for the selector
   const getHospitalizedPatients = useCallback(() => {
-    if (!record?.beds) return [];
-
-    return Object.entries(record.beds)
-      .filter(([, patient]: [string, PatientData]) => patient.patientName && !patient.isBlocked)
-      .map(([bedId, patient]: [string, PatientData]) => ({
-        id: bedId,
-        name: patient.patientName,
-        bedId: bedId,
-        diagnosis: patient.pathology || 'Sin diagnóstico',
-      }));
+    return buildHospitalizedPatients(record?.beds);
   }, [record]);
 
   // Create a new transfer request
   const createTransfer = useCallback(
     async (data: TransferFormData) => {
-      if (!user?.email) {
-        setError('Usuario no autenticado');
+      const actorEmail = user?.email ?? null;
+      const patient = record?.beds?.[data.bedId];
+      const preconditionError = getTransferCreationPreconditionError({
+        hasUserEmail: Boolean(actorEmail),
+        hasBeds: Boolean(record?.beds),
+        hasPatient: Boolean(patient),
+      });
+      if (preconditionError || !actorEmail || !record || !patient) {
+        setError(preconditionError);
         return;
       }
 
-      if (!record?.beds) {
-        setError('No hay registro diario cargado');
-        return;
-      }
-
-      const patient = record.beds[data.bedId];
-      if (!patient) {
-        setError('Paciente no encontrado');
-        return;
-      }
-
-      // Create patient snapshot
-      const patientSnapshot: PatientSnapshot = {
-        name: patient.patientName,
-        rut: patient.rut || 'Sin RUT',
-        age: parseInt(patient.age) || 0,
-        birthDate: patient.birthDate, // Copy birth date from census
-        sex: patient.biologicalSex === 'Masculino' ? 'M' : 'F',
-        diagnosis: patient.pathology || 'Sin diagnóstico',
-        secondaryDiagnoses: patient.diagnosisComments ? [patient.diagnosisComments] : undefined,
-        admissionDate: patient.admissionDate || record.date,
-      };
-
-      try {
-        await createTransferRequest({
-          patientId: data.bedId,
-          bedId: data.bedId,
-          patientSnapshot,
-          destinationHospital: data.destinationHospital,
-          transferReason: data.transferReason,
-          requestingDoctor: data.requestingDoctor,
-          requiredSpecialty: data.requiredSpecialty,
-          requiredBedType: data.requiredBedType,
-          observations: data.observations,
-          customFields: data.customFields || {},
-          status: 'REQUESTED',
-          requestDate: data.requestDate || getLocalDateInputValue(),
-          createdBy: user.email,
-        });
-        setError(null);
-      } catch (err) {
-        console.error('Error creating transfer:', err);
-        setError('Error al crear la solicitud de traslado');
-      }
+      await runTransferAction('create', async () => {
+        await createTransferRequest(
+          buildCreateTransferPayload(
+            data,
+            patient,
+            record.date,
+            actorEmail,
+            data.requestDate || getLocalDateInputValue()
+          )
+        );
+      });
     },
-    [user, record]
+    [user, record, runTransferAction]
   );
 
   // Update an existing transfer
-  const updateTransfer = useCallback(async (id: string, data: Partial<TransferFormData>) => {
-    try {
-      await updateTransferRequest(id, data);
-      setError(null);
-    } catch (err) {
-      console.error('Error updating transfer:', err);
-      setError('Error al actualizar la solicitud');
-    }
-  }, []);
+  const updateTransfer = useCallback(
+    async (id: string, data: Partial<TransferFormData>) => {
+      await runTransferAction('update', async () => {
+        await updateTransferRequest(id, data);
+      });
+    },
+    [runTransferAction]
+  );
 
   // Advance to next status
   const advanceStatus = useCallback(
     async (transfer: TransferRequest) => {
-      if (!user?.email) {
-        setError('Usuario no autenticado');
-        return;
-      }
-
+      const actorEmail = user?.email ?? null;
       const nextStatus = getNextStatus(transfer.status);
-      if (!nextStatus) {
-        setError('El traslado ya está en su estado final');
+      const preconditionError = getTransferStatusAdvanceError(Boolean(actorEmail), nextStatus);
+      if (preconditionError || !actorEmail || !nextStatus) {
+        setError(preconditionError);
         return;
       }
 
-      try {
-        await changeTransferStatus(transfer.id, nextStatus, user.email);
-        setError(null);
-      } catch (err) {
-        console.error('Error advancing status:', err);
-        setError('Error al cambiar el estado');
-      }
+      await runTransferAction('advance', async () => {
+        await changeTransferStatus(transfer.id, nextStatus, actorEmail);
+      });
     },
-    [user]
+    [user, runTransferAction]
   );
 
   // Set a specific status
   const setTransferStatus = useCallback(
     async (transfer: TransferRequest, status: TransferStatus) => {
-      if (!user?.email) {
-        setError('Usuario no autenticado');
+      const actorEmail = user?.email ?? null;
+      const authError = getTransferAuthError(Boolean(actorEmail));
+      if (authError || !actorEmail) {
+        setError(authError);
         return;
       }
 
-      try {
-        await changeTransferStatus(transfer.id, status, user.email);
-        setError(null);
-      } catch (err) {
-        console.error('Error setting status:', err);
-        setError('Error al cambiar el estado');
-      }
+      await runTransferAction('set_status', async () => {
+        await changeTransferStatus(transfer.id, status, actorEmail);
+      });
     },
-    [user]
+    [user, runTransferAction]
   );
 
   // Mark as transferred (complete) and integrate with daily census
   const markAsTransferred = useCallback(
     async (transfer: TransferRequest, transferMethod: string) => {
-      if (!user?.email) {
-        setError('Usuario no autenticado');
+      const actorEmail = user?.email ?? null;
+      const authError = getTransferAuthError(Boolean(actorEmail));
+      if (authError || !actorEmail) {
+        setError(authError);
         return;
       }
 
-      try {
+      await runTransferAction('complete', async () => {
         // 1. Complete the transfer request in Firestore
-        await completeTransfer(transfer.id, user.email);
+        await completeTransfer(transfer.id, actorEmail);
 
         // 2. Add to daily census transfers array
         addTransfer(
@@ -217,120 +198,89 @@ export const useTransferManagement = (): UseTransferManagementReturn => {
           transfer.destinationHospital,
           '', // centerOther - not needed as hospital is already selected
           undefined, // escort
-          new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+          buildTransferCompletionTimestamp()
         );
 
         // 3. Clear the patient from the bed (bed is now free)
         clearPatient(transfer.bedId);
-
-        setError(null);
-        // console.info(`✅ Traslado completado: ${transfer.patientSnapshot.name} → ${transfer.destinationHospital}`);
-      } catch (err) {
-        console.error('Error completing transfer:', err);
-        setError('Error al completar el traslado');
-      }
+      });
     },
-    [user, addTransfer, clearPatient]
+    [user, addTransfer, clearPatient, runTransferAction]
   );
 
   // Cancel a transfer request
   const cancelTransfer = useCallback(
     async (transfer: TransferRequest, reason: string) => {
-      if (!user?.email) {
-        setError('Usuario no autenticado');
+      const actorEmail = user?.email ?? null;
+      const authError = getTransferAuthError(Boolean(actorEmail));
+      if (authError || !actorEmail) {
+        setError(authError);
         return;
       }
 
-      try {
-        await changeTransferStatus(transfer.id, 'CANCELLED', user.email, reason);
-        setError(null);
-        // console.info(`❌ Traslado cancelado: ${transfer.patientSnapshot.name} - Razón: ${reason}`);
-      } catch (err) {
-        console.error('Error cancelling transfer:', err);
-        setError('Error al cancelar el traslado');
-      }
+      await runTransferAction('cancel', async () => {
+        await changeTransferStatus(transfer.id, 'CANCELLED', actorEmail, reason);
+      });
     },
-    [user]
+    [user, runTransferAction]
   );
 
   // Delete a transfer request
-  const deleteTransfer = useCallback(async (id: string) => {
-    try {
-      await deleteTransferRequest(id);
-      setError(null);
-    } catch (err) {
-      console.error('Error deleting transfer:', err);
-      setError('Error al eliminar la solicitud');
-    }
-  }, []);
+  const deleteTransfer = useCallback(
+    async (id: string) => {
+      await runTransferAction('delete', async () => {
+        await deleteTransferRequest(id);
+      });
+    },
+    [runTransferAction]
+  );
 
   // Undo a transfer (revert to previous status, typically ACCEPTED)
   const undoTransfer = useCallback(
     async (transfer: TransferRequest) => {
-      if (!user?.email) {
-        setError('Usuario no autenticado');
+      const actorEmail = user?.email ?? null;
+      const authError = getTransferAuthError(Boolean(actorEmail));
+      if (authError || !actorEmail) {
+        setError(authError);
         return;
       }
 
       // Find the previous status from history
-      const prevChange =
-        transfer.statusHistory.length >= 2
-          ? transfer.statusHistory[transfer.statusHistory.length - 2]
-          : null;
-      const prevStatus = prevChange?.to || 'ACCEPTED';
+      const prevStatus = resolvePreviousTransferStatus(transfer);
 
-      try {
-        await changeTransferStatus(transfer.id, prevStatus, user.email, 'Traslado deshecho');
-        setError(null);
-        // console.info(`↩️ Traslado deshecho: ${transfer.patientSnapshot.name} → ${prevStatus}`);
-      } catch (err) {
-        console.error('Error undoing transfer:', err);
-        setError('Error al deshacer el traslado');
-      }
+      await runTransferAction('undo', async () => {
+        await changeTransferStatus(transfer.id, prevStatus, actorEmail, 'Traslado deshecho');
+      });
     },
-    [user]
+    [user, runTransferAction]
   );
 
   // Archive a transfer (hide from list until next day auto-cleanup)
-  const archiveTransfer = useCallback(async (transfer: TransferRequest) => {
-    try {
-      await updateTransferRequest(transfer.id, {
-        archived: true,
-        archivedAt: new Date().toISOString(),
-      } as Partial<TransferRequest>);
-      setError(null);
-      // console.info(`📦 Traslado archivado: ${transfer.patientSnapshot.name}`);
-    } catch (err) {
-      console.error('Error archiving transfer:', err);
-      setError('Error al archivar el traslado');
-    }
-  }, []);
+  const archiveTransfer = useCallback(
+    async (transfer: TransferRequest) => {
+      await runTransferAction('archive', async () => {
+        await updateTransferRequest(transfer.id, {
+          archived: true,
+          archivedAt: new Date().toISOString(),
+        } as Partial<TransferRequest>);
+      });
+    },
+    [runTransferAction]
+  );
 
   // Delete a specific history entry (for correcting mistakes)
   const deleteHistoryEntry = useCallback(
     async (transfer: TransferRequest, historyIndex: number) => {
-      try {
+      await runTransferAction('delete_history', async () => {
         await deleteStatusHistoryEntry(transfer.id, historyIndex);
-        setError(null);
-        // console.info(`🗑️ Historial eliminado: ${transfer.patientSnapshot.name} índice ${historyIndex}`);
-      } catch (err) {
-        console.error('Error deleting history entry:', err);
-        setError('Error al eliminar el registro del historial');
-      }
+      });
     },
-    []
+    [runTransferAction]
   );
 
   // Keep archived transfers hidden from operational views.
-  const isClosedTransferStatus = (status: TransferStatus): boolean =>
-    status === 'TRANSFERRED' ||
-    status === 'CANCELLED' ||
-    status === 'REJECTED' ||
-    status === 'NO_RESPONSE';
-
-  const visibleTransfers = transfers.filter(t => !t.archived);
-
-  const activeCount = visibleTransfers.filter(t => !isClosedTransferStatus(t.status)).length;
+  const visibleTransfers = filterVisibleTransfers(transfers);
+  const activeCount = countActiveTransfers(visibleTransfers);
 
   return {
     transfers: visibleTransfers,

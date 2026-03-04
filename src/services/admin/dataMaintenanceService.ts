@@ -14,6 +14,7 @@ import { getCurrentUserEmail } from './utils/auditUtils';
 import { getTodayISO } from '@/utils/dateUtils';
 import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { resolvePreferredDailyRecord } from '@/services/repositories/dailyRecordSyncCompatibility';
+import { parseDailyRecordWithDefaultsReport } from '@/schemas/zodSchemas';
 
 export interface MonthBackup {
   version: string;
@@ -31,6 +32,13 @@ export interface YearToDateBackup {
   throughDate: string;
   recordCount: number;
   records: DailyRecord[];
+}
+
+export interface BackupImportResult {
+  success: number;
+  failed: number;
+  repaired: number;
+  outcome: 'clean' | 'repaired' | 'partial' | 'blocked';
 }
 
 const monthNames = [
@@ -182,17 +190,28 @@ export const exportYearToDateRecords = async (
 export const importRecordsFromBackup = async (
   backup: MonthBackup,
   onProgress?: (current: number, total: number) => void
-): Promise<{ success: number; failed: number }> => {
+): Promise<BackupImportResult> => {
   let success = 0;
   let failed = 0;
+  let repaired = 0;
 
   for (let i = 0; i < backup.records.length; i++) {
     const record = backup.records[i];
     try {
-      // Validate record date matches backup metadata optionally,
-      // but usually we just trust the individual record dates
-      await DailyRecordRepository.save(record);
+      const parsed = parseDailyRecordWithDefaultsReport(record, record.date);
+      const hadRepairs =
+        parsed.report.nullNormalization.replacedNullCount > 0 ||
+        parsed.report.nullNormalization.droppedArrayEntriesCount > 0 ||
+        parsed.report.salvagedBeds.length > 0 ||
+        parsed.report.droppedDischargeItems > 0 ||
+        parsed.report.droppedTransferItems > 0 ||
+        parsed.report.droppedCmaItems > 0;
+
+      await DailyRecordRepository.saveDetailed(parsed.record);
       success++;
+      if (hadRepairs) {
+        repaired++;
+      }
     } catch (error) {
       console.error(`Failed to import record for ${record.date}:`, error);
       failed++;
@@ -205,16 +224,27 @@ export const importRecordsFromBackup = async (
 
   // Audit log
   if (success > 0) {
+    const outcome = failed > 0 ? 'partial' : repaired > 0 ? 'repaired' : 'clean';
     await logAuditEvent(
       getCurrentUserEmail(),
       'DATA_IMPORTED',
       'dailyRecord',
       `${backup.year}-${backup.month}`,
-      { year: backup.year, month: backup.month, recordCount: success, failedCount: failed }
+      {
+        year: backup.year,
+        month: backup.month,
+        recordCount: success,
+        failedCount: failed,
+        repairedCount: repaired,
+        outcome,
+      }
     );
   }
 
-  return { success, failed };
+  const outcome =
+    success === 0 ? 'blocked' : failed > 0 ? 'partial' : repaired > 0 ? 'repaired' : 'clean';
+
+  return { success, failed, repaired, outcome };
 };
 
 /**

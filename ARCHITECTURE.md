@@ -60,19 +60,19 @@ Para resumen ejecutivo y stack, ver este documento.
 
 ## 📦 Stack Tecnológico
 
-| Capa                 | Tecnología           | Versión         |
-| -------------------- | -------------------- | --------------- |
-| **UI**               | React                | 19.2.1          |
-| **Language**         | TypeScript           | 5.8.2           |
-| **Build**            | Vite                 | 6.2.0           |
-| **State Management** | TanStack Query       | 5.90.12         |
-| **Styling**          | Vanilla CSS          | -               |
-| **Database**         | Firestore            | 12.6.0          |
-| **Local Storage**    | IndexedDB (Dexie.js) | 4.2.1           |
-| **Auth**             | Firebase Auth        | 12.6.0          |
-| **Validation**       | Zod                  | 3.25.76         |
-| **Testing**          | Vitest + Playwright  | 4.0.15 / 1.57.0 |
-| **Hosting**          | Netlify              | -               |
+| Capa                 | Tecnología                        | Versión         |
+| -------------------- | --------------------------------- | --------------- |
+| **UI**               | React                             | 19.2.1          |
+| **Language**         | TypeScript                        | 5.8.2           |
+| **Build**            | Vite                              | 6.2.0           |
+| **State Management** | TanStack Query                    | 5.90.12         |
+| **Styling**          | CSS Modules + utilidades Tailwind | -               |
+| **Database**         | Firestore                         | 12.6.0          |
+| **Local Storage**    | IndexedDB (Dexie.js)              | 4.2.1           |
+| **Auth**             | Firebase Auth                     | 12.6.0          |
+| **Validation**       | Zod                               | 3.25.76         |
+| **Testing**          | Vitest + Playwright               | 4.0.15 / 1.57.0 |
+| **Hosting**          | Netlify                           | -               |
 
 ---
 

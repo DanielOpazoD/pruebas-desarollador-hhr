@@ -7,7 +7,10 @@ import { reportUserHealth, UserHealthStatus } from '@/services/admin/healthServi
 import { getSyncQueueTelemetry } from '@/services/storage/syncQueueService';
 import { isDatabaseInFallbackMode } from '@/services/storage/indexedDBService';
 import { getRepositoryPerformanceSummary } from '@/services/repositories/repositoryPerformance';
-import { buildUserHealthStatus } from '@/hooks/controllers/systemHealthReporterController';
+import {
+  buildUserHealthStatus,
+  canReportSystemHealthForRole,
+} from '@/hooks/controllers/systemHealthReporterController';
 
 const REPORT_INTERVAL_MS = 2 * 60 * 1000; // Report every 2 minutes
 
@@ -16,13 +19,13 @@ const REPORT_INTERVAL_MS = 2 * 60 * 1000; // Report every 2 minutes
  * Runs in the background and only reports if a user is logged in.
  */
 export const useSystemHealthReporter = () => {
-  const { user, isFirebaseConnected } = useAuth();
+  const { user, role, isFirebaseConnected } = useAuth();
   const { isOutdated } = useVersion();
   const mutatingCount = useIsMutating();
   const lastReportTime = useRef<number>(0);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !canReportSystemHealthForRole(role)) return;
 
     const reportHealth = async () => {
       try {
@@ -81,5 +84,5 @@ export const useSystemHealthReporter = () => {
     }, REPORT_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [user, isFirebaseConnected, isOutdated, mutatingCount]);
+  }, [user, role, isFirebaseConnected, isOutdated, mutatingCount]);
 };

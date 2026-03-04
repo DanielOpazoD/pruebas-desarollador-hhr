@@ -19,6 +19,7 @@ import {
 } from '@/hooks';
 import { UseDateNavigationReturn } from '@/hooks/useDateNavigation';
 import { useStorageMigration } from '@/hooks/useStorageMigration';
+import { useSystemHealthReporter } from '@/hooks/admin/useSystemHealthReporter';
 import { LoginPage } from '@/features/auth';
 import { MedicalSignatureView } from '@/features/admin';
 import { GlobalErrorBoundary } from '@/components/shared/GlobalErrorBoundary';
@@ -139,8 +140,6 @@ interface AppInnerProps {
   dateNav: UseDateNavigationReturn & { isSignatureMode: boolean; currentDateString: string };
   sharedCensus: ReturnType<typeof useSharedCensusMode>;
 }
-
-import { useSystemHealthReporter } from '@/hooks/admin/useSystemHealthReporter';
 
 function AppInner({ auth, dateNav, sharedCensus }: AppInnerProps) {
   // Report health status in background

@@ -6,88 +6,85 @@ import * as ExportService from '@/services/exporters/exportService';
 
 // Mock context
 vi.mock('@/context/UIContext', () => ({
-    useNotification: () => ({
-        success: vi.fn(),
-        error: vi.fn(),
-    }),
+  useNotification: () => ({
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+  }),
 }));
 
 // Mock export service
 vi.mock('@/services/exporters/exportService', () => ({
-    exportDataJSON: vi.fn(),
-    exportDataCSV: vi.fn(),
-    importDataJSON: vi.fn().mockResolvedValue(true),
+  exportDataJSON: vi.fn(),
+  exportDataCSV: vi.fn(),
+  importDataJSON: vi.fn().mockResolvedValue(true),
+  importDataJSONDetailed: vi.fn().mockResolvedValue({
+    success: true,
+    importedCount: 1,
+    repairedCount: 0,
+    skippedEntries: [],
+  }),
 }));
 
 describe('useFileOperations', () => {
-    const mockRecord: DailyRecord = { date: '2024-12-28', beds: {} } as DailyRecord;
-    const mockOnRefresh = vi.fn();
+  const mockRecord: DailyRecord = { date: '2024-12-28', beds: {} } as DailyRecord;
+  const mockOnRefresh = vi.fn();
 
-    beforeEach(() => {
-        vi.clearAllMocks();
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should return all file operation functions', () => {
+    const { result } = renderHook(() => useFileOperations(mockRecord, mockOnRefresh));
+
+    expect(typeof result.current.handleExportJSON).toBe('function');
+    expect(typeof result.current.handleExportCSV).toBe('function');
+    expect(typeof result.current.handleImportJSON).toBe('function');
+    expect(typeof result.current.handleImportFile).toBe('function');
+  });
+
+  it('should export JSON', () => {
+    const { result } = renderHook(() => useFileOperations(mockRecord, mockOnRefresh));
+
+    act(() => {
+      result.current.handleExportJSON();
     });
 
-    it('should return all file operation functions', () => {
-        const { result } = renderHook(() =>
-            useFileOperations(mockRecord, mockOnRefresh)
-        );
+    expect(ExportService.exportDataJSON).toHaveBeenCalled();
+  });
 
-        expect(typeof result.current.handleExportJSON).toBe('function');
-        expect(typeof result.current.handleExportCSV).toBe('function');
-        expect(typeof result.current.handleImportJSON).toBe('function');
-        expect(typeof result.current.handleImportFile).toBe('function');
+  it('should export CSV', () => {
+    const { result } = renderHook(() => useFileOperations(mockRecord, mockOnRefresh));
+
+    act(() => {
+      result.current.handleExportCSV();
     });
 
-    it('should export JSON', () => {
-        const { result } = renderHook(() =>
-            useFileOperations(mockRecord, mockOnRefresh)
-        );
+    expect(ExportService.exportDataCSV).toHaveBeenCalledWith(mockRecord);
+  });
 
-        act(() => {
-            result.current.handleExportJSON();
-        });
+  it('should import JSON file', async () => {
+    const { result } = renderHook(() => useFileOperations(mockRecord, mockOnRefresh));
 
-        expect(ExportService.exportDataJSON).toHaveBeenCalled();
+    const file = new File(['{}'], 'test.json', { type: 'application/json' });
+
+    await act(async () => {
+      await result.current.handleImportFile(file);
     });
 
-    it('should export CSV', () => {
-        const { result } = renderHook(() =>
-            useFileOperations(mockRecord, mockOnRefresh)
-        );
+    expect(ExportService.importDataJSONDetailed).toHaveBeenCalledWith(file);
+    expect(mockOnRefresh).toHaveBeenCalled();
+  });
 
-        act(() => {
-            result.current.handleExportCSV();
-        });
+  it('should reject non-JSON files', async () => {
+    const { result } = renderHook(() => useFileOperations(mockRecord, mockOnRefresh));
 
-        expect(ExportService.exportDataCSV).toHaveBeenCalledWith(mockRecord);
+    const file = new File(['data'], 'test.txt', { type: 'text/plain' });
+
+    await act(async () => {
+      await result.current.handleImportFile(file);
     });
 
-    it('should import JSON file', async () => {
-        const { result } = renderHook(() =>
-            useFileOperations(mockRecord, mockOnRefresh)
-        );
-
-        const file = new File(['{}'], 'test.json', { type: 'application/json' });
-
-        await act(async () => {
-            await result.current.handleImportFile(file);
-        });
-
-        expect(ExportService.importDataJSON).toHaveBeenCalledWith(file);
-        expect(mockOnRefresh).toHaveBeenCalled();
-    });
-
-    it('should reject non-JSON files', async () => {
-        const { result } = renderHook(() =>
-            useFileOperations(mockRecord, mockOnRefresh)
-        );
-
-        const file = new File(['data'], 'test.txt', { type: 'text/plain' });
-
-        await act(async () => {
-            await result.current.handleImportFile(file);
-        });
-
-        expect(ExportService.importDataJSON).not.toHaveBeenCalled();
-    });
+    expect(ExportService.importDataJSONDetailed).not.toHaveBeenCalled();
+  });
 });

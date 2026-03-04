@@ -16,20 +16,19 @@ import {
   isExpectedStorageLookupMiss,
   shouldLogStorageError,
   resolveStorageLookupStatus,
-  type StorageLookupStatus,
 } from './storageErrorPolicy';
 import { isBackupDateValidationError, parseBackupDateParts } from './storageContracts';
 import { measureStorageOperation } from './storageObservability';
 import { assertStorageAvailable } from './storageAvailability';
+import {
+  createStorageLookupResult,
+  type StorageLookupResult,
+  withStorageLookupTimeout,
+} from './storageLookupContracts';
 
 // ============= Types =============
 
 export type StoredCensusFile = BaseStoredFile;
-export interface StorageLookupResult {
-  exists: boolean;
-  status: StorageLookupStatus;
-}
-
 // ============= Constants =============
 
 const STORAGE_ROOT = 'censo-diario';
@@ -101,10 +100,6 @@ export const checkCensusExists = async (date: string): Promise<boolean> => {
 
 export const checkCensusExistsDetailed = async (date: string): Promise<StorageLookupResult> => {
   const TIMEOUT_MS = 4000;
-  const timeoutPromise = new Promise<StorageLookupResult>(resolve =>
-    setTimeout(() => resolve({ exists: false, status: 'timeout' }), TIMEOUT_MS)
-  );
-
   const checkPromise = measureStorageOperation(
     'censusExists',
     async (): Promise<StorageLookupResult> => {
@@ -114,27 +109,27 @@ export const checkCensusExistsDetailed = async (date: string): Promise<StorageLo
 
         const storageRef = ref(storage, generateCensusPath(date));
         await getMetadata(storageRef);
-        return { exists: true, status: 'available' };
+        return createStorageLookupResult(true, 'available');
       } catch (error: unknown) {
         // Expected lookup misses (missing file or blocked access in current auth context).
         if (isExpectedStorageLookupMiss(error) || isBackupDateValidationError(error)) {
-          return {
-            exists: false,
-            status: resolveStorageLookupStatus(error, {
+          return createStorageLookupResult(
+            false,
+            resolveStorageLookupStatus(error, {
               invalidDate: isBackupDateValidationError(error),
-            }),
-          };
+            })
+          );
         }
         if (shouldLogStorageError(error)) {
           console.warn('[CensusStorage] Error checking file existence:', error);
         }
-        return { exists: false, status: resolveStorageLookupStatus(error) };
+        return createStorageLookupResult(false, resolveStorageLookupStatus(error));
       }
     },
     { context: date }
   );
 
-  return await Promise.race([checkPromise, timeoutPromise]);
+  return withStorageLookupTimeout(checkPromise, TIMEOUT_MS);
 };
 
 /**

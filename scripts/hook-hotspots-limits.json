@@ -1,0 +1,9 @@
+{
+  "files": {
+    "src/hooks/useCensusEmail.ts": 640,
+    "src/hooks/useTransferManagement.ts": 360,
+    "src/hooks/useBedManagement.ts": 360,
+    "src/hooks/useExportManager.ts": 280,
+    "src/hooks/useBackupFileBrowser.ts": 320
+  }
+}

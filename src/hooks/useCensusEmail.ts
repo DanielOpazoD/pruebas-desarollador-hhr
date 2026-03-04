@@ -6,24 +6,20 @@ import { getAppSetting, saveAppSetting } from '@/services/settingsService';
 import { isAdmin } from '@/utils/permissions';
 import { CensusAccessRole } from '@/types/censusAccess';
 import { defaultCensusEmailBrowserRuntime } from '@/hooks/controllers/censusEmailBrowserRuntimeController';
+import { resolveCensusRecipientsBootstrap } from '@/hooks/controllers/censusEmailRecipientsBootstrapController';
+import { resolveStoredRecipients } from '@/hooks/controllers/censusEmailRecipientsController';
 import {
   CENSUS_EMAIL_EXCEL_SHEET_CONFIG_KEY,
   DEFAULT_CENSUS_EMAIL_EXCEL_SHEET_CONFIG,
   normalizeCensusEmailExcelSheetConfig,
   type CensusEmailExcelSheetConfig,
 } from '@/hooks/controllers/censusExcelSheetController';
-import {
-  resolveLegacyRecipients,
-  resolveStoredRecipients,
-} from '@/hooks/controllers/censusEmailRecipientsController';
 import { useCensusEmailActions, type CensusEmailSendStatus } from '@/hooks/useCensusEmailActions';
 import {
   areGlobalEmailRecipientsEqual,
   buildGlobalEmailRecipientListId,
   CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST,
   deleteGlobalEmailRecipientList,
-  ensureGlobalEmailRecipientList,
-  getGlobalEmailRecipientLists,
   GlobalEmailRecipientList,
   saveGlobalEmailRecipientList,
 } from '@/services/email/emailRecipientListService';
@@ -170,82 +166,24 @@ export const useCensusEmail = ({
 
     const loadRecipients = async () => {
       try {
-        if (!canManageGlobalRecipientLists) {
-          const stored = await getAppSetting<string[] | null>('censusEmailRecipients', null);
-          const storedRecipients = resolveStoredRecipients(stored);
+        const bootstrap = await resolveCensusRecipientsBootstrap({
+          canManageGlobalRecipientLists,
+          browserRuntime,
+          activeListStorageKey: RECIPIENT_LIST_KEY,
+          user,
+        });
 
-          if (isActive && storedRecipients) {
-            setRecipients(storedRecipients);
-            setRecipientsSource('local');
-            recipientsReadyRef.current = true;
-            return;
-          }
-
-          if (isActive) {
-            setRecipients(CENSUS_DEFAULT_RECIPIENTS);
-            setRecipientsSource('default');
-            recipientsReadyRef.current = true;
-          }
+        if (!isActive) {
           return;
         }
 
-        const stored = await getAppSetting<string[] | null>('censusEmailRecipients', null);
-        const storedActiveListId = await getAppSetting<string | null>(RECIPIENT_LIST_KEY, null);
-        const storedRecipients = resolveStoredRecipients(stored);
-        let seedRecipients = storedRecipients ?? null;
-
-        if (!seedRecipients) {
-          const legacyRecipients = resolveLegacyRecipients(browserRuntime.getLegacyRecipients());
-          if (legacyRecipients) {
-            seedRecipients = legacyRecipients;
-            await saveAppSetting('censusEmailRecipients', legacyRecipients);
-            browserRuntime.clearLegacyRecipients();
-          }
-        }
-
-        let lists = await getGlobalEmailRecipientLists();
-
-        if (lists.length === 0) {
-          await ensureGlobalEmailRecipientList({
-            listId: CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.id,
-            name: CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.name,
-            description: CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.description,
-            recipients: seedRecipients ?? CENSUS_DEFAULT_RECIPIENTS,
-            updatedByUid: user?.uid ?? null,
-            updatedByEmail: user?.email ?? null,
-          });
-          lists = await getGlobalEmailRecipientLists();
-        }
-
-        if (lists.length > 0) {
-          const preferredListId =
-            storedActiveListId && lists.some(list => list.id === storedActiveListId)
-              ? storedActiveListId
-              : lists.some(list => list.id === CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.id)
-                ? CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.id
-                : lists[0].id;
-          const activeList = lists.find(list => list.id === preferredListId) ?? lists[0];
-
-          if (isActive) {
-            setRecipientLists(lists);
-            applyActiveRecipientList(activeList);
-          }
-          return;
-        }
-
-        if (storedRecipients) {
-          if (isActive) {
-            setRecipients(storedRecipients);
-            setRecipientsSource('local');
-            setRecipientsSyncError(null);
-          }
-          recipientsReadyRef.current = true;
-          return;
-        }
-
-        if (isActive) {
-          setRecipients(CENSUS_DEFAULT_RECIPIENTS);
-          setRecipientsSource('default');
+        setRecipientLists(bootstrap.recipientLists);
+        if (bootstrap.activeRecipientList) {
+          applyActiveRecipientList(bootstrap.activeRecipientList);
+        } else {
+          setRecipients(bootstrap.recipients);
+          setRecipientsSource(bootstrap.recipientsSource);
+          setRecipientsSyncError(bootstrap.syncError);
         }
         recipientsReadyRef.current = true;
       } catch (error) {
@@ -274,8 +212,7 @@ export const useCensusEmail = ({
     applyActiveRecipientList,
     browserRuntime,
     canManageGlobalRecipientLists,
-    user?.email,
-    user?.uid,
+    user,
   ]);
 
   useEffect(() => {

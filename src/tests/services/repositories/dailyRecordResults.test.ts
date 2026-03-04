@@ -8,6 +8,7 @@ describe('dailyRecordResults contracts', () => {
   it('accepts valid save result payload', () => {
     const result = createSaveDailyRecordResult({
       date: '2026-02-19',
+      outcome: 'queued',
       savedLocally: true,
       savedRemotely: false,
       queuedForRetry: true,
@@ -20,6 +21,7 @@ describe('dailyRecordResults contracts', () => {
     expect(() =>
       createUpdatePartialDailyRecordResult({
         date: '2026-02-19',
+        outcome: 'blocked',
         savedLocally: true,
         updatedRemotely: false,
         queuedForRetry: true,

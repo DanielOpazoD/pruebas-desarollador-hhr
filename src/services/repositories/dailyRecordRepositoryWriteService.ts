@@ -36,9 +36,20 @@ const createRemoteWriteState = (): RemoteWriteState => ({
   autoMerged: false,
 });
 
+const resolveWriteOutcome = (state: RemoteWriteState): 'clean' | 'queued' | 'auto_merged' => {
+  if (state.autoMerged) {
+    return 'auto_merged';
+  }
+  if (state.queuedForRetry) {
+    return 'queued';
+  }
+  return 'clean';
+};
+
 const buildSaveResult = (date: string, state: RemoteWriteState) =>
   createSaveDailyRecordResult({
     date,
+    outcome: resolveWriteOutcome(state),
     savedLocally: true,
     savedRemotely: state.savedRemotely,
     queuedForRetry: state.queuedForRetry,
@@ -48,6 +59,7 @@ const buildSaveResult = (date: string, state: RemoteWriteState) =>
 const buildPartialUpdateResult = (date: string, state: RemoteWriteState, patchedFields: number) =>
   createUpdatePartialDailyRecordResult({
     date,
+    outcome: resolveWriteOutcome(state),
     savedLocally: true,
     updatedRemotely: state.savedRemotely,
     queuedForRetry: state.queuedForRetry,
@@ -88,7 +100,7 @@ const applyRemoteRecovery = async (
   return recovery.status === 'auto_merged' ? 'return' : 'continue';
 };
 
-export const save = async (record: DailyRecord, expectedLastUpdated?: string): Promise<void> => {
+export const saveDetailed = async (record: DailyRecord, expectedLastUpdated?: string) => {
   const command = createSaveDailyRecordCommand(record, expectedLastUpdated);
   const remoteState = createRemoteWriteState();
   const validatedRecord = prepareDailyRecordForPersistence(command.record, command.date);
@@ -111,18 +123,21 @@ export const save = async (record: DailyRecord, expectedLastUpdated?: string): P
         remoteState
       );
       if (nextAction === 'return') {
-        buildSaveResult(command.date, remoteState);
-        return;
+        return buildSaveResult(command.date, remoteState);
       }
     }
   }
 
   syncPatientsToMasterInBackground(validatedRecord);
 
-  buildSaveResult(command.date, remoteState);
+  return buildSaveResult(command.date, remoteState);
 };
 
-export const updatePartial = async (date: string, partialData: DailyRecordPatch): Promise<void> => {
+export const save = async (record: DailyRecord, expectedLastUpdated?: string): Promise<void> => {
+  await saveDetailed(record, expectedLastUpdated);
+};
+
+export const updatePartialDetailed = async (date: string, partialData: DailyRecordPatch) => {
   const command = createPartialUpdateDailyRecordCommand(date, partialData);
   const remoteState = createRemoteWriteState();
   const current = await getRecordFromIndexedDB(command.date);
@@ -131,7 +146,15 @@ export const updatePartial = async (date: string, partialData: DailyRecordPatch)
     console.warn(
       `[Repository] updatePartial: No record found for ${command.date}, operation aborted.`
     );
-    return;
+    return createUpdatePartialDailyRecordResult({
+      date: command.date,
+      outcome: 'blocked',
+      savedLocally: false,
+      updatedRemotely: false,
+      queuedForRetry: false,
+      autoMerged: false,
+      patchedFields: Object.keys(command.patch).length,
+    });
   }
 
   const { record: validatedRecord, mergedPatches } = preparePatchedRecordForPersistence(
@@ -157,11 +180,14 @@ export const updatePartial = async (date: string, partialData: DailyRecordPatch)
         remoteState
       );
       if (nextAction === 'return') {
-        buildPartialUpdateResult(command.date, remoteState, patchedFields);
-        return;
+        return buildPartialUpdateResult(command.date, remoteState, patchedFields);
       }
     }
   }
 
-  buildPartialUpdateResult(command.date, remoteState, patchedFields);
+  return buildPartialUpdateResult(command.date, remoteState, patchedFields);
+};
+
+export const updatePartial = async (date: string, partialData: DailyRecordPatch): Promise<void> => {
+  await updatePartialDetailed(date, partialData);
 };

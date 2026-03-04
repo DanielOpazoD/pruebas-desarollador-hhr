@@ -1,0 +1,102 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { resolveCensusRecipientsBootstrap } from '@/hooks/controllers/censusEmailRecipientsBootstrapController';
+
+vi.mock('@/services/settingsService', () => ({
+  getAppSetting: vi.fn(),
+  saveAppSetting: vi.fn(),
+}));
+
+vi.mock('@/services/email/emailRecipientListService', () => ({
+  CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST: {
+    id: 'census-default',
+    name: 'Censo diario (predeterminado)',
+    description: 'Lista global reutilizable para envios predeterminados de censo diario.',
+  },
+  ensureGlobalEmailRecipientList: vi.fn().mockResolvedValue(undefined),
+  getGlobalEmailRecipientLists: vi.fn().mockResolvedValue([]),
+}));
+
+import { getAppSetting, saveAppSetting } from '@/services/settingsService';
+import {
+  ensureGlobalEmailRecipientList,
+  getGlobalEmailRecipientLists,
+} from '@/services/email/emailRecipientListService';
+
+describe('censusEmailRecipientsBootstrapController', () => {
+  const browserRuntime = {
+    getLegacyRecipients: vi.fn(),
+    clearLegacyRecipients: vi.fn(),
+    getOrigin: vi.fn(() => 'http://localhost:3000'),
+    writeClipboard: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns local recipients when user cannot manage global lists', async () => {
+    vi.mocked(getAppSetting).mockResolvedValueOnce(['local@test.com']);
+
+    const result = await resolveCensusRecipientsBootstrap({
+      canManageGlobalRecipientLists: false,
+      browserRuntime,
+      activeListStorageKey: 'active',
+      user: null,
+    });
+
+    expect(result.recipients).toEqual(['local@test.com']);
+    expect(result.recipientsSource).toBe('local');
+  });
+
+  it('creates default global list when none exists', async () => {
+    vi.mocked(getAppSetting)
+      .mockResolvedValueOnce(['seed@test.com'])
+      .mockResolvedValueOnce('census-default');
+    vi.mocked(getGlobalEmailRecipientLists)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id: 'census-default',
+          name: 'Global',
+          description: null,
+          recipients: ['seed@test.com'],
+          scope: 'global',
+          updatedAt: '2026-03-03T10:00:00.000Z',
+          updatedByUid: null,
+          updatedByEmail: null,
+        },
+      ]);
+
+    const result = await resolveCensusRecipientsBootstrap({
+      canManageGlobalRecipientLists: true,
+      browserRuntime,
+      activeListStorageKey: 'active',
+      user: { email: 'admin@test.com', uid: '1' },
+    });
+
+    expect(ensureGlobalEmailRecipientList).toHaveBeenCalledWith(
+      expect.objectContaining({
+        listId: 'census-default',
+        recipients: ['seed@test.com'],
+      })
+    );
+    expect(result.recipientsSource).toBe('firebase');
+    expect(result.activeRecipientList?.id).toBe('census-default');
+  });
+
+  it('migrates legacy browser recipients before creating firebase seed', async () => {
+    vi.mocked(getAppSetting).mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+    vi.mocked(getGlobalEmailRecipientLists).mockResolvedValue([]);
+    browserRuntime.getLegacyRecipients.mockReturnValue(JSON.stringify(['legacy@test.com']));
+
+    await resolveCensusRecipientsBootstrap({
+      canManageGlobalRecipientLists: true,
+      browserRuntime,
+      activeListStorageKey: 'active',
+      user: { email: 'admin@test.com', uid: '1' },
+    });
+
+    expect(saveAppSetting).toHaveBeenCalledWith('censusEmailRecipients', ['legacy@test.com']);
+    expect(browserRuntime.clearLegacyRecipients).toHaveBeenCalled();
+  });
+});

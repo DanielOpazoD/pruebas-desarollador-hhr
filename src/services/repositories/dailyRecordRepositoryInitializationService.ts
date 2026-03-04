@@ -1,7 +1,10 @@
 import { DailyRecord } from '@/types';
 import { saveRecord as saveToIndexedDB } from '@/services/storage/indexedDBService';
 import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
-import { getForDate } from '@/services/repositories/dailyRecordRepositoryReadService';
+import {
+  getForDate,
+  getForDateWithMeta,
+} from '@/services/repositories/dailyRecordRepositoryReadService';
 import { save } from '@/services/repositories/dailyRecordRepositoryWriteService';
 import { loadRemoteRecordWithFallback } from '@/services/repositories/dailyRecordRemoteLoader';
 import {
@@ -17,10 +20,55 @@ import {
   shouldReturnSeedRecord,
 } from '@/services/repositories/dailyRecordInitializationSeed';
 import { measureRepositoryOperation } from '@/services/repositories/repositoryPerformance';
+import { migrateLegacyDataWithReport } from '@/services/repositories/dataMigration';
+
+export interface DailyRecordInitializationResult {
+  record: DailyRecord;
+  sourceDate?: string;
+  sourceCompatibilityIntensity:
+    | 'none'
+    | 'normalized_only'
+    | 'legacy_staff_promoted'
+    | 'legacy_schema_bridge';
+  sourceMigrationRulesApplied: string[];
+}
+
+export interface CopyPatientToDateResult {
+  sourceDate: string;
+  targetDate: string;
+  sourceBedId: string;
+  targetBedId: string;
+  sourceCompatibilityIntensity:
+    | 'none'
+    | 'normalized_only'
+    | 'legacy_staff_promoted'
+    | 'legacy_schema_bridge';
+  sourceMigrationRulesApplied: string[];
+}
 
 const loadCopySourceRecord = async (copyFromDate?: string): Promise<DailyRecord | null> => {
   if (!copyFromDate) return null;
   return getForDate(copyFromDate);
+};
+
+const buildCopySourceMeta = (
+  copySourceRecord: DailyRecord | null,
+  copyFromDate?: string
+): Omit<DailyRecordInitializationResult, 'record'> => {
+  if (!copySourceRecord) {
+    return {
+      sourceDate: copyFromDate,
+      sourceCompatibilityIntensity: 'none',
+      sourceMigrationRulesApplied: [],
+    };
+  }
+
+  const migration = migrateLegacyDataWithReport(copySourceRecord, copySourceRecord.date);
+  return {
+    sourceDate: copySourceRecord.date,
+    sourceCompatibilityIntensity: migration.compatibilityIntensity,
+    sourceMigrationRulesApplied: migration.appliedRules,
+  };
 };
 
 const cacheInitializationRecordIfNeeded = async (
@@ -84,8 +132,15 @@ const resolveTargetRecordForCopy = async (targetDate: string): Promise<DailyReco
   return targetRecord ?? initializeMissingDay(targetDate);
 };
 
-const initializeMissingDay = async (date: string, copyFromDate?: string): Promise<DailyRecord> => {
-  const copySourceRecord = await loadCopySourceRecord(copyFromDate);
+const initializeMissingDay = async (
+  date: string,
+  copyFromDate?: string,
+  copySourceRecordOverride?: DailyRecord | null
+): Promise<DailyRecord> => {
+  const copySourceRecord =
+    copySourceRecordOverride === undefined
+      ? await loadCopySourceRecord(copyFromDate)
+      : copySourceRecordOverride;
   const initializationSeed = await resolveInitializationSeed(date, copySourceRecord);
 
   if (shouldReturnSeedRecord(initializationSeed)) {
@@ -99,15 +154,32 @@ const initializeMissingDay = async (date: string, copyFromDate?: string): Promis
 };
 
 export const initializeDay = async (date: string, copyFromDate?: string): Promise<DailyRecord> =>
+  (await initializeDayDetailed(date, copyFromDate)).record;
+
+export const initializeDayDetailed = async (
+  date: string,
+  copyFromDate?: string
+): Promise<DailyRecordInitializationResult> =>
   measureRepositoryOperation(
     'dailyRecord.initializeDay',
     async () => {
       const existing = await loadExistingDailyRecord(date);
       if (existing) {
-        return existing;
+        return {
+          record: existing,
+          sourceDate: copyFromDate,
+          sourceCompatibilityIntensity: 'none',
+          sourceMigrationRulesApplied: [],
+        };
       }
 
-      return initializeMissingDay(date, copyFromDate);
+      const copySourceRecord = copyFromDate ? await loadCopySourceRecord(copyFromDate) : null;
+      const copyMeta = buildCopySourceMeta(copySourceRecord, copyFromDate);
+      const record = await initializeMissingDay(date, copyFromDate, copySourceRecord);
+      return {
+        record,
+        ...copyMeta,
+      };
     },
     { thresholdMs: 180, context: `${date}${copyFromDate ? `<-${copyFromDate}` : ''}` }
   );
@@ -118,7 +190,17 @@ export const copyPatientToDate = async (
   targetDate: string,
   targetBedId: string
 ): Promise<void> => {
-  const sourceRecord = await getForDate(sourceDate);
+  await copyPatientToDateDetailed(sourceDate, sourceBedId, targetDate, targetBedId);
+};
+
+export const copyPatientToDateDetailed = async (
+  sourceDate: string,
+  sourceBedId: string,
+  targetDate: string,
+  targetBedId: string
+): Promise<CopyPatientToDateResult> => {
+  const sourceResult = await getForDateWithMeta(sourceDate);
+  const sourceRecord = sourceResult.record;
   if (!sourceRecord) throw new Error(`Source record for ${sourceDate} not found`);
 
   const sourcePatient = sourceRecord.beds[sourceBedId];
@@ -128,4 +210,13 @@ export const copyPatientToDate = async (
 
   const targetRecord = await resolveTargetRecordForCopy(targetDate);
   await save(assignCarriedPatientToRecord(targetRecord, targetBedId, sourcePatient));
+
+  return {
+    sourceDate,
+    targetDate,
+    sourceBedId,
+    targetBedId,
+    sourceCompatibilityIntensity: sourceResult.compatibilityIntensity,
+    sourceMigrationRulesApplied: sourceResult.migrationRulesApplied,
+  };
 };

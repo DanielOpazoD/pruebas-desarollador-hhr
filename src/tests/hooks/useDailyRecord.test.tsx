@@ -16,10 +16,31 @@ vi.mock('@/services/repositories/DailyRecordRepository', () => {
     save: vi.fn().mockResolvedValue(undefined),
     updatePartial: vi.fn().mockResolvedValue(undefined),
     initializeDay: vi.fn().mockResolvedValue(null), // Changed to null to force init
+    initializeDayDetailed: vi.fn().mockResolvedValue({
+      record: null,
+      sourceCompatibilityIntensity: 'none',
+      sourceMigrationRulesApplied: [],
+    }),
     deleteDay: vi.fn().mockResolvedValue(undefined),
     getPreviousDay: vi.fn().mockResolvedValue(null),
+    getPreviousDayWithMeta: vi.fn().mockResolvedValue({
+      date: '2025-01-01',
+      record: null,
+      source: 'not_found',
+      compatibilityTier: 'none',
+      compatibilityIntensity: 'none',
+      migrationRulesApplied: [],
+    }),
     syncWithFirestore: vi.fn().mockResolvedValue(null),
     copyPatientToDate: vi.fn().mockResolvedValue(undefined),
+    copyPatientToDateDetailed: vi.fn().mockResolvedValue({
+      sourceDate: '2025-01-01',
+      targetDate: '2025-01-02',
+      sourceBedId: 'R1',
+      targetBedId: 'R2',
+      sourceCompatibilityIntensity: 'none',
+      sourceMigrationRulesApplied: [],
+    }),
   };
   return {
     DailyRecordRepository: repo,
@@ -63,6 +84,15 @@ describe('useDailyRecord', () => {
       const rec = DataFactory.createMockDailyRecord(date);
       recordsMap[date] = rec;
       return rec;
+    });
+    vi.mocked(repo.initializeDayDetailed).mockImplementation(async date => {
+      const rec = DataFactory.createMockDailyRecord(date);
+      recordsMap[date] = rec;
+      return {
+        record: rec,
+        sourceCompatibilityIntensity: 'none',
+        sourceMigrationRulesApplied: [],
+      };
     });
 
     vi.mocked(repo.updatePartial).mockImplementation(async (date, partial) => {
@@ -116,7 +146,7 @@ describe('useDailyRecord', () => {
       await result.current.createDay(false);
     });
 
-    expect(DailyRecordRepository.DailyRecordRepository.initializeDay).toHaveBeenCalledWith(
+    expect(DailyRecordRepository.DailyRecordRepository.initializeDayDetailed).toHaveBeenCalledWith(
       mockDate,
       undefined
     );
@@ -225,12 +255,9 @@ describe('useDailyRecord', () => {
       });
 
       // Verify copyPatientToDate called with correct arguments
-      expect(DailyRecordRepository.DailyRecordRepository.copyPatientToDate).toHaveBeenCalledWith(
-        mockDate,
-        'R1',
-        targetDate,
-        'R2'
-      );
+      expect(
+        DailyRecordRepository.DailyRecordRepository.copyPatientToDateDetailed
+      ).toHaveBeenCalledWith(mockDate, 'R1', targetDate, 'R2');
     });
   });
 });

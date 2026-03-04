@@ -1,0 +1,133 @@
+import { CENSUS_DEFAULT_RECIPIENTS } from '@/constants/email';
+import type { CensusEmailBrowserRuntime } from '@/hooks/controllers/censusEmailBrowserRuntimeController';
+import {
+  resolveLegacyRecipients,
+  resolveStoredRecipients,
+} from '@/hooks/controllers/censusEmailRecipientsController';
+import {
+  CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST,
+  ensureGlobalEmailRecipientList,
+  getGlobalEmailRecipientLists,
+  type GlobalEmailRecipientList,
+} from '@/services/email/emailRecipientListService';
+import { getAppSetting, saveAppSetting } from '@/services/settingsService';
+
+export interface CensusEmailRecipientsBootstrapResult {
+  recipients: string[];
+  recipientsSource: 'firebase' | 'local' | 'default';
+  recipientLists: GlobalEmailRecipientList[];
+  activeRecipientList: GlobalEmailRecipientList | null;
+  syncError: string | null;
+}
+
+interface ResolveCensusRecipientsBootstrapParams {
+  canManageGlobalRecipientLists: boolean;
+  browserRuntime: CensusEmailBrowserRuntime;
+  activeListStorageKey: string;
+  user: { uid?: string; email?: string | null } | null;
+}
+
+const getDefaultBootstrapResult = (): CensusEmailRecipientsBootstrapResult => ({
+  recipients: CENSUS_DEFAULT_RECIPIENTS,
+  recipientsSource: 'default',
+  recipientLists: [],
+  activeRecipientList: null,
+  syncError: null,
+});
+
+const resolvePreferredActiveList = (
+  lists: GlobalEmailRecipientList[],
+  storedActiveListId: string | null
+): GlobalEmailRecipientList | null => {
+  if (lists.length === 0) {
+    return null;
+  }
+
+  if (storedActiveListId) {
+    const storedList = lists.find(list => list.id === storedActiveListId);
+    if (storedList) {
+      return storedList;
+    }
+  }
+
+  return lists.find(list => list.id === CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.id) ?? lists[0] ?? null;
+};
+
+export const resolveCensusRecipientsBootstrap = async ({
+  canManageGlobalRecipientLists,
+  browserRuntime,
+  activeListStorageKey,
+  user,
+}: ResolveCensusRecipientsBootstrapParams): Promise<CensusEmailRecipientsBootstrapResult> => {
+  const stored = await getAppSetting<string[] | null>('censusEmailRecipients', null);
+  const storedRecipients = resolveStoredRecipients(stored);
+
+  if (!canManageGlobalRecipientLists) {
+    return storedRecipients
+      ? {
+          recipients: storedRecipients,
+          recipientsSource: 'local',
+          recipientLists: [],
+          activeRecipientList: null,
+          syncError: null,
+        }
+      : getDefaultBootstrapResult();
+  }
+
+  const storedActiveListId = await getAppSetting<string | null>(activeListStorageKey, null);
+  let seedRecipients = storedRecipients ?? null;
+
+  if (!seedRecipients) {
+    const legacyRecipients = resolveLegacyRecipients(browserRuntime.getLegacyRecipients());
+    if (legacyRecipients) {
+      seedRecipients = legacyRecipients;
+      await saveAppSetting('censusEmailRecipients', legacyRecipients);
+      browserRuntime.clearLegacyRecipients();
+    }
+  }
+
+  try {
+    let lists = await getGlobalEmailRecipientLists();
+    if (lists.length === 0) {
+      await ensureGlobalEmailRecipientList({
+        listId: CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.id,
+        name: CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.name,
+        description: CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.description,
+        recipients: seedRecipients ?? CENSUS_DEFAULT_RECIPIENTS,
+        updatedByUid: user?.uid ?? null,
+        updatedByEmail: user?.email ?? null,
+      });
+      lists = await getGlobalEmailRecipientLists();
+    }
+
+    const activeRecipientList = resolvePreferredActiveList(lists, storedActiveListId);
+    if (activeRecipientList) {
+      return {
+        recipients: activeRecipientList.recipients,
+        recipientsSource: 'firebase',
+        recipientLists: lists,
+        activeRecipientList,
+        syncError: null,
+      };
+    }
+  } catch (error) {
+    console.error('[useCensusEmail] Failed to load global recipient lists:', error);
+    return {
+      recipients: storedRecipients ?? CENSUS_DEFAULT_RECIPIENTS,
+      recipientsSource: storedRecipients ? 'local' : 'default',
+      recipientLists: [],
+      activeRecipientList: null,
+      syncError: 'No se pudo cargar la lista global en Firebase. Se usara la copia local.',
+    };
+  }
+
+  return storedRecipients
+    ? {
+        recipients: storedRecipients,
+        recipientsSource: 'local',
+        recipientLists: [],
+        activeRecipientList: null,
+        syncError: null,
+      }
+    : getDefaultBootstrapResult();
+};

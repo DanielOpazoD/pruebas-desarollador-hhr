@@ -9,6 +9,7 @@ import { migrateLegacyData } from '@/services/repositories/dataMigration';
 import { loadRemoteRecordWithFallback } from '@/services/repositories/dailyRecordRemoteLoader';
 import { resolvePreferredDailyRecord } from '@/services/repositories/dailyRecordSyncCompatibility';
 import { measureRepositoryOperation } from '@/services/repositories/repositoryPerformance';
+import { createSyncDailyRecordResult } from '@/services/repositories/contracts/dailyRecordResults';
 
 const resolveIncomingRemoteRecord = async (
   date: string,
@@ -42,7 +43,7 @@ export const subscribe = (
   });
 };
 
-export const syncWithFirestore = async (date: string): Promise<DailyRecord | null> => {
+export const syncWithFirestoreDetailed = async (date: string) => {
   if (!isFirestoreEnabled()) return null;
 
   return measureRepositoryOperation(
@@ -50,12 +51,26 @@ export const syncWithFirestore = async (date: string): Promise<DailyRecord | nul
     async () => {
       try {
         const remoteResult = await loadRemoteRecordWithFallback(date);
-        return resolveIncomingRemoteRecord(date, remoteResult.record);
+        const record = await resolveIncomingRemoteRecord(date, remoteResult.record);
+        return createSyncDailyRecordResult({
+          date,
+          outcome: record ? 'clean' : 'missing',
+          record,
+        });
       } catch (err) {
         console.warn(`[Repository] Sync failed for ${date}:`, err);
+        return createSyncDailyRecordResult({
+          date,
+          outcome: 'blocked',
+          record: null,
+        });
       }
-      return null;
     },
     { thresholdMs: 200, context: date }
   );
+};
+
+export const syncWithFirestore = async (date: string): Promise<DailyRecord | null> => {
+  const result = await syncWithFirestoreDetailed(date);
+  return result?.record ?? null;
 };

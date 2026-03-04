@@ -1,6 +1,7 @@
 import { BEDS } from '@/constants';
 import type { DailyRecord, DailyRecordPatch, PatientData } from '@/types';
 import { clonePatient, createEmptyPatient } from '@/services/factories/patientFactory';
+import { parsePatientDataWithDefaults } from '@/schemas/zodSchemas';
 import { mapPatientToFhir } from '@/services/utils/fhirMappers';
 import { createDailyRecordAggregate } from '@/services/repositories/dailyRecordAggregate';
 import { inheritPatientHandoffNotes } from '@/services/repositories/dailyRecordHandoffDomainService';
@@ -41,7 +42,10 @@ const shouldClonePreviousPatient = (prevPatient: PatientData): boolean =>
   );
 
 export const preparePatientForCarryover = (sourcePatient: PatientData): PatientData => {
-  const clonedPatient = clonePatient(sourcePatient);
+  const clonedPatient = parsePatientDataWithDefaults(
+    clonePatient(sourcePatient),
+    sourcePatient.bedId
+  );
   resetCarryoverCudyr(clonedPatient);
   inheritPatientHandoffNotes(clonedPatient, sourcePatient);
 

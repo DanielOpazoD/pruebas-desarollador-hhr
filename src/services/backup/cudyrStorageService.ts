@@ -22,7 +22,6 @@ import {
   isExpectedStorageLookupMiss,
   shouldLogStorageError,
   resolveStorageLookupStatus,
-  type StorageLookupStatus,
 } from '@/services/backup/storageErrorPolicy';
 import {
   isBackupDateValidationError,
@@ -30,16 +29,17 @@ import {
 } from '@/services/backup/storageContracts';
 import { measureStorageOperation } from '@/services/backup/storageObservability';
 import { assertStorageAvailable } from '@/services/backup/storageAvailability';
+import {
+  createStorageLookupResult,
+  type StorageLookupResult,
+  withStorageLookupTimeout,
+} from '@/services/backup/storageLookupContracts';
 
 // ============= Types =============
 
 export interface StoredCudyrFile extends BaseStoredFile {
   month: string;
   year: string;
-}
-export interface StorageLookupResult {
-  exists: boolean;
-  status: StorageLookupStatus;
 }
 
 // ============= Constants =============
@@ -147,10 +147,6 @@ export const cudyrExists = async (date: string): Promise<boolean> => {
 
 export const cudyrExistsDetailed = async (date: string): Promise<StorageLookupResult> => {
   const TIMEOUT_MS = 4000;
-  const timeoutPromise = new Promise<StorageLookupResult>(resolve =>
-    setTimeout(() => resolve({ exists: false, status: 'timeout' }), TIMEOUT_MS)
-  );
-
   const checkPromise = measureStorageOperation(
     'cudyrExists',
     async (): Promise<StorageLookupResult> => {
@@ -162,27 +158,27 @@ export const cudyrExistsDetailed = async (date: string): Promise<StorageLookupRe
         const storageRef = ref(storage, filePath);
 
         await getMetadata(storageRef);
-        return { exists: true, status: 'available' };
+        return createStorageLookupResult(true, 'available');
       } catch (error: unknown) {
         if (isExpectedStorageLookupMiss(error) || isBackupDateValidationError(error)) {
-          return {
-            exists: false,
-            status: resolveStorageLookupStatus(error, {
+          return createStorageLookupResult(
+            false,
+            resolveStorageLookupStatus(error, {
               invalidDate: isBackupDateValidationError(error),
-            }),
-          };
+            })
+          );
         }
         if (shouldLogStorageError(error)) {
           const storageError = error as { message?: string };
           console.warn(`[CudyrStorage] Error checking:`, storageError.message || error);
         }
-        return { exists: false, status: resolveStorageLookupStatus(error) };
+        return createStorageLookupResult(false, resolveStorageLookupStatus(error));
       }
     },
     { context: date }
   );
 
-  return await Promise.race([checkPromise, timeoutPromise]);
+  return withStorageLookupTimeout(checkPromise, TIMEOUT_MS);
 };
 
 /**

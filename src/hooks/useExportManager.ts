@@ -3,6 +3,13 @@ import { DailyRecord } from '@/types';
 import { checkCensusExistsDetailed, uploadCensus } from '@/services/backup/censusStorageService';
 import { getMonthRecordsFromFirestore } from '@/services/storage/firestoreService';
 import { useConfirmDialog, useNotification } from '@/context/UIContext';
+import {
+  buildArchiveStatusState,
+  mergeMonthlyRecordsForBackup,
+  resolveHandoffBackupStaff,
+  shouldCheckArchiveStatus,
+} from '@/hooks/controllers/exportManagerController';
+import { getStorageLookupNotice } from '@/services/backup/storageUiPolicy';
 import { getShiftSchedule } from '@/utils/dateUtils';
 
 interface UseExportManagerProps {
@@ -41,35 +48,34 @@ export const useExportManager = ({
 
   // Check archive status when date/module changes
   useEffect(() => {
-    if (currentDateString) {
-      if (currentModule === 'CENSUS') {
-        checkCensusExistsDetailed(currentDateString)
-          .then(result => {
-            setIsArchived(result.exists);
-            if (result.status === 'restricted') {
-              warning(
-                'Respaldo no verificable',
-                'No se pudo confirmar el respaldo del censo por permisos de Storage.'
-              );
-            }
-          })
-          .catch(() => setIsArchived(false));
-      } else if (currentModule === 'NURSING_HANDOFF') {
-        import('@/services/backup/pdfStorageService').then(({ pdfExistsDetailed }) => {
-          pdfExistsDetailed(currentDateString, selectedShift)
-            .then(result => {
-              setIsArchived(result.exists);
-              if (result.status === 'restricted') {
-                warning(
-                  'Respaldo no verificable',
-                  'No se pudo confirmar el respaldo PDF por permisos de Storage.'
-                );
-              }
-            })
-            .catch(() => setIsArchived(false));
-        });
-      }
+    if (!shouldCheckArchiveStatus(currentDateString, currentModule)) {
+      return;
     }
+
+    if (currentModule === 'CENSUS') {
+      checkCensusExistsDetailed(currentDateString)
+        .then(result => {
+          setIsArchived(buildArchiveStatusState(result));
+          const notice = getStorageLookupNotice(result, 'censo');
+          if (notice?.channel === 'warning') {
+            warning(notice.title, notice.message);
+          }
+        })
+        .catch(() => setIsArchived(false));
+      return;
+    }
+
+    import('@/services/backup/pdfStorageService').then(({ pdfExistsDetailed }) => {
+      pdfExistsDetailed(currentDateString, selectedShift)
+        .then(result => {
+          setIsArchived(buildArchiveStatusState(result));
+          const notice = getStorageLookupNotice(result, 'PDF');
+          if (notice?.channel === 'warning') {
+            warning(notice.title, notice.message);
+          }
+        })
+        .catch(() => setIsArchived(false));
+    });
   }, [currentDateString, currentModule, selectedShift, warning]);
 
   const handleExportPDF = useCallback(async () => {
@@ -97,15 +103,12 @@ export const useExportManager = ({
       const monthRecords = await getMonthRecordsFromFirestore(selectedYear, selectedMonth);
       const limitDate = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
 
-      const filteredRecords = monthRecords
-        .filter(r => r.date <= limitDate)
-        .sort((a, b) => a.date.localeCompare(b.date));
-
-      // Include current record if not in the list
-      if (record && !filteredRecords.some(r => r.date === currentDateString)) {
-        filteredRecords.push(record);
-        filteredRecords.sort((a, b) => a.date.localeCompare(b.date));
-      }
+      const filteredRecords = mergeMonthlyRecordsForBackup(
+        monthRecords,
+        record,
+        currentDateString,
+        limitDate
+      );
 
       if (filteredRecords.length === 0) {
         warning('No hay registros para archivar.');
@@ -145,10 +148,7 @@ export const useExportManager = ({
       if (!record) return;
 
       // Staff derive logic
-      const delivers =
-        selectedShift === 'day' ? record.nursesDayShift || [] : record.nursesNightShift || [];
-      const receives =
-        selectedShift === 'day' ? record.nursesNightShift || [] : record.handoffNightReceives || [];
+      const { delivers, receives } = resolveHandoffBackupStaff(record, selectedShift);
 
       if (delivers.length === 0 || receives.length === 0) {
         warning('Selecciona enfermera que entrega y recibe antes de guardar');

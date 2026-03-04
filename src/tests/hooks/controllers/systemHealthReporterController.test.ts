@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { buildUserHealthStatus } from '@/hooks/controllers/systemHealthReporterController';
+import {
+  buildUserHealthStatus,
+  canReportSystemHealthForRole,
+} from '@/hooks/controllers/systemHealthReporterController';
 
 describe('systemHealthReporterController', () => {
+  it('allows health reporting only for admin and nursing roles', () => {
+    expect(canReportSystemHealthForRole('admin')).toBe(true);
+    expect(canReportSystemHealthForRole('nurse_hospital')).toBe(true);
+    expect(canReportSystemHealthForRole('doctor_urgency')).toBe(false);
+    expect(canReportSystemHealthForRole('viewer')).toBe(false);
+    expect(canReportSystemHealthForRole(undefined)).toBe(false);
+  });
+
   it('builds a normalized health payload with sync and repository metrics', () => {
     const status = buildUserHealthStatus({
       uid: 'u1',

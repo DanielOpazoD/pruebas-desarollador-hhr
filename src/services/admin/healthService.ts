@@ -54,6 +54,13 @@ const toBoolean = (value: unknown, fallback = false): boolean =>
 const toStringValue = (value: unknown, fallback = ''): string =>
   typeof value === 'string' && value.trim().length > 0 ? value : fallback;
 
+const isHealthPermissionError = (error: unknown): boolean => {
+  const authError = error as { code?: string; message?: string };
+  const code = String(authError?.code || '').toLowerCase();
+  const message = String(authError?.message || '').toLowerCase();
+  return code.includes('permission') || message.includes('missing or insufficient permissions');
+};
+
 export const normalizeUserHealthStatus = (raw: Partial<UserHealthStatus>): UserHealthStatus => ({
   uid: toStringValue(raw.uid, 'unknown'),
   email: toStringValue(raw.email, 'unknown@local'),
@@ -109,6 +116,9 @@ export const reportUserHealth = async (status: UserHealthStatus): Promise<void> 
       lastSeen: new Date().toISOString(),
     });
   } catch (error) {
+    if (isHealthPermissionError(error)) {
+      return;
+    }
     console.error('[HealthService] Failed to report health:', error);
   }
 };

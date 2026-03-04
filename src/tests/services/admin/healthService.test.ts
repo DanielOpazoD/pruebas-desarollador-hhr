@@ -51,6 +51,21 @@ describe('healthService', () => {
   });
 
   describe('reportUserHealth', () => {
+    it('should silence permission errors', async () => {
+      vi.mocked(db.setDoc).mockRejectedValueOnce(
+        new Error('FirebaseError: Missing or insufficient permissions.')
+      );
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      await reportUserHealth(mockStatus);
+
+      expect(warnSpy).not.toHaveBeenCalled();
+      expect(errorSpy).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+      errorSpy.mockRestore();
+    });
+
     it('should call db.setDoc with correct arguments', async () => {
       await reportUserHealth(mockStatus);
       expect(db.setDoc).toHaveBeenCalledWith(

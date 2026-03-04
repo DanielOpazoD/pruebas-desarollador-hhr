@@ -75,8 +75,8 @@ export const useSaveDailyRecordMutation = () => {
 
   return useMutation({
     mutationFn: async (record: DailyRecord) => {
-      await dailyRecord.save(record);
-      return record;
+      const result = await dailyRecord.saveDetailed(record);
+      return { record, result };
     },
     onMutate: newRecord => {
       // Cancel any outgoing refetches (don't await to avoid race conditions in rapid updates)
@@ -101,10 +101,10 @@ export const useSaveDailyRecordMutation = () => {
         setDailyRecordQueryData(queryClient, newRecord.date, context.previousRecord);
       }
     },
-    onSettled: record => {
+    onSettled: payload => {
       // Refetch to ensure we're in sync
-      if (record) {
-        invalidateDailyRecordQuery(queryClient, record.date);
+      if (payload?.record) {
+        invalidateDailyRecordQuery(queryClient, payload.record.date);
       }
     },
   });
@@ -129,8 +129,8 @@ export const usePatchDailyRecordMutation = (date: string) => {
 
   return useMutation({
     mutationFn: async (partial: DailyRecordPatch) => {
-      await dailyRecord.updatePartial(date, partial);
-      return partial;
+      const result = await dailyRecord.updatePartialDetailed(date, partial);
+      return { partial, result };
     },
     onMutate: partial => {
       // Don't await cancelQueries to ensure the optimistic update happens in the same tick

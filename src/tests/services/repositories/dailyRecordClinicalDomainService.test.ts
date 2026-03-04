@@ -60,6 +60,23 @@ describe('dailyRecordClinicalDomainService', () => {
     expect(carried.clinicalCrib?.handoffNoteNightShift).toBe('Nota noche cuna');
   });
 
+  it('sanitizes malformed legacy patient data during carryover', () => {
+    const source = {
+      ...buildPatient('R1'),
+      patientName: 'Paciente Legacy',
+      status: 'ESTADO_INVALIDO',
+      devices: [null, 'CVC'],
+      clinicalEvents: [null],
+    } as unknown as PatientData;
+
+    const carried = preparePatientForCarryover(source);
+
+    expect(carried.patientName).toBe('Paciente Legacy');
+    expect(carried.devices).toEqual([]);
+    expect(carried.clinicalEvents).toEqual([]);
+    expect(carried.bedId).toBe('R1');
+  });
+
   it('preserves cie10 only when patient names match', () => {
     const newBeds = {
       R1: buildPatient('R1', { patientName: 'Paciente Uno' }),

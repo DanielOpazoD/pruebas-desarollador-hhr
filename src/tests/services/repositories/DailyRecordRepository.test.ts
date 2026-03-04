@@ -554,6 +554,31 @@ describe('DailyRecordRepository', () => {
         })
       );
     });
+
+    it('returns copy metadata through copyPatientToDateDetailed', async () => {
+      const sourceDate = '2024-12-30';
+      const targetDate = '2024-12-31';
+      const sourceRecord = {
+        ...mockRecord,
+        date: sourceDate,
+        beds: {
+          R1: buildPatient({
+            patientName: 'Patient X',
+            status: 'ESTADO_INVALIDO',
+          } as unknown as Partial<PatientData>),
+        },
+      };
+
+      vi.mocked(idbService.getRecordForDate).mockImplementation(async date => {
+        if (date === sourceDate) return sourceRecord;
+        return null;
+      });
+
+      const result = await Repository.copyPatientToDateDetailed(sourceDate, 'R1', targetDate, 'R2');
+
+      expect(result.sourceDate).toBe(sourceDate);
+      expect(result.sourceMigrationRulesApplied).toContain('salvage_patient_fallback_applied');
+    });
   });
 
   describe('Repository contract guards', () => {

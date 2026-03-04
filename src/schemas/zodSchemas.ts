@@ -114,6 +114,11 @@ export interface DailyRecordParseReport {
   droppedCmaItems: number;
 }
 
+export interface PatientDataParseReport {
+  nullNormalization: LegacyNullNormalizationReport;
+  usedFallback: boolean;
+}
+
 // ============================================================================
 // Safe Parsing Utilities
 // ============================================================================
@@ -126,7 +131,7 @@ export const safeParseDailyRecord = (data: unknown): DailyRecord | null => {
   return null;
 };
 
-const buildFallbackPatient = (data: unknown, bedId: string): PatientData => {
+export const buildFallbackPatientData = (data: unknown, bedId: string): PatientData => {
   const fallback = createEmptyPatient(bedId);
   const raw = data && typeof data === 'object' ? (data as Record<string, unknown>) : {};
 
@@ -141,11 +146,39 @@ const buildFallbackPatient = (data: unknown, bedId: string): PatientData => {
   if (raw.hasCompanionCrib === true) fallback.hasCompanionCrib = true;
 
   if (raw.clinicalCrib && typeof raw.clinicalCrib === 'object') {
-    fallback.clinicalCrib = buildFallbackPatient(raw.clinicalCrib, bedId);
+    fallback.clinicalCrib = buildFallbackPatientData(raw.clinicalCrib, bedId);
   }
 
   return fallback;
 };
+
+export const parsePatientDataWithDefaultsReport = (
+  data: unknown,
+  bedId: string
+): { patient: PatientData; report: PatientDataParseReport } => {
+  const { normalized, report: nullNormalization } = normalizeLegacyNullsDeep(data);
+  const parsed = PatientDataSchema.safeParse(normalized);
+  if (parsed.success) {
+    return {
+      patient: parsed.data,
+      report: {
+        nullNormalization,
+        usedFallback: false,
+      },
+    };
+  }
+
+  return {
+    patient: buildFallbackPatientData(normalized, bedId),
+    report: {
+      nullNormalization,
+      usedFallback: true,
+    },
+  };
+};
+
+export const parsePatientDataWithDefaults = (data: unknown, bedId: string): PatientData =>
+  parsePatientDataWithDefaultsReport(data, bedId).patient;
 
 export const parseDailyRecordWithDefaultsReport = (
   data: unknown,
@@ -184,7 +217,7 @@ export const parseDailyRecordWithDefaultsReport = (
         return;
       }
 
-      salvagedBeds[id] = buildFallbackPatient(patient, id);
+      salvagedBeds[id] = buildFallbackPatientData(patient, id);
       salvagedBedIds.push(id);
     });
   }
