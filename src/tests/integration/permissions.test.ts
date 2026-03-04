@@ -68,9 +68,10 @@ describe('Permissions System (RBAC)', () => {
       expect(canViewModule(role, 'CUDYR')).toBe(false);
     });
 
-    it('should be READ-ONLY for all clinical modules', () => {
+    it('should only edit medical handoff', () => {
       expect(canEditModule(role, 'CENSUS')).toBe(false);
       expect(canEditModule(role, 'NURSING_HANDOFF')).toBe(false);
+      expect(canEditModule(role, 'MEDICAL_HANDOFF')).toBe(true);
     });
 
     it('should be allowed to sign medical handoff', () => {

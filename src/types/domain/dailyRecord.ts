@@ -9,6 +9,43 @@ import type {
 } from './clinical';
 import type { DischargeData, TransferData, CMAData } from './movements';
 
+export type MedicalSpecialty =
+  | 'cirugia'
+  | 'traumatologia'
+  | 'ginecobstetricia'
+  | 'pediatria'
+  | 'psiquiatria'
+  | 'medicinaInterna';
+
+export interface MedicalHandoffActor {
+  uid: string;
+  displayName: string;
+  email: string;
+  specialty?: MedicalSpecialty;
+  role?: string;
+}
+
+export interface MedicalHandoffDailyContinuityEntry {
+  status: 'updated_by_specialist' | 'confirmed_no_changes';
+  confirmedBy?: MedicalHandoffActor;
+  confirmedAt?: string;
+  comment?: string;
+}
+
+export interface MedicalSpecialtyHandoffNote {
+  note: string;
+  createdAt: string;
+  updatedAt: string;
+  author: MedicalHandoffActor;
+  lastEditor?: MedicalHandoffActor;
+  version: number;
+  dailyContinuity?: Record<string, MedicalHandoffDailyContinuityEntry>;
+}
+
+export type MedicalHandoffBySpecialty = Partial<
+  Record<MedicalSpecialty, MedicalSpecialtyHandoffNote>
+>;
+
 export interface DailyRecord {
   date: string;
   beds: Record<string, PatientData>;
@@ -58,6 +95,7 @@ export interface DailyRecord {
 
   // ===== Medical Handoff Novedades =====
   medicalHandoffNovedades?: string; // Free text novedades for medical handoff
+  medicalHandoffBySpecialty?: MedicalHandoffBySpecialty;
 
   // ===== Medical Handoff Signature =====
   medicalHandoffDoctor?: string; // Doctor delivering the shift
@@ -123,6 +161,7 @@ type TopLevelPath = keyof Pick<
   | 'handoffNovedadesDayShift'
   | 'handoffNovedadesNightShift'
   | 'medicalHandoffNovedades'
+  | 'medicalHandoffBySpecialty'
   | 'medicalHandoffDoctor'
   | 'medicalHandoffSentAt'
   | 'medicalHandoffSentAtByScope'

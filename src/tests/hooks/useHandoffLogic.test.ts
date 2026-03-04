@@ -8,6 +8,7 @@ import {
 } from '@/context/useDailyRecordScopedActions';
 import { Specialty, PatientStatus } from '@/types';
 import * as dateUtils from '@/utils/dateUtils';
+import { DEFAULT_NO_CHANGES_COMMENT } from '@/features/handoff/controllers';
 
 // Mock Audit
 const mockLogDebouncedEvent = vi.fn();
@@ -21,6 +22,17 @@ vi.mock('@/context/AuditContext', () => ({
 
 vi.mock('@/context/DailyRecordContext', () => ({
   useDailyRecordData: vi.fn(),
+}));
+
+vi.mock('@/context', () => ({
+  useAuth: () => ({
+    user: {
+      uid: 'doctor-1',
+      email: 'doctor@hospitalhangaroa.cl',
+      displayName: 'Dr. Test',
+    },
+    role: 'doctor_urgency',
+  }),
 }));
 
 vi.mock('@/context/useDailyRecordScopedActions', () => ({
@@ -220,5 +232,97 @@ describe('useHandoffLogic', () => {
       undefined,
       10000
     );
+  });
+
+  it('updates medical note with audit metadata and confirms current validity', async () => {
+    const mockUpdateMultiple = vi.fn();
+    vi.mocked(useDailyRecordBedActions).mockReturnValue({
+      updatePatientMultiple: mockUpdateMultiple,
+      updatePatient: vi.fn(),
+      updateClinicalCrib: vi.fn(),
+      updateClinicalCribMultiple: vi.fn(),
+    } as unknown as BedActionsMock);
+
+    const params = {
+      type: 'medical' as const,
+      selectedShift: 'day' as const,
+      setSelectedShift: vi.fn(),
+      onSuccess: vi.fn(),
+    };
+
+    const { result } = renderHook(() => useHandoffLogic(params));
+
+    await act(async () => {
+      await result.current.handleNursingNoteChange('R1', 'Evolución especialista');
+    });
+
+    expect(mockUpdateMultiple).toHaveBeenCalledWith(
+      'R1',
+      expect.objectContaining({
+        medicalHandoffNote: 'Evolución especialista',
+        medicalHandoffAudit: expect.objectContaining({
+          lastSpecialistUpdateBy: expect.objectContaining({
+            displayName: 'Dr. Test',
+          }),
+          lastSpecialistUpdateSpecialty: Specialty.MEDICINA,
+          currentStatus: 'updated_by_specialist',
+          currentStatusDate: '2025-01-01',
+          currentStatusSpecialty: Specialty.MEDICINA,
+        }),
+        medicalHandoffEntries: expect.arrayContaining([
+          expect.objectContaining({
+            specialty: Specialty.MEDICINA,
+            note: 'Evolución especialista',
+          }),
+        ]),
+      })
+    );
+
+    vi.mocked(useDailyRecordData).mockReturnValue({
+      record: {
+        ...mockRecord,
+        beds: {
+          ...mockRecord.beds,
+          R1: {
+            ...mockRecord.beds.R1,
+            medicalHandoffNote: 'Evolución especialista',
+            medicalHandoffEntries: [
+              {
+                id: 'legacy-primary',
+                specialty: Specialty.MEDICINA,
+                note: 'Evolución especialista',
+              },
+            ],
+          },
+        },
+      } as DailyRecordDataMock['record'],
+      syncStatus: 'synced' as DailyRecordDataMock['syncStatus'],
+      lastSyncTime: null,
+      inventory: {} as DailyRecordDataMock['inventory'],
+      stabilityRules: {} as DailyRecordDataMock['stabilityRules'],
+    } as DailyRecordDataMock);
+
+    const { result: result2 } = renderHook(() => useHandoffLogic(params));
+    await act(async () => {
+      result2.current.handleMedicalContinuityConfirm('R1', 'legacy-primary');
+    });
+
+    expect(mockUpdateMultiple).toHaveBeenLastCalledWith(
+      'R1',
+      expect.objectContaining({
+        medicalHandoffAudit: expect.objectContaining({
+          currentStatus: 'confirmed_current',
+          currentStatusDate: '2025-01-01',
+          currentStatusSpecialty: Specialty.MEDICINA,
+        }),
+        medicalHandoffEntries: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'legacy-primary',
+            currentStatus: 'confirmed_current',
+          }),
+        ]),
+      })
+    );
+    expect(DEFAULT_NO_CHANGES_COMMENT).toContain('sin cambios');
   });
 });

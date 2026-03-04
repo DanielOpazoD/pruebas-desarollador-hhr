@@ -7,6 +7,36 @@ import type {
   FhirResource,
 } from './clinical';
 
+export interface MedicalHandoffAuditActor {
+  uid: string;
+  displayName: string;
+  email: string;
+  role?: string;
+}
+
+export interface MedicalHandoffAudit {
+  lastSpecialistUpdateAt?: string;
+  lastSpecialistUpdateBy?: MedicalHandoffAuditActor;
+  lastSpecialistUpdateSpecialty?: Specialty | string;
+  currentStatus?: 'updated_by_specialist' | 'confirmed_current';
+  currentStatusDate?: string;
+  currentStatusAt?: string;
+  currentStatusBy?: MedicalHandoffAuditActor;
+  currentStatusSpecialty?: Specialty | string;
+}
+
+export interface MedicalHandoffEntry {
+  id: string;
+  specialty: Specialty | string;
+  note: string;
+  updatedAt?: string;
+  updatedBy?: MedicalHandoffAuditActor;
+  currentStatus?: 'updated_by_specialist' | 'confirmed_current';
+  currentStatusDate?: string;
+  currentStatusAt?: string;
+  currentStatusBy?: MedicalHandoffAuditActor;
+}
+
 export interface PatientData {
   bedId: string;
   isBlocked: boolean;
@@ -66,6 +96,8 @@ export interface PatientData {
 
   // Medical Handoff
   medicalHandoffNote?: string;
+  medicalHandoffAudit?: MedicalHandoffAudit;
+  medicalHandoffEntries?: MedicalHandoffEntry[];
 
   // Clinical Events (procedures, surgeries, cultures, etc.)
   clinicalEvents?: ClinicalEvent[];

@@ -16,6 +16,29 @@ import { useState, useMemo } from 'react';
 import { useModal, UseModalReturn } from './useModal';
 import type { ModuleType } from '@/constants/navigationConfig';
 
+const MODULES_FROM_URL: readonly ModuleType[] = [
+  'CENSUS',
+  'CUDYR',
+  'NURSING_HANDOFF',
+  'MEDICAL_HANDOFF',
+  'AUDIT',
+  'WHATSAPP',
+  'TRANSFER_MANAGEMENT',
+  'BACKUP_FILES',
+  'PATIENT_MASTER_INDEX',
+  'DATA_MAINTENANCE',
+  'DIAGNOSTICS',
+  'ROLE_MANAGEMENT',
+  'ERRORS',
+] as const;
+
+const resolveInitialModule = (): ModuleType => {
+  if (typeof window === 'undefined') return 'CENSUS';
+  const rawModule = new URLSearchParams(window.location.search).get('module');
+  if (!rawModule) return 'CENSUS';
+  return MODULES_FROM_URL.includes(rawModule as ModuleType) ? (rawModule as ModuleType) : 'CENSUS';
+};
+
 export interface UseAppStateReturn {
   // Module navigation
   currentModule: ModuleType;
@@ -54,7 +77,7 @@ export interface UseAppStateReturn {
  */
 export function useAppState(): UseAppStateReturn {
   // Module navigation
-  const [currentModule, setCurrentModule] = useState<ModuleType>('CENSUS');
+  const [currentModule, setCurrentModule] = useState<ModuleType>(() => resolveInitialModule());
 
   // View modes
   const [censusViewMode, setCensusViewMode] = useState<'REGISTER' | 'ANALYTICS'>('REGISTER');

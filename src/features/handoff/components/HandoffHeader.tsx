@@ -8,6 +8,7 @@ interface HandoffHeaderProps {
   selectedShift: 'day' | 'night';
   setSelectedShift: (shift: 'day' | 'night') => void;
   readOnly: boolean;
+  showMedicalShareActions?: boolean;
   medicalSignature?: {
     doctorName: string;
     signedAt: string;
@@ -23,6 +24,7 @@ export const HandoffHeader: React.FC<HandoffHeaderProps> = ({
   selectedShift,
   setSelectedShift,
   readOnly,
+  showMedicalShareActions = true,
   medicalSignature,
   onSendWhatsApp,
   onShareLink,
@@ -100,7 +102,7 @@ export const HandoffHeader: React.FC<HandoffHeaderProps> = ({
       )}
 
       {/* Medical Action Buttons */}
-      {isMedical && !readOnly && (
+      {isMedical && !readOnly && showMedicalShareActions && (
         <div className="flex items-center gap-2 md:ml-auto">
           <button
             onClick={onSendWhatsApp}

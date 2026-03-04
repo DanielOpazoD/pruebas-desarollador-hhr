@@ -180,6 +180,12 @@ export const parseDailyRecordWithDefaults = (data: unknown, docId: string): Dail
       typeof raw.handoffNovedadesNightShift === 'string' ? raw.handoffNovedadesNightShift : '',
     medicalHandoffNovedades:
       typeof raw.medicalHandoffNovedades === 'string' ? raw.medicalHandoffNovedades : '',
+    medicalHandoffBySpecialty:
+      raw.medicalHandoffBySpecialty &&
+      typeof raw.medicalHandoffBySpecialty === 'object' &&
+      !Array.isArray(raw.medicalHandoffBySpecialty)
+        ? (raw.medicalHandoffBySpecialty as DailyRecord['medicalHandoffBySpecialty'])
+        : undefined,
     handoffNightReceives: Array.isArray(raw.handoffNightReceives) ? raw.handoffNightReceives : [],
     bedTypeOverrides: (raw.bedTypeOverrides as Record<string, BedType>) || {},
     schemaVersion: typeof raw.schemaVersion === 'number' ? raw.schemaVersion : 1,

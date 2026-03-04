@@ -146,6 +146,13 @@ const resolveWholeRecord = (
       traceContext,
       'handoffNightChecklist'
     ) as DailyRecord['handoffNightChecklist'],
+    medicalHandoffBySpecialty: mergeObject(
+      remote.medicalHandoffBySpecialty as unknown as Record<string, unknown> | undefined,
+      local.medicalHandoffBySpecialty as unknown as Record<string, unknown> | undefined,
+      preferLocal,
+      traceContext,
+      'medicalHandoffBySpecialty'
+    ) as DailyRecord['medicalHandoffBySpecialty'],
     medicalSignature: mergeObject(
       remote.medicalSignature as unknown as Record<string, unknown> | undefined,
       local.medicalSignature as unknown as Record<string, unknown> | undefined,

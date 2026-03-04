@@ -73,6 +73,7 @@ describe('handoffViewController', () => {
 
   it('resolves novedades value with night fallback', () => {
     const record = {
+      date: '2026-02-15',
       medicalHandoffNovedades: 'Med note',
       handoffNovedadesDayShift: 'Day note',
       handoffNovedadesNightShift: '',

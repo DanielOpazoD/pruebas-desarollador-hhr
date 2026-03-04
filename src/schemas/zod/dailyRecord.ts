@@ -4,6 +4,31 @@ import { DATE_REGEX } from './helpers';
 import { BedTypeSchema, PatientDataSchema } from './patient';
 import { DischargeDataSchema, TransferDataSchema, CMADataSchema } from './movements';
 
+const MedicalHandoffActorSchema = z.object({
+  uid: z.string(),
+  displayName: z.string(),
+  email: z.string(),
+  specialty: z.string().optional(),
+  role: z.string().optional(),
+});
+
+const MedicalHandoffDailyContinuityEntrySchema = z.object({
+  status: z.enum(['updated_by_specialist', 'confirmed_no_changes']),
+  confirmedBy: MedicalHandoffActorSchema.optional(),
+  confirmedAt: z.string().optional(),
+  comment: z.string().optional(),
+});
+
+const MedicalSpecialtyHandoffNoteSchema = z.object({
+  note: z.string().default(''),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  author: MedicalHandoffActorSchema,
+  lastEditor: MedicalHandoffActorSchema.optional(),
+  version: z.number().default(1),
+  dailyContinuity: z.record(z.string(), MedicalHandoffDailyContinuityEntrySchema).optional(),
+});
+
 export const DailyRecordSchema: z.ZodType<DailyRecord, z.ZodTypeDef, unknown> = z
   .object({
     date: z.string().regex(DATE_REGEX),
@@ -56,6 +81,7 @@ export const DailyRecordSchema: z.ZodType<DailyRecord, z.ZodTypeDef, unknown> = 
     handoffNovedadesDayShift: z.string().optional(),
     handoffNovedadesNightShift: z.string().optional(),
     medicalHandoffNovedades: z.string().optional(),
+    medicalHandoffBySpecialty: z.record(z.string(), MedicalSpecialtyHandoffNoteSchema).optional(),
     medicalHandoffDoctor: z.string().optional(),
     medicalHandoffSentAt: z.string().optional(),
     medicalHandoffSentAtByScope: z

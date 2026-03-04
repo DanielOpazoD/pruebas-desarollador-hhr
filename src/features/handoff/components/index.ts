@@ -13,3 +13,4 @@ export { HandoffShiftSelector } from './HandoffShiftSelector';
 export { HandoffPatientTable } from './HandoffPatientTable';
 export { HandoffChecklistSection } from './HandoffChecklistSection';
 export { HandoffWhatsAppActions } from './HandoffWhatsAppActions';
+export { MedicalSpecialtyHandoffSection } from './MedicalSpecialtyHandoffSection';

@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useRef, useEffect } from 'react';
-import { DailyRecord, DailyRecordPatch } from '@/types';
+import { DailyRecord, DailyRecordPatch, MedicalHandoffActor, MedicalSpecialty } from '@/types';
 import { BEDS } from '@/constants';
 import { useNotification } from '@/context/UIContext';
 import { getPreviousDay } from '@/services/repositories/DailyRecordRepository';
@@ -11,14 +11,29 @@ import { useAuditContext } from '@/context/AuditContext';
 import { getAttributedAuthors } from '@/services/admin/attributionService';
 import type { MedicalHandoffScope } from '@/features/handoff/controllers';
 import {
+  buildMedicalHandoffSummary,
   buildMedicalHandoffSignatureLink,
+  DEFAULT_NO_CHANGES_COMMENT,
   resolveScopedMedicalSignatureToken,
 } from '@/features/handoff/controllers';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 
+interface ConfirmMedicalSpecialtyNoChangesInput {
+  specialty: MedicalSpecialty;
+  actor: Partial<MedicalHandoffActor>;
+  comment?: string;
+  dateKey?: string;
+}
+
 export interface HandoffManagementActions {
   updateHandoffChecklist: (shift: 'day' | 'night', field: string, value: boolean | string) => void;
   updateHandoffNovedades: (shift: 'day' | 'night' | 'medical', value: string) => void;
+  updateMedicalSpecialtyNote: (
+    specialty: MedicalSpecialty,
+    value: string,
+    actor: Partial<MedicalHandoffActor>
+  ) => Promise<void>;
+  confirmMedicalSpecialtyNoChanges: (input: ConfirmMedicalSpecialtyNoChangesInput) => Promise<void>;
   updateHandoffStaff: (
     shift: 'day' | 'night',
     type: 'delivers' | 'receives' | 'tens',
@@ -39,6 +54,17 @@ const generateMedicalSignatureLinkToken = (): string => {
 
   return `sig_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
 };
+
+const normalizeMedicalHandoffActor = (
+  actor: Partial<MedicalHandoffActor>,
+  specialty?: MedicalSpecialty
+): MedicalHandoffActor => ({
+  uid: actor.uid || 'unknown-user',
+  displayName: actor.displayName || actor.email || 'Usuario sin nombre',
+  email: actor.email || 'unknown@hospitalhangaroa.cl',
+  role: actor.role,
+  specialty: specialty || actor.specialty,
+});
 
 export const useHandoffManagement = (
   record: DailyRecord | null,
@@ -126,6 +152,127 @@ export const useHandoffManagement = (
       );
     },
     [saveAndUpdate, logDebouncedEvent, userId]
+  );
+
+  const updateMedicalSpecialtyNote = useCallback(
+    async (specialty: MedicalSpecialty, value: string, actor: Partial<MedicalHandoffActor>) => {
+      const currentRecord = recordRef.current;
+      if (!currentRecord) return;
+
+      const now = new Date().toISOString();
+      const normalizedActor = normalizeMedicalHandoffActor(actor, specialty);
+      const currentNote = currentRecord.medicalHandoffBySpecialty?.[specialty];
+      const updatedRecord: DailyRecord = {
+        ...currentRecord,
+        medicalHandoffBySpecialty: {
+          ...(currentRecord.medicalHandoffBySpecialty || {}),
+          [specialty]: {
+            note: value,
+            createdAt: currentNote?.createdAt || now,
+            updatedAt: now,
+            author: currentNote?.author || normalizedActor,
+            lastEditor: normalizedActor,
+            version: (currentNote?.version || 0) + 1,
+            dailyContinuity: {
+              ...(currentNote?.dailyContinuity || {}),
+              [currentRecord.date]: {
+                status: 'updated_by_specialist',
+              },
+            },
+          },
+        },
+        lastUpdated: now,
+      };
+
+      updatedRecord.medicalHandoffNovedades = buildMedicalHandoffSummary(updatedRecord);
+      await saveAndUpdate(updatedRecord);
+
+      logDebouncedEvent(
+        'HANDOFF_NOVEDADES_MODIFIED',
+        'dailyRecord',
+        currentRecord.date,
+        {
+          shift: 'medical',
+          specialty,
+          value,
+          operation: 'specialty_note_update',
+          changes: {
+            novedades: { old: currentNote?.note || '', new: value },
+          },
+        },
+        undefined,
+        currentRecord.date
+      );
+    },
+    [logDebouncedEvent, saveAndUpdate]
+  );
+
+  const confirmMedicalSpecialtyNoChanges = useCallback(
+    async ({ specialty, actor, comment, dateKey }: ConfirmMedicalSpecialtyNoChangesInput) => {
+      const currentRecord = recordRef.current;
+      if (!currentRecord) return;
+
+      const currentNote = currentRecord.medicalHandoffBySpecialty?.[specialty];
+      if (!currentNote?.note?.trim()) {
+        notifyError(
+          'Sin nota base',
+          'Primero debe existir una entrega del especialista para confirmar continuidad.'
+        );
+        return;
+      }
+
+      const effectiveDateKey = dateKey || currentRecord.date;
+      if (currentNote.updatedAt?.slice(0, 10) === effectiveDateKey) {
+        notifyError(
+          'Ya actualizado hoy',
+          'Esta especialidad ya fue actualizada hoy por un especialista.'
+        );
+        return;
+      }
+
+      const now = new Date().toISOString();
+      const normalizedActor = normalizeMedicalHandoffActor(actor, specialty);
+      const nextComment = comment?.trim() || DEFAULT_NO_CHANGES_COMMENT;
+      const updatedRecord: DailyRecord = {
+        ...currentRecord,
+        medicalHandoffBySpecialty: {
+          ...(currentRecord.medicalHandoffBySpecialty || {}),
+          [specialty]: {
+            ...currentNote,
+            dailyContinuity: {
+              ...(currentNote.dailyContinuity || {}),
+              [effectiveDateKey]: {
+                status: 'confirmed_no_changes',
+                confirmedAt: now,
+                confirmedBy: normalizedActor,
+                comment: nextComment,
+              },
+            },
+          },
+        },
+        lastUpdated: now,
+      };
+
+      updatedRecord.medicalHandoffNovedades = buildMedicalHandoffSummary(updatedRecord);
+      await saveAndUpdate(updatedRecord);
+
+      logEvent(
+        'HANDOFF_NOVEDADES_MODIFIED',
+        'dailyRecord',
+        currentRecord.date,
+        {
+          shift: 'medical',
+          specialty,
+          operation: 'confirm_no_changes',
+          comment: nextComment,
+          confirmedAt: now,
+          confirmedBy: normalizedActor.displayName,
+        },
+        undefined,
+        currentRecord.date
+      );
+    },
+    [logEvent, notifyError, saveAndUpdate]
   );
 
   const updateHandoffStaff = useCallback(
@@ -400,6 +547,8 @@ export const useHandoffManagement = (
     () => ({
       updateHandoffChecklist,
       updateHandoffNovedades,
+      updateMedicalSpecialtyNote,
+      confirmMedicalSpecialtyNoChanges,
       updateHandoffStaff,
       updateMedicalSignature,
       updateMedicalHandoffDoctor,
@@ -411,6 +560,8 @@ export const useHandoffManagement = (
     [
       updateHandoffChecklist,
       updateHandoffNovedades,
+      updateMedicalSpecialtyNote,
+      confirmMedicalSpecialtyNoChanges,
       updateHandoffStaff,
       updateMedicalSignature,
       updateMedicalHandoffDoctor,

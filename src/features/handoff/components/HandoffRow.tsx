@@ -9,7 +9,9 @@ import {
   HandoffPatientCell,
   HandoffDiagnosisCell,
   HandoffDevicesCell,
+  HandoffMedicalObservationsCell,
   HandoffObservationsCell,
+  HandoffMedicalValidityCell,
 } from './HandoffRowCells';
 
 // ============================================================================
@@ -24,6 +26,11 @@ interface HandoffRowProps {
   isSubRow?: boolean;
   noteField: keyof PatientData; // Dynamic field
   onNoteChange: (val: string) => void;
+  onMedicalEntryNoteChange?: (entryId: string, value: string) => void;
+  onMedicalEntrySpecialtyChange?: (entryId: string, specialty: string) => void;
+  onMedicalEntryAdd?: () => void;
+  onMedicalEntryDelete?: (entryId: string) => void;
+  onMedicalContinuityConfirm?: (entryId: string) => void;
   readOnly?: boolean;
   isMedical?: boolean;
   forcedExpand?: boolean;
@@ -40,6 +47,11 @@ export const HandoffRow: React.FC<HandoffRowProps> = ({
   isSubRow = false,
   noteField,
   onNoteChange,
+  onMedicalEntryNoteChange,
+  onMedicalEntrySpecialtyChange,
+  onMedicalEntryAdd,
+  onMedicalEntryDelete,
+  onMedicalContinuityConfirm,
   readOnly = false,
   isMedical = false,
   forcedExpand = false,
@@ -65,7 +77,7 @@ export const HandoffRow: React.FC<HandoffRowProps> = ({
           {bedName}
         </td>
         <td
-          colSpan={isMedical ? 3 : 4}
+          colSpan={isMedical ? 4 : 4}
           className="p-2 text-slate-600 align-middle print:p-1 print:whitespace-nowrap"
         >
           <span className="inline-flex items-center gap-1.5 print:gap-1">
@@ -111,11 +123,33 @@ export const HandoffRow: React.FC<HandoffRowProps> = ({
       {/* DMI column only shown in nursing handoff */}
       {!isMedical && <HandoffDevicesCell patient={patient} reportDate={reportDate} />}
 
-      <HandoffObservationsCell
-        noteValue={noteValue}
-        onNoteChange={onNoteChange}
-        isFieldReadOnly={isFieldReadOnly}
-      />
+      {isMedical ? (
+        <HandoffMedicalObservationsCell
+          patient={patient}
+          isFieldReadOnly={isFieldReadOnly}
+          onEntryNoteChange={(entryId, value) => onMedicalEntryNoteChange?.(entryId, value)}
+          onEntrySpecialtyChange={(entryId, specialty) =>
+            onMedicalEntrySpecialtyChange?.(entryId, specialty)
+          }
+          onAddEntry={onMedicalEntryAdd}
+          onDeleteEntry={onMedicalEntryDelete}
+        />
+      ) : (
+        <HandoffObservationsCell
+          noteValue={noteValue}
+          onNoteChange={onNoteChange}
+          isFieldReadOnly={isFieldReadOnly}
+        />
+      )}
+
+      {isMedical && (
+        <HandoffMedicalValidityCell
+          patient={patient}
+          reportDate={reportDate}
+          onQuickAction={onMedicalContinuityConfirm}
+          readOnly={isFieldReadOnly}
+        />
+      )}
     </tr>
   );
 };

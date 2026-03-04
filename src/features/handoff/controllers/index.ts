@@ -12,6 +12,43 @@ export {
   shouldShowNightCudyrActions,
 } from './handoffViewController';
 export {
+  buildMedicalHandoffSummary,
+  canConfirmMedicalSpecialtyNoChanges,
+  DEFAULT_NO_CHANGES_COMMENT,
+  getMedicalSpecialtyLabel,
+  getMedicalSpecialtyNote,
+  MEDICAL_SPECIALTY_ORDER,
+  resolveEditableMedicalSpecialties,
+  resolveMedicalSpecialtyDailyStatus,
+} from './medicalSpecialtyHandoffController';
+export type { MedicalSpecialtyDailyStatus } from './medicalSpecialtyHandoffController';
+export {
+  buildMedicalHandoffFieldsFromEntries,
+  createMedicalHandoffEntry,
+  formatMedicalHandoffActorLabel,
+  formatMedicalHandoffTimestamp,
+  getDisplayMedicalHandoffEntries,
+  getMedicalHandoffSpecialtyOptions,
+  getNextMedicalHandoffSpecialty,
+  getPatientMedicalHandoffEntries,
+} from './medicalPatientHandoffController';
+export {
+  buildMedicalEntryAddFields,
+  buildMedicalEntryContinuityFields,
+  buildMedicalEntryDeleteFields,
+  buildMedicalEntryNoteFields,
+  buildMedicalEntrySpecialtyFields,
+  buildMedicalPrimaryNoteFields,
+} from './medicalPatientHandoffMutationController';
+export {
+  buildMedicalSpecialtyLink,
+  collectMedicalSpecialties,
+  filterBedsByMedicalScope,
+  filterBedsBySelectedMedicalSpecialty,
+  hasVisibleMedicalPatients,
+  resolveInitialMedicalSpecialtyFromSearch,
+} from './medicalPatientHandoffViewController';
+export {
   buildMedicalHandoffSignatureLink,
   resolveMedicalHandoffScope,
   resolveScopedMedicalHandoffSentAt,

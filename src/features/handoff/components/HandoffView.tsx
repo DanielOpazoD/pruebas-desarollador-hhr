@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDailyRecordData } from '@/context/DailyRecordContext';
 import { useDailyRecordHandoffActions } from '@/context/useDailyRecordScopedActions';
 import { useStaffContext } from '@/context/StaffContext';
@@ -20,6 +20,12 @@ import { getAttributedAuthors } from '@/services/admin/attributionService';
 import { useUIState, UseUIStateReturn } from '@/hooks/useUIState';
 import { useAuth } from '@/context';
 import {
+  buildMedicalSpecialtyLink,
+  collectMedicalSpecialties,
+  filterBedsByMedicalScope,
+  filterBedsBySelectedMedicalSpecialty,
+  hasVisibleMedicalPatients,
+  resolveInitialMedicalSpecialtyFromSearch,
   resolveMedicalHandoffScope,
   resolveScopedMedicalHandoffSentAt,
   resolveScopedMedicalSignature,
@@ -30,6 +36,8 @@ import {
   resolveHandoffTitle,
   shouldShowNightCudyrActions,
 } from '@/features/handoff/controllers';
+import { ACTIONS, canDoAction } from '@/utils/permissions';
+import { Specialty } from '@/types';
 
 interface HandoffViewProps {
   type?: 'nursing' | 'medical';
@@ -44,6 +52,10 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
   ui: propUi,
   medicalScope = 'all',
 }) => {
+  const initialMedicalSpecialtyFromUrl = React.useMemo(() => {
+    if (typeof window === 'undefined') return 'all' as Specialty | 'all';
+    return resolveInitialMedicalSpecialtyFromSearch(window.location.search);
+  }, []);
   const { record } = useDailyRecordData();
   const {
     updateHandoffChecklist,
@@ -59,6 +71,9 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
   const { role } = useAuth();
   const logEventRef = useRef(logEvent);
   const recordRef = useRef(record);
+  const [selectedMedicalSpecialty, setSelectedMedicalSpecialty] = useState<Specialty | 'all'>(
+    initialMedicalSpecialtyFromUrl
+  );
 
   useEffect(() => {
     logEventRef.current = logEvent;
@@ -85,6 +100,11 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
     tensList,
     shouldShowPatient,
     handleNursingNoteChange,
+    handleMedicalEntryAdd,
+    handleMedicalEntryDelete,
+    handleMedicalEntryNoteChange,
+    handleMedicalEntrySpecialtyChange,
+    handleMedicalContinuityConfirm,
     handleShareLink,
     handleSendWhatsAppManual,
     formatPrintDate,
@@ -101,26 +121,39 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
 
   const scopedMedicalScope = resolveMedicalHandoffScope(medicalScope);
   const filteredMedicalBeds = React.useMemo(() => {
-    if (!isMedical) return visibleBeds;
-    if (scopedMedicalScope === 'upc') {
-      return visibleBeds.filter(bed => record?.beds[bed.id]?.isUPC);
-    }
-    if (scopedMedicalScope === 'no-upc') {
-      return visibleBeds.filter(bed => !record?.beds[bed.id]?.isUPC);
-    }
-    return visibleBeds;
+    return filterBedsByMedicalScope(visibleBeds, record, isMedical, scopedMedicalScope);
   }, [isMedical, scopedMedicalScope, visibleBeds, record]);
   const effectiveVisibleBeds = isMedical ? filteredMedicalBeds : visibleBeds;
+  const medicalSpecialties = React.useMemo(() => {
+    return collectMedicalSpecialties(effectiveVisibleBeds, record, isMedical);
+  }, [effectiveVisibleBeds, isMedical, record]);
+  useEffect(() => {
+    if (
+      selectedMedicalSpecialty !== 'all' &&
+      !medicalSpecialties.includes(selectedMedicalSpecialty)
+    ) {
+      setSelectedMedicalSpecialty('all');
+    }
+  }, [medicalSpecialties, selectedMedicalSpecialty]);
+  const specialtyFilteredBeds = React.useMemo(() => {
+    return filterBedsBySelectedMedicalSpecialty(
+      effectiveVisibleBeds,
+      record,
+      isMedical,
+      selectedMedicalSpecialty
+    );
+  }, [effectiveVisibleBeds, isMedical, record, selectedMedicalSpecialty]);
   const scopedMedicalSignature = isMedical
     ? resolveScopedMedicalSignature(record, scopedMedicalScope)
     : null;
   const scopedMedicalHandoffSentAt = isMedical
     ? resolveScopedMedicalHandoffSentAt(record, scopedMedicalScope)
     : null;
-  const hasAnyVisiblePatients = effectiveVisibleBeds.some(bed => {
-    const patient = record?.beds[bed.id];
-    return patient?.patientName && shouldShowPatient(bed.id);
-  });
+  const hasAnyVisiblePatients = hasVisibleMedicalPatients(
+    specialtyFilteredBeds,
+    record,
+    shouldShowPatient
+  );
 
   // MINSAL Traceability: Log when clinical data is viewed
   const { userId } = useAuditContext();
@@ -169,6 +202,7 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
   }, [record?.date, selectedShift, isMedical]);
 
   const title = resolveHandoffTitle({ isMedical, selectedShift });
+  const canSendMedicalHandoff = canDoAction(role, ACTIONS.HANDOFF_SEND_WHATSAPP);
 
   const handleOpenCudyr = () => {
     if (ui) ui.setCurrentModule('CUDYR');
@@ -206,6 +240,7 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
         selectedShift={selectedShift}
         setSelectedShift={setSelectedShift}
         readOnly={readOnly}
+        showMedicalShareActions={canSendMedicalHandoff}
         medicalSignature={scopedMedicalSignature}
         medicalHandoffSentAt={scopedMedicalHandoffSentAt}
         onSendWhatsApp={handleSendWhatsAppManual}
@@ -255,24 +290,89 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
 
       {/* Patient Table - Tabbed UPC/Non-UPC for Medical Handoff */}
       {isMedical ? (
-        <MedicalHandoffTabs
-          visibleBeds={effectiveVisibleBeds}
-          record={record}
-          noteField={noteField}
-          onNoteChange={handleNursingNoteChange}
-          tableHeaderClass={tableHeaderClass}
-          readOnly={readOnly}
-          isMedical={isMedical}
-          shouldShowPatient={shouldShowPatient}
-          fixedScope={scopedMedicalScope === 'all' ? null : scopedMedicalScope}
-          hasAnyPatients={hasAnyVisiblePatients}
-        />
+        <div className="space-y-3">
+          <div className="bg-white rounded-xl border border-sky-100 p-3 print:hidden">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                Especialidad
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  const url = buildMedicalSpecialtyLink(
+                    window.location.origin,
+                    window.location.pathname,
+                    record.date,
+                    selectedMedicalSpecialty
+                  );
+                  if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(url);
+                    success('Link copiado', 'Comparte este enlace con el especialista autorizado.');
+                  }
+                }}
+                className="rounded-lg bg-sky-100 px-3 py-1.5 text-xs font-bold text-sky-800 hover:bg-sky-200 transition-colors"
+              >
+                Copiar link especialista
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedMedicalSpecialty('all')}
+                className={
+                  selectedMedicalSpecialty === 'all'
+                    ? 'px-3 py-2 rounded-lg bg-sky-100 text-sky-800 text-sm font-semibold'
+                    : 'px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-medium'
+                }
+              >
+                Todos
+              </button>
+              {medicalSpecialties.map(specialty => (
+                <button
+                  key={specialty}
+                  type="button"
+                  onClick={() => setSelectedMedicalSpecialty(specialty)}
+                  className={
+                    selectedMedicalSpecialty === specialty
+                      ? 'px-3 py-2 rounded-lg bg-sky-100 text-sky-800 text-sm font-semibold'
+                      : 'px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-medium'
+                  }
+                >
+                  {specialty}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <MedicalHandoffTabs
+            visibleBeds={specialtyFilteredBeds}
+            record={record}
+            noteField={noteField}
+            onNoteChange={handleNursingNoteChange}
+            onMedicalEntryNoteChange={handleMedicalEntryNoteChange}
+            onMedicalEntrySpecialtyChange={handleMedicalEntrySpecialtyChange}
+            onMedicalEntryAdd={handleMedicalEntryAdd}
+            onMedicalEntryDelete={handleMedicalEntryDelete}
+            onMedicalContinuityConfirm={handleMedicalContinuityConfirm}
+            tableHeaderClass={tableHeaderClass}
+            readOnly={readOnly}
+            isMedical={isMedical}
+            shouldShowPatient={shouldShowPatient}
+            fixedScope={scopedMedicalScope === 'all' ? null : scopedMedicalScope}
+            hasAnyPatients={hasAnyVisiblePatients}
+          />
+        </div>
       ) : (
         <HandoffPatientTable
           visibleBeds={visibleBeds}
           record={record}
           noteField={noteField}
           onNoteChange={handleNursingNoteChange}
+          onMedicalEntryNoteChange={handleMedicalEntryNoteChange}
+          onMedicalEntrySpecialtyChange={handleMedicalEntrySpecialtyChange}
+          onMedicalEntryAdd={handleMedicalEntryAdd}
+          onMedicalEntryDelete={handleMedicalEntryDelete}
+          onMedicalContinuityConfirm={handleMedicalContinuityConfirm}
           tableHeaderClass={tableHeaderClass}
           readOnly={readOnly}
           isMedical={isMedical}
@@ -291,12 +391,13 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
       {/* Additional Sections for Nursing Handoff (Altas, Traslados, CMA) */}
       {!isMedical && <MovementsSummary record={record} selectedShift={selectedShift} />}
 
-      {/* Novedades Section (Unified) */}
-      <HandoffNovedades
-        value={resolveHandoffNovedadesValue({ isMedical, selectedShift, record })}
-        onChange={val => updateHandoffNovedades(isMedical ? 'medical' : selectedShift, val)}
-        readOnly={readOnly}
-      />
+      {!isMedical && (
+        <HandoffNovedades
+          value={resolveHandoffNovedadesValue({ isMedical, selectedShift, record })}
+          onChange={val => updateHandoffNovedades(isMedical ? 'medical' : selectedShift, val)}
+          readOnly={readOnly}
+        />
+      )}
 
       {/* CUDYR - Night Nursing Print Only */}
       {shouldShowNightCudyrActions({ isMedical, selectedShift }) && (

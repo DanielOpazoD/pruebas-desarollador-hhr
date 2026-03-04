@@ -3,7 +3,17 @@
  * These replace `any` types throughout the codebase for better type safety.
  */
 
-import { PatientData, CudyrScore, PatientStatus, Specialty, DeviceDetails, ClinicalEvent, DeviceInstance } from './core';
+import {
+  PatientData,
+  CudyrScore,
+  PatientStatus,
+  Specialty,
+  DeviceDetails,
+  ClinicalEvent,
+  DeviceInstance,
+  MedicalHandoffAudit,
+  MedicalHandoffEntry,
+} from './core';
 import { LucideIcon } from 'lucide-react';
 
 // ============================================================================
@@ -14,47 +24,49 @@ import { LucideIcon } from 'lucide-react';
  * All possible values that can be assigned to PatientData fields
  */
 export type PatientFieldValue =
-    | string
-    | number
-    | boolean
-    | string[]
-    | undefined
-    | PatientData
-    | CudyrScore
-    | DeviceDetails
-    | PatientStatus
-    | Specialty
-    | ClinicalEvent[]
-    | DeviceInstance[]
-    | import('./core').FhirResource;
+  | string
+  | number
+  | boolean
+  | string[]
+  | undefined
+  | PatientData
+  | CudyrScore
+  | DeviceDetails
+  | PatientStatus
+  | Specialty
+  | ClinicalEvent[]
+  | DeviceInstance[]
+  | MedicalHandoffAudit
+  | MedicalHandoffEntry[]
+  | import('./core').FhirResource;
 
 /**
  * Specific field value types for type-safe updates
  */
 export type PatientStringField =
-    | 'patientName'
-    | 'rut'
-    | 'age'
-    | 'pathology'
-    | 'admissionDate'
-    | 'bedId'
-    | 'location'
-    | 'handoffNote'
-    | 'blockedReason'
-    | 'documentType';
+  | 'patientName'
+  | 'rut'
+  | 'age'
+  | 'pathology'
+  | 'admissionDate'
+  | 'bedId'
+  | 'location'
+  | 'handoffNote'
+  | 'blockedReason'
+  | 'documentType';
 
 export type PatientBooleanField =
-    | 'isBlocked'
-    | 'hasWristband'
-    | 'surgicalComplication'
-    | 'isUPC'
-    | 'hasCompanionCrib';
+  | 'isBlocked'
+  | 'hasWristband'
+  | 'surgicalComplication'
+  | 'isUPC'
+  | 'hasCompanionCrib';
 
-export type PatientArrayField = 'devices' | 'clinicalEvents';
+export type PatientArrayField = 'devices' | 'clinicalEvents' | 'medicalHandoffEntries';
 
 export type PatientEnumField = 'status' | 'specialty' | 'bedMode';
 
-export type PatientObjectField = 'clinicalCrib' | 'cudyr' | 'deviceDetails';
+export type PatientObjectField = 'clinicalCrib' | 'cudyr' | 'deviceDetails' | 'medicalHandoffAudit';
 
 // ============================================================================
 // Error Handling
@@ -69,16 +81,16 @@ export type CaughtError = unknown;
  * Helper to extract error message from unknown error
  */
 export function getErrorMessage(error: CaughtError): string {
-    if (error instanceof Error) {
-        return error.message;
-    }
-    if (typeof error === 'string') {
-        return error;
-    }
-    if (error && typeof error === 'object' && 'message' in error) {
-        return String((error as { message: unknown }).message);
-    }
-    return 'An unknown error occurred';
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String((error as { message: unknown }).message);
+  }
+  return 'An unknown error occurred';
 }
 
 // ============================================================================
@@ -97,4 +109,3 @@ export type IconComponent = LucideIcon;
 
 export { randomItem } from '@/utils/arrayUtils';
 export { escapeCsvValue } from '@/utils/csvUtils';
-

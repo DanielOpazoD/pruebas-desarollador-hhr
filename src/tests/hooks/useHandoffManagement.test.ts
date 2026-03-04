@@ -49,6 +49,7 @@ describe('useHandoffManagement', () => {
       handoffNightChecklist: {},
       handoffNovedadesDayShift: '',
       handoffNovedadesNightShift: '',
+      medicalHandoffNovedades: '',
     } as unknown as DailyRecord;
   });
 
@@ -59,6 +60,8 @@ describe('useHandoffManagement', () => {
 
     expect(typeof result.current.updateHandoffChecklist).toBe('function');
     expect(typeof result.current.updateHandoffNovedades).toBe('function');
+    expect(typeof result.current.updateMedicalSpecialtyNote).toBe('function');
+    expect(typeof result.current.confirmMedicalSpecialtyNoChanges).toBe('function');
     expect(typeof result.current.updateHandoffStaff).toBe('function');
     expect(typeof result.current.updateMedicalSignature).toBe('function');
     expect(typeof result.current.updateMedicalHandoffDoctor).toBe('function');
@@ -113,6 +116,85 @@ describe('useHandoffManagement', () => {
     });
 
     expect(mockSaveAndUpdate).toHaveBeenCalled();
+  });
+
+  it('should update specialty medical handoff and refresh legacy summary', async () => {
+    const { result } = renderHook(() =>
+      useHandoffManagement(mockRecord, mockSaveAndUpdate, mockPatchRecord)
+    );
+
+    await act(async () => {
+      await result.current.updateMedicalSpecialtyNote('cirugia', 'Paciente estable', {
+        uid: 'doctor-1',
+        displayName: 'Dr. Cirugía',
+        email: 'cirugia@hospitalhangaroa.cl',
+        role: 'doctor_urgency',
+      });
+    });
+
+    expect(mockSaveAndUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        medicalHandoffBySpecialty: expect.objectContaining({
+          cirugia: expect.objectContaining({
+            note: 'Paciente estable',
+            version: 1,
+            author: expect.objectContaining({
+              displayName: 'Dr. Cirugía',
+            }),
+          }),
+        }),
+        medicalHandoffNovedades: expect.stringContaining('Cirugía'),
+      })
+    );
+  });
+
+  it('should confirm no changes for a specialty when no update was made today', async () => {
+    mockRecord.medicalHandoffBySpecialty = {
+      pediatria: {
+        note: 'Sin requerimientos nuevos',
+        createdAt: '2024-12-20T10:00:00.000Z',
+        updatedAt: '2024-12-27T10:00:00.000Z',
+        author: {
+          uid: 'ped-1',
+          displayName: 'Dra. Pediatría',
+          email: 'pediatria@hospitalhangaroa.cl',
+          specialty: 'pediatria',
+        },
+        version: 2,
+      },
+    };
+
+    const { result } = renderHook(() =>
+      useHandoffManagement(mockRecord, mockSaveAndUpdate, mockPatchRecord)
+    );
+
+    await act(async () => {
+      await result.current.confirmMedicalSpecialtyNoChanges({
+        specialty: 'pediatria',
+        actor: {
+          uid: 'admin-1',
+          displayName: 'Admin',
+          email: 'admin@hospitalhangaroa.cl',
+          role: 'admin',
+        },
+        comment: 'Condición actual sin cambios',
+      });
+    });
+
+    expect(mockSaveAndUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        medicalHandoffBySpecialty: expect.objectContaining({
+          pediatria: expect.objectContaining({
+            dailyContinuity: expect.objectContaining({
+              '2024-12-28': expect.objectContaining({
+                status: 'confirmed_no_changes',
+                comment: 'Condición actual sin cambios',
+              }),
+            }),
+          }),
+        }),
+      })
+    );
   });
 
   it('should update staff list', () => {

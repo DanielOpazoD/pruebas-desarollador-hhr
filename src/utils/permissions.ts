@@ -79,7 +79,7 @@ const PERMISSIONS: Record<string, RolePermissions> = {
   [ROLES.DOCTOR_URGENCY]: {
     // Observador de Censo, Entrega Enf y Entrega Médica.
     modules: ['CENSUS', 'NURSING_HANDOFF', 'MEDICAL_HANDOFF'],
-    canEdit: [],
+    canEdit: ['MEDICAL_HANDOFF'],
   },
   [ROLES.VIEWER_CENSUS]: {
     // Solo visualización censo diario.

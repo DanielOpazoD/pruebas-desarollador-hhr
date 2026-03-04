@@ -23,11 +23,20 @@ vi.mock('@/hooks/useStabilityRules', () => ({
 
 vi.mock('@/hooks/useAuthState', () => ({
   useAuthState: () => ({
+    user: {
+      uid: 'test-user',
+      email: 'admin@hospitalhangaroa.cl',
+      displayName: 'Admin Test',
+      role: 'admin',
+    },
     role: 'admin',
+    authLoading: false,
     isEditor: true,
     isViewer: false,
+    canEdit: true,
     isAuthenticated: true,
-    isLoading: false,
+    isFirebaseConnected: true,
+    handleLogout: vi.fn(),
   }),
 }));
 
@@ -186,6 +195,8 @@ export const createMockDailyRecordContext = (
   // Handoff Management
   updateHandoffChecklist: vi.fn(),
   updateHandoffNovedades: vi.fn(),
+  updateMedicalSpecialtyNote: vi.fn().mockResolvedValue(undefined),
+  confirmMedicalSpecialtyNoChanges: vi.fn().mockResolvedValue(undefined),
   updateHandoffStaff: vi.fn(),
   updateMedicalSignature: vi.fn().mockResolvedValue(undefined),
   updateMedicalHandoffDoctor: vi.fn().mockResolvedValue(undefined),

@@ -25,10 +25,11 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import { ClinicalEvent } from '@/types';
+import { ClinicalEvent, MedicalHandoffAuditActor, PatientData } from '@/types';
 import { getShiftSchedule } from '@/utils/dateUtils';
 import { useAuditContext } from '@/context/AuditContext';
 import { useDailyRecordData } from '@/context/DailyRecordContext';
+import { useAuth } from '@/context';
 import {
   useDailyRecordBedActions,
   useDailyRecordHandoffActions,
@@ -38,6 +39,15 @@ import {
 import { useHandoffVisibility, NursingShift } from './useHandoffVisibility';
 import { useHandoffStaff } from './useHandoffStaff';
 import { useHandoffCommunication } from './useHandoffCommunication';
+import {
+  buildMedicalEntryAddFields,
+  buildMedicalEntryContinuityFields,
+  buildMedicalEntryDeleteFields,
+  buildMedicalEntryNoteFields,
+  buildMedicalEntrySpecialtyFields,
+  buildMedicalPrimaryNoteFields,
+  getPatientMedicalHandoffEntries,
+} from '@/features/handoff/controllers';
 
 interface UseHandoffLogicParams {
   type: 'nursing' | 'medical';
@@ -45,6 +55,11 @@ interface UseHandoffLogicParams {
   setSelectedShift: (s: NursingShift) => void;
   onSuccess: (message: string, description?: string) => void;
 }
+
+type MedicalPatientFields = Pick<
+  PatientData,
+  'medicalHandoffEntries' | 'medicalHandoffNote' | 'medicalHandoffAudit'
+>;
 
 export const useHandoffLogic = ({
   type,
@@ -56,6 +71,7 @@ export const useHandoffLogic = ({
   const { updatePatient, updatePatientMultiple, updateClinicalCrib, updateClinicalCribMultiple } =
     useDailyRecordBedActions();
   const { sendMedicalHandoff, ensureMedicalHandoffSignatureLink } = useDailyRecordHandoffActions();
+  const { user, role } = useAuth();
 
   const isMedical = type === 'medical';
 
@@ -93,6 +109,26 @@ export const useHandoffLogic = ({
 
   // ========== HANDLERS ==========
   const { logDebouncedEvent } = useAuditContext();
+  const medicalAuditActor = useMemo<MedicalHandoffAuditActor | null>(() => {
+    if (!user?.uid || !user.email) return null;
+    return {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName || user.email,
+      role,
+    };
+  }, [role, user]);
+
+  const persistMedicalFields = useCallback(
+    async (bedId: string, fields: MedicalPatientFields, isNested: boolean) => {
+      if (isNested) {
+        await updateClinicalCribMultiple(bedId, fields);
+        return;
+      }
+      await updatePatientMultiple(bedId, fields);
+    },
+    [updateClinicalCribMultiple, updatePatientMultiple]
+  );
 
   /**
    * CLINICAL EVENTS HANDLERS
@@ -174,7 +210,10 @@ export const useHandoffLogic = ({
 
   const handleNursingNoteChange = useCallback(
     async (bedId: string, value: string, isNested: boolean = false) => {
+      if (!record) return;
+
       const bed = record?.beds[bedId];
+      const currentPatient = isNested ? bed?.clinicalCrib : bed;
       const oldNote = isMedical
         ? isNested
           ? bed?.clinicalCrib?.medicalHandoffNote
@@ -190,8 +229,18 @@ export const useHandoffLogic = ({
       const NOTE_DEBOUNCE_MS = 30 * 1000;
 
       if (isMedical) {
+        const now = new Date().toISOString();
+        if (!currentPatient) return;
+        const { fields } = buildMedicalPrimaryNoteFields(
+          currentPatient,
+          value,
+          medicalAuditActor,
+          record.date,
+          now
+        );
+
         if (isNested) {
-          await updateClinicalCrib(bedId, 'medicalHandoffNote', value);
+          await persistMedicalFields(bedId, fields, true);
           const p = record?.beds[bedId].clinicalCrib;
           if (p) {
             logDebouncedEvent(
@@ -210,7 +259,7 @@ export const useHandoffLogic = ({
             );
           }
         } else {
-          updatePatient(bedId, 'medicalHandoffNote', value);
+          await persistMedicalFields(bedId, fields, false);
           const p = record?.beds[bedId];
           if (p) {
             logDebouncedEvent(
@@ -334,7 +383,163 @@ export const useHandoffLogic = ({
       updateClinicalCrib,
       updateClinicalCribMultiple,
       logDebouncedEvent,
+      medicalAuditActor,
+      persistMedicalFields,
     ]
+  );
+
+  const handleMedicalEntryNoteChange = useCallback(
+    async (bedId: string, entryId: string, value: string, isNested: boolean = false) => {
+      if (!record || !isMedical) return;
+
+      const patient = isNested ? record.beds[bedId]?.clinicalCrib : record.beds[bedId];
+      if (!patient) return;
+
+      const now = new Date().toISOString();
+      const previousEntry = getPatientMedicalHandoffEntries(patient).find(
+        entry => entry.id === entryId
+      );
+      const { entry, fields } = buildMedicalEntryNoteFields(
+        patient,
+        entryId,
+        value,
+        medicalAuditActor,
+        record.date,
+        now
+      );
+      await persistMedicalFields(bedId, fields, isNested);
+
+      logDebouncedEvent(
+        'MEDICAL_HANDOFF_MODIFIED',
+        'patient',
+        bedId,
+        {
+          patientName: patient.patientName || '',
+          specialty: entry.specialty,
+          note: value,
+          changes: {
+            medicalHandoffNote: {
+              old: previousEntry?.note || '',
+              new: value,
+            },
+          },
+        },
+        patient.rut,
+        record.date,
+        undefined,
+        30000
+      );
+    },
+    [isMedical, logDebouncedEvent, medicalAuditActor, persistMedicalFields, record]
+  );
+
+  const handleMedicalEntrySpecialtyChange = useCallback(
+    async (bedId: string, entryId: string, specialty: string, isNested: boolean = false) => {
+      if (!record || !isMedical) return;
+
+      const patient = isNested ? record.beds[bedId]?.clinicalCrib : record.beds[bedId];
+      if (!patient) return;
+
+      const { fields } = buildMedicalEntrySpecialtyFields(patient, entryId, specialty);
+      await persistMedicalFields(bedId, fields, isNested);
+    },
+    [isMedical, persistMedicalFields, record]
+  );
+
+  const handleMedicalEntryAdd = useCallback(
+    async (bedId: string, isNested: boolean = false) => {
+      if (!record || !isMedical) return;
+
+      const patient = isNested ? record.beds[bedId]?.clinicalCrib : record.beds[bedId];
+      if (!patient) return;
+
+      const fields = buildMedicalEntryAddFields(patient);
+      await persistMedicalFields(bedId, fields, isNested);
+    },
+    [isMedical, persistMedicalFields, record]
+  );
+
+  const handleMedicalEntryDelete = useCallback(
+    async (bedId: string, entryId: string, isNested: boolean = false) => {
+      if (!record || !isMedical) return;
+
+      const patient = isNested ? record.beds[bedId]?.clinicalCrib : record.beds[bedId];
+      if (!patient) return;
+
+      const mutation = buildMedicalEntryDeleteFields(patient, entryId);
+      if (!mutation) return;
+      const { entry, fields } = mutation;
+      await persistMedicalFields(bedId, fields, isNested);
+
+      logDebouncedEvent(
+        'MEDICAL_HANDOFF_MODIFIED',
+        'patient',
+        bedId,
+        {
+          patientName: patient.patientName || '',
+          specialty: entry.specialty,
+          operation: 'delete_medical_handoff_entry',
+          changes: {
+            medicalHandoffNote: {
+              old: entry.note || '',
+              new: '',
+            },
+          },
+        },
+        patient.rut,
+        record.date,
+        undefined,
+        10000
+      );
+    },
+    [isMedical, logDebouncedEvent, persistMedicalFields, record]
+  );
+
+  const handleMedicalContinuityConfirm = useCallback(
+    (bedId: string, entryId: string, isNested: boolean = false) => {
+      if (!record || !isMedical || !medicalAuditActor) return;
+
+      const patient = isNested ? record.beds[bedId]?.clinicalCrib : record.beds[bedId];
+      if (!patient) return;
+
+      const previousEntry = getPatientMedicalHandoffEntries(patient).find(
+        entry => entry.id === entryId
+      );
+      const now = new Date().toISOString();
+      const mutation = buildMedicalEntryContinuityFields(
+        patient,
+        entryId,
+        medicalAuditActor,
+        record.date,
+        now
+      );
+      if (!mutation || !mutation.entry.note.trim()) return;
+      const { entry, fields } = mutation;
+      void persistMedicalFields(bedId, fields, isNested);
+
+      logDebouncedEvent(
+        'HANDOFF_NOVEDADES_MODIFIED',
+        'patient',
+        bedId,
+        {
+          shift: 'medical',
+          operation: 'confirm_current',
+          patientName: patient.patientName || '',
+          specialty: entry.specialty,
+          changes: {
+            medicalHandoffCurrentStatus: {
+              old: previousEntry?.currentStatus || '',
+              new: 'confirmed_current',
+            },
+          },
+        },
+        patient.rut,
+        record.date,
+        undefined,
+        10000
+      );
+    },
+    [isMedical, logDebouncedEvent, medicalAuditActor, persistMedicalFields, record]
   );
 
   const formatPrintDate = useCallback(() => {
@@ -365,6 +570,11 @@ export const useHandoffLogic = ({
     // Handlers
     shouldShowPatient: visibility.shouldShowPatient,
     handleNursingNoteChange,
+    handleMedicalEntryAdd,
+    handleMedicalEntryDelete,
+    handleMedicalEntryNoteChange,
+    handleMedicalEntrySpecialtyChange,
+    handleMedicalContinuityConfirm,
     handleShareLink: comms.handleShareLink,
     handleSendWhatsApp: comms.handleSendWhatsApp,
     handleSendWhatsAppManual: comms.handleSendWhatsAppManual,

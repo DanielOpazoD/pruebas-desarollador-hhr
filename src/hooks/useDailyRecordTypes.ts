@@ -11,6 +11,8 @@ import {
   PatientFieldValue,
   CMAData,
   DailyRecordPatch,
+  MedicalHandoffActor,
+  MedicalSpecialty,
 } from '@/types';
 import type { PatientMovementActions } from '@/types/movements';
 import type { MedicalHandoffScope } from '@/features/handoff/controllers';
@@ -126,6 +128,17 @@ export interface DailyRecordActionsContextType extends PatientMovementActions {
   // Handoff Management (from useHandoffManagement)
   updateHandoffChecklist: (shift: 'day' | 'night', field: string, value: boolean | string) => void;
   updateHandoffNovedades: (shift: 'day' | 'night' | 'medical', value: string) => void;
+  updateMedicalSpecialtyNote: (
+    specialty: MedicalSpecialty,
+    value: string,
+    actor: Partial<MedicalHandoffActor>
+  ) => Promise<void>;
+  confirmMedicalSpecialtyNoChanges: (input: {
+    specialty: MedicalSpecialty;
+    actor: Partial<MedicalHandoffActor>;
+    comment?: string;
+    dateKey?: string;
+  }) => Promise<void>;
   updateHandoffStaff: (
     shift: 'day' | 'night',
     type: 'delivers' | 'receives' | 'tens',

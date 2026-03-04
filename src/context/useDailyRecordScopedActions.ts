@@ -51,6 +51,8 @@ type DailyRecordHandoffActions = Pick<
   DailyRecordActionsContextType,
   | 'updateHandoffChecklist'
   | 'updateHandoffNovedades'
+  | 'updateMedicalSpecialtyNote'
+  | 'confirmMedicalSpecialtyNoChanges'
   | 'updateHandoffStaff'
   | 'updateMedicalSignature'
   | 'updateMedicalHandoffDoctor'
@@ -185,6 +187,8 @@ export const useDailyRecordHandoffActions = (): DailyRecordHandoffActions => {
     () => ({
       updateHandoffChecklist: actions.updateHandoffChecklist,
       updateHandoffNovedades: actions.updateHandoffNovedades,
+      updateMedicalSpecialtyNote: actions.updateMedicalSpecialtyNote,
+      confirmMedicalSpecialtyNoChanges: actions.confirmMedicalSpecialtyNoChanges,
       updateHandoffStaff: actions.updateHandoffStaff,
       updateMedicalSignature: actions.updateMedicalSignature,
       updateMedicalHandoffDoctor: actions.updateMedicalHandoffDoctor,
@@ -200,6 +204,8 @@ export const useDailyRecordHandoffActions = (): DailyRecordHandoffActions => {
       actions.sendMedicalHandoff,
       actions.updateHandoffChecklist,
       actions.updateHandoffNovedades,
+      actions.updateMedicalSpecialtyNote,
+      actions.confirmMedicalSpecialtyNoChanges,
       actions.updateHandoffStaff,
       actions.updateMedicalHandoffDoctor,
       actions.updateMedicalSignature,

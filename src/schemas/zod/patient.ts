@@ -70,6 +70,36 @@ export const FhirResourceSchema = z
   })
   .passthrough();
 
+const MedicalHandoffAuditActorSchema = z.object({
+  uid: z.string(),
+  displayName: z.string(),
+  email: z.string(),
+  role: z.string().optional(),
+});
+
+const MedicalHandoffAuditSchema = z.object({
+  lastSpecialistUpdateAt: z.string().optional(),
+  lastSpecialistUpdateBy: MedicalHandoffAuditActorSchema.optional(),
+  lastSpecialistUpdateSpecialty: z.union([z.nativeEnum(Specialty), z.string()]).optional(),
+  currentStatus: z.enum(['updated_by_specialist', 'confirmed_current']).optional(),
+  currentStatusDate: z.string().optional(),
+  currentStatusAt: z.string().optional(),
+  currentStatusBy: MedicalHandoffAuditActorSchema.optional(),
+  currentStatusSpecialty: z.union([z.nativeEnum(Specialty), z.string()]).optional(),
+});
+
+const MedicalHandoffEntrySchema = z.object({
+  id: z.string(),
+  specialty: z.union([z.nativeEnum(Specialty), z.string()]),
+  note: z.string().default(''),
+  updatedAt: z.string().optional(),
+  updatedBy: MedicalHandoffAuditActorSchema.optional(),
+  currentStatus: z.enum(['updated_by_specialist', 'confirmed_current']).optional(),
+  currentStatusDate: z.string().optional(),
+  currentStatusAt: z.string().optional(),
+  currentStatusBy: MedicalHandoffAuditActorSchema.optional(),
+});
+
 import { PatientData } from '@/types';
 
 export const PatientDataSchema: z.ZodType<PatientData, z.ZodTypeDef, unknown> = z.lazy(() =>
@@ -143,6 +173,8 @@ export const PatientDataSchema: z.ZodType<PatientData, z.ZodTypeDef, unknown> = 
       handoffNoteDayShift: nullableOptional(z.string()),
       handoffNoteNightShift: nullableOptional(z.string()),
       medicalHandoffNote: nullableOptional(z.string()),
+      medicalHandoffAudit: nullableOptional(MedicalHandoffAuditSchema),
+      medicalHandoffEntries: z.array(MedicalHandoffEntrySchema).optional(),
       clinicalEvents: z.array(ClinicalEventSchema).default([]),
       fhir_resource: nullableOptional(FhirResourceSchema),
     })

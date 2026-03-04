@@ -1,4 +1,5 @@
 import type { DailyRecord, PatientData } from '@/types';
+import { buildMedicalHandoffSummary } from '@/features/handoff/controllers';
 
 export interface DailyRecordClinicalFacet {
   beds: DailyRecord['beds'];
@@ -69,7 +70,7 @@ export const createDailyRecordAggregate = (record: DailyRecord): DailyRecordAggr
   handoff: {
     dayNovedades: record.handoffNovedadesDayShift || '',
     nightNovedades: record.handoffNovedadesNightShift || '',
-    medicalNovedades: record.medicalHandoffNovedades || '',
+    medicalNovedades: buildMedicalHandoffSummary(record),
   },
   metadata: {
     date: record.date,

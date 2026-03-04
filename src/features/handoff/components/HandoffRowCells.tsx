@@ -1,11 +1,18 @@
 import React from 'react';
-import { PatientData, PatientStatus, ClinicalEvent } from '@/types';
-import { Baby, ChevronDown, Clock } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { ClinicalEvent, MedicalHandoffEntry, PatientData, PatientStatus } from '@/types';
+import { Baby, Check, ChevronDown, Clock, Info, Plus, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
 import { formatDateDDMMYYYY } from '@/utils/dateUtils';
 import { ClinicalEventsPanel } from './ClinicalEventsPanel';
 import { calculateDeviceDays } from '@/components/device-selector/DeviceDateConfigModal';
 import { DebouncedTextarea } from '@/components/ui/DebouncedTextarea';
+import {
+  formatMedicalHandoffActorLabel,
+  formatMedicalHandoffTimestamp,
+  getDisplayMedicalHandoffEntries,
+  getMedicalHandoffSpecialtyOptions,
+} from '@/features/handoff/controllers';
 
 import { MedicalBadge, MedicalBadgeVariant } from '@/components/ui/base/MedicalBadge';
 
@@ -116,7 +123,7 @@ export const HandoffDiagnosisCell: React.FC<HandoffDiagnosisCellProps> = ({
         : 'green';
 
   return (
-    <td className="p-1.5 border-r border-slate-200 w-[260px] text-slate-700 align-top relative print:w-20 print:text-[10px] print:leading-tight print:p-1">
+    <td className="p-1.5 border-r border-slate-200 w-[220px] text-slate-700 align-top relative print:w-20 print:text-[10px] print:leading-tight print:p-1">
       <div className="flex flex-col gap-1">
         <div className="flex items-start justify-between gap-0">
           <div className="font-medium leading-tight flex-1 pr-6">{patient.pathology}</div>
@@ -244,3 +251,313 @@ export const HandoffObservationsCell: React.FC<HandoffObservationsCellProps> = (
     )}
   </td>
 );
+
+interface HandoffMedicalObservationsCellProps {
+  patient: PatientData;
+  isFieldReadOnly: boolean;
+  onEntryNoteChange: (entryId: string, value: string) => void;
+  onEntrySpecialtyChange: (entryId: string, specialty: string) => void;
+  onAddEntry?: () => void;
+  onDeleteEntry?: (entryId: string) => void;
+}
+
+const specialtyOptions = getMedicalHandoffSpecialtyOptions();
+
+const resolveEntryInlineMeta = (entry: MedicalHandoffEntry): string => {
+  const actor = formatMedicalHandoffActorLabel(
+    entry.updatedBy?.displayName || entry.updatedBy?.email
+  );
+  const timestamp = formatMedicalHandoffTimestamp(entry.updatedAt);
+  return [actor, timestamp].filter(Boolean).join(' · ');
+};
+
+export const HandoffMedicalObservationsCell: React.FC<HandoffMedicalObservationsCellProps> = ({
+  patient,
+  isFieldReadOnly,
+  onEntryNoteChange,
+  onEntrySpecialtyChange,
+  onAddEntry,
+  onDeleteEntry,
+}) => {
+  const entries = getDisplayMedicalHandoffEntries(patient, !isFieldReadOnly);
+
+  return (
+    <td className="p-1.5 w-full min-w-[280px] align-top border-r border-slate-200 print:w-auto print:min-w-0 print:text-[8px] print:p-0.5">
+      <div className="space-y-2">
+        {entries.length === 0 ? (
+          <div className="text-sm text-slate-400 italic print:text-[8px]">
+            Sin entrega registrada
+          </div>
+        ) : (
+          entries.map((entry, index) => {
+            const inlineMeta = resolveEntryInlineMeta(entry);
+            const specialtyLabel = entry.specialty || 'Especialidad sin definir';
+            const specialtyWidth = `${Math.max(String(specialtyLabel).length + 4, 14)}ch`;
+
+            return (
+              <div
+                key={entry.id}
+                className={clsx(
+                  'space-y-1',
+                  index > 0 && 'border-t border-slate-100 pt-2 print:border-t-0 print:pt-1'
+                )}
+              >
+                <div className="hidden print:block text-[7px] leading-tight text-slate-500">
+                  {[specialtyLabel, inlineMeta].filter(Boolean).join(' · ')}
+                </div>
+                {isFieldReadOnly ? (
+                  <div className="text-[10px] leading-tight text-slate-500 print:hidden">
+                    {[specialtyLabel, inlineMeta].filter(Boolean).join(' · ')}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-1.5 text-[10px] leading-tight text-slate-500 print:hidden">
+                    <label
+                      className="sr-only"
+                      htmlFor={`medical-specialty-${patient.bedId}-${entry.id}`}
+                    >
+                      Especialidad {index + 1}
+                    </label>
+                    <select
+                      id={`medical-specialty-${patient.bedId}-${entry.id}`}
+                      aria-label={`Especialidad ${index + 1}`}
+                      value={entry.specialty}
+                      onChange={event => onEntrySpecialtyChange(entry.id, event.target.value)}
+                      className="rounded-full border border-slate-300 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-700"
+                      style={{ width: specialtyWidth }}
+                    >
+                      {specialtyOptions.map(option => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                    {inlineMeta && <span>{inlineMeta}</span>}
+                    <div className="ml-auto flex items-center gap-1">
+                      {!isFieldReadOnly && onAddEntry && index === entries.length - 1 && (
+                        <button
+                          type="button"
+                          onClick={onAddEntry}
+                          className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
+                          aria-label="Agregar otra especialidad"
+                          title="Agregar otra especialidad"
+                        >
+                          <Plus size={11} />
+                        </button>
+                      )}
+                      {onDeleteEntry && (
+                        <button
+                          type="button"
+                          onClick={() => onDeleteEntry(entry.id)}
+                          className="inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                          aria-label={`Eliminar entrega ${index + 1}`}
+                          title="Eliminar entrega de turno"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {isFieldReadOnly ? (
+                  <div className="whitespace-pre-wrap break-words text-[13px] leading-snug text-slate-800 print:text-[8px] print:leading-tight">
+                    {entry.note || (
+                      <span className="text-slate-400 italic">Sin entrega registrada</span>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div className="print:hidden">
+                      <DebouncedTextarea
+                        value={entry.note}
+                        onChangeValue={value => onEntryNoteChange(entry.id, value)}
+                        className="w-full rounded border border-slate-200 bg-white px-2 py-1.5 text-[13px] leading-snug focus:ring-2 focus:ring-medical-500 focus:outline-none"
+                        minRows={1}
+                        debounceMs={1500}
+                      />
+                    </div>
+                    <div className="hidden print:block whitespace-pre-wrap break-words text-slate-800 print:text-[8px] print:leading-tight">
+                      {entry.note}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </td>
+  );
+};
+
+interface HandoffMedicalValidityCellProps {
+  patient: PatientData;
+  reportDate: string;
+  onQuickAction?: (entryId: string) => void;
+  readOnly?: boolean;
+}
+
+interface HandoffInfoTooltipProps {
+  label: string;
+}
+
+const HandoffInfoTooltip: React.FC<HandoffInfoTooltipProps> = ({ label }) => {
+  const triggerRef = React.useRef<HTMLSpanElement | null>(null);
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [position, setPosition] = React.useState<{ top: number; left: number } | null>(null);
+
+  const updatePosition = React.useCallback(() => {
+    if (!triggerRef.current || typeof window === 'undefined') return;
+
+    const rect = triggerRef.current.getBoundingClientRect();
+    const tooltipWidth = 220;
+    const centeredLeft = rect.left + rect.width / 2 - tooltipWidth / 2;
+    const left = Math.max(12, Math.min(centeredLeft, window.innerWidth - tooltipWidth - 12));
+    const top = rect.bottom + 8;
+    setPosition({ top, left });
+  }, []);
+
+  const openTooltip = React.useCallback(() => {
+    updatePosition();
+    setIsOpen(true);
+  }, [updatePosition]);
+
+  const closeTooltip = React.useCallback(() => {
+    setIsOpen(false);
+  }, []);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const handleWindowChange = () => updatePosition();
+    window.addEventListener('scroll', handleWindowChange, true);
+    window.addEventListener('resize', handleWindowChange);
+    return () => {
+      window.removeEventListener('scroll', handleWindowChange, true);
+      window.removeEventListener('resize', handleWindowChange);
+    };
+  }, [isOpen, updatePosition]);
+
+  return (
+    <>
+      <span
+        ref={triggerRef}
+        onMouseEnter={openTooltip}
+        onMouseLeave={closeTooltip}
+        onFocus={openTooltip}
+        onBlur={closeTooltip}
+        className="-translate-y-1 inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 text-[9px] font-bold text-slate-500"
+        aria-label="Ver detalle de vigencia"
+        title={label}
+        tabIndex={0}
+      >
+        <Info size={10} />
+      </span>
+      {isOpen &&
+        position &&
+        createPortal(
+          <div
+            className="pointer-events-none fixed z-[1000] w-[220px] rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[10px] leading-tight text-slate-600 shadow-lg"
+            style={{ top: position.top, left: position.left }}
+          >
+            {label}
+          </div>,
+          document.body
+        )}
+    </>
+  );
+};
+
+export const HandoffMedicalValidityCell: React.FC<HandoffMedicalValidityCellProps> = ({
+  patient,
+  reportDate,
+  onQuickAction,
+  readOnly = false,
+}) => {
+  const entries = getDisplayMedicalHandoffEntries(patient, !readOnly);
+
+  if (entries.length === 0) {
+    return (
+      <td className="p-1.5 w-40 align-top print:w-auto print:text-[8px] print:p-1">
+        <div className="text-[11px] italic text-slate-400 print:text-[7px]">Sin registro</div>
+      </td>
+    );
+  }
+
+  return (
+    <td className="p-1.5 w-40 align-top print:w-auto print:text-[8px] print:p-1">
+      <div className="space-y-2 text-[9px] leading-tight text-slate-700 print:text-[7px]">
+        {entries.map(entry => {
+          const wasUpdatedToday =
+            Boolean(entry.updatedAt) && entry.updatedAt?.slice(0, 10) === reportDate;
+          const statusForToday =
+            entry.currentStatusDate === reportDate
+              ? entry.currentStatus
+              : wasUpdatedToday
+                ? 'updated_by_specialist'
+                : undefined;
+          const currentStatusIsToday = Boolean(statusForToday);
+          const statusLabel = !statusForToday
+            ? 'Condición actual: pendiente hoy'
+            : statusForToday === 'updated_by_specialist'
+              ? 'Condición actual: actualizada hoy'
+              : 'Condición actual: vigente, sin cambios';
+          const actorLabel = entry.currentStatusBy?.displayName || entry.currentStatusBy?.email;
+          const timestamp = formatMedicalHandoffTimestamp(entry.currentStatusAt);
+          const canConfirm = Boolean(entry.note.trim());
+          const isConfirmedCurrent = statusForToday === 'confirmed_current';
+          const isActiveToday =
+            statusForToday === 'confirmed_current' || statusForToday === 'updated_by_specialist';
+          const tooltipLabel = [
+            isConfirmedCurrent
+              ? actorLabel
+              : entry.updatedBy?.displayName || entry.updatedBy?.email,
+            isConfirmedCurrent ? timestamp : formatMedicalHandoffTimestamp(entry.updatedAt),
+          ]
+            .filter(Boolean)
+            .join(' · ');
+
+          return (
+            <div key={entry.id} className="space-y-1">
+              <div
+                className={clsx(
+                  'flex items-start justify-between gap-1.5',
+                  !currentStatusIsToday && 'text-slate-400'
+                )}
+              >
+                <div className="min-w-0 flex-1 leading-snug">
+                  <span>{statusLabel}</span>
+                  {tooltipLabel && (
+                    <div className="hidden print:block mt-0.5 text-slate-500">{tooltipLabel}</div>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 pt-0.5 shrink-0 print:hidden">
+                  {tooltipLabel && <HandoffInfoTooltip label={tooltipLabel} />}
+                  {!readOnly && onQuickAction && (
+                    <button
+                      type="button"
+                      onClick={() => onQuickAction(entry.id)}
+                      disabled={!canConfirm}
+                      className={clsx(
+                        'mt-px inline-flex h-4 w-4 items-center justify-center rounded-[5px] border transition-colors',
+                        !canConfirm
+                          ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+                          : isActiveToday
+                            ? 'border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-100'
+                            : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                      )}
+                      aria-label={isActiveToday ? 'Entrega vigente' : 'Marcar entrega como vigente'}
+                      title={isActiveToday ? 'Entrega vigente' : 'Marcar entrega como vigente'}
+                    >
+                      <Check size={8} strokeWidth={3} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </td>
+  );
+};

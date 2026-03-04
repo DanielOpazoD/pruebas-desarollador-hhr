@@ -171,9 +171,52 @@ describe('HandoffView Component', () => {
 
   it('handles medical handoff view', () => {
     const record = createMockRecord('2024-12-11');
+    record.beds['R1'] = createMockPatient({
+      bedId: 'R1',
+      patientName: 'PACIENTE MEDICINA',
+      specialty: 'Med Interna',
+    });
+    record.beds['R2'] = createMockPatient({
+      bedId: 'R2',
+      patientName: 'PACIENTE CIRUGIA',
+      specialty: 'Cirugía',
+    });
     render(<HandoffView type="medical" />, { contextValue: createMockDailyRecordContext(record) });
 
     expect(screen.getByText(/Entrega Turno Médicos/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Especialidad/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Cirugía/i })).toBeInTheDocument();
+  });
+
+  it('filters medical handoff patients by census specialty', async () => {
+    const record = createMockRecord('2024-12-11');
+    record.beds['R1'] = createMockPatient({
+      bedId: 'R1',
+      patientName: 'PACIENTE MEDICINA',
+      specialty: 'Med Interna',
+    });
+    record.beds['R2'] = createMockPatient({
+      bedId: 'R2',
+      patientName: 'PACIENTE CIRUGIA',
+      specialty: 'Cirugía',
+    });
+    const { mockContext } = render(<HandoffView type="medical" />, {
+      contextValue: createMockDailyRecordContext(record),
+    });
+
+    const initialTable = screen.getAllByRole('table')[0];
+    expect(within(initialTable).getByText('PACIENTE MEDICINA')).toBeInTheDocument();
+    expect(within(initialTable).getByText('PACIENTE CIRUGIA')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cirugía' }));
+
+    await waitFor(() => {
+      const filteredTable = screen.getAllByRole('table')[0];
+      expect(within(filteredTable).queryByText('PACIENTE MEDICINA')).not.toBeInTheDocument();
+      expect(within(filteredTable).getByText('PACIENTE CIRUGIA')).toBeInTheDocument();
+    });
+
+    expect(mockContext.updateMedicalSpecialtyNote).not.toHaveBeenCalled();
   });
 
   it('shows scoped medical signature only in the matching filtered view', () => {

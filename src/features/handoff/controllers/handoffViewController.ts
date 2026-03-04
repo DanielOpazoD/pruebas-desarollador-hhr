@@ -1,4 +1,5 @@
 import type { DailyRecord, ShiftType } from '@/types';
+import { buildMedicalHandoffSummary } from './medicalSpecialtyHandoffController';
 
 interface HandoffTitleParams {
   isMedical: boolean;
@@ -49,7 +50,11 @@ interface ResolveHandoffNovedadesValueParams {
   selectedShift: ShiftType;
   record: Pick<
     DailyRecord,
-    'medicalHandoffNovedades' | 'handoffNovedadesDayShift' | 'handoffNovedadesNightShift'
+    | 'date'
+    | 'medicalHandoffNovedades'
+    | 'medicalHandoffBySpecialty'
+    | 'handoffNovedadesDayShift'
+    | 'handoffNovedadesNightShift'
   >;
 }
 
@@ -58,7 +63,7 @@ export const resolveHandoffNovedadesValue = ({
   selectedShift,
   record,
 }: ResolveHandoffNovedadesValueParams): string => {
-  if (isMedical) return record.medicalHandoffNovedades || '';
+  if (isMedical) return buildMedicalHandoffSummary(record);
 
   if (selectedShift === 'day') return record.handoffNovedadesDayShift || '';
 

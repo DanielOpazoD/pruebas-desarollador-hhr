@@ -10,6 +10,21 @@ interface MedicalHandoffTabsProps {
   record: DailyRecord;
   noteField: 'handoffNoteDayShift' | 'handoffNoteNightShift' | 'medicalHandoffNote';
   onNoteChange: (bedId: string, value: string, isNested: boolean) => void;
+  onMedicalEntryNoteChange?: (
+    bedId: string,
+    entryId: string,
+    value: string,
+    isNested: boolean
+  ) => void;
+  onMedicalEntrySpecialtyChange?: (
+    bedId: string,
+    entryId: string,
+    specialty: string,
+    isNested: boolean
+  ) => void;
+  onMedicalEntryAdd?: (bedId: string, isNested: boolean) => void;
+  onMedicalEntryDelete?: (bedId: string, entryId: string, isNested: boolean) => void;
+  onMedicalContinuityConfirm?: (bedId: string, entryId: string, isNested: boolean) => void;
   tableHeaderClass: string;
   readOnly: boolean;
   isMedical: boolean;
@@ -25,6 +40,11 @@ export const MedicalHandoffTabs: React.FC<MedicalHandoffTabsProps> = ({
   record,
   noteField,
   onNoteChange,
+  onMedicalEntryNoteChange,
+  onMedicalEntrySpecialtyChange,
+  onMedicalEntryAdd,
+  onMedicalEntryDelete,
+  onMedicalContinuityConfirm,
   tableHeaderClass,
   readOnly,
   isMedical,
@@ -181,6 +201,11 @@ export const MedicalHandoffTabs: React.FC<MedicalHandoffTabsProps> = ({
           record={record}
           noteField={noteField}
           onNoteChange={onNoteChange}
+          onMedicalEntryNoteChange={onMedicalEntryNoteChange}
+          onMedicalEntrySpecialtyChange={onMedicalEntrySpecialtyChange}
+          onMedicalEntryAdd={onMedicalEntryAdd}
+          onMedicalEntryDelete={onMedicalEntryDelete}
+          onMedicalContinuityConfirm={onMedicalContinuityConfirm}
           tableHeaderClass={tableHeaderClass}
           readOnly={readOnly}
           isMedical={isMedical}
@@ -202,6 +227,11 @@ export const MedicalHandoffTabs: React.FC<MedicalHandoffTabsProps> = ({
               record={record}
               noteField={noteField}
               onNoteChange={onNoteChange}
+              onMedicalEntryNoteChange={onMedicalEntryNoteChange}
+              onMedicalEntrySpecialtyChange={onMedicalEntrySpecialtyChange}
+              onMedicalEntryAdd={onMedicalEntryAdd}
+              onMedicalEntryDelete={onMedicalEntryDelete}
+              onMedicalContinuityConfirm={onMedicalContinuityConfirm}
               tableHeaderClass={tableHeaderClass}
               readOnly={readOnly}
               isMedical={isMedical}
@@ -224,6 +254,11 @@ export const MedicalHandoffTabs: React.FC<MedicalHandoffTabsProps> = ({
                 record={record}
                 noteField={noteField}
                 onNoteChange={onNoteChange}
+                onMedicalEntryNoteChange={onMedicalEntryNoteChange}
+                onMedicalEntrySpecialtyChange={onMedicalEntrySpecialtyChange}
+                onMedicalEntryAdd={onMedicalEntryAdd}
+                onMedicalEntryDelete={onMedicalEntryDelete}
+                onMedicalContinuityConfirm={onMedicalContinuityConfirm}
                 tableHeaderClass={tableHeaderClass}
                 readOnly={readOnly}
                 isMedical={isMedical}

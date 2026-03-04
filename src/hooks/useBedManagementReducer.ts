@@ -270,6 +270,8 @@ const getClearClinicalDataPatches = (bedId: string) => ({
   [`beds.${bedId}.handoffNoteDayShift`]: '',
   [`beds.${bedId}.handoffNoteNightShift`]: '',
   [`beds.${bedId}.medicalHandoffNote`]: '',
+  [`beds.${bedId}.medicalHandoffAudit`]: undefined,
+  [`beds.${bedId}.medicalHandoffEntries`]: [],
   [`beds.${bedId}.deliveryRoute`]: undefined,
   [`beds.${bedId}.deliveryDate`]: undefined,
 });

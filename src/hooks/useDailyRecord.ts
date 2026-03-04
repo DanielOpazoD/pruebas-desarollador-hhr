@@ -154,6 +154,8 @@ export const useDailyRecord = (
         copyPatientToDate,
         updateHandoffChecklist: handoffManagement.updateHandoffChecklist,
         updateHandoffNovedades: handoffManagement.updateHandoffNovedades,
+        updateMedicalSpecialtyNote: handoffManagement.updateMedicalSpecialtyNote,
+        confirmMedicalSpecialtyNoChanges: handoffManagement.confirmMedicalSpecialtyNoChanges,
         updateHandoffStaff: handoffManagement.updateHandoffStaff,
         updateMedicalSignature: handoffManagement.updateMedicalSignature,
         updateMedicalHandoffDoctor: handoffManagement.updateMedicalHandoffDoctor,
