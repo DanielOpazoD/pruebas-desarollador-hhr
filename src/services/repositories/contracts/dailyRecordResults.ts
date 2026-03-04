@@ -33,6 +33,18 @@ export interface SyncDailyRecordResult {
   record: DailyRecord | null;
 }
 
+export interface InitializeDayResult {
+  date: string;
+  outcome: 'clean' | 'repaired';
+  sourceDate?: string;
+}
+
+export interface CopyPatientResult {
+  sourceDate: string;
+  targetDate: string;
+  outcome: 'clean' | 'repaired';
+}
+
 export const createSaveDailyRecordResult = (
   input: SaveDailyRecordResult
 ): SaveDailyRecordResult => {
@@ -56,5 +68,16 @@ export const createSyncDailyRecordResult = (
   input: SyncDailyRecordResult
 ): SyncDailyRecordResult => {
   assertDate(input.date, 'sync result');
+  return input;
+};
+
+export const createInitializeDayResult = (input: InitializeDayResult): InitializeDayResult => {
+  assertDate(input.date, 'initializeDay result');
+  return input;
+};
+
+export const createCopyPatientResult = (input: CopyPatientResult): CopyPatientResult => {
+  assertDate(input.sourceDate, 'copyPatient source result');
+  assertDate(input.targetDate, 'copyPatient target result');
   return input;
 };

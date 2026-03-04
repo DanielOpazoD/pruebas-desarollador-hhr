@@ -9,6 +9,20 @@ import { defaultCensusEmailBrowserRuntime } from '@/hooks/controllers/censusEmai
 import { resolveCensusRecipientsBootstrap } from '@/hooks/controllers/censusEmailRecipientsBootstrapController';
 import { resolveStoredRecipients } from '@/hooks/controllers/censusEmailRecipientsController';
 import {
+  buildCreatedRecipientList,
+  buildRecipientListSavePayload,
+  resolveCreateRecipientListError,
+  resolveDeleteRecipientListError,
+  resolveRecipientListFallback,
+  resolveRenamedRecipientListName,
+  resolveRenameRecipientListError,
+} from '@/hooks/controllers/censusEmailRecipientListController';
+import {
+  buildRecipientSyncPayload,
+  resolveActiveRecipientListForSync,
+  shouldSkipRecipientSync,
+} from '@/hooks/controllers/censusEmailRecipientSyncController';
+import {
   CENSUS_EMAIL_EXCEL_SHEET_CONFIG_KEY,
   DEFAULT_CENSUS_EMAIL_EXCEL_SHEET_CONFIG,
   normalizeCensusEmailExcelSheetConfig,
@@ -17,7 +31,6 @@ import {
 import { useCensusEmailActions, type CensusEmailSendStatus } from '@/hooks/useCensusEmailActions';
 import {
   areGlobalEmailRecipientsEqual,
-  buildGlobalEmailRecipientListId,
   CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST,
   deleteGlobalEmailRecipientList,
   GlobalEmailRecipientList,
@@ -323,15 +336,14 @@ export const useCensusEmail = ({
   }, [recipients]);
 
   useEffect(() => {
-    if (!canManageGlobalRecipientLists) {
-      return;
-    }
-
-    if (!recipientsReadyRef.current) {
-      return;
-    }
-
-    if (areGlobalEmailRecipientsEqual(recipients, lastRemoteRecipientsRef.current)) {
+    if (
+      shouldSkipRecipientSync({
+        canManageGlobalRecipientLists,
+        recipientsReady: recipientsReadyRef.current,
+        recipients,
+        lastRemoteRecipients: lastRemoteRecipientsRef.current,
+      })
+    ) {
       return;
     }
 
@@ -341,19 +353,18 @@ export const useCensusEmail = ({
     setRecipientsSyncError(null);
 
     const timeoutId = window.setTimeout(() => {
-      const activeList =
-        recipientLists.find(list => list.id === activeRecipientListIdRef.current) ??
-        recipientLists.find(list => list.id === CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.id) ??
-        null;
+      const activeList = resolveActiveRecipientListForSync(
+        recipientLists,
+        activeRecipientListIdRef.current
+      );
 
-      void saveGlobalEmailRecipientList({
-        listId: activeList?.id ?? CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.id,
-        name: activeList?.name ?? CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.name,
-        description: activeList?.description ?? CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.description,
-        recipients,
-        updatedByUid: user?.uid ?? null,
-        updatedByEmail: user?.email ?? null,
-      })
+      void saveGlobalEmailRecipientList(
+        buildRecipientSyncPayload({
+          activeList,
+          recipients,
+          actor: user,
+        })
+      )
         .then(() => {
           if (cancelled) {
             return;
@@ -388,43 +399,31 @@ export const useCensusEmail = ({
 
   const createRecipientList = useCallback(
     async (name: string) => {
-      if (!canManageGlobalRecipientLists) {
-        setRecipientsSyncError('Tu usuario no tiene permisos para crear listas globales.');
+      const validationError = resolveCreateRecipientListError(canManageGlobalRecipientLists, name);
+      if (validationError) {
+        setRecipientsSyncError(validationError);
         return;
       }
 
-      const trimmedName = name.trim();
-      if (!trimmedName) {
-        setRecipientsSyncError('Debes ingresar un nombre para la nueva lista.');
-        return;
-      }
-
-      const nextListId = buildGlobalEmailRecipientListId(
-        trimmedName,
-        recipientLists.map(list => list.id)
+      const createdList = buildCreatedRecipientList(
+        name,
+        recipients,
+        recipientLists.map(list => list.id),
+        user
       );
       setIsRecipientsSyncing(true);
       setRecipientsSyncError(null);
 
       try {
-        await saveGlobalEmailRecipientList({
-          listId: nextListId,
-          name: trimmedName,
-          description: `Lista global creada desde el modulo de correo de censo: ${trimmedName}.`,
-          recipients,
-          updatedByUid: user?.uid ?? null,
-          updatedByEmail: user?.email ?? null,
-        });
-        const createdList: GlobalEmailRecipientList = {
-          id: nextListId,
-          name: trimmedName,
-          description: `Lista global creada desde el modulo de correo de censo: ${trimmedName}.`,
-          recipients,
-          scope: 'global',
-          updatedAt: new Date().toISOString(),
-          updatedByUid: user?.uid ?? null,
-          updatedByEmail: user?.email ?? null,
-        };
+        await saveGlobalEmailRecipientList(
+          buildRecipientListSavePayload({
+            listId: createdList.id,
+            name: createdList.name,
+            description: createdList.description ?? '',
+            recipients,
+            actor: user,
+          })
+        );
         upsertRecipientList(createdList);
         applyActiveRecipientList(createdList);
       } catch (error) {
@@ -446,40 +445,35 @@ export const useCensusEmail = ({
 
   const renameActiveRecipientList = useCallback(
     async (name: string) => {
-      if (!canManageGlobalRecipientLists) {
-        setRecipientsSyncError('Tu usuario no tiene permisos para editar listas globales.');
-        return;
-      }
-
-      const trimmedName = name.trim();
       const activeList = recipientLists.find(list => list.id === activeRecipientListId);
-
-      if (!activeList || !trimmedName) {
-        setRecipientsSyncError('Debes ingresar un nombre valido para la lista.');
+      const validationError = resolveRenameRecipientListError(
+        canManageGlobalRecipientLists,
+        activeList,
+        name
+      );
+      if (validationError || !activeList) {
+        setRecipientsSyncError(validationError);
         return;
       }
+
+      const resolvedName = resolveRenamedRecipientListName(activeList.id, name);
 
       setIsRecipientsSyncing(true);
       setRecipientsSyncError(null);
 
       try {
-        await saveGlobalEmailRecipientList({
-          listId: activeList.id,
-          name:
-            activeList.id === CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.id
-              ? CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.name
-              : trimmedName,
-          description: activeList.description,
-          recipients,
-          updatedByUid: user?.uid ?? null,
-          updatedByEmail: user?.email ?? null,
-        });
+        await saveGlobalEmailRecipientList(
+          buildRecipientListSavePayload({
+            listId: activeList.id,
+            name: resolvedName,
+            description: activeList.description ?? '',
+            recipients,
+            actor: user,
+          })
+        );
         upsertRecipientList({
           ...activeList,
-          name:
-            activeList.id === CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.id
-              ? CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.name
-              : trimmedName,
+          name: resolvedName,
           recipients,
           updatedAt: new Date().toISOString(),
           updatedByUid: user?.uid ?? null,
@@ -504,19 +498,14 @@ export const useCensusEmail = ({
 
   const deleteRecipientList = useCallback(
     async (listId: string) => {
-      if (!canManageGlobalRecipientLists) {
-        setRecipientsSyncError('Tu usuario no tiene permisos para eliminar listas globales.');
-        return;
-      }
-
-      if (recipientLists.length <= 1) {
-        setRecipientsSyncError('Debe existir al menos una lista global de correos.');
-        return;
-      }
-
-      const fallbackList = recipientLists.find(list => list.id !== listId);
-      if (!fallbackList) {
-        setRecipientsSyncError('No se encontro una lista alternativa para mantener activa.');
+      const validationError = resolveDeleteRecipientListError(
+        canManageGlobalRecipientLists,
+        recipientLists,
+        listId
+      );
+      const fallbackList = resolveRecipientListFallback(recipientLists, listId);
+      if (validationError || !fallbackList) {
+        setRecipientsSyncError(validationError);
         return;
       }
 

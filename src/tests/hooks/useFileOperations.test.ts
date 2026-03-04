@@ -20,6 +20,7 @@ vi.mock('@/services/exporters/exportService', () => ({
   importDataJSON: vi.fn().mockResolvedValue(true),
   importDataJSONDetailed: vi.fn().mockResolvedValue({
     success: true,
+    outcome: 'clean',
     importedCount: 1,
     repairedCount: 0,
     skippedEntries: [],

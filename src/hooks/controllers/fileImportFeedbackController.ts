@@ -13,19 +13,33 @@ export const buildJsonImportNotifications = (result: JsonImportResult): ImportNo
     return [{ channel: 'error', title: 'Error al importar datos', message: 'Import Error' }];
   }
 
-  const notifications: ImportNotification[] = [
-    {
+  const notifications: ImportNotification[] = [];
+  if (result.outcome === 'clean') {
+    notifications.push({
       channel: 'success',
       title: 'Datos importados correctamente',
       message: `${result.importedCount} registro(s) importado(s).`,
-    },
-  ];
+    });
+  }
 
-  if (result.repairedCount > 0) {
+  if (result.outcome === 'repaired') {
+    notifications.push({
+      channel: 'success',
+      title: 'Datos importados correctamente',
+      message: `${result.importedCount} registro(s) importado(s).`,
+    });
     notifications.push({
       channel: 'warning',
       title: 'Se corrigieron datos heredados',
       message: `${result.repairedCount} registro(s) fueron reparados automáticamente durante la importación.`,
+    });
+  }
+
+  if (result.outcome === 'partial') {
+    notifications.push({
+      channel: 'warning',
+      title: 'Importación completada con observaciones',
+      message: `${result.importedCount} registro(s) importado(s), ${result.repairedCount} reparado(s) y ${result.skippedEntries.length} omitido(s).`,
     });
   }
 

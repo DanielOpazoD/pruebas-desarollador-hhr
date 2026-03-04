@@ -21,9 +21,14 @@ import {
 } from '@/services/repositories/dailyRecordInitializationSeed';
 import { measureRepositoryOperation } from '@/services/repositories/repositoryPerformance';
 import { migrateLegacyDataWithReport } from '@/services/repositories/dataMigration';
+import {
+  createCopyPatientResult,
+  createInitializeDayResult,
+} from '@/services/repositories/contracts/dailyRecordResults';
 
 export interface DailyRecordInitializationResult {
   record: DailyRecord;
+  outcome: 'clean' | 'repaired';
   sourceDate?: string;
   sourceCompatibilityIntensity:
     | 'none'
@@ -38,6 +43,7 @@ export interface CopyPatientToDateResult {
   targetDate: string;
   sourceBedId: string;
   targetBedId: string;
+  outcome: 'clean' | 'repaired';
   sourceCompatibilityIntensity:
     | 'none'
     | 'normalized_only'
@@ -57,6 +63,7 @@ const buildCopySourceMeta = (
 ): Omit<DailyRecordInitializationResult, 'record'> => {
   if (!copySourceRecord) {
     return {
+      outcome: 'clean',
       sourceDate: copyFromDate,
       sourceCompatibilityIntensity: 'none',
       sourceMigrationRulesApplied: [],
@@ -65,6 +72,10 @@ const buildCopySourceMeta = (
 
   const migration = migrateLegacyDataWithReport(copySourceRecord, copySourceRecord.date);
   return {
+    outcome:
+      migration.compatibilityIntensity !== 'none' && migration.appliedRules.length > 0
+        ? 'repaired'
+        : 'clean',
     sourceDate: copySourceRecord.date,
     sourceCompatibilityIntensity: migration.compatibilityIntensity,
     sourceMigrationRulesApplied: migration.appliedRules,
@@ -167,7 +178,7 @@ export const initializeDayDetailed = async (
       if (existing) {
         return {
           record: existing,
-          sourceDate: copyFromDate,
+          ...createInitializeDayResult({ date, outcome: 'clean', sourceDate: copyFromDate }),
           sourceCompatibilityIntensity: 'none',
           sourceMigrationRulesApplied: [],
         };
@@ -178,6 +189,11 @@ export const initializeDayDetailed = async (
       const record = await initializeMissingDay(date, copyFromDate, copySourceRecord);
       return {
         record,
+        ...createInitializeDayResult({
+          date,
+          outcome: copyMeta.outcome,
+          sourceDate: copyMeta.sourceDate,
+        }),
         ...copyMeta,
       };
     },
@@ -212,8 +228,15 @@ export const copyPatientToDateDetailed = async (
   await save(assignCarriedPatientToRecord(targetRecord, targetBedId, sourcePatient));
 
   return {
-    sourceDate,
-    targetDate,
+    ...createCopyPatientResult({
+      sourceDate,
+      targetDate,
+      outcome:
+        sourceResult.compatibilityIntensity !== 'none' &&
+        sourceResult.migrationRulesApplied.length > 0
+          ? 'repaired'
+          : 'clean',
+    }),
     sourceBedId,
     targetBedId,
     sourceCompatibilityIntensity: sourceResult.compatibilityIntensity,

@@ -1,5 +1,9 @@
 import { DailyRecord } from '@/types';
-import { DailyRecordSchema, parseDailyRecordWithDefaultsReport } from '@/schemas/zodSchemas';
+import {
+  DailyRecordSchema,
+  hasStructuralRepairs,
+  parseDailyRecordWithDefaultsReport,
+} from '@/schemas/zodSchemas';
 
 const logSalvageSummary = (
   date: string,
@@ -13,15 +17,7 @@ const logSalvageSummary = (
     droppedCmaItems,
   } = report;
 
-  const hasRepairs =
-    nullNormalization.replacedNullCount > 0 ||
-    nullNormalization.droppedArrayEntriesCount > 0 ||
-    salvagedBeds.length > 0 ||
-    droppedDischargeItems > 0 ||
-    droppedTransferItems > 0 ||
-    droppedCmaItems > 0;
-
-  if (!hasRepairs) {
+  if (!hasStructuralRepairs(report)) {
     return;
   }
 

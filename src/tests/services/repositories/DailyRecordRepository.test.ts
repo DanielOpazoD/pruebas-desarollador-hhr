@@ -254,6 +254,30 @@ describe('DailyRecordRepository', () => {
       expect(result.beds['R1'].patientName).toBe('Patient X');
     });
 
+    it('returns semantic initialization outcome through initializeDayDetailed', async () => {
+      const prevRecord = {
+        ...mockRecord,
+        date: '2024-12-31',
+        beds: {
+          R1: buildPatient({
+            patientName: 'Paciente legacy',
+            status: 'ESTADO_INVALIDO',
+          } as unknown as Partial<PatientData>),
+        },
+      };
+
+      vi.mocked(idbService.getRecordForDate).mockImplementation(async date => {
+        if (date === mockDate) return null;
+        if (date === '2024-12-31') return prevRecord;
+        return null;
+      });
+
+      const result = await Repository.initializeDayDetailed(mockDate, '2024-12-31');
+
+      expect(result.outcome).toBe('repaired');
+      expect(result.sourceMigrationRulesApplied.length).toBeGreaterThan(0);
+    });
+
     it('should fallback to firestore during initialization if not found locally', async () => {
       vi.mocked(idbService.getRecordForDate).mockResolvedValueOnce(null);
       vi.mocked(firestoreService.getRecordFromFirestore).mockResolvedValueOnce(mockRecord);
@@ -577,6 +601,7 @@ describe('DailyRecordRepository', () => {
       const result = await Repository.copyPatientToDateDetailed(sourceDate, 'R1', targetDate, 'R2');
 
       expect(result.sourceDate).toBe(sourceDate);
+      expect(result.outcome).toBe('repaired');
       expect(result.sourceMigrationRulesApplied).toContain('salvage_patient_fallback_applied');
     });
   });

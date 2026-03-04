@@ -17,6 +17,9 @@ export const nullishDefault = <T extends z.ZodTypeAny>(
   createDefault: () => z.input<T>
 ) => z.preprocess(v => (v === null || v === undefined ? createDefault() : v), schema);
 
+export const emptyStringToUndefined = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess(v => (v === '' ? undefined : v), schema.optional());
+
 export const resolveLegacyNameParts = (
   patientName: string
 ): {

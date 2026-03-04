@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { BedType, PatientStatus, Specialty } from '@/types';
-import { nullableOptional, nullishDefault, resolveLegacyNameParts } from './helpers';
+import {
+  emptyStringToUndefined,
+  nullableOptional,
+  nullishDefault,
+  resolveLegacyNameParts,
+} from './helpers';
 
 export const BedTypeSchema = z.nativeEnum(BedType) as z.ZodType<BedType>;
 export const PatientStatusSchema = z.nativeEnum(PatientStatus);
@@ -131,35 +136,21 @@ export const PatientDataSchema: z.ZodType<PatientData, z.ZodTypeDef, unknown> = 
       secondLastName: z.string().default(''),
       identityStatus: nullableOptional(z.enum(['provisional', 'official'])),
       rut: z.string().default(''),
-      documentType: nullableOptional(
-        z.preprocess(v => (v === '' ? undefined : v), z.enum(['RUT', 'Pasaporte']).optional())
-      ),
+      documentType: nullableOptional(emptyStringToUndefined(z.enum(['RUT', 'Pasaporte']))),
       age: z.string().default(''),
       birthDate: nullableOptional(z.string()),
       biologicalSex: nullableOptional(
-        z.preprocess(
-          v => (v === '' ? undefined : v),
-          z.enum(['Masculino', 'Femenino', 'Indeterminado']).optional()
-        )
+        emptyStringToUndefined(z.enum(['Masculino', 'Femenino', 'Indeterminado']))
       ),
       insurance: nullableOptional(
-        z.preprocess(
-          v => (v === '' ? undefined : v),
-          z.enum(['Fonasa', 'Isapre', 'Particular']).optional()
-        )
+        emptyStringToUndefined(z.enum(['Fonasa', 'Isapre', 'Particular']))
       ),
       admissionOrigin: nullableOptional(
-        z.preprocess(
-          v => (v === '' ? undefined : v),
-          z.enum(['CAE', 'APS', 'Urgencias', 'Pabellón', 'Otro']).optional()
-        )
+        emptyStringToUndefined(z.enum(['CAE', 'APS', 'Urgencias', 'Pabellón', 'Otro']))
       ),
       admissionOriginDetails: nullableOptional(z.string()),
       origin: nullableOptional(
-        z.preprocess(
-          v => (v === '' ? undefined : v),
-          z.enum(['Residente', 'Turista Nacional', 'Turista Extranjero']).optional()
-        )
+        emptyStringToUndefined(z.enum(['Residente', 'Turista Nacional', 'Turista Extranjero']))
       ),
       isRapanui: nullableOptional(z.boolean()),
       pathology: z.string().default(''),

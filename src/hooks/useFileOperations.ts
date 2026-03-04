@@ -4,6 +4,11 @@ import { DailyRecord } from '@/types';
 import { useNotification } from '@/context/UIContext';
 import { buildJsonImportNotifications } from '@/hooks/controllers/fileImportFeedbackController';
 import {
+  buildExportCsvNotification,
+  buildExportJsonNotification,
+  buildImportFileErrorNotification,
+} from '@/hooks/controllers/fileOperationsFeedbackController';
+import {
   isJsonImportFile,
   shouldRefreshAfterJsonImport,
 } from '@/hooks/controllers/fileOperationsController';
@@ -24,22 +29,35 @@ export const useFileOperations = (
   onRefresh: () => void
 ): UseFileOperationsReturn => {
   const { success, error, warning } = useNotification();
+  const dispatchNotification = (notification: {
+    channel: 'success' | 'warning' | 'error';
+    title: string;
+    message?: string;
+  }) => {
+    if (notification.channel === 'success') {
+      success(notification.title, notification.message);
+    } else if (notification.channel === 'warning') {
+      warning(notification.title, notification.message);
+    } else {
+      error(notification.title, notification.message);
+    }
+  };
 
   const handleExportJSON = () => {
     try {
       ExportService.exportDataJSON();
-      success('Datos exportados exitosamente', 'Export JSON');
+      dispatchNotification(buildExportJsonNotification('success'));
     } catch (_err) {
-      error('Error al exportar datos', 'Export Error');
+      dispatchNotification(buildExportJsonNotification('error'));
     }
   };
 
   const handleExportCSV = () => {
     try {
       ExportService.exportDataCSV(record);
-      success('CSV exportado exitosamente', 'Export CSV');
+      dispatchNotification(buildExportCsvNotification('success'));
     } catch (_err) {
-      error('Error al exportar CSV', 'Export Error');
+      dispatchNotification(buildExportCsvNotification('error'));
     }
   };
 
@@ -49,25 +67,19 @@ export const useFileOperations = (
         const result = await ExportService.importDataJSONDetailed(file);
         if (result.success) {
           for (const notification of buildJsonImportNotifications(result)) {
-            if (notification.channel === 'success') {
-              success(notification.title, notification.message);
-            } else if (notification.channel === 'warning') {
-              warning(notification.title, notification.message);
-            } else {
-              error(notification.title, notification.message);
-            }
+            dispatchNotification(notification);
           }
           if (shouldRefreshAfterJsonImport(result)) {
             onRefresh();
           }
         } else {
-          error('Error al importar datos', 'Import Error');
+          dispatchNotification(buildImportFileErrorNotification('import_failed'));
         }
       } catch (_err) {
-        error('Error al procesar archivo', 'Import Error');
+        dispatchNotification(buildImportFileErrorNotification('processing_failed'));
       }
     } else {
-      error('Por favor seleccione un archivo .json válido', 'Formato Inválido');
+      dispatchNotification(buildImportFileErrorNotification('invalid_format'));
     }
   };
 

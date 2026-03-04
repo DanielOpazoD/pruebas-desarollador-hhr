@@ -1,9 +1,10 @@
 import { DailyRecord } from '@/types';
 import { saveRecord } from '@/services/storage/indexedDBService';
-import { parseDailyRecordWithDefaultsReport } from '@/schemas/zodSchemas';
+import { hasStructuralRepairs, parseDailyRecordWithDefaultsReport } from '@/schemas/zodSchemas';
 
 export interface JsonImportResult {
   success: boolean;
+  outcome: 'clean' | 'repaired' | 'partial' | 'blocked';
   importedCount: number;
   repairedCount: number;
   skippedEntries: string[];
@@ -43,15 +44,7 @@ export const importDataJSONDetailed = async (file: File): Promise<JsonImportResu
         const parsed = parseDailyRecordWithDefaultsReport(value, key);
         importedRecords.push(parsed.record);
 
-        const hasRepairs =
-          parsed.report.nullNormalization.replacedNullCount > 0 ||
-          parsed.report.nullNormalization.droppedArrayEntriesCount > 0 ||
-          parsed.report.salvagedBeds.length > 0 ||
-          parsed.report.droppedDischargeItems > 0 ||
-          parsed.report.droppedTransferItems > 0 ||
-          parsed.report.droppedCmaItems > 0;
-
-        if (hasRepairs) {
+        if (hasStructuralRepairs(parsed.report)) {
           repairedCount += 1;
         }
       } catch (_error) {
@@ -63,6 +56,7 @@ export const importDataJSONDetailed = async (file: File): Promise<JsonImportResu
       alert('El archivo JSON no contiene registros importables.');
       return {
         success: false,
+        outcome: 'blocked',
         importedCount: 0,
         repairedCount: 0,
         skippedEntries,
@@ -70,8 +64,11 @@ export const importDataJSONDetailed = async (file: File): Promise<JsonImportResu
     }
 
     await persistImportedRecords(importedRecords);
+    const outcome =
+      skippedEntries.length > 0 ? 'partial' : repairedCount > 0 ? 'repaired' : 'clean';
     return {
       success: true,
+      outcome,
       importedCount: importedRecords.length,
       repairedCount,
       skippedEntries,
@@ -81,6 +78,7 @@ export const importDataJSONDetailed = async (file: File): Promise<JsonImportResu
     alert('Error al procesar el archivo JSON.');
     return {
       success: false,
+      outcome: 'blocked',
       importedCount: 0,
       repairedCount: 0,
       skippedEntries: [],

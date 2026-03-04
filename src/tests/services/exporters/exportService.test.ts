@@ -152,6 +152,7 @@ describe('exportService', () => {
       const result = await importDataJSONDetailed(file);
 
       expect(result.success).toBe(true);
+      expect(result.outcome).toBe('repaired');
       expect(result.repairedCount).toBe(1);
       expect(result.importedCount).toBe(1);
     });

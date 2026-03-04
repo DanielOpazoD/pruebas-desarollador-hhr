@@ -14,6 +14,7 @@ describe('fileOperationsController', () => {
     expect(
       shouldRefreshAfterJsonImport({
         success: true,
+        outcome: 'clean',
         importedCount: 1,
         repairedCount: 0,
         skippedEntries: [],
@@ -22,6 +23,7 @@ describe('fileOperationsController', () => {
     expect(
       shouldRefreshAfterJsonImport({
         success: false,
+        outcome: 'blocked',
         importedCount: 0,
         repairedCount: 0,
         skippedEntries: [],

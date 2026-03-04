@@ -351,6 +351,7 @@ vi.mock('@/services/repositories/DailyRecordRepository', () => ({
     copyPatientToDateDetailed: vi.fn().mockResolvedValue({
       sourceDate: '2026-01-01',
       targetDate: '2026-01-02',
+      outcome: 'clean',
       sourceBedId: 'R1',
       targetBedId: 'R2',
       sourceCompatibilityIntensity: 'none',
@@ -395,6 +396,7 @@ vi.mock('@/services/repositories/DailyRecordRepository', () => ({
   copyPatientToDateDetailed: vi.fn().mockResolvedValue({
     sourceDate: '2026-01-01',
     targetDate: '2026-01-02',
+    outcome: 'clean',
     sourceBedId: 'R1',
     targetBedId: 'R2',
     sourceCompatibilityIntensity: 'none',

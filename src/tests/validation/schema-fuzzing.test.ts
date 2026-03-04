@@ -1,62 +1,96 @@
 import { describe, it, expect } from 'vitest';
 import {
-    safeParseDailyRecord,
-    parseDailyRecordWithDefaults
+  safeParseDailyRecord,
+  parseDailyRecordWithDefaults,
+  parseDailyRecordWithDefaultsReport,
+  hasStructuralRepairs,
 } from '@/schemas/zodSchemas';
 
 describe('Data Schema Resilience (Fuzzing)', () => {
-    it('should fail gracefully on totally corrupted data', () => {
-        const corrupted = {
-            date: 12345, // Should be string
-            beds: "not-an-object",
-            discharges: null
-        };
+  it('should fail gracefully on totally corrupted data', () => {
+    const corrupted = {
+      date: 12345, // Should be string
+      beds: 'not-an-object',
+      discharges: null,
+    };
 
-        const result = safeParseDailyRecord(corrupted);
-        expect(result).toBeNull();
-    });
+    const result = safeParseDailyRecord(corrupted);
+    expect(result).toBeNull();
+  });
 
-    it('should recover basic structure using parseDailyRecordWithDefaults', () => {
-        const partiallyCorrupted = {
-            date: '2024-12-25',
-            beds: 'INVALID_DATA',
-            nurses: 'NOT_AN_ARRAY'
-        };
+  it('should recover basic structure using parseDailyRecordWithDefaults', () => {
+    const partiallyCorrupted = {
+      date: '2024-12-25',
+      beds: 'INVALID_DATA',
+      nurses: 'NOT_AN_ARRAY',
+    };
 
-        const result = parseDailyRecordWithDefaults(partiallyCorrupted, '2024-12-25');
+    const result = parseDailyRecordWithDefaults(partiallyCorrupted, '2024-12-25');
 
-        expect(result.date).toBe('2024-12-25');
-        expect(result.beds).toEqual({}); // Recovered default
-        expect(Array.isArray(result.nurses)).toBe(true); // Recovered default
-    });
+    expect(result.date).toBe('2024-12-25');
+    expect(result.beds).toEqual({}); // Recovered default
+    expect(Array.isArray(result.nurses)).toBe(true); // Recovered default
+  });
 
-    it('should handle unexpected enum values in PatientData', () => {
-        const invalidPatient = {
-            date: '2024-12-25',
-            beds: {
-                'BED_01': {
-                    patientName: 'CORRUPT TEST',
-                    status: 'SUPER_GRAVE', // Invalid enum
-                    biologicalSex: 'ROBOT' // Invalid enum
-                }
-            }
-        };
+  it('should handle unexpected enum values in PatientData', () => {
+    const invalidPatient = {
+      date: '2024-12-25',
+      beds: {
+        BED_01: {
+          patientName: 'CORRUPT TEST',
+          status: 'SUPER_GRAVE', // Invalid enum
+          biologicalSex: 'ROBOT', // Invalid enum
+        },
+      },
+    };
 
-        const result = safeParseDailyRecord(invalidPatient);
-        // Currently safeParse returns null if ANY part fails
-        expect(result).toBeNull();
-    });
+    const result = safeParseDailyRecord(invalidPatient);
+    // Currently safeParse returns null if ANY part fails
+    expect(result).toBeNull();
+  });
 
-    it('should passthrough extra fields (forward compatibility)', () => {
-        const dataWithFutureFields = {
-            date: '2024-12-25',
-            beds: {},
-            newFeatureFlag: true,
-            v4Metadata: { region: 'hospital' }
-        };
+  it('should passthrough extra fields (forward compatibility)', () => {
+    const dataWithFutureFields = {
+      date: '2024-12-25',
+      beds: {},
+      newFeatureFlag: true,
+      v4Metadata: { region: 'hospital' },
+    };
 
-        const result = safeParseDailyRecord(dataWithFutureFields);
-        expect(result).not.toBeNull();
-        expect((result as unknown as { newFeatureFlag?: boolean }).newFeatureFlag).toBe(true);
-    });
+    const result = safeParseDailyRecord(dataWithFutureFields);
+    expect(result).not.toBeNull();
+    expect((result as unknown as { newFeatureFlag?: boolean }).newFeatureFlag).toBe(true);
+  });
+
+  it('should salvage mixed legacy payloads and report repairs', () => {
+    const mixedLegacyPayload = {
+      date: '2024-12-25',
+      beds: {
+        R1: {
+          patientName: 'Paciente mixto',
+          documentType: '',
+          clinicalEvents: [
+            null,
+            {
+              id: 'evt-1',
+              name: 'Control',
+              date: '2024-12-25',
+              note: null,
+              createdAt: '2024-12-25T10:00:00.000Z',
+            },
+          ],
+        },
+      },
+      discharges: [null],
+      transfers: null,
+    };
+
+    const parsed = parseDailyRecordWithDefaultsReport(mixedLegacyPayload, '2024-12-25');
+
+    expect(parsed.record.beds.R1.patientName).toBe('Paciente mixto');
+    expect(parsed.record.beds.R1.documentType).toBeUndefined();
+    expect(parsed.record.beds.R1.clinicalEvents).toHaveLength(1);
+    expect(parsed.record.discharges).toEqual([]);
+    expect(hasStructuralRepairs(parsed.report)).toBe(true);
+  });
 });

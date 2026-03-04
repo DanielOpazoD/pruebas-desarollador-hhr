@@ -18,6 +18,7 @@ import {
   safeParseDailyRecord,
   parseDailyRecordWithDefaults,
   parseDailyRecordWithDefaultsReport,
+  hasStructuralRepairs,
 } from '@/schemas/zodSchemas';
 
 describe('zodSchemas', () => {
@@ -200,6 +201,23 @@ describe('zodSchemas', () => {
 
       expect(patient.clinicalEvents).toHaveLength(1);
       expect(patient.clinicalEvents?.[0]?.note).toBeUndefined();
+    });
+
+    it('should normalize empty-string legacy enums to undefined', () => {
+      const patient = PatientDataSchema.parse({
+        patientName: 'Paciente Legacy',
+        documentType: '',
+        biologicalSex: '',
+        insurance: '',
+        admissionOrigin: '',
+        origin: '',
+      });
+
+      expect(patient.documentType).toBeUndefined();
+      expect(patient.biologicalSex).toBeUndefined();
+      expect(patient.insurance).toBeUndefined();
+      expect(patient.admissionOrigin).toBeUndefined();
+      expect(patient.origin).toBeUndefined();
     });
 
     it('should normalize legacy null arrays and nested optional objects', () => {
@@ -623,6 +641,39 @@ describe('zodSchemas', () => {
       expect(record.cudyrLockedAt).toBeUndefined();
       expect(record.cudyrLockedBy).toBeUndefined();
       expect(record.handoffNightReceives).toEqual([]);
+    });
+  });
+
+  describe('repair reports', () => {
+    it('detects structural repairs in salvaged daily records', () => {
+      const parsed = parseDailyRecordWithDefaultsReport(
+        {
+          date: '2026-03-04',
+          beds: {
+            R1: {
+              patientName: 'Paciente Legacy',
+              status: 'ESTADO_INVALIDO',
+              clinicalEvents: [null],
+            },
+          },
+        },
+        '2026-03-04'
+      );
+
+      expect(hasStructuralRepairs(parsed.report)).toBe(true);
+    });
+
+    it('does not mark clean records as repaired', () => {
+      const parsed = parseDailyRecordWithDefaultsReport(
+        {
+          date: '2026-03-04',
+          beds: {},
+          nurses: ['', ''],
+        },
+        '2026-03-04'
+      );
+
+      expect(hasStructuralRepairs(parsed.report)).toBe(false);
     });
   });
 });

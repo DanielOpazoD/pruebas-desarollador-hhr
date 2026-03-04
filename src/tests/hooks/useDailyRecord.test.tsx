@@ -14,10 +14,28 @@ vi.mock('@/services/repositories/DailyRecordRepository', () => {
     getForDate: vi.fn(),
     subscribe: vi.fn(() => vi.fn()),
     save: vi.fn().mockResolvedValue(undefined),
+    saveDetailed: vi.fn().mockResolvedValue({
+      date: '2025-01-01',
+      outcome: 'clean',
+      savedLocally: true,
+      savedRemotely: true,
+      queuedForRetry: false,
+      autoMerged: false,
+    }),
     updatePartial: vi.fn().mockResolvedValue(undefined),
+    updatePartialDetailed: vi.fn().mockResolvedValue({
+      date: '2025-01-01',
+      outcome: 'clean',
+      savedLocally: true,
+      updatedRemotely: true,
+      queuedForRetry: false,
+      autoMerged: false,
+      patchedFields: 1,
+    }),
     initializeDay: vi.fn().mockResolvedValue(null), // Changed to null to force init
     initializeDayDetailed: vi.fn().mockResolvedValue({
       record: null,
+      outcome: 'clean',
       sourceCompatibilityIntensity: 'none',
       sourceMigrationRulesApplied: [],
     }),
@@ -32,10 +50,16 @@ vi.mock('@/services/repositories/DailyRecordRepository', () => {
       migrationRulesApplied: [],
     }),
     syncWithFirestore: vi.fn().mockResolvedValue(null),
+    syncWithFirestoreDetailed: vi.fn().mockResolvedValue({
+      date: '2025-01-01',
+      outcome: 'clean',
+      record: null,
+    }),
     copyPatientToDate: vi.fn().mockResolvedValue(undefined),
     copyPatientToDateDetailed: vi.fn().mockResolvedValue({
       sourceDate: '2025-01-01',
       targetDate: '2025-01-02',
+      outcome: 'clean',
       sourceBedId: 'R1',
       targetBedId: 'R2',
       sourceCompatibilityIntensity: 'none',
@@ -90,6 +114,7 @@ describe('useDailyRecord', () => {
       recordsMap[date] = rec;
       return {
         record: rec,
+        outcome: 'clean',
         sourceCompatibilityIntensity: 'none',
         sourceMigrationRulesApplied: [],
       };

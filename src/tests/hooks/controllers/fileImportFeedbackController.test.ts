@@ -5,6 +5,7 @@ describe('fileImportFeedbackController', () => {
   it('builds success, repair and skipped notifications', () => {
     const notifications = buildJsonImportNotifications({
       success: true,
+      outcome: 'partial',
       importedCount: 3,
       repairedCount: 1,
       skippedEntries: ['2026-03-01', '2026-03-02'],
@@ -12,14 +13,9 @@ describe('fileImportFeedbackController', () => {
 
     expect(notifications).toEqual([
       {
-        channel: 'success',
-        title: 'Datos importados correctamente',
-        message: '3 registro(s) importado(s).',
-      },
-      {
         channel: 'warning',
-        title: 'Se corrigieron datos heredados',
-        message: '1 registro(s) fueron reparados automáticamente durante la importación.',
+        title: 'Importación completada con observaciones',
+        message: '3 registro(s) importado(s), 1 reparado(s) y 2 omitido(s).',
       },
       {
         channel: 'error',

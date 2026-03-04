@@ -22,10 +22,8 @@ import {
   buildDailyRecordContextValue,
   resolveCopyPatientRequest,
 } from '@/hooks/controllers/dailyRecordController';
-import {
-  hasCriticalLegacyRepairSignal,
-  getLegacyRepairWarningMessage,
-} from '@/hooks/controllers/legacyRepairWarningController';
+import { hasCriticalLegacyRepairSignal } from '@/hooks/controllers/legacyRepairWarningController';
+import { buildCopyPatientNotifications } from '@/hooks/controllers/persistenceFeedbackController';
 
 // Types
 import { DailyRecordContextType } from './useDailyRecordTypes';
@@ -105,8 +103,12 @@ export const useDailyRecord = (
           copyRequest.targetDate,
           copyRequest.targetBedId
         );
-        if (hasCriticalLegacyRepairSignal(copyResult)) {
-          warning('Se corrigieron datos heredados', getLegacyRepairWarningMessage('copy_patient'));
+        const notifications = buildCopyPatientNotifications({
+          outcome: copyResult.outcome,
+          hasCriticalLegacyRepair: hasCriticalLegacyRepairSignal(copyResult),
+        });
+        for (const notification of notifications) {
+          warning(notification.title, notification.message);
         }
         await refresh();
       } catch (error) {

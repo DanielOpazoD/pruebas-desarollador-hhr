@@ -9,10 +9,8 @@ import {
 } from '@/services/repositories/DailyRecordRepository';
 import { DailyRecord } from '@/types';
 import { getUserFriendlyErrorMessage } from '@/services/utils/errorService';
-import {
-  hasCriticalLegacyRepairSignal,
-  getLegacyRepairWarningMessage,
-} from '@/hooks/controllers/legacyRepairWarningController';
+import { hasCriticalLegacyRepairSignal } from '@/hooks/controllers/legacyRepairWarningController';
+import { buildCreateDayNotifications } from '@/hooks/controllers/persistenceFeedbackController';
 
 interface UsePersistenceProps {
   currentDateString: string;
@@ -75,13 +73,19 @@ export const usePersistence = ({
         markLocalChange();
         setRecord(newRecord);
 
-        const sourceMsg = prevDate ? `Copiado desde ${prevDate}` : 'Registro en blanco';
-        success('Día creado', sourceMsg);
-        if (
-          hasCriticalLegacyRepairSignal(copySourceMeta) ||
-          hasCriticalLegacyRepairSignal(initResult)
-        ) {
-          warning('Se corrigieron datos heredados', getLegacyRepairWarningMessage('copy_day'));
+        const notifications = buildCreateDayNotifications({
+          sourceDate: prevDate,
+          outcome: initResult.outcome,
+          hasCriticalLegacyRepair:
+            hasCriticalLegacyRepairSignal(copySourceMeta) ||
+            hasCriticalLegacyRepairSignal(initResult),
+        });
+        for (const notification of notifications) {
+          if (notification.channel === 'success') {
+            success(notification.title, notification.message);
+          } else {
+            warning(notification.title, notification.message);
+          }
         }
 
         logDailyRecordCreated(

@@ -119,6 +119,26 @@ export interface PatientDataParseReport {
   usedFallback: boolean;
 }
 
+export const hasStructuralRepairs = (
+  report: DailyRecordParseReport | PatientDataParseReport
+): boolean => {
+  const hasNullRepairs =
+    report.nullNormalization.replacedNullCount > 0 ||
+    report.nullNormalization.droppedArrayEntriesCount > 0;
+
+  if ('usedFallback' in report) {
+    return hasNullRepairs || report.usedFallback;
+  }
+
+  return (
+    hasNullRepairs ||
+    report.salvagedBeds.length > 0 ||
+    report.droppedDischargeItems > 0 ||
+    report.droppedTransferItems > 0 ||
+    report.droppedCmaItems > 0
+  );
+};
+
 // ============================================================================
 // Safe Parsing Utilities
 // ============================================================================
