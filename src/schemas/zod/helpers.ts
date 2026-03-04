@@ -12,6 +12,11 @@ export const nullableOptional = <T extends z.ZodTypeAny>(schema: T) =>
     .optional()
     .transform(v => v ?? undefined);
 
+export const nullishDefault = <T extends z.ZodTypeAny>(
+  schema: T,
+  createDefault: () => z.input<T>
+) => z.preprocess(v => (v === null || v === undefined ? createDefault() : v), schema);
+
 export const resolveLegacyNameParts = (
   patientName: string
 ): {

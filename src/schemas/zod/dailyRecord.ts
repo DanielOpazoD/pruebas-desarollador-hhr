@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { DailyRecord } from '@/types';
-import { DATE_REGEX } from './helpers';
+import { DATE_REGEX, nullableOptional, nullishDefault } from './helpers';
 import { BedTypeSchema, PatientDataSchema } from './patient';
 import { DischargeDataSchema, TransferDataSchema, CMADataSchema } from './movements';
 
@@ -8,15 +8,15 @@ const MedicalHandoffActorSchema = z.object({
   uid: z.string(),
   displayName: z.string(),
   email: z.string(),
-  specialty: z.string().optional(),
-  role: z.string().optional(),
+  specialty: nullableOptional(z.string()),
+  role: nullableOptional(z.string()),
 });
 
 const MedicalHandoffDailyContinuityEntrySchema = z.object({
   status: z.enum(['updated_by_specialist', 'confirmed_no_changes']),
-  confirmedBy: MedicalHandoffActorSchema.optional(),
-  confirmedAt: z.string().optional(),
-  comment: z.string().optional(),
+  confirmedBy: nullableOptional(MedicalHandoffActorSchema),
+  confirmedAt: nullableOptional(z.string()),
+  comment: nullableOptional(z.string()),
 });
 
 const MedicalSpecialtyHandoffNoteSchema = z.object({
@@ -24,9 +24,9 @@ const MedicalSpecialtyHandoffNoteSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   author: MedicalHandoffActorSchema,
-  lastEditor: MedicalHandoffActorSchema.optional(),
+  lastEditor: nullableOptional(MedicalHandoffActorSchema),
   version: z.number().default(1),
-  dailyContinuity: z.record(z.string(), MedicalHandoffDailyContinuityEntrySchema).optional(),
+  dailyContinuity: nullableOptional(z.record(z.string(), MedicalHandoffDailyContinuityEntrySchema)),
 });
 
 export const DailyRecordSchema: z.ZodType<DailyRecord, z.ZodTypeDef, unknown> = z
@@ -47,93 +47,95 @@ export const DailyRecordSchema: z.ZodType<DailyRecord, z.ZodTypeDef, unknown> = 
         z.record(z.string(), BedTypeSchema)
       )
       .default({}),
-    discharges: z.array(DischargeDataSchema).default([]),
-    transfers: z.array(TransferDataSchema).default([]),
-    cma: z.array(CMADataSchema).default([]),
+    discharges: nullishDefault(z.array(DischargeDataSchema), () => []),
+    transfers: nullishDefault(z.array(TransferDataSchema), () => []),
+    cma: nullishDefault(z.array(CMADataSchema), () => []),
     lastUpdated: z.string().default(() => new Date().toISOString()),
-    dateTimestamp: z.number().optional(),
+    dateTimestamp: nullableOptional(z.number()),
     schemaVersion: z.number().default(1),
-    nurses: z.array(z.string()).default(['', '']),
-    nurseName: z.string().optional(),
-    nursesDayShift: z.array(z.string()).default(['', '']),
-    nursesNightShift: z.array(z.string()).default(['', '']),
-    tensDayShift: z.array(z.string()).default(['', '', '']),
-    tensNightShift: z.array(z.string()).default(['', '', '']),
-    activeExtraBeds: z.array(z.string()).default([]),
+    nurses: nullishDefault(z.array(z.string()), () => ['', '']),
+    nurseName: nullableOptional(z.string()),
+    nursesDayShift: nullishDefault(z.array(z.string()), () => ['', '']),
+    nursesNightShift: nullishDefault(z.array(z.string()), () => ['', '']),
+    tensDayShift: nullishDefault(z.array(z.string()), () => ['', '', '']),
+    tensNightShift: nullishDefault(z.array(z.string()), () => ['', '', '']),
+    activeExtraBeds: nullishDefault(z.array(z.string()), () => []),
     handoffDayChecklist: z
       .object({
-        escalaBraden: z.boolean().optional(),
-        escalaRiesgoCaidas: z.boolean().optional(),
-        escalaRiesgoLPP: z.boolean().optional(),
+        escalaBraden: nullableOptional(z.boolean()),
+        escalaRiesgoCaidas: nullableOptional(z.boolean()),
+        escalaRiesgoLPP: nullableOptional(z.boolean()),
       })
       .default({}),
     handoffNightChecklist: z
       .object({
-        estadistica: z.boolean().optional(),
-        categorizacionCudyr: z.boolean().optional(),
-        encuestaUTI: z.boolean().optional(),
-        encuestaMedias: z.boolean().optional(),
-        conteoMedicamento: z.boolean().optional(),
-        conteoNoControlados: z.boolean().optional(),
-        conteoNoControladosProximaFecha: z.string().optional(),
+        estadistica: nullableOptional(z.boolean()),
+        categorizacionCudyr: nullableOptional(z.boolean()),
+        encuestaUTI: nullableOptional(z.boolean()),
+        encuestaMedias: nullableOptional(z.boolean()),
+        conteoMedicamento: nullableOptional(z.boolean()),
+        conteoNoControlados: nullableOptional(z.boolean()),
+        conteoNoControladosProximaFecha: nullableOptional(z.string()),
       })
       .default({}),
-    handoffNovedadesDayShift: z.string().optional(),
-    handoffNovedadesNightShift: z.string().optional(),
-    medicalHandoffNovedades: z.string().optional(),
-    medicalHandoffBySpecialty: z.record(z.string(), MedicalSpecialtyHandoffNoteSchema).optional(),
-    medicalHandoffDoctor: z.string().optional(),
-    medicalHandoffSentAt: z.string().optional(),
-    medicalHandoffSentAtByScope: z
-      .object({
-        all: z.string().optional(),
-        upc: z.string().optional(),
-        'no-upc': z.string().optional(),
+    handoffNovedadesDayShift: nullableOptional(z.string()),
+    handoffNovedadesNightShift: nullableOptional(z.string()),
+    medicalHandoffNovedades: nullableOptional(z.string()),
+    medicalHandoffBySpecialty: nullableOptional(
+      z.record(z.string(), MedicalSpecialtyHandoffNoteSchema)
+    ),
+    medicalHandoffDoctor: nullableOptional(z.string()),
+    medicalHandoffSentAt: nullableOptional(z.string()),
+    medicalHandoffSentAtByScope: nullableOptional(
+      z.object({
+        all: nullableOptional(z.string()),
+        upc: nullableOptional(z.string()),
+        'no-upc': nullableOptional(z.string()),
       })
-      .optional(),
-    medicalSignatureLinkTokenByScope: z
-      .object({
-        all: z.string().optional(),
-        upc: z.string().optional(),
-        'no-upc': z.string().optional(),
+    ),
+    medicalSignatureLinkTokenByScope: nullableOptional(
+      z.object({
+        all: nullableOptional(z.string()),
+        upc: nullableOptional(z.string()),
+        'no-upc': nullableOptional(z.string()),
       })
-      .optional(),
-    medicalSignature: z
-      .object({
+    ),
+    medicalSignature: nullableOptional(
+      z.object({
         doctorName: z.string(),
         signedAt: z.string(),
-        userAgent: z.string().optional(),
+        userAgent: nullableOptional(z.string()),
       })
-      .optional(),
-    medicalSignatureByScope: z
-      .object({
-        all: z
-          .object({
+    ),
+    medicalSignatureByScope: nullableOptional(
+      z.object({
+        all: nullableOptional(
+          z.object({
             doctorName: z.string(),
             signedAt: z.string(),
-            userAgent: z.string().optional(),
+            userAgent: nullableOptional(z.string()),
           })
-          .optional(),
-        upc: z
-          .object({
+        ),
+        upc: nullableOptional(
+          z.object({
             doctorName: z.string(),
             signedAt: z.string(),
-            userAgent: z.string().optional(),
+            userAgent: nullableOptional(z.string()),
           })
-          .optional(),
-        'no-upc': z
-          .object({
+        ),
+        'no-upc': nullableOptional(
+          z.object({
             doctorName: z.string(),
             signedAt: z.string(),
-            userAgent: z.string().optional(),
+            userAgent: nullableOptional(z.string()),
           })
-          .optional(),
+        ),
       })
-      .optional(),
-    cudyrLocked: z.boolean().optional(),
-    cudyrLockedAt: z.string().optional(),
-    cudyrLockedBy: z.string().optional(),
-    handoffNightReceives: z.array(z.string()).default([]),
+    ),
+    cudyrLocked: nullableOptional(z.boolean()),
+    cudyrLockedAt: nullableOptional(z.string()),
+    cudyrLockedBy: nullableOptional(z.string()),
+    handoffNightReceives: nullishDefault(z.array(z.string()), () => []),
   })
   .passthrough();
 

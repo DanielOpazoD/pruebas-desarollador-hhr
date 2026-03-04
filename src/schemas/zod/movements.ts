@@ -20,7 +20,7 @@ export const IeehDataSchema = z.object({
 export const DischargeDataSchema: z.ZodType<DischargeData, z.ZodTypeDef, unknown> = z
   .object({
     id: z.string(),
-    movementDate: z.string().optional(),
+    movementDate: nullableOptional(z.string()),
     bedName: z.string().default(''),
     bedId: z.string().default(''),
     bedType: z.string().default(''),
@@ -35,16 +35,16 @@ export const DischargeDataSchema: z.ZodType<DischargeData, z.ZodTypeDef, unknown
     insurance: nullableOptional(z.string()),
     origin: nullableOptional(z.string()),
     isRapanui: nullableOptional(z.boolean()),
-    originalData: PatientDataSchema.optional(),
-    isNested: z.boolean().optional(),
-    ieehData: IeehDataSchema.optional(),
+    originalData: nullableOptional(PatientDataSchema),
+    isNested: nullableOptional(z.boolean()),
+    ieehData: nullableOptional(IeehDataSchema),
   })
   .passthrough();
 
 export const TransferDataSchema: z.ZodType<TransferData, z.ZodTypeDef, unknown> = z
   .object({
     id: z.string(),
-    movementDate: z.string().optional(),
+    movementDate: nullableOptional(z.string()),
     bedName: z.string().default(''),
     bedId: z.string().default(''),
     bedType: z.string().default(''),
@@ -60,8 +60,8 @@ export const TransferDataSchema: z.ZodType<TransferData, z.ZodTypeDef, unknown> 
     insurance: nullableOptional(z.string()),
     origin: nullableOptional(z.string()),
     isRapanui: nullableOptional(z.boolean()),
-    originalData: PatientDataSchema.optional(),
-    isNested: z.boolean().optional(),
+    originalData: nullableOptional(PatientDataSchema),
+    isNested: nullableOptional(z.boolean()),
   })
   .passthrough();
 
@@ -81,6 +81,6 @@ export const CMADataSchema: z.ZodType<CMAData, z.ZodTypeDef, unknown> = z
     enteredBy: nullableOptional(z.string()),
     timestamp: nullableOptional(z.string()),
     originalBedId: nullableOptional(z.string()),
-    originalData: PatientDataSchema.optional(),
+    originalData: nullableOptional(PatientDataSchema),
   })
   .passthrough();

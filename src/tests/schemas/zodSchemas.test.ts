@@ -181,6 +181,63 @@ describe('zodSchemas', () => {
       });
       expect((patient as unknown as { customField?: string }).customField).toBe('custom value');
     });
+
+    it('should coerce legacy null clinical event notes to undefined', () => {
+      const patient = PatientDataSchema.parse({
+        bedId: 'R1',
+        patientName: 'Juan Perez',
+        clinicalEvents: [
+          {
+            id: 'event-1',
+            name: 'Cirugia',
+            date: '2026-03-03',
+            note: null,
+            createdAt: '2026-03-03T20:30:00.000Z',
+          },
+        ],
+      });
+
+      expect(patient.clinicalEvents).toHaveLength(1);
+      expect(patient.clinicalEvents?.[0]?.note).toBeUndefined();
+    });
+
+    it('should normalize legacy null arrays and nested optional objects', () => {
+      const patient = PatientDataSchema.parse({
+        bedId: 'R1',
+        patientName: 'Paciente Legacy',
+        devices: null,
+        clinicalEvents: null,
+        medicalHandoffEntries: null,
+        deviceDetails: {
+          CUP: null,
+          CVC: {
+            installationDate: null,
+            removalDate: null,
+            note: null,
+          },
+        },
+        medicalHandoffAudit: {
+          lastSpecialistUpdateAt: null,
+          lastSpecialistUpdateBy: null,
+          currentStatusDate: null,
+          currentStatusAt: null,
+          currentStatusBy: null,
+        },
+      });
+
+      expect(patient.devices).toEqual([]);
+      expect(patient.clinicalEvents).toEqual([]);
+      expect(patient.medicalHandoffEntries).toBeUndefined();
+      expect(patient.deviceDetails?.CUP).toBeUndefined();
+      expect(patient.deviceDetails?.CVC?.installationDate).toBeUndefined();
+      expect(patient.deviceDetails?.CVC?.removalDate).toBeUndefined();
+      expect(patient.deviceDetails?.CVC?.note).toBeUndefined();
+      expect(patient.medicalHandoffAudit?.lastSpecialistUpdateAt).toBeUndefined();
+      expect(patient.medicalHandoffAudit?.lastSpecialistUpdateBy).toBeUndefined();
+      expect(patient.medicalHandoffAudit?.currentStatusDate).toBeUndefined();
+      expect(patient.medicalHandoffAudit?.currentStatusAt).toBeUndefined();
+      expect(patient.medicalHandoffAudit?.currentStatusBy).toBeUndefined();
+    });
   });
 
   describe('IeehDataSchema', () => {
@@ -391,6 +448,119 @@ describe('zodSchemas', () => {
       expect(result.date).toBe('2026-01-15');
       expect(result.beds).toEqual({});
       consoleSpy.mockRestore();
+    });
+
+    it('should salvage beds with legacy null clinical event notes', () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const result = parseDailyRecordWithDefaults(
+        {
+          date: '2026-03-04',
+          beds: {
+            R1: {
+              bedId: 'R1',
+              patientName: 'Paciente Legacy',
+              clinicalEvents: [
+                {
+                  id: 'event-1',
+                  name: 'Cultivo',
+                  date: '2026-03-03',
+                  note: null,
+                  createdAt: '2026-03-03T20:33:00.000Z',
+                },
+              ],
+            },
+          },
+        },
+        '2026-03-04'
+      );
+
+      expect(result.beds.R1.clinicalEvents).toHaveLength(1);
+      expect(result.beds.R1.clinicalEvents?.[0]?.note).toBeUndefined();
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('DailyRecordSchema legacy null tolerance', () => {
+    it('should normalize null arrays and optional metadata fields', () => {
+      const record = DailyRecordSchema.parse({
+        date: '2026-03-04',
+        beds: {},
+        discharges: null,
+        transfers: null,
+        cma: null,
+        nurses: null,
+        nurseName: null,
+        nursesDayShift: null,
+        nursesNightShift: null,
+        tensDayShift: null,
+        tensNightShift: null,
+        activeExtraBeds: null,
+        handoffDayChecklist: {
+          escalaBraden: null,
+        },
+        handoffNightChecklist: {
+          estadistica: null,
+          conteoNoControladosProximaFecha: null,
+        },
+        handoffNovedadesDayShift: null,
+        handoffNovedadesNightShift: null,
+        medicalHandoffNovedades: null,
+        medicalHandoffBySpecialty: null,
+        medicalHandoffDoctor: null,
+        medicalHandoffSentAt: null,
+        medicalHandoffSentAtByScope: null,
+        medicalSignatureLinkTokenByScope: {
+          all: null,
+          upc: null,
+          'no-upc': null,
+        },
+        medicalSignature: null,
+        medicalSignatureByScope: {
+          all: null,
+          upc: {
+            doctorName: 'Dr. Test',
+            signedAt: '2026-03-04T10:00:00.000Z',
+            userAgent: null,
+          },
+          'no-upc': null,
+        },
+        cudyrLocked: null,
+        cudyrLockedAt: null,
+        cudyrLockedBy: null,
+        handoffNightReceives: null,
+      });
+
+      expect(record.discharges).toEqual([]);
+      expect(record.transfers).toEqual([]);
+      expect(record.cma).toEqual([]);
+      expect(record.nurses).toEqual(['', '']);
+      expect(record.nurseName).toBeUndefined();
+      expect(record.nursesDayShift).toEqual(['', '']);
+      expect(record.nursesNightShift).toEqual(['', '']);
+      expect(record.tensDayShift).toEqual(['', '', '']);
+      expect(record.tensNightShift).toEqual(['', '', '']);
+      expect(record.activeExtraBeds).toEqual([]);
+      expect(record.handoffDayChecklist?.escalaBraden).toBeUndefined();
+      expect(record.handoffNightChecklist?.estadistica).toBeUndefined();
+      expect(record.handoffNightChecklist?.conteoNoControladosProximaFecha).toBeUndefined();
+      expect(record.handoffNovedadesDayShift).toBeUndefined();
+      expect(record.handoffNovedadesNightShift).toBeUndefined();
+      expect(record.medicalHandoffNovedades).toBeUndefined();
+      expect(record.medicalHandoffBySpecialty).toBeUndefined();
+      expect(record.medicalHandoffDoctor).toBeUndefined();
+      expect(record.medicalHandoffSentAt).toBeUndefined();
+      expect(record.medicalHandoffSentAtByScope).toBeUndefined();
+      expect(record.medicalSignatureLinkTokenByScope?.all).toBeUndefined();
+      expect(record.medicalSignatureLinkTokenByScope?.upc).toBeUndefined();
+      expect(record.medicalSignatureLinkTokenByScope?.['no-upc']).toBeUndefined();
+      expect(record.medicalSignature).toBeUndefined();
+      expect(record.medicalSignatureByScope?.all).toBeUndefined();
+      expect(record.medicalSignatureByScope?.upc?.userAgent).toBeUndefined();
+      expect(record.medicalSignatureByScope?.['no-upc']).toBeUndefined();
+      expect(record.cudyrLocked).toBeUndefined();
+      expect(record.cudyrLockedAt).toBeUndefined();
+      expect(record.cudyrLockedBy).toBeUndefined();
+      expect(record.handoffNightReceives).toEqual([]);
     });
   });
 });

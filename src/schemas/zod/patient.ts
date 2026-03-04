@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { BedType, PatientStatus, Specialty } from '@/types';
-import { nullableOptional, resolveLegacyNameParts } from './helpers';
+import { nullableOptional, nullishDefault, resolveLegacyNameParts } from './helpers';
 
 export const BedTypeSchema = z.nativeEnum(BedType) as z.ZodType<BedType>;
 export const PatientStatusSchema = z.nativeEnum(PatientStatus);
@@ -32,28 +32,38 @@ export const CudyrScoreSchema = z.object({
 });
 
 export const DeviceInfoSchema = z.object({
-  installationDate: z.string().optional(),
-  removalDate: z.string().optional(),
-  note: z.string().optional(),
+  installationDate: nullableOptional(z.string()),
+  removalDate: nullableOptional(z.string()),
+  note: nullableOptional(z.string()),
 });
 
-export const DeviceDetailsSchema = z
-  .object({
-    CUP: DeviceInfoSchema.optional(),
-    CVC: DeviceInfoSchema.optional(),
-    VMI: DeviceInfoSchema.optional(),
-    'VVP#1': DeviceInfoSchema.optional(),
-    'VVP#2': DeviceInfoSchema.optional(),
-    'VVP#3': DeviceInfoSchema.optional(),
-  })
-  .catchall(DeviceInfoSchema);
+export const DeviceDetailsSchema = z.preprocess(
+  val => {
+    if (!val || typeof val !== 'object' || Array.isArray(val)) return {};
+    const record: Record<string, unknown> = { ...(val as Record<string, unknown>) };
+    Object.keys(record).forEach(key => {
+      if (record[key] === null || record[key] === undefined) delete record[key];
+    });
+    return record;
+  },
+  z
+    .object({
+      CUP: nullableOptional(DeviceInfoSchema),
+      CVC: nullableOptional(DeviceInfoSchema),
+      VMI: nullableOptional(DeviceInfoSchema),
+      'VVP#1': nullableOptional(DeviceInfoSchema),
+      'VVP#2': nullableOptional(DeviceInfoSchema),
+      'VVP#3': nullableOptional(DeviceInfoSchema),
+    })
+    .catchall(DeviceInfoSchema)
+);
 
 export const ClinicalEventSchema = z
   .object({
     id: z.string(),
     name: z.string(),
     date: z.string(),
-    note: z.string().optional(),
+    note: nullableOptional(z.string()),
     createdAt: z.string(),
   })
   .passthrough();
@@ -74,30 +84,30 @@ const MedicalHandoffAuditActorSchema = z.object({
   uid: z.string(),
   displayName: z.string(),
   email: z.string(),
-  role: z.string().optional(),
+  role: nullableOptional(z.string()),
 });
 
 const MedicalHandoffAuditSchema = z.object({
-  lastSpecialistUpdateAt: z.string().optional(),
-  lastSpecialistUpdateBy: MedicalHandoffAuditActorSchema.optional(),
-  lastSpecialistUpdateSpecialty: z.union([z.nativeEnum(Specialty), z.string()]).optional(),
+  lastSpecialistUpdateAt: nullableOptional(z.string()),
+  lastSpecialistUpdateBy: nullableOptional(MedicalHandoffAuditActorSchema),
+  lastSpecialistUpdateSpecialty: nullableOptional(z.union([z.nativeEnum(Specialty), z.string()])),
   currentStatus: z.enum(['updated_by_specialist', 'confirmed_current']).optional(),
-  currentStatusDate: z.string().optional(),
-  currentStatusAt: z.string().optional(),
-  currentStatusBy: MedicalHandoffAuditActorSchema.optional(),
-  currentStatusSpecialty: z.union([z.nativeEnum(Specialty), z.string()]).optional(),
+  currentStatusDate: nullableOptional(z.string()),
+  currentStatusAt: nullableOptional(z.string()),
+  currentStatusBy: nullableOptional(MedicalHandoffAuditActorSchema),
+  currentStatusSpecialty: nullableOptional(z.union([z.nativeEnum(Specialty), z.string()])),
 });
 
 const MedicalHandoffEntrySchema = z.object({
   id: z.string(),
   specialty: z.union([z.nativeEnum(Specialty), z.string()]),
   note: z.string().default(''),
-  updatedAt: z.string().optional(),
-  updatedBy: MedicalHandoffAuditActorSchema.optional(),
+  updatedAt: nullableOptional(z.string()),
+  updatedBy: nullableOptional(MedicalHandoffAuditActorSchema),
   currentStatus: z.enum(['updated_by_specialist', 'confirmed_current']).optional(),
-  currentStatusDate: z.string().optional(),
-  currentStatusAt: z.string().optional(),
-  currentStatusBy: MedicalHandoffAuditActorSchema.optional(),
+  currentStatusDate: nullableOptional(z.string()),
+  currentStatusAt: nullableOptional(z.string()),
+  currentStatusBy: nullableOptional(MedicalHandoffAuditActorSchema),
 });
 
 import { PatientData } from '@/types';
@@ -163,7 +173,7 @@ export const PatientDataSchema: z.ZodType<PatientData, z.ZodTypeDef, unknown> = 
       admissionDate: z.string().default(''),
       admissionTime: z.string().default(''),
       hasWristband: z.boolean().default(true),
-      devices: z.array(z.string()).default([]),
+      devices: nullishDefault(z.array(z.string()), () => []),
       deviceDetails: nullableOptional(DeviceDetailsSchema),
       surgicalComplication: z.boolean().default(false),
       isUPC: z.boolean().default(false),
@@ -174,8 +184,8 @@ export const PatientDataSchema: z.ZodType<PatientData, z.ZodTypeDef, unknown> = 
       handoffNoteNightShift: nullableOptional(z.string()),
       medicalHandoffNote: nullableOptional(z.string()),
       medicalHandoffAudit: nullableOptional(MedicalHandoffAuditSchema),
-      medicalHandoffEntries: z.array(MedicalHandoffEntrySchema).optional(),
-      clinicalEvents: z.array(ClinicalEventSchema).default([]),
+      medicalHandoffEntries: nullableOptional(z.array(MedicalHandoffEntrySchema)),
+      clinicalEvents: nullishDefault(z.array(ClinicalEventSchema), () => []),
       fhir_resource: nullableOptional(FhirResourceSchema),
     })
     .passthrough()

@@ -279,6 +279,31 @@ describe('DailyRecordRepository (Expanded)', () => {
       const initialized = await initializeDay('2024-12-28', '2024-12-27');
       expect(initialized.handoffNovedadesDayShift).toBe('Night news');
     });
+
+    it('copies previous day even when a clinical event note is null in legacy data', async () => {
+      const prev = createMockRecord('2026-03-03');
+      prev.beds = {
+        R1: {
+          ...createValidPatient('R1', { patientName: 'Paciente Legacy' }),
+          clinicalEvents: [
+            {
+              id: 'event-1',
+              name: 'Cirugia',
+              date: '2026-03-03',
+              note: null,
+              createdAt: '2026-03-03T20:33:00.000Z',
+            },
+          ],
+        } as unknown as PatientData,
+      };
+      await save(prev);
+
+      const initialized = await initializeDay('2026-03-04', '2026-03-03');
+
+      expect(initialized.beds.R1.patientName).toBe('Paciente Legacy');
+      expect(initialized.beds.R1.clinicalEvents).toHaveLength(1);
+      expect(initialized.beds.R1.clinicalEvents?.[0]?.note).toBeUndefined();
+    });
   });
 
   describe('Maintenance Operations', () => {
