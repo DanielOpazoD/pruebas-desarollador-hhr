@@ -26,13 +26,13 @@ export const PatientMainRowBedTypeCell: React.FC<PatientMainRowBedTypeCellProps>
   const isAcceptedTransfer = activeTransfer?.status === 'ACCEPTED';
 
   return (
-    <td className="p-0 border-r border-slate-100 text-center w-16 relative group/tipo-cell">
+    <td className="p-0 border-r border-slate-100 text-center w-16 relative overflow-hidden group/tipo-cell">
       {hasActiveTransfer && (
         <div
           className={
             isAcceptedTransfer
-              ? 'absolute top-0.5 left-0.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-sm ring-1 ring-emerald-200'
-              : 'absolute top-0.5 left-0.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-slate-100 text-slate-500 shadow-sm ring-1 ring-slate-200'
+              ? 'absolute top-0.5 left-0.5 z-0 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-sm ring-1 ring-emerald-200'
+              : 'absolute top-0.5 left-0.5 z-0 flex h-4 w-4 items-center justify-center rounded-full bg-slate-100 text-slate-500 shadow-sm ring-1 ring-slate-200'
           }
           title={isAcceptedTransfer ? 'Traslado aceptado' : 'Gestión de traslado activa'}
           aria-label={isAcceptedTransfer ? 'Traslado aceptado' : 'Gestión de traslado activa'}
@@ -51,7 +51,7 @@ export const PatientMainRowBedTypeCell: React.FC<PatientMainRowBedTypeCellProps>
       {canToggleBedType && (
         <button
           onClick={onToggleBedType}
-          className="absolute top-0.5 right-0.5 p-0.5 rounded-full text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition-all opacity-0 group-hover/tipo-cell:opacity-100"
+          className="absolute top-0.5 right-0.5 z-10 p-0.5 rounded-full text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition-all opacity-0 group-hover/tipo-cell:opacity-100"
           title="Cambiar nivel de cuidado (UCI/UTI)"
         >
           <RefreshCcw size={10} className="animate-hover-spin" />

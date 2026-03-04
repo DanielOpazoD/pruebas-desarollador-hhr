@@ -157,6 +157,10 @@ export const HandoffPatientTable: React.FC<HandoffPatientTableProps> = ({
                 return renderRow(bed, { isBlocked: false } as PatientData, { isNested: false });
               }
 
+              if (isMedical && patient.isBlocked) {
+                return null;
+              }
+
               const showPatient =
                 patient.isBlocked || !patient.patientName || shouldShowPatient(bed.id);
 

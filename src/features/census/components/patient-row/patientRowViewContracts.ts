@@ -58,6 +58,7 @@ export interface PatientSubRowViewProps {
   data: PatientData;
   currentDateString: string;
   readOnly: boolean;
+  diagnosisMode: DiagnosisMode;
   style?: CSSProperties;
   onOpenDemographics: () => void;
   onChange: ClinicalCribInputChangeHandlers;

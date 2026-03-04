@@ -89,15 +89,17 @@ export const buildPatientSubRowBindings = ({
   data,
   currentDateString,
   readOnly,
+  diagnosisMode,
   style,
   runtime,
 }: Pick<
   BuildPatientRowBindingsParams,
-  'data' | 'currentDateString' | 'readOnly' | 'style' | 'runtime'
+  'data' | 'currentDateString' | 'readOnly' | 'diagnosisMode' | 'style' | 'runtime'
 >): PatientSubRowBindings => ({
   data,
   currentDateString,
   readOnly,
+  diagnosisMode,
   style,
   onOpenDemographics: runtime.uiState.openDemographics,
   onChange: runtime.handlers.cribInputChangeHandlers,
@@ -157,6 +159,7 @@ export const buildPatientRowBindings = ({
       data,
       currentDateString,
       readOnly,
+      diagnosisMode,
       style,
       runtime,
     }),

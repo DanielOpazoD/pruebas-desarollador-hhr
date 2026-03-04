@@ -142,6 +142,7 @@ describe('patientRowBindingsController', () => {
       data,
       currentDateString: '2026-02-15',
       readOnly: false,
+      diagnosisMode: 'cie10',
       runtime,
     });
     const modals = buildPatientRowModalsBindings({
@@ -154,6 +155,7 @@ describe('patientRowBindingsController', () => {
 
     expect(main.isBlocked).toBe(true);
     expect(main.hasCompanion).toBe(true);
+    expect(sub.diagnosisMode).toBe('cie10');
     expect(sub.onOpenDemographics).toBe(runtime.uiState.openDemographics);
     expect(modals.showHistory).toBe(true);
   });

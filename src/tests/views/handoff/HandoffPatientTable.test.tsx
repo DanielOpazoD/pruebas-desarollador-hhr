@@ -63,4 +63,28 @@ describe('HandoffPatientTable', () => {
     render(<HandoffPatientTable {...defaultProps} isMedical={true} />);
     expect(screen.queryByTitle(/Expandir todos los eventos/i)).not.toBeInTheDocument();
   });
+
+  it('hides blocked beds in medical mode', () => {
+    const blockedRecord: DailyRecord = DataFactory.createMockDailyRecord('2025-01-01', {
+      beds: {
+        R1: DataFactory.createMockPatient('R1', {
+          patientName: 'Paciente bloqueado',
+          isBlocked: true,
+        }),
+        R2: DataFactory.createMockPatient('R2', { patientName: 'Paciente visible' }),
+      },
+    });
+
+    render(
+      <HandoffPatientTable
+        {...defaultProps}
+        isMedical={true}
+        record={blockedRecord}
+        visibleBeds={BEDS.filter(b => b.id === 'R1' || b.id === 'R2')}
+      />
+    );
+
+    expect(screen.queryByText('Paciente bloqueado')).not.toBeInTheDocument();
+    expect(screen.getByText('Paciente visible')).toBeInTheDocument();
+  });
 });

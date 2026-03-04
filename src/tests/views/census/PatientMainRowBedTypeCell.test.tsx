@@ -59,6 +59,7 @@ describe('PatientMainRowBedTypeCell', () => {
     const indicator = screen.getByLabelText('Traslado aceptado');
     expect(indicator.className).toContain('bg-emerald-100');
     expect(indicator.className).toContain('text-emerald-600');
+    expect(indicator.className).toContain('z-0');
   });
 
   it('hides active-transfer icon when there is no open transfer request', () => {
