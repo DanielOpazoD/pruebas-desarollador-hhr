@@ -12,7 +12,9 @@ interface ResolvePatientActionMenuPanelModelParams {
 
 export interface PatientActionMenuPanelModel {
   showHistoryAction: boolean;
+  showUtilityActions: boolean;
   showClinicalSection: boolean;
+  showClinicalDocumentsAction: boolean;
   showExamRequestAction: boolean;
   showImagingRequestAction: boolean;
   utilityActions: UtilityActionConfig[];
@@ -24,7 +26,9 @@ export const resolvePatientActionMenuPanelModel = ({
   utilityActions,
 }: ResolvePatientActionMenuPanelModelParams): PatientActionMenuPanelModel => ({
   showHistoryAction: viewState.showHistoryAction,
+  showUtilityActions: viewState.showUtilityActions,
   showClinicalSection: viewState.showClinicalSection,
+  showClinicalDocumentsAction: viewState.showClinicalDocumentsAction,
   showExamRequestAction: viewState.showExamRequestAction,
   showImagingRequestAction: viewState.showImagingRequestAction,
   utilityActions,

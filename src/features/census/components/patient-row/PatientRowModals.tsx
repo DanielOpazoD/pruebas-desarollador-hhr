@@ -3,6 +3,7 @@ import { DemographicsModal } from '@/components/modals/DemographicsModal';
 import { ExamRequestModal } from '@/components/modals/ExamRequestModal';
 import { ImagingRequestDialog } from '@/components/modals/ImagingRequestDialog';
 import { PatientHistoryModal } from '@/components/modals/PatientHistoryModal';
+import { ClinicalDocumentsModal } from '@/features/clinical-documents';
 import { resolvePatientRowDemographicsBinding } from '@/features/census/controllers/patientRowModalController';
 import type { PatientRowModalsProps } from '@/features/census/components/patient-row/patientRowViewContracts';
 
@@ -12,10 +13,12 @@ export const PatientRowModals: React.FC<PatientRowModalsProps> = ({
   currentDateString,
   isSubRow,
   showDemographics,
+  showClinicalDocuments,
   showExamRequest,
   showImagingRequest,
   showHistory,
   onCloseDemographics,
+  onCloseClinicalDocuments,
   onCloseExamRequest,
   onCloseImagingRequest,
   onCloseHistory,
@@ -55,6 +58,14 @@ export const PatientRowModals: React.FC<PatientRowModalsProps> = ({
         isOpen={showImagingRequest}
         onClose={onCloseImagingRequest}
         patient={data}
+      />
+
+      <ClinicalDocumentsModal
+        isOpen={showClinicalDocuments}
+        onClose={onCloseClinicalDocuments}
+        patient={data}
+        currentDateString={currentDateString}
+        bedId={bedId}
       />
 
       <PatientHistoryModal

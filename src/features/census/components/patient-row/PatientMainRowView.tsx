@@ -23,6 +23,7 @@ export const PatientMainRowView: React.FC<PatientMainRowViewProps> = ({
   mainRowViewState,
   onAction,
   onOpenDemographics,
+  onOpenClinicalDocuments,
   onOpenExamRequest,
   onOpenImagingRequest,
   onOpenHistory,
@@ -46,6 +47,11 @@ export const PatientMainRowView: React.FC<PatientMainRowViewProps> = ({
         align={actionMenuAlign}
         onAction={onAction}
         onViewDemographics={onOpenDemographics}
+        onViewClinicalDocuments={
+          mainRowViewState.rowActionsAvailability.canOpenClinicalDocuments
+            ? onOpenClinicalDocuments
+            : undefined
+        }
         onViewExamRequest={
           mainRowViewState.rowActionsAvailability.canOpenExamRequest ? onOpenExamRequest : undefined
         }

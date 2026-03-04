@@ -15,6 +15,7 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
   isBlocked,
   onAction,
   onViewDemographics,
+  onViewClinicalDocuments,
   onViewExamRequest,
   onViewImagingRequest,
   onViewHistory,
@@ -30,6 +31,7 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
     close,
     handleAction,
     handleViewHistory,
+    handleViewClinicalDocuments,
     handleViewExamRequest,
     handleViewImagingRequest,
   } = usePatientActionMenu({
@@ -37,6 +39,7 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
     readOnly,
     onAction,
     onViewHistory,
+    onViewClinicalDocuments,
     onViewExamRequest,
     onViewImagingRequest,
   });
@@ -74,6 +77,7 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
         onClose={close}
         onAction={handleAction}
         onViewHistory={handleViewHistory}
+        onViewClinicalDocuments={handleViewClinicalDocuments}
         onViewExamRequest={handleViewExamRequest}
         onViewImagingRequest={handleViewImagingRequest}
       />

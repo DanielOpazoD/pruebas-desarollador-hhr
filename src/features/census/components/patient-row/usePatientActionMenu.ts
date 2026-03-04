@@ -12,6 +12,7 @@ interface UsePatientActionMenuParams {
   readOnly: boolean;
   onAction: (action: PatientRowAction) => void;
   onViewHistory?: () => void;
+  onViewClinicalDocuments?: () => void;
   onViewExamRequest?: () => void;
   onViewImagingRequest?: () => void;
 }
@@ -25,6 +26,7 @@ interface UsePatientActionMenuResult {
   close: () => void;
   handleAction: (action: PatientRowAction) => void;
   handleViewHistory: () => void;
+  handleViewClinicalDocuments: () => void;
   handleViewExamRequest: () => void;
   handleViewImagingRequest: () => void;
 }
@@ -34,6 +36,7 @@ export const usePatientActionMenu = ({
   readOnly,
   onAction,
   onViewHistory,
+  onViewClinicalDocuments,
   onViewExamRequest,
   onViewImagingRequest,
 }: UsePatientActionMenuParams): UsePatientActionMenuResult => {
@@ -46,10 +49,18 @@ export const usePatientActionMenu = ({
         isBlocked,
         readOnly,
         hasHistoryAction: typeof onViewHistory === 'function',
+        hasClinicalDocumentsAction: typeof onViewClinicalDocuments === 'function',
         hasExamRequestAction: typeof onViewExamRequest === 'function',
         hasImagingRequestAction: typeof onViewImagingRequest === 'function',
       }),
-    [isBlocked, onViewExamRequest, onViewImagingRequest, onViewHistory, readOnly]
+    [
+      isBlocked,
+      onViewClinicalDocuments,
+      onViewExamRequest,
+      onViewImagingRequest,
+      onViewHistory,
+      readOnly,
+    ]
   );
 
   const handleAction = useCallback(
@@ -64,6 +75,11 @@ export const usePatientActionMenu = ({
     onViewHistory?.();
     close();
   }, [close, onViewHistory]);
+
+  const handleViewClinicalDocuments = useCallback(() => {
+    onViewClinicalDocuments?.();
+    close();
+  }, [close, onViewClinicalDocuments]);
 
   const handleViewExamRequest = useCallback(() => {
     onViewExamRequest?.();
@@ -84,6 +100,7 @@ export const usePatientActionMenu = ({
     close,
     handleAction,
     handleViewHistory,
+    handleViewClinicalDocuments,
     handleViewExamRequest,
     handleViewImagingRequest,
   };

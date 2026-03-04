@@ -32,9 +32,11 @@ export const resolvePatientMainRowClassName = ({
 export const resolvePatientMainRowActionsAvailability = (
   data: { patientName?: string; rut?: string } | null | undefined
 ): {
+  canOpenClinicalDocuments: boolean;
   canOpenExamRequest: boolean;
   canOpenHistory: boolean;
 } => ({
+  canOpenClinicalDocuments: Boolean(data?.patientName),
   canOpenExamRequest: Boolean(data?.patientName),
   canOpenHistory: Boolean(data?.rut),
 });
@@ -52,6 +54,7 @@ export interface PatientMainRowViewState {
   canToggleBedType: boolean;
   rowClassName: string;
   rowActionsAvailability: {
+    canOpenClinicalDocuments: boolean;
     canOpenExamRequest: boolean;
     canOpenHistory: boolean;
   };

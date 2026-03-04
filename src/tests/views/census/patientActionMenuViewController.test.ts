@@ -10,6 +10,7 @@ describe('patientActionMenuViewController', () => {
       isBlocked: false,
       readOnly: false,
       hasHistoryAction: true,
+      hasClinicalDocumentsAction: true,
       hasExamRequestAction: true,
       hasImagingRequestAction: true,
     });
@@ -18,7 +19,9 @@ describe('patientActionMenuViewController', () => {
       showDemographicsAction: true,
       showMenuTrigger: true,
       showHistoryAction: true,
+      showUtilityActions: true,
       showClinicalSection: true,
+      showClinicalDocumentsAction: true,
       showExamRequestAction: true,
       showImagingRequestAction: true,
     });
@@ -29,6 +32,7 @@ describe('patientActionMenuViewController', () => {
       isBlocked: true,
       readOnly: false,
       hasHistoryAction: true,
+      hasClinicalDocumentsAction: true,
       hasExamRequestAction: true,
       hasImagingRequestAction: true,
     });
@@ -36,7 +40,9 @@ describe('patientActionMenuViewController', () => {
     expect(view.showDemographicsAction).toBe(false);
     expect(view.showMenuTrigger).toBe(true);
     expect(view.showHistoryAction).toBe(true);
+    expect(view.showUtilityActions).toBe(true);
     expect(view.showClinicalSection).toBe(false);
+    expect(view.showClinicalDocumentsAction).toBe(false);
     expect(view.showExamRequestAction).toBe(false);
     expect(view.showImagingRequestAction).toBe(false);
   });
@@ -46,14 +52,17 @@ describe('patientActionMenuViewController', () => {
       isBlocked: false,
       readOnly: true,
       hasHistoryAction: false,
+      hasClinicalDocumentsAction: true,
       hasExamRequestAction: true,
       hasImagingRequestAction: true,
     });
 
     expect(view.showDemographicsAction).toBe(false);
-    expect(view.showMenuTrigger).toBe(false);
+    expect(view.showMenuTrigger).toBe(true);
     expect(view.showHistoryAction).toBe(false);
-    expect(view.showClinicalSection).toBe(false);
+    expect(view.showUtilityActions).toBe(false);
+    expect(view.showClinicalSection).toBe(true);
+    expect(view.showClinicalDocumentsAction).toBe(true);
     expect(view.showExamRequestAction).toBe(false);
     expect(view.showImagingRequestAction).toBe(false);
   });

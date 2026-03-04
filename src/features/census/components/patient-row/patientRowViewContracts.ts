@@ -47,6 +47,7 @@ export interface PatientMainRowViewProps
   isCunaMode: boolean;
   mainRowViewState: PatientMainRowViewState;
   onOpenDemographics: () => void;
+  onOpenClinicalDocuments: () => void;
   onOpenExamRequest: () => void;
   onOpenImagingRequest: () => void;
   onOpenHistory: () => void;
@@ -70,10 +71,12 @@ export interface PatientRowModalsProps {
   currentDateString: string;
   isSubRow: boolean;
   showDemographics: boolean;
+  showClinicalDocuments: boolean;
   showExamRequest: boolean;
   showImagingRequest: boolean;
   showHistory: boolean;
   onCloseDemographics: () => void;
+  onCloseClinicalDocuments: () => void;
   onCloseExamRequest: () => void;
   onCloseImagingRequest: () => void;
   onCloseHistory: () => void;

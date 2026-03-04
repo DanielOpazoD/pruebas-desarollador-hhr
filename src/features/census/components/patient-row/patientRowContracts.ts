@@ -8,6 +8,7 @@ export type MaybePromiseVoid = void | Promise<void>;
 export interface PatientActionMenuCallbacks {
   onAction: (action: PatientRowAction) => void;
   onViewDemographics: () => void;
+  onViewClinicalDocuments?: () => void;
   onViewExamRequest?: () => void;
   onViewImagingRequest?: () => void;
   onViewHistory?: () => void;

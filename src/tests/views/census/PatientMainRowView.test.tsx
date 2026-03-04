@@ -6,11 +6,13 @@ import { BEDS } from '@/constants';
 
 vi.mock('@/features/census/components/patient-row/PatientMainRowActionCell', () => ({
   PatientMainRowActionCell: (props: {
+    onViewClinicalDocuments?: () => void;
     onViewExamRequest?: () => void;
     onViewHistory?: () => void;
   }) => (
     <td
       data-testid="action-cell"
+      data-clinical-documents={String(Boolean(props.onViewClinicalDocuments))}
       data-exam={String(Boolean(props.onViewExamRequest))}
       data-history={String(Boolean(props.onViewHistory))}
     />
@@ -50,11 +52,16 @@ describe('PatientMainRowView', () => {
     mainRowViewState: {
       canToggleBedType: true,
       rowClassName: 'row',
-      rowActionsAvailability: { canOpenExamRequest: true, canOpenHistory: true },
+      rowActionsAvailability: {
+        canOpenClinicalDocuments: true,
+        canOpenExamRequest: true,
+        canOpenHistory: true,
+      },
       showBlockedContent: false,
     },
     onAction: vi.fn(),
     onOpenDemographics: vi.fn(),
+    onOpenClinicalDocuments: vi.fn(),
     onOpenExamRequest: vi.fn(),
     onOpenImagingRequest: vi.fn(),
     onOpenHistory: vi.fn(),

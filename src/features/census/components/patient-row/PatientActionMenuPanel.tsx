@@ -19,6 +19,7 @@ interface PatientActionMenuPanelProps {
   onClose: () => void;
   onAction: (action: PatientRowAction) => void;
   onViewHistory: () => void;
+  onViewClinicalDocuments: () => void;
   onViewExamRequest: () => void;
   onViewImagingRequest: () => void;
 }
@@ -31,6 +32,7 @@ export const PatientActionMenuPanel: React.FC<PatientActionMenuPanelProps> = ({
   onClose,
   onAction,
   onViewHistory,
+  onViewClinicalDocuments,
   onViewExamRequest,
   onViewImagingRequest,
 }) => {
@@ -56,14 +58,18 @@ export const PatientActionMenuPanel: React.FC<PatientActionMenuPanelProps> = ({
           <PatientActionMenuHistoryAction onViewHistory={onViewHistory} />
         )}
 
-        <PatientActionMenuUtilityGrid utilityActions={model.utilityActions} onAction={onAction} />
+        {model.showUtilityActions && (
+          <PatientActionMenuUtilityGrid utilityActions={model.utilityActions} onAction={onAction} />
+        )}
 
         {model.showClinicalSection && (
           <PatientActionMenuClinicalSection
             clinicalActions={model.clinicalActions}
+            showClinicalDocumentsAction={model.showClinicalDocumentsAction}
             showExamRequestAction={model.showExamRequestAction}
             showImagingRequestAction={model.showImagingRequestAction}
             onAction={onAction}
+            onViewClinicalDocuments={onViewClinicalDocuments}
             onViewExamRequest={onViewExamRequest}
             onViewImagingRequest={onViewImagingRequest}
           />

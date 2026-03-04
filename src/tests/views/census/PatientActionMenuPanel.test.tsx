@@ -15,7 +15,9 @@ describe('PatientActionMenuPanel', () => {
           showDemographicsAction: true,
           showMenuTrigger: true,
           showHistoryAction: true,
+          showUtilityActions: true,
           showClinicalSection: true,
+          showClinicalDocumentsAction: true,
           showExamRequestAction: true,
           showImagingRequestAction: true,
         }}
@@ -23,6 +25,7 @@ describe('PatientActionMenuPanel', () => {
         onClose={vi.fn()}
         onAction={vi.fn()}
         onViewHistory={vi.fn()}
+        onViewClinicalDocuments={vi.fn()}
         onViewExamRequest={vi.fn()}
         onViewImagingRequest={vi.fn()}
       />
@@ -35,6 +38,7 @@ describe('PatientActionMenuPanel', () => {
     const onClose = vi.fn();
     const onAction = vi.fn();
     const onViewHistory = vi.fn();
+    const onViewClinicalDocuments = vi.fn();
     const onViewExamRequest = vi.fn();
 
     render(
@@ -45,7 +49,9 @@ describe('PatientActionMenuPanel', () => {
           showDemographicsAction: true,
           showMenuTrigger: true,
           showHistoryAction: true,
+          showUtilityActions: true,
           showClinicalSection: true,
+          showClinicalDocumentsAction: true,
           showExamRequestAction: true,
           showImagingRequestAction: true,
         }}
@@ -62,6 +68,7 @@ describe('PatientActionMenuPanel', () => {
         onClose={onClose}
         onAction={onAction}
         onViewHistory={onViewHistory}
+        onViewClinicalDocuments={onViewClinicalDocuments}
         onViewExamRequest={onViewExamRequest}
         onViewImagingRequest={vi.fn()}
       />
@@ -72,6 +79,9 @@ describe('PatientActionMenuPanel', () => {
 
     fireEvent.click(screen.getByText('Limpiar'));
     expect(onAction).toHaveBeenCalledWith('clear');
+
+    fireEvent.click(screen.getByText('Documentos Clínicos'));
+    expect(onViewClinicalDocuments).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByText('Solicitud Exámenes'));
     expect(onViewExamRequest).toHaveBeenCalledTimes(1);

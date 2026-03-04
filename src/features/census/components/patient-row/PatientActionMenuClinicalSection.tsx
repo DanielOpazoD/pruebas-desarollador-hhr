@@ -1,22 +1,26 @@
 import React from 'react';
-import { FileText, Image } from 'lucide-react';
+import { FileText, Image, ScrollText } from 'lucide-react';
 import type { ClinicalActionConfig } from '@/features/census/components/patient-row/patientActionMenuConfig';
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';
 
 interface PatientActionMenuClinicalSectionProps {
   clinicalActions: readonly ClinicalActionConfig[];
+  showClinicalDocumentsAction: boolean;
   showExamRequestAction: boolean;
   showImagingRequestAction: boolean;
   onAction: (action: PatientRowAction) => void;
+  onViewClinicalDocuments: () => void;
   onViewExamRequest: () => void;
   onViewImagingRequest: () => void;
 }
 
 export const PatientActionMenuClinicalSection: React.FC<PatientActionMenuClinicalSectionProps> = ({
   clinicalActions,
+  showClinicalDocumentsAction,
   showExamRequestAction,
   showImagingRequestAction,
   onAction,
+  onViewClinicalDocuments,
   onViewExamRequest,
   onViewImagingRequest,
 }) => (
@@ -37,6 +41,21 @@ export const PatientActionMenuClinicalSection: React.FC<PatientActionMenuClinica
         <span className="text-sm">{label}</span>
       </button>
     ))}
+    {showClinicalDocumentsAction && (
+      <>
+        <div className="h-px bg-slate-100 mx-3 my-1"></div>
+        <button
+          onClick={onViewClinicalDocuments}
+          className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-slate-700 group"
+        >
+          <ScrollText
+            size={16}
+            className="text-medical-500 group-hover:text-medical-700 transition-colors"
+          />
+          <span className="text-sm">Documentos Clínicos</span>
+        </button>
+      </>
+    )}
     {showExamRequestAction && (
       <>
         <div className="h-px bg-slate-100 mx-3 my-1"></div>

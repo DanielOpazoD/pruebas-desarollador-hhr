@@ -31,10 +31,13 @@ describe('patientRowBindingsController', () => {
       },
       uiState: {
         showDemographics: false,
+        showClinicalDocuments: false,
         showExamRequest: true,
         showHistory: false,
         openDemographics: vi.fn(),
+        openClinicalDocuments: vi.fn(),
         closeDemographics: vi.fn(),
+        closeClinicalDocuments: vi.fn(),
         openExamRequest: vi.fn(),
         closeExamRequest: vi.fn(),
         showImagingRequest: false,
@@ -76,9 +79,11 @@ describe('patientRowBindingsController', () => {
     expect(result.mainRowProps.bed).toBe(bed);
     expect(result.mainRowProps.data).toBe(data);
     expect(result.mainRowProps.onAction).toBe(runtime.handleAction);
+    expect(result.mainRowProps.onOpenClinicalDocuments).toBe(runtime.uiState.openClinicalDocuments);
     expect(result.subRowProps.onOpenDemographics).toBe(runtime.uiState.openDemographics);
     expect(result.modalsProps.bedId).toBe('R1');
     expect(result.modalsProps.onSaveDemographics).toBe(runtime.modalSavers.onSaveDemographics);
+    expect(result.modalsProps.showClinicalDocuments).toBe(false);
   });
 
   it('builds split bindings with consistent runtime wiring', () => {
@@ -98,10 +103,13 @@ describe('patientRowBindingsController', () => {
       },
       uiState: {
         showDemographics: true,
+        showClinicalDocuments: true,
         showExamRequest: false,
         showHistory: true,
         openDemographics: vi.fn(),
+        openClinicalDocuments: vi.fn(),
         closeDemographics: vi.fn(),
+        closeClinicalDocuments: vi.fn(),
         openExamRequest: vi.fn(),
         closeExamRequest: vi.fn(),
         showImagingRequest: false,
@@ -157,6 +165,7 @@ describe('patientRowBindingsController', () => {
     expect(main.hasCompanion).toBe(true);
     expect(sub.diagnosisMode).toBe('cie10');
     expect(sub.onOpenDemographics).toBe(runtime.uiState.openDemographics);
+    expect(modals.showClinicalDocuments).toBe(true);
     expect(modals.showHistory).toBe(true);
   });
 });

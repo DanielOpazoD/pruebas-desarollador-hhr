@@ -14,6 +14,7 @@ export const PatientMainRowActionCell: React.FC<PatientMainRowActionCellProps> =
   align,
   onAction,
   onViewDemographics,
+  onViewClinicalDocuments,
   onViewExamRequest,
   onViewImagingRequest,
   onViewHistory,
@@ -23,6 +24,7 @@ export const PatientMainRowActionCell: React.FC<PatientMainRowActionCellProps> =
       isBlocked={isBlocked}
       onAction={onAction}
       onViewDemographics={onViewDemographics}
+      onViewClinicalDocuments={onViewClinicalDocuments}
       onViewExamRequest={onViewExamRequest}
       onViewImagingRequest={onViewImagingRequest}
       onViewHistory={onViewHistory}

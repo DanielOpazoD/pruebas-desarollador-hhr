@@ -267,6 +267,24 @@ service cloud.firestore {
       }
       
       // ----------------------------------------
+      // CLINICAL DOCUMENTS
+      // ----------------------------------------
+      match /clinicalDocuments/{documentId} {
+        allow read: if canReadClinicalData();
+        allow create: if isAdmin() || isDoctor();
+        allow update: if isAdmin() || isDoctor();
+        allow delete: if isAdmin();
+      }
+
+      // ----------------------------------------
+      // CLINICAL DOCUMENT TEMPLATES
+      // ----------------------------------------
+      match /clinicalDocumentTemplates/{templateId} {
+        allow read: if canReadClinicalData();
+        allow write: if isAdmin();
+      }
+
+      // ----------------------------------------
       // SETTINGS (Nurses, TENS, TableConfig)
       // ----------------------------------------
       match /settings/{settingId} {
