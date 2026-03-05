@@ -5,6 +5,7 @@ import {
   canEditClinicalDocuments,
   canReadClinicalDocuments,
   canSignClinicalDocument,
+  canUnsignClinicalDocument,
 } from '@/features/clinical-documents/controllers/clinicalDocumentPermissionController';
 import { createClinicalDocumentDraft } from '@/features/clinical-documents/domain/factories';
 import { DataFactory } from '@/tests/factories/DataFactory';
@@ -53,5 +54,34 @@ describe('clinicalDocumentPermissionController', () => {
     expect(canDeleteClinicalDocuments('nurse_hospital')).toBe(true);
     expect(canDeleteClinicalDocuments('editor')).toBe(true);
     expect(canDeleteClinicalDocuments('viewer')).toBe(false);
+  });
+
+  it('allows unsign only for signed epicrisis on same day and editable roles', () => {
+    const signedToday = {
+      ...record,
+      documentType: 'epicrisis' as const,
+      status: 'signed' as const,
+      audit: {
+        ...record.audit,
+        signedAt: '2026-03-04T10:30:00.000Z',
+      },
+    };
+
+    expect(
+      canUnsignClinicalDocument('doctor_urgency', signedToday, new Date('2026-03-04T20:00:00.000Z'))
+    ).toBe(true);
+    expect(
+      canUnsignClinicalDocument('nurse_hospital', signedToday, new Date('2026-03-04T20:00:00.000Z'))
+    ).toBe(false);
+    expect(
+      canUnsignClinicalDocument('doctor_urgency', signedToday, new Date('2026-03-05T20:00:00.000Z'))
+    ).toBe(false);
+    expect(
+      canUnsignClinicalDocument(
+        'doctor_urgency',
+        { ...signedToday, documentType: 'informe_medico' },
+        new Date('2026-03-04T20:00:00.000Z')
+      )
+    ).toBe(false);
   });
 });

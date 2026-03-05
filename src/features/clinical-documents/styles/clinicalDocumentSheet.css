@@ -22,12 +22,12 @@
   grid-template-columns: 52px 1fr 52px;
   gap: 8px;
   align-items: start;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .clinical-document-sheet-logo {
-  width: 48px;
-  max-width: 48px;
+  width: 56px;
+  max-width: 56px;
   height: auto;
   object-fit: contain;
 }
@@ -38,7 +38,7 @@
 
 .clinical-document-title {
   margin: 0;
-  font-weight: 800;
+  font-weight: 800 !important;
   font-size: 20px;
   line-height: 1.15;
 }
@@ -53,16 +53,16 @@
 }
 
 .clinical-document-section-title {
-  margin: 4px 0 4px;
+  margin: 2px 0 3px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 700 !important;
   color: #1f2937;
 }
 
 .clinical-document-patient-grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 8px 10px;
+  gap: 5px 8px;
 }
 
 .clinical-document-sheet .col-span-2 {
@@ -86,12 +86,40 @@
 
 .clinical-document-patient-field.stacked {
   grid-template-columns: 1fr;
-  row-gap: 4px;
+  row-gap: 2px;
+}
+
+.clinical-document-patient-field--nombre {
+  grid-column: 1 / span 7;
+}
+
+.clinical-document-patient-field--rut {
+  grid-column: 8 / span 3;
+}
+
+.clinical-document-patient-field--edad {
+  grid-column: 11 / span 2;
+}
+
+.clinical-document-patient-field--fecnac {
+  grid-column: 1 / span 3;
+}
+
+.clinical-document-patient-field--fing {
+  grid-column: 4 / span 3;
+}
+
+.clinical-document-patient-field--finf {
+  grid-column: 7 / span 3;
+}
+
+.clinical-document-patient-field--hinf {
+  grid-column: 10 / span 3;
 }
 
 .clinical-document-patient-label {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 700 !important;
   color: #1f2937;
 }
 
@@ -104,7 +132,7 @@
   color: #1f2937;
   font-size: 13px;
   line-height: 1.4;
-  padding: 6px 8px;
+  padding: 5px 8px;
   font-family: inherit;
 }
 
@@ -125,8 +153,9 @@
 }
 
 .clinical-document-textarea {
-  min-height: 110px;
-  resize: vertical;
+  min-height: 92px;
+  resize: none;
+  overflow: hidden;
 }
 
 .clinical-document-footer {
@@ -137,7 +166,7 @@
 }
 
 .clinical-document-sheet .mb-3 {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .clinical-document-sheet .space-y-3 > * + * {
@@ -164,13 +193,53 @@
   justify-self: end;
 }
 
+.clinical-document-print-bottom-bar,
+.clinical-document-print-footer-left,
+.clinical-document-print-footer-right {
+  display: none;
+}
+
+body.clinical-documents-print .clinical-document-print-bottom-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4mm 10mm 0;
+  page-break-inside: avoid;
+}
+
+body.clinical-documents-print .clinical-document-print-footer-left,
+body.clinical-documents-print .clinical-document-print-footer-right {
+  display: block;
+  color: #334155;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+body.clinical-documents-print .clinical-document-patient-signature-line {
+  width: 45mm;
+  border-top: 1px solid #334155;
+  margin-bottom: 2px;
+}
+
+body.clinical-documents-print .clinical-document-patient-signature-label {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+body.clinical-documents-print .clinical-document-print-footer-right {
+  font-size: 10px;
+  font-weight: 600;
+  text-align: right;
+}
+
 .clinical-document-inline-title {
   border: 1px dashed transparent;
   border-radius: 4px;
   padding: 0;
   background: transparent;
   color: inherit;
-  font: inherit;
+  font-family: inherit;
   cursor: pointer;
   width: 100%;
   text-align: inherit;
@@ -186,7 +255,7 @@
   border: 1px solid #94a3b8;
   border-radius: 4px;
   padding: 2px 6px;
-  font: inherit;
+  font-family: inherit;
   color: inherit;
   background: #ffffff;
 }
@@ -196,7 +265,7 @@
   border-color: #2563eb;
 }
 
-@media (max-width: 900px) {
+@media screen and (max-width: 900px) {
   .clinical-document-sheet {
     padding: 18px;
   }
@@ -245,11 +314,11 @@
   body.clinical-documents-print .clinical-document-sheet {
     width: auto;
     max-width: none;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
+    border: none;
+    border-radius: 0;
     box-shadow: none;
     margin: 0;
-    padding: 10mm 10mm 10mm;
+    padding: 10mm 10mm 18mm;
     background: #ffffff;
     color: #1f2937;
     overflow: visible;
@@ -270,13 +339,14 @@
   }
 
   body.clinical-documents-print .clinical-document-textarea {
-    min-height: 110px;
+    min-height: 92px;
     height: auto;
+    overflow: visible;
   }
 
   body.clinical-documents-print .clinical-document-sheet-logo {
-    width: 48px;
-    max-width: 48px;
+    width: 56px;
+    max-width: 56px;
     opacity: 1;
   }
 }

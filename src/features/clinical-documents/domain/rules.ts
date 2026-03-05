@@ -24,14 +24,20 @@ export const CLINICAL_DOCUMENT_EPICRISIS_SECTIONS: ClinicalDocumentSectionTempla
     visible: true,
   },
   {
+    id: 'diagnosticos',
+    title: 'Diagnósticos de egreso',
+    order: 2,
+    required: false,
+    visible: true,
+  },
+  {
     id: 'examenes-complementarios',
     title: 'Exámenes complementarios',
-    order: 2,
+    order: 3,
     required: false,
     visible: false,
   },
-  { id: 'diagnosticos', title: 'Diagnósticos', order: 3, required: false, visible: false },
-  { id: 'plan', title: 'Plan', order: 4, required: true, visible: true },
+  { id: 'plan', title: 'Indicaciones al alta', order: 4, required: true, visible: true },
 ] as const;
 
 export const CLINICAL_DOCUMENT_EVOLUTION_SECTIONS: ClinicalDocumentSectionTemplate[] = [

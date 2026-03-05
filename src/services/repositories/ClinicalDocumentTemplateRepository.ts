@@ -9,6 +9,69 @@ const getClinicalDocumentTemplatesCollectionPath = (
 
 const defaultTemplates = Object.values(CLINICAL_DOCUMENT_TEMPLATES);
 
+const normalizeEpicrisisTemplate = (
+  template: ClinicalDocumentTemplate
+): ClinicalDocumentTemplate => {
+  if (template.documentType !== 'epicrisis') {
+    return template;
+  }
+
+  const patientFields = template.patientFields.map(field =>
+    field.id === 'finf' ? { ...field, label: 'Fecha de alta' } : field
+  );
+
+  const sectionById = new Map(template.sections.map(section => [section.id, section]));
+  const antecedentes = sectionById.get('antecedentes');
+  const historia = sectionById.get('historia-evolucion');
+  const diagnosticos = sectionById.get('diagnosticos');
+  const plan = sectionById.get('plan');
+  const examenes = sectionById.get('examenes-complementarios');
+
+  const sections = [
+    antecedentes
+      ? { ...antecedentes, order: 0, title: antecedentes.title || 'Antecedentes' }
+      : null,
+    historia
+      ? {
+          ...historia,
+          order: 1,
+          title: historia.title || 'Historia y evolución clínica',
+        }
+      : null,
+    diagnosticos
+      ? {
+          ...diagnosticos,
+          order: 2,
+          title:
+            diagnosticos.title === 'Diagnósticos' || !diagnosticos.title
+              ? 'Diagnósticos de egreso'
+              : diagnosticos.title,
+          visible: true,
+        }
+      : {
+          id: 'diagnosticos',
+          title: 'Diagnósticos de egreso',
+          order: 2,
+          required: false,
+          visible: true,
+        },
+    plan
+      ? {
+          ...plan,
+          order: 3,
+          title: plan.title === 'Plan' || !plan.title ? 'Indicaciones al alta' : plan.title,
+        }
+      : null,
+    examenes ? { ...examenes, order: 4 } : null,
+  ].filter(Boolean) as ClinicalDocumentTemplate['sections'];
+
+  return {
+    ...template,
+    patientFields,
+    sections,
+  };
+};
+
 const normalizeTemplate = (
   raw: Partial<ClinicalDocumentTemplate> | null | undefined
 ): ClinicalDocumentTemplate | null => {
@@ -16,7 +79,7 @@ const normalizeTemplate = (
     return null;
   }
 
-  return {
+  const normalizedTemplate: ClinicalDocumentTemplate = {
     id: raw.id,
     documentType: raw.documentType,
     name: raw.name,
@@ -42,6 +105,8 @@ const normalizeTemplate = (
     allowClinicalUpdateSections: Boolean(raw.allowClinicalUpdateSections),
     status: raw.status === 'archived' ? 'archived' : 'active',
   };
+
+  return normalizeEpicrisisTemplate(normalizedTemplate);
 };
 
 const sortTemplates = (templates: ClinicalDocumentTemplate[]): ClinicalDocumentTemplate[] =>

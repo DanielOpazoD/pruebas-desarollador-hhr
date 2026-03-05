@@ -41,7 +41,7 @@ export interface ClinicalDocumentVersionMeta {
   version: number;
   savedAt: string;
   savedBy: ClinicalDocumentAuditActor;
-  reason: 'autosave' | 'manual' | 'signature' | 'admin_fix';
+  reason: 'autosave' | 'manual' | 'signature' | 'unsign' | 'admin_fix';
 }
 
 export interface ClinicalDocumentPdfMeta {
@@ -85,6 +85,14 @@ export interface ClinicalDocumentRecord {
     updatedBy: ClinicalDocumentAuditActor;
     signedAt?: string;
     signedBy?: ClinicalDocumentAuditActor;
+    unsignedAt?: string;
+    unsignedBy?: ClinicalDocumentAuditActor;
+    signatureRevocations?: Array<{
+      revokedAt: string;
+      revokedBy: ClinicalDocumentAuditActor;
+      previousSignedAt?: string;
+      reason: string;
+    }>;
     archivedAt?: string;
     archivedBy?: ClinicalDocumentAuditActor;
   };

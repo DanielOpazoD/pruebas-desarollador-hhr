@@ -17,6 +17,10 @@ interface RenderClinicalDocumentPdfResult {
 }
 
 const ASSET_LOAD_TIMEOUT_MS = 4_000;
+const MM_TO_PX = 96 / 25.4;
+const LETTER_PAGE_HEIGHT_MM = 279.4;
+const PRINT_MARGIN_MM = 8;
+const PRINT_USABLE_HEIGHT_PX = (LETTER_PAGE_HEIGHT_MM - PRINT_MARGIN_MM * 2) * MM_TO_PX;
 
 interface PrintHtmlOptions {
   pageTitle?: string;
@@ -108,6 +112,13 @@ const buildPrintHtml = (options: PrintHtmlOptions = {}): string | null => {
     '</head>',
     '<body class="clinical-documents-print">',
     sheetClone.outerHTML,
+    '<div class="clinical-document-print-bottom-bar" aria-hidden="true">',
+    '  <div class="clinical-document-print-footer-left">',
+    '    <div class="clinical-document-patient-signature-line"></div>',
+    '    <div class="clinical-document-patient-signature-label">Firma paciente</div>',
+    '  </div>',
+    '  <div class="clinical-document-print-footer-right">1/1</div>',
+    '</div>',
     printScript,
     '</body>',
     '</html>',
@@ -163,6 +174,17 @@ const waitForSheetAssets = async (
       // Best effort: font readiness should not block PDF generation.
     }
   }
+};
+
+const updatePrintFooterPageCounter = (ownerDocument: Document): void => {
+  const sheet = ownerDocument.getElementById(CLINICAL_DOCUMENT_SHEET_ID);
+  const counter = ownerDocument.querySelector('.clinical-document-print-footer-right');
+  if (!(sheet instanceof HTMLElement) || !(counter instanceof HTMLElement)) {
+    return;
+  }
+
+  const estimatedTotalPages = Math.max(1, Math.ceil(sheet.scrollHeight / PRINT_USABLE_HEIGHT_PX));
+  counter.textContent = `1/${estimatedTotalPages}`;
 };
 
 const createIsolatedPrintFrame = async (
@@ -334,10 +356,10 @@ export const openClinicalDocumentBrowserPrintPreview = (pageTitle: string): bool
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
   iframe.style.position = 'fixed';
-  iframe.style.right = '0';
-  iframe.style.bottom = '0';
-  iframe.style.width = '1px';
-  iframe.style.height = '1px';
+  iframe.style.left = '-99999px';
+  iframe.style.top = '0';
+  iframe.style.width = '1200px';
+  iframe.style.height = '1800px';
   iframe.style.opacity = '0';
   iframe.style.pointerEvents = 'none';
   iframe.style.border = '0';
@@ -354,6 +376,8 @@ export const openClinicalDocumentBrowserPrintPreview = (pageTitle: string): bool
   frameDocument.write(html);
   frameDocument.close();
 
+  updatePrintFooterPageCounter(frameDocument);
+
   let printed = false;
   const cleanup = () => {
     frameWindow.removeEventListener('afterprint', cleanup);
@@ -363,6 +387,7 @@ export const openClinicalDocumentBrowserPrintPreview = (pageTitle: string): bool
   const triggerPrint = () => {
     if (printed) return;
     printed = true;
+    updatePrintFooterPageCounter(frameDocument);
     frameWindow.addEventListener('afterprint', cleanup, { once: true });
     window.setTimeout(cleanup, 60_000);
     frameWindow.focus();

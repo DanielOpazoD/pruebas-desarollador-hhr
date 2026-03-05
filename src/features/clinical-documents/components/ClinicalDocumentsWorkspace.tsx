@@ -1,13 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  CheckCircle2,
-  FilePlus2,
-  Printer,
-  Save,
-  ShieldCheck,
-  Trash2,
-  UploadCloud,
-} from 'lucide-react';
+import { FilePlus2, Printer, RotateCcw, Save, Trash2, UploadCloud } from 'lucide-react';
 import clsx from 'clsx';
 
 import '@/features/clinical-documents/styles/clinicalDocumentSheet.css';
@@ -32,6 +24,7 @@ import {
   canEditClinicalDocuments,
   canReadClinicalDocuments,
   canSignClinicalDocument,
+  canUnsignClinicalDocument,
 } from '@/features/clinical-documents/controllers/clinicalDocumentPermissionController';
 import { validateClinicalDocument } from '@/features/clinical-documents/controllers/clinicalDocumentValidationController';
 import {
@@ -122,12 +115,88 @@ const InlineEditableTitle: React.FC<InlineEditableTitleProps> = ({
 const serializeClinicalDocument = (record: ClinicalDocumentRecord | null): string =>
   record ? JSON.stringify(record) : '';
 
-const hydrateLegacyDocument = (record: ClinicalDocumentRecord): ClinicalDocumentRecord => ({
-  ...record,
-  patientInfoTitle: record.patientInfoTitle || 'Información del Paciente',
-  footerMedicoLabel: record.footerMedicoLabel || 'Médico',
-  footerEspecialidadLabel: record.footerEspecialidadLabel || 'Especialidad',
-});
+const normalizeEpicrisisSections = (
+  sections: ClinicalDocumentRecord['sections']
+): ClinicalDocumentRecord['sections'] => {
+  const sectionMap = new Map(sections.map(section => [section.id, section]));
+  const antecedentes = sectionMap.get('antecedentes');
+  const historia = sectionMap.get('historia-evolucion');
+  const diagnosticos = sectionMap.get('diagnosticos');
+  const plan = sectionMap.get('plan');
+  const examenes = sectionMap.get('examenes-complementarios');
+
+  const ordered: ClinicalDocumentRecord['sections'] = [];
+
+  if (antecedentes) {
+    ordered.push({ ...antecedentes, order: 0, title: antecedentes.title || 'Antecedentes' });
+  }
+
+  if (historia) {
+    ordered.push({
+      ...historia,
+      order: 1,
+      title: historia.title || 'Historia y evolución clínica',
+    });
+  }
+
+  if (diagnosticos) {
+    ordered.push({
+      ...diagnosticos,
+      order: 2,
+      title:
+        diagnosticos.title === 'Diagnósticos' || !diagnosticos.title
+          ? 'Diagnósticos de egreso'
+          : diagnosticos.title,
+      visible: true,
+    });
+  } else {
+    ordered.push({
+      id: 'diagnosticos',
+      title: 'Diagnósticos de egreso',
+      content: '',
+      order: 2,
+      required: false,
+      visible: true,
+    });
+  }
+
+  if (plan) {
+    ordered.push({
+      ...plan,
+      order: 3,
+      title: plan.title === 'Plan' || !plan.title ? 'Indicaciones al alta' : plan.title,
+    });
+  }
+
+  if (examenes) {
+    ordered.push({ ...examenes, order: 4 });
+  }
+
+  const knownIds = new Set(ordered.map(section => section.id));
+  const extras = sections
+    .filter(section => !knownIds.has(section.id))
+    .sort((left, right) => left.order - right.order);
+
+  return [...ordered, ...extras].map((section, index) => ({
+    ...section,
+    order: section.order ?? index,
+  }));
+};
+
+const hydrateLegacyDocument = (record: ClinicalDocumentRecord): ClinicalDocumentRecord => {
+  const normalizedSections =
+    record.documentType === 'epicrisis'
+      ? normalizeEpicrisisSections(record.sections)
+      : record.sections;
+
+  return {
+    ...record,
+    sections: normalizedSections,
+    patientInfoTitle: record.patientInfoTitle || 'Información del Paciente',
+    footerMedicoLabel: record.footerMedicoLabel || 'Médico',
+    footerEspecialidadLabel: record.footerEspecialidadLabel || 'Especialidad',
+  };
+};
 
 const formatDateTime = (isoString?: string): string => {
   if (!isoString) return '—';
@@ -158,10 +227,24 @@ const shouldFallbackToLegacyDriveUpload = (error: unknown): boolean => {
 };
 
 const getPatientFieldGridClass = (fieldId: string): string => {
-  if (fieldId === 'nombre') return 'col-span-7 clinical-document-patient-field';
-  if (fieldId === 'rut') return 'col-span-3 clinical-document-patient-field';
-  if (fieldId === 'edad') return 'col-span-2 clinical-document-patient-field';
-  return 'col-span-3 clinical-document-patient-field stacked';
+  return `clinical-document-patient-field stacked clinical-document-patient-field--${fieldId}`;
+};
+
+const getPatientFieldLabel = (
+  field: ClinicalDocumentRecord['patientFields'][number],
+  documentType: ClinicalDocumentRecord['documentType']
+): string => {
+  if (documentType === 'epicrisis' && field.id === 'finf') {
+    return 'Fecha de alta';
+  }
+  return field.label;
+};
+
+const resizeSectionTextarea = (textarea: HTMLTextAreaElement | null): void => {
+  if (!textarea) return;
+  textarea.style.height = 'auto';
+  const minHeight = 92;
+  textarea.style.height = `${Math.max(textarea.scrollHeight, minHeight)}px`;
 };
 
 export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProps> = ({
@@ -334,6 +417,8 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
   }, [canEdit, draft, hospitalId, isActive, role, user]);
 
   const selectedDocument = draft;
+  const canUnsignSelectedDocument =
+    selectedDocument && user ? canUnsignClinicalDocument(role, selectedDocument) : false;
   const validationIssues = useMemo(
     () => (selectedDocument ? validateClinicalDocument(selectedDocument) : []),
     [selectedDocument]
@@ -524,46 +609,6 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
     }
   };
 
-  const handleValidate = async () => {
-    if (!selectedDocument || !canEdit || !user) return;
-    if (validationIssues.length > 0) {
-      warning('Faltan datos obligatorios', validationIssues[0]?.message);
-      return;
-    }
-    const now = new Date().toISOString();
-    const actor = {
-      uid: user.uid,
-      email: user.email || '',
-      displayName: user.displayName || user.email || 'Usuario',
-      role: role || 'viewer',
-    };
-    const saved = await ClinicalDocumentRepository.saveDraft(
-      {
-        ...selectedDocument,
-        status: 'ready_for_signature',
-        currentVersion: selectedDocument.currentVersion + 1,
-        versionHistory: [
-          ...selectedDocument.versionHistory,
-          {
-            version: selectedDocument.currentVersion + 1,
-            savedAt: now,
-            savedBy: actor,
-            reason: 'manual',
-          },
-        ],
-        audit: {
-          ...selectedDocument.audit,
-          updatedAt: now,
-          updatedBy: actor,
-        },
-      },
-      hospitalId
-    );
-    lastPersistedSnapshotRef.current = serializeClinicalDocument(saved);
-    setDraft(saved);
-    success('Documento validado', `${saved.title} quedó listo para firma.`);
-  };
-
   const handlePrint = () => {
     if (!selectedDocument) return;
     const opened = openClinicalDocumentBrowserPrintPreview(selectedDocument.title);
@@ -628,6 +673,69 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
     } catch (error) {
       console.error('[ClinicalDocumentsWorkspace] Sign failed', error);
       notifyError('No se pudo firmar', 'Intenta nuevamente.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUnsign = async () => {
+    if (!selectedDocument || !user || !canUnsignClinicalDocument(role, selectedDocument)) {
+      warning(
+        'No se puede quitar la firma',
+        'Solo se puede quitar firma de epicrisis firmadas el mismo día de emisión.'
+      );
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const now = new Date().toISOString();
+      const actor = {
+        uid: user.uid,
+        email: user.email || '',
+        displayName: user.displayName || user.email || 'Usuario',
+        role: role || 'viewer',
+      };
+      const unsigned = await ClinicalDocumentRepository.unsign(
+        {
+          ...selectedDocument,
+          status: 'draft',
+          isLocked: false,
+          currentVersion: selectedDocument.currentVersion + 1,
+          versionHistory: [
+            ...selectedDocument.versionHistory,
+            {
+              version: selectedDocument.currentVersion + 1,
+              savedAt: now,
+              savedBy: actor,
+              reason: 'unsign',
+            },
+          ],
+          audit: {
+            ...selectedDocument.audit,
+            updatedAt: now,
+            updatedBy: actor,
+            unsignedAt: now,
+            unsignedBy: actor,
+            signatureRevocations: [
+              ...(selectedDocument.audit.signatureRevocations || []),
+              {
+                revokedAt: now,
+                revokedBy: actor,
+                previousSignedAt: selectedDocument.audit.signedAt,
+                reason: 'same_day_update',
+              },
+            ],
+          },
+        },
+        hospitalId
+      );
+      lastPersistedSnapshotRef.current = serializeClinicalDocument(unsigned);
+      setDraft(unsigned);
+      success('Firma quitada', 'La epicrisis volvió a borrador con registro en auditoría.');
+    } catch (error) {
+      console.error('[ClinicalDocumentsWorkspace] Unsign failed', error);
+      notifyError('No se pudo quitar la firma', 'Intenta nuevamente.');
     } finally {
       setIsSaving(false);
     }
@@ -740,9 +848,9 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
   }
 
   return (
-    <div className="grid grid-cols-[320px_minmax(0,1fr)] min-h-[70vh]">
-      <aside className="border-r border-slate-200 bg-slate-50/70 p-4 space-y-4">
-        <div className="space-y-2">
+    <div className="grid grid-cols-[260px_minmax(0,1fr)] min-h-[72vh]">
+      <aside className="border-r border-slate-200 bg-slate-50/70 p-3 space-y-3">
+        <div className="space-y-1.5">
           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
             Nuevo documento
           </p>
@@ -751,7 +859,7 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
               Perfil en solo lectura: puedes revisar e imprimir, pero no crear nuevos documentos.
             </div>
           )}
-          <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+          <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-2.5">
             <label className="flex flex-col gap-1">
               <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
                 Tipo de documento
@@ -759,7 +867,7 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
               <select
                 value={selectedTemplateId}
                 onChange={event => setSelectedTemplateId(event.target.value)}
-                className="rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-800"
+                className="rounded-md border border-slate-300 bg-slate-50 px-2.5 py-2 text-sm text-slate-800"
               >
                 {templates.map(template => (
                   <option key={template.id} value={template.id}>
@@ -773,7 +881,7 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
               onClick={() => void createDocument()}
               disabled={!canEdit || !patient.patientName}
               className={clsx(
-                'w-full rounded-lg border px-3 py-2 text-xs font-black uppercase tracking-widest transition-all',
+                'w-full rounded-lg border px-2.5 py-2 text-[11px] font-black uppercase tracking-wider transition-all',
                 canEdit && patient.patientName
                   ? 'border-medical-300 bg-medical-50 text-medical-800 hover:bg-medical-100'
                   : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
@@ -785,7 +893,7 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
             Episodio actual
           </p>
@@ -799,7 +907,7 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
                 <div
                   key={document.id}
                   className={clsx(
-                    'rounded-xl border bg-white px-3 py-3 transition-all',
+                    'rounded-lg border bg-white px-2.5 py-2.5 transition-all',
                     selectedDocumentId === document.id
                       ? 'border-medical-300 bg-medical-50'
                       : 'border-slate-200 hover:border-slate-300'
@@ -811,7 +919,7 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
                       onClick={() => setSelectedDocumentId(document.id)}
                       className="flex-1 text-left"
                     >
-                      <span className="text-sm font-bold text-slate-800">{document.title}</span>
+                      <span className="text-[13px] font-bold text-slate-800">{document.title}</span>
                       <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                         {getClinicalDocumentTypeLabel(document.documentType)}
                       </p>
@@ -845,7 +953,7 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
                       )}
                     </div>
                   </div>
-                  <p className="mt-1 text-[11px] text-slate-500">
+                  <p className="mt-0.5 text-[10px] text-slate-500">
                     {document.audit.updatedBy.displayName || 'Sin autor'} ·{' '}
                     {formatDateTime(document.audit.updatedAt)}
                   </p>
@@ -856,23 +964,14 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
         </div>
       </aside>
 
-      <section className="bg-[#f3f4f6] p-4 overflow-y-auto">
+      <section className="bg-[#f3f4f6] p-3 overflow-y-auto">
         {!selectedDocument ? (
           <div className="mx-auto max-w-4xl rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
             Selecciona o crea un documento clínico para comenzar.
           </div>
         ) : (
-          <div className="mx-auto max-w-5xl space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white border border-slate-200 px-4 py-3">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500">
-                <ShieldCheck size={14} className="text-medical-600" />
-                {selectedDocument.status === 'signed'
-                  ? 'Documento firmado'
-                  : selectedDocument.status === 'ready_for_signature'
-                    ? 'Listo para firma'
-                    : 'Borrador en edición'}
-                {isSaving && <span className="text-slate-400">· guardando...</span>}
-              </div>
+          <div className="mx-auto max-w-6xl space-y-3">
+            <div className="flex flex-wrap items-center justify-end gap-3 rounded-2xl bg-white border border-slate-200 px-4 py-3">
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -885,21 +984,23 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
                 </button>
                 <button
                   type="button"
-                  onClick={handleValidate}
-                  disabled={!canEdit || selectedDocument.isLocked}
-                  className="rounded-xl border border-amber-200 px-3 py-2 text-xs font-black uppercase tracking-widest text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:border-slate-200"
-                >
-                  <CheckCircle2 size={14} className="inline mr-2" />
-                  Validar
-                </button>
-                <button
-                  type="button"
                   onClick={handleSign}
                   disabled={!canSignClinicalDocument(role, selectedDocument)}
                   className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black uppercase tracking-widest text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200"
                 >
                   Firmar
                 </button>
+                {canUnsignSelectedDocument && (
+                  <button
+                    type="button"
+                    onClick={() => void handleUnsign()}
+                    disabled={isSaving}
+                    className="rounded-xl border border-rose-200 px-3 py-2 text-xs font-black uppercase tracking-widest text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:border-slate-200"
+                  >
+                    <RotateCcw size={14} className="inline mr-2" />
+                    Quitar firma
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={handlePrint}
@@ -918,6 +1019,11 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
                   Drive
                 </button>
               </div>
+              {isSaving && (
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Guardando...
+                </span>
+              )}
             </div>
 
             {validationIssues.length > 0 && selectedDocument.status !== 'signed' && (
@@ -958,7 +1064,9 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
                 <div className="clinical-document-patient-grid">
                   {selectedDocument.patientFields.map(field => (
                     <label key={field.id} className={getPatientFieldGridClass(field.id)}>
-                      <span className="clinical-document-patient-label">{field.label}</span>
+                      <span className="clinical-document-patient-label">
+                        {getPatientFieldLabel(field, selectedDocument.documentType)}
+                      </span>
                       <input
                         type={field.type}
                         value={field.value}
@@ -985,9 +1093,13 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
                       />
                       <textarea
                         value={section.content}
-                        onChange={event => patchSection(section.id, event.target.value)}
+                        onChange={event => {
+                          patchSection(section.id, event.target.value);
+                          resizeSectionTextarea(event.currentTarget);
+                        }}
                         readOnly={!canEdit || selectedDocument.isLocked}
-                        rows={section.id === 'historia-evolucion' ? 5 : 4}
+                        rows={3}
+                        ref={element => resizeSectionTextarea(element)}
                         className="clinical-document-textarea"
                       />
                     </label>

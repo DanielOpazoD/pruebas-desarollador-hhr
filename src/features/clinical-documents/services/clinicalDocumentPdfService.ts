@@ -11,6 +11,16 @@ const normalizeFieldValue = (fieldId: string, value: string): string => {
   return value;
 };
 
+const getPatientFieldLabelForPdf = (
+  record: ClinicalDocumentRecord,
+  field: ClinicalDocumentRecord['patientFields'][number]
+): string => {
+  if (record.documentType === 'epicrisis' && field.id === 'finf') {
+    return 'Fecha de alta';
+  }
+  return field.label;
+};
+
 const generateStructuredClinicalDocumentPdfBlob = async (
   record: ClinicalDocumentRecord
 ): Promise<Blob> => {
@@ -53,7 +63,7 @@ const generateStructuredClinicalDocumentPdfBlob = async (
 
   record.patientFields.forEach(field => {
     addWrappedText(
-      `${field.label}: ${normalizeFieldValue(field.id, field.value)}`,
+      `${getPatientFieldLabelForPdf(record, field)}: ${normalizeFieldValue(field.id, field.value)}`,
       marginX,
       contentWidth
     );

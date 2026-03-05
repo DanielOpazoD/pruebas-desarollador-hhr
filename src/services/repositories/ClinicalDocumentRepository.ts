@@ -18,6 +18,12 @@ const hydrateLegacyRecordDefaults = (record: ClinicalDocumentRecord): ClinicalDo
   patientInfoTitle: record.patientInfoTitle || 'Información del Paciente',
   footerMedicoLabel: record.footerMedicoLabel || 'Médico',
   footerEspecialidadLabel: record.footerEspecialidadLabel || 'Especialidad',
+  audit: {
+    ...record.audit,
+    signatureRevocations: Array.isArray(record.audit.signatureRevocations)
+      ? record.audit.signatureRevocations
+      : [],
+  },
 });
 
 const sanitizeForFirestore = <T>(value: T): T => {
@@ -101,6 +107,23 @@ export const ClinicalDocumentRepository = {
         ...record,
         isLocked: true,
         status: 'signed',
+      })
+    );
+    await db.setDoc(getClinicalDocumentsCollectionPath(hospitalId), record.id, enriched, {
+      merge: true,
+    });
+    return enriched;
+  },
+
+  async unsign(
+    record: ClinicalDocumentRecord,
+    hospitalId: string = getActiveHospitalId()
+  ): Promise<ClinicalDocumentRecord> {
+    const enriched = sanitizeForFirestore(
+      enrichRecord({
+        ...record,
+        isLocked: false,
+        status: 'draft',
       })
     );
     await db.setDoc(getClinicalDocumentsCollectionPath(hospitalId), record.id, enriched, {

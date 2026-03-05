@@ -18,3 +18,27 @@ export const canSignClinicalDocument = (
   record: ClinicalDocumentRecord
 ): boolean =>
   canEditClinicalDocuments(role) && record.status !== 'signed' && record.status !== 'archived';
+
+const isSameCalendarDay = (leftIso: string, right: Date): boolean => {
+  const left = new Date(leftIso);
+  if (Number.isNaN(left.getTime())) {
+    return false;
+  }
+
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  );
+};
+
+export const canUnsignClinicalDocument = (
+  role: UserRole | undefined,
+  record: ClinicalDocumentRecord,
+  now: Date = new Date()
+): boolean =>
+  canEditClinicalDocuments(role) &&
+  record.documentType === 'epicrisis' &&
+  record.status === 'signed' &&
+  typeof record.audit.signedAt === 'string' &&
+  isSameCalendarDay(record.audit.signedAt, now);
