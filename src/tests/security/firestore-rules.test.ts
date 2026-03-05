@@ -51,6 +51,10 @@ describeRules('Firestore Security Rules', () => {
     testEnv
       .authenticatedContext('user_doctor', { email: 'doctor@example.com', role: 'doctor_urgency' })
       .firestore();
+  const doctorWithoutClaim = () =>
+    testEnv
+      .authenticatedContext('user_doctor_allowed_only', { email: 'doctor.allowed@example.com' })
+      .firestore();
   const editor = () =>
     testEnv
       .authenticatedContext('user_editor', { email: 'editor@example.com', role: 'editor' })
@@ -246,6 +250,57 @@ describeRules('Firestore Security Rules', () => {
 
     it('Unauthenticated users cannot read settings', async () => {
       await assertFails(unauth().doc(settingsPath).get());
+    });
+  });
+
+  describe('Clinical Documents Collection', () => {
+    const clinicalDocumentPath = 'hospitals/H1/clinicalDocuments/doc-1';
+    const clinicalDocumentPayload = {
+      id: 'doc-1',
+      documentType: 'epicrisis',
+      templateId: 'epicrisis',
+      title: 'Epicrisis médica',
+      episodeKey: '157894824__2026-03-04',
+      patientRut: '15.789.482-4',
+      status: 'draft',
+      currentVersion: 1,
+      audit: {
+        createdAt: new Date(NOW_MS).toISOString(),
+        updatedAt: new Date(NOW_MS).toISOString(),
+      },
+    };
+
+    it('Doctors can create clinical documents', async () => {
+      await assertSucceeds(doctor().doc(clinicalDocumentPath).set(clinicalDocumentPayload));
+    });
+
+    it('Regular authenticated users cannot create clinical documents', async () => {
+      await assertFails(authed().doc(clinicalDocumentPath).set(clinicalDocumentPayload));
+    });
+
+    it('Doctors resolved via allowedUsers fallback can create clinical documents', async () => {
+      await setupDoc(admin(), 'allowedUsers/user_doctor_allowed_only', {
+        email: 'doctor.allowed@example.com',
+        role: 'doctor_urgency',
+      });
+
+      await assertSucceeds(
+        doctorWithoutClaim().doc(clinicalDocumentPath).set(clinicalDocumentPayload)
+      );
+    });
+
+    it('Delete is allowed for clinical editor roles and denied for viewer', async () => {
+      await setupDoc(admin(), clinicalDocumentPath, clinicalDocumentPayload);
+      await assertSucceeds(doctor().doc(clinicalDocumentPath).delete());
+
+      await setupDoc(admin(), clinicalDocumentPath, clinicalDocumentPayload);
+      await assertSucceeds(nurse().doc(clinicalDocumentPath).delete());
+
+      await setupDoc(admin(), clinicalDocumentPath, clinicalDocumentPayload);
+      await assertSucceeds(editor().doc(clinicalDocumentPath).delete());
+
+      await setupDoc(admin(), clinicalDocumentPath, clinicalDocumentPayload);
+      await assertFails(authed().doc(clinicalDocumentPath).delete());
     });
   });
 

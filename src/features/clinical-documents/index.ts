@@ -4,6 +4,8 @@ export { ClinicalDocumentsWorkspace } from './components/ClinicalDocumentsWorksp
 export type {
   ClinicalDocumentRecord,
   ClinicalDocumentTemplate,
+  ClinicalDocumentPatientFieldTemplate,
+  ClinicalDocumentSectionTemplate,
   ClinicalDocumentPatientField,
   ClinicalDocumentSection,
   ClinicalDocumentStatus,

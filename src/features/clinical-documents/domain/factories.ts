@@ -39,7 +39,14 @@ export const getClinicalDocumentTemplate = (templateId?: string): ClinicalDocume
 export const buildClinicalDocumentRenderedText = (
   record: Pick<
     ClinicalDocumentRecord,
-    'title' | 'patientFields' | 'sections' | 'medico' | 'especialidad'
+    | 'title'
+    | 'patientInfoTitle'
+    | 'patientFields'
+    | 'sections'
+    | 'footerMedicoLabel'
+    | 'footerEspecialidadLabel'
+    | 'medico'
+    | 'especialidad'
   >
 ): string => {
   const patientBlock = record.patientFields
@@ -52,11 +59,11 @@ export const buildClinicalDocumentRenderedText = (
 
   return [
     record.title,
-    'Información del Paciente',
+    record.patientInfoTitle || 'Información del Paciente',
     patientBlock,
     sectionsBlock,
-    `Médico: ${record.medico || '—'}`,
-    `Especialidad: ${record.especialidad || '—'}`,
+    `${record.footerMedicoLabel || 'Médico'}: ${record.medico || '—'}`,
+    `${record.footerEspecialidadLabel || 'Especialidad'}: ${record.especialidad || '—'}`,
   ]
     .filter(Boolean)
     .join('\n\n')
@@ -98,6 +105,9 @@ export const createClinicalDocumentDraft = ({
     templateId: template.id,
     templateVersion: template.version,
     title: template.title,
+    patientInfoTitle: template.defaultPatientInfoTitle,
+    footerMedicoLabel: template.defaultFooterMedicoLabel,
+    footerEspecialidadLabel: template.defaultFooterEspecialidadLabel,
     patientRut: episode.patientRut,
     patientName: episode.patientName,
     episodeKey: episode.episodeKey,

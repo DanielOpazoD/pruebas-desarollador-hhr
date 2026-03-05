@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domain/entities';
 import { formatDateToCL } from '@/utils/clinicalUtils';
+import { generateClinicalDocumentPrintStyledPdfBlob } from '@/features/clinical-documents/services/clinicalDocumentPrintPdfService';
 
 const normalizeFieldValue = (fieldId: string, value: string): string => {
   if (!value.trim()) return '—';
@@ -10,7 +11,7 @@ const normalizeFieldValue = (fieldId: string, value: string): string => {
   return value;
 };
 
-export const generateClinicalDocumentPdfBlob = async (
+const generateStructuredClinicalDocumentPdfBlob = async (
   record: ClinicalDocumentRecord
 ): Promise<Blob> => {
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
@@ -47,7 +48,7 @@ export const generateClinicalDocumentPdfBlob = async (
 
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(11);
-  pdf.text('Información del Paciente', marginX, cursorY);
+  pdf.text(record.patientInfoTitle || 'Información del Paciente', marginX, cursorY);
   cursorY += 6;
 
   record.patientFields.forEach(field => {
@@ -78,15 +79,37 @@ export const generateClinicalDocumentPdfBlob = async (
   ensureSpace(lineHeight * 3);
   pdf.text('Profesional Responsable', marginX, cursorY);
   cursorY += 6;
-  addWrappedText(`Médico: ${record.medico || '—'}`, marginX, contentWidth / 2 - 2);
+  addWrappedText(
+    `${record.footerMedicoLabel || 'Médico'}: ${record.medico || '—'}`,
+    marginX,
+    contentWidth / 2 - 2
+  );
   const savedY = cursorY;
   cursorY -= lineHeight;
   addWrappedText(
-    `Especialidad: ${record.especialidad || '—'}`,
+    `${record.footerEspecialidadLabel || 'Especialidad'}: ${record.especialidad || '—'}`,
     pageWidth / 2 + 2,
     contentWidth / 2 - 2
   );
   cursorY = Math.max(cursorY, savedY) + 2;
 
   return pdf.output('blob');
+};
+
+export const generateClinicalDocumentPdfBlob = async (
+  record: ClinicalDocumentRecord
+): Promise<Blob> => {
+  try {
+    const printStyled = await generateClinicalDocumentPrintStyledPdfBlob();
+    if (printStyled) {
+      return printStyled;
+    }
+  } catch (error) {
+    console.warn(
+      '[clinicalDocumentPdfService] print-style generation failed, falling back to structured PDF:',
+      error
+    );
+  }
+
+  return generateStructuredClinicalDocumentPdfBlob(record);
 };

@@ -60,6 +60,9 @@ export interface ClinicalDocumentRecord {
   templateId: string;
   templateVersion: number;
   title: string;
+  patientInfoTitle: string;
+  footerMedicoLabel: string;
+  footerEspecialidadLabel: string;
   patientRut: string;
   patientName: string;
   episodeKey: string;
@@ -112,6 +115,9 @@ export interface ClinicalDocumentTemplate {
   documentType: ClinicalDocumentType;
   name: string;
   title: string;
+  defaultPatientInfoTitle: string;
+  defaultFooterMedicoLabel: string;
+  defaultFooterEspecialidadLabel: string;
   version: number;
   patientFields: ClinicalDocumentPatientFieldTemplate[];
   sections: ClinicalDocumentSectionTemplate[];

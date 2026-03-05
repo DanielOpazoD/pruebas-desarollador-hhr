@@ -25,19 +25,25 @@ describe('Security hardening static guards', () => {
   });
 
   it('uses robust admin check in setUserRole callable', () => {
-    const functionsIndex = readProjectFile('functions/index.js');
+    const authCallablePolicy = readProjectFile('functions/lib/auth/authCallablePolicy.js');
 
     // Regression guard for precedence bug: !context.auth.token.role === 'admin'
-    expect(functionsIndex).not.toContain('!context.auth.token.role ===');
-    expect(functionsIndex).toContain("const hasAdminClaim = context.auth?.token?.role === 'admin'");
+    expect(authCallablePolicy).not.toContain('!context.auth.token.role ===');
+    expect(authCallablePolicy).toContain(
+      "const hasAdminClaim = context.auth?.token?.role === 'admin'"
+    );
   });
 
   it('restricts dailyRecords delete operation to admins only', () => {
     const rules = readProjectFile('firestore.rules');
-
-    expect(rules).toMatch(/match \/dailyRecords\/\{date\}[\s\S]*allow delete:\s*if isAdmin\(\);/m);
-    expect(rules).not.toMatch(
-      /match \/dailyRecords\/\{date\}[\s\S]*allow delete:\s*if [^;]*isNurse\(/m
+    const dailyRecordsMatch = rules.match(
+      /match \/dailyRecords\/\{date\}\s*\{([\s\S]*?)\n\s*\}\n\n\s*\/\/ Deleted Records/m
     );
+
+    expect(dailyRecordsMatch).not.toBeNull();
+    const dailyRecordsBlock = dailyRecordsMatch?.[1] || '';
+
+    expect(dailyRecordsBlock).toMatch(/allow delete:\s*if isAdmin\(\);/m);
+    expect(dailyRecordsBlock).not.toMatch(/allow delete:\s*if [^;]*isNurse\(/m);
   });
 });

@@ -73,6 +73,9 @@ export const PatientRowModals: React.FC<PatientRowModalsProps> = ({
         onClose={onCloseHistory}
         patientRut={data.rut || ''}
         patientName={data.patientName}
+        patient={data}
+        currentDateString={currentDateString}
+        bedId={bedId}
       />
     </>
   );

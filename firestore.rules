@@ -20,11 +20,18 @@ service cloud.firestore {
     function hasEmail() {
       return isAuthenticated() && request.auth.token.email != null;
     }
+
+    function hasAllowedUserRole(role) {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/allowedUsers/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/allowedUsers/$(request.auth.uid)).data.role == role;
+    }
     
     // Check if user is admin via Custom Claims OR Whitelist (Dual Stack)
     function isAdmin() {
       return isAuthenticated() && (
         request.auth.token.role == 'admin' ||
+        hasAllowedUserRole('admin') ||
         getUserEmail() in [
           'daniel.opazo@hospitalhangaroa.cl',
           'd.opazo.damiani@gmail.com',
@@ -39,6 +46,8 @@ service cloud.firestore {
       return isAuthenticated() && (
         request.auth.token.role == 'nurse_hospital' || 
         request.auth.token.role == 'admin' ||
+        hasAllowedUserRole('nurse_hospital') ||
+        hasAllowedUserRole('admin') ||
         getUserEmail() in [
           'hospitalizados@hospitalhangaroa.cl',
           'enfermeria.hospitalizados@hospitalhangaroa.cl'
@@ -51,6 +60,8 @@ service cloud.firestore {
       return isAuthenticated() && (
         request.auth.token.role == 'doctor_urgency' ||
         request.auth.token.role == 'admin' ||
+        hasAllowedUserRole('doctor_urgency') ||
+        hasAllowedUserRole('admin') ||
         (
           hasEmail() &&
           exists(/databases/$(database)/documents/config/roles) &&
@@ -71,6 +82,7 @@ service cloud.firestore {
     function isEditorRole() {
       return isAuthenticated() && (
         request.auth.token.role == 'editor' ||
+        hasAllowedUserRole('editor') ||
         (
           hasEmail() &&
           exists(/databases/$(database)/documents/config/roles) &&
@@ -273,7 +285,7 @@ service cloud.firestore {
         allow read: if canReadClinicalData();
         allow create: if isAdmin() || isDoctor();
         allow update: if isAdmin() || isDoctor();
-        allow delete: if isAdmin();
+        allow delete: if isAdmin() || isDoctor() || isNurse() || isEditorRole();
       }
 
       // ----------------------------------------

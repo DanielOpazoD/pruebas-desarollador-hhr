@@ -2,14 +2,15 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CheckCircle2,
   FilePlus2,
-  FileText,
   Printer,
   Save,
   ShieldCheck,
+  Trash2,
   UploadCloud,
 } from 'lucide-react';
 import clsx from 'clsx';
 
+import '@/features/clinical-documents/styles/clinicalDocumentSheet.css';
 import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '@/context/UIContext';
 import { getActiveHospitalId } from '@/constants/firestorePaths';
@@ -20,15 +21,14 @@ import type {
   ClinicalDocumentRecord,
   ClinicalDocumentTemplate,
 } from '@/features/clinical-documents/domain/entities';
-import {
-  createClinicalDocumentDraft,
-  getClinicalDocumentTemplate,
-} from '@/features/clinical-documents/domain/factories';
+import { CLINICAL_DOCUMENT_BRANDING } from '@/features/clinical-documents/domain/branding';
+import { createClinicalDocumentDraft } from '@/features/clinical-documents/domain/factories';
 import {
   buildClinicalDocumentEpisodeContext,
   buildClinicalDocumentPatientFieldValues,
 } from '@/features/clinical-documents/controllers/clinicalDocumentEpisodeController';
 import {
+  canDeleteClinicalDocuments,
   canEditClinicalDocuments,
   canReadClinicalDocuments,
   canSignClinicalDocument,
@@ -39,6 +39,8 @@ import {
   listActiveClinicalDocumentTemplates,
 } from '@/features/clinical-documents/controllers/clinicalDocumentTemplateController';
 import { generateClinicalDocumentPdfBlob } from '@/features/clinical-documents/services/clinicalDocumentPdfService';
+import { openClinicalDocumentBrowserPrintPreview } from '@/features/clinical-documents/services/clinicalDocumentPrintPdfService';
+import { exportClinicalDocumentPdfViaBackend } from '@/features/clinical-documents/services/clinicalDocumentBackendExportService';
 import { uploadClinicalDocumentPdfToDrive } from '@/features/clinical-documents/services/clinicalDocumentDriveService';
 
 interface ClinicalDocumentsWorkspaceProps {
@@ -48,19 +50,84 @@ interface ClinicalDocumentsWorkspaceProps {
   isActive?: boolean;
 }
 
+interface InlineEditableTitleProps {
+  value: string;
+  className?: string;
+  inputClassName?: string;
+  disabled?: boolean;
+  onChange: (value: string) => void;
+}
+
+const InlineEditableTitle: React.FC<InlineEditableTitleProps> = ({
+  value,
+  className,
+  inputClassName,
+  disabled = false,
+  onChange,
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftValue, setDraftValue] = useState(value);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setDraftValue(value);
+    }
+  }, [isEditing, value]);
+
+  const commit = () => {
+    const normalized = draftValue.trim();
+    onChange(normalized.length > 0 ? normalized : value);
+    setIsEditing(false);
+  };
+
+  if (disabled) {
+    return <span className={className}>{value}</span>;
+  }
+
+  if (isEditing) {
+    return (
+      <input
+        value={draftValue}
+        onChange={event => setDraftValue(event.target.value)}
+        onBlur={commit}
+        onKeyDown={event => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            commit();
+          }
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            setDraftValue(value);
+            setIsEditing(false);
+          }
+        }}
+        className={clsx('clinical-document-inline-title-input', inputClassName, className)}
+        autoFocus
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={clsx('clinical-document-inline-title', className)}
+      onClick={() => setIsEditing(true)}
+      title="Haz clic para editar"
+    >
+      {value}
+    </button>
+  );
+};
+
 const serializeClinicalDocument = (record: ClinicalDocumentRecord | null): string =>
   record ? JSON.stringify(record) : '';
 
-const downloadBlob = (blob: Blob, fileName: string): void => {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-};
+const hydrateLegacyDocument = (record: ClinicalDocumentRecord): ClinicalDocumentRecord => ({
+  ...record,
+  patientInfoTitle: record.patientInfoTitle || 'Información del Paciente',
+  footerMedicoLabel: record.footerMedicoLabel || 'Médico',
+  footerEspecialidadLabel: record.footerEspecialidadLabel || 'Especialidad',
+});
 
 const formatDateTime = (isoString?: string): string => {
   if (!isoString) return '—';
@@ -76,6 +143,27 @@ const formatDateTime = (isoString?: string): string => {
       });
 };
 
+const shouldFallbackToLegacyDriveUpload = (error: unknown): boolean => {
+  const code =
+    typeof error === 'object' && error && 'code' in error
+      ? String((error as { code?: string }).code || '')
+      : '';
+  return (
+    code === 'functions/unimplemented' ||
+    code === 'functions/not-found' ||
+    code === 'functions/internal' ||
+    code === 'functions/deadline-exceeded' ||
+    code === 'functions/failed-precondition'
+  );
+};
+
+const getPatientFieldGridClass = (fieldId: string): string => {
+  if (fieldId === 'nombre') return 'col-span-7 clinical-document-patient-field';
+  if (fieldId === 'rut') return 'col-span-3 clinical-document-patient-field';
+  if (fieldId === 'edad') return 'col-span-2 clinical-document-patient-field';
+  return 'col-span-3 clinical-document-patient-field stacked';
+};
+
 export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProps> = ({
   patient,
   currentDateString,
@@ -83,10 +171,11 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
   isActive = true,
 }) => {
   const { user, role } = useAuth();
-  const { success, warning, error: notifyError, info } = useNotification();
+  const { success, warning, error: notifyError, info, confirm } = useNotification();
   const [templates, setTemplates] = useState<ClinicalDocumentTemplate[]>(
     listActiveClinicalDocumentTemplates()
   );
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('epicrisis');
   const [documents, setDocuments] = useState<ClinicalDocumentRecord[]>([]);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [draft, setDraft] = useState<ClinicalDocumentRecord | null>(null);
@@ -97,11 +186,18 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
 
   const canRead = canReadClinicalDocuments(role);
   const canEdit = canEditClinicalDocuments(role);
+  const canDelete = canDeleteClinicalDocuments(role);
   const hospitalId = getActiveHospitalId();
   const episode = useMemo(
     () => buildClinicalDocumentEpisodeContext(patient, currentDateString, bedId),
     [bedId, currentDateString, patient]
   );
+
+  useEffect(() => {
+    if (!templates.some(template => template.id === selectedTemplateId)) {
+      setSelectedTemplateId(templates[0]?.id || 'epicrisis');
+    }
+  }, [selectedTemplateId, templates]);
 
   useEffect(() => {
     if (!isActive || !canRead) {
@@ -152,8 +248,9 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
     const unsubscribe = ClinicalDocumentRepository.subscribeByEpisode(
       episode.episodeKey,
       docs => {
-        setDocuments(docs);
-        setSelectedDocumentId(prev => prev || docs[0]?.id || null);
+        const hydrated = docs.map(document => hydrateLegacyDocument(document));
+        setDocuments(hydrated);
+        setSelectedDocumentId(prev => prev || hydrated[0]?.id || null);
       },
       hospitalId
     );
@@ -171,8 +268,9 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
     }
     const selected = documents.find(document => document.id === selectedDocumentId) || null;
     const cloned = selected ? structuredClone(selected) : null;
-    setDraft(cloned);
-    lastPersistedSnapshotRef.current = serializeClinicalDocument(cloned);
+    const hydratedClone = cloned ? hydrateLegacyDocument(cloned) : null;
+    setDraft(hydratedClone);
+    lastPersistedSnapshotRef.current = serializeClinicalDocument(hydratedClone);
   }, [documents, selectedDocumentId]);
 
   useEffect(() => {
@@ -236,9 +334,6 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
   }, [canEdit, draft, hospitalId, isActive, role, user]);
 
   const selectedDocument = draft;
-  const selectedTemplate = selectedDocument
-    ? getClinicalDocumentTemplate(selectedDocument.templateId)
-    : null;
   const validationIssues = useMemo(
     () => (selectedDocument ? validateClinicalDocument(selectedDocument) : []),
     [selectedDocument]
@@ -247,7 +342,7 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
   const buildPdfFileName = (record: ClinicalDocumentRecord): string =>
     `${record.title.replace(/\s+/g, '_')}_${record.patientRut.replace(/[.\-]/g, '')}_${record.episodeKey}.pdf`;
 
-  const createDocument = async (templateId: string) => {
+  const createDocument = async () => {
     if (!canEdit || !user) {
       warning('Permiso insuficiente', 'No tienes permisos para crear documentos clínicos.');
       return;
@@ -260,21 +355,67 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
       role: role || 'viewer',
     };
 
-    const record = createClinicalDocumentDraft({
-      templateId,
-      hospitalId,
-      actor,
-      episode,
-      patientFieldValues: buildClinicalDocumentPatientFieldValues(patient),
-      medico: actor.displayName,
-      especialidad: episode.specialty || '',
+    try {
+      const templateId = selectedTemplateId || templates[0]?.id || 'epicrisis';
+      const record = createClinicalDocumentDraft({
+        templateId,
+        hospitalId,
+        actor,
+        episode,
+        patientFieldValues: buildClinicalDocumentPatientFieldValues(patient),
+        medico: actor.displayName,
+        especialidad: episode.specialty || '',
+      });
+
+      const saved = await ClinicalDocumentRepository.createDraft(record, hospitalId);
+      lastPersistedSnapshotRef.current = serializeClinicalDocument(saved);
+      setSelectedDocumentId(saved.id);
+      setDraft(saved);
+      success(`${saved.title} creada`, 'Se generó el borrador inicial del documento.');
+    } catch (creationError) {
+      console.error('[ClinicalDocumentsWorkspace] Create document failed', creationError);
+      notifyError(
+        'No se pudo crear el documento',
+        creationError instanceof Error
+          ? creationError.message
+          : 'Ocurrió un error al crear el borrador clínico.'
+      );
+    }
+  };
+
+  const handleDeleteDocument = async (document: ClinicalDocumentRecord) => {
+    if (!canDelete) {
+      warning('Permiso insuficiente', 'No tienes permisos para eliminar documentos clínicos.');
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: 'Eliminar documento clínico',
+      message:
+        'Esta acción eliminará el documento de forma permanente.\n\nEscribe ELIMINAR para confirmar.',
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      requireInputConfirm: 'ELIMINAR',
     });
 
-    const saved = await ClinicalDocumentRepository.createDraft(record, hospitalId);
-    lastPersistedSnapshotRef.current = serializeClinicalDocument(saved);
-    setSelectedDocumentId(saved.id);
-    setDraft(saved);
-    success(`${saved.title} creada`, 'Se generó el borrador inicial del documento.');
+    if (!confirmed) return;
+
+    try {
+      await ClinicalDocumentRepository.delete(document.id, hospitalId);
+      if (selectedDocumentId === document.id) {
+        setSelectedDocumentId(null);
+        setDraft(null);
+        lastPersistedSnapshotRef.current = '';
+      }
+      success('Documento eliminado', `${document.title} fue eliminado correctamente.`);
+    } catch (error) {
+      console.error('[ClinicalDocumentsWorkspace] Delete failed', error);
+      notifyError(
+        'No se pudo eliminar',
+        error instanceof Error ? error.message : 'Intenta nuevamente.'
+      );
+    }
   };
 
   const patchPatientField = (fieldId: string, value: string) => {
@@ -303,8 +444,35 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
     );
   };
 
+  const patchSectionTitle = (sectionId: string, title: string) => {
+    setDraft(prev =>
+      prev
+        ? {
+            ...prev,
+            sections: prev.sections.map(section =>
+              section.id === sectionId ? { ...section, title } : section
+            ),
+          }
+        : prev
+    );
+  };
+
   const patchDocumentTitle = (title: string) => {
     setDraft(prev => (prev ? { ...prev, title } : prev));
+  };
+
+  const patchPatientInfoTitle = (title: string) => {
+    setDraft(prev => (prev ? { ...prev, patientInfoTitle: title } : prev));
+  };
+
+  const patchFooterLabel = (kind: 'medico' | 'especialidad', title: string) => {
+    setDraft(prev =>
+      prev
+        ? kind === 'medico'
+          ? { ...prev, footerMedicoLabel: title }
+          : { ...prev, footerEspecialidadLabel: title }
+        : prev
+    );
   };
 
   const patchDocumentMeta = (
@@ -396,11 +564,20 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
     success('Documento validado', `${saved.title} quedó listo para firma.`);
   };
 
-  const handlePrint = async () => {
+  const handlePrint = () => {
     if (!selectedDocument) return;
-    const blob = await generateClinicalDocumentPdfBlob(selectedDocument);
-    downloadBlob(blob, buildPdfFileName(selectedDocument));
-    info('PDF preparado', 'Se descargó una copia PDF del documento.');
+    const opened = openClinicalDocumentBrowserPrintPreview(selectedDocument.title);
+    if (!opened) {
+      warning(
+        'No se pudo abrir la vista de impresión',
+        'Permite ventanas emergentes para usar la impresión PDF del navegador.'
+      );
+      return;
+    }
+    info(
+      'Vista de impresión abierta',
+      'Ajusta escala, márgenes y destino en el cuadro de impresión del navegador.'
+    );
   };
 
   const handleSign = async () => {
@@ -468,14 +645,34 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
     setIsUploadingPdf(true);
     try {
       const pdfBlob = await generateClinicalDocumentPdfBlob(selectedDocument);
-      const result = await uploadClinicalDocumentPdfToDrive(
-        pdfBlob,
-        buildPdfFileName(selectedDocument),
-        selectedDocument.documentType,
-        selectedDocument.patientName,
-        selectedDocument.patientRut,
-        selectedDocument.episodeKey
-      );
+      let result: { fileId: string; webViewLink: string; folderPath: string };
+
+      try {
+        const backendResult = await exportClinicalDocumentPdfViaBackend({
+          documentId: selectedDocument.id,
+          fileName: buildPdfFileName(selectedDocument),
+          documentType: selectedDocument.documentType,
+          patientName: selectedDocument.patientName,
+          patientRut: selectedDocument.patientRut,
+          episodeKey: selectedDocument.episodeKey,
+          pdfBlob,
+        });
+        result = backendResult;
+      } catch (backendError) {
+        if (!shouldFallbackToLegacyDriveUpload(backendError)) {
+          throw backendError;
+        }
+
+        result = await uploadClinicalDocumentPdfToDrive(
+          pdfBlob,
+          buildPdfFileName(selectedDocument),
+          selectedDocument.documentType,
+          selectedDocument.patientName,
+          selectedDocument.patientRut,
+          selectedDocument.episodeKey
+        );
+      }
+
       const exportedAt = new Date().toISOString();
       await ClinicalDocumentRepository.savePdfMetadata(
         selectedDocument.id,
@@ -537,7 +734,9 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
   };
 
   if (!canRead) {
-    return <p className="text-sm text-slate-600">No tienes permisos para acceder a este módulo.</p>;
+    return (
+      <p className="p-4 text-sm text-slate-600">No tienes permisos para acceder a este módulo.</p>
+    );
   }
 
   return (
@@ -547,27 +746,42 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
             Nuevo documento
           </p>
-          <div className="grid gap-2">
-            {templates.map(template => (
-              <button
-                key={template.id}
-                type="button"
-                onClick={() => void createDocument(template.id)}
-                disabled={!canEdit || !patient.patientName}
-                className={clsx(
-                  'w-full rounded-xl border px-3 py-3 text-left transition-all',
-                  canEdit && patient.patientName
-                    ? 'border-slate-200 bg-white hover:border-medical-300 hover:bg-medical-50'
-                    : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
-                )}
+          {!canEdit && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+              Perfil en solo lectura: puedes revisar e imprimir, pero no crear nuevos documentos.
+            </div>
+          )}
+          <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                Tipo de documento
+              </span>
+              <select
+                value={selectedTemplateId}
+                onChange={event => setSelectedTemplateId(event.target.value)}
+                className="rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-800"
               >
-                <div className="flex items-center gap-2">
-                  <FilePlus2 size={15} className="text-medical-600" />
-                  <span className="text-sm font-bold text-slate-800">{template.name}</span>
-                </div>
-                <p className="mt-1 text-[11px] text-slate-500">{template.title}</p>
-              </button>
-            ))}
+                {templates.map(template => (
+                  <option key={template.id} value={template.id}>
+                    {template.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={() => void createDocument()}
+              disabled={!canEdit || !patient.patientName}
+              className={clsx(
+                'w-full rounded-lg border px-3 py-2 text-xs font-black uppercase tracking-widest transition-all',
+                canEdit && patient.patientName
+                  ? 'border-medical-300 bg-medical-50 text-medical-800 hover:bg-medical-100'
+                  : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+              )}
+            >
+              <FilePlus2 size={14} className="inline mr-2" />
+              Crear documento
+            </button>
           </div>
         </div>
 
@@ -580,48 +794,64 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
               No hay documentos clínicos para este episodio.
             </div>
           ) : (
-            documents.map(document => (
-              <button
-                key={document.id}
-                type="button"
-                onClick={() => setSelectedDocumentId(document.id)}
-                className={clsx(
-                  'w-full rounded-xl border px-3 py-3 text-left transition-all',
-                  selectedDocumentId === document.id
-                    ? 'border-medical-300 bg-medical-50'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
-                )}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <span className="text-sm font-bold text-slate-800">{document.title}</span>
-                    <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      {getClinicalDocumentTypeLabel(document.documentType)}
-                    </p>
+            <div className="space-y-2">
+              {documents.map(document => (
+                <div
+                  key={document.id}
+                  className={clsx(
+                    'rounded-xl border bg-white px-3 py-3 transition-all',
+                    selectedDocumentId === document.id
+                      ? 'border-medical-300 bg-medical-50'
+                      : 'border-slate-200 hover:border-slate-300'
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDocumentId(document.id)}
+                      className="flex-1 text-left"
+                    >
+                      <span className="text-sm font-bold text-slate-800">{document.title}</span>
+                      <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        {getClinicalDocumentTypeLabel(document.documentType)}
+                      </p>
+                    </button>
+                    <div className="flex items-center gap-1">
+                      <span
+                        className={clsx(
+                          'rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider',
+                          document.status === 'signed'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : document.status === 'ready_for_signature'
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-slate-100 text-slate-600'
+                        )}
+                      >
+                        {document.status === 'ready_for_signature'
+                          ? 'Lista'
+                          : document.status === 'signed'
+                            ? 'Firmada'
+                            : 'Borrador'}
+                      </span>
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteDocument(document)}
+                          className="rounded-md border border-red-200 p-1 text-red-600 hover:bg-red-50"
+                          title="Eliminar documento"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <span
-                    className={clsx(
-                      'rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider',
-                      document.status === 'signed'
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : document.status === 'ready_for_signature'
-                          ? 'bg-amber-100 text-amber-700'
-                          : 'bg-slate-100 text-slate-600'
-                    )}
-                  >
-                    {document.status === 'ready_for_signature'
-                      ? 'Lista'
-                      : document.status === 'signed'
-                        ? 'Firmada'
-                        : 'Borrador'}
-                  </span>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    {document.audit.updatedBy.displayName || 'Sin autor'} ·{' '}
+                    {formatDateTime(document.audit.updatedAt)}
+                  </p>
                 </div>
-                <p className="mt-1 text-[11px] text-slate-500">
-                  {document.audit.updatedBy.displayName || 'Sin autor'} ·{' '}
-                  {formatDateTime(document.audit.updatedAt)}
-                </p>
-              </button>
-            ))
+              ))}
+            </div>
           )}
         </div>
       </aside>
@@ -696,108 +926,103 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
               </div>
             )}
 
-            <div className="rounded-2xl border border-slate-300 bg-white px-6 py-5 shadow-sm">
-              <div className="mb-4 flex items-start justify-between gap-4">
+            <div id="clinical-document-sheet" className="clinical-document-sheet">
+              <div className="clinical-document-sheet-header">
                 <img
-                  src="/images/logos/logo_HHR.png"
-                  alt="Hospital Hanga Roa"
-                  className="h-14 w-auto object-contain"
+                  src={CLINICAL_DOCUMENT_BRANDING.leftLogoUrl}
+                  alt="Logo institucional izquierdo"
+                  className="clinical-document-sheet-logo"
                 />
-                <div className="flex-1 space-y-2">
-                  {selectedTemplate?.allowCustomTitle ? (
-                    <input
-                      type="text"
-                      value={selectedDocument.title}
-                      onChange={event => patchDocumentTitle(event.target.value)}
-                      readOnly={!canEdit || selectedDocument.isLocked}
-                      className="w-full border-none bg-transparent text-center text-2xl font-bold text-slate-800 focus:outline-none"
-                    />
-                  ) : (
-                    <h3 className="text-center text-2xl font-bold text-slate-800">
-                      {selectedDocument.title}
-                    </h3>
-                  )}
-                  <p className="text-center text-[10px] font-black uppercase tracking-[0.28em] text-slate-400">
-                    {getClinicalDocumentTypeLabel(selectedDocument.documentType)} · versión{' '}
-                    {selectedDocument.currentVersion}
-                  </p>
+                <div className="clinical-document-title-wrap">
+                  <InlineEditableTitle
+                    value={selectedDocument.title}
+                    onChange={patchDocumentTitle}
+                    disabled={!canEdit || selectedDocument.isLocked}
+                    className="clinical-document-title"
+                  />
                 </div>
-                <div className="h-14 w-14 rounded-full border border-amber-300/70 text-amber-400 flex items-center justify-center text-2xl">
-                  ∞
-                </div>
+                <img
+                  src={CLINICAL_DOCUMENT_BRANDING.rightLogoUrl}
+                  alt="Logo institucional derecho"
+                  className="clinical-document-sheet-logo justify-self-end"
+                />
               </div>
 
-              <div className="mb-4">
-                <h4 className="mb-2 text-base font-bold text-slate-800">
-                  Información del Paciente
-                </h4>
-                <div className="grid grid-cols-12 gap-3">
+              <div className="mb-3">
+                <InlineEditableTitle
+                  value={selectedDocument.patientInfoTitle}
+                  onChange={patchPatientInfoTitle}
+                  disabled={!canEdit || selectedDocument.isLocked}
+                  className="clinical-document-section-title clinical-document-patient-info-title"
+                />
+                <div className="clinical-document-patient-grid">
                   {selectedDocument.patientFields.map(field => (
-                    <label
-                      key={field.id}
-                      className={clsx(
-                        'flex flex-col gap-1',
-                        field.id === 'nombre'
-                          ? 'col-span-7'
-                          : field.id === 'rut'
-                            ? 'col-span-3'
-                            : field.id === 'edad'
-                              ? 'col-span-2'
-                              : 'col-span-3'
-                      )}
-                    >
-                      <span className="text-sm font-bold text-slate-700">{field.label}</span>
+                    <label key={field.id} className={getPatientFieldGridClass(field.id)}>
+                      <span className="clinical-document-patient-label">{field.label}</span>
                       <input
                         type={field.type}
                         value={field.value}
                         onChange={event => patchPatientField(field.id, event.target.value)}
                         readOnly={!canEdit || field.readonly || selectedDocument.isLocked}
-                        className="rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-800 read-only:cursor-default read-only:bg-slate-100"
+                        className="clinical-document-input"
                       />
                     </label>
                   ))}
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {selectedDocument.sections
                   .filter(section => section.visible !== false)
                   .sort((left, right) => left.order - right.order)
                   .map(section => (
                     <label key={section.id} className="block">
-                      <span className="mb-1 block text-sm font-bold text-slate-700">
-                        {section.title}
-                      </span>
+                      <InlineEditableTitle
+                        value={section.title}
+                        onChange={title => patchSectionTitle(section.id, title)}
+                        disabled={!canEdit || selectedDocument.isLocked}
+                        className="clinical-document-section-title"
+                      />
                       <textarea
                         value={section.content}
                         onChange={event => patchSection(section.id, event.target.value)}
                         readOnly={!canEdit || selectedDocument.isLocked}
                         rows={section.id === 'historia-evolucion' ? 5 : 4}
-                        className="min-h-[110px] w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-3 text-sm leading-6 text-slate-800 read-only:cursor-default read-only:bg-slate-100"
+                        className="clinical-document-textarea"
                       />
                     </label>
                   ))}
               </div>
 
-              <div className="mt-4 grid grid-cols-12 gap-3">
-                <label className="col-span-6 flex flex-col gap-1">
-                  <span className="text-sm font-bold text-slate-700">Médico</span>
+              <div className="clinical-document-footer">
+                <label className="flex flex-col gap-1">
+                  <InlineEditableTitle
+                    value={selectedDocument.footerMedicoLabel}
+                    onChange={title => patchFooterLabel('medico', title)}
+                    disabled={!canEdit || selectedDocument.isLocked}
+                    className="clinical-document-section-title"
+                  />
                   <input
                     type="text"
                     value={selectedDocument.medico}
                     onChange={event => patchDocumentMeta({ medico: event.target.value })}
                     readOnly={!canEdit || selectedDocument.isLocked}
-                    className="rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-800 read-only:cursor-default read-only:bg-slate-100"
+                    className="clinical-document-input"
                   />
                 </label>
-                <label className="col-span-6 flex flex-col gap-1">
-                  <span className="text-sm font-bold text-slate-700">Especialidad</span>
+                <label className="flex flex-col gap-1">
+                  <InlineEditableTitle
+                    value={selectedDocument.footerEspecialidadLabel}
+                    onChange={title => patchFooterLabel('especialidad', title)}
+                    disabled={!canEdit || selectedDocument.isLocked}
+                    className="clinical-document-section-title"
+                  />
                   <input
                     type="text"
                     value={selectedDocument.especialidad}
                     onChange={event => patchDocumentMeta({ especialidad: event.target.value })}
                     readOnly={!canEdit || selectedDocument.isLocked}
-                    className="rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-800 read-only:cursor-default read-only:bg-slate-100"
+                    className="clinical-document-input"
                   />
                 </label>
               </div>

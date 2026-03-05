@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  canDeleteClinicalDocuments,
   canEditClinicalDocuments,
   canReadClinicalDocuments,
   canSignClinicalDocument,
@@ -32,6 +33,7 @@ describe('clinicalDocumentPermissionController', () => {
     expect(canReadClinicalDocuments('admin')).toBe(true);
     expect(canReadClinicalDocuments('doctor_urgency')).toBe(true);
     expect(canReadClinicalDocuments('nurse_hospital')).toBe(true);
+    expect(canReadClinicalDocuments('editor')).toBe(true);
     expect(canReadClinicalDocuments('viewer')).toBe(false);
   });
 
@@ -43,5 +45,13 @@ describe('clinicalDocumentPermissionController', () => {
     expect(canSignClinicalDocument('doctor_urgency', record)).toBe(true);
     expect(canSignClinicalDocument('nurse_hospital', record)).toBe(false);
     expect(canSignClinicalDocument('doctor_urgency', { ...record, status: 'signed' })).toBe(false);
+  });
+
+  it('allows document delete for editor and clinical roles', () => {
+    expect(canDeleteClinicalDocuments('admin')).toBe(true);
+    expect(canDeleteClinicalDocuments('doctor_urgency')).toBe(true);
+    expect(canDeleteClinicalDocuments('nurse_hospital')).toBe(true);
+    expect(canDeleteClinicalDocuments('editor')).toBe(true);
+    expect(canDeleteClinicalDocuments('viewer')).toBe(false);
   });
 });

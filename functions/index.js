@@ -3,6 +3,10 @@ const { createMirrorFunctions } = require('./lib/mirrorFunctions');
 const { createAuthHelpers, createAuthFunctions } = require('./lib/authFunctions');
 const { createMinsalFunctions } = require('./lib/minsalFunctions');
 const { createHandoffSignatureFunctions } = require('./lib/handoffSignatureFunctions');
+const { createClinicalDocumentExportFunctions } = require('./lib/clinicalDocumentExportFunctions');
+const {
+  createClinicalDocumentPdfRenderFunctions,
+} = require('./lib/clinicalDocumentPdfRenderFunctions');
 
 const authHelpers = createAuthHelpers(admin);
 
@@ -19,5 +23,12 @@ module.exports = {
   }),
   ...createHandoffSignatureFunctions({
     admin,
+  }),
+  ...createClinicalDocumentExportFunctions({
+    admin,
+    resolveRoleForEmail: authHelpers.resolveRoleForEmail,
+  }),
+  ...createClinicalDocumentPdfRenderFunctions({
+    resolveRoleForEmail: authHelpers.resolveRoleForEmail,
   }),
 };
