@@ -6,7 +6,6 @@
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { getAuditLogs } from '@/services/admin/auditService';
 import {
   AuditAction,
   AuditLogEntry,
@@ -17,6 +16,7 @@ import {
 } from '@/types/audit';
 import { useAuditWorker } from './useAuditWorker';
 import { AUDIT_ACTION_LABELS, CRITICAL_ACTIONS } from '@/services/admin/auditConstants';
+import { executeFetchAuditLogs } from '@/application/audit/fetchAuditLogsUseCase';
 import {
   AUDIT_ITEMS_PER_PAGE,
   AUDIT_SECTIONS,
@@ -108,10 +108,14 @@ export function useAuditData(): UseAuditDataReturn {
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getAuditLogs(1000);
-      setLogs(data);
+      const result = await executeFetchAuditLogs({ limit: 1000 });
+      setLogs(result.data);
+      if (result.status === 'failed') {
+        console.error('Failed to fetch audit logs:', result.issues[0]?.message);
+      }
     } catch (error) {
       console.error('Failed to fetch audit logs:', error);
+      setLogs([]);
     } finally {
       setLoading(false);
     }

@@ -5,10 +5,11 @@ import type { DailyRecord } from '@/types';
 import type { CensusEmailBrowserRuntime } from '@/hooks/controllers/censusEmailBrowserRuntimeController';
 import { type CensusEmailExcelSheetConfig } from '@/hooks/controllers/censusExcelSheetController';
 import {
-  deliverCensusEmail,
-  deliverCensusEmailWithLink,
-  generateCensusShareLink,
-} from '@/hooks/controllers/censusEmailDeliveryController';
+  buildSendCensusConfirmationMessage,
+  executeGenerateCensusShareLink,
+  executeSendCensusEmail,
+  executeSendCensusEmailWithLink,
+} from '@/application/census-email/sendCensusEmailUseCases';
 import {
   buildClipboardCopyMessage,
   canRunCensusEmailAction,
@@ -70,15 +71,40 @@ export const useCensusEmailActions = ({
   browserRuntime,
 }: UseCensusEmailActionsParams): UseCensusEmailActionsResult => {
   const generateShareLink = useCallback(
-    async (accessRole: CensusAccessRole = 'viewer'): Promise<string | null> =>
-      // Role kept explicit even if current browser-runtime flow doesn't specialize the token yet.
-      generateCensusShareLink(browserRuntime, alert),
+    async (_accessRole: CensusAccessRole = 'viewer'): Promise<string | null> => {
+      const result = await executeGenerateCensusShareLink(browserRuntime);
+      if (result.status === 'success') {
+        return result.data;
+      }
+      await alert(result.issues[0]?.message || 'No se pudo generar el link de acceso.');
+      return null;
+    },
     [alert, browserRuntime]
   );
 
   const sendEmail = useCallback(async () => {
     if (!canRunCensusEmailAction(status)) return;
-    await deliverCensusEmail({
+    const confirmed = await confirm({
+      title: 'Confirmar Envío de Censo',
+      message: buildSendCensusConfirmationMessage({
+        currentDateString,
+        recipients,
+        testModeEnabled,
+        testRecipient,
+        isAdminUser,
+      }),
+      confirmText: 'Aceptar',
+      cancelText: 'Cancelar',
+      variant: 'info',
+    });
+    if (!confirmed) {
+      return;
+    }
+
+    setError(null);
+    setStatus('loading');
+
+    const result = await executeSendCensusEmail({
       record,
       currentDateString,
       nurseSignature,
@@ -93,11 +119,28 @@ export const useCensusEmailActions = ({
       testRecipient,
       isAdminUser,
       excelSheetConfig,
-      setStatus,
-      setError,
-      confirm,
-      alert,
     });
+
+    if (result.status === 'success' || result.status === 'partial') {
+      setStatus('success');
+      if (result.status === 'partial') {
+        await alert(
+          result.issues.map(issue => issue.message).join('\n'),
+          'Envío completado con advertencias'
+        );
+      }
+      return;
+    }
+
+    const errorMessage = result.issues[0]?.message || 'No se pudo enviar el correo.';
+    setError(errorMessage);
+    setStatus('error');
+    await alert(
+      errorMessage,
+      result.issues[0]?.kind === 'validation' && isAdminUser && testModeEnabled
+        ? 'Modo prueba'
+        : 'Error al enviar'
+    );
   }, [
     alert,
     confirm,
@@ -124,7 +167,22 @@ export const useCensusEmailActions = ({
   const sendEmailWithLink = useCallback(
     async (accessRole: CensusAccessRole = 'viewer') => {
       if (!canRunCensusEmailAction(status)) return;
-      await deliverCensusEmailWithLink({
+      const confirmed = await confirm({
+        title: 'Enviar Link de Acceso',
+        message:
+          '¿Estás seguro de enviar un link de acceso seguro a los destinatarios configurados?\n\nEsto permitirá a los usuarios visualizar el censo sin necesidad de archivos Excel.',
+        confirmText: 'Aceptar',
+        cancelText: 'Cancelar',
+        variant: 'info',
+      });
+      if (!confirmed) {
+        return;
+      }
+
+      setStatus('loading');
+      setError(null);
+
+      const result = await executeSendCensusEmailWithLink({
         record,
         currentDateString,
         nurseSignature,
@@ -132,13 +190,18 @@ export const useCensusEmailActions = ({
         role,
         recipients,
         message,
-        browserRuntime,
         accessRole: resolveShareLinkRole(accessRole),
-        confirm,
-        alert,
-        setStatus,
-        setError,
+        browserRuntime,
       });
+      if (result.status === 'success') {
+        setStatus('success');
+        return;
+      }
+
+      const errorMessage = result.issues[0]?.message || 'Error al enviar link.';
+      setError(errorMessage);
+      setStatus('error');
+      await alert(errorMessage || 'No se pudo enviar el link de acceso.');
     },
     [
       alert,
