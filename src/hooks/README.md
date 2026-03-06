@@ -4,6 +4,8 @@
 
 Lógica de aplicación reusable y composición de casos de uso. Es el puente entre UI (`components/features`) y servicios/context.
 
+Cuando una operación necesita coordinar repositorios, clasificar outcomes remotos o reutilizar semántica clínica cross-feature, la implementación preferida ya no es el hook directo sino `src/application/*`, dejando al hook como adaptador de UI.
+
 ## Estructura
 
 | Path                         | Rol                                                   |
@@ -33,11 +35,14 @@ Lógica de aplicación reusable y composición de casos de uso. Es el puente ent
 ## Patrones usados
 
 - **Orchestrator Hook**: hooks agregadores que exponen API estable.
+- **Application-backed hooks**: hooks que delegan casos críticos a `src/application/*` para no mezclar UI y coordinación de infraestructura.
 - **Command Hooks**: ejecutan comandos tipados y notifican errores.
 - **Controller-backed hooks**: validación/transformación extraída a `controllers`.
 - `useDailyRecordQuery.ts` ahora delega construcción de query/subscription/prefetch a [controllers/dailyRecordQueryController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/dailyRecordQueryController.ts) para concentrar decisiones de cache en un único punto.
 - `useDailyRecordSyncQuery.ts` delega resolución de estado y bootstrap de creación de día a [controllers/dailyRecordSyncController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/dailyRecordSyncController.ts).
-- `useCensusEmail.ts` y [useCensusEmailActions.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/useCensusEmailActions.ts) usan [controllers/censusEmailStateController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/censusEmailStateController.ts) y [controllers/censusEmailDeliveryController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/censusEmailDeliveryController.ts) para separar estado date-bound y orquestación de envío.
+- `useCensusEmail.ts` usa [useCensusEmailRecipientLists.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/useCensusEmailRecipientLists.ts) y casos de uso en `src/application/census-email/*` para separar bootstrap/sync/CRUD de listas del estado UI del envío.
+- `useAudit.ts` delega escritura/lectura remota a `src/application/audit/*` y mantiene en el hook solo la fachada de UI + debounce.
+- `useBedManagement.ts` ahora centraliza validación/auditoría/reducer a [controllers/bedManagementDispatchController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/bedManagementDispatchController.ts), reduciendo lógica inline de dispatch.
 - **LatestRef pattern**: evita stale closures en callbacks largos.
 - `useTransferViewStates.ts` ahora delega preparación/caché documental a [controllers/transferDocumentPackageController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/transferDocumentPackageController.ts) para mantener el hook enfocado en estado de modales y selección.
 

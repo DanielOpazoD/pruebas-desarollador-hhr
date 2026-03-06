@@ -33,8 +33,14 @@ import {
 } from '@/features/clinical-documents/controllers/clinicalDocumentTemplateController';
 import { generateClinicalDocumentPdfBlob } from '@/features/clinical-documents/services/clinicalDocumentPdfService';
 import { openClinicalDocumentBrowserPrintPreview } from '@/features/clinical-documents/services/clinicalDocumentPrintPdfService';
-import { exportClinicalDocumentPdfViaBackend } from '@/features/clinical-documents/services/clinicalDocumentBackendExportService';
-import { uploadClinicalDocumentPdfToDrive } from '@/features/clinical-documents/services/clinicalDocumentDriveService';
+import {
+  executeCreateClinicalDocumentDraft,
+  executeDeleteClinicalDocument,
+  executeExportClinicalDocumentPdf,
+  executePersistClinicalDocumentDraft,
+  executeSignClinicalDocument,
+  executeUnsignClinicalDocument,
+} from '@/application/clinical-documents/clinicalDocumentUseCases';
 
 interface ClinicalDocumentsWorkspaceProps {
   patient: PatientData;
@@ -212,20 +218,6 @@ const formatDateTime = (isoString?: string): string => {
       });
 };
 
-const shouldFallbackToLegacyDriveUpload = (error: unknown): boolean => {
-  const code =
-    typeof error === 'object' && error && 'code' in error
-      ? String((error as { code?: string }).code || '')
-      : '';
-  return (
-    code === 'functions/unimplemented' ||
-    code === 'functions/not-found' ||
-    code === 'functions/internal' ||
-    code === 'functions/deadline-exceeded' ||
-    code === 'functions/failed-precondition'
-  );
-};
-
 const getPatientFieldGridClass = (fieldId: string): string => {
   return `clinical-document-patient-field stacked clinical-document-patient-field--${fieldId}`;
 };
@@ -373,34 +365,24 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
     autosaveTimerRef.current = window.setTimeout(async () => {
       try {
         setIsSaving(true);
-        const now = new Date().toISOString();
         const actor = {
           uid: user.uid,
           email: user.email || '',
           displayName: user.displayName || user.email || 'Usuario',
           role: role || 'viewer',
         };
-        const nextDraft: ClinicalDocumentRecord = {
-          ...draft,
-          currentVersion: draft.currentVersion + 1,
-          versionHistory: [
-            ...draft.versionHistory,
-            {
-              version: draft.currentVersion + 1,
-              savedAt: now,
-              savedBy: actor,
-              reason: 'autosave',
-            },
-          ],
-          audit: {
-            ...draft.audit,
-            updatedAt: now,
-            updatedBy: actor,
-          },
-        };
-        const saved = await ClinicalDocumentRepository.saveDraft(nextDraft, hospitalId);
-        lastPersistedSnapshotRef.current = serializeClinicalDocument(saved);
-        setDraft(saved);
+        const result = await executePersistClinicalDocumentDraft(
+          draft,
+          hospitalId,
+          actor,
+          'autosave'
+        );
+        if (result.status === 'success' && result.data) {
+          lastPersistedSnapshotRef.current = serializeClinicalDocument(result.data);
+          setDraft(result.data);
+        } else {
+          console.error('[ClinicalDocumentsWorkspace] Autosave failed', result.issues[0]?.message);
+        }
       } catch (error) {
         console.error('[ClinicalDocumentsWorkspace] Autosave failed', error);
       } finally {
@@ -452,11 +434,14 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
         especialidad: episode.specialty || '',
       });
 
-      const saved = await ClinicalDocumentRepository.createDraft(record, hospitalId);
-      lastPersistedSnapshotRef.current = serializeClinicalDocument(saved);
-      setSelectedDocumentId(saved.id);
-      setDraft(saved);
-      success(`${saved.title} creada`, 'Se generó el borrador inicial del documento.');
+      const result = await executeCreateClinicalDocumentDraft(record, hospitalId);
+      if (result.status !== 'success' || !result.data) {
+        throw new Error(result.issues[0]?.message || 'No se pudo crear el documento clínico.');
+      }
+      lastPersistedSnapshotRef.current = serializeClinicalDocument(result.data);
+      setSelectedDocumentId(result.data.id);
+      setDraft(result.data);
+      success(`${result.data.title} creada`, 'Se generó el borrador inicial del documento.');
     } catch (creationError) {
       console.error('[ClinicalDocumentsWorkspace] Create document failed', creationError);
       notifyError(
@@ -487,7 +472,10 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
     if (!confirmed) return;
 
     try {
-      await ClinicalDocumentRepository.delete(document.id, hospitalId);
+      const result = await executeDeleteClinicalDocument(document.id, hospitalId);
+      if (result.status !== 'success') {
+        throw new Error(result.issues[0]?.message || 'No se pudo eliminar el documento.');
+      }
       if (selectedDocumentId === document.id) {
         setSelectedDocumentId(null);
         setDraft(null);
@@ -570,36 +558,23 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
     if (!selectedDocument || !canEdit || !user) return;
     setIsSaving(true);
     try {
-      const now = new Date().toISOString();
       const actor = {
         uid: user.uid,
         email: user.email || '',
         displayName: user.displayName || user.email || 'Usuario',
         role: role || 'viewer',
       };
-      const saved = await ClinicalDocumentRepository.saveDraft(
-        {
-          ...selectedDocument,
-          currentVersion: selectedDocument.currentVersion + 1,
-          versionHistory: [
-            ...selectedDocument.versionHistory,
-            {
-              version: selectedDocument.currentVersion + 1,
-              savedAt: now,
-              savedBy: actor,
-              reason: 'manual',
-            },
-          ],
-          audit: {
-            ...selectedDocument.audit,
-            updatedAt: now,
-            updatedBy: actor,
-          },
-        },
-        hospitalId
+      const result = await executePersistClinicalDocumentDraft(
+        selectedDocument,
+        hospitalId,
+        actor,
+        'manual'
       );
-      lastPersistedSnapshotRef.current = serializeClinicalDocument(saved);
-      setDraft(saved);
+      if (result.status !== 'success' || !result.data) {
+        throw new Error(result.issues[0]?.message || 'No se pudo guardar el documento.');
+      }
+      lastPersistedSnapshotRef.current = serializeClinicalDocument(result.data);
+      setDraft(result.data);
       success('Documento guardado', 'Los cambios se guardaron correctamente.');
     } catch (error) {
       console.error('[ClinicalDocumentsWorkspace] Save failed', error);
@@ -635,41 +610,19 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
     }
     setIsSaving(true);
     try {
-      const now = new Date().toISOString();
       const actor = {
         uid: user.uid,
         email: user.email || '',
         displayName: user.displayName || user.email || 'Usuario',
         role: role || 'viewer',
       };
-      const signed = await ClinicalDocumentRepository.sign(
-        {
-          ...selectedDocument,
-          status: 'signed',
-          isLocked: true,
-          currentVersion: selectedDocument.currentVersion + 1,
-          versionHistory: [
-            ...selectedDocument.versionHistory,
-            {
-              version: selectedDocument.currentVersion + 1,
-              savedAt: now,
-              savedBy: actor,
-              reason: 'signature',
-            },
-          ],
-          audit: {
-            ...selectedDocument.audit,
-            updatedAt: now,
-            updatedBy: actor,
-            signedAt: now,
-            signedBy: actor,
-          },
-        },
-        hospitalId
-      );
-      lastPersistedSnapshotRef.current = serializeClinicalDocument(signed);
-      setDraft(signed);
-      success('Documento firmado', `${signed.title} quedó cerrado y bloqueado.`);
+      const result = await executeSignClinicalDocument(selectedDocument, hospitalId, actor);
+      if (result.status !== 'success' || !result.data) {
+        throw new Error(result.issues[0]?.message || 'No se pudo firmar el documento.');
+      }
+      lastPersistedSnapshotRef.current = serializeClinicalDocument(result.data);
+      setDraft(result.data);
+      success('Documento firmado', `${result.data.title} quedó cerrado y bloqueado.`);
     } catch (error) {
       console.error('[ClinicalDocumentsWorkspace] Sign failed', error);
       notifyError('No se pudo firmar', 'Intenta nuevamente.');
@@ -689,49 +642,18 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
 
     setIsSaving(true);
     try {
-      const now = new Date().toISOString();
       const actor = {
         uid: user.uid,
         email: user.email || '',
         displayName: user.displayName || user.email || 'Usuario',
         role: role || 'viewer',
       };
-      const unsigned = await ClinicalDocumentRepository.unsign(
-        {
-          ...selectedDocument,
-          status: 'draft',
-          isLocked: false,
-          currentVersion: selectedDocument.currentVersion + 1,
-          versionHistory: [
-            ...selectedDocument.versionHistory,
-            {
-              version: selectedDocument.currentVersion + 1,
-              savedAt: now,
-              savedBy: actor,
-              reason: 'unsign',
-            },
-          ],
-          audit: {
-            ...selectedDocument.audit,
-            updatedAt: now,
-            updatedBy: actor,
-            unsignedAt: now,
-            unsignedBy: actor,
-            signatureRevocations: [
-              ...(selectedDocument.audit.signatureRevocations || []),
-              {
-                revokedAt: now,
-                revokedBy: actor,
-                previousSignedAt: selectedDocument.audit.signedAt,
-                reason: 'same_day_update',
-              },
-            ],
-          },
-        },
-        hospitalId
-      );
-      lastPersistedSnapshotRef.current = serializeClinicalDocument(unsigned);
-      setDraft(unsigned);
+      const result = await executeUnsignClinicalDocument(selectedDocument, hospitalId, actor);
+      if (result.status !== 'success' || !result.data) {
+        throw new Error(result.issues[0]?.message || 'No se pudo quitar la firma.');
+      }
+      lastPersistedSnapshotRef.current = serializeClinicalDocument(result.data);
+      setDraft(result.data);
       success('Firma quitada', 'La epicrisis volvió a borrador con registro en auditoría.');
     } catch (error) {
       console.error('[ClinicalDocumentsWorkspace] Unsign failed', error);
@@ -752,86 +674,38 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
 
     setIsUploadingPdf(true);
     try {
-      const pdfBlob = await generateClinicalDocumentPdfBlob(selectedDocument);
-      let result: { fileId: string; webViewLink: string; folderPath: string };
-
-      try {
-        const backendResult = await exportClinicalDocumentPdfViaBackend({
-          documentId: selectedDocument.id,
-          fileName: buildPdfFileName(selectedDocument),
-          documentType: selectedDocument.documentType,
-          patientName: selectedDocument.patientName,
-          patientRut: selectedDocument.patientRut,
-          episodeKey: selectedDocument.episodeKey,
-          pdfBlob,
-        });
-        result = backendResult;
-      } catch (backendError) {
-        if (!shouldFallbackToLegacyDriveUpload(backendError)) {
-          throw backendError;
-        }
-
-        result = await uploadClinicalDocumentPdfToDrive(
-          pdfBlob,
-          buildPdfFileName(selectedDocument),
-          selectedDocument.documentType,
-          selectedDocument.patientName,
-          selectedDocument.patientRut,
-          selectedDocument.episodeKey
-        );
+      const result = await executeExportClinicalDocumentPdf({
+        record: selectedDocument,
+        hospitalId,
+        fileName: buildPdfFileName(selectedDocument),
+      });
+      if (result.status !== 'success' || !result.data) {
+        throw new Error(result.issues[0]?.message || 'No se pudo exportar el PDF clínico.');
       }
-
-      const exportedAt = new Date().toISOString();
-      await ClinicalDocumentRepository.savePdfMetadata(
-        selectedDocument.id,
-        {
-          fileId: result.fileId,
-          webViewLink: result.webViewLink,
-          folderPath: result.folderPath,
-          exportedAt,
-          exportStatus: 'exported',
-        },
-        hospitalId
-      );
+      const exportedPdf = result.data.pdf;
       setDraft(prev =>
         prev
           ? {
               ...prev,
-              pdf: {
-                fileId: result.fileId,
-                webViewLink: result.webViewLink,
-                folderPath: result.folderPath,
-                exportedAt,
-                exportStatus: 'exported',
-              },
+              pdf: exportedPdf,
             }
           : prev
       );
       success('PDF exportado', 'El documento quedó respaldado en Google Drive.');
     } catch (error) {
       console.error('[ClinicalDocumentsWorkspace] Drive upload failed', error);
-      if (selectedDocument) {
-        await ClinicalDocumentRepository.savePdfMetadata(
-          selectedDocument.id,
-          {
-            exportStatus: 'failed',
-            exportError: error instanceof Error ? error.message : 'Error desconocido',
-          },
-          hospitalId
-        );
-        setDraft(prev =>
-          prev
-            ? {
-                ...prev,
-                pdf: {
-                  ...prev.pdf,
-                  exportStatus: 'failed',
-                  exportError: error instanceof Error ? error.message : 'Error desconocido',
-                },
-              }
-            : prev
-        );
-      }
+      setDraft(prev =>
+        prev
+          ? {
+              ...prev,
+              pdf: {
+                ...prev.pdf,
+                exportStatus: 'failed',
+                exportError: error instanceof Error ? error.message : 'Error desconocido',
+              },
+            }
+          : prev
+      );
       notifyError(
         'Falló la exportación',
         'El documento quedó guardado, pero el PDF no se pudo subir.'

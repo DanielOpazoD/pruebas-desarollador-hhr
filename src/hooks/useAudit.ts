@@ -5,13 +5,16 @@
  */
 
 import React, { useCallback } from 'react';
-import { logAuditEvent, getAuditLogs } from '@/services/admin/auditService';
 import { AUDIT_ACTION_LABELS } from '@/services/admin/auditConstants';
 import { AuditAction, AuditLogEntry } from '@/types/audit';
 import {
-  hasMeaningfulAuditDetails,
-  normalizeAuditDetails,
-} from '@/services/admin/auditChangeUtils';
+  buildDebouncedAuditKey,
+  buildMeaningfulAuditDetails,
+  mergeDebouncedAuditDetails,
+  type PendingAuditEntry,
+} from '@/hooks/controllers/auditLogPolicyController';
+import { executeWriteAuditEvent } from '@/application/audit/writeAuditEventUseCase';
+import { executeFetchAuditLogs } from '@/application/audit/fetchAuditLogsUseCase';
 
 interface UseAuditReturn {
   // Logging functions
@@ -74,18 +77,7 @@ interface UseAuditReturn {
 export const useAudit = (userId: string): UseAuditReturn => {
   // Store timers for debounced events (key: action-entityId)
   // We use 'any' for timer to avoid NodeJS vs Browser type conflicts
-  const timersRef = React.useRef<
-    Record<
-      string,
-      {
-        timer: number;
-        details: Record<string, unknown>;
-        rut?: string;
-        date?: string;
-        authors?: string;
-      }
-    >
-  >({});
+  const timersRef = React.useRef<Record<string, PendingAuditEntry>>({});
 
   const logEvent = useCallback(
     (
@@ -97,22 +89,21 @@ export const useAudit = (userId: string): UseAuditReturn => {
       recordDate?: string,
       authors?: string
     ) => {
-      const normalizedDetails = normalizeAuditDetails(details);
-      if (!hasMeaningfulAuditDetails(normalizedDetails)) {
+      const normalizedDetails = buildMeaningfulAuditDetails(details);
+      if (!normalizedDetails) {
         return;
       }
 
-      // Fire and forget - don't await
-      logAuditEvent(
+      void executeWriteAuditEvent({
         userId,
         action,
         entityType,
         entityId,
-        normalizedDetails,
+        details: normalizedDetails,
         patientRut,
         recordDate,
-        authors
-      );
+        authors,
+      });
     },
     [userId]
   );
@@ -129,54 +120,14 @@ export const useAudit = (userId: string): UseAuditReturn => {
       authors?: string,
       waitMs: number = 5 * 60 * 1000 // Default 5 mins
     ) => {
-      const key = `${action}-${entityId}`;
+      const key = buildDebouncedAuditKey(action, entityId);
 
       // Get existing pending entry
       const pending = timersRef.current[key];
 
       // Merge changes if they exist
-      let mergedDetails = normalizeAuditDetails({ ...details });
-      if (pending && pending.details && mergedDetails.changes) {
-        const oldChanges = (pending.details.changes || {}) as Record<
-          string,
-          { old?: unknown; new?: unknown } | unknown
-        >;
-        const newChanges = (mergedDetails.changes || {}) as Record<
-          string,
-          { old?: unknown; new?: unknown } | unknown
-        >;
-
-        // Merge logic: Preserve the FIRST 'old' value in the chain
-        // but take the LAST 'new' value.
-        const mergedChanges: Record<string, unknown> = { ...oldChanges };
-
-        Object.keys(newChanges).forEach(field => {
-          const oldVal = mergedChanges[field] as Record<string, unknown> | undefined;
-          const newVal = newChanges[field] as Record<string, unknown> | undefined;
-
-          if (oldVal && typeof oldVal === 'object' && 'old' in oldVal) {
-            // Field already exists in pending log, keep its 'old' value
-            mergedChanges[field] = {
-              old: oldVal.old,
-              new:
-                newVal && typeof newVal === 'object' && 'new' in newVal
-                  ? newVal.new
-                  : newChanges[field],
-            };
-          } else {
-            // New field being modified
-            mergedChanges[field] = newChanges[field];
-          }
-        });
-
-        mergedDetails = normalizeAuditDetails({
-          ...pending.details,
-          ...mergedDetails,
-          changes: mergedChanges,
-        });
-      }
-
-      if (!hasMeaningfulAuditDetails(mergedDetails)) {
+      const mergedDetails = mergeDebouncedAuditDetails(pending?.details || null, details);
+      if (!mergedDetails) {
         return;
       }
 
@@ -286,7 +237,8 @@ export const useAudit = (userId: string): UseAuditReturn => {
   );
 
   const fetchLogs = useCallback(async (limit: number = 100): Promise<AuditLogEntry[]> => {
-    return getAuditLogs(limit);
+    const result = await executeFetchAuditLogs({ limit });
+    return result.data;
   }, []);
 
   const getActionLabel = useCallback((action: AuditAction): string => {

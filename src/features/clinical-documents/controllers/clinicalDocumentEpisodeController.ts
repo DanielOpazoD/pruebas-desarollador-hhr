@@ -1,9 +1,13 @@
 import type { ClinicalDocumentEpisodeContext } from '@/features/clinical-documents/domain/entities';
 import type { PatientData } from '@/types';
+import {
+  buildClinicalEpisodeKey as buildClinicalEpisodeKeyFromApplication,
+  resolveClinicalEpisode,
+} from '@/application/patient-flow/clinicalEpisode';
 import { calculateAge } from '@/utils/clinicalUtils';
 
 export const buildClinicalEpisodeKey = (patientRut: string, admissionDate?: string): string =>
-  `${patientRut || 'sin-rut'}__${admissionDate || 'sin-ingreso'}`;
+  buildClinicalEpisodeKeyFromApplication(patientRut, admissionDate);
 
 const padTime = (value: number): string => value.toString().padStart(2, '0');
 
@@ -18,15 +22,11 @@ export const buildClinicalDocumentEpisodeContext = (
   patient: PatientData,
   sourceDailyRecordDate: string,
   sourceBedId: string
-): ClinicalDocumentEpisodeContext => ({
-  patientRut: patient.rut,
-  patientName: patient.patientName,
-  episodeKey: buildClinicalEpisodeKey(patient.rut, patient.admissionDate),
-  admissionDate: patient.admissionDate,
-  sourceDailyRecordDate,
-  sourceBedId,
-  specialty: patient.specialty,
-});
+): ClinicalDocumentEpisodeContext =>
+  resolveClinicalEpisode(patient, {
+    sourceDailyRecordDate,
+    sourceBedId,
+  });
 
 export const buildClinicalDocumentPatientFieldValues = (
   patient: PatientData

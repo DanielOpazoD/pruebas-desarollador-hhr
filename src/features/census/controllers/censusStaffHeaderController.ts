@@ -1,5 +1,5 @@
 import type { DischargeData, PatientData, TransferData } from '@/types';
-import { isNewAdmissionForClinicalDay } from '@/utils/dateUtils';
+import { classifyPatientMovementForRecord } from '@/application/patient-flow/clinicalEpisode';
 
 export interface StaffSelectorsState {
   nursesDayShift: string[];
@@ -76,8 +76,8 @@ export const resolveAdmissionsCountForRecord = ({ beds, recordDate }: Admissions
   if (!recordDate) return 0;
 
   const patients = collectHospitalizedPatients(beds);
-  return patients.filter(patient =>
-    isNewAdmissionForClinicalDay(recordDate, patient.admissionDate, patient.admissionTime)
+  return patients.filter(
+    patient => classifyPatientMovementForRecord(recordDate, patient).isNewAdmission
   ).length;
 };
 

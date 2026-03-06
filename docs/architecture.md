@@ -15,6 +15,7 @@ Documento de referencia para entender cómo se organiza el sistema, cómo fluyen
                                   ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ Application Layer                                                          │
+│ - src/application                                                          │
 │ - src/hooks                                                                │
 │ - src/context                                                              │
 │ - src/features/*/hooks                                                     │
@@ -46,6 +47,7 @@ Documento de referencia para entender cómo se organiza el sistema, cómo fluyen
 | ------------------------- | ------------------------------------------ | -------------------------------------------------------------------- | ------- | --------------------------------------- | -------------------------------------------- |
 | `components` / `views`    | hooks, context, feature controllers, types | services de bajo nivel directo (salvo casos legacy), infraestructura |
 | `hooks`                   | controllers, services, types, utils        | implementación de componentes (`.tsx`)                               |
+| `application`             | repositories, domain, types, utils         | componentes React, JSX, runtime UI directo                           |
 | `controllers`             | domain, types, utils, contratos            | componentes React                                                    |
 | `domain`                  | types, utils puros                         | React, context, UI                                                   |
 | `services/repositories`   | services/storage, integrations, types      | componentes/hook de UI                                               |
@@ -157,17 +159,29 @@ npm run test
 
 - **Feature-first híbrido**: módulos por feature + capas transversales (`services`, `shared`, `types`).
 - **Controller pattern**: lógica de validación, transformación y comandos fuera de componentes.
+- **Application use cases**: coordinación explícita de operaciones críticas sobre repositorios y outcomes homogéneos.
+- Casos ya migrados en primera ola:
+  - inicialización/sync de `dailyRecord`
+  - episodio clínico compartido
+  - envío médico de handoff
+  - análisis/migración de pacientes
+- Casos ya migrados en segunda ola:
+  - escritura/lectura de auditoría
+  - bootstrap/sync/CRUD de listas de destinatarios de censo
+  - persistencia/firma/desfirma/exportación de documentos clínicos
 - **Repository pattern**: acceso a datos desacoplado de la UI.
 - **Runtime adapter pattern**: encapsulación de efectos de browser (`alert`, `confirm`, `reload`, `open`).
 - **Form flow unificado**: `useModalFormFlow` en modales críticos.
 
 ## 9) Riesgos técnicos actuales (no seguridad)
 
-| Riesgo                                  | Impacto                | Mitigación sugerida                                  |
-| --------------------------------------- | ---------------------- | ---------------------------------------------------- |
-| Tamaño del módulo en feature `census`   | Complejidad alta       | Seguir extrayendo controllers por bounded context    |
-| Coexistencia de capas legacy y nuevas   | Curva de mantenimiento | Consolidar readmes + reglas de arquitectura por capa |
-| Acoplamiento histórico en algunos hooks | Riesgo de regresión    | Aumentar tests de borde + contracts tests            |
+| Riesgo                                  | Impacto                | Mitigación sugerida                                                                                                   |
+| --------------------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Tamaño del módulo en feature `census`   | Complejidad alta       | Seguir extrayendo controllers por bounded context                                                                     |
+| Coexistencia de capas legacy y nuevas   | Curva de mantenimiento | Consolidar readmes + reglas de arquitectura por capa                                                                  |
+| Acoplamiento histórico en algunos hooks | Riesgo de regresión    | Aumentar tests de borde + contracts tests                                                                             |
+| Outcomes remotos heterogéneos           | UX inconsistente       | Traducir sync/export a `ApplicationOutcome`                                                                           |
+| Hotspots legacy de coordinación         | Mantenimiento costoso  | Seguir migrando `useAudit`, `useCensusEmail`, `ClinicalDocumentsWorkspace` y `useBedManagement` a fachada + use-cases |
 
 ## 10) Guía rápida para cambios nuevos
 

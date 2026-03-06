@@ -1,4 +1,4 @@
-import { isNewAdmissionForClinicalDay } from '@/utils/dateUtils';
+import { classifyPatientMovementForRecord } from '@/application/patient-flow/clinicalEpisode';
 
 interface ResolveIsNewAdmissionForRecordParams {
   recordDate: string;
@@ -11,4 +11,4 @@ export const resolveIsNewAdmissionForRecord = ({
   admissionDate,
   admissionTime,
 }: ResolveIsNewAdmissionForRecordParams): boolean =>
-  isNewAdmissionForClinicalDay(recordDate, admissionDate, admissionTime);
+  classifyPatientMovementForRecord(recordDate, { admissionDate, admissionTime }).isNewAdmission;

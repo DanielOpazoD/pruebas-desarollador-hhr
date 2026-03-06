@@ -1,0 +1,130 @@
+import type { DailyRecord, DailyRecordPatch, PatientData, PatientFieldValue } from '@/types';
+import { BEDS } from '@/constants';
+import { getBedTypeForRecord } from '@/utils/bedTypeUtils';
+import { BedType } from '@/types';
+import { type BedAction, bedManagementReducer } from '@/hooks/useBedManagementReducer';
+import type { usePatientValidation } from '@/hooks/usePatientValidation';
+import type { useBedAudit } from '@/hooks/useBedAudit';
+
+type ValidationPort = ReturnType<typeof usePatientValidation>;
+type BedAuditPort = ReturnType<typeof useBedAudit>;
+
+interface ExecuteBedManagementActionInput {
+  currentRecord: DailyRecord | null;
+  action: BedAction;
+  validation: ValidationPort;
+  bedAudit: BedAuditPort;
+  patchRecord: (partial: DailyRecordPatch) => Promise<void>;
+}
+
+const validateAction = (action: BedAction, validation: ValidationPort): BedAction | null => {
+  if (action.type === 'UPDATE_PATIENT') {
+    const result = validation.processFieldValue(action.field, action.value);
+    if (!result.valid) {
+      console.warn(`Validation failed for ${action.field}:`, result.error);
+      return null;
+    }
+
+    return {
+      ...action,
+      value: result.value,
+    };
+  }
+
+  if (action.type === 'UPDATE_PATIENT_MULTIPLE') {
+    const validatedFields: Partial<PatientData> = {};
+    for (const [key, value] of Object.entries(action.fields)) {
+      const result = validation.processFieldValue(
+        key as keyof PatientData,
+        value as PatientFieldValue
+      );
+      if (result.valid) {
+        (validatedFields as Record<string, unknown>)[key] = result.value;
+      }
+    }
+
+    return {
+      ...action,
+      fields: validatedFields,
+    };
+  }
+
+  return action;
+};
+
+const auditActionIntent = (
+  action: BedAction,
+  currentRecord: DailyRecord,
+  bedAudit: BedAuditPort
+) => {
+  switch (action.type) {
+    case 'UPDATE_PATIENT':
+      bedAudit.auditPatientChange(
+        action.bedId,
+        action.field,
+        currentRecord.beds[action.bedId],
+        action.value
+      );
+      break;
+    case 'UPDATE_CUDYR':
+      bedAudit.auditCudyrChange(action.bedId, action.field, action.value);
+      break;
+    case 'UPDATE_CLINICAL_CRIB_CUDYR':
+      bedAudit.auditCribCudyrChange(action.bedId, action.field, action.value);
+      break;
+    case 'CLEAR_PATIENT': {
+      const bed = currentRecord.beds[action.bedId];
+      if (bed.patientName) {
+        bedAudit.auditPatientCleared(action.bedId, bed.patientName, bed.rut);
+      }
+      break;
+    }
+    case 'TOGGLE_BED_TYPE': {
+      const bedDef = BEDS.find(bed => bed.id === action.bedId);
+      if (!bedDef) {
+        break;
+      }
+
+      const fromType = getBedTypeForRecord(bedDef, currentRecord);
+      const toType = fromType === BedType.UTI ? BedType.UCI : BedType.UTI;
+      bedAudit.auditPatientModified(action.bedId, {
+        action: 'toggle_bed_type',
+        from: fromType,
+        to: toType,
+      });
+      break;
+    }
+  }
+};
+
+export const executeBedManagementAction = ({
+  currentRecord,
+  action,
+  validation,
+  bedAudit,
+  patchRecord,
+}: ExecuteBedManagementActionInput): void => {
+  if (!currentRecord) {
+    return;
+  }
+
+  const validatedAction = validateAction(action, validation);
+  if (!validatedAction) {
+    return;
+  }
+
+  try {
+    auditActionIntent(validatedAction, currentRecord, bedAudit);
+  } catch (error) {
+    console.error('Audit logging failed', error);
+  }
+
+  try {
+    const patch = bedManagementReducer(currentRecord, validatedAction);
+    if (patch) {
+      void patchRecord(patch);
+    }
+  } catch (error) {
+    console.warn('Bed management action failed:', error);
+  }
+};

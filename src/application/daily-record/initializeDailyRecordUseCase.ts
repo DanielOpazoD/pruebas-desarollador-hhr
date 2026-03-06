@@ -1,0 +1,77 @@
+import type { DailyRecord } from '@/types';
+import type { IDailyRecordRepository } from '@/services/repositories/DailyRecordRepository';
+import {
+  createApplicationDegraded,
+  createApplicationFailed,
+  createApplicationSuccess,
+  type ApplicationOutcome,
+  type UseCase,
+} from '@/application/shared/applicationOutcome';
+import type { DailyRecordInitializationResult } from '@/services/repositories/dailyRecordRepositoryInitializationService';
+
+export interface InitializeDailyRecordInput {
+  date: string;
+  copyFromDate?: string;
+  repository: Pick<IDailyRecordRepository, 'initializeDayDetailed'>;
+}
+
+export interface InitializeDailyRecordOutput {
+  record: DailyRecord | null;
+  initialization: DailyRecordInitializationResult | null;
+}
+
+const mapInitializationOutcome = (
+  result: DailyRecordInitializationResult
+): ApplicationOutcome<InitializeDailyRecordOutput> => {
+  const data = {
+    record: result.record,
+    initialization: result,
+  };
+
+  if (result.outcome === 'repaired') {
+    return createApplicationDegraded(data, [
+      {
+        kind: 'conflict',
+        message: 'El día fue inicializado con reparación de compatibilidad heredada.',
+        code: result.sourceCompatibilityIntensity,
+      },
+    ]);
+  }
+
+  return createApplicationSuccess(data);
+};
+
+export class InitializeDailyRecordUseCase implements UseCase<
+  InitializeDailyRecordInput,
+  InitializeDailyRecordOutput
+> {
+  async execute(
+    input: InitializeDailyRecordInput
+  ): Promise<ApplicationOutcome<InitializeDailyRecordOutput>> {
+    try {
+      const initialization = await input.repository.initializeDayDetailed(
+        input.date,
+        input.copyFromDate
+      );
+      return mapInitializationOutcome(initialization);
+    } catch (error) {
+      return createApplicationFailed(
+        {
+          record: null as never,
+          initialization: null as never,
+        },
+        [
+          {
+            kind: 'unknown',
+            message: error instanceof Error ? error.message : 'No se pudo inicializar el día.',
+          },
+        ]
+      );
+    }
+  }
+}
+
+export const executeInitializeDailyRecord = async (
+  input: InitializeDailyRecordInput
+): Promise<ApplicationOutcome<InitializeDailyRecordOutput>> =>
+  new InitializeDailyRecordUseCase().execute(input);

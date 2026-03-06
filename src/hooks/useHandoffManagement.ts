@@ -1,12 +1,7 @@
 import { useMemo, useCallback, useRef, useEffect } from 'react';
 import { DailyRecord, DailyRecordPatch, MedicalHandoffActor, MedicalSpecialty } from '@/types';
-import { BEDS } from '@/constants';
 import { useNotification } from '@/context/UIContext';
 import { getPreviousDay } from '@/services/repositories/DailyRecordRepository';
-import {
-  formatHandoffMessage,
-  sendWhatsAppMessage,
-} from '@/services/integrations/whatsapp/whatsappService';
 import { useAuditContext } from '@/context/AuditContext';
 import { getAttributedAuthors } from '@/services/admin/attributionService';
 import type { MedicalHandoffScope } from '@/features/handoff/controllers';
@@ -25,6 +20,7 @@ import {
   normalizeMedicalHandoffActor,
 } from '@/features/handoff/controllers/handoffManagementController';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
+import { executeSendMedicalHandoff } from '@/application/handoff/sendMedicalHandoffUseCase';
 
 interface ConfirmMedicalSpecialtyNoChangesInput {
   specialty: MedicalSpecialty;
@@ -372,57 +368,19 @@ export const useHandoffManagement = (
       if (!currentRecord) return;
 
       try {
-        // 1. Get Doctor Name (Auto-fill from previous if empty)
-        let doctorName = currentRecord.medicalHandoffDoctor;
-        if (!doctorName) {
-          const previousRecord = await getPreviousDay(currentRecord.date);
-          doctorName = previousRecord?.medicalHandoffDoctor || 'Sin especificar';
-        }
-
-        // 2. Calculate Stats (Replica of HandoffView logic)
-        const activeExtras = currentRecord.activeExtraBeds || [];
-        const visibleBeds = BEDS.filter(bed => !bed.isExtra || activeExtras.includes(bed.id));
-
-        const hospitalized = visibleBeds.filter(
-          b => currentRecord.beds[b.id].patientName && !currentRecord.beds[b.id].isBlocked
-        ).length;
-        const blockedBeds = visibleBeds.filter(b => currentRecord.beds[b.id].isBlocked).length;
-        const freeBeds = visibleBeds.length - hospitalized - blockedBeds;
-
-        // 3. Format Message
-        const [year, month, day] = currentRecord.date.split('-');
-        const dateStr = `${day}-${month}-${year}`;
-        const handoffUrl = await ensureMedicalHandoffSignatureLink('all');
-
-        const message = formatHandoffMessage(templateContent, {
-          date: dateStr,
-          signedBy: doctorName,
-          signedAt: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
-          hospitalized,
-          freeBeds,
-          newAdmissions: 0,
-          discharges: 0,
-          handoffUrl,
+        const outcome = await executeSendMedicalHandoff({
+          record: currentRecord,
+          templateContent,
+          targetGroupId,
+          patchRecord,
+          getPreviousDay,
+          scope: 'all',
         });
-
-        // 4. Send WhatsApp
-        const result = await sendWhatsAppMessage(targetGroupId, message);
-        if (!result.success) {
-          throw new Error(result.error);
+        if (outcome.status === 'failed') {
+          throw new Error(outcome.issues[0]?.message || 'No se pudo enviar la entrega médica.');
         }
 
         success('WhatsApp Enviado', 'Entrega médica enviada correctamente.');
-
-        // 5. Atomic Patch Update
-        const sentAt = new Date().toISOString();
-        await patchRecord({
-          medicalHandoffDoctor: doctorName,
-          medicalHandoffSentAt: sentAt,
-          medicalHandoffSentAtByScope: {
-            ...(currentRecord.medicalHandoffSentAtByScope || {}),
-            all: sentAt,
-          },
-        });
       } catch (err: unknown) {
         console.error('WhatsApp Logic Error:', err);
         const errorMessage = err instanceof Error ? err.message : 'Error desconocido';

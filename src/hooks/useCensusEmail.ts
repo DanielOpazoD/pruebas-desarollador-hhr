@@ -1,27 +1,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useConfirmDialog } from '@/context/UIContext';
 import { DailyRecord } from '@/types';
-import { CENSUS_DEFAULT_RECIPIENTS } from '@/constants/email';
 import { getAppSetting, saveAppSetting } from '@/services/settingsService';
 import { isAdmin } from '@/utils/permissions';
 import { CensusAccessRole } from '@/types/censusAccess';
 import { defaultCensusEmailBrowserRuntime } from '@/hooks/controllers/censusEmailBrowserRuntimeController';
-import { resolveCensusRecipientsBootstrap } from '@/hooks/controllers/censusEmailRecipientsBootstrapController';
-import { resolveStoredRecipients } from '@/hooks/controllers/censusEmailRecipientsController';
-import {
-  buildCreatedRecipientList,
-  buildRecipientListSavePayload,
-  resolveCreateRecipientListError,
-  resolveDeleteRecipientListError,
-  resolveRecipientListFallback,
-  resolveRenamedRecipientListName,
-  resolveRenameRecipientListError,
-} from '@/hooks/controllers/censusEmailRecipientListController';
-import {
-  buildRecipientSyncPayload,
-  resolveActiveRecipientListForSync,
-  shouldSkipRecipientSync,
-} from '@/hooks/controllers/censusEmailRecipientSyncController';
+import type { GlobalEmailRecipientList } from '@/services/email/emailRecipientListService';
 import {
   CENSUS_EMAIL_EXCEL_SHEET_CONFIG_KEY,
   DEFAULT_CENSUS_EMAIL_EXCEL_SHEET_CONFIG,
@@ -30,13 +14,6 @@ import {
 } from '@/hooks/controllers/censusExcelSheetController';
 import { useCensusEmailActions, type CensusEmailSendStatus } from '@/hooks/useCensusEmailActions';
 import {
-  areGlobalEmailRecipientsEqual,
-  CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST,
-  deleteGlobalEmailRecipientList,
-  GlobalEmailRecipientList,
-  saveGlobalEmailRecipientList,
-} from '@/services/email/emailRecipientListService';
-import {
   createInitialCensusMessageState,
   createInitialCensusSendState,
   resolveCensusEmailMessage,
@@ -44,6 +21,7 @@ import {
   updateDateBoundErrorState,
   updateDateBoundStatusState,
 } from '@/hooks/controllers/censusEmailStateController';
+import { useCensusEmailRecipientLists } from '@/hooks/useCensusEmailRecipientLists';
 
 interface UseCensusEmailParams {
   record: DailyRecord | null;
@@ -123,128 +101,23 @@ export const useCensusEmail = ({
     !!user && (role === 'admin' || role === 'nurse_hospital' || role === 'editor');
 
   // ========== RECIPIENTS STATE ==========
-  const [recipients, setRecipients] = useState<string[]>(CENSUS_DEFAULT_RECIPIENTS);
-  const [recipientLists, setRecipientLists] = useState<GlobalEmailRecipientList[]>([]);
-  const [activeRecipientListId, setActiveRecipientListIdState] = useState<string>(
-    CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.id
-  );
-  const [recipientsSource, setRecipientsSource] = useState<'firebase' | 'local' | 'default'>(
-    'default'
-  );
-  const [isRecipientsSyncing, setIsRecipientsSyncing] = useState(false);
-  const [recipientsSyncError, setRecipientsSyncError] = useState<string | null>(null);
-  const recipientsReadyRef = useRef(false);
-  const lastRemoteRecipientsRef = useRef<string[] | null>(null);
-  const activeRecipientListIdRef = useRef<string>(CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.id);
-  const RECIPIENT_LIST_KEY = 'censusEmailActiveRecipientListId';
-
-  const setActiveRecipientListId = useCallback((listId: string) => {
-    activeRecipientListIdRef.current = listId;
-    setActiveRecipientListIdState(listId);
-    void saveAppSetting(RECIPIENT_LIST_KEY, listId);
-  }, []);
-
-  const applyActiveRecipientList = useCallback(
-    (list: GlobalEmailRecipientList) => {
-      setActiveRecipientListId(list.id);
-      lastRemoteRecipientsRef.current = list.recipients;
-      recipientsReadyRef.current = true;
-      setRecipientsSource('firebase');
-      setRecipientsSyncError(null);
-      setRecipients(currentRecipients =>
-        areGlobalEmailRecipientsEqual(currentRecipients, list.recipients)
-          ? currentRecipients
-          : list.recipients
-      );
-      void saveAppSetting('censusEmailRecipients', list.recipients);
-    },
-    [setActiveRecipientListId]
-  );
-
-  const upsertRecipientList = useCallback((nextList: GlobalEmailRecipientList) => {
-    setRecipientLists(previousLists => {
-      const existingIndex = previousLists.findIndex(list => list.id === nextList.id);
-      if (existingIndex === -1) {
-        return [nextList, ...previousLists];
-      }
-
-      const updatedLists = [...previousLists];
-      updatedLists[existingIndex] = nextList;
-      return updatedLists;
-    });
-  }, []);
-
-  useEffect(() => {
-    let isActive = true;
-
-    const loadRecipients = async () => {
-      try {
-        const bootstrap = await resolveCensusRecipientsBootstrap({
-          canManageGlobalRecipientLists,
-          browserRuntime,
-          activeListStorageKey: RECIPIENT_LIST_KEY,
-          user,
-        });
-
-        if (!isActive) {
-          return;
-        }
-
-        setRecipientLists(bootstrap.recipientLists);
-        if (bootstrap.activeRecipientList) {
-          applyActiveRecipientList(bootstrap.activeRecipientList);
-        } else {
-          setRecipients(bootstrap.recipients);
-          setRecipientsSource(bootstrap.recipientsSource);
-          setRecipientsSyncError(bootstrap.syncError);
-        }
-        recipientsReadyRef.current = true;
-      } catch (error) {
-        console.error('[useCensusEmail] Failed to load global recipient lists:', error);
-
-        const stored = await getAppSetting<string[] | null>('censusEmailRecipients', null);
-        const storedRecipients = resolveStoredRecipients(stored) ?? CENSUS_DEFAULT_RECIPIENTS;
-        if (isActive) {
-          setRecipients(storedRecipients);
-          setRecipientsSource(storedRecipients.length > 0 ? 'local' : 'default');
-          setRecipientsSyncError(
-            'No se pudo cargar la lista global en Firebase. Se usara la copia local.'
-          );
-          recipientsReadyRef.current = true;
-        }
-      }
-    };
-
-    void loadRecipients();
-
-    return () => {
-      isActive = false;
-    };
-  }, [
-    RECIPIENT_LIST_KEY,
-    applyActiveRecipientList,
-    browserRuntime,
-    canManageGlobalRecipientLists,
-    user,
-  ]);
-
-  useEffect(() => {
-    if (!canManageGlobalRecipientLists) {
-      return;
-    }
-
-    const activeList = recipientLists.find(list => list.id === activeRecipientListId);
-    if (!activeList) {
-      return;
-    }
-
-    applyActiveRecipientList(activeList);
-  }, [
-    activeRecipientListId,
-    applyActiveRecipientList,
-    canManageGlobalRecipientLists,
+  const {
+    recipients,
+    setRecipients,
     recipientLists,
-  ]);
+    activeRecipientListId,
+    setActiveRecipientListId,
+    createRecipientList,
+    renameActiveRecipientList,
+    deleteRecipientList,
+    recipientsSource,
+    isRecipientsSyncing,
+    recipientsSyncError,
+  } = useCensusEmailRecipientLists({
+    canManageGlobalRecipientLists,
+    browserRuntime,
+    user,
+  });
 
   // ========== MESSAGE STATE ==========
   // Message is always generated dynamically based on date and nurses
@@ -324,206 +197,6 @@ export const useCensusEmail = ({
       });
     },
     [currentDateString]
-  );
-
-  // ========== PERSISTENCE EFFECTS ==========
-  useEffect(() => {
-    if (!recipientsReadyRef.current) {
-      return;
-    }
-
-    void saveAppSetting('censusEmailRecipients', recipients);
-  }, [recipients]);
-
-  useEffect(() => {
-    if (
-      shouldSkipRecipientSync({
-        canManageGlobalRecipientLists,
-        recipientsReady: recipientsReadyRef.current,
-        recipients,
-        lastRemoteRecipients: lastRemoteRecipientsRef.current,
-      })
-    ) {
-      return;
-    }
-
-    let cancelled = false;
-
-    setIsRecipientsSyncing(true);
-    setRecipientsSyncError(null);
-
-    const timeoutId = window.setTimeout(() => {
-      const activeList = resolveActiveRecipientListForSync(
-        recipientLists,
-        activeRecipientListIdRef.current
-      );
-
-      void saveGlobalEmailRecipientList(
-        buildRecipientSyncPayload({
-          activeList,
-          recipients,
-          actor: user,
-        })
-      )
-        .then(() => {
-          if (cancelled) {
-            return;
-          }
-
-          lastRemoteRecipientsRef.current = recipients;
-          setRecipientsSource('firebase');
-        })
-        .catch(error => {
-          if (cancelled) {
-            return;
-          }
-
-          console.error('[useCensusEmail] Failed to sync recipients list:', error);
-          setRecipientsSyncError(
-            'No se pudo sincronizar la lista global en Firebase. Se mantiene la copia local.'
-          );
-        })
-        .finally(() => {
-          if (!cancelled) {
-            setIsRecipientsSyncing(false);
-          }
-        });
-    }, 250);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timeoutId);
-      setIsRecipientsSyncing(false);
-    };
-  }, [canManageGlobalRecipientLists, recipientLists, recipients, user?.email, user?.uid]);
-
-  const createRecipientList = useCallback(
-    async (name: string) => {
-      const validationError = resolveCreateRecipientListError(canManageGlobalRecipientLists, name);
-      if (validationError) {
-        setRecipientsSyncError(validationError);
-        return;
-      }
-
-      const createdList = buildCreatedRecipientList(
-        name,
-        recipients,
-        recipientLists.map(list => list.id),
-        user
-      );
-      setIsRecipientsSyncing(true);
-      setRecipientsSyncError(null);
-
-      try {
-        await saveGlobalEmailRecipientList(
-          buildRecipientListSavePayload({
-            listId: createdList.id,
-            name: createdList.name,
-            description: createdList.description ?? '',
-            recipients,
-            actor: user,
-          })
-        );
-        upsertRecipientList(createdList);
-        applyActiveRecipientList(createdList);
-      } catch (error) {
-        console.error('[useCensusEmail] Failed to create recipient list:', error);
-        setRecipientsSyncError('No se pudo crear la nueva lista global.');
-      } finally {
-        setIsRecipientsSyncing(false);
-      }
-    },
-    [
-      canManageGlobalRecipientLists,
-      recipientLists,
-      recipients,
-      setActiveRecipientListId,
-      user?.email,
-      user?.uid,
-    ]
-  );
-
-  const renameActiveRecipientList = useCallback(
-    async (name: string) => {
-      const activeList = recipientLists.find(list => list.id === activeRecipientListId);
-      const validationError = resolveRenameRecipientListError(
-        canManageGlobalRecipientLists,
-        activeList,
-        name
-      );
-      if (validationError || !activeList) {
-        setRecipientsSyncError(validationError);
-        return;
-      }
-
-      const resolvedName = resolveRenamedRecipientListName(activeList.id, name);
-
-      setIsRecipientsSyncing(true);
-      setRecipientsSyncError(null);
-
-      try {
-        await saveGlobalEmailRecipientList(
-          buildRecipientListSavePayload({
-            listId: activeList.id,
-            name: resolvedName,
-            description: activeList.description ?? '',
-            recipients,
-            actor: user,
-          })
-        );
-        upsertRecipientList({
-          ...activeList,
-          name: resolvedName,
-          recipients,
-          updatedAt: new Date().toISOString(),
-          updatedByUid: user?.uid ?? null,
-          updatedByEmail: user?.email ?? null,
-        });
-      } catch (error) {
-        console.error('[useCensusEmail] Failed to rename recipient list:', error);
-        setRecipientsSyncError('No se pudo actualizar el nombre de la lista global.');
-      } finally {
-        setIsRecipientsSyncing(false);
-      }
-    },
-    [
-      activeRecipientListId,
-      canManageGlobalRecipientLists,
-      recipientLists,
-      recipients,
-      user?.email,
-      user?.uid,
-    ]
-  );
-
-  const deleteRecipientList = useCallback(
-    async (listId: string) => {
-      const validationError = resolveDeleteRecipientListError(
-        canManageGlobalRecipientLists,
-        recipientLists,
-        listId
-      );
-      const fallbackList = resolveRecipientListFallback(recipientLists, listId);
-      if (validationError || !fallbackList) {
-        setRecipientsSyncError(validationError);
-        return;
-      }
-
-      setIsRecipientsSyncing(true);
-      setRecipientsSyncError(null);
-
-      try {
-        await deleteGlobalEmailRecipientList(listId);
-        setRecipientLists(previousLists => previousLists.filter(list => list.id !== listId));
-        setActiveRecipientListId(fallbackList.id);
-      } catch (error) {
-        console.error('[useCensusEmail] Failed to delete recipient list:', error);
-        setRecipientsSyncError('No se pudo eliminar la lista global seleccionada.');
-      } finally {
-        setIsRecipientsSyncing(false);
-      }
-    },
-    [canManageGlobalRecipientLists, recipientLists, setActiveRecipientListId]
   );
 
   useEffect(() => {

@@ -1,0 +1,150 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  executeBootstrapCensusRecipientLists,
+  executeCreateCensusRecipientList,
+  executeDeleteCensusRecipientList,
+  executeRenameCensusRecipientList,
+  executeSyncCensusRecipientList,
+} from '@/application/census-email/censusRecipientListUseCases';
+import * as emailRecipientListService from '@/services/email/emailRecipientListService';
+import * as bootstrapController from '@/hooks/controllers/censusEmailRecipientsBootstrapController';
+
+vi.mock('@/services/email/emailRecipientListService', () => ({
+  CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST: {
+    id: 'census-default',
+    name: 'Destinatarios predeterminados de censo diario',
+    description: 'Lista global reutilizable para envios predeterminados de censo diario.',
+  },
+  areGlobalEmailRecipientsEqual: (left: string[] = [], right: string[] = []) =>
+    JSON.stringify(left) === JSON.stringify(right),
+  buildGlobalEmailRecipientListId: vi.fn((name: string) => name.toLowerCase().replace(/\s+/g, '-')),
+  deleteGlobalEmailRecipientList: vi.fn(),
+  saveGlobalEmailRecipientList: vi.fn(),
+}));
+
+vi.mock('@/hooks/controllers/censusEmailRecipientsBootstrapController', () => ({
+  resolveCensusRecipientsBootstrap: vi.fn(),
+}));
+
+describe('censusRecipientListUseCases', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('wraps bootstrap as a success outcome', async () => {
+    vi.mocked(bootstrapController.resolveCensusRecipientsBootstrap).mockResolvedValueOnce({
+      recipients: ['a@test.com'],
+      recipientsSource: 'firebase',
+      recipientLists: [],
+      activeRecipientList: null,
+      syncError: null,
+    });
+
+    const result = await executeBootstrapCensusRecipientLists({
+      canManageGlobalRecipientLists: true,
+      browserRuntime: {
+        getLegacyRecipients: () => null,
+        clearLegacyRecipients: vi.fn(),
+      } as any,
+      activeListStorageKey: 'key',
+      user: null,
+    });
+
+    expect(result.status).toBe('success');
+    expect(result.data?.recipients).toEqual(['a@test.com']);
+  });
+
+  it('creates a list through the application layer', async () => {
+    vi.mocked(emailRecipientListService.saveGlobalEmailRecipientList).mockResolvedValueOnce(
+      undefined
+    );
+
+    const result = await executeCreateCensusRecipientList({
+      canManageGlobalRecipientLists: true,
+      name: 'Nueva Lista',
+      recipients: ['a@test.com'],
+      recipientLists: [],
+      actor: { email: 'admin@test.com' },
+    });
+
+    expect(result.status).toBe('success');
+    expect(result.data?.name).toBe('Nueva Lista');
+  });
+
+  it('renames a list through the application layer', async () => {
+    vi.mocked(emailRecipientListService.saveGlobalEmailRecipientList).mockResolvedValueOnce(
+      undefined
+    );
+
+    const result = await executeRenameCensusRecipientList({
+      canManageGlobalRecipientLists: true,
+      activeList: {
+        id: 'custom',
+        name: 'Vieja',
+        description: '',
+        recipients: ['a@test.com'],
+        scope: 'global',
+        updatedAt: '',
+        updatedByUid: null,
+        updatedByEmail: null,
+      },
+      name: 'Nueva',
+      recipients: ['a@test.com'],
+      actor: { email: 'admin@test.com' },
+    });
+
+    expect(result.status).toBe('success');
+    expect(result.data?.name).toBe('Nueva');
+  });
+
+  it('deletes a list through the application layer', async () => {
+    vi.mocked(emailRecipientListService.deleteGlobalEmailRecipientList).mockResolvedValueOnce(
+      undefined
+    );
+
+    const result = await executeDeleteCensusRecipientList({
+      canManageGlobalRecipientLists: true,
+      listId: 'custom',
+      recipientLists: [
+        {
+          id: 'custom',
+          name: 'Custom',
+          description: '',
+          recipients: ['a@test.com'],
+          scope: 'global',
+          updatedAt: '',
+          updatedByUid: null,
+          updatedByEmail: null,
+        },
+        {
+          id: 'fallback',
+          name: 'Fallback',
+          description: '',
+          recipients: ['b@test.com'],
+          scope: 'global',
+          updatedAt: '',
+          updatedByUid: null,
+          updatedByEmail: null,
+        },
+      ],
+    });
+
+    expect(result.status).toBe('success');
+    expect(result.data.fallbackList?.id).toBe('fallback');
+  });
+
+  it('skips recipient sync when there is nothing to persist', async () => {
+    const result = await executeSyncCensusRecipientList({
+      canManageGlobalRecipientLists: true,
+      recipientsReady: true,
+      recipients: ['a@test.com'],
+      lastRemoteRecipients: ['a@test.com'],
+      recipientLists: [],
+      activeRecipientListId: 'census-default',
+      actor: null,
+    });
+
+    expect(result.status).toBe('success');
+    expect(result.data.skipped).toBe(true);
+  });
+});

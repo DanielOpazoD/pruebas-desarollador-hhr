@@ -29,6 +29,7 @@ import {
   resolveCreateDaySourceDate,
   resolveMutationSyncStatus,
 } from '@/hooks/controllers/dailyRecordSyncController';
+import { executeSyncDailyRecord } from '@/application/daily-record/syncDailyRecordUseCase';
 
 export const useDailyRecordSyncQuery = (
   currentDateString: string,
@@ -175,12 +176,15 @@ export const useDailyRecordSyncQuery = (
   }, []);
 
   const refresh = useCallback(() => {
-    void dailyRecord.syncWithFirestoreDetailed(currentDateString).then(result => {
-      if (result?.outcome === 'blocked') {
-        warning(
-          'Sincronización bloqueada',
-          'No se pudo actualizar desde Firestore. Se mantendrá la copia local.'
-        );
+    void executeSyncDailyRecord({
+      date: currentDateString,
+      repository: dailyRecord,
+    }).then(outcome => {
+      if (outcome.status === 'degraded') {
+        warning('Sincronización degradada', outcome.issues[0]?.message);
+      }
+      if (outcome.status === 'partial') {
+        warning('Sincronización parcial', outcome.issues[0]?.message);
       }
       refetch();
     });

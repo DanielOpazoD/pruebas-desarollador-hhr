@@ -4,13 +4,14 @@ import { logDailyRecordCreated, logDailyRecordDeleted } from '@/services/admin/a
 import {
   getForDateWithMeta,
   getPreviousDayWithMeta,
-  initializeDayDetailed,
   deleteDay,
 } from '@/services/repositories/DailyRecordRepository';
+import { useRepositories } from '@/services/RepositoryContext';
 import { DailyRecord } from '@/types';
 import { getUserFriendlyErrorMessage } from '@/services/utils/errorService';
 import { hasCriticalLegacyRepairSignal } from '@/hooks/controllers/legacyRepairWarningController';
 import { buildCreateDayNotifications } from '@/hooks/controllers/persistenceFeedbackController';
+import { executeInitializeDailyRecord } from '@/application/daily-record/initializeDailyRecordUseCase';
 
 interface UsePersistenceProps {
   currentDateString: string;
@@ -28,6 +29,7 @@ export const usePersistence = ({
   setRecord,
 }: UsePersistenceProps) => {
   const { success, warning, error: notifyError } = useNotification();
+  const { dailyRecord } = useRepositories();
 
   /**
    * Creates a new daily record for the current date.
@@ -68,8 +70,16 @@ export const usePersistence = ({
           }
         }
 
-        const initResult = await initializeDayDetailed(currentDateString, prevDate);
-        const newRecord = initResult.record;
+        const initOutcome = await executeInitializeDailyRecord({
+          date: currentDateString,
+          copyFromDate: prevDate,
+          repository: dailyRecord,
+        });
+        const initResult = initOutcome.data.initialization;
+        const newRecord = initOutcome.data.record;
+        if (!initResult || !newRecord) {
+          throw new Error(initOutcome.issues[0]?.message || 'No se pudo inicializar el día');
+        }
         markLocalChange();
         setRecord(newRecord);
 
@@ -96,7 +106,7 @@ export const usePersistence = ({
         notifyError('No se pudo crear el día', getUserFriendlyErrorMessage(error));
       }
     },
-    [currentDateString, warning, success, notifyError, markLocalChange, setRecord]
+    [currentDateString, warning, success, notifyError, markLocalChange, setRecord, dailyRecord]
   );
 
   /**

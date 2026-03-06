@@ -1,4 +1,4 @@
-import { buildClinicalEpisodeKey } from '@/features/clinical-documents/controllers/clinicalDocumentEpisodeController';
+import { buildPatientPresenceSnapshot } from '@/application/patient-flow/clinicalEpisode';
 import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domain/entities';
 import type { OccupiedBedRow } from '@/features/census/types/censusTableTypes';
 
@@ -11,16 +11,15 @@ export const buildBedEpisodeBindings = (occupiedRows: OccupiedBedRow[]): BedEpis
   occupiedRows
     .filter(row => !row.isSubRow)
     .flatMap(row => {
-      const patientRut = row.data.rut?.trim();
-      const admissionDate = row.data.admissionDate?.trim();
-      if (!patientRut || !admissionDate) {
+      const snapshot = buildPatientPresenceSnapshot(row.data, row.bed.id);
+      if (!snapshot) {
         return [];
       }
 
       return [
         {
-          bedId: row.bed.id,
-          episodeKey: buildClinicalEpisodeKey(patientRut, admissionDate),
+          bedId: snapshot.bedId,
+          episodeKey: snapshot.episodeKey,
         },
       ];
     });
