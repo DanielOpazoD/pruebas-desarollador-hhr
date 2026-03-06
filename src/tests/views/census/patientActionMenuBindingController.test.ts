@@ -19,6 +19,7 @@ describe('patientActionMenuBindingController', () => {
     });
 
     expect(binding.align).toBe('bottom');
+    expect(binding.showCmaAction).toBe(true);
     expect(binding.indicators).toEqual({
       hasClinicalDocument: true,
       isNewAdmission: true,

@@ -41,6 +41,8 @@ export const PatientMainRowView: React.FC<PatientMainRowViewProps> = ({
     isBlocked,
     readOnly,
     actionMenuAlign,
+    data,
+    currentDateString,
     indicators,
     mainRowViewState,
     onAction,

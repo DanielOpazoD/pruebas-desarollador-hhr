@@ -1,23 +1,58 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildResolvedOccupiedRows,
   resolvePatientRowMenuAlign,
   shouldRenderEmptyBedsDivider,
 } from '@/features/census/controllers/censusTableBodyController';
+import { DataFactory } from '@/tests/factories/DataFactory';
+import type { OccupiedBedRow } from '@/features/census/types/censusTableTypes';
+import { BedType } from '@/types';
 
 describe('censusTableBodyController', () => {
-  it('resolves top align for early rows and bottom align for last rows', () => {
-    expect(resolvePatientRowMenuAlign(0, 10)).toBe('top');
-    expect(resolvePatientRowMenuAlign(5, 10)).toBe('top');
-    expect(resolvePatientRowMenuAlign(6, 10)).toBe('bottom');
-    expect(resolvePatientRowMenuAlign(9, 10)).toBe('bottom');
+  it('builds resolved occupied rows with menu alignment and indicators', () => {
+    const occupiedRows: OccupiedBedRow[] = [
+      {
+        id: 'row-1',
+        bed: { id: 'R1', name: 'R1', type: BedType.MEDIA, isCuna: false },
+        data: DataFactory.createMockPatient('R1', {
+          admissionDate: '2026-03-05',
+          admissionTime: '01:20',
+        }),
+        isSubRow: false,
+      },
+      {
+        id: 'row-2',
+        bed: { id: 'R2', name: 'R2', type: BedType.MEDIA, isCuna: false },
+        data: DataFactory.createMockPatient('R2'),
+        isSubRow: true,
+      },
+    ];
+
+    const result = buildResolvedOccupiedRows({
+      occupiedRows,
+      currentDateString: '2026-03-05',
+      clinicalDocumentPresenceByBedId: { R1: true, R2: true },
+    });
+
+    expect(result).toHaveLength(2);
+    expect(result[0]).toMatchObject({
+      actionMenuAlign: 'bottom',
+      indicators: {
+        hasClinicalDocument: true,
+        isNewAdmission: true,
+      },
+    });
+    expect(result[1]).toMatchObject({
+      indicators: {
+        hasClinicalDocument: false,
+        isNewAdmission: false,
+      },
+    });
   });
 
-  it('always resolves bottom when total rows are small', () => {
-    expect(resolvePatientRowMenuAlign(0, 1)).toBe('bottom');
-    expect(resolvePatientRowMenuAlign(1, 2)).toBe('bottom');
-  });
-
-  it('renders empty beds divider only when empty beds exist', () => {
+  it('keeps utility functions stable', () => {
+    expect(resolvePatientRowMenuAlign(0, 6)).toBe('top');
+    expect(resolvePatientRowMenuAlign(3, 6)).toBe('bottom');
     expect(shouldRenderEmptyBedsDivider(0)).toBe(false);
     expect(shouldRenderEmptyBedsDivider(1)).toBe(true);
   });

@@ -10,11 +10,9 @@ export const PatientActionMenuHistoryAction: React.FC<PatientActionMenuHistoryAc
 }) => (
   <button
     onClick={onViewHistory}
-    className="w-full text-left px-4 py-2.5 hover:bg-purple-50 flex items-center gap-3 text-slate-700 border-b border-slate-100"
+    className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-600 border-b border-slate-100"
   >
-    <div className="p-1 bg-purple-100 rounded text-purple-600">
-      <History size={14} />
-    </div>
-    <span className="font-medium text-sm">Ver Historial</span>
+    <History size={14} className="text-violet-400" />
+    <span className="font-medium text-[13px]">Ver Historial</span>
   </button>
 );

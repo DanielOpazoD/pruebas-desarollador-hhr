@@ -11,16 +11,16 @@ export const PatientActionMenuUtilityGrid: React.FC<PatientActionMenuUtilityGrid
   utilityActions,
   onAction,
 }) => (
-  <div className="grid grid-cols-3 gap-1 p-2 bg-slate-50 border-b border-slate-100">
+  <div className="grid grid-cols-3 gap-1.5 px-3 py-2 border-b border-slate-100 bg-white">
     {utilityActions.map(({ action, icon: Icon, label, title, iconClassName }) => (
       <button
         key={action}
         onClick={() => onAction(action)}
-        className={`flex flex-col items-center justify-center p-2 rounded hover:bg-white hover:shadow-sm text-slate-500 transition-all group ${iconClassName}`}
+        className={`flex min-w-0 items-center justify-center gap-1 rounded-full border border-slate-200 bg-slate-50/70 px-1.5 py-1 text-slate-500 transition-colors hover:bg-slate-100 hover:border-slate-300 group ${iconClassName}`}
         title={title}
       >
-        <Icon size={18} className="mb-1 group-hover:scale-110 transition-transform" />
-        <span className="text-[10px] font-medium">{label}</span>
+        <Icon size={13} className="group-hover:scale-105 transition-transform" />
+        <span className="truncate text-[11px] font-medium leading-none">{label}</span>
       </button>
     ))}
   </div>

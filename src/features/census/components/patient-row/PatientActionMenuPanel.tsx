@@ -40,6 +40,7 @@ export const PatientActionMenuPanel: React.FC<PatientActionMenuPanelProps> = ({
   const model = resolvePatientActionMenuPanelModel({
     viewState: binding.availability,
     utilityActions,
+    showCmaAction: binding.showCmaAction,
   });
 
   return (
@@ -47,7 +48,7 @@ export const PatientActionMenuPanel: React.FC<PatientActionMenuPanelProps> = ({
       <div className="fixed inset-0 z-40" onClick={onClose}></div>
       <div
         className={clsx(
-          'absolute left-10 z-50 bg-white shadow-xl rounded-xl border border-slate-200 w-64 text-left overflow-hidden animate-fade-in print:hidden',
+          'absolute left-10 z-50 bg-white shadow-xl rounded-2xl border border-slate-200/90 w-60 text-left overflow-hidden animate-fade-in print:hidden',
           resolvePatientActionMenuPanelClassName(binding.align)
         )}
       >

@@ -5,7 +5,9 @@ import type {
   OccupiedBedRow,
 } from '@/features/census/types/censusTableTypes';
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';
+import type { RowMenuAlign } from '@/features/census/components/patient-row/patientRowContracts';
 import type { BedDefinition, PatientData, UserRole } from '@/types';
+import type { PatientActionMenuIndicators } from '@/features/census/components/patient-row/patientRowContracts';
 
 export interface CensusTableHeaderProps {
   readOnly: boolean;
@@ -30,4 +32,10 @@ export interface CensusTableBodyProps {
   clinicalDocumentPresenceByBedId: Record<string, boolean>;
   onAction: (action: PatientRowAction, bedId: string, patient: PatientData) => void;
   onActivateEmptyBed: (bedId: string) => void;
+}
+
+export interface CensusTableResolvedOccupiedRow {
+  row: OccupiedBedRow;
+  actionMenuAlign: RowMenuAlign;
+  indicators: Required<PatientActionMenuIndicators>;
 }

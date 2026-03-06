@@ -60,6 +60,60 @@ describe('CensusTableBody', () => {
     expect(patientRowSpy.mock.calls[2][0].actionMenuAlign).toBe('bottom');
     expect(patientRowSpy.mock.calls[5][0].actionMenuAlign).toBe('bottom');
     expect(patientRowSpy.mock.calls[0][0].role).toBe('viewer_census');
+    expect(patientRowSpy.mock.calls[0][0].indicators).toEqual({
+      hasClinicalDocument: false,
+      isNewAdmission: false,
+    });
+  });
+
+  it('forwards resolved indicators to main rows only', () => {
+    patientRowSpy.mockClear();
+    const occupiedRows: OccupiedBedRow[] = [
+      {
+        id: 'row-main',
+        bed: { id: 'R1', name: 'R1', type: BedType.MEDIA, isCuna: false },
+        data: DataFactory.createMockPatient('R1', {
+          admissionDate: '2026-02-15',
+          admissionTime: '02:10',
+        }),
+        isSubRow: false,
+      },
+      {
+        id: 'row-crib',
+        bed: { id: 'R1', name: 'R1', type: BedType.MEDIA, isCuna: false },
+        data: DataFactory.createMockPatient('R1-crib', {
+          admissionDate: '2026-02-15',
+          admissionTime: '02:10',
+        }),
+        isSubRow: true,
+      },
+    ];
+
+    render(
+      <table>
+        <CensusTableBody
+          occupiedRows={occupiedRows}
+          emptyBeds={[]}
+          currentDateString="2026-02-15"
+          readOnly={false}
+          diagnosisMode="free"
+          bedTypes={{}}
+          role="nurse_hospital"
+          clinicalDocumentPresenceByBedId={{ R1: true }}
+          onAction={vi.fn()}
+          onActivateEmptyBed={vi.fn()}
+        />
+      </table>
+    );
+
+    expect(patientRowSpy.mock.calls[0][0].indicators).toEqual({
+      hasClinicalDocument: true,
+      isNewAdmission: true,
+    });
+    expect(patientRowSpy.mock.calls[1][0].indicators).toEqual({
+      hasClinicalDocument: false,
+      isNewAdmission: false,
+    });
   });
 
   it('renders empty bed divider and forwards empty bed activation', () => {

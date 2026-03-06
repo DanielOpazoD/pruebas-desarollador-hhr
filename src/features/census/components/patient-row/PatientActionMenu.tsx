@@ -13,6 +13,7 @@ interface PatientActionMenuProps extends PatientActionMenuCallbacks, PatientActi
   isBlocked: boolean;
   readOnly?: boolean;
   align?: RowMenuAlign;
+  showCmaAction?: boolean;
 }
 
 const PatientActionPrimaryIcon: React.FC<{
@@ -49,6 +50,7 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
   onViewHistory,
   readOnly = false,
   align = 'top',
+  showCmaAction = true,
 }) => {
   const {
     isOpen,
@@ -66,6 +68,7 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
     isBlocked,
     readOnly,
     align,
+    showCmaAction,
     indicators: {
       hasClinicalDocument,
       isNewAdmission,

@@ -25,6 +25,7 @@ describe('patientActionMenuPanelController', () => {
           visibleWhenBlocked: true,
         },
       ],
+      showCmaAction: true,
     });
 
     expect(model.showHistoryAction).toBe(true);
@@ -38,5 +39,24 @@ describe('patientActionMenuPanelController', () => {
       'transfer',
       'cma',
     ]);
+  });
+
+  it('hides CMA action when the binding marks it as not applicable', () => {
+    const model = resolvePatientActionMenuPanelModel({
+      viewState: {
+        showDemographicsAction: true,
+        showMenuTrigger: true,
+        showHistoryAction: true,
+        showUtilityActions: true,
+        showClinicalSection: true,
+        showClinicalDocumentsAction: true,
+        showExamRequestAction: true,
+        showImagingRequestAction: true,
+      },
+      utilityActions: [],
+      showCmaAction: false,
+    });
+
+    expect(model.clinicalActions.map(action => action.action)).toEqual(['discharge', 'transfer']);
   });
 });

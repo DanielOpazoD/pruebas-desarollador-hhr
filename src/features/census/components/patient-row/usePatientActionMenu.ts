@@ -16,6 +16,7 @@ interface UsePatientActionMenuParams {
   isBlocked: boolean;
   readOnly: boolean;
   align?: RowMenuAlign;
+  showCmaAction?: boolean;
   indicators?: Required<PatientActionMenuIndicators>;
   onAction: (action: PatientRowAction) => void;
   onViewHistory?: () => void;
@@ -42,6 +43,7 @@ export const usePatientActionMenu = ({
   isBlocked,
   readOnly,
   align,
+  showCmaAction,
   indicators,
   onAction,
   onViewHistory,
@@ -56,6 +58,7 @@ export const usePatientActionMenu = ({
     () =>
       resolvePatientActionMenuBinding({
         align,
+        showCmaAction,
         isBlocked,
         readOnly,
         hasHistoryAction: typeof onViewHistory === 'function',
@@ -73,6 +76,7 @@ export const usePatientActionMenu = ({
       onViewImagingRequest,
       onViewHistory,
       readOnly,
+      showCmaAction,
     ]
   );
 

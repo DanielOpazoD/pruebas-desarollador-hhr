@@ -3,10 +3,9 @@ import { EmptyBedRow } from '@/features/census/components/EmptyBedRow';
 import { PatientRow } from '@/features/census/components/PatientRow';
 import { CensusEmptyBedsDividerRow } from '@/features/census/components/CensusEmptyBedsDividerRow';
 import {
-  resolvePatientRowMenuAlign,
+  buildResolvedOccupiedRows,
   shouldRenderEmptyBedsDivider,
 } from '@/features/census/controllers/censusTableBodyController';
-import { resolveIsNewAdmissionForRecord } from '@/features/census/controllers/patientRowNewAdmissionIndicatorController';
 import type { CensusTableBodyProps } from '@/features/census/types/censusTableComponentContracts';
 
 export const CensusTableBody: React.FC<CensusTableBodyProps> = ({
@@ -22,10 +21,15 @@ export const CensusTableBody: React.FC<CensusTableBodyProps> = ({
   onActivateEmptyBed,
 }) => {
   const showEmptyBedsDivider = shouldRenderEmptyBedsDivider(emptyBeds.length);
+  const resolvedOccupiedRows = buildResolvedOccupiedRows({
+    occupiedRows,
+    currentDateString,
+    clinicalDocumentPresenceByBedId,
+  });
 
   return (
     <tbody>
-      {occupiedRows.map((row, index) => (
+      {resolvedOccupiedRows.map(({ row, actionMenuAlign, indicators }) => (
         <PatientRow
           key={row.id}
           bed={row.bed}
@@ -33,22 +37,12 @@ export const CensusTableBody: React.FC<CensusTableBodyProps> = ({
           currentDateString={currentDateString}
           onAction={onAction}
           readOnly={readOnly}
-          actionMenuAlign={resolvePatientRowMenuAlign(index, occupiedRows.length)}
+          actionMenuAlign={actionMenuAlign}
           diagnosisMode={diagnosisMode}
           isSubRow={row.isSubRow}
           bedType={bedTypes[row.bed.id]}
           role={role}
-          indicators={{
-            hasClinicalDocument:
-              !row.isSubRow && Boolean(clinicalDocumentPresenceByBedId[row.bed.id]),
-            isNewAdmission:
-              !row.isSubRow &&
-              resolveIsNewAdmissionForRecord({
-                recordDate: currentDateString,
-                admissionDate: row.data.admissionDate,
-                admissionTime: row.data.admissionTime,
-              }),
-          }}
+          indicators={indicators}
         />
       ))}
 

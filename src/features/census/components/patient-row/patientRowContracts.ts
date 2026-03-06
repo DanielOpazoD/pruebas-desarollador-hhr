@@ -34,6 +34,7 @@ export interface PatientActionMenuBinding {
   align: RowMenuAlign;
   isBlocked: boolean;
   readOnly: boolean;
+  showCmaAction: boolean;
   indicators: Required<PatientActionMenuIndicators>;
   availability: PatientActionMenuAvailability;
 }

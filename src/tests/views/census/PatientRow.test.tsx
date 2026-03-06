@@ -19,7 +19,7 @@ vi.mock('@/features/census/components/patient-row/PatientSubRowView', () => ({
 }));
 
 vi.mock('@/features/census/components/patient-row/PatientRowModals', () => ({
-  PatientRowModals: () => <div data-testid="row-modals" />,
+  PatientRowModals: () => <tr data-testid="row-modals" />,
 }));
 
 describe('PatientRow', () => {

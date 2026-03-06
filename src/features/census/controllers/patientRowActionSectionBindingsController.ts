@@ -1,5 +1,6 @@
 import type { PatientMainRowViewProps } from '@/features/census/components/patient-row/patientRowViewContracts';
 import type { PatientMainRowActionCellProps } from '@/features/census/components/patient-row/PatientMainRowActionCell';
+import { calculateHospitalizedDays } from '@/features/census/controllers/patientBedConfigViewController';
 
 export type PatientActionSectionBinding = PatientMainRowActionCellProps;
 
@@ -9,6 +10,8 @@ export const buildPatientActionSectionBinding = ({
   actionMenuAlign,
   indicators,
   mainRowViewState,
+  data,
+  currentDateString,
   onAction,
   onOpenDemographics,
   onOpenClinicalDocuments,
@@ -22,28 +25,40 @@ export const buildPatientActionSectionBinding = ({
   | 'actionMenuAlign'
   | 'indicators'
   | 'mainRowViewState'
+  | 'data'
+  | 'currentDateString'
   | 'onAction'
   | 'onOpenDemographics'
   | 'onOpenClinicalDocuments'
   | 'onOpenExamRequest'
   | 'onOpenImagingRequest'
   | 'onOpenHistory'
->): PatientActionSectionBinding => ({
-  isBlocked,
-  readOnly,
-  align: actionMenuAlign,
-  hasClinicalDocument: indicators.hasClinicalDocument,
-  isNewAdmission: indicators.isNewAdmission,
-  onAction,
-  onViewDemographics: onOpenDemographics,
-  onViewClinicalDocuments: mainRowViewState.rowActionsAvailability.canOpenClinicalDocuments
-    ? onOpenClinicalDocuments
-    : undefined,
-  onViewExamRequest: mainRowViewState.rowActionsAvailability.canOpenExamRequest
-    ? onOpenExamRequest
-    : undefined,
-  onViewImagingRequest: mainRowViewState.rowActionsAvailability.canOpenImagingRequest
-    ? onOpenImagingRequest
-    : undefined,
-  onViewHistory: mainRowViewState.rowActionsAvailability.canOpenHistory ? onOpenHistory : undefined,
-});
+>): PatientActionSectionBinding => {
+  const daysHospitalized = calculateHospitalizedDays({
+    admissionDate: data.admissionDate,
+    currentDate: currentDateString,
+  });
+
+  return {
+    isBlocked,
+    readOnly,
+    align: actionMenuAlign,
+    showCmaAction: daysHospitalized === null || daysHospitalized <= 1,
+    hasClinicalDocument: indicators.hasClinicalDocument,
+    isNewAdmission: indicators.isNewAdmission,
+    onAction,
+    onViewDemographics: onOpenDemographics,
+    onViewClinicalDocuments: mainRowViewState.rowActionsAvailability.canOpenClinicalDocuments
+      ? onOpenClinicalDocuments
+      : undefined,
+    onViewExamRequest: mainRowViewState.rowActionsAvailability.canOpenExamRequest
+      ? onOpenExamRequest
+      : undefined,
+    onViewImagingRequest: mainRowViewState.rowActionsAvailability.canOpenImagingRequest
+      ? onOpenImagingRequest
+      : undefined,
+    onViewHistory: mainRowViewState.rowActionsAvailability.canOpenHistory
+      ? onOpenHistory
+      : undefined,
+  };
+};

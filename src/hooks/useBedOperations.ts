@@ -5,12 +5,18 @@
  */
 
 import { useCallback } from 'react';
-import { DailyRecord, PatientData, BedType } from '@/types';
-import { createEmptyPatient } from '@/services/factories/patientFactory';
-import { BEDS } from '@/constants';
+import { DailyRecord } from '@/types';
 import { useAuditContext } from '@/context/AuditContext';
-import { DailyRecordPatch } from './useDailyRecordTypes';
-import { getBedTypeForRecord } from '@/utils/bedTypeUtils';
+import type { DailyRecordPatch } from './useDailyRecordTypes';
+import {
+  buildActiveExtraBeds,
+  buildBlockedReasonPatch,
+  buildClearAllBedsPatch,
+  buildClearedPatient,
+  buildMoveOrCopyPatch,
+  buildToggleBedTypePatch,
+  buildToggleBlockedPatch,
+} from './useBedOperationsController';
 
 // ============================================================================
 // Types
@@ -67,11 +73,7 @@ export const useBedOperations = (
     (bedId: string) => {
       if (!record) return;
 
-      const cleanPatient = createEmptyPatient(bedId);
-      // Preserve location
-      cleanPatient.location = record.beds[bedId].location;
-      cleanPatient.clinicalCrib = undefined;
-      cleanPatient.hasCompanionCrib = false;
+      const cleanPatient = buildClearedPatient(record, bedId);
 
       // Audit Log
       const patientName = record.beds[bedId].patientName;
@@ -89,22 +91,7 @@ export const useBedOperations = (
 
   const clearAllBeds = useCallback(() => {
     if (!record) return;
-    const updatedBeds: Record<string, PatientData> = {};
-
-    BEDS.forEach(bed => {
-      const cleanPatient = createEmptyPatient(bed.id);
-      cleanPatient.location = record.beds[bed.id]?.location;
-      cleanPatient.clinicalCrib = undefined;
-      cleanPatient.hasCompanionCrib = false;
-      updatedBeds[bed.id] = cleanPatient;
-    });
-
-    // Full update for clear all is safer/cleaner
-    patchRecord({
-      beds: updatedBeds,
-      discharges: [],
-      transfers: [],
-    });
+    patchRecord(buildClearAllBedsPatch(record));
   }, [record, patchRecord]);
 
   // ========================================================================
@@ -122,19 +109,12 @@ export const useBedOperations = (
         return;
       }
 
+      const patch = buildMoveOrCopyPatch(record, type, sourceBedId, targetBedId);
+      if (!patch) {
+        return;
+      }
+
       if (type === 'move') {
-        const targetPatient = {
-          ...sourceData,
-          bedId: targetBedId,
-          location: record.beds[targetBedId].location,
-        };
-
-        const cleanSource = createEmptyPatient(sourceBedId);
-        cleanSource.location = record.beds[sourceBedId].location;
-
-        const patch: DailyRecordPatch = {};
-        patch[`beds.${targetBedId}`] = targetPatient;
-        patch[`beds.${sourceBedId}`] = cleanSource;
         patchRecord(patch);
 
         // Audit
@@ -158,15 +138,6 @@ export const useBedOperations = (
           record.date
         );
       } else {
-        const cloneData = JSON.parse(JSON.stringify(sourceData));
-        const targetPatient = {
-          ...cloneData,
-          bedId: targetBedId,
-          location: record.beds[targetBedId].location,
-        };
-
-        const patch: DailyRecordPatch = {};
-        patch[`beds.${targetBedId}`] = targetPatient;
         patchRecord(patch);
 
         // Audit
@@ -198,12 +169,7 @@ export const useBedOperations = (
   const toggleBlockBed = useCallback(
     (bedId: string, reason?: string) => {
       if (!record) return;
-      const currentBed = record.beds[bedId];
-      const newIsBlocked = !currentBed.isBlocked;
-
-      const patch: DailyRecordPatch = {};
-      patch[`beds.${bedId}.isBlocked`] = newIsBlocked;
-      patch[`beds.${bedId}.blockedReason`] = newIsBlocked ? reason || '' : '';
+      const { patch, newIsBlocked } = buildToggleBlockedPatch(record, bedId, reason);
       patchRecord(patch);
 
       // Audit Log
@@ -228,9 +194,7 @@ export const useBedOperations = (
       const currentBed = record.beds[bedId];
       if (!currentBed.isBlocked) return; // Only update if already blocked
 
-      const patch: DailyRecordPatch = {};
-      patch[`beds.${bedId}.blockedReason`] = reason || '';
-      patchRecord(patch);
+      patchRecord(buildBlockedReasonPatch(bedId, reason));
 
       // Audit Log
       logEvent(
@@ -249,10 +213,8 @@ export const useBedOperations = (
     (bedId: string) => {
       if (!record) return;
       const currentExtras = record.activeExtraBeds || [];
-      const isActive = !currentExtras.includes(bedId);
-      const newExtras = isActive
-        ? [...currentExtras, bedId]
-        : currentExtras.filter(id => id !== bedId);
+      const newExtras = buildActiveExtraBeds(currentExtras, bedId);
+      const isActive = newExtras.includes(bedId);
 
       patchRecord({ activeExtraBeds: newExtras });
 
@@ -272,34 +234,17 @@ export const useBedOperations = (
   const toggleBedType = useCallback(
     (bedId: string) => {
       if (!record) return;
-      const bedDef = BEDS.find(b => b.id === bedId);
-      if (!bedDef) return;
+      const togglePatch = buildToggleBedTypePatch(record, bedId);
+      if (!togglePatch) return;
 
-      // Current type with overrides
-      const currentType = getBedTypeForRecord(bedDef, record);
-
-      // Cycle between UTI and UCI
-      const nextType = currentType === BedType.UTI ? BedType.UCI : BedType.UTI;
-
-      const updatedOverrides = { ...(record.bedTypeOverrides || {}) };
-
-      // If next type is same as base type, remove override to keep record clean
-      if (nextType === bedDef.type) {
-        delete updatedOverrides[bedId];
-      } else {
-        updatedOverrides[bedId] = nextType;
-      }
-
-      patchRecord({
-        bedTypeOverrides: updatedOverrides,
-      });
+      patchRecord(togglePatch.patch);
 
       // Audit Log
       logEvent(
         'PATIENT_MODIFIED',
         'patient',
         bedId,
-        { action: 'toggle_bed_type', from: currentType, to: nextType },
+        { action: 'toggle_bed_type', from: togglePatch.currentType, to: togglePatch.nextType },
         record.beds[bedId]?.rut,
         record.date
       );

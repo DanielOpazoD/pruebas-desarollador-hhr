@@ -24,21 +24,21 @@ export const PatientActionMenuClinicalSection: React.FC<PatientActionMenuClinica
   onViewExamRequest,
   onViewImagingRequest,
 }) => (
-  <div className="py-1">
-    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 py-1 block">
+  <div className="py-1.5">
+    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.18em] px-3 py-1 block">
       Gestión Clínica
     </span>
     {clinicalActions.map(({ action, icon: Icon, label, iconClassName }) => (
       <button
         key={action}
         onClick={() => onAction(action)}
-        className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-slate-700 group"
+        className="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 group"
       >
         <Icon
-          size={16}
+          size={15}
           className={`${iconClassName} group-hover:translate-x-0.5 transition-transform`}
         />
-        <span className="text-sm">{label}</span>
+        <span className="text-[15px]">{label}</span>
       </button>
     ))}
     {showClinicalDocumentsAction && (
@@ -46,13 +46,13 @@ export const PatientActionMenuClinicalSection: React.FC<PatientActionMenuClinica
         <div className="h-px bg-slate-100 mx-3 my-1"></div>
         <button
           onClick={onViewClinicalDocuments}
-          className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-slate-700 group"
+          className="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 group"
         >
           <ScrollText
-            size={16}
+            size={15}
             className="text-medical-500 group-hover:text-medical-700 transition-colors"
           />
-          <span className="text-sm">Documentos Clínicos</span>
+          <span className="text-[15px]">Documentos Clínicos</span>
         </button>
       </>
     )}
@@ -61,23 +61,23 @@ export const PatientActionMenuClinicalSection: React.FC<PatientActionMenuClinica
         <div className="h-px bg-slate-100 mx-3 my-1"></div>
         <button
           onClick={onViewExamRequest}
-          className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-slate-700 group"
+          className="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 group"
         >
           <FileText
-            size={16}
+            size={15}
             className="text-slate-400 group-hover:text-medical-600 transition-colors"
           />
-          <span className="text-sm">Solicitud Exámenes</span>
+          <span className="text-[15px]">Solicitud Exámenes</span>
         </button>
       </>
     )}
     {showImagingRequestAction && (
       <button
         onClick={onViewImagingRequest}
-        className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-3 text-slate-700 group"
+        className="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 group"
       >
-        <Image size={16} className="text-slate-400 group-hover:text-blue-600 transition-colors" />
-        <span className="text-sm">Solicitud de Imágenes</span>
+        <Image size={15} className="text-slate-400 group-hover:text-blue-600 transition-colors" />
+        <span className="text-[15px]">Solicitud de Imágenes</span>
       </button>
     )}
   </div>

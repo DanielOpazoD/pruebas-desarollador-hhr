@@ -8,6 +8,7 @@ import type { PatientActionMenuViewState } from '@/features/census/controllers/p
 interface ResolvePatientActionMenuPanelModelParams {
   viewState: PatientActionMenuViewState;
   utilityActions: UtilityActionConfig[];
+  showCmaAction?: boolean;
 }
 
 export interface PatientActionMenuPanelModel {
@@ -24,6 +25,7 @@ export interface PatientActionMenuPanelModel {
 export const resolvePatientActionMenuPanelModel = ({
   viewState,
   utilityActions,
+  showCmaAction = true,
 }: ResolvePatientActionMenuPanelModelParams): PatientActionMenuPanelModel => ({
   showHistoryAction: viewState.showHistoryAction,
   showUtilityActions: viewState.showUtilityActions,
@@ -32,5 +34,5 @@ export const resolvePatientActionMenuPanelModel = ({
   showExamRequestAction: viewState.showExamRequestAction,
   showImagingRequestAction: viewState.showImagingRequestAction,
   utilityActions,
-  clinicalActions: CLINICAL_ACTIONS,
+  clinicalActions: CLINICAL_ACTIONS.filter(action => action.action !== 'cma' || showCmaAction),
 });

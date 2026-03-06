@@ -10,6 +10,7 @@ import {
 
 interface ResolvePatientActionMenuBindingParams extends ResolvePatientActionMenuViewParams {
   align?: RowMenuAlign;
+  showCmaAction?: boolean;
   indicators?: Required<PatientActionMenuIndicators>;
 }
 
@@ -17,6 +18,7 @@ export const resolvePatientActionMenuBinding = ({
   align = 'top',
   isBlocked,
   readOnly,
+  showCmaAction = true,
   hasHistoryAction,
   hasClinicalDocumentsAction,
   hasExamRequestAction,
@@ -26,6 +28,7 @@ export const resolvePatientActionMenuBinding = ({
   align,
   isBlocked,
   readOnly,
+  showCmaAction,
   indicators: indicators || {
     hasClinicalDocument: false,
     isNewAdmission: false,

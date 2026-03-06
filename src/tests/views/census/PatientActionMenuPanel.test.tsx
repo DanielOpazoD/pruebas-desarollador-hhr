@@ -14,6 +14,7 @@ describe('PatientActionMenuPanel', () => {
           align: 'top',
           isBlocked: false,
           readOnly: false,
+          showCmaAction: true,
           indicators: {
             hasClinicalDocument: false,
             isNewAdmission: false,
@@ -56,6 +57,7 @@ describe('PatientActionMenuPanel', () => {
           align: 'bottom',
           isBlocked: false,
           readOnly: false,
+          showCmaAction: true,
           indicators: {
             hasClinicalDocument: true,
             isNewAdmission: true,

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { buildPatientActionSectionBinding } from '@/features/census/controllers/patientRowActionSectionBindingsController';
+import { DataFactory } from '@/tests/factories/DataFactory';
 
 describe('patientRowActionSectionBindingsController', () => {
   it('maps row action availability into action cell callbacks', () => {
@@ -11,6 +12,10 @@ describe('patientRowActionSectionBindingsController', () => {
       isBlocked: false,
       readOnly: false,
       actionMenuAlign: 'top',
+      data: DataFactory.createMockPatient('R1', {
+        admissionDate: '2026-03-03',
+      }),
+      currentDateString: '2026-03-05',
       indicators: {
         hasClinicalDocument: true,
         isNewAdmission: false,
@@ -38,5 +43,6 @@ describe('patientRowActionSectionBindingsController', () => {
     expect(binding.onViewClinicalDocuments).toBe(onOpenClinicalDocuments);
     expect(binding.onViewExamRequest).toBeUndefined();
     expect(binding.hasClinicalDocument).toBe(true);
+    expect(binding.showCmaAction).toBe(false);
   });
 });

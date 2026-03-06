@@ -11,12 +11,14 @@ export interface PatientMainRowActionCellProps
   isBlocked: boolean;
   readOnly: boolean;
   align: RowMenuAlign;
+  showCmaAction?: boolean;
 }
 
 export const PatientMainRowActionCell: React.FC<PatientMainRowActionCellProps> = ({
   isBlocked,
   readOnly,
   align,
+  showCmaAction = true,
   hasClinicalDocument,
   isNewAdmission,
   onAction,
@@ -37,6 +39,7 @@ export const PatientMainRowActionCell: React.FC<PatientMainRowActionCellProps> =
       onViewHistory={onViewHistory}
       readOnly={readOnly}
       align={align}
+      showCmaAction={showCmaAction}
       hasClinicalDocument={hasClinicalDocument}
       isNewAdmission={isNewAdmission}
     />
