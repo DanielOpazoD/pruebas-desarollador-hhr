@@ -49,6 +49,8 @@ describe('PatientMainRowView', () => {
     hasCompanion: false,
     hasClinicalCrib: false,
     isCunaMode: false,
+    hasClinicalDocument: false,
+    isNewAdmissionIndicator: false,
     mainRowViewState: {
       canToggleBedType: true,
       rowClassName: 'row',

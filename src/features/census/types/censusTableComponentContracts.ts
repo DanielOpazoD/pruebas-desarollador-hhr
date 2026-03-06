@@ -26,6 +26,7 @@ export interface CensusTableBodyProps {
   readOnly: boolean;
   diagnosisMode: DiagnosisMode;
   bedTypes: BedTypesById;
+  clinicalDocumentPresenceByBedId: Record<string, boolean>;
   onAction: (action: PatientRowAction, bedId: string, patient: PatientData) => void;
   onActivateEmptyBed: (bedId: string) => void;
 }

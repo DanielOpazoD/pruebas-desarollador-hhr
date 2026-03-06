@@ -3,10 +3,16 @@ import { Statistics } from '@/types';
 import { NurseSelector } from './NurseSelector';
 import { TensSelector } from './TensSelector';
 import { CombinedSummaryCard } from '@/components/layout/SummaryCard';
-import { useDailyRecordStaff, useDailyRecordMovements } from '@/context/DailyRecordContext';
+import {
+  useDailyRecordData,
+  useDailyRecordBeds,
+  useDailyRecordStaff,
+  useDailyRecordMovements,
+} from '@/context/DailyRecordContext';
 import { useDailyRecordStaffActions } from '@/context/useDailyRecordScopedActions';
 import { useStaffContext } from '@/context/StaffContext';
 import {
+  resolveAdmissionsCountForRecord,
   resolveMovementSummaryState,
   resolveStaffSelectorsClassName,
   resolveStaffSelectorsState,
@@ -26,13 +32,22 @@ export const CensusStaffHeader: React.FC<CensusStaffHeaderProps> = ({
   readOnly = false,
   stats,
 }) => {
+  const dailyRecordData = useDailyRecordData();
+  const beds = useDailyRecordBeds();
   const staffData = useDailyRecordStaff();
   const movementsData = useDailyRecordMovements();
 
   const { updateNurse, updateTens } = useDailyRecordStaffActions();
   const { nursesList, tensList } = useStaffContext();
   const staffSelectorsState = resolveStaffSelectorsState(staffData);
-  const movementSummaryState = resolveMovementSummaryState(movementsData);
+  const admissionsCount = resolveAdmissionsCountForRecord({
+    beds,
+    recordDate: dailyRecordData.record?.date,
+  });
+  const movementSummaryState = resolveMovementSummaryState({
+    ...(movementsData || {}),
+    admissionsCount,
+  });
   const selectorsClassName = resolveStaffSelectorsClassName(readOnly);
 
   return (
@@ -61,6 +76,7 @@ export const CensusStaffHeader: React.FC<CensusStaffHeaderProps> = ({
           discharges={movementSummaryState.discharges}
           transfers={movementSummaryState.transfers}
           cmaCount={movementSummaryState.cmaCount}
+          newAdmissions={movementSummaryState.admissionsCount}
         />
       )}
     </div>

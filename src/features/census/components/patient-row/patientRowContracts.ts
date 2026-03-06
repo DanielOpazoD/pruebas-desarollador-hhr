@@ -14,6 +14,11 @@ export interface PatientActionMenuCallbacks {
   onViewHistory?: () => void;
 }
 
+export interface PatientActionMenuIndicators {
+  hasClinicalDocument?: boolean;
+  isNewAdmission?: boolean;
+}
+
 export interface PatientBedConfigCallbacks {
   onToggleMode: () => MaybePromiseVoid;
   onToggleCompanion: () => MaybePromiseVoid;

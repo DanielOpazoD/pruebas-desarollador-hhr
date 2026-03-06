@@ -6,12 +6,16 @@ interface PatientMainRowActionCellProps extends PatientActionMenuCallbacks {
   isBlocked: boolean;
   readOnly: boolean;
   align: RowMenuAlign;
+  hasClinicalDocument: boolean;
+  isNewAdmission: boolean;
 }
 
 export const PatientMainRowActionCell: React.FC<PatientMainRowActionCellProps> = ({
   isBlocked,
   readOnly,
   align,
+  hasClinicalDocument,
+  isNewAdmission,
   onAction,
   onViewDemographics,
   onViewClinicalDocuments,
@@ -30,6 +34,8 @@ export const PatientMainRowActionCell: React.FC<PatientMainRowActionCellProps> =
       onViewHistory={onViewHistory}
       readOnly={readOnly}
       align={align}
+      hasClinicalDocument={hasClinicalDocument}
+      isNewAdmission={isNewAdmission}
     />
   </td>
 );

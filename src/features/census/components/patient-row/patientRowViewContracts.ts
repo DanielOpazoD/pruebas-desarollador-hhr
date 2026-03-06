@@ -45,6 +45,8 @@ export interface PatientMainRowViewProps
   hasCompanion: boolean;
   hasClinicalCrib: boolean;
   isCunaMode: boolean;
+  hasClinicalDocument: boolean;
+  isNewAdmissionIndicator: boolean;
   mainRowViewState: PatientMainRowViewState;
   onOpenDemographics: () => void;
   onOpenClinicalDocuments: () => void;
@@ -94,5 +96,7 @@ export interface PatientRowProps {
   diagnosisMode?: DiagnosisMode;
   isSubRow?: boolean;
   bedType: BedType;
+  hasClinicalDocument?: boolean;
+  isNewAdmissionIndicator?: boolean;
   style?: CSSProperties;
 }

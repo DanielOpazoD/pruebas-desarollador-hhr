@@ -6,6 +6,7 @@ import {
   resolvePatientRowMenuAlign,
   shouldRenderEmptyBedsDivider,
 } from '@/features/census/controllers/censusTableBodyController';
+import { resolveIsNewAdmissionForRecord } from '@/features/census/controllers/patientRowNewAdmissionIndicatorController';
 import type { CensusTableBodyProps } from '@/features/census/types/censusTableComponentContracts';
 
 export const CensusTableBody: React.FC<CensusTableBodyProps> = ({
@@ -15,6 +16,7 @@ export const CensusTableBody: React.FC<CensusTableBodyProps> = ({
   readOnly,
   diagnosisMode,
   bedTypes,
+  clinicalDocumentPresenceByBedId,
   onAction,
   onActivateEmptyBed,
 }) => {
@@ -34,6 +36,17 @@ export const CensusTableBody: React.FC<CensusTableBodyProps> = ({
           diagnosisMode={diagnosisMode}
           isSubRow={row.isSubRow}
           bedType={bedTypes[row.bed.id]}
+          hasClinicalDocument={
+            !row.isSubRow && Boolean(clinicalDocumentPresenceByBedId[row.bed.id])
+          }
+          isNewAdmissionIndicator={
+            !row.isSubRow &&
+            resolveIsNewAdmissionForRecord({
+              recordDate: currentDateString,
+              admissionDate: row.data.admissionDate,
+              admissionTime: row.data.admissionTime,
+            })
+          }
         />
       ))}
 

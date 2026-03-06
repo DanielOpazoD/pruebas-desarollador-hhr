@@ -51,7 +51,14 @@ describe('SummaryCard Components', () => {
     it('renders movements without deaths', () => {
       const discharges = [asDischarge({ status: 'Vivo' })];
       const transfers = [asTransfer({ id: '1' })];
-      render(<MovementSummaryCard discharges={discharges} transfers={transfers} cmaCount={5} />);
+      render(
+        <MovementSummaryCard
+          discharges={discharges}
+          transfers={transfers}
+          cmaCount={5}
+          newAdmissions={2}
+        />
+      );
 
       expect(screen.getByText('Egresos')).toBeInTheDocument();
       // Using getAllByText and checking values specifically
@@ -61,6 +68,8 @@ describe('SummaryCard Components', () => {
       expect(screen.getByText('Traslados')).toBeInTheDocument();
       const traslados = screen.getByText('Traslados').nextElementSibling;
       expect(traslados?.textContent).toBe('1');
+      const ingresos = screen.getByText('Ingresos').nextElementSibling;
+      expect(ingresos?.textContent).toBe('2');
 
       expect(screen.queryByText('Fallecidos')).not.toBeInTheDocument();
     });
@@ -87,12 +96,16 @@ describe('SummaryCard Components', () => {
           discharges={discharges}
           transfers={[]}
           cmaCount={3}
+          newAdmissions={4}
         />
       );
 
       expect(screen.getByText('Censo Camas')).toBeInTheDocument();
       expect(screen.getByText('Recursos Cuna')).toBeInTheDocument();
       expect(screen.getByText('Movimientos')).toBeInTheDocument();
+      expect(screen.getByText('Ingresos')).toBeInTheDocument();
+      const ingresos = screen.getByText('Ingresos').nextElementSibling;
+      expect(ingresos?.textContent).toBe('4');
 
       // Check specific section values
       expect(screen.getByText('Fall.')).toBeInTheDocument();
@@ -103,9 +116,9 @@ describe('SummaryCard Components', () => {
     it('handles default values for optional props', () => {
       render(<CombinedSummaryCard stats={mockStats} />);
       expect(screen.queryByText('Fall.')).not.toBeInTheDocument();
-      // Egresos, Traslados, H.Diurna should all be 0
+      // Egresos, Traslados, H.Diurna, Ingresos should all be 0
       const zeros = screen.getAllByText('0');
-      expect(zeros.length).toBeGreaterThanOrEqual(3);
+      expect(zeros.length).toBeGreaterThanOrEqual(4);
     });
   });
 

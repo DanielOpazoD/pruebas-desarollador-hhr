@@ -19,6 +19,8 @@ export interface BuildPatientRowBindingsParams {
   actionMenuAlign: RowMenuAlign;
   diagnosisMode: DiagnosisMode;
   isSubRow: boolean;
+  hasClinicalDocument: boolean;
+  isNewAdmissionIndicator: boolean;
   style?: React.CSSProperties;
   runtime: PatientRowRuntime;
 }
@@ -33,6 +35,8 @@ export const buildPatientMainRowBindings = ({
   readOnly,
   actionMenuAlign,
   diagnosisMode,
+  hasClinicalDocument,
+  isNewAdmissionIndicator,
   style,
   runtime,
 }: Pick<
@@ -44,6 +48,8 @@ export const buildPatientMainRowBindings = ({
   | 'readOnly'
   | 'actionMenuAlign'
   | 'diagnosisMode'
+  | 'hasClinicalDocument'
+  | 'isNewAdmissionIndicator'
   | 'style'
   | 'runtime'
 >): PatientMainRowBindings => {
@@ -70,6 +76,8 @@ export const buildPatientMainRowBindings = ({
     hasCompanion: runtime.rowState.hasCompanion,
     hasClinicalCrib: runtime.rowState.hasClinicalCrib,
     isCunaMode: runtime.rowState.isCunaMode,
+    hasClinicalDocument,
+    isNewAdmissionIndicator,
     mainRowViewState,
     onAction: runtime.handleAction,
     onOpenDemographics: runtime.uiState.openDemographics,
@@ -143,6 +151,8 @@ export const buildPatientRowBindings = ({
   actionMenuAlign,
   diagnosisMode,
   isSubRow,
+  hasClinicalDocument,
+  isNewAdmissionIndicator,
   style,
   runtime,
 }: BuildPatientRowBindingsParams): PatientRowBindings => {
@@ -155,6 +165,8 @@ export const buildPatientRowBindings = ({
       readOnly,
       actionMenuAlign,
       diagnosisMode,
+      hasClinicalDocument,
+      isNewAdmissionIndicator,
       style,
       runtime,
     }),

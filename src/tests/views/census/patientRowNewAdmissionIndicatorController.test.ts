@@ -1,0 +1,72 @@
+import { describe, expect, it } from 'vitest';
+import { resolveIsNewAdmissionForRecord } from '@/features/census/controllers/patientRowNewAdmissionIndicatorController';
+
+describe('patientRowNewAdmissionIndicatorController', () => {
+  const recordDate = '2026-03-05';
+
+  it('marks admissions on the same record date as new', () => {
+    expect(
+      resolveIsNewAdmissionForRecord({
+        recordDate,
+        admissionDate: '2026-03-05',
+        admissionTime: '21:10',
+      })
+    ).toBe(true);
+  });
+
+  it('marks next-day admissions before night-end as new', () => {
+    expect(
+      resolveIsNewAdmissionForRecord({
+        recordDate,
+        admissionDate: '2026-03-06',
+        admissionTime: '07:15',
+      })
+    ).toBe(true);
+  });
+
+  it('marks next-day admissions without time as new', () => {
+    expect(
+      resolveIsNewAdmissionForRecord({
+        recordDate,
+        admissionDate: '2026-03-06',
+      })
+    ).toBe(true);
+  });
+
+  it('does not mark next-day admissions at or after night-end', () => {
+    expect(
+      resolveIsNewAdmissionForRecord({
+        recordDate,
+        admissionDate: '2026-03-06',
+        admissionTime: '08:00',
+      })
+    ).toBe(false);
+    expect(
+      resolveIsNewAdmissionForRecord({
+        recordDate,
+        admissionDate: '2026-03-06',
+        admissionTime: '09:10',
+      })
+    ).toBe(false);
+  });
+
+  it('does not mark admissions from previous days', () => {
+    expect(
+      resolveIsNewAdmissionForRecord({
+        recordDate,
+        admissionDate: '2026-03-04',
+        admissionTime: '23:00',
+      })
+    ).toBe(false);
+  });
+
+  it('does not mark admissions after the next day', () => {
+    expect(
+      resolveIsNewAdmissionForRecord({
+        recordDate,
+        admissionDate: '2026-03-07',
+        admissionTime: '01:00',
+      })
+    ).toBe(false);
+  });
+});

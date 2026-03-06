@@ -73,12 +73,16 @@ describe('patientRowBindingsController', () => {
       actionMenuAlign: 'top',
       diagnosisMode: 'free',
       isSubRow: false,
+      hasClinicalDocument: true,
+      isNewAdmissionIndicator: true,
       runtime,
     });
 
     expect(result.mainRowProps.bed).toBe(bed);
     expect(result.mainRowProps.data).toBe(data);
     expect(result.mainRowProps.onAction).toBe(runtime.handleAction);
+    expect(result.mainRowProps.hasClinicalDocument).toBe(true);
+    expect(result.mainRowProps.isNewAdmissionIndicator).toBe(true);
     expect(result.mainRowProps.onOpenClinicalDocuments).toBe(runtime.uiState.openClinicalDocuments);
     expect(result.subRowProps.onOpenDemographics).toBe(runtime.uiState.openDemographics);
     expect(result.modalsProps.bedId).toBe('R1');
@@ -144,6 +148,8 @@ describe('patientRowBindingsController', () => {
       readOnly: false,
       actionMenuAlign: 'top',
       diagnosisMode: 'free',
+      hasClinicalDocument: false,
+      isNewAdmissionIndicator: false,
       runtime,
     });
     const sub = buildPatientSubRowBindings({

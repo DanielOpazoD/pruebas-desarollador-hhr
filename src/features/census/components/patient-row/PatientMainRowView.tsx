@@ -20,6 +20,8 @@ export const PatientMainRowView: React.FC<PatientMainRowViewProps> = ({
   hasCompanion,
   hasClinicalCrib,
   isCunaMode,
+  hasClinicalDocument,
+  isNewAdmissionIndicator,
   mainRowViewState,
   onAction,
   onOpenDemographics,
@@ -45,6 +47,8 @@ export const PatientMainRowView: React.FC<PatientMainRowViewProps> = ({
         isBlocked={isBlocked}
         readOnly={readOnly}
         align={actionMenuAlign}
+        hasClinicalDocument={hasClinicalDocument}
+        isNewAdmission={isNewAdmissionIndicator}
         onAction={onAction}
         onViewDemographics={onOpenDemographics}
         onViewClinicalDocuments={

@@ -7,9 +7,13 @@ import { DataFactory } from '@/tests/factories/DataFactory';
 const mockedUseDailyRecordStaffActions = vi.fn();
 const mockedUseDailyRecordStaff = vi.fn();
 const mockedUseDailyRecordMovements = vi.fn();
+const mockedUseDailyRecordBeds = vi.fn();
+const mockedUseDailyRecordData = vi.fn();
 const mockedUseStaffContext = vi.fn();
 
 vi.mock('@/context/DailyRecordContext', () => ({
+  useDailyRecordData: () => mockedUseDailyRecordData(),
+  useDailyRecordBeds: () => mockedUseDailyRecordBeds(),
   useDailyRecordStaff: () => mockedUseDailyRecordStaff(),
   useDailyRecordMovements: () => mockedUseDailyRecordMovements(),
 }));
@@ -55,11 +59,13 @@ vi.mock('@/components/layout/SummaryCard', () => ({
     discharges: unknown[];
     transfers: unknown[];
     cmaCount: number;
+    newAdmissions?: number;
   }) => (
     <div data-testid="summary-card">
       <span data-testid="summary-discharges">{props.discharges.length}</span>
       <span data-testid="summary-transfers">{props.transfers.length}</span>
       <span data-testid="summary-cma">{props.cmaCount}</span>
+      <span data-testid="summary-admissions">{props.newAdmissions ?? 0}</span>
     </div>
   ),
 }));
@@ -82,6 +88,30 @@ describe('CensusStaffHeader', () => {
       transfers: [{ id: 't1' }],
       cma: [{ id: 'c1' }, { id: 'c2' }],
     });
+    mockedUseDailyRecordData.mockReturnValue({
+      record: { date: '2026-02-15' },
+      syncStatus: 'idle',
+      lastSyncTime: null,
+      inventory: null,
+      stabilityRules: null,
+    });
+    mockedUseDailyRecordBeds.mockReturnValue({
+      R1: DataFactory.createMockPatient('R1', {
+        patientName: 'Paciente 1',
+        admissionDate: '2026-02-15',
+        admissionTime: '10:00',
+      }),
+      R2: DataFactory.createMockPatient('R2', {
+        patientName: 'Paciente 2',
+        admissionDate: '2026-02-16',
+        admissionTime: '07:00',
+      }),
+      R3: DataFactory.createMockPatient('R3', {
+        patientName: 'Paciente 3',
+        admissionDate: '2026-02-16',
+        admissionTime: '10:00',
+      }),
+    });
     mockedUseStaffContext.mockReturnValue({
       nursesList: ['Nurse A'],
       tensList: ['Tens A'],
@@ -97,11 +127,20 @@ describe('CensusStaffHeader', () => {
     expect(screen.getByTestId('summary-discharges').textContent).toBe('1');
     expect(screen.getByTestId('summary-transfers').textContent).toBe('1');
     expect(screen.getByTestId('summary-cma').textContent).toBe('2');
+    expect(screen.getByTestId('summary-admissions').textContent).toBe('2');
   });
 
   it('passes readOnly class to selectors and hides summary when stats are null', () => {
     mockedUseDailyRecordStaff.mockReturnValue(null);
     mockedUseDailyRecordMovements.mockReturnValue(null);
+    mockedUseDailyRecordData.mockReturnValue({
+      record: null,
+      syncStatus: 'idle',
+      lastSyncTime: null,
+      inventory: null,
+      stabilityRules: null,
+    });
+    mockedUseDailyRecordBeds.mockReturnValue(null);
 
     render(<CensusStaffHeader stats={null} readOnly={true} />);
 

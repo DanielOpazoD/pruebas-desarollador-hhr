@@ -10,8 +10,19 @@ import { createHash } from '@/features/clinical-documents/utils/hash';
 const getClinicalDocumentsCollectionPath = (hospitalId: string = getActiveHospitalId()): string =>
   `hospitals/${hospitalId}/clinicalDocuments`;
 
+const EPISODE_KEY_QUERY_CHUNK_SIZE = 10;
+
 const sortDocuments = (documents: ClinicalDocumentRecord[]): ClinicalDocumentRecord[] =>
   [...documents].sort((left, right) => right.audit.updatedAt.localeCompare(left.audit.updatedAt));
+
+const chunkArray = <T>(values: T[], size: number): T[][] => {
+  if (size <= 0) return [values];
+  const chunks: T[][] = [];
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+  return chunks;
+};
 
 const hydrateLegacyRecordDefaults = (record: ClinicalDocumentRecord): ClinicalDocumentRecord => ({
   ...record,
@@ -65,6 +76,35 @@ export const ClinicalDocumentRepository = {
       }
     );
     return sortDocuments(documents.map(document => hydrateLegacyRecordDefaults(document)));
+  },
+
+  async listByEpisodeKeys(
+    episodeKeys: string[],
+    hospitalId: string = getActiveHospitalId()
+  ): Promise<ClinicalDocumentRecord[]> {
+    const sanitizedEpisodeKeys = Array.from(new Set(episodeKeys.filter(Boolean)));
+    if (sanitizedEpisodeKeys.length === 0) {
+      return [];
+    }
+
+    const chunks = chunkArray(sanitizedEpisodeKeys, EPISODE_KEY_QUERY_CHUNK_SIZE);
+    const chunkedResults = await Promise.all(
+      chunks.map(chunk =>
+        db.getDocs<ClinicalDocumentRecord>(getClinicalDocumentsCollectionPath(hospitalId), {
+          where: [{ field: 'episodeKey', operator: 'in', value: chunk }],
+        })
+      )
+    );
+
+    const deduplicated = new Map<string, ClinicalDocumentRecord>();
+    chunkedResults.flat().forEach(document => {
+      const key = document.id || `${document.episodeKey}-${document.audit?.updatedAt || ''}`;
+      deduplicated.set(key, document);
+    });
+
+    return sortDocuments(
+      Array.from(deduplicated.values()).map(document => hydrateLegacyRecordDefaults(document))
+    );
   },
 
   async get(

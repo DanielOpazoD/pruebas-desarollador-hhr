@@ -47,6 +47,7 @@ describe('CensusTableBody', () => {
           readOnly={false}
           diagnosisMode="free"
           bedTypes={{}}
+          clinicalDocumentPresenceByBedId={{}}
           onAction={vi.fn()}
           onActivateEmptyBed={vi.fn()}
         />
@@ -76,6 +77,7 @@ describe('CensusTableBody', () => {
           readOnly={false}
           diagnosisMode="free"
           bedTypes={{}}
+          clinicalDocumentPresenceByBedId={{}}
           onAction={vi.fn()}
           onActivateEmptyBed={onActivateEmptyBed}
         />

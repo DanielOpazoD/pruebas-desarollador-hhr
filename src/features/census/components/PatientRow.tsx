@@ -17,6 +17,8 @@ const PatientRowComponent: React.FC<PatientRowProps> = ({
   diagnosisMode = 'free',
   isSubRow = false,
   bedType,
+  hasClinicalDocument = false,
+  isNewAdmissionIndicator = false,
   style,
 }) => {
   const bindings = usePatientRowBindingsModel({
@@ -30,6 +32,8 @@ const PatientRowComponent: React.FC<PatientRowProps> = ({
     diagnosisMode,
     isSubRow,
     style,
+    hasClinicalDocument,
+    isNewAdmissionIndicator,
   });
 
   // EARLY RETURN ONLY AFTER ALL HOOKS
