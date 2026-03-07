@@ -1,17 +1,16 @@
 import { useCallback } from 'react';
 import { useNotification } from '@/context/UIContext';
-import { logDailyRecordCreated, logDailyRecordDeleted } from '@/services/admin/auditService';
-import {
-  getForDateWithMeta,
-  getPreviousDayWithMeta,
-  deleteDay,
-} from '@/services/repositories/DailyRecordRepository';
 import { useRepositories } from '@/services/RepositoryContext';
 import { DailyRecord } from '@/types';
 import { getUserFriendlyErrorMessage } from '@/services/utils/errorService';
 import { hasCriticalLegacyRepairSignal } from '@/hooks/controllers/legacyRepairWarningController';
 import { buildCreateDayNotifications } from '@/hooks/controllers/persistenceFeedbackController';
 import { executeInitializeDailyRecord } from '@/application/daily-record/initializeDailyRecordUseCase';
+import { useAuditContext } from '@/context/AuditContext';
+import {
+  defaultDailyRecordReadPort,
+  defaultDailyRecordWritePort,
+} from '@/application/ports/dailyRecordPort';
 
 interface UsePersistenceProps {
   currentDateString: string;
@@ -30,6 +29,7 @@ export const usePersistence = ({
 }: UsePersistenceProps) => {
   const { success, warning, error: notifyError } = useNotification();
   const { dailyRecord } = useRepositories();
+  const { logDailyRecordCreated, logDailyRecordDeleted } = useAuditContext();
 
   /**
    * Creates a new daily record for the current date.
@@ -45,7 +45,7 @@ export const usePersistence = ({
       try {
         if (copyFromPrevious) {
           if (specificDate) {
-            const source = await getForDateWithMeta(specificDate, true);
+            const source = await defaultDailyRecordReadPort.getForDateWithMeta(specificDate, true);
             if (!source.record) {
               warning(
                 'No se encontró registro anterior',
@@ -56,7 +56,8 @@ export const usePersistence = ({
             prevDate = source.record.date;
             copySourceMeta = source;
           } else {
-            const prevRecord = await getPreviousDayWithMeta(currentDateString);
+            const prevRecord =
+              await defaultDailyRecordReadPort.getPreviousDayWithMeta(currentDateString);
             if (prevRecord.record) {
               prevDate = prevRecord.record.date;
               copySourceMeta = prevRecord;
@@ -106,19 +107,28 @@ export const usePersistence = ({
         notifyError('No se pudo crear el día', getUserFriendlyErrorMessage(error));
       }
     },
-    [currentDateString, warning, success, notifyError, markLocalChange, setRecord, dailyRecord]
+    [
+      currentDateString,
+      warning,
+      success,
+      notifyError,
+      markLocalChange,
+      setRecord,
+      dailyRecord,
+      logDailyRecordCreated,
+    ]
   );
 
   /**
    * Deletes the current day's record.
    */
   const resetDay = useCallback(async () => {
-    await deleteDay(currentDateString);
+    await defaultDailyRecordWritePort.delete(currentDateString);
     setRecord(null);
     success('Registro eliminado', 'El registro del día ha sido eliminado.');
 
     logDailyRecordDeleted(currentDateString);
-  }, [currentDateString, setRecord, success]);
+  }, [currentDateString, setRecord, success, logDailyRecordDeleted]);
 
   return {
     createDay,

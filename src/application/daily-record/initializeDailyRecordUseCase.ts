@@ -1,5 +1,4 @@
 import type { DailyRecord } from '@/types';
-import type { IDailyRecordRepository } from '@/services/repositories/DailyRecordRepository';
 import {
   createApplicationDegraded,
   createApplicationFailed,
@@ -8,11 +7,15 @@ import {
   type UseCase,
 } from '@/application/shared/applicationOutcome';
 import type { DailyRecordInitializationResult } from '@/services/repositories/dailyRecordRepositoryInitializationService';
+import {
+  defaultDailyRecordReadPort,
+  type DailyRecordReadPort,
+} from '@/application/ports/dailyRecordPort';
 
 export interface InitializeDailyRecordInput {
   date: string;
   copyFromDate?: string;
-  repository: Pick<IDailyRecordRepository, 'initializeDayDetailed'>;
+  repository?: Pick<DailyRecordReadPort, 'initializeDay'>;
 }
 
 export interface InitializeDailyRecordOutput {
@@ -48,11 +51,12 @@ export class InitializeDailyRecordUseCase implements UseCase<
   async execute(
     input: InitializeDailyRecordInput
   ): Promise<ApplicationOutcome<InitializeDailyRecordOutput>> {
+    const repository = input.repository || defaultDailyRecordReadPort;
     try {
-      const initialization = await input.repository.initializeDayDetailed(
+      const initialization = (await repository.initializeDay(
         input.date,
         input.copyFromDate
-      );
+      )) as DailyRecordInitializationResult;
       return mapInitializationOutcome(initialization);
     } catch (error) {
       return createApplicationFailed(

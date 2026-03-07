@@ -9,7 +9,7 @@ import type { MasterPatient } from '@/types';
 describe('patientAnalysisUseCase', () => {
   it('builds analysis from repository records', async () => {
     const repository = {
-      getAllDates: vi.fn().mockResolvedValue(['2026-03-05']),
+      getAvailableDates: vi.fn().mockResolvedValue(['2026-03-05']),
       getForDate: vi.fn().mockResolvedValue({
         date: '2026-03-05',
         beds: {
@@ -32,7 +32,7 @@ describe('patientAnalysisUseCase', () => {
 
   it('resolves a conflict and optionally harmonizes history', async () => {
     const repository = {
-      getAllDates: vi.fn(),
+      getAvailableDates: vi.fn(),
       getForDate: vi.fn(),
       updatePartial: vi.fn().mockResolvedValue(undefined),
     };
@@ -66,7 +66,7 @@ describe('patientAnalysisUseCase', () => {
       correctName: 'Correct Name',
       harmonizeHistory: true,
       dailyRecordRepository: repository,
-      logAuditEvent: vi.fn().mockResolvedValue(undefined),
+      auditPort: { writeEvent: vi.fn().mockResolvedValue(undefined) },
       currentUserEmail: 'test@test.com',
     });
 

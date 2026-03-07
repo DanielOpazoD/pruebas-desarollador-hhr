@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { getAvailableDates, getPreviousDay } from '@/services/repositories/DailyRecordRepository';
 import {
   executeLoadCensusPromptDataController,
   INITIAL_CENSUS_PROMPT_STATE,
   type CensusPromptState,
 } from '@/features/census/controllers/censusLogicController';
+import { defaultDailyRecordReadPort } from '@/application/ports/dailyRecordPort';
 
 export const useCensusPromptState = (currentDateString: string): CensusPromptState => {
   const [promptState, setPromptState] = useState(INITIAL_CENSUS_PROMPT_STATE);
@@ -17,8 +17,8 @@ export const useCensusPromptState = (currentDateString: string): CensusPromptSta
     void (async () => {
       const nextPromptState = await executeLoadCensusPromptDataController({
         currentDateString,
-        getPreviousDay,
-        getAvailableDates,
+        getPreviousDay: defaultDailyRecordReadPort.getPreviousDay,
+        getAvailableDates: defaultDailyRecordReadPort.getAvailableDates,
       });
 
       if (isDisposed || requestId !== requestIdRef.current) {

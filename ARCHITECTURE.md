@@ -105,6 +105,7 @@ src/
 │
 ├── context/                    # Estado Global (Shared Contexts)
 ├── hooks/                      # Hooks transversales (Query, UI, Validation)
+├── application/                # Casos de uso, outcomes homogéneos y puertos
 ├── schemas/                    # Validación Zod (Seguridad en runtime)
 ├── types/                      # Definiciones de tipos del dominio
 ├── utils/                      # Helpers y utilidades técnicas
@@ -225,6 +226,20 @@ sequenceDiagram
 3. **Aprende los contratos de datos**: estos “acuerdos” evitan errores al mover datos entre capas.
 4. **Revisa estabilidad y seguridad**: mira “Enfoque de Estabilidad” y “Seguridad” para entender por qué el sistema no se cae y protege datos.
 5. **Si algo falla**: busca en “Observabilidad” y “Flujos Críticos” para ubicar el punto de diagnóstico.
+
+---
+
+## 🔌 Boundary Actual (Use Cases + Ports)
+
+- `src/application/*` coordina side-effects críticos y devuelve `ApplicationOutcome`.
+- `src/application/ports/*` es el único lugar donde los use-cases pueden atarse por defecto a servicios concretos.
+- `src/hooks/*`, `src/components/*` y `src/features/*` no deben importar directo:
+  - `auditService`
+  - `DailyRecordRepository`
+  - `ClinicalDocumentRepository`
+  - `censusEmailService`
+- Si una operación ya existe en `application/`, la UI debe consumir el use-case o un hook fachada, no el servicio remoto.
+- Este boundary se verifica automáticamente con `npm run check:application-port-boundary`.
 
 ---
 

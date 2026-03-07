@@ -2,16 +2,14 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { useSharedCensusFiles } from '@/hooks/useSharedCensusFiles';
 import type { StoredCensusFile } from '@/services/backup/censusStorageService';
+import {
+  executeLoadSharedCensusFiles,
+  executeLogSharedCensusAccess,
+} from '@/application/backup-export/sharedCensusFilesUseCases';
 
-const mockedListCensusFilesInMonth = vi.fn();
-const mockedLogAccess = vi.fn();
-
-vi.mock('@/services/backup/censusStorageService', () => ({
-  listCensusFilesInMonth: (...args: unknown[]) => mockedListCensusFilesInMonth(...args),
-}));
-
-vi.mock('@/services/census/censusAccessService', () => ({
-  logAccess: (...args: unknown[]) => mockedLogAccess(...args),
+vi.mock('@/application/backup-export/sharedCensusFilesUseCases', () => ({
+  executeLoadSharedCensusFiles: vi.fn(),
+  executeLogSharedCensusAccess: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe('useSharedCensusFiles', () => {
@@ -37,7 +35,11 @@ describe('useSharedCensusFiles', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedListCensusFilesInMonth.mockResolvedValue([]);
+    vi.mocked(executeLoadSharedCensusFiles).mockResolvedValue({
+      status: 'success',
+      data: [],
+      issues: [],
+    });
   });
 
   it('uses runtime alert for unauthorized download attempts', async () => {
@@ -80,7 +82,7 @@ describe('useSharedCensusFiles', () => {
     });
 
     expect(runtime.open).toHaveBeenCalledWith('https://example.com/file.xlsx', '_blank');
-    expect(mockedLogAccess).toHaveBeenCalledWith(
+    expect(executeLogSharedCensusAccess).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'download_file',
         fileName: sampleFile.name,
@@ -93,7 +95,11 @@ describe('useSharedCensusFiles', () => {
       alert: vi.fn(),
       open: vi.fn(),
     };
-    mockedListCensusFilesInMonth.mockRejectedValue(new Error('failed'));
+    vi.mocked(executeLoadSharedCensusFiles).mockResolvedValue({
+      status: 'failed',
+      data: [],
+      issues: [{ kind: 'unknown', message: 'No se pudieron cargar los archivos del censo.' }],
+    });
 
     const { result } = renderHook(() => useSharedCensusFiles(accessUser, runtime));
 
@@ -104,8 +110,7 @@ describe('useSharedCensusFiles', () => {
   });
 
   it('ignores stale fetch responses when a newer fetch is in flight', async () => {
-    let resolveFirstCurrent!: (files: StoredCensusFile[]) => void;
-    let resolveFirstPrevious!: (files: StoredCensusFile[]) => void;
+    let resolveFirst!: (value: { status: 'success'; data: StoredCensusFile[]; issues: [] }) => void;
 
     const secondCurrent: StoredCensusFile[] = [
       {
@@ -115,23 +120,18 @@ describe('useSharedCensusFiles', () => {
         date: '2026-02-12',
       },
     ];
-    const secondPrevious: StoredCensusFile[] = [];
-
-    mockedListCensusFilesInMonth
+    vi.mocked(executeLoadSharedCensusFiles)
       .mockImplementationOnce(
         () =>
-          new Promise<StoredCensusFile[]>(resolve => {
-            resolveFirstCurrent = resolve;
+          new Promise(resolve => {
+            resolveFirst = resolve as typeof resolveFirst;
           })
       )
-      .mockImplementationOnce(
-        () =>
-          new Promise<StoredCensusFile[]>(resolve => {
-            resolveFirstPrevious = resolve;
-          })
-      )
-      .mockResolvedValueOnce(secondCurrent)
-      .mockResolvedValueOnce(secondPrevious);
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: secondCurrent,
+        issues: [],
+      });
 
     const { result, rerender } = renderHook(({ user }) => useSharedCensusFiles(user), {
       initialProps: { user: accessUser },
@@ -145,8 +145,11 @@ describe('useSharedCensusFiles', () => {
     });
 
     await act(async () => {
-      resolveFirstCurrent([sampleFile]);
-      resolveFirstPrevious([]);
+      resolveFirst({
+        status: 'success',
+        data: [sampleFile],
+        issues: [],
+      });
     });
 
     expect(result.current.filteredFiles[0]?.fullPath).toBe('/censo/2026/02/new-file.xlsx');

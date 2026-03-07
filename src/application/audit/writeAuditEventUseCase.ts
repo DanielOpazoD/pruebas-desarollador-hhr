@@ -1,9 +1,9 @@
-import { logAuditEvent } from '@/services/admin/auditService';
 import {
   createApplicationFailed,
   createApplicationSuccess,
   type ApplicationOutcome,
 } from '@/application/shared/applicationOutcome';
+import { defaultAuditPort, type AuditPort } from '@/application/ports/auditPort';
 import type { AuditAction, AuditLogEntry } from '@/types/audit';
 
 export interface WriteAuditEventInput {
@@ -17,11 +17,17 @@ export interface WriteAuditEventInput {
   authors?: string;
 }
 
+export interface WriteAuditEventDependencies {
+  auditPort?: AuditPort;
+}
+
 export const executeWriteAuditEvent = async (
-  input: WriteAuditEventInput
+  input: WriteAuditEventInput,
+  dependencies: WriteAuditEventDependencies = {}
 ): Promise<ApplicationOutcome<null>> => {
+  const auditPort = dependencies.auditPort || defaultAuditPort;
   try {
-    await logAuditEvent(
+    await auditPort.writeEvent(
       input.userId,
       input.action,
       input.entityType,

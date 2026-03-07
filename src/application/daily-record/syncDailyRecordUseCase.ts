@@ -1,5 +1,4 @@
 import type { DailyRecord } from '@/types';
-import type { IDailyRecordRepository } from '@/services/repositories/DailyRecordRepository';
 import type { SyncDailyRecordResult } from '@/services/repositories/contracts/dailyRecordResults';
 import {
   createApplicationDegraded,
@@ -9,6 +8,10 @@ import {
   type ApplicationOutcome,
   type UseCase,
 } from '@/application/shared/applicationOutcome';
+import {
+  defaultDailyRecordSyncPort,
+  type DailyRecordSyncPort,
+} from '@/application/ports/dailyRecordPort';
 
 export type SyncDegradationReason = 'missing_remote_record' | 'remote_blocked';
 
@@ -20,13 +23,14 @@ export interface SyncOutcome {
 
 export interface SyncDailyRecordInput {
   date: string;
-  repository: Pick<IDailyRecordRepository, 'syncWithFirestoreDetailed'>;
+  repository?: DailyRecordSyncPort;
 }
 
 export class SyncDailyRecordUseCase implements UseCase<SyncDailyRecordInput, SyncOutcome> {
   async execute(input: SyncDailyRecordInput): Promise<ApplicationOutcome<SyncOutcome>> {
+    const repository = input.repository || defaultDailyRecordSyncPort;
     try {
-      const sync = await input.repository.syncWithFirestoreDetailed(input.date);
+      const sync = await repository.syncWithFirestoreDetailed(input.date);
 
       if (!sync) {
         return createApplicationPartial(

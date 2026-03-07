@@ -1,7 +1,4 @@
 import { useState, useCallback } from 'react';
-import { DailyRecordRepository } from '@/services/repositories/DailyRecordRepository';
-import { PatientMasterRepository } from '@/services/repositories/PatientMasterRepository';
-import { logAuditEvent } from '@/services/admin/auditService';
 import { getCurrentUserEmail } from '@/services/admin/utils/auditUtils';
 import {
   executeAnalyzePatients,
@@ -10,6 +7,12 @@ import {
   type AnalysisResult,
   type Conflict,
 } from '@/application/patient-flow/patientAnalysisUseCase';
+import {
+  defaultDailyRecordReadPort,
+  defaultDailyRecordWritePort,
+} from '@/application/ports/dailyRecordPort';
+import { defaultPatientMasterWritePort } from '@/application/ports/patientMasterPort';
+import { defaultAuditPort } from '@/application/ports/auditPort';
 
 export type { Conflict, AnalysisResult } from '@/application/patient-flow/patientAnalysisUseCase';
 
@@ -35,25 +38,12 @@ export const usePatientAnalysis = () => {
           rut,
           correctName,
           harmonizeHistory,
-          dailyRecordRepository: DailyRecordRepository,
-          logAuditEvent: async (
-            userEmail,
-            eventType,
-            entityType,
-            entityId,
-            changes,
-            patientRut,
-            dateKey
-          ) =>
-            logAuditEvent(
-              userEmail,
-              eventType as never,
-              entityType as never,
-              entityId,
-              changes || {},
-              patientRut,
-              dateKey
-            ),
+          dailyRecordRepository: {
+            getAvailableDates: defaultDailyRecordReadPort.getAvailableDates,
+            getForDate: defaultDailyRecordReadPort.getForDate,
+            updatePartial: defaultDailyRecordWritePort.updatePartial,
+          },
+          auditPort: defaultAuditPort,
           currentUserEmail: getCurrentUserEmail(),
         });
 
@@ -78,7 +68,11 @@ export const usePatientAnalysis = () => {
 
     try {
       const outcome = await executeAnalyzePatients({
-        dailyRecordRepository: DailyRecordRepository,
+        dailyRecordRepository: {
+          getAvailableDates: defaultDailyRecordReadPort.getAvailableDates,
+          getForDate: defaultDailyRecordReadPort.getForDate,
+          updatePartial: defaultDailyRecordWritePort.updatePartial,
+        },
       });
       if (outcome.status === 'failed') {
         console.error(
@@ -99,7 +93,7 @@ export const usePatientAnalysis = () => {
     try {
       const outcome = await executeMigratePatients({
         analysis,
-        patientMasterRepository: PatientMasterRepository,
+        patientMasterRepository: defaultPatientMasterWritePort,
       });
       if (outcome.status === 'failed') {
         console.error(

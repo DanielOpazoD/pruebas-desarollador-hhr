@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { logPatientDischarge, logPatientTransfer } from '@/services/admin/auditService';
+import { useAuditContext } from '@/context/AuditContext';
 
 interface DischargeAuditEntry {
   bedId: string;
@@ -16,6 +16,7 @@ interface TransferAuditEntry {
 }
 
 export const usePatientMovementAudit = () => {
+  const { logPatientDischarge, logPatientTransfer } = useAuditContext();
   const logDischargeEntries = useCallback((entries: DischargeAuditEntry[], recordDate: string) => {
     for (const entry of entries) {
       logPatientDischarge(entry.bedId, entry.patientName, entry.rut, entry.status, recordDate);

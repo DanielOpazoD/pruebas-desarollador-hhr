@@ -1,4 +1,3 @@
-import { ClinicalDocumentRepository } from '@/services/repositories/ClinicalDocumentRepository';
 import type {
   ClinicalDocumentAuditActor,
   ClinicalDocumentPdfMeta,
@@ -12,8 +11,16 @@ import {
   createApplicationSuccess,
   type ApplicationOutcome,
 } from '@/application/shared/applicationOutcome';
+import {
+  defaultClinicalDocumentPort,
+  type ClinicalDocumentPort,
+} from '@/application/ports/clinicalDocumentPort';
 
 type PersistReason = 'autosave' | 'manual';
+
+interface ClinicalDocumentUseCaseDependencies {
+  clinicalDocumentPort?: ClinicalDocumentPort;
+}
 
 const shouldFallbackToLegacyDriveUpload = (error: unknown): boolean => {
   const code =
@@ -55,10 +62,12 @@ const appendVersionAudit = (
 
 export const executeCreateClinicalDocumentDraft = async (
   record: ClinicalDocumentRecord,
-  hospitalId: string
+  hospitalId: string,
+  dependencies: ClinicalDocumentUseCaseDependencies = {}
 ): Promise<ApplicationOutcome<ClinicalDocumentRecord | null>> => {
+  const clinicalDocumentPort = dependencies.clinicalDocumentPort || defaultClinicalDocumentPort;
   try {
-    const saved = await ClinicalDocumentRepository.createDraft(record, hospitalId);
+    const saved = await clinicalDocumentPort.createDraft(record, hospitalId);
     return createApplicationSuccess(saved);
   } catch (error) {
     return createApplicationFailed(null, [
@@ -70,15 +79,50 @@ export const executeCreateClinicalDocumentDraft = async (
   }
 };
 
+export const executeListClinicalDocumentsByEpisodeKeys = async (
+  episodeKeys: string[],
+  hospitalId?: string,
+  dependencies: ClinicalDocumentUseCaseDependencies = {}
+): Promise<ApplicationOutcome<ClinicalDocumentRecord[]>> => {
+  const clinicalDocumentPort = dependencies.clinicalDocumentPort || defaultClinicalDocumentPort;
+  try {
+    const documents = await clinicalDocumentPort.listByEpisodeKeys(episodeKeys, hospitalId);
+    return createApplicationSuccess(documents);
+  } catch (error) {
+    return createApplicationFailed(
+      [],
+      [
+        {
+          kind: 'unknown',
+          message:
+            error instanceof Error ? error.message : 'No se pudieron cargar documentos clínicos.',
+        },
+      ]
+    );
+  }
+};
+
+export const subscribeClinicalDocumentsByEpisode = (
+  episodeKey: string,
+  callback: (documents: ClinicalDocumentRecord[]) => void,
+  hospitalId: string,
+  dependencies: ClinicalDocumentUseCaseDependencies = {}
+): (() => void) => {
+  const clinicalDocumentPort = dependencies.clinicalDocumentPort || defaultClinicalDocumentPort;
+  return clinicalDocumentPort.subscribeByEpisode(episodeKey, callback, hospitalId);
+};
+
 export const executePersistClinicalDocumentDraft = async (
   record: ClinicalDocumentRecord,
   hospitalId: string,
   actor: ClinicalDocumentAuditActor,
-  reason: PersistReason
+  reason: PersistReason,
+  dependencies: ClinicalDocumentUseCaseDependencies = {}
 ): Promise<ApplicationOutcome<ClinicalDocumentRecord | null>> => {
+  const clinicalDocumentPort = dependencies.clinicalDocumentPort || defaultClinicalDocumentPort;
   try {
     const now = new Date().toISOString();
-    const saved = await ClinicalDocumentRepository.saveDraft(
+    const saved = await clinicalDocumentPort.saveDraft(
       appendVersionAudit(record, actor, reason, now),
       hospitalId
     );
@@ -95,10 +139,12 @@ export const executePersistClinicalDocumentDraft = async (
 
 export const executeDeleteClinicalDocument = async (
   documentId: string,
-  hospitalId: string
+  hospitalId: string,
+  dependencies: ClinicalDocumentUseCaseDependencies = {}
 ): Promise<ApplicationOutcome<null>> => {
+  const clinicalDocumentPort = dependencies.clinicalDocumentPort || defaultClinicalDocumentPort;
   try {
-    await ClinicalDocumentRepository.delete(documentId, hospitalId);
+    await clinicalDocumentPort.delete(documentId, hospitalId);
     return createApplicationSuccess(null);
   } catch (error) {
     return createApplicationFailed(null, [
@@ -113,11 +159,13 @@ export const executeDeleteClinicalDocument = async (
 export const executeSignClinicalDocument = async (
   record: ClinicalDocumentRecord,
   hospitalId: string,
-  actor: ClinicalDocumentAuditActor
+  actor: ClinicalDocumentAuditActor,
+  dependencies: ClinicalDocumentUseCaseDependencies = {}
 ): Promise<ApplicationOutcome<ClinicalDocumentRecord | null>> => {
+  const clinicalDocumentPort = dependencies.clinicalDocumentPort || defaultClinicalDocumentPort;
   try {
     const now = new Date().toISOString();
-    const signed = await ClinicalDocumentRepository.sign(
+    const signed = await clinicalDocumentPort.sign(
       {
         ...appendVersionAudit(record, actor, 'signature', now),
         status: 'signed',
@@ -146,11 +194,13 @@ export const executeSignClinicalDocument = async (
 export const executeUnsignClinicalDocument = async (
   record: ClinicalDocumentRecord,
   hospitalId: string,
-  actor: ClinicalDocumentAuditActor
+  actor: ClinicalDocumentAuditActor,
+  dependencies: ClinicalDocumentUseCaseDependencies = {}
 ): Promise<ApplicationOutcome<ClinicalDocumentRecord | null>> => {
+  const clinicalDocumentPort = dependencies.clinicalDocumentPort || defaultClinicalDocumentPort;
   try {
     const now = new Date().toISOString();
-    const unsigned = await ClinicalDocumentRepository.unsign(
+    const unsigned = await clinicalDocumentPort.unsign(
       {
         ...appendVersionAudit(record, actor, 'unsign', now),
         status: 'draft',
@@ -195,13 +245,11 @@ export interface ExportClinicalDocumentPdfOutput {
   pdf: ClinicalDocumentPdfMeta;
 }
 
-export const executeExportClinicalDocumentPdf = async ({
-  record,
-  hospitalId,
-  fileName,
-}: ExportClinicalDocumentPdfInput): Promise<
-  ApplicationOutcome<ExportClinicalDocumentPdfOutput | null>
-> => {
+export const executeExportClinicalDocumentPdf = async (
+  { record, hospitalId, fileName }: ExportClinicalDocumentPdfInput,
+  dependencies: ClinicalDocumentUseCaseDependencies = {}
+): Promise<ApplicationOutcome<ExportClinicalDocumentPdfOutput | null>> => {
+  const clinicalDocumentPort = dependencies.clinicalDocumentPort || defaultClinicalDocumentPort;
   try {
     const pdfBlob = await generateClinicalDocumentPdfBlob(record);
     let result: { fileId: string; webViewLink: string; folderPath: string };
@@ -239,7 +287,7 @@ export const executeExportClinicalDocumentPdf = async ({
       exportStatus: 'exported',
     };
 
-    await ClinicalDocumentRepository.savePdfMetadata(record.id, pdf, hospitalId);
+    await clinicalDocumentPort.savePdfMetadata(record.id, pdf, hospitalId);
     return createApplicationSuccess({ pdf });
   } catch (error) {
     const failedPdf: ClinicalDocumentPdfMeta = {
@@ -248,7 +296,7 @@ export const executeExportClinicalDocumentPdf = async ({
     };
 
     try {
-      await ClinicalDocumentRepository.savePdfMetadata(record.id, failedPdf, hospitalId);
+      await clinicalDocumentPort.savePdfMetadata(record.id, failedPdf, hospitalId);
     } catch {
       // Keep the original export error as the user-facing failure.
     }

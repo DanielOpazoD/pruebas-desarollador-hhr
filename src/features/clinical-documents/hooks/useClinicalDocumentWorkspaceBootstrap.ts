@@ -7,8 +7,11 @@ import type {
 import { listActiveClinicalDocumentTemplates } from '@/features/clinical-documents/controllers/clinicalDocumentTemplateController';
 import { buildClinicalDocumentEpisodeContext } from '@/features/clinical-documents/controllers/clinicalDocumentEpisodeController';
 import { hydrateLegacyClinicalDocument } from '@/features/clinical-documents/controllers/clinicalDocumentWorkspaceController';
-import { ClinicalDocumentRepository } from '@/services/repositories/ClinicalDocumentRepository';
-import { ClinicalDocumentTemplateRepository } from '@/services/repositories/ClinicalDocumentTemplateRepository';
+import {
+  executeListActiveClinicalDocumentTemplates,
+  executeSeedClinicalDocumentTemplates,
+} from '@/application/clinical-documents/clinicalDocumentTemplateUseCases';
+import { subscribeClinicalDocumentsByEpisode } from '@/application/clinical-documents/clinicalDocumentUseCases';
 
 interface UseClinicalDocumentWorkspaceBootstrapParams {
   patient: PatientData;
@@ -65,7 +68,8 @@ export const useClinicalDocumentWorkspaceBootstrap = ({
     let cancelled = false;
 
     const loadTemplates = async () => {
-      const remoteTemplates = await ClinicalDocumentTemplateRepository.listActive(hospitalId);
+      const remoteTemplatesOutcome = await executeListActiveClinicalDocumentTemplates(hospitalId);
+      const remoteTemplates = remoteTemplatesOutcome.data;
       if (!cancelled) {
         setTemplates(remoteTemplates);
       }
@@ -83,13 +87,14 @@ export const useClinicalDocumentWorkspaceBootstrap = ({
       return;
     }
 
-    void ClinicalDocumentTemplateRepository.seedDefaults(hospitalId)
-      .then(() => ClinicalDocumentTemplateRepository.listActive(hospitalId))
-      .then(setTemplates)
-      .catch(error => {
-        console.error('[ClinicalDocumentsWorkspace] Failed to seed templates:', error);
+    void executeSeedClinicalDocumentTemplates(hospitalId).then(outcome => {
+      if (outcome.status === 'failed') {
+        console.error('[ClinicalDocumentsWorkspace] Failed to seed templates:', outcome.issues);
         setTemplates(listActiveClinicalDocumentTemplates());
-      });
+        return;
+      }
+      setTemplates(outcome.data);
+    });
   }, [hospitalId, isActive, role, templates.length]);
 
   useEffect(() => {
@@ -97,7 +102,7 @@ export const useClinicalDocumentWorkspaceBootstrap = ({
       return;
     }
 
-    const unsubscribe = ClinicalDocumentRepository.subscribeByEpisode(
+    const unsubscribe = subscribeClinicalDocumentsByEpisode(
       episode.episodeKey,
       docs => {
         const hydrated = docs.map(document => hydrateLegacyClinicalDocument(document));

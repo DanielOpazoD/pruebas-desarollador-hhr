@@ -1,20 +1,26 @@
-import { getAuditLogs } from '@/services/admin/auditService';
 import {
   createApplicationFailed,
   createApplicationSuccess,
   type ApplicationOutcome,
 } from '@/application/shared/applicationOutcome';
+import { defaultAuditPort, type AuditPort } from '@/application/ports/auditPort';
 import type { AuditLogEntry } from '@/types/audit';
 
 export interface FetchAuditLogsInput {
   limit?: number;
 }
 
-export const executeFetchAuditLogs = async ({ limit = 100 }: FetchAuditLogsInput = {}): Promise<
-  ApplicationOutcome<AuditLogEntry[]>
-> => {
+export interface FetchAuditLogsDependencies {
+  auditPort?: AuditPort;
+}
+
+export const executeFetchAuditLogs = async (
+  { limit = 100 }: FetchAuditLogsInput = {},
+  dependencies: FetchAuditLogsDependencies = {}
+): Promise<ApplicationOutcome<AuditLogEntry[]>> => {
+  const auditPort = dependencies.auditPort || defaultAuditPort;
   try {
-    const logs = await getAuditLogs(limit);
+    const logs = await auditPort.fetchLogs(limit);
     return createApplicationSuccess(logs);
   } catch (error) {
     return createApplicationFailed(

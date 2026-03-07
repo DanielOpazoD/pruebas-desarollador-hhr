@@ -1,14 +1,24 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { usePatientMovementAudit } from '@/features/census/hooks/usePatientMovementAudit';
-import * as auditService from '@/services/admin/auditService';
+import { useAuditContext } from '@/context/AuditContext';
 
-vi.mock('@/services/admin/auditService', () => ({
-  logPatientDischarge: vi.fn(),
-  logPatientTransfer: vi.fn(),
+vi.mock('@/context/AuditContext', () => ({
+  useAuditContext: vi.fn(),
 }));
 
 describe('usePatientMovementAudit', () => {
+  const mockLogPatientDischarge = vi.fn();
+  const mockLogPatientTransfer = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useAuditContext).mockReturnValue({
+      logPatientDischarge: mockLogPatientDischarge,
+      logPatientTransfer: mockLogPatientTransfer,
+    } as unknown as ReturnType<typeof useAuditContext>);
+  });
+
   it('logs all discharge audit entries', () => {
     const { result } = renderHook(() => usePatientMovementAudit());
 
@@ -20,8 +30,8 @@ describe('usePatientMovementAudit', () => {
       '2025-01-01'
     );
 
-    expect(auditService.logPatientDischarge).toHaveBeenCalledTimes(2);
-    expect(auditService.logPatientDischarge).toHaveBeenNthCalledWith(
+    expect(mockLogPatientDischarge).toHaveBeenCalledTimes(2);
+    expect(mockLogPatientDischarge).toHaveBeenNthCalledWith(
       1,
       'R1',
       'A',
@@ -29,7 +39,7 @@ describe('usePatientMovementAudit', () => {
       'Vivo',
       '2025-01-01'
     );
-    expect(auditService.logPatientDischarge).toHaveBeenNthCalledWith(
+    expect(mockLogPatientDischarge).toHaveBeenNthCalledWith(
       2,
       'R2',
       'B',
@@ -52,8 +62,8 @@ describe('usePatientMovementAudit', () => {
       '2025-01-02'
     );
 
-    expect(auditService.logPatientTransfer).toHaveBeenCalledTimes(1);
-    expect(auditService.logPatientTransfer).toHaveBeenCalledWith(
+    expect(mockLogPatientTransfer).toHaveBeenCalledTimes(1);
+    expect(mockLogPatientTransfer).toHaveBeenCalledWith(
       'R3',
       'Paciente T',
       '3-5',

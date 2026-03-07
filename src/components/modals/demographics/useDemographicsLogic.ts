@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { logPatientView } from '@/services/admin/auditService';
 import { PatientInputSchema } from '@/schemas/inputSchemas';
+import { useAuditContext } from '@/context/AuditContext';
 import {
   DemographicSubset,
   LocalDemographicsState,
@@ -31,6 +31,7 @@ export const useDemographicsLogic = ({
   onSave,
   onClose,
 }: UseDemographicsLogicProps) => {
+  const { logPatientView } = useAuditContext();
   const [localData, setLocalData] = useState<LocalDemographicsState>(() =>
     buildLocalData(data, isClinicalCribPatient)
   );

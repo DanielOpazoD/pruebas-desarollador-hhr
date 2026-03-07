@@ -1,0 +1,31 @@
+import type { MedicalHandoffActor, MedicalSpecialty } from '@/types';
+import type { MedicalHandoffScope } from '@/features/handoff/controllers';
+
+export interface ConfirmMedicalSpecialtyNoChangesInput {
+  specialty: MedicalSpecialty;
+  actor: Partial<MedicalHandoffActor>;
+  comment?: string;
+  dateKey?: string;
+}
+
+export interface HandoffManagementActions {
+  updateHandoffChecklist: (shift: 'day' | 'night', field: string, value: boolean | string) => void;
+  updateHandoffNovedades: (shift: 'day' | 'night' | 'medical', value: string) => void;
+  updateMedicalSpecialtyNote: (
+    specialty: MedicalSpecialty,
+    value: string,
+    actor: Partial<MedicalHandoffActor>
+  ) => Promise<void>;
+  confirmMedicalSpecialtyNoChanges: (input: ConfirmMedicalSpecialtyNoChangesInput) => Promise<void>;
+  updateHandoffStaff: (
+    shift: 'day' | 'night',
+    type: 'delivers' | 'receives' | 'tens',
+    staffList: string[]
+  ) => void;
+  updateMedicalSignature: (doctorName: string, scope?: MedicalHandoffScope) => Promise<void>;
+  updateMedicalHandoffDoctor: (doctorName: string) => Promise<void>;
+  markMedicalHandoffAsSent: (doctorName?: string, scope?: MedicalHandoffScope) => Promise<void>;
+  ensureMedicalHandoffSignatureLink: (scope?: MedicalHandoffScope) => Promise<string>;
+  resetMedicalHandoffState: () => Promise<void>;
+  sendMedicalHandoff: (templateContent: string, targetGroupId: string) => Promise<void>;
+}

@@ -1,31 +1,26 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { usePatientAnalysis } from '@/hooks/usePatientAnalysis';
-import { DailyRecordRepository } from '@/services/repositories/DailyRecordRepository';
-import { PatientMasterRepository } from '@/services/repositories/PatientMasterRepository';
+import {
+  defaultDailyRecordReadPort,
+  defaultDailyRecordWritePort,
+} from '@/application/ports/dailyRecordPort';
+import { defaultPatientMasterWritePort } from '@/application/ports/patientMasterPort';
 
-// Mock repositories using a more robust Vitest pattern
-vi.mock('@/services/repositories/DailyRecordRepository', () => {
-  return {
-    DailyRecordRepository: {
-      getAllDates: vi.fn(),
-      getForDate: vi.fn(),
-      updatePartial: vi.fn(),
-    },
-  };
-});
+vi.mock('@/application/ports/dailyRecordPort', () => ({
+  defaultDailyRecordReadPort: {
+    getAvailableDates: vi.fn(),
+    getForDate: vi.fn(),
+  },
+  defaultDailyRecordWritePort: {
+    updatePartial: vi.fn(),
+  },
+}));
 
-vi.mock('@/services/repositories/PatientMasterRepository', () => {
-  return {
-    PatientMasterRepository: {
-      bulkUpsertPatients: vi.fn(),
-    },
-  };
-});
-
-// Mock audit service
-vi.mock('@/services/admin/auditService', () => ({
-  logAuditEvent: vi.fn(),
+vi.mock('@/application/ports/patientMasterPort', () => ({
+  defaultPatientMasterWritePort: {
+    bulkUpsertPatients: vi.fn(),
+  },
 }));
 
 vi.mock('@/services/admin/utils/auditUtils', () => ({
@@ -34,7 +29,11 @@ vi.mock('@/services/admin/utils/auditUtils', () => ({
 
 describe('usePatientAnalysis', () => {
   const asRepoRecord = <T>(value: T) =>
-    value as unknown as Awaited<ReturnType<typeof DailyRecordRepository.getForDate>>;
+    value as unknown as Awaited<ReturnType<typeof defaultDailyRecordReadPort.getForDate>>;
+
+  const dailyRecordReadPort = vi.mocked(defaultDailyRecordReadPort);
+  const dailyRecordWritePort = vi.mocked(defaultDailyRecordWritePort);
+  const patientMasterWritePort = vi.mocked(defaultPatientMasterWritePort);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -53,8 +52,8 @@ describe('usePatientAnalysis', () => {
       },
     };
 
-    vi.mocked(DailyRecordRepository.getAllDates).mockResolvedValue(mockDates);
-    vi.mocked(DailyRecordRepository.getForDate).mockResolvedValue(asRepoRecord(mockRecord));
+    dailyRecordReadPort.getAvailableDates.mockResolvedValue(mockDates);
+    dailyRecordReadPort.getForDate.mockResolvedValue(asRepoRecord(mockRecord));
 
     const { result } = renderHook(() => usePatientAnalysis());
 
@@ -78,8 +77,8 @@ describe('usePatientAnalysis', () => {
       beds: { B1: { rut: '11.111.111-1', patientName: 'John Smith' } },
     };
 
-    vi.mocked(DailyRecordRepository.getAllDates).mockResolvedValue(mockDates);
-    vi.mocked(DailyRecordRepository.getForDate)
+    dailyRecordReadPort.getAvailableDates.mockResolvedValue(mockDates);
+    dailyRecordReadPort.getForDate
       .mockResolvedValueOnce(asRepoRecord(record1))
       .mockResolvedValueOnce(asRepoRecord(record2));
 
@@ -105,8 +104,8 @@ describe('usePatientAnalysis', () => {
       date: '2025-01-02',
       beds: { B1: { rut: '11.111.111-1', patientName: 'John New' } },
     };
-    vi.mocked(DailyRecordRepository.getAllDates).mockResolvedValue(mockDates);
-    vi.mocked(DailyRecordRepository.getForDate)
+    dailyRecordReadPort.getAvailableDates.mockResolvedValue(mockDates);
+    dailyRecordReadPort.getForDate
       .mockResolvedValueOnce(asRepoRecord(record1))
       .mockResolvedValueOnce(asRepoRecord(record2));
 
@@ -121,7 +120,7 @@ describe('usePatientAnalysis', () => {
       await result.current.resolveConflict('11.111.111-1', 'John Doe', true);
     });
 
-    expect(DailyRecordRepository.updatePartial).toHaveBeenCalled();
+    expect(dailyRecordWritePort.updatePartial).toHaveBeenCalled();
     expect(result.current.analysis?.conflicts).toHaveLength(0);
   });
 
@@ -135,8 +134,8 @@ describe('usePatientAnalysis', () => {
       date: '2025-01-02',
       beds: { B1: { rut: '11.111.111-1', patientName: 'John Doe', admissionDate: '2025-01-01' } },
     };
-    vi.mocked(DailyRecordRepository.getAllDates).mockResolvedValue(mockDates);
-    vi.mocked(DailyRecordRepository.getForDate)
+    dailyRecordReadPort.getAvailableDates.mockResolvedValue(mockDates);
+    dailyRecordReadPort.getForDate
       .mockResolvedValueOnce(asRepoRecord(record1))
       .mockResolvedValueOnce(asRepoRecord(record2));
 
@@ -158,8 +157,8 @@ describe('usePatientAnalysis', () => {
       beds: { B1: { rut: '11.111.111-1', patientName: 'John Doe' } },
       discharges: [{ rut: '11.111.111-1', bedName: 'B1', diagnosis: 'Done', status: 'Alta' }],
     };
-    vi.mocked(DailyRecordRepository.getAllDates).mockResolvedValue(mockDates);
-    vi.mocked(DailyRecordRepository.getForDate).mockResolvedValue(asRepoRecord(record1));
+    dailyRecordReadPort.getAvailableDates.mockResolvedValue(mockDates);
+    dailyRecordReadPort.getForDate.mockResolvedValue(asRepoRecord(record1));
 
     const { result } = renderHook(() => usePatientAnalysis());
     await act(async () => {
@@ -181,8 +180,8 @@ describe('usePatientAnalysis', () => {
       date: '2025-01-02',
       beds: {}, // Patient gone without explicit discharge
     };
-    vi.mocked(DailyRecordRepository.getAllDates).mockResolvedValue(mockDates);
-    vi.mocked(DailyRecordRepository.getForDate)
+    dailyRecordReadPort.getAvailableDates.mockResolvedValue(mockDates);
+    dailyRecordReadPort.getForDate
       .mockResolvedValueOnce(asRepoRecord(record1))
       .mockResolvedValueOnce(asRepoRecord(record2));
 
@@ -206,8 +205,8 @@ describe('usePatientAnalysis', () => {
         { rut: '11.111.111-1', bedName: 'B1', diagnosis: 'Heart', receivingCenter: 'Other Clinic' },
       ],
     };
-    vi.mocked(DailyRecordRepository.getAllDates).mockResolvedValue(mockDates);
-    vi.mocked(DailyRecordRepository.getForDate).mockResolvedValue(asRepoRecord(record));
+    dailyRecordReadPort.getAvailableDates.mockResolvedValue(mockDates);
+    dailyRecordReadPort.getForDate.mockResolvedValue(asRepoRecord(record));
 
     const { result } = renderHook(() => usePatientAnalysis());
     await act(async () => {
@@ -229,8 +228,8 @@ describe('usePatientAnalysis', () => {
         { rut: '11.111.111-1', bedName: 'B1', status: 'Fallecido', diagnosis: 'Sepsis' },
       ],
     };
-    vi.mocked(DailyRecordRepository.getAllDates).mockResolvedValue(mockDates);
-    vi.mocked(DailyRecordRepository.getForDate).mockResolvedValue(asRepoRecord(record));
+    dailyRecordReadPort.getAvailableDates.mockResolvedValue(mockDates);
+    dailyRecordReadPort.getForDate.mockResolvedValue(asRepoRecord(record));
 
     const { result } = renderHook(() => usePatientAnalysis());
     await act(async () => {
@@ -247,8 +246,8 @@ describe('usePatientAnalysis', () => {
     const mockDates = ['2025-01-01', '2025-01-02'];
     const r1 = { beds: { B1: { rut: '11.111.111-1', patientName: 'N1' } } };
     const r2 = { beds: { B1: { rut: '11.111.111-1', patientName: 'N2' } } };
-    vi.mocked(DailyRecordRepository.getAllDates).mockResolvedValue(mockDates);
-    vi.mocked(DailyRecordRepository.getForDate)
+    dailyRecordReadPort.getAvailableDates.mockResolvedValue(mockDates);
+    dailyRecordReadPort.getForDate
       .mockResolvedValueOnce(asRepoRecord(r1))
       .mockResolvedValueOnce(asRepoRecord(r2));
 
@@ -261,7 +260,7 @@ describe('usePatientAnalysis', () => {
       await result.current.resolveConflict('11.111.111-1', 'Correct Name', false);
     });
 
-    expect(DailyRecordRepository.updatePartial).not.toHaveBeenCalled();
+    expect(dailyRecordWritePort.updatePartial).not.toHaveBeenCalled();
     expect(result.current.analysis?.validPatients[0].fullName).toBe('Correct Name');
   });
 
@@ -291,8 +290,8 @@ describe('usePatientAnalysis', () => {
         },
       },
     };
-    vi.mocked(DailyRecordRepository.getAllDates).mockResolvedValue(mockDates);
-    vi.mocked(DailyRecordRepository.getForDate)
+    dailyRecordReadPort.getAvailableDates.mockResolvedValue(mockDates);
+    dailyRecordReadPort.getForDate
       .mockResolvedValueOnce(asRepoRecord(record1))
       .mockResolvedValueOnce(asRepoRecord(record2));
 
@@ -311,7 +310,7 @@ describe('usePatientAnalysis', () => {
     await act(async () => {
       await result.current.resolveConflict('123', 'Name', true);
     });
-    expect(DailyRecordRepository.updatePartial).not.toHaveBeenCalled();
+    expect(dailyRecordWritePort.updatePartial).not.toHaveBeenCalled();
   });
 
   it('should run migration and handle success', async () => {
@@ -320,9 +319,9 @@ describe('usePatientAnalysis', () => {
       date: '2025-01-01',
       beds: { B1: { rut: '11.111.111-1', patientName: 'John D.' } },
     };
-    vi.mocked(DailyRecordRepository.getAllDates).mockResolvedValue(mockDates);
-    vi.mocked(DailyRecordRepository.getForDate).mockResolvedValue(asRepoRecord(record1));
-    vi.mocked(PatientMasterRepository.bulkUpsertPatients).mockResolvedValue({
+    dailyRecordReadPort.getAvailableDates.mockResolvedValue(mockDates);
+    dailyRecordReadPort.getForDate.mockResolvedValue(asRepoRecord(record1));
+    patientMasterWritePort.bulkUpsertPatients.mockResolvedValue({
       successes: 1,
       errors: 0,
     });
@@ -346,11 +345,9 @@ describe('usePatientAnalysis', () => {
       date: '2025-01-01',
       beds: { B1: { rut: '11.111.111-1', patientName: 'John' } },
     };
-    vi.mocked(DailyRecordRepository.getAllDates).mockResolvedValue(mockDates);
-    vi.mocked(DailyRecordRepository.getForDate).mockResolvedValue(asRepoRecord(record1));
-    vi.mocked(PatientMasterRepository.bulkUpsertPatients).mockRejectedValue(
-      new Error('Migration fail')
-    );
+    dailyRecordReadPort.getAvailableDates.mockResolvedValue(mockDates);
+    dailyRecordReadPort.getForDate.mockResolvedValue(asRepoRecord(record1));
+    patientMasterWritePort.bulkUpsertPatients.mockRejectedValue(new Error('Migration fail'));
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const { result } = renderHook(() => usePatientAnalysis());
@@ -366,7 +363,7 @@ describe('usePatientAnalysis', () => {
   });
 
   it('should handle analysis failure', async () => {
-    vi.mocked(DailyRecordRepository.getAllDates).mockRejectedValue(new Error('Analysis fail'));
+    dailyRecordReadPort.getAvailableDates.mockRejectedValue(new Error('Analysis fail'));
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const { result } = renderHook(() => usePatientAnalysis());
@@ -386,8 +383,8 @@ describe('usePatientAnalysis', () => {
       { date: '2025-01-03', beds: { B1: { rut: '11.111.111-1', patientName: 'N3' } } },
     ];
 
-    vi.mocked(DailyRecordRepository.getAllDates).mockResolvedValue(mockDates);
-    vi.mocked(DailyRecordRepository.getForDate)
+    dailyRecordReadPort.getAvailableDates.mockResolvedValue(mockDates);
+    dailyRecordReadPort.getForDate
       .mockResolvedValueOnce(asRepoRecord(records[0]))
       .mockResolvedValueOnce(asRepoRecord(records[1]))
       .mockResolvedValueOnce(asRepoRecord(records[2]));

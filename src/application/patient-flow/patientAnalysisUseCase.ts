@@ -5,6 +5,12 @@ import {
   createApplicationSuccess,
   type ApplicationOutcome,
 } from '@/application/shared/applicationOutcome';
+import type {
+  DailyRecordReadPort,
+  DailyRecordWritePort,
+} from '@/application/ports/dailyRecordPort';
+import type { PatientMasterWritePort } from '@/application/ports/patientMasterPort';
+import type { AuditPort } from '@/application/ports/auditPort';
 
 export interface Conflict {
   rut: string;
@@ -21,23 +27,10 @@ export interface AnalysisResult {
   conflicts: Conflict[];
 }
 
-interface DailyRecordRepositoryPort {
-  getAllDates: () => Promise<string[]>;
-  getForDate: (date: string) => Promise<{
-    date: string;
-    beds: Record<string, any>;
-    discharges?: any[];
-    transfers?: any[];
-  } | null>;
-  updatePartial: (date: string, patch: DailyRecordPatch) => Promise<void>;
-}
-
-interface PatientMasterRepositoryPort {
-  bulkUpsertPatients: (patients: MasterPatient[]) => Promise<{
-    successes: number;
-    errors: number;
-  }>;
-}
+type DailyRecordRepositoryPort = Pick<
+  DailyRecordReadPort & DailyRecordWritePort,
+  'getAvailableDates' | 'getForDate' | 'updatePartial'
+>;
 
 interface AnalyzePatientsInput {
   dailyRecordRepository: DailyRecordRepositoryPort;
@@ -49,27 +42,19 @@ interface ResolvePatientConflictInput {
   correctName: string;
   harmonizeHistory: boolean;
   dailyRecordRepository: DailyRecordRepositoryPort;
-  logAuditEvent: (
-    userEmail: string,
-    eventType: string,
-    entityType: string,
-    entityId: string,
-    changes?: Record<string, unknown>,
-    patientRut?: string,
-    dateKey?: string
-  ) => Promise<void>;
+  auditPort: Pick<AuditPort, 'writeEvent'>;
   currentUserEmail: string;
 }
 
 interface MigratePatientsInput {
   analysis: AnalysisResult | null;
-  patientMasterRepository: PatientMasterRepositoryPort;
+  patientMasterRepository: PatientMasterWritePort;
 }
 
 const buildAnalysis = async (
   dailyRecordRepository: DailyRecordRepositoryPort
 ): Promise<AnalysisResult> => {
-  const dates = await dailyRecordRepository.getAllDates();
+  const dates = await dailyRecordRepository.getAvailableDates();
   const sortedDates = [...dates].sort();
   const patientsMap = new Map<string, MasterPatient>();
   const conflicts: Conflict[] = [];
@@ -262,7 +247,7 @@ export const executeResolvePatientConflict = async (
         [`beds.${bedId}.patientName`]: input.correctName,
       } as DailyRecordPatch);
 
-      await input.logAuditEvent(
+      await input.auditPort.writeEvent(
         input.currentUserEmail,
         'PATIENT_HARMONIZED',
         'dailyRecord',

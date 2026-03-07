@@ -6,7 +6,7 @@ import {
   buildBedEpisodeBindings,
   buildClinicalDocumentPresenceByBed,
 } from '@/features/census/controllers/clinicalDocumentPresenceController';
-import { ClinicalDocumentRepository } from '@/services/repositories/ClinicalDocumentRepository';
+import { executeListClinicalDocumentsByEpisodeKeys } from '@/application/clinical-documents/clinicalDocumentUseCases';
 
 interface UseClinicalDocumentPresenceByBedParams {
   occupiedRows: OccupiedBedRow[];
@@ -28,7 +28,13 @@ export const useClinicalDocumentPresenceByBed = ({
   const query = useQuery({
     queryKey: ['clinicalDocuments', 'presenceByBed', currentDateString, ...episodeKeys],
     enabled: enabled && episodeKeys.length > 0,
-    queryFn: async () => ClinicalDocumentRepository.listByEpisodeKeys(episodeKeys),
+    queryFn: async () => {
+      const outcome = await executeListClinicalDocumentsByEpisodeKeys(episodeKeys);
+      if (outcome.status === 'failed') {
+        throw new Error(outcome.issues[0]?.message || 'No se pudo resolver presencia documental.');
+      }
+      return outcome.data;
+    },
     staleTime: 30 * 1000,
     refetchInterval: 45 * 1000,
     retry: false,

@@ -4,8 +4,6 @@ import type { BackupType } from '@/hooks/useBackupFileBrowser';
 import type { StoredPdfFile } from '@/services/backup/pdfStorageService';
 import type { BaseStoredFile, StorageListReport } from '@/services/backup/baseStorageService';
 import type { BackupItem } from '@/hooks/useBackupFilesQuery';
-import { getMonthRecordsFromFirestore } from '@/services/storage/firestoreService';
-import { uploadCensus } from '@/services/backup/censusStorageService';
 import { importDataJSONDetailed } from '@/services/exporters/exportImportJson';
 import {
   createApplicationFailed,
@@ -44,6 +42,8 @@ import {
   listCudyrFilesInMonthWithReport,
   cudyrExistsDetailed,
 } from '@/services/backup/cudyrStorageService';
+import { defaultDailyRecordReadPort } from '@/application/ports/dailyRecordPort';
+import { defaultCensusEmailDeliveryPort } from '@/application/ports/censusEmailPort';
 
 const EMPTY_STORAGE_LIST_REPORT: StorageListReport = {
   skippedNotFound: 0,
@@ -234,7 +234,7 @@ export const executeBackupCensusExcel = async (
   input: BackupCensusExcelInput
 ): Promise<ApplicationOutcome<BackupCensusExcelOutput | null>> => {
   try {
-    const monthRecords = await getMonthRecordsFromFirestore(
+    const monthRecords = await defaultDailyRecordReadPort.getMonthRecords(
       input.selectedYear,
       input.selectedMonth
     );
@@ -262,7 +262,7 @@ export const executeBackupCensusExcel = async (
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
 
-    await uploadCensus(blob, input.currentDateString);
+    await defaultCensusEmailDeliveryPort.uploadBackup(blob, input.currentDateString);
 
     return createApplicationSuccess({
       archivedDate: input.currentDateString,

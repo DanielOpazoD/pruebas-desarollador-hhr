@@ -1,19 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { useExportManager } from '@/hooks/useExportManager';
 import { DailyRecord } from '@/types';
 import * as backupExportUseCases from '@/application/backup-export/backupExportUseCases';
 
+const notificationApi = {
+  success: vi.fn(),
+  error: vi.fn(),
+  warning: vi.fn(),
+};
+
+const confirmApi = {
+  confirm: vi.fn().mockResolvedValue(true),
+};
+
 // Mock context
 vi.mock('@/context/UIContext', () => ({
-  useNotification: () => ({
-    success: vi.fn(),
-    error: vi.fn(),
-    warning: vi.fn(),
-  }),
-  useConfirmDialog: () => ({
-    confirm: vi.fn().mockResolvedValue(true),
-  }),
+  useNotification: () => notificationApi,
+  useConfirmDialog: () => confirmApi,
 }));
 
 vi.mock('@/application/backup-export/backupExportUseCases', async () => {
@@ -68,6 +72,11 @@ describe('useExportManager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    notificationApi.success.mockReset();
+    notificationApi.error.mockReset();
+    notificationApi.warning.mockReset();
+    confirmApi.confirm.mockReset();
+    confirmApi.confirm.mockResolvedValue(true);
   });
 
   it('should return all export functions', () => {
@@ -122,5 +131,50 @@ describe('useExportManager', () => {
     const { result } = renderHook(() => useExportManager(props));
 
     expect(result.current.handleExportPDF).toBeDefined();
+  });
+
+  it('surfaces degraded lookup as warning on mount', async () => {
+    vi.mocked(backupExportUseCases.executeLookupBackupArchiveStatus).mockResolvedValueOnce({
+      status: 'degraded',
+      data: { exists: false, lookup: { exists: false, status: 'restricted' } },
+      issues: [{ kind: 'unknown', message: 'Storage restringido' }],
+    } as any);
+
+    renderHook(() => useExportManager(defaultProps));
+
+    await waitFor(() => {
+      expect(notificationApi.warning).toHaveBeenCalled();
+    });
+  });
+
+  it('surfaces partial handoff backup and still marks archive state', async () => {
+    vi.mocked(backupExportUseCases.executeBackupHandoffPdf).mockResolvedValueOnce({
+      status: 'partial',
+      data: { shift: 'day', createdCudyrBackup: false },
+      issues: [{ kind: 'unknown', message: 'CUDYR mensual no pudo guardarse.' }],
+    } as any);
+
+    const { result } = renderHook(() =>
+      useExportManager({
+        ...defaultProps,
+        currentModule: 'NURSING_HANDOFF',
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.isArchived).toBeDefined();
+    });
+
+    await act(async () => {
+      await result.current.handleBackupHandoff(true);
+    });
+
+    await waitFor(() => {
+      expect(notificationApi.warning).toHaveBeenCalledWith(
+        'Respaldo PDF guardado con observaciones',
+        expect.stringContaining('CUDYR mensual')
+      );
+      expect(result.current.isArchived).toBe(true);
+    });
   });
 });

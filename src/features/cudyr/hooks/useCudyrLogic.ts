@@ -8,10 +8,10 @@ import { BEDS } from '@/constants';
 import { CudyrScore } from '@/types';
 import { useAuditContext } from '@/context/AuditContext';
 import { useAuth } from '@/context/AuthContext';
-import { updatePartial } from '@/services/repositories/DailyRecordRepository';
 import { getCategorization } from '../services/CudyrScoreUtils';
 import { buildDailyCudyrSummary } from '../services/cudyrSummary';
 import { getAttributedAuthors } from '@/services/admin/attributionService';
+import { defaultDailyRecordWritePort } from '@/application/ports/dailyRecordPort';
 
 /**
  * Helper: Check if a patient was admitted after CUDYR was locked.
@@ -65,7 +65,7 @@ export const useCudyrLogic = (readOnly: boolean) => {
     const now = new Date().toISOString();
 
     try {
-      await updatePartial(record.date, {
+      await defaultDailyRecordWritePort.updatePartial(record.date, {
         cudyrLocked: newLockedState,
         cudyrLockedAt: newLockedState ? now : undefined,
         cudyrLockedBy: newLockedState ? user?.email || userId : undefined,

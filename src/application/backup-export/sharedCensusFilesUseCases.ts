@@ -1,0 +1,54 @@
+import {
+  createApplicationFailed,
+  createApplicationSuccess,
+  type ApplicationOutcome,
+} from '@/application/shared/applicationOutcome';
+import {
+  defaultCensusAccessPort,
+  type CensusAccessPort,
+} from '@/application/ports/censusAccessPort';
+import {
+  listCensusFilesInMonth,
+  type StoredCensusFile,
+} from '@/services/backup/censusStorageService';
+import { executeLoadSharedCensusFilesController } from '@/hooks/controllers/sharedCensusFilesController';
+import type { CensusAccessLog } from '@/types/censusAccess';
+
+export interface SharedCensusFilesPort {
+  listFilesInMonth: (year: string, month: string) => Promise<StoredCensusFile[]>;
+}
+
+export const defaultSharedCensusFilesPort: SharedCensusFilesPort = {
+  listFilesInMonth: async (year, month) => listCensusFilesInMonth(year, month),
+};
+
+interface SharedCensusFilesUseCaseDependencies {
+  sharedCensusFilesPort?: SharedCensusFilesPort;
+  censusAccessPort?: Pick<CensusAccessPort, 'logAccess'>;
+}
+
+export const executeLoadSharedCensusFiles = async (
+  now: Date,
+  dependencies: SharedCensusFilesUseCaseDependencies = {}
+): Promise<ApplicationOutcome<StoredCensusFile[]>> => {
+  const sharedCensusFilesPort = dependencies.sharedCensusFilesPort || defaultSharedCensusFilesPort;
+
+  const result = await executeLoadSharedCensusFilesController({
+    now,
+    listFilesInMonth: sharedCensusFilesPort.listFilesInMonth,
+  });
+
+  if (!result.ok) {
+    return createApplicationFailed([], [{ kind: 'unknown', message: result.error.message }]);
+  }
+
+  return createApplicationSuccess(result.value.files);
+};
+
+export const executeLogSharedCensusAccess = async (
+  config: Omit<CensusAccessLog, 'id' | 'timestamp'>,
+  dependencies: SharedCensusFilesUseCaseDependencies = {}
+): Promise<void> => {
+  const censusAccessPort = dependencies.censusAccessPort || defaultCensusAccessPort;
+  await censusAccessPort.logAccess(config);
+};

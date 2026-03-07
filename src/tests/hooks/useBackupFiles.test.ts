@@ -1,131 +1,153 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useBackupFiles } from '@/hooks/useBackupFiles';
+import {
+  executeListBackupCrudFiles,
+  executeGetBackupCrudFile,
+  executeDeleteBackupCrudFile,
+  executeSaveNursingHandoffCrudBackup,
+  executeCheckBackupCrudExists,
+} from '@/application/backup-export/backupFilesUseCases';
 
-// Mock backup service
-vi.mock('@/services/backup/backupService', () => ({
-    listBackupFiles: vi.fn().mockResolvedValue([]),
-    getBackupFile: vi.fn().mockResolvedValue({ id: 'test-1', content: {} }),
-    deleteBackupFile: vi.fn().mockResolvedValue(undefined),
-    saveNursingHandoffBackup: vi.fn().mockResolvedValue('new-id'),
-    checkBackupExists: vi.fn().mockResolvedValue(false),
+vi.mock('@/application/backup-export/backupFilesUseCases', () => ({
+  executeListBackupCrudFiles: vi
+    .fn()
+    .mockResolvedValue({ status: 'success', data: [], issues: [] }),
+  executeGetBackupCrudFile: vi.fn().mockResolvedValue({
+    status: 'success',
+    data: { id: 'test-1', content: {} },
+    issues: [],
+  }),
+  executeDeleteBackupCrudFile: vi.fn().mockResolvedValue({
+    status: 'success',
+    data: { deleted: true },
+    issues: [],
+  }),
+  executeSaveNursingHandoffCrudBackup: vi.fn().mockResolvedValue({
+    status: 'success',
+    data: 'new-id',
+    issues: [],
+  }),
+  executeCheckBackupCrudExists: vi.fn().mockResolvedValue({
+    status: 'success',
+    data: false,
+    issues: [],
+  }),
 }));
 
-import * as backupService from '@/services/backup/backupService';
-
 describe('useBackupFiles', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should return all backup file functions', async () => {
+    const { result } = renderHook(() => useBackupFiles());
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
     });
 
-    it('should return all backup file functions', async () => {
-        const { result } = renderHook(() => useBackupFiles());
+    expect(typeof result.current.loadFiles).toBe('function');
+    expect(typeof result.current.loadFile).toBe('function');
+    expect(typeof result.current.removeFile).toBe('function');
+    expect(typeof result.current.setFilters).toBe('function');
+    expect(typeof result.current.clearSelectedFile).toBe('function');
+    expect(typeof result.current.saveNursingHandoff).toBe('function');
+    expect(typeof result.current.checkExists).toBe('function');
+  });
 
-        await waitFor(() => {
-            expect(result.current.isLoading).toBe(false);
-        });
+  it('should load files on mount', async () => {
+    const { result } = renderHook(() => useBackupFiles());
 
-        expect(typeof result.current.loadFiles).toBe('function');
-        expect(typeof result.current.loadFile).toBe('function');
-        expect(typeof result.current.removeFile).toBe('function');
-        expect(typeof result.current.setFilters).toBe('function');
-        expect(typeof result.current.clearSelectedFile).toBe('function');
-        expect(typeof result.current.saveNursingHandoff).toBe('function');
-        expect(typeof result.current.checkExists).toBe('function');
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
     });
 
-    it('should load files on mount', async () => {
-        const { result } = renderHook(() => useBackupFiles());
+    expect(executeListBackupCrudFiles).toHaveBeenCalled();
+  });
 
-        await waitFor(() => {
-            expect(result.current.isLoading).toBe(false);
-        });
+  it('should load single file', async () => {
+    const { result } = renderHook(() => useBackupFiles());
 
-        expect(backupService.listBackupFiles).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
     });
 
-    it('should load single file', async () => {
-        const { result } = renderHook(() => useBackupFiles());
-
-        await waitFor(() => {
-            expect(result.current.isLoading).toBe(false);
-        });
-
-        await act(async () => {
-            await result.current.loadFile('test-1');
-        });
-
-        expect(backupService.getBackupFile).toHaveBeenCalledWith('test-1');
+    await act(async () => {
+      await result.current.loadFile('test-1');
     });
 
-    it('should clear selected file', async () => {
-        const { result } = renderHook(() => useBackupFiles());
+    expect(executeGetBackupCrudFile).toHaveBeenCalledWith('test-1');
+  });
 
-        await waitFor(() => {
-            expect(result.current.isLoading).toBe(false);
-        });
+  it('should clear selected file', async () => {
+    const { result } = renderHook(() => useBackupFiles());
 
-        act(() => {
-            result.current.clearSelectedFile();
-        });
-
-        expect(result.current.selectedFile).toBeNull();
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
     });
 
-    it('should delete file', async () => {
-        const { result } = renderHook(() => useBackupFiles());
-
-        await waitFor(() => {
-            expect(result.current.isLoading).toBe(false);
-        });
-
-        await act(async () => {
-            const success = await result.current.removeFile('test-1');
-            expect(success).toBe(true);
-        });
-
-        expect(backupService.deleteBackupFile).toHaveBeenCalledWith('test-1');
+    act(() => {
+      result.current.clearSelectedFile();
     });
 
-    it('should check if backup exists', async () => {
-        const { result } = renderHook(() => useBackupFiles());
+    expect(result.current.selectedFile).toBeNull();
+  });
 
-        await waitFor(() => {
-            expect(result.current.isLoading).toBe(false);
-        });
+  it('should delete file', async () => {
+    const { result } = renderHook(() => useBackupFiles());
 
-        await act(async () => {
-            const exists = await result.current.checkExists('2024-12-28', 'night');
-            expect(exists).toBe(false);
-        });
-
-        expect(backupService.checkBackupExists).toHaveBeenCalledWith('2024-12-28', 'night');
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
     });
 
-    it('should set filters', async () => {
-        const { result } = renderHook(() => useBackupFiles());
-
-        await waitFor(() => {
-            expect(result.current.isLoading).toBe(false);
-        });
-
-        act(() => {
-            result.current.setFilters({ type: 'NURSING_HANDOFF' });
-        });
-
-        await waitFor(() => {
-            expect(result.current.filters).toEqual({ type: 'NURSING_HANDOFF' });
-        });
-
-        await waitFor(() => {
-            expect(result.current.isLoading).toBe(false);
-        });
-
-        await waitFor(() => {
-            expect(backupService.listBackupFiles).toHaveBeenCalledWith({ type: 'NURSING_HANDOFF' });
-        });
-
-        const lastCallArgs = vi.mocked(backupService.listBackupFiles).mock.calls.at(-1);
-        expect(lastCallArgs?.[0]).toEqual({ type: 'NURSING_HANDOFF' });
+    await act(async () => {
+      const success = await result.current.removeFile('test-1');
+      expect(success).toBe(true);
     });
+
+    expect(executeDeleteBackupCrudFile).toHaveBeenCalledWith('test-1');
+  });
+
+  it('should check if backup exists', async () => {
+    const { result } = renderHook(() => useBackupFiles());
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    await act(async () => {
+      const exists = await result.current.checkExists('2024-12-28', 'night');
+      expect(exists).toBe(false);
+    });
+
+    expect(executeCheckBackupCrudExists).toHaveBeenCalledWith('2024-12-28', 'night');
+  });
+
+  it('should set filters', async () => {
+    const { result } = renderHook(() => useBackupFiles());
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    act(() => {
+      result.current.setFilters({ type: 'NURSING_HANDOFF' });
+    });
+
+    await waitFor(() => {
+      expect(result.current.filters).toEqual({ type: 'NURSING_HANDOFF' });
+    });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    await waitFor(() => {
+      expect(executeListBackupCrudFiles).toHaveBeenCalledWith({ type: 'NURSING_HANDOFF' });
+    });
+
+    const lastCallArgs = vi.mocked(executeListBackupCrudFiles).mock.calls.at(-1);
+    expect(lastCallArgs?.[0]).toEqual({ type: 'NURSING_HANDOFF' });
+  });
 });

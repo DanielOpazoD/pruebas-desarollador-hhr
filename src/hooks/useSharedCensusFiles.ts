@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { listCensusFilesInMonth, StoredCensusFile } from '@/services/backup/censusStorageService';
-import { logAccess } from '@/services/census/censusAccessService';
+import type { StoredCensusFile } from '@/services/backup/censusStorageService';
 import { CensusAccessUser } from '@/types/censusAccess';
 import {
-  executeLoadSharedCensusFilesController,
   filterSharedCensusFilesByTerm,
   resolveSharedCensusDownloadPermission,
 } from '@/hooks/controllers/sharedCensusFilesController';
@@ -11,6 +9,10 @@ import {
   defaultSharedCensusBrowserRuntime,
   SharedCensusBrowserRuntime,
 } from '@/hooks/controllers/sharedCensusBrowserRuntimeController';
+import {
+  executeLoadSharedCensusFiles,
+  executeLogSharedCensusAccess,
+} from '@/application/backup-export/sharedCensusFilesUseCases';
 
 export const useSharedCensusFiles = (
   accessUser: CensusAccessUser | null,
@@ -31,11 +33,14 @@ export const useSharedCensusFiles = (
     };
   }, []);
 
-  const safeLogAccess = useCallback((params: Parameters<typeof logAccess>[0]) => {
-    void Promise.resolve(logAccess(params)).catch(error => {
-      console.error('[SharedCensusFiles] Failed to log access:', error);
-    });
-  }, []);
+  const safeLogAccess = useCallback(
+    (params: Parameters<typeof executeLogSharedCensusAccess>[0]) => {
+      void Promise.resolve(executeLogSharedCensusAccess(params)).catch(error => {
+        console.error('[SharedCensusFiles] Failed to log access:', error);
+      });
+    },
+    []
+  );
 
   const fetchFiles = useCallback(async () => {
     if (!accessUser) {
@@ -52,21 +57,17 @@ export const useSharedCensusFiles = (
 
     setIsLoading(true);
     try {
-      const result = await executeLoadSharedCensusFilesController({
-        now: new Date(),
-        listFilesInMonth: listCensusFilesInMonth,
-      });
+      const outcome = await executeLoadSharedCensusFiles(new Date());
 
       if (!mountedRef.current || requestSequence !== requestSequenceRef.current) {
         return;
       }
 
-      if (!result.ok) {
-        setLoadError(result.error.message);
+      setFiles(outcome.data ?? []);
+      if (outcome.status === 'failed') {
+        setLoadError(outcome.issues[0]?.message || 'No se pudieron cargar los archivos del censo.');
         return;
       }
-
-      setFiles(result.value.files);
       setLoadError(null);
 
       safeLogAccess({
@@ -74,13 +75,6 @@ export const useSharedCensusFiles = (
         email: accessUser.email,
         action: 'list_files',
       });
-    } catch (err: unknown) {
-      if (!mountedRef.current || requestSequence !== requestSequenceRef.current) {
-        return;
-      }
-
-      console.error('[SharedCensusView] Error fetching files:', err);
-      setLoadError('No se pudieron cargar los archivos del censo.');
     } finally {
       if (mountedRef.current && requestSequence === requestSequenceRef.current) {
         setIsLoading(false);

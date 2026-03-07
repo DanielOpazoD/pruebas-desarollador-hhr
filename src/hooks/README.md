@@ -36,6 +36,7 @@ Cuando una operación necesita coordinar repositorios, clasificar outcomes remot
 
 - **Orchestrator Hook**: hooks agregadores que exponen API estable.
 - **Application-backed hooks**: hooks que delegan casos críticos a `src/application/*` para no mezclar UI y coordinación de infraestructura.
+- **Ports-backed use cases**: cuando un use-case requiere acceso remoto, la dependencia preferida es `src/application/ports/*`, no servicios concretos desde el hook.
 - **Command Hooks**: ejecutan comandos tipados y notifican errores.
 - **Controller-backed hooks**: validación/transformación extraída a `controllers`.
 - `useDailyRecordQuery.ts` ahora delega construcción de query/subscription/prefetch a [controllers/dailyRecordQueryController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/dailyRecordQueryController.ts) para concentrar decisiones de cache en un único punto.
@@ -58,4 +59,12 @@ dailyRecord.updatePatient('R1', 'patientName', 'Paciente Demo');
 
 1. Hooks no deben importar implementación de componentes.
 2. Lógica de validación compleja va a controllers puros.
-3. Mantener API estable y documentar breaking changes en este README.
+3. Si ya existe use-case o port equivalente, el hook no debe importar directo `auditService`, `DailyRecordRepository`, `ClinicalDocumentRepository` ni `censusEmailService`.
+4. Los tests de hooks deben mockear use-cases, ports o adapters antes que servicios concretos.
+5. Mantener API estable y documentar breaking changes en este README.
+
+## Guardrails activos
+
+- `npm run check:application-port-boundary`
+- `npm run check:runtime-adapter-boundary`
+- `npm run check:hook-hotspots`

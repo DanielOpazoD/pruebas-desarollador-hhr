@@ -7,11 +7,13 @@ import * as clinicalDocumentUseCases from '@/application/clinical-documents/clin
 import { ClinicalDocumentRepository } from '@/services/repositories/ClinicalDocumentRepository';
 import { ClinicalDocumentTemplateRepository } from '@/services/repositories/ClinicalDocumentTemplateRepository';
 
+const authState = {
+  user: { uid: 'u1', email: 'doctor@test.com', displayName: 'Doctor Test' },
+  role: 'doctor_urgency',
+};
+
 vi.mock('@/context/AuthContext', () => ({
-  useAuth: () => ({
-    user: { uid: 'u1', email: 'doctor@test.com', displayName: 'Doctor Test' },
-    role: 'doctor_urgency',
-  }),
+  useAuth: () => authState,
 }));
 
 const notificationApi = {
@@ -101,6 +103,8 @@ vi.mock('@/application/clinical-documents/clinicalDocumentUseCases', async () =>
 describe('ClinicalDocumentsWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    authState.user = { uid: 'u1', email: 'doctor@test.com', displayName: 'Doctor Test' };
+    authState.role = 'doctor_urgency';
 
     vi.mocked(ClinicalDocumentTemplateRepository.listActive).mockResolvedValue([
       {
@@ -140,7 +144,21 @@ describe('ClinicalDocumentsWorkspace', () => {
     } as any);
     vi.mocked(clinicalDocumentUseCases.executeSignClinicalDocument).mockResolvedValue({
       status: 'success',
-      data: { ...document, status: 'signed', isLocked: true },
+      data: {
+        ...document,
+        status: 'signed',
+        isLocked: true,
+        audit: {
+          ...document.audit,
+          signedAt: '2026-03-06T10:45:00.000Z',
+          signedBy: {
+            uid: 'u1',
+            email: 'doctor@test.com',
+            displayName: 'Doctor Test',
+            role: 'doctor_urgency',
+          },
+        },
+      },
       issues: [],
     } as any);
     vi.mocked(clinicalDocumentUseCases.executeUnsignClinicalDocument).mockResolvedValue({
@@ -191,5 +209,69 @@ describe('ClinicalDocumentsWorkspace', () => {
       expect(clinicalDocumentUseCases.executePersistClinicalDocumentDraft).toHaveBeenCalled();
       expect(clinicalDocumentUseCases.executeSignClinicalDocument).toHaveBeenCalled();
     });
+  });
+
+  it('supports sign -> upload -> unsign on the real shell boundary', async () => {
+    render(
+      <ClinicalDocumentsWorkspace
+        patient={
+          {
+            patientName: 'Paciente Test',
+            rut: '11.111.111-1',
+            admissionDate: '2026-03-06',
+            age: '40a',
+            birthDate: '1986-01-01',
+          } as any
+        }
+        currentDateString="2026-03-06"
+        bedId="R1"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /firmar/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /firmar/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /quitar firma/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /drive/i }));
+    fireEvent.click(screen.getByRole('button', { name: /quitar firma/i }));
+
+    await waitFor(() => {
+      expect(clinicalDocumentUseCases.executeExportClinicalDocumentPdf).toHaveBeenCalled();
+      expect(clinicalDocumentUseCases.executeUnsignClinicalDocument).toHaveBeenCalled();
+    });
+  });
+
+  it('renders read-only sheet actions for nurse role', async () => {
+    authState.user = { uid: 'n1', email: 'nurse@test.com', displayName: 'Nurse Test' };
+    authState.role = 'nurse_hospital';
+
+    render(
+      <ClinicalDocumentsWorkspace
+        patient={
+          {
+            patientName: 'Paciente Test',
+            rut: '11.111.111-1',
+            admissionDate: '2026-03-06',
+            age: '40a',
+            birthDate: '1986-01-01',
+          } as any
+        }
+        currentDateString="2026-03-06"
+        bedId="R1"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Doctor Test')).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole('button', { name: /guardar/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /firmar/i })).toBeDisabled();
   });
 });

@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useBedAudit } from '@/hooks/useBedAudit';
 import { useAuditContext } from '@/context/AuditContext';
 import { getAttributedAuthors } from '@/services/admin/attributionService';
-import { logPatientAdmission } from '@/services/admin/auditService';
 import {
   PatientStatus,
   Specialty,
@@ -20,12 +19,9 @@ vi.mock('../../services/admin/attributionService', () => ({
   getAttributedAuthors: vi.fn(),
 }));
 
-vi.mock('../../services/admin/auditService', () => ({
-  logPatientAdmission: vi.fn(),
-}));
-
 describe('useBedAudit', () => {
   const mockLogDebouncedEvent = vi.fn();
+  const mockLogPatientAdmission = vi.fn();
   const buildCudyr = (overrides: Partial<CudyrScore> = {}): CudyrScore => ({
     changeClothes: 0,
     mobilization: 0,
@@ -91,6 +87,7 @@ describe('useBedAudit', () => {
     vi.clearAllMocks();
     vi.mocked(useAuditContext).mockReturnValue({
       logDebouncedEvent: mockLogDebouncedEvent,
+      logPatientAdmission: mockLogPatientAdmission,
       userId: 'user123',
     } as unknown as ReturnType<typeof useAuditContext>);
   });
@@ -101,7 +98,7 @@ describe('useBedAudit', () => {
 
     result.current.auditPatientChange('B1', 'patientName', oldPatient, 'New Patient');
 
-    expect(logPatientAdmission).toHaveBeenCalledWith('B1', 'New Patient', '', '', '2026-01-19');
+    expect(mockLogPatientAdmission).toHaveBeenCalledWith('B1', 'New Patient', '', '2026-01-19');
   });
 
   it('should log PATIENT_MODIFIED when name is changed', () => {

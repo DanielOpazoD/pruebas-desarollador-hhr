@@ -6,7 +6,7 @@ describe('initializeDailyRecordUseCase', () => {
   it('returns success for clean initialization', async () => {
     const record = DataFactory.createMockDailyRecord('2026-03-05');
     const repository = {
-      initializeDayDetailed: vi.fn().mockResolvedValue({
+      initializeDay: vi.fn().mockResolvedValue({
         record,
         date: '2026-03-05',
         outcome: 'clean',
@@ -27,7 +27,7 @@ describe('initializeDailyRecordUseCase', () => {
   it('returns degraded for repaired initialization', async () => {
     const record = DataFactory.createMockDailyRecord('2026-03-05');
     const repository = {
-      initializeDayDetailed: vi.fn().mockResolvedValue({
+      initializeDay: vi.fn().mockResolvedValue({
         record,
         date: '2026-03-05',
         outcome: 'repaired',

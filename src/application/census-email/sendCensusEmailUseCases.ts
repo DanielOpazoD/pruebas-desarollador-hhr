@@ -2,10 +2,6 @@ import type { CensusAccessRole } from '@/types/censusAccess';
 import type { DailyRecord } from '@/types';
 import type { CensusEmailBrowserRuntime } from '@/hooks/controllers/censusEmailBrowserRuntimeController';
 import { formatDateDDMMYYYY as formatDate } from '@/utils/dateUtils';
-import { getMonthRecordsFromFirestore } from '@/services/storage/firestoreService';
-import { initializeDay } from '@/services/repositories/DailyRecordRepository';
-import { triggerCensusEmail } from '@/services/integrations/censusEmailService';
-import { uploadCensus } from '@/services/backup/censusStorageService';
 import { buildSharedCensusLink } from '@/hooks/controllers/censusEmailBrowserRuntimeController';
 import { CENSUS_DEFAULT_RECIPIENTS } from '@/constants/email';
 import { resolveSendingRecipients } from '@/hooks/controllers/censusEmailRecipientsController';
@@ -25,6 +21,14 @@ import {
   createApplicationSuccess,
   type ApplicationOutcome,
 } from '@/application/shared/applicationOutcome';
+import {
+  defaultDailyRecordReadPort,
+  type DailyRecordReadPort,
+} from '@/application/ports/dailyRecordPort';
+import {
+  defaultCensusEmailDeliveryPort,
+  type CensusEmailDeliveryPort,
+} from '@/application/ports/censusEmailPort';
 
 interface SharedCensusEmailInput {
   currentDateString: string;
@@ -59,6 +63,11 @@ export interface SendCensusEmailWithLinkInput extends SharedCensusEmailInput {
 export interface SendCensusEmailWithLinkOutput {
   recipients: string[];
   shareLink: string;
+}
+
+export interface CensusEmailUseCaseDependencies {
+  dailyRecordReadPort?: Pick<DailyRecordReadPort, 'initializeDay' | 'getMonthRecords'>;
+  censusEmailDeliveryPort?: CensusEmailDeliveryPort;
 }
 
 export const executeGenerateCensusShareLink = async (
@@ -104,8 +113,12 @@ export const buildSendCensusConfirmationMessage = (
 };
 
 export const executeSendCensusEmail = async (
-  input: SendCensusEmailInput
+  input: SendCensusEmailInput,
+  dependencies: CensusEmailUseCaseDependencies = {}
 ): Promise<ApplicationOutcome<SendCensusEmailOutput | null>> => {
+  const dailyRecordReadPort = dependencies.dailyRecordReadPort || defaultDailyRecordReadPort;
+  const censusEmailDeliveryPort =
+    dependencies.censusEmailDeliveryPort || defaultCensusEmailDeliveryPort;
   if (!input.record) {
     return createApplicationFailed(null, [
       { kind: 'validation', message: 'No hay datos del censo para enviar.' },
@@ -134,7 +147,7 @@ export const executeSendCensusEmail = async (
       const date = integrityDates[index];
       const previousDate = index > 0 ? integrityDates[index - 1] : undefined;
       try {
-        await initializeDay(date, previousDate);
+        await dailyRecordReadPort.initializeDay(date, previousDate);
       } catch (errorOnInitialize) {
         issues.push({
           kind: 'unknown',
@@ -151,7 +164,7 @@ export const executeSendCensusEmail = async (
       currentDateString: input.currentDateString,
       nurseSignature: input.nurseSignature,
     });
-    const monthRecords = await getMonthRecordsFromFirestore(
+    const monthRecords = await dailyRecordReadPort.getMonthRecords(
       input.selectedYear,
       input.selectedMonth
     );
@@ -169,7 +182,7 @@ export const executeSendCensusEmail = async (
       config: input.excelSheetConfig,
     });
 
-    await triggerCensusEmail({
+    await censusEmailDeliveryPort.sendEmail({
       date: input.currentDateString,
       records: workbookPlan.records,
       sheetDescriptors: workbookPlan.sheetDescriptors,
@@ -192,7 +205,7 @@ export const executeSendCensusEmail = async (
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       });
 
-      await uploadCensus(excelBlob, input.currentDateString);
+      await censusEmailDeliveryPort.uploadBackup(excelBlob, input.currentDateString);
     } catch (backupError) {
       backupUploaded = false;
       issues.push({
@@ -225,8 +238,11 @@ export const executeSendCensusEmail = async (
 };
 
 export const executeSendCensusEmailWithLink = async (
-  input: SendCensusEmailWithLinkInput
+  input: SendCensusEmailWithLinkInput,
+  dependencies: CensusEmailUseCaseDependencies = {}
 ): Promise<ApplicationOutcome<SendCensusEmailWithLinkOutput | null>> => {
+  const censusEmailDeliveryPort =
+    dependencies.censusEmailDeliveryPort || defaultCensusEmailDeliveryPort;
   if (!input.record) {
     return createApplicationFailed(null, [
       { kind: 'validation', message: 'No hay datos del censo para enviar.' },
@@ -248,7 +264,7 @@ export const executeSendCensusEmailWithLink = async (
       ? recipientsResult.recipients
       : CENSUS_DEFAULT_RECIPIENTS;
 
-    await triggerCensusEmail({
+    await censusEmailDeliveryPort.sendLink({
       date: input.currentDateString,
       records: [input.record],
       recipients: resolvedRecipients,

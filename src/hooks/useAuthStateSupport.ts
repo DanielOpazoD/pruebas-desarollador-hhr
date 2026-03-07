@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AuthUser } from '@/types';
 import { safeJsonParse } from '@/utils/jsonUtils';
 import { ACTIVITY_EVENTS, SESSION_TIMEOUT_MS } from '@/constants/security';
-import { logUserLogin, logUserLogout } from '@/services/admin/auditService';
+import { defaultAuditPort } from '@/application/ports/auditPort';
 import {
   clearAuthBootstrapPending,
   isAuthBootstrapPending,
@@ -75,7 +75,7 @@ export const createHandleLogout =
   ): ((reason?: 'manual' | 'automatic') => Promise<void>) =>
   async (reason: 'manual' | 'automatic' = 'manual') => {
     if (user?.email) {
-      await logUserLogout(user.email, reason);
+      await defaultAuditPort.logUserLogout(user.email, reason);
     }
 
     if (typeof sessionStorage !== 'undefined') {
@@ -165,7 +165,7 @@ export const subscribeToResolvedAuthState = async ({
         typeof sessionStorage !== 'undefined' &&
         !sessionStorage.getItem('hhr_logged_this_session')
       ) {
-        logUserLogin(authUser.email);
+        void defaultAuditPort.logUserLogin(authUser.email);
         sessionStorage.setItem('hhr_logged_this_session', 'true');
       }
       setUser(authUser);

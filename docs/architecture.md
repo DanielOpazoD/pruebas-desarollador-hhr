@@ -63,6 +63,9 @@ Documento de referencia para entender cómo se organiza el sistema, cómo fluyen
 Reglas específicas adicionales:
 
 - En código productivo (`src/**` fuera de tests y `DailyRecordContext`) no se permite `useDailyRecordActions`; deben usarse hooks acotados (`useDailyRecordBedActions`, `useDailyRecordMovementActions`, `useDailyRecordDayActions`, etc.).
+- En código productivo, si ya existe un use-case o port equivalente, `hooks`, `components` y `features` no deben importar directo `auditService`, `DailyRecordRepository`, `ClinicalDocumentRepository` ni `censusEmailService`.
+- `src/application/ports/*` es el boundary permitido para adapters por defecto a servicios concretos.
+- El guardrail automático correspondiente es `npm run check:application-port-boundary`.
 
 ## 3) Flujo de Datos (Write)
 
@@ -160,6 +163,7 @@ npm run test
 - **Feature-first híbrido**: módulos por feature + capas transversales (`services`, `shared`, `types`).
 - **Controller pattern**: lógica de validación, transformación y comandos fuera de componentes.
 - **Application use cases**: coordinación explícita de operaciones críticas sobre repositorios y outcomes homogéneos.
+- **Ports/adapters**: los use-cases hablan con contratos (`AuditPort`, `DailyRecordReadPort`, `DailyRecordWritePort`, `CensusEmailDeliveryPort`, `ClinicalDocumentPort`) y los adapters por defecto viven en `src/application/ports/*`.
 - Casos ya migrados en primera ola:
   - inicialización/sync de `dailyRecord`
   - episodio clínico compartido
@@ -172,6 +176,24 @@ npm run test
 - **Repository pattern**: acceso a datos desacoplado de la UI.
 - **Runtime adapter pattern**: encapsulación de efectos de browser (`alert`, `confirm`, `reload`, `open`).
 - **Form flow unificado**: `useModalFormFlow` en modales críticos.
+
+### Boundary operativo actual
+
+```text
+components/features
+  -> hooks facade
+  -> controllers puros
+  -> application use cases
+  -> application ports
+  -> services / repositories / storage
+```
+
+Regla práctica:
+
+```text
+Si una operación remota ya tiene use-case o port,
+la UI no importa el servicio concreto.
+```
 
 ## 9) Riesgos técnicos actuales (no seguridad)
 
