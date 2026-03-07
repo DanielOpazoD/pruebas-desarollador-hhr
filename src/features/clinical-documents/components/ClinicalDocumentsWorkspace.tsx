@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import '@/features/clinical-documents/styles/clinicalDocumentSheet.css';
 import { useAuth } from '@/context/AuthContext';
@@ -39,6 +39,10 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
   const canEdit = canEditClinicalDocuments(role);
   const canDelete = canDeleteClinicalDocuments(role);
   const hospitalId = getActiveHospitalId();
+  const notifyPort = useMemo(
+    () => buildClinicalDocumentWorkspaceNotifyPort(success, warning, notifyError, info, confirm),
+    [confirm, info, notifyError, success, warning]
+  );
   const {
     templates,
     selectedTemplateId,
@@ -99,13 +103,7 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
       canEdit,
       canDelete,
       validationIssues,
-      notify: buildClinicalDocumentWorkspaceNotifyPort(
-        success,
-        warning,
-        notifyError,
-        info,
-        confirm
-      ),
+      notify: notifyPort,
       setSelectedDocumentId,
       setDraft,
       setIsSaving,
@@ -116,13 +114,7 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
     useClinicalDocumentWorkspaceExportActions({
       selectedDocument,
       hospitalId,
-      notify: buildClinicalDocumentWorkspaceNotifyPort(
-        success,
-        warning,
-        notifyError,
-        info,
-        confirm
-      ),
+      notify: notifyPort,
       setDraft,
     });
 

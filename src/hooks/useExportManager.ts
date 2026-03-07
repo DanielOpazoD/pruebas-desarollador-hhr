@@ -1,19 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DailyRecord } from '@/types';
-import { checkCensusExistsDetailed } from '@/services/backup/censusStorageService';
 import { useConfirmDialog, useNotification } from '@/context/UIContext';
 import {
   buildArchiveStatusState,
   resolveHandoffBackupStaff,
   shouldCheckArchiveStatus,
 } from '@/hooks/controllers/exportManagerController';
-import { getStorageLookupNotice } from '@/services/backup/storageUiPolicy';
 import {
   executeBackupCensusExcel,
   executeBackupHandoffPdf,
   executeExportHandoffPdf,
+  executeLookupBackupArchiveStatus,
 } from '@/application/backup-export/backupExportUseCases';
 import { presentBackupExportOutcome } from '@/hooks/controllers/backupExportOutcomeController';
+import { presentBackupLookupOutcome } from '@/hooks/controllers/backupStorageOutcomeController';
 
 interface UseExportManagerProps {
   currentDateString: string;
@@ -55,31 +55,21 @@ export const useExportManager = ({
       return;
     }
 
-    if (currentModule === 'CENSUS') {
-      checkCensusExistsDetailed(currentDateString)
-        .then(result => {
-          setIsArchived(buildArchiveStatusState(result));
-          const notice = getStorageLookupNotice(result, 'censo');
-          if (notice?.channel === 'warning') {
-            warning(notice.title, notice.message);
-          }
-        })
-        .catch(() => setIsArchived(false));
-      return;
-    }
-
-    import('@/services/backup/pdfStorageService').then(({ pdfExistsDetailed }) => {
-      pdfExistsDetailed(currentDateString, selectedShift)
-        .then(result => {
-          setIsArchived(buildArchiveStatusState(result));
-          const notice = getStorageLookupNotice(result, 'PDF');
-          if (notice?.channel === 'warning') {
-            warning(notice.title, notice.message);
-          }
-        })
-        .catch(() => setIsArchived(false));
+    const backupType = currentModule === 'CENSUS' ? 'census' : 'handoff';
+    void executeLookupBackupArchiveStatus({
+      backupType,
+      date: currentDateString,
+      shift: selectedShift,
+    }).then(outcome => {
+      setIsArchived(buildArchiveStatusState(outcome.data.lookup));
+      const notice = presentBackupLookupOutcome(outcome);
+      if (notice?.channel === 'warning') {
+        warning(notice.title || 'Respaldo', notice.message);
+      } else if (notice?.channel === 'error') {
+        notifyError(notice.title || 'Respaldo', notice.message);
+      }
     });
-  }, [currentDateString, currentModule, selectedShift, warning]);
+  }, [currentDateString, currentModule, notifyError, selectedShift, warning]);
 
   const handleExportPDF = useCallback(async () => {
     const outcome = await executeExportHandoffPdf({ record, selectedShift });

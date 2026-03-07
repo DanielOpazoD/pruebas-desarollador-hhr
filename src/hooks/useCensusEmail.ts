@@ -12,8 +12,7 @@ import {
   normalizeCensusEmailExcelSheetConfig,
   type CensusEmailExcelSheetConfig,
 } from '@/hooks/controllers/censusExcelSheetController';
-import { useCensusEmailActions, type CensusEmailSendStatus } from '@/hooks/useCensusEmailActions';
-import {} from '@/hooks/controllers/censusEmailStateController';
+import { useCensusEmailDeliveryActions } from '@/hooks/useCensusEmailDeliveryActions';
 import { useCensusEmailRecipientLists } from '@/hooks/useCensusEmailRecipientLists';
 import { useCensusEmailMessageState } from '@/hooks/useCensusEmailMessageState';
 import { useCensusEmailSendState } from '@/hooks/useCensusEmailSendState';
@@ -172,28 +171,29 @@ export const useCensusEmail = ({
   }, [excelSheetConfig]);
 
   // ========== HANDLERS ==========
-  const { sendEmail, sendEmailWithLink, generateShareLink, copyShareLink } = useCensusEmailActions({
-    record,
-    currentDateString,
-    nurseSignature,
-    selectedYear,
-    selectedMonth,
-    selectedDay,
-    user,
-    role,
-    recipients,
-    message,
-    status,
-    testModeEnabled,
-    testRecipient,
-    isAdminUser,
-    excelSheetConfig,
-    setStatus,
-    setError,
-    confirm,
-    alert,
-    browserRuntime,
-  });
+  const { sendEmail, sendEmailWithLink, generateShareLink, copyShareLink } =
+    useCensusEmailDeliveryActions({
+      record,
+      currentDateString,
+      nurseSignature,
+      selectedYear,
+      selectedMonth,
+      selectedDay,
+      user,
+      role,
+      recipients,
+      message,
+      status,
+      testModeEnabled,
+      testRecipient,
+      isAdminUser,
+      excelSheetConfig,
+      setStatus,
+      setError,
+      confirm,
+      alert,
+      browserRuntime,
+    });
 
   return {
     showEmailConfig,

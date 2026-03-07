@@ -1,32 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useCensusEmail } from '@/hooks/useCensusEmail';
-import { getMonthRecordsFromFirestore } from '@/services/storage/firestoreService';
-import { triggerCensusEmail } from '@/services/integrations/censusEmailService';
-import { initializeDay } from '@/services/repositories/DailyRecordRepository';
-import { getAppSetting, saveAppSetting } from '@/services/settingsService';
-import { buildCensusMasterWorkbook } from '@/services/exporters/censusMasterWorkbook';
-import { uploadCensus } from '@/services/backup/censusStorageService';
 import { useConfirmDialog } from '@/context/UIContext';
-import {
-  ensureGlobalEmailRecipientList,
-  getGlobalEmailRecipientLists,
-  saveGlobalEmailRecipientList,
-  subscribeToGlobalEmailRecipientLists,
-} from '@/services/email/emailRecipientListService';
+import { getAppSetting, saveAppSetting } from '@/services/settingsService';
+import { useCensusEmailRecipientLists } from '@/hooks/useCensusEmailRecipientLists';
+import { useCensusEmailDeliveryActions } from '@/hooks/useCensusEmailDeliveryActions';
 import { DailyRecord } from '@/types';
-import { Workbook } from 'exceljs';
 
-vi.mock('@/services/storage/firestoreService', () => ({
-  getMonthRecordsFromFirestore: vi.fn(),
-}));
-
-vi.mock('@/services/integrations/censusEmailService', () => ({
-  triggerCensusEmail: vi.fn(),
-}));
-
-vi.mock('@/services/repositories/DailyRecordRepository', () => ({
-  initializeDay: vi.fn(),
+vi.mock('@/context/UIContext', () => ({
+  useConfirmDialog: vi.fn(),
 }));
 
 vi.mock('@/services/settingsService', () => ({
@@ -34,39 +16,21 @@ vi.mock('@/services/settingsService', () => ({
   saveAppSetting: vi.fn(),
 }));
 
-vi.mock('@/services/exporters/censusMasterWorkbook', () => ({
-  buildCensusMasterWorkbook: vi.fn(),
+vi.mock('@/hooks/useCensusEmailRecipientLists', () => ({
+  useCensusEmailRecipientLists: vi.fn(),
 }));
 
-vi.mock('@/services/backup/censusStorageService', () => ({
-  uploadCensus: vi.fn(),
-}));
-
-vi.mock('@/context/UIContext', () => ({
-  useConfirmDialog: vi.fn(),
-}));
-
-vi.mock('@/services/email/emailRecipientListService', () => ({
-  CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST: {
-    id: 'census-default',
-    name: 'Destinatarios predeterminados de censo diario',
-    description: 'Lista global reutilizable para envios predeterminados de censo diario.',
-  },
-  areGlobalEmailRecipientsEqual: (
-    left: string[] | null | undefined,
-    right: string[] | null | undefined
-  ) => JSON.stringify(left ?? []) === JSON.stringify(right ?? []),
-  buildGlobalEmailRecipientListId: vi.fn((name: string) => name.toLowerCase().replace(/\s+/g, '-')),
-  deleteGlobalEmailRecipientList: vi.fn().mockResolvedValue(undefined),
-  ensureGlobalEmailRecipientList: vi.fn().mockResolvedValue(undefined),
-  getGlobalEmailRecipientLists: vi.fn().mockResolvedValue([]),
-  saveGlobalEmailRecipientList: vi.fn().mockResolvedValue(undefined),
-  subscribeToGlobalEmailRecipientLists: vi.fn().mockImplementation(_callback => vi.fn()),
+vi.mock('@/hooks/useCensusEmailDeliveryActions', () => ({
+  useCensusEmailDeliveryActions: vi.fn(),
 }));
 
 describe('useCensusEmail', () => {
   const mockConfirm = vi.fn();
   const mockAlert = vi.fn();
+  const sendEmail = vi.fn();
+  const sendEmailWithLink = vi.fn();
+  const generateShareLink = vi.fn();
+  const copyShareLink = vi.fn();
 
   const defaultParams = {
     record: {
@@ -96,170 +60,45 @@ describe('useCensusEmail', () => {
       alert: mockAlert,
     } as unknown as ReturnType<typeof useConfirmDialog>);
 
-    vi.mocked(getAppSetting).mockResolvedValue(['test@test.com']);
-    vi.mocked(getGlobalEmailRecipientLists).mockResolvedValue([]);
-    vi.mocked(ensureGlobalEmailRecipientList).mockResolvedValue({
-      id: 'census-default',
-      name: 'Destinatarios predeterminados de censo diario',
-      description: null,
+    vi.mocked(getAppSetting).mockResolvedValue(['Hoja diaria', 'Resumen']);
+    vi.mocked(saveAppSetting).mockResolvedValue(undefined);
+
+    vi.mocked(useCensusEmailRecipientLists).mockReturnValue({
       recipients: ['test@test.com'],
-      scope: 'global',
-      updatedAt: '2026-03-02T10:00:00.000Z',
-      updatedByUid: null,
-      updatedByEmail: null,
-    });
-    vi.mocked(saveGlobalEmailRecipientList).mockResolvedValue(undefined);
-    vi.mocked(subscribeToGlobalEmailRecipientLists).mockImplementation(_callback => vi.fn());
-    vi.mocked(getMonthRecordsFromFirestore).mockResolvedValue([]);
-    vi.mocked(initializeDay).mockResolvedValue({} as DailyRecord);
-    vi.mocked(triggerCensusEmail).mockResolvedValue({
-      success: true,
-      message: 'Sent',
-      gmailId: '123',
+      setRecipients: vi.fn(),
+      recipientLists: [],
+      activeRecipientListId: 'census-default',
+      setActiveRecipientListId: vi.fn(),
+      createRecipientList: vi.fn(),
+      renameActiveRecipientList: vi.fn(),
+      deleteRecipientList: vi.fn(),
+      recipientsSource: 'firebase',
+      isRecipientsSyncing: false,
+      recipientsSyncError: null,
     });
 
-    vi.stubGlobal('localStorage', {
-      getItem: vi.fn(),
-      setItem: vi.fn(),
-      removeItem: vi.fn(),
-    });
-
-    Object.assign(navigator, {
-      clipboard: {
-        writeText: vi.fn(),
-      },
+    vi.mocked(useCensusEmailDeliveryActions).mockReturnValue({
+      sendEmail,
+      sendEmailWithLink,
+      generateShareLink,
+      copyShareLink,
     });
   });
 
-  it('should initialize with default state and load recipients from storage', async () => {
+  it('initializes facade state and recipients', async () => {
     const { result } = renderHook(() => useCensusEmail(defaultParams));
 
     expect(result.current.status).toBe('idle');
     expect(result.current.showEmailConfig).toBe(false);
     expect(result.current.isAdminUser).toBe(true);
+    expect(result.current.recipients).toEqual(['test@test.com']);
 
     await waitFor(() => {
-      expect(getAppSetting).toHaveBeenCalledWith('censusEmailRecipients', null);
-      expect(result.current.recipients).toEqual(['test@test.com']);
+      expect(getAppSetting).toHaveBeenCalledWith('censusEmailExcelSheetConfig', expect.any(Object));
     });
   });
 
-  it('should prioritize the global firebase recipient list when available', async () => {
-    vi.mocked(getGlobalEmailRecipientLists).mockResolvedValueOnce([
-      {
-        id: 'census-default',
-        name: 'Lista global',
-        description: null,
-        recipients: ['global@test.com'],
-        scope: 'global',
-        updatedAt: '2026-03-02T10:00:00.000Z',
-        updatedByUid: null,
-        updatedByEmail: null,
-      },
-    ]);
-
-    const { result } = renderHook(() => useCensusEmail(defaultParams));
-
-    await waitFor(() => {
-      expect(result.current.recipients).toEqual(['global@test.com']);
-      expect(result.current.recipientsSource).toBe('firebase');
-    });
-  });
-
-  it('should create the default firebase list when none exists yet', async () => {
-    vi.mocked(getGlobalEmailRecipientLists)
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        {
-          id: 'census-default',
-          name: 'Lista global',
-          description: null,
-          recipients: ['test@test.com'],
-          scope: 'global',
-          updatedAt: '2026-03-02T10:00:00.000Z',
-          updatedByUid: null,
-          updatedByEmail: null,
-        },
-      ]);
-
-    renderHook(() => useCensusEmail(defaultParams));
-
-    await waitFor(() => {
-      expect(ensureGlobalEmailRecipientList).toHaveBeenCalledWith(
-        expect.objectContaining({
-          listId: 'census-default',
-        })
-      );
-    });
-  });
-
-  it('should migrate legacy recipients from localStorage', async () => {
-    vi.mocked(getAppSetting).mockResolvedValue(null);
-    vi.mocked(getGlobalEmailRecipientLists)
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        {
-          id: 'census-default',
-          name: 'Lista global',
-          description: null,
-          recipients: ['legacy@test.com'],
-          scope: 'global',
-          updatedAt: '2026-03-02T10:00:00.000Z',
-          updatedByUid: null,
-          updatedByEmail: null,
-        },
-      ]);
-    vi.mocked(localStorage.getItem).mockReturnValue(JSON.stringify(['legacy@test.com']));
-
-    const { result } = renderHook(() => useCensusEmail(defaultParams));
-
-    await waitFor(() => {
-      expect(localStorage.removeItem).toHaveBeenCalledWith('censusEmailRecipients');
-    });
-
-    expect(result.current.recipients).toEqual(['legacy@test.com']);
-    expect(saveAppSetting).toHaveBeenCalledWith('censusEmailRecipients', ['legacy@test.com']);
-  });
-
-  it('should sync recipient changes to the global firebase list', async () => {
-    vi.mocked(getGlobalEmailRecipientLists).mockResolvedValueOnce([
-      {
-        id: 'census-default',
-        name: 'Lista global',
-        description: null,
-        recipients: ['test@test.com'],
-        scope: 'global',
-        updatedAt: '2026-03-02T10:00:00.000Z',
-        updatedByUid: null,
-        updatedByEmail: null,
-      },
-    ]);
-
-    const { result } = renderHook(() => useCensusEmail(defaultParams));
-
-    await waitFor(() => {
-      expect(result.current.recipients).toEqual(['test@test.com']);
-    });
-
-    act(() => {
-      result.current.setRecipients(['nuevo@test.com']);
-    });
-
-    await waitFor(
-      () => {
-        expect(saveGlobalEmailRecipientList).toHaveBeenCalledWith(
-          expect.objectContaining({
-            listId: 'census-default',
-            recipients: ['nuevo@test.com'],
-            updatedByEmail: 'admin@test.com',
-          })
-        );
-      },
-      { timeout: 1500 }
-    );
-  });
-
-  it('should update message when nurseSignature changes', async () => {
+  it('updates message when nurseSignature changes until manual edit occurs', async () => {
     const { result, rerender } = renderHook(props => useCensusEmail(props), {
       initialProps: defaultParams,
     });
@@ -273,19 +112,13 @@ describe('useCensusEmail', () => {
     await waitFor(() => {
       expect(result.current.message).toContain('New Nurse');
     });
-  });
-
-  it('should not auto-update message if it was manually edited', async () => {
-    const { result, rerender } = renderHook(props => useCensusEmail(props), {
-      initialProps: defaultParams,
-    });
 
     act(() => {
       result.current.onMessageChange('Manual edit');
     });
 
     act(() => {
-      rerender({ ...defaultParams, nurseSignature: 'New Nurse' });
+      rerender({ ...defaultParams, nurseSignature: 'Third Nurse' });
     });
 
     await waitFor(() => {
@@ -293,7 +126,7 @@ describe('useCensusEmail', () => {
     });
   });
 
-  it('should reset status when currentDateString changes', async () => {
+  it('resets send state when currentDateString changes', async () => {
     const { result, rerender } = renderHook(props => useCensusEmail(props), {
       initialProps: defaultParams,
     });
@@ -308,232 +141,19 @@ describe('useCensusEmail', () => {
     });
   });
 
-  describe('sendEmail', () => {
-    it('should show alert and return if no record provided', async () => {
-      mockConfirm.mockResolvedValue(true);
-      const { result } = renderHook(() => useCensusEmail({ ...defaultParams, record: null }));
+  it('delegates send and share actions to the delivery hook boundary', async () => {
+    const { result } = renderHook(() => useCensusEmail(defaultParams));
 
-      await act(async () => {
-        await result.current.sendEmail();
-      });
-
-      expect(mockAlert).toHaveBeenCalledWith(
-        'No hay datos del censo para enviar.',
-        'Error al enviar'
-      );
-      expect(triggerCensusEmail).not.toHaveBeenCalled();
+    await act(async () => {
+      await result.current.sendEmail();
+      await result.current.sendEmailWithLink();
+      await result.current.generateShareLink();
+      await result.current.copyShareLink();
     });
 
-    it('should handle successful email sending flow', async () => {
-      mockConfirm.mockResolvedValue(true);
-      vi.mocked(getMonthRecordsFromFirestore).mockResolvedValue([
-        defaultParams.record as DailyRecord,
-      ]);
-      vi.mocked(triggerCensusEmail).mockResolvedValue({
-        success: true,
-        message: 'Sent',
-        gmailId: '123',
-      });
-
-      const mockWorkbook = {
-        xlsx: { writeBuffer: vi.fn().mockResolvedValue(Buffer.from([])) },
-      };
-      vi.mocked(buildCensusMasterWorkbook).mockResolvedValue(mockWorkbook as unknown as Workbook);
-
-      const { result } = renderHook(() => useCensusEmail(defaultParams));
-
-      await act(async () => {
-        await result.current.sendEmail();
-      });
-
-      expect(mockConfirm).toHaveBeenCalled();
-      expect(initializeDay).toHaveBeenCalled();
-      expect(triggerCensusEmail).toHaveBeenCalled();
-      expect(uploadCensus).toHaveBeenCalled();
-      expect(result.current.status).toBe('success');
-    });
-
-    it('should include excel sheet descriptors in email payload', async () => {
-      mockConfirm.mockResolvedValue(true);
-      vi.mocked(getMonthRecordsFromFirestore).mockResolvedValue([
-        defaultParams.record as DailyRecord,
-      ]);
-
-      const mockWorkbook = {
-        xlsx: { writeBuffer: vi.fn().mockResolvedValue(Buffer.from([])) },
-      };
-      vi.mocked(buildCensusMasterWorkbook).mockResolvedValue(mockWorkbook as unknown as Workbook);
-
-      const { result } = renderHook(() => useCensusEmail(defaultParams));
-
-      await act(async () => {
-        await result.current.sendEmail();
-      });
-
-      expect(triggerCensusEmail).toHaveBeenCalledWith(
-        expect.objectContaining({
-          sheetDescriptors: expect.arrayContaining([
-            expect.objectContaining({
-              recordDate: '2025-01-08',
-              sheetName: '08-01-2025 23-59',
-              snapshotLabel: '23:59',
-            }),
-          ]),
-        })
-      );
-    });
-
-    it('should handle silent backup failure', async () => {
-      mockConfirm.mockResolvedValue(true);
-      vi.mocked(getMonthRecordsFromFirestore).mockResolvedValue([defaultParams.record]);
-      vi.mocked(triggerCensusEmail).mockResolvedValue({
-        success: true,
-        message: 'Sent',
-        gmailId: '123',
-      });
-
-      const mockWorkbook = {
-        xlsx: { writeBuffer: vi.fn().mockResolvedValue(Buffer.from([])) },
-      };
-      vi.mocked(buildCensusMasterWorkbook).mockResolvedValue(mockWorkbook as unknown as Workbook);
-      vi.mocked(uploadCensus).mockRejectedValue(new Error('Backup failed'));
-
-      const { result } = renderHook(() => useCensusEmail(defaultParams));
-
-      await act(async () => {
-        await result.current.sendEmail();
-      });
-
-      expect(result.current.status).toBe('success');
-    });
-
-    it('should handle initialization warning', async () => {
-      mockConfirm.mockResolvedValue(true);
-      vi.mocked(getMonthRecordsFromFirestore).mockResolvedValue([defaultParams.record]);
-      vi.mocked(triggerCensusEmail).mockResolvedValue({
-        success: true,
-        message: 'Sent',
-        gmailId: '123',
-      });
-      vi.mocked(initializeDay).mockRejectedValue(new Error('Init fail'));
-
-      const { result } = renderHook(() => useCensusEmail(defaultParams));
-
-      await act(async () => {
-        await result.current.sendEmail();
-      });
-
-      expect(result.current.status).toBe('success');
-    });
-
-    it('should handle test mode for admin users', async () => {
-      mockConfirm.mockResolvedValue(true);
-      vi.mocked(getMonthRecordsFromFirestore).mockResolvedValue([defaultParams.record]);
-      vi.mocked(triggerCensusEmail).mockResolvedValue({
-        success: true,
-        message: 'Sent',
-        gmailId: '123',
-      });
-
-      const { result } = renderHook(() => useCensusEmail(defaultParams));
-
-      act(() => {
-        result.current.setTestModeEnabled(true);
-        result.current.setTestRecipient('dev@test.com');
-      });
-
-      await act(async () => {
-        await result.current.sendEmail();
-      });
-
-      expect(triggerCensusEmail).toHaveBeenCalledWith(
-        expect.objectContaining({ recipients: ['dev@test.com'] })
-      );
-    });
-
-    it('should handle errors during sending', async () => {
-      mockConfirm.mockResolvedValue(true);
-      vi.mocked(triggerCensusEmail).mockRejectedValue(new Error('Network error'));
-
-      const { result } = renderHook(() => useCensusEmail(defaultParams));
-
-      await act(async () => {
-        await result.current.sendEmail();
-      });
-
-      expect(result.current.status).toBe('error');
-      expect(result.current.error).toBe('Network error');
-      expect(mockAlert).toHaveBeenCalledWith('Network error', 'Error al enviar');
-    });
-  });
-
-  describe('sendEmailWithLink', () => {
-    it('should trigger email with share link', async () => {
-      mockConfirm.mockResolvedValue(true);
-      vi.mocked(triggerCensusEmail).mockResolvedValue({
-        success: true,
-        message: 'Sent',
-        gmailId: '123',
-      });
-
-      const { result } = renderHook(() => useCensusEmail(defaultParams));
-
-      await act(async () => {
-        await result.current.sendEmailWithLink('viewer');
-      });
-
-      expect(triggerCensusEmail).toHaveBeenCalledWith(
-        expect.objectContaining({
-          shareLink: expect.stringContaining('/censo-compartido'),
-        })
-      );
-      expect(result.current.status).toBe('success');
-    });
-
-    it('should handle error when generating share link fails', async () => {
-      mockConfirm.mockResolvedValue(true);
-      vi.mocked(triggerCensusEmail).mockImplementation(() => {
-        throw new Error('Link trigger failed');
-      });
-
-      const { result } = renderHook(() => useCensusEmail(defaultParams));
-
-      await act(async () => {
-        await result.current.sendEmailWithLink('viewer');
-      });
-
-      expect(result.current.status).toBe('error');
-      expect(result.current.error).toBe('Link trigger failed');
-    });
-  });
-
-  describe('copyShareLink', () => {
-    it('should handle clipboard error', async () => {
-      const { result } = renderHook(() => useCensusEmail(defaultParams));
-      vi.mocked(navigator.clipboard.writeText).mockRejectedValue(new Error('Clipboard blocked'));
-
-      await act(async () => {
-        await result.current.copyShareLink();
-      });
-
-      expect(mockAlert).toHaveBeenCalledWith(expect.stringContaining('No se pudo copiar el link'));
-    });
-
-    it('should copy link to clipboard', async () => {
-      vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
-      const { result } = renderHook(() => useCensusEmail(defaultParams));
-
-      await act(async () => {
-        await result.current.copyShareLink();
-      });
-
-      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-        expect.stringContaining('/censo-compartido')
-      );
-      expect(mockAlert).toHaveBeenCalledWith(
-        expect.stringContaining('Copiado al portapapeles'),
-        'Link Copiado'
-      );
-    });
+    expect(sendEmail).toHaveBeenCalled();
+    expect(sendEmailWithLink).toHaveBeenCalled();
+    expect(generateShareLink).toHaveBeenCalled();
+    expect(copyShareLink).toHaveBeenCalled();
   });
 });

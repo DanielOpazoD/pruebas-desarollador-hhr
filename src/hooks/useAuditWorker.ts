@@ -2,10 +2,12 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { AuditLogEntry, GroupedAuditLogEntry, AuditStats, WorkerFilterParams } from '@/types/audit';
 import {
   buildInitialAuditWorkerResults,
-  isAuditWorkerErrorMessage,
-  isAuditWorkerProcessedMessage,
   normalizeAuditWorkerErrorMessage,
 } from '@/hooks/controllers/auditWorkerController';
+import {
+  createAuditWorkerAdapter,
+  type AuditWorkerAdapter,
+} from '@/hooks/controllers/auditWorkerAdapter';
 
 export interface AuditWorkerResults {
   filteredLogs: AuditLogEntry[];
@@ -16,33 +18,23 @@ export interface AuditWorkerResults {
 export const useAuditWorker = () => {
   const [results, setResults] = useState<AuditWorkerResults>(buildInitialAuditWorkerResults());
   const [isProcessing, setIsProcessing] = useState(false);
-  const workerRef = useRef<Worker | null>(null);
+  const workerRef = useRef<AuditWorkerAdapter | null>(null);
 
   useEffect(() => {
-    // Initialize worker using Vite's URL constructor pattern
-    const worker = new Worker(new URL('../services/admin/audit.worker.ts', import.meta.url), {
-      type: 'module',
+    const adapter = createAuditWorkerAdapter({
+      onProcessed(payload) {
+        setResults(payload as AuditWorkerResults);
+        setIsProcessing(false);
+      },
+      onError(message) {
+        console.error('[AuditWorker Hook] Error:', normalizeAuditWorkerErrorMessage(message));
+        setIsProcessing(false);
+      },
     });
-
-    worker.onmessage = event => {
-      if (isAuditWorkerProcessedMessage(event.data)) {
-        setResults(event.data.payload);
-        setIsProcessing(false);
-        return;
-      }
-      if (isAuditWorkerErrorMessage(event.data)) {
-        console.error(
-          '[AuditWorker Hook] Error:',
-          normalizeAuditWorkerErrorMessage(event.data.payload.message)
-        );
-        setIsProcessing(false);
-      }
-    };
-
-    workerRef.current = worker;
+    workerRef.current = adapter;
 
     return () => {
-      worker.terminate();
+      adapter.dispose();
     };
   }, []);
 
@@ -56,10 +48,7 @@ export const useAuditWorker = () => {
       if (!workerRef.current) return;
 
       setIsProcessing(true);
-      workerRef.current.postMessage({
-        type: 'PROCESS_AUDIT_DATA',
-        payload: { logs, params, actionLabels, criticalActions },
-      });
+      workerRef.current.processData(logs, params, actionLabels, criticalActions);
     },
     []
   );

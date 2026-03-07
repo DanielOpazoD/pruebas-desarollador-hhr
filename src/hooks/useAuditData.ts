@@ -20,6 +20,7 @@ import { executeFetchAuditLogs } from '@/application/audit/fetchAuditLogsUseCase
 import {
   buildDefaultAuditStats,
   resolveAuditLogsFallback,
+  shouldResetAuditPagination,
 } from '@/hooks/controllers/auditDataPolicyController';
 import {
   AUDIT_ITEMS_PER_PAGE,
@@ -181,7 +182,18 @@ export function useAuditData(): UseAuditDataReturn {
 
   // Reset page when filters change
   useEffect(() => {
-    setCurrentPage(1);
+    if (
+      shouldResetAuditPagination({
+        searchTerm,
+        filterAction,
+        activeSection,
+        startDate,
+        endDate,
+        groupedView,
+      })
+    ) {
+      setCurrentPage(1);
+    }
   }, [searchTerm, filterAction, activeSection, startDate, endDate, groupedView]);
 
   // Use stats from worker

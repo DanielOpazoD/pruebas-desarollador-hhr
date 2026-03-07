@@ -72,30 +72,25 @@ export const useBackupFileBrowserActions = ({
 
       if (!confirmed) return;
 
-      try {
-        const outcome = await executeDeleteBackupFile({
-          backupType: selectedBackupType,
-          file,
-        });
-        const notice = presentBackupExportOutcome(outcome, {
-          successTitle: 'Archivo eliminado',
-          partialTitle: 'Archivo eliminado con observaciones',
-          failedTitle: 'Error al eliminar archivo',
-          fallbackErrorMessage: 'Error al eliminar archivo',
-        });
-        if (notice.channel === 'success') {
-          notifications.success(notice.title, notice.message);
-        } else if (notice.channel === 'warning') {
-          notifications.warning(notice.title, notice.message);
-        } else {
-          notifications.error(notice.title, notice.message);
-          return;
-        }
-        await refetch();
-      } catch (error) {
-        console.error('Delete error:', error);
-        notifications.error('Error al eliminar archivo');
+      const outcome = await executeDeleteBackupFile({
+        backupType: selectedBackupType,
+        file,
+      });
+      const notice = presentBackupExportOutcome(outcome, {
+        successTitle: 'Archivo eliminado',
+        partialTitle: 'Archivo eliminado con observaciones',
+        failedTitle: 'Error al eliminar archivo',
+        fallbackErrorMessage: 'Error al eliminar archivo',
+      });
+      if (notice.channel === 'success') {
+        notifications.success(notice.title, notice.message);
+      } else if (notice.channel === 'warning') {
+        notifications.warning(notice.title, notice.message);
+      } else {
+        notifications.error(notice.title, notice.message);
+        return;
       }
+      await refetch();
     },
     [confirm, notifications, refetch, selectedBackupType]
   );

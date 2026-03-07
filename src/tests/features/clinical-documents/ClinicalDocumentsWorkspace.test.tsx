@@ -1,8 +1,11 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { ClinicalDocumentsWorkspace } from '@/features/clinical-documents/components/ClinicalDocumentsWorkspace';
 import { createClinicalDocumentDraft } from '@/features/clinical-documents/domain/factories';
+import * as clinicalDocumentUseCases from '@/application/clinical-documents/clinicalDocumentUseCases';
+import { ClinicalDocumentRepository } from '@/services/repositories/ClinicalDocumentRepository';
+import { ClinicalDocumentTemplateRepository } from '@/services/repositories/ClinicalDocumentTemplateRepository';
 
 vi.mock('@/context/AuthContext', () => ({
   useAuth: () => ({
@@ -25,6 +28,10 @@ vi.mock('@/context/UIContext', () => ({
 
 vi.mock('@/constants/firestorePaths', () => ({
   getActiveHospitalId: () => 'hhr',
+}));
+
+vi.mock('@/features/clinical-documents/services/clinicalDocumentPrintPdfService', () => ({
+  openClinicalDocumentBrowserPrintPreview: vi.fn(() => true),
 }));
 
 const document = createClinicalDocumentDraft({
@@ -58,92 +65,131 @@ const document = createClinicalDocumentDraft({
   especialidad: 'Medicina',
 });
 
-const mockBootstrapState = {
-  templates: [{ id: 'epicrisis', name: 'Epicrisis' }],
-  selectedTemplateId: 'epicrisis',
-  setSelectedTemplateId: vi.fn(),
-  documents: [document],
-  selectedDocumentId: document.id,
-  setSelectedDocumentId: vi.fn(),
-  episode: {
-    patientRut: '11.111.111-1',
-    patientName: 'Paciente Test',
-    episodeKey: '11.111.111-1__2026-03-06',
-    admissionDate: '2026-03-06',
-    sourceDailyRecordDate: '2026-03-06',
-    sourceBedId: 'R1',
-    specialty: 'Medicina',
+document.sections = document.sections.map(section => ({
+  ...section,
+  content: `${section.title} completo`,
+}));
+
+vi.mock('@/services/repositories/ClinicalDocumentRepository', () => ({
+  ClinicalDocumentRepository: {
+    subscribeByEpisode: vi.fn(),
   },
-};
-
-const mockDraftState = {
-  draft: document,
-  setDraft: vi.fn(),
-  isSaving: false,
-  setIsSaving: vi.fn(),
-  validationIssues: [],
-  lastPersistedSnapshotRef: { current: '' },
-  patchPatientField: vi.fn(),
-  patchSection: vi.fn(),
-  patchSectionTitle: vi.fn(),
-  patchDocumentTitle: vi.fn(),
-  patchPatientInfoTitle: vi.fn(),
-  patchFooterLabel: vi.fn(),
-  patchDocumentMeta: vi.fn(),
-};
-
-const mockDocumentActions = {
-  createDocument: vi.fn(),
-  handleDeleteDocument: vi.fn(),
-  handleSaveNow: vi.fn(),
-  handleSign: vi.fn(),
-  handleUnsign: vi.fn(),
-};
-
-const mockExportActions = {
-  handlePrint: vi.fn(),
-  handleUploadPdf: vi.fn(),
-  isUploadingPdf: false,
-};
-
-vi.mock('@/features/clinical-documents/hooks/useClinicalDocumentWorkspaceBootstrap', () => ({
-  useClinicalDocumentWorkspaceBootstrap: () => mockBootstrapState,
 }));
 
-vi.mock('@/features/clinical-documents/hooks/useClinicalDocumentWorkspaceDraft', () => ({
-  useClinicalDocumentWorkspaceDraft: () => mockDraftState,
+vi.mock('@/services/repositories/ClinicalDocumentTemplateRepository', () => ({
+  ClinicalDocumentTemplateRepository: {
+    listActive: vi.fn(),
+    seedDefaults: vi.fn(),
+  },
 }));
 
-vi.mock('@/features/clinical-documents/hooks/useClinicalDocumentWorkspaceDocumentActions', () => ({
-  useClinicalDocumentWorkspaceDocumentActions: () => mockDocumentActions,
-}));
-
-vi.mock('@/features/clinical-documents/hooks/useClinicalDocumentWorkspaceExportActions', () => ({
-  useClinicalDocumentWorkspaceExportActions: () => mockExportActions,
-}));
+vi.mock('@/application/clinical-documents/clinicalDocumentUseCases', async () => {
+  const actual = await vi.importActual<
+    typeof import('@/application/clinical-documents/clinicalDocumentUseCases')
+  >('@/application/clinical-documents/clinicalDocumentUseCases');
+  return {
+    ...actual,
+    executeCreateClinicalDocumentDraft: vi.fn(),
+    executePersistClinicalDocumentDraft: vi.fn(),
+    executeDeleteClinicalDocument: vi.fn(),
+    executeSignClinicalDocument: vi.fn(),
+    executeUnsignClinicalDocument: vi.fn(),
+    executeExportClinicalDocumentPdf: vi.fn(),
+  };
+});
 
 describe('ClinicalDocumentsWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    vi.mocked(ClinicalDocumentTemplateRepository.listActive).mockResolvedValue([
+      {
+        id: 'epicrisis',
+        name: 'Epicrisis',
+        title: 'Epicrisis médica',
+        version: 1,
+        patientFields: [],
+        sections: [],
+        allowCustomTitle: false,
+        allowAddSection: false,
+        allowClinicalUpdateSections: false,
+        status: 'active',
+        documentType: 'epicrisis',
+        defaultPatientInfoTitle: 'Información del Paciente',
+        defaultFooterMedicoLabel: 'Médico',
+        defaultFooterEspecialidadLabel: 'Especialidad',
+      },
+    ] as any);
+
+    vi.mocked(ClinicalDocumentRepository.subscribeByEpisode).mockImplementation(
+      (_episodeKey, callback) => {
+        callback([document]);
+        return vi.fn();
+      }
+    );
+
+    vi.mocked(clinicalDocumentUseCases.executeCreateClinicalDocumentDraft).mockResolvedValue({
+      status: 'success',
+      data: { ...document, id: 'new-doc' },
+      issues: [],
+    } as any);
+    vi.mocked(clinicalDocumentUseCases.executePersistClinicalDocumentDraft).mockResolvedValue({
+      status: 'success',
+      data: document,
+      issues: [],
+    } as any);
+    vi.mocked(clinicalDocumentUseCases.executeSignClinicalDocument).mockResolvedValue({
+      status: 'success',
+      data: { ...document, status: 'signed', isLocked: true },
+      issues: [],
+    } as any);
+    vi.mocked(clinicalDocumentUseCases.executeUnsignClinicalDocument).mockResolvedValue({
+      status: 'success',
+      data: { ...document, status: 'draft', isLocked: false },
+      issues: [],
+    } as any);
+    vi.mocked(clinicalDocumentUseCases.executeDeleteClinicalDocument).mockResolvedValue({
+      status: 'success',
+      data: null,
+      issues: [],
+    } as any);
+    vi.mocked(clinicalDocumentUseCases.executeExportClinicalDocumentPdf).mockResolvedValue({
+      status: 'success',
+      data: { pdf: { exportStatus: 'exported' } },
+      issues: [],
+    } as any);
   });
 
-  it('wires sidebar and sheet actions through the shell', () => {
+  it('renders the real shell and wires create/save/sign/pdf through use-case boundaries', async () => {
     render(
       <ClinicalDocumentsWorkspace
-        patient={{ patientName: 'Paciente Test', rut: '11.111.111-1' } as any}
+        patient={
+          {
+            patientName: 'Paciente Test',
+            rut: '11.111.111-1',
+            admissionDate: '2026-03-06',
+            age: '40a',
+            birthDate: '1986-01-01',
+          } as any
+        }
         currentDateString="2026-03-06"
         bedId="R1"
       />
     );
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Doctor Test')).toBeInTheDocument();
+    });
 
     fireEvent.click(screen.getByRole('button', { name: /crear documento/i }));
     fireEvent.click(screen.getByRole('button', { name: /guardar/i }));
     fireEvent.click(screen.getByRole('button', { name: /firmar/i }));
     fireEvent.click(screen.getByRole('button', { name: /pdf/i }));
 
-    expect(mockDocumentActions.createDocument).toHaveBeenCalled();
-    expect(mockDocumentActions.handleSaveNow).toHaveBeenCalled();
-    expect(mockDocumentActions.handleSign).toHaveBeenCalled();
-    expect(mockExportActions.handlePrint).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(clinicalDocumentUseCases.executeCreateClinicalDocumentDraft).toHaveBeenCalled();
+      expect(clinicalDocumentUseCases.executePersistClinicalDocumentDraft).toHaveBeenCalled();
+      expect(clinicalDocumentUseCases.executeSignClinicalDocument).toHaveBeenCalled();
+    });
   });
 });

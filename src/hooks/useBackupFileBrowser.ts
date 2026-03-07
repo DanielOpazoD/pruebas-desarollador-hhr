@@ -2,13 +2,13 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useNotification, useConfirmDialog } from '@/context/UIContext';
 import { useBackupFilesQuery } from '@/hooks/useBackupFilesQuery';
 import { useAuth } from '@/context/AuthContext';
-import { getStorageListNotice } from '@/services/backup/storageUiPolicy';
 import { useBackupFileBrowserNavigation } from '@/hooks/useBackupFileBrowserNavigation';
 import { useBackupFileBrowserActions } from '@/hooks/useBackupFileBrowserActions';
 import {
   filterBackupBrowserItems,
   resolveCanRunMagicBackfill,
 } from '@/hooks/backupFileBrowserController';
+import { presentBackupListingOutcome } from '@/hooks/controllers/backupStorageOutcomeController';
 
 export type BackupType = 'handoff' | 'census' | 'cudyr';
 
@@ -38,6 +38,7 @@ export const useBackupFileBrowser = (initialBackupType: BackupType = 'handoff') 
 
   const {
     data: items = [],
+    listingOutcome,
     storageReport,
     isLoading,
     isRefetching,
@@ -71,21 +72,29 @@ export const useBackupFileBrowser = (initialBackupType: BackupType = 'handoff') 
   });
 
   useEffect(() => {
-    const signature = JSON.stringify(storageReport);
+    const signature = JSON.stringify(listingOutcome);
     if (lastReportSignatureRef.current === signature) {
       return;
     }
     lastReportSignatureRef.current = signature;
 
-    const notice = getStorageListNotice(storageReport);
+    if (!listingOutcome) {
+      return;
+    }
+
+    const notice = presentBackupListingOutcome(listingOutcome);
     if (notice?.channel === 'warning') {
-      warning(notice.title, notice.message);
+      warning(notice.title || 'Respaldos', notice.message);
       return;
     }
     if (notice?.channel === 'info') {
-      info(notice.title, notice.message);
+      info(notice.title || 'Respaldos', notice.message);
+      return;
     }
-  }, [info, storageReport, warning]);
+    if (notice?.channel === 'error') {
+      notifyError(notice.title || 'Respaldos', notice.message);
+    }
+  }, [info, listingOutcome, notifyError, warning]);
 
   return {
     selectedBackupType,

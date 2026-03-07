@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useExportManager } from '@/hooks/useExportManager';
 import { DailyRecord } from '@/types';
+import * as backupExportUseCases from '@/application/backup-export/backupExportUseCases';
 
 // Mock context
 vi.mock('@/context/UIContext', () => ({
@@ -15,27 +16,34 @@ vi.mock('@/context/UIContext', () => ({
   }),
 }));
 
-// Mock services
-vi.mock('@/services/backup/censusStorageService', () => ({
-  checkCensusExists: vi.fn().mockResolvedValue(false),
-  checkCensusExistsDetailed: vi.fn().mockResolvedValue({ exists: false, status: 'missing' }),
-  uploadCensus: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock('@/services/storage/firestoreService', () => ({
-  getMonthRecordsFromFirestore: vi.fn().mockResolvedValue([]),
-}));
-
-vi.mock('@/services/exporters/censusMasterWorkbook', () => ({
-  buildCensusMasterWorkbook: vi.fn().mockResolvedValue({
-    xlsx: { writeBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)) },
-  }),
-}));
-
-vi.mock('@/services/backup/pdfStorageService', () => ({
-  pdfExists: vi.fn().mockResolvedValue(false),
-  pdfExistsDetailed: vi.fn().mockResolvedValue({ exists: false, status: 'missing' }),
-}));
+vi.mock('@/application/backup-export/backupExportUseCases', async () => {
+  const actual = await vi.importActual<
+    typeof import('@/application/backup-export/backupExportUseCases')
+  >('@/application/backup-export/backupExportUseCases');
+  return {
+    ...actual,
+    executeLookupBackupArchiveStatus: vi.fn().mockResolvedValue({
+      status: 'success',
+      data: { exists: false, lookup: { exists: false, status: 'missing' } },
+      issues: [],
+    }),
+    executeExportHandoffPdf: vi.fn().mockResolvedValue({
+      status: 'success',
+      data: null,
+      issues: [],
+    }),
+    executeBackupCensusExcel: vi.fn().mockResolvedValue({
+      status: 'success',
+      data: { archivedDate: '2024-12-28', recordCount: 1 },
+      issues: [],
+    }),
+    executeBackupHandoffPdf: vi.fn().mockResolvedValue({
+      status: 'success',
+      data: { shift: 'day', createdCudyrBackup: false },
+      issues: [],
+    }),
+  };
+});
 
 describe('useExportManager', () => {
   const mockRecord: DailyRecord = {
@@ -78,6 +86,12 @@ describe('useExportManager', () => {
     await waitFor(() => {
       expect(result.current.isArchived).toBeDefined();
     });
+
+    expect(backupExportUseCases.executeLookupBackupArchiveStatus).toHaveBeenCalledWith({
+      backupType: 'census',
+      date: '2024-12-28',
+      shift: 'day',
+    });
   });
 
   it('should check archive status for NURSING_HANDOFF module', async () => {
@@ -90,6 +104,12 @@ describe('useExportManager', () => {
 
     await waitFor(() => {
       expect(result.current.isArchived).toBeDefined();
+    });
+
+    expect(backupExportUseCases.executeLookupBackupArchiveStatus).toHaveBeenCalledWith({
+      backupType: 'handoff',
+      date: '2024-12-28',
+      shift: 'day',
     });
   });
 

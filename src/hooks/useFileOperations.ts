@@ -65,30 +65,26 @@ export const useFileOperations = (
 
   const handleImportFile = async (file: File) => {
     if (isJsonImportFile(file)) {
-      try {
-        const outcome = await executeImportJsonBackup(file);
-        if (outcome.status === 'success' || outcome.status === 'partial') {
-          for (const notification of buildJsonImportNotifications(outcome.data)) {
-            dispatchNotification(notification);
-          }
-          if (shouldRefreshAfterJsonImport(outcome.data)) {
-            onRefresh();
-          }
-        } else {
-          const notice = presentBackupExportOutcome(outcome, {
-            successTitle: 'Importación completada',
-            partialTitle: 'Importación completada con observaciones',
-            failedTitle: 'Error al importar',
-            fallbackErrorMessage: 'No se pudo importar el archivo JSON.',
-          });
-          dispatchNotification({
-            channel: notice.channel === 'info' ? 'warning' : notice.channel,
-            title: notice.title,
-            message: notice.message,
-          });
+      const outcome = await executeImportJsonBackup(file);
+      if (outcome.status === 'success' || outcome.status === 'partial') {
+        for (const notification of buildJsonImportNotifications(outcome.data)) {
+          dispatchNotification(notification);
         }
-      } catch (_err) {
-        dispatchNotification(buildImportFileErrorNotification('processing_failed'));
+        if (shouldRefreshAfterJsonImport(outcome.data)) {
+          onRefresh();
+        }
+      } else {
+        const notice = presentBackupExportOutcome(outcome, {
+          successTitle: 'Importación completada',
+          partialTitle: 'Importación completada con observaciones',
+          failedTitle: 'Error al importar',
+          fallbackErrorMessage: 'No se pudo importar el archivo JSON.',
+        });
+        dispatchNotification({
+          channel: notice.channel === 'info' ? 'warning' : notice.channel,
+          title: notice.title,
+          message: notice.message,
+        });
       }
     } else {
       dispatchNotification(buildImportFileErrorNotification('invalid_format'));
