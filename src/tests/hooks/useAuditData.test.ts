@@ -248,6 +248,44 @@ describe('useAuditData', () => {
     });
   });
 
+  it('falls back to a stable empty list when fetch is degraded', async () => {
+    vi.mocked(fetchAuditLogsUseCase.executeFetchAuditLogs).mockResolvedValueOnce({
+      status: 'degraded',
+      data: null,
+      issues: [{ kind: 'unknown', message: 'Sin acceso remoto temporal.' }],
+    } as any);
+
+    const { result } = renderHook(() => useAuditData());
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.logs).toEqual([]);
+    expect(result.current.filteredLogs).toEqual([]);
+    expect(result.current.stats.totalSessionsToday).toBe(0);
+  });
+
+  it('keeps filters stable when the fetched audit set is empty', async () => {
+    vi.mocked(fetchAuditLogsUseCase.executeFetchAuditLogs).mockResolvedValueOnce({
+      status: 'success',
+      data: [],
+      issues: [],
+    });
+
+    const { result } = renderHook(() => useAuditData());
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => {
+      result.current.setCurrentPage(2);
+      result.current.setSearchTerm('Juan');
+    });
+
+    expect(result.current.filteredLogs).toEqual([]);
+    expect(result.current.currentPage).toBe(1);
+    expect(result.current.filters.searchTerm).toBe('Juan');
+    expect(result.current.isProcessing).toBe(false);
+  });
+
   describe('Row Expansion', () => {
     it('toggles row expansion', async () => {
       const { result } = renderHook(() => useAuditData());

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ChevronDown, Pencil, Plus, Settings2, Trash2, Users, X } from 'lucide-react';
 import { ModalSection } from '@/components/shared/BaseModal';
 import type { GlobalEmailRecipientList } from '@/services/email/emailRecipientListService';
@@ -81,10 +81,6 @@ export const CensusEmailRecipientsSection: React.FC<CensusEmailRecipientsSection
   const [showRenamePanel, setShowRenamePanel] = useState(false);
   const [showCreatePanel, setShowCreatePanel] = useState(false);
 
-  useEffect(() => {
-    setListNameDraft(activeRecipientList?.name ?? '');
-  }, [activeRecipientList?.name]);
-
   return (
     <ModalSection
       title="Destinatarios"
@@ -131,6 +127,7 @@ export const CensusEmailRecipientsSection: React.FC<CensusEmailRecipientsSection
           <button
             type="button"
             onClick={() => {
+              setListNameDraft(activeRecipientList?.name ?? '');
               setShowRenamePanel(previous => !previous);
               setShowCreatePanel(false);
             }}

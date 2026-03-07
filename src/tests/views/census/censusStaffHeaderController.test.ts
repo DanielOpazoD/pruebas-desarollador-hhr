@@ -7,6 +7,7 @@ import {
   resolveStaffSelectorsState,
 } from '@/features/census/controllers/censusStaffHeaderController';
 import { DataFactory } from '@/tests/factories/DataFactory';
+import { isNewAdmissionForClinicalDay } from '@/utils/dateUtils';
 
 describe('censusStaffHeaderController', () => {
   it('normalizes nullable staff arrays to safe arrays', () => {
@@ -133,6 +134,32 @@ describe('censusStaffHeaderController', () => {
         recordDate: '2026-03-05',
       })
     ).toBe(2);
+  });
+
+  it('matches the same clinical-day admission semantics used by the row indicator', () => {
+    const beds = {
+      R1: DataFactory.createMockPatient('R1', {
+        patientName: 'Ingreso madrugada',
+        admissionDate: '2026-03-06',
+        admissionTime: '07:59',
+      }),
+      R2: DataFactory.createMockPatient('R2', {
+        patientName: 'Fuera de ventana',
+        admissionDate: '2026-03-06',
+        admissionTime: '08:15',
+      }),
+    };
+
+    const admissionsCount = resolveAdmissionsCountForRecord({
+      beds,
+      recordDate: '2026-03-05',
+    });
+    const indicatorCount = Object.values(beds).filter(patient =>
+      isNewAdmissionForClinicalDay('2026-03-05', patient.admissionDate, patient.admissionTime)
+    ).length;
+
+    expect(admissionsCount).toBe(indicatorCount);
+    expect(admissionsCount).toBe(1);
   });
 
   it('returns read-only class name only when readOnly is true', () => {

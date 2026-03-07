@@ -52,9 +52,7 @@ const sanitizeHtmlPayload = html => {
 
 const loadPuppeteerDependencies = () => {
   try {
-    // eslint-disable-next-line global-require
     const chromium = require('@sparticuz/chromium');
-    // eslint-disable-next-line global-require
     const puppeteer = require('puppeteer-core');
     return { chromium, puppeteer };
   } catch (error) {

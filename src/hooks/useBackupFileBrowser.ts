@@ -39,7 +39,6 @@ export const useBackupFileBrowser = (initialBackupType: BackupType = 'handoff') 
   const {
     data: items = [],
     listingOutcome,
-    storageReport,
     isLoading,
     isRefetching,
     refetch,

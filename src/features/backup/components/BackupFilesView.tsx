@@ -24,8 +24,7 @@ import { FolderCard, FileCard, Breadcrumbs } from './components/BackupDriveItems
 import { HandoffCalendarView } from './components/HandoffCalendarView';
 import { DailyBackupCalendarView } from './components/DailyBackupCalendarView';
 import { PdfViewerModal } from '@/components/shared/PdfViewerModal';
-import { formatFileSize, BaseStoredFile } from '@/services/backup/baseStorageService';
-import { StoredPdfFile } from '@/services/backup/pdfStorageService';
+import { formatFileSize, type BaseStoredFile, type StoredPdfFile } from '@/types/backupArtifacts';
 import { BackupFolder } from '@/hooks/useBackupFilesQuery';
 import clsx from 'clsx';
 

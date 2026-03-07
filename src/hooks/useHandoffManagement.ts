@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { DailyRecord, DailyRecordPatch } from '@/types';
 import { useNotification } from '@/context/UIContext';
 import { useAuditContext } from '@/context/AuditContext';

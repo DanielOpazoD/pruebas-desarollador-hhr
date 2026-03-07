@@ -1,8 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 import { Clock, Download, Eye, FileSpreadsheet, ShieldCheck } from 'lucide-react';
-import { formatFileSize } from '@/services/backup/baseStorageService';
-import type { StoredCensusFile } from '@/services/backup/censusStorageService';
+import { formatFileSize, type StoredCensusFile } from '@/types/backupArtifacts';
 import { buildSharedCensusFileCardModel } from '@/features/census/controllers/sharedCensusViewController';
 
 interface SharedCensusFileCardProps {

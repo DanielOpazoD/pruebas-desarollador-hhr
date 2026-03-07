@@ -1,4 +1,4 @@
-import type { StoredCensusFile } from '@/services/backup/censusStorageService';
+import type { StoredCensusFile } from '@/types/backupArtifacts';
 import {
   type ControllerError,
   type ControllerResult,

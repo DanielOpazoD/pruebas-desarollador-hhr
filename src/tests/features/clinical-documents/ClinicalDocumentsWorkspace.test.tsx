@@ -199,6 +199,9 @@ describe('ClinicalDocumentsWorkspace', () => {
       expect(screen.getByDisplayValue('Doctor Test')).toBeInTheDocument();
     });
 
+    fireEvent.change(screen.getByDisplayValue('Antecedentes completo'), {
+      target: { value: 'Antecedentes actualizados' },
+    });
     fireEvent.click(screen.getByRole('button', { name: /crear documento/i }));
     fireEvent.click(screen.getByRole('button', { name: /guardar/i }));
     fireEvent.click(screen.getByRole('button', { name: /firmar/i }));
@@ -208,6 +211,21 @@ describe('ClinicalDocumentsWorkspace', () => {
       expect(clinicalDocumentUseCases.executeCreateClinicalDocumentDraft).toHaveBeenCalled();
       expect(clinicalDocumentUseCases.executePersistClinicalDocumentDraft).toHaveBeenCalled();
       expect(clinicalDocumentUseCases.executeSignClinicalDocument).toHaveBeenCalled();
+      expect(clinicalDocumentUseCases.executePersistClinicalDocumentDraft).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sections: expect.arrayContaining([
+            expect.objectContaining({
+              title: 'Antecedentes',
+              content: 'Antecedentes actualizados',
+            }),
+          ]),
+        }),
+        'hhr',
+        expect.objectContaining({
+          uid: 'u1',
+        }),
+        'manual'
+      );
     });
   });
 

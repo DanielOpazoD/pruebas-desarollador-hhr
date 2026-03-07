@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import * as whatsappService from '@/services/integrations/whatsapp/whatsappService';
 
 // Mock dependencies before importing the hook
 vi.mock('@/context/UIContext', () => ({
@@ -15,10 +16,6 @@ vi.mock('@/context/AuditContext', () => ({
     logDebouncedEvent: vi.fn(),
     userId: 'test-user',
   }),
-}));
-
-vi.mock('@/services/repositories/DailyRecordRepository', () => ({
-  getPreviousDay: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock('@/services/integrations/whatsapp/whatsappService', () => ({
@@ -268,5 +265,27 @@ describe('useHandoffManagement', () => {
     expect(link).toContain('mode=signature');
     expect(link).toContain('scope=upc');
     expect(link).toContain('token=');
+  });
+
+  it('does not mark the handoff as sent when WhatsApp delivery fails', async () => {
+    mockRecord.medicalHandoffDoctor = 'Dr. Error';
+    vi.mocked(whatsappService.sendWhatsAppMessage).mockResolvedValueOnce({
+      success: false,
+      error: 'Falla remota',
+    });
+
+    const { result } = renderHook(() =>
+      useHandoffManagement(mockRecord, mockSaveAndUpdate, mockPatchRecord)
+    );
+
+    await act(async () => {
+      await result.current.sendMedicalHandoff('Template content', 'group-xyz');
+    });
+
+    expect(mockPatchRecord).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        medicalHandoffSentAt: expect.any(String),
+      })
+    );
   });
 });

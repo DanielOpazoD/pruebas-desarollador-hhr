@@ -50,11 +50,7 @@ export const EmptyDayPrompt: React.FC<EmptyDayPromptProps> = ({
     return () => window.clearInterval(intervalId);
   }, [copyAvailability.isCopyLocked]);
 
-  useEffect(() => {
-    if (copyAvailability.isCopyLocked && showDatePicker) {
-      setShowDatePicker(false);
-    }
-  }, [copyAvailability.isCopyLocked, showDatePicker]);
+  const isDatePickerVisible = showDatePicker && !copyAvailability.isCopyLocked;
 
   // Format date for display (DD de Mes)
   const formatDate = (dateStr: string) => {
@@ -133,19 +129,19 @@ export const EmptyDayPrompt: React.FC<EmptyDayPromptProps> = ({
                       copyAvailability.isCopyLocked
                         ? 'cursor-not-allowed opacity-60'
                         : 'hover:bg-slate-50 hover:text-slate-600',
-                      showDatePicker && 'bg-medical-50 text-medical-600'
+                      isDatePickerVisible && 'bg-medical-50 text-medical-600'
                     )}
                     title="Seleccionar otra fecha"
                     aria-label="Seleccionar otra fecha para copiar"
                   >
                     <ChevronDown
                       size={16}
-                      className={clsx('transition-transform', showDatePicker && 'rotate-180')}
+                      className={clsx('transition-transform', isDatePickerVisible && 'rotate-180')}
                     />
                   </button>
 
                   {/* Date Picker Dropdown - Opens Upward */}
-                  {showDatePicker && (
+                  {isDatePickerVisible && (
                     <div className="absolute bottom-full right-0 mb-2 w-56 max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-50 animate-fade-in">
                       <div className="p-2">
                         <p className="text-[10px] text-slate-400 uppercase font-bold px-2 py-1">

@@ -143,7 +143,7 @@ export const buildClinicalDocumentActor = (
 });
 
 export const buildClinicalDocumentPdfFileName = (record: ClinicalDocumentRecord): string =>
-  `${record.title.replace(/\s+/g, '_')}_${record.patientRut.replace(/[.\-]/g, '')}_${record.episodeKey}.pdf`;
+  `${record.title.replace(/\s+/g, '_')}_${record.patientRut.replace(/[.-]/g, '')}_${record.episodeKey}.pdf`;
 
 export const buildClinicalDocumentWorkspaceNotifyPort = (
   success: (title: string, message?: string) => void,

@@ -5,7 +5,6 @@ import {
   executeListBackupCrudFiles,
   executeGetBackupCrudFile,
   executeDeleteBackupCrudFile,
-  executeSaveNursingHandoffCrudBackup,
   executeCheckBackupCrudExists,
 } from '@/application/backup-export/backupFilesUseCases';
 

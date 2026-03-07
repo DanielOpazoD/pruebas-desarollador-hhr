@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useConfirmDialog } from '@/context/UIContext';
 import { DailyRecord } from '@/types';
 import { getAppSetting, saveAppSetting } from '@/services/settingsService';

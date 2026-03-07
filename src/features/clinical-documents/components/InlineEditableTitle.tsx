@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import clsx from 'clsx';
 
 interface InlineEditableTitleProps {
@@ -18,12 +18,6 @@ export const InlineEditableTitle: React.FC<InlineEditableTitleProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [draftValue, setDraftValue] = useState(value);
-
-  useEffect(() => {
-    if (!isEditing) {
-      setDraftValue(value);
-    }
-  }, [isEditing, value]);
 
   const commit = () => {
     const normalized = draftValue.trim();
@@ -62,7 +56,10 @@ export const InlineEditableTitle: React.FC<InlineEditableTitleProps> = ({
     <button
       type="button"
       className={clsx('clinical-document-inline-title', className)}
-      onClick={() => setIsEditing(true)}
+      onClick={() => {
+        setDraftValue(value);
+        setIsEditing(true);
+      }}
       title="Haz clic para editar"
     >
       {value}

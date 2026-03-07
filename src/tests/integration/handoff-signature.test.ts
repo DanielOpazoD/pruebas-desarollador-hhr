@@ -8,6 +8,7 @@ import { renderHook, act } from '@testing-library/react';
 import { useHandoffManagement } from '@/hooks/useHandoffManagement';
 import { DailyRecord, Specialty, PatientStatus } from '@/types';
 import * as whatsappService from '@/services/integrations/whatsapp/whatsappService';
+import { defaultDailyRecordReadPort } from '@/application/ports/dailyRecordPort';
 
 // ============================================================================
 // Mocks
@@ -109,6 +110,7 @@ describe('Handoff → Signature Integration', () => {
     mockPatchRecord = vi.fn(async (_partial: Partial<DailyRecord>) => {});
     saveAndUpdateFn = mockSaveAndUpdate as unknown as (updatedRecord: DailyRecord) => Promise<void>;
     patchRecordFn = mockPatchRecord as unknown as (partial: Partial<DailyRecord>) => Promise<void>;
+    defaultDailyRecordReadPort.getPreviousDay = vi.fn().mockResolvedValue(null);
   });
 
   describe('Nursing Handoff', () => {
@@ -220,6 +222,28 @@ describe('Handoff → Signature Integration', () => {
       expect(formatCall?.handoffUrl).toContain('mode=signature');
       expect(formatCall?.handoffUrl).toContain('date=2024-12-28');
     });
+
+    it('should keep state stable when remote delivery fails', async () => {
+      mockRecord.medicalHandoffDoctor = 'Dr. Falla';
+      vi.mocked(whatsappService.sendWhatsAppMessage).mockResolvedValueOnce({
+        success: false,
+        error: 'Servicio no disponible',
+      });
+
+      const { result } = renderHook(() =>
+        useHandoffManagement(mockRecord, saveAndUpdateFn, patchRecordFn)
+      );
+
+      await act(async () => {
+        await result.current.sendMedicalHandoff('Contenido', 'group-fail');
+      });
+
+      expect(mockPatchRecord).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          medicalHandoffSentAt: expect.any(String),
+        })
+      );
+    });
   });
 
   describe('Edge Cases', () => {
@@ -236,18 +260,9 @@ describe('Handoff → Signature Integration', () => {
     });
 
     it('should fallback to previous day doctor if current is empty when sending', async () => {
-      // We need a way to mock getPreviousDay from DailyRecordRepository
-      // Since it's an import, we mock the whole module
-      vi.mock('../../services/repositories/DailyRecordRepository', async importOriginal => {
-        const actual =
-          await importOriginal<
-            typeof import('../../services/repositories/DailyRecordRepository')
-          >();
-        return {
-          ...actual,
-          getPreviousDay: vi.fn(() => ({ medicalHandoffDoctor: 'Dr. Previous' })),
-        };
-      });
+      defaultDailyRecordReadPort.getPreviousDay = vi
+        .fn()
+        .mockResolvedValue({ medicalHandoffDoctor: 'Dr. Previous' } as DailyRecord);
 
       const { result } = renderHook(() =>
         useHandoffManagement(mockRecord, saveAndUpdateFn, patchRecordFn)

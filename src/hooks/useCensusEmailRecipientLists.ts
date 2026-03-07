@@ -97,6 +97,24 @@ export const useCensusEmailRecipientLists = ({
     });
   }, []);
 
+  const selectActiveRecipientList = useCallback(
+    (listId: string) => {
+      const activeList = recipientLists.find(list => list.id === listId);
+      if (!activeList || !canManageGlobalRecipientLists) {
+        setActiveRecipientListId(listId);
+        return;
+      }
+
+      applyActiveRecipientList(activeList);
+    },
+    [
+      applyActiveRecipientList,
+      canManageGlobalRecipientLists,
+      recipientLists,
+      setActiveRecipientListId,
+    ]
+  );
+
   useEffect(() => {
     let isActive = true;
 
@@ -147,24 +165,6 @@ export const useCensusEmailRecipientLists = ({
       isActive = false;
     };
   }, [applyActiveRecipientList, browserRuntime, canManageGlobalRecipientLists, user]);
-
-  useEffect(() => {
-    if (!canManageGlobalRecipientLists) {
-      return;
-    }
-
-    const activeList = recipientLists.find(list => list.id === activeRecipientListId);
-    if (!activeList) {
-      return;
-    }
-
-    applyActiveRecipientList(activeList);
-  }, [
-    activeRecipientListId,
-    applyActiveRecipientList,
-    canManageGlobalRecipientLists,
-    recipientLists,
-  ]);
 
   useEffect(() => {
     if (!recipientsReadyRef.current) {
@@ -314,7 +314,7 @@ export const useCensusEmailRecipientLists = ({
     setRecipients,
     recipientLists,
     activeRecipientListId,
-    setActiveRecipientListId,
+    setActiveRecipientListId: selectActiveRecipientList,
     createRecipientList,
     renameActiveRecipientList,
     deleteRecipientList,

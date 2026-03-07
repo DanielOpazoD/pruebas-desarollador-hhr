@@ -41,7 +41,7 @@ export const useDemographicsLogic = ({
     if (isOpen && data.patientName) {
       logPatientView(bedId, data.patientName, data.rut, recordDate);
     }
-  }, [isOpen, data.patientName, data.rut, bedId, recordDate]);
+  }, [isOpen, data.patientName, data.rut, bedId, recordDate, logPatientView]);
 
   const isProvisionalRnMode = isClinicalCribPatient && localData.identityStatus === 'provisional';
 

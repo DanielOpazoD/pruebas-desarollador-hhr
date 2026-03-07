@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import type { BackupFolder } from '@/hooks/useBackupFilesQuery';
-import type { BaseStoredFile } from '@/services/backup/baseStorageService';
-import type { StoredPdfFile } from '@/services/backup/pdfStorageService';
+import type { BaseStoredFile, StoredPdfFile } from '@/types/backupArtifacts';
 import type { BackupType } from '@/hooks/useBackupFileBrowser';
 import { buildInitialBackupBrowserPath } from '@/hooks/backupFileBrowserController';
 

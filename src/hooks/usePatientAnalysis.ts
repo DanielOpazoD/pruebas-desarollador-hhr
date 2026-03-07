@@ -5,7 +5,6 @@ import {
   executeMigratePatients,
   executeResolvePatientConflict,
   type AnalysisResult,
-  type Conflict,
 } from '@/application/patient-flow/patientAnalysisUseCase';
 import {
   defaultDailyRecordReadPort,

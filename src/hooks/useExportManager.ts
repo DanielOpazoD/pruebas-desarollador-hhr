@@ -3,7 +3,6 @@ import { DailyRecord } from '@/types';
 import { useConfirmDialog, useNotification } from '@/context/UIContext';
 import {
   buildArchiveStatusState,
-  resolveHandoffBackupStaff,
   shouldCheckArchiveStatus,
 } from '@/hooks/controllers/exportManagerController';
 import {
@@ -132,8 +131,6 @@ export const useExportManager = ({
   const handleBackupHandoff = useCallback(
     async (skipConfirmation = false) => {
       if (!record) return;
-
-      const { delivers, receives } = resolveHandoffBackupStaff(record, selectedShift);
 
       const [year, month, day] = record.date.split('-');
       const formattedDate = `${day}-${month}-${year}`;

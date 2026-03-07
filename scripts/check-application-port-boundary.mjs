@@ -14,6 +14,8 @@ const LAYER_RULES = [
     excludePrefixes: ['src/hooks/controllers/', 'src/features/backup/'],
     forbiddenImports: [
       '@/services/auditService',
+      '@/services/backup/backupService',
+      '@/services/census/censusAccessService',
       '@/services/repositories/DailyRecordRepository',
       '@/services/repositories/ClinicalDocumentRepository',
       '@/services/integrations/censusEmailService',
@@ -25,6 +27,8 @@ const LAYER_RULES = [
     excludePrefixes: ['src/application/ports/'],
     forbiddenImports: [
       '@/services/auditService',
+      '@/services/backup/backupService',
+      '@/services/census/censusAccessService',
       '@/services/repositories/DailyRecordRepository',
       '@/services/repositories/ClinicalDocumentRepository',
       '@/services/integrations/censusEmailService',

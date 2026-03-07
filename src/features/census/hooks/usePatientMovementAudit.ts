@@ -17,21 +17,27 @@ interface TransferAuditEntry {
 
 export const usePatientMovementAudit = () => {
   const { logPatientDischarge, logPatientTransfer } = useAuditContext();
-  const logDischargeEntries = useCallback((entries: DischargeAuditEntry[], recordDate: string) => {
-    for (const entry of entries) {
-      logPatientDischarge(entry.bedId, entry.patientName, entry.rut, entry.status, recordDate);
-    }
-  }, []);
+  const logDischargeEntries = useCallback(
+    (entries: DischargeAuditEntry[], recordDate: string) => {
+      for (const entry of entries) {
+        logPatientDischarge(entry.bedId, entry.patientName, entry.rut, entry.status, recordDate);
+      }
+    },
+    [logPatientDischarge]
+  );
 
-  const logTransferEntry = useCallback((entry: TransferAuditEntry, recordDate: string) => {
-    logPatientTransfer(
-      entry.bedId,
-      entry.patientName,
-      entry.rut,
-      entry.receivingCenter,
-      recordDate
-    );
-  }, []);
+  const logTransferEntry = useCallback(
+    (entry: TransferAuditEntry, recordDate: string) => {
+      logPatientTransfer(
+        entry.bedId,
+        entry.patientName,
+        entry.rut,
+        entry.receivingCenter,
+        recordDate
+      );
+    },
+    [logPatientTransfer]
+  );
 
   return useMemo(
     () => ({

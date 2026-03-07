@@ -148,7 +148,7 @@ export const useDailyRecordSyncQuery = (
         throw err;
       }
     },
-    [saveMutation, notifyError, refetch, clearPendingRefetchTimeout]
+    [saveMutation, notifyError, refetch, clearPendingRefetchTimeout, warning]
   );
 
   const patchRecord = useCallback(

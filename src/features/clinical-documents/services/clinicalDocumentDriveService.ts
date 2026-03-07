@@ -2,7 +2,6 @@ import { requestAccessToken } from '@/services/google/googleDriveAuth';
 import { uploadToDriveFolder } from '@/services/google/googleDriveFolders';
 
 const ROOT_FOLDER = 'Hospitalizados';
-const CLINICAL_FOLDER = 'Documentos Clinicos';
 const DOCUMENT_ROOT_FOLDER = 'Documentos Clinicos';
 const FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
 
@@ -80,7 +79,7 @@ export const uploadClinicalDocumentPdfToDrive = async (
   const token = await requestAccessToken();
   const year = now.getFullYear().toString();
   const month = String(now.getMonth() + 1).padStart(2, '0');
-  const patientFolder = `${patientName.trim().replace(/\s+/g, '_')}_${patientRut.replace(/[.\-]/g, '')}_${episodeKey}`;
+  const patientFolder = `${patientName.trim().replace(/\s+/g, '_')}_${patientRut.replace(/[.-]/g, '')}_${episodeKey}`;
   const documentFolder = documentType
     .replace(/_/g, ' ')
     .replace(/\b\w/g, letter => letter.toUpperCase());

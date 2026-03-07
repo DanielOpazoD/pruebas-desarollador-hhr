@@ -54,10 +54,11 @@ export const useClinicalDocumentWorkspaceBootstrap = ({
     [bedId, currentDateString, patient]
   );
 
-  useEffect(() => {
-    if (!templates.some(template => template.id === selectedTemplateId)) {
-      setSelectedTemplateId(templates[0]?.id || 'epicrisis');
+  const resolvedSelectedTemplateId = useMemo(() => {
+    if (templates.some(template => template.id === selectedTemplateId)) {
+      return selectedTemplateId;
     }
+    return templates[0]?.id || 'epicrisis';
   }, [selectedTemplateId, templates]);
 
   useEffect(() => {
@@ -119,7 +120,7 @@ export const useClinicalDocumentWorkspaceBootstrap = ({
 
   return {
     templates,
-    selectedTemplateId,
+    selectedTemplateId: resolvedSelectedTemplateId,
     setSelectedTemplateId,
     documents,
     selectedDocumentId,

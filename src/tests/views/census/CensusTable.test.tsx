@@ -71,8 +71,9 @@ vi.mock('@/context/AuthContext', () => ({
   })),
 }));
 
+const patientRowMock = vi.fn((_props: unknown) => <tr data-testid="patient-row" />);
 vi.mock('@/features/census/components/PatientRow', () => ({
-  PatientRow: () => <tr data-testid="patient-row" />,
+  PatientRow: (props: unknown) => patientRowMock(props),
 }));
 
 vi.mock('@/features/census/components/EmptyBedRow', () => ({
@@ -230,6 +231,7 @@ describe('CensusTable', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    patientRowMock.mockClear();
     applyDefaultMocks();
   });
 
@@ -349,5 +351,52 @@ describe('CensusTable', () => {
         enabled: true,
       })
     );
+  });
+
+  it('passes clinical-document and new-admission indicators to the main row binding', () => {
+    const patient = DataFactory.createMockPatient('R1', {
+      patientName: 'Paciente indicador',
+      rut: '11.111.111-1',
+      admissionDate: '2025-01-09',
+      admissionTime: '07:30',
+    });
+
+    vi.mocked(useAuth).mockReturnValue(
+      asContextReturn<ReturnType<typeof useAuth>>({
+        user: null,
+        role: 'nurse_hospital',
+        isLoading: false,
+        isAuthenticated: false,
+        isEditor: true,
+        isViewer: false,
+        isFirebaseConnected: true,
+        signOut: vi.fn(),
+      })
+    );
+    vi.mocked(useDailyRecordBeds).mockReturnValue(
+      asContextReturn<ReturnType<typeof useDailyRecordBeds>>({
+        R1: patient,
+      })
+    );
+    vi.mocked(useClinicalDocumentPresenceByBed).mockReturnValue({
+      R1: true,
+    });
+
+    render(<CensusTable currentDateString="2025-01-08" />);
+
+    expect(
+      patientRowMock.mock.calls.some(call => {
+        const props = call[0] as unknown as {
+          indicators?: { hasClinicalDocument?: boolean; isNewAdmission?: boolean };
+        };
+        const rowProps = props as {
+          indicators?: { hasClinicalDocument?: boolean; isNewAdmission?: boolean };
+        };
+        return (
+          rowProps.indicators?.hasClinicalDocument === true &&
+          rowProps.indicators?.isNewAdmission === true
+        );
+      })
+    ).toBe(true);
   });
 });

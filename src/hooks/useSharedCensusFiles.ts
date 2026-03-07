@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { StoredCensusFile } from '@/services/backup/censusStorageService';
+import type { StoredCensusFile } from '@/types/backupArtifacts';
 import { CensusAccessUser } from '@/types/censusAccess';
 import {
   filterSharedCensusFilesByTerm,

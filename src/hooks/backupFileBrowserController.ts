@@ -1,7 +1,6 @@
 import type { BackupFolder } from '@/hooks/useBackupFilesQuery';
-import type { BaseStoredFile } from '@/services/backup/baseStorageService';
-import type { StoredPdfFile } from '@/services/backup/pdfStorageService';
-import { MONTH_NAMES } from '@/services/backup/baseStorageService';
+import type { BaseStoredFile, StoredPdfFile } from '@/types/backupArtifacts';
+import { MONTH_NAMES } from '@/types/backupArtifacts';
 
 export type BackupBrowserType = 'handoff' | 'census' | 'cudyr';
 

@@ -114,7 +114,6 @@ export const useCensusDischargeCommand = ({
     },
     [
       addDischargeRef,
-      confirmRef,
       dischargeStateRef,
       getCurrentTime,
       notifyError,

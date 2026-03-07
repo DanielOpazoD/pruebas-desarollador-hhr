@@ -147,6 +147,23 @@ describe('useExportManager', () => {
     });
   });
 
+  it('treats a missing lookup as a non-fatal unarchived state', async () => {
+    vi.mocked(backupExportUseCases.executeLookupBackupArchiveStatus).mockResolvedValueOnce({
+      status: 'success',
+      data: { exists: false, lookup: { exists: false, status: 'missing' } },
+      issues: [],
+    } as any);
+
+    const { result } = renderHook(() => useExportManager(defaultProps));
+
+    await waitFor(() => {
+      expect(result.current.isArchived).toBe(false);
+    });
+
+    expect(notificationApi.warning).not.toHaveBeenCalled();
+    expect(notificationApi.error).not.toHaveBeenCalled();
+  });
+
   it('surfaces partial handoff backup and still marks archive state', async () => {
     vi.mocked(backupExportUseCases.executeBackupHandoffPdf).mockResolvedValueOnce({
       status: 'partial',

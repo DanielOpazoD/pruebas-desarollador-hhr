@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { StoredCensusFile } from '@/services/backup/censusStorageService';
+import type { StoredCensusFile } from '@/types/backupArtifacts';
 import {
   executeLoadSharedCensusFilesController,
   filterSharedCensusFilesByTerm,

@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
-import { MONTH_NAMES, type BaseStoredFile } from '@/services/backup/baseStorageService';
-import type { StoredPdfFile } from '@/services/backup/pdfStorageService';
+import { MONTH_NAMES, type BaseStoredFile, type StoredPdfFile } from '@/types/backupArtifacts';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 import type { BackupType } from '@/hooks/useBackupFileBrowser';
 import { resolveBackupModuleLabel } from '@/hooks/backupFileBrowserController';
