@@ -63,3 +63,7 @@ tsc_*.log
 .env*
 # NOTA: llave-beta.json debe estar en functions/ para el despliegue de Cloud Functions
 functions/llave-beta.json
+
+# Local agent / worktree artifacts
+.claude/
+.agent/
