@@ -14,6 +14,7 @@ import {
   generateDailyTrend,
   getDateRangeFromPreset,
 } from '@/services/calculations/minsalStatsCalculator';
+import { resolveDisplayedMinsalStats } from '@/hooks/controllers/minsalStatsPresentationController';
 import { getFunctionsInstance } from '@/firebaseConfig';
 import { getActiveHospitalId } from '@/constants/firestorePaths';
 import {
@@ -118,12 +119,6 @@ export function useMinsalStats(initialPreset: DateRangePreset = 'lastMonth'): Us
     return generateDailyTrend(filtered);
   }, [rangeRecords, startDate, endDate]);
 
-  const currentSnapshot = useMemo(() => {
-    if (trendData.length === 0) return null;
-    const withData = [...trendData].reverse().find(snapshot => snapshot.ocupadas > 0);
-    return withData ?? trendData[trendData.length - 1];
-  }, [trendData]);
-
   const localRangeStats = useMemo(() => {
     if (rangeRecords.length === 0) {
       return null;
@@ -139,46 +134,11 @@ export function useMinsalStats(initialPreset: DateRangePreset = 'lastMonth'): Us
   }, [remoteStatsQuery.isError, localRangeStats]);
 
   const stats = useMemo<MinsalStatistics | null>(() => {
-    if (remoteStatsQuery.data) {
-      const remote = remoteStatsQuery.data;
-      const snapshot = currentSnapshot;
-      const snapshotOccupancy = snapshot?.tasaOcupacion ?? 0;
-      const snapshotOccupied = snapshot?.ocupadas ?? 0;
-      const snapshotBlocked = snapshot?.bloqueadas ?? 0;
-      const snapshotAvailable = snapshot?.disponibles ?? 0;
-
-      const remoteSpecialtyBreakdown = remote.porEspecialidad ?? [];
-      const preferredSpecialtyBreakdown =
-        localRangeStats?.porEspecialidad && localRangeStats.porEspecialidad.length > 0
-          ? localRangeStats.porEspecialidad
-          : remoteSpecialtyBreakdown;
-
-      return {
-        ...remote,
-        periodStart: remote.periodStart || startDate,
-        periodEnd: remote.periodEnd || endDate,
-        totalDays: remote.totalDays ?? rangeRecords.length,
-        calendarDays: remote.calendarDays ?? getDaysInRange(startDate, endDate),
-        pacientesActuales: remote.pacientesActuales ?? snapshotOccupied,
-        camasOcupadas: remote.camasOcupadas ?? snapshotOccupied,
-        camasBloqueadas: remote.camasBloqueadas ?? snapshotBlocked,
-        camasDisponibles: remote.camasDisponibles ?? snapshotAvailable,
-        camasLibres: remote.camasLibres ?? Math.max(0, snapshotAvailable - snapshotOccupied),
-        tasaOcupacionActual: remote.tasaOcupacionActual ?? snapshotOccupancy,
-        porEspecialidad: preferredSpecialtyBreakdown,
-      };
-    }
-
-    return localFallbackStats;
-  }, [
-    remoteStatsQuery.data,
-    localFallbackStats,
-    localRangeStats,
-    currentSnapshot,
-    startDate,
-    endDate,
-    rangeRecords.length,
-  ]);
+    return resolveDisplayedMinsalStats({
+      localStats: localRangeStats,
+      remoteStats: remoteStatsQuery.data ?? localFallbackStats,
+    });
+  }, [localFallbackStats, localRangeStats, remoteStatsQuery.data]);
 
   const error = useMemo(() => {
     if (recordsQuery.error) {
