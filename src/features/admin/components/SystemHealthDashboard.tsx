@@ -105,6 +105,17 @@ export const SystemHealthDashboard = () => {
           </p>
         </div>
         <div className="card p-3">
+          <p className="text-[10px] uppercase font-bold text-slate-400">Operación dominante</p>
+          <p className="text-sm font-black text-slate-900">
+            {summary.topOperationalOperation || 'Sin patrón dominante'}
+          </p>
+          <p className="text-[10px] text-slate-400">
+            {summary.topOperationalCategory
+              ? `Tipo principal: ${summary.topOperationalCategory}`
+              : 'Sin categoría dominante reciente'}
+          </p>
+        </div>
+        <div className="card p-3">
           <p className="text-[10px] uppercase font-bold text-slate-400">Recencia operativa</p>
           <p className="text-sm font-black text-slate-900">
             {summary.usersWithRecentOperationalIssues} usuarios recientes
@@ -286,9 +297,18 @@ export const SystemHealthDashboard = () => {
                       <span>Local {u.operationalIndexedDbObservedCount}</span>
                       <span>Docs {u.operationalClinicalDocumentObservedCount}</span>
                       <span>Día {u.operationalCreateDayObservedCount}</span>
+                      {u.operationalTopObservedCategory && (
+                        <span>Tipo {u.operationalTopObservedCategory}</span>
+                      )}
+                      {u.operationalTopObservedOperation && (
+                        <span className="text-slate-400">
+                          Op. {u.operationalTopObservedOperation}
+                        </span>
+                      )}
                       {u.latestOperationalIssueAt && (
                         <span className="text-slate-400">
                           Última obs.{' '}
+                          {u.latestOperationalOperation ? `${u.latestOperationalOperation} · ` : ''}
                           {new Date(u.latestOperationalIssueAt).toLocaleTimeString([], {
                             hour: '2-digit',
                             minute: '2-digit',

@@ -163,6 +163,7 @@ npm run test
 - **Feature-first híbrido**: módulos por feature + capas transversales (`services`, `shared`, `types`).
 - **Controller pattern**: lógica de validación, transformación y comandos fuera de componentes.
 - **Application use cases**: coordinación explícita de operaciones críticas sobre repositorios y outcomes homogéneos.
+- **Operational telemetry**: el core reporta eventos estructurados (`sync`, `indexeddb`, `export`, `backup`, `clinical_document`, `create_day`) a una telemetría local persistida y puede reenviarlos a un adapter externo opt-in vía `VITE_OPERATIONAL_TELEMETRY_ENDPOINT`.
 - **Ports/adapters**: los use-cases hablan con contratos (`AuditPort`, `DailyRecordReadPort`, `DailyRecordWritePort`, `CensusEmailDeliveryPort`, `ClinicalDocumentPort`) y los adapters por defecto viven en `src/application/ports/*`.
 - Casos ya migrados en primera ola:
   - inicialización/sync de `dailyRecord`
@@ -173,6 +174,10 @@ npm run test
   - escritura/lectura de auditoría
   - bootstrap/sync/CRUD de listas de destinatarios de censo
   - persistencia/firma/desfirma/exportación de documentos clínicos
+- Casos ya modularizados por bounded context:
+  - `backup-export/backupExportStorageUseCases`
+  - `backup-export/backupExportArchiveUseCases`
+  - `backup-export/backupExportMaintenanceUseCases`
 - **Repository pattern**: acceso a datos desacoplado de la UI.
 - **Runtime adapter pattern**: encapsulación de efectos de browser (`alert`, `confirm`, `reload`, `open`).
 - **Form flow unificado**: `useModalFormFlow` en modales críticos.

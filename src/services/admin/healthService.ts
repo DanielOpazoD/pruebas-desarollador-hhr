@@ -29,6 +29,9 @@ export interface UserHealthStatus {
   operationalClinicalDocumentObservedCount: number;
   operationalCreateDayObservedCount: number;
   operationalExportBackupObservedCount: number;
+  operationalTopObservedCategory?: string;
+  operationalTopObservedOperation?: string;
+  latestOperationalOperation?: string;
   latestOperationalIssueAt?: string;
   appVersion: string;
   platform: string;
@@ -58,6 +61,8 @@ export interface SystemHealthSummary {
   totalOperationalClinicalDocumentObservedCount: number;
   totalOperationalCreateDayObservedCount: number;
   totalOperationalExportBackupObservedCount: number;
+  topOperationalCategory?: string;
+  topOperationalOperation?: string;
   usersWithRecentOperationalIssues: number;
   latestOperationalIssueAt?: string;
 }
@@ -105,6 +110,16 @@ export const normalizeUserHealthStatus = (raw: Partial<UserHealthStatus>): UserH
   operationalClinicalDocumentObservedCount: toNumber(raw.operationalClinicalDocumentObservedCount),
   operationalCreateDayObservedCount: toNumber(raw.operationalCreateDayObservedCount),
   operationalExportBackupObservedCount: toNumber(raw.operationalExportBackupObservedCount),
+  operationalTopObservedCategory:
+    typeof raw.operationalTopObservedCategory === 'string'
+      ? raw.operationalTopObservedCategory
+      : undefined,
+  operationalTopObservedOperation:
+    typeof raw.operationalTopObservedOperation === 'string'
+      ? raw.operationalTopObservedOperation
+      : undefined,
+  latestOperationalOperation:
+    typeof raw.latestOperationalOperation === 'string' ? raw.latestOperationalOperation : undefined,
   latestOperationalIssueAt:
     typeof raw.latestOperationalIssueAt === 'string' ? raw.latestOperationalIssueAt : undefined,
   appVersion: toStringValue(raw.appVersion, 'unknown'),
@@ -118,6 +133,24 @@ export const buildSystemHealthSummary = (statuses: UserHealthStatus[]): SystemHe
     .filter((value): value is string => typeof value === 'string' && value.length > 0)
     .sort()
     .at(-1);
+  const topCount = (values: string[]): string | undefined => {
+    if (values.length === 0) return undefined;
+    const counts = values.reduce<Record<string, number>>((acc, value) => {
+      acc[value] = (acc[value] || 0) + 1;
+      return acc;
+    }, {});
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0];
+  };
+  const topOperationalCategory = topCount(
+    statuses
+      .map(status => status.operationalTopObservedCategory)
+      .filter((value): value is string => Boolean(value))
+  );
+  const topOperationalOperation = topCount(
+    statuses
+      .map(status => status.operationalTopObservedOperation)
+      .filter((value): value is string => Boolean(value))
+  );
 
   return {
     totalUsers: statuses.length,
@@ -179,6 +212,8 @@ export const buildSystemHealthSummary = (statuses: UserHealthStatus[]): SystemHe
       (sum, status) => sum + status.operationalExportBackupObservedCount,
       0
     ),
+    topOperationalCategory,
+    topOperationalOperation,
     usersWithRecentOperationalIssues: statuses.filter(status => !!status.latestOperationalIssueAt)
       .length,
     latestOperationalIssueAt,

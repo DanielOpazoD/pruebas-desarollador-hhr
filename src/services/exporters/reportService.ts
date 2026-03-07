@@ -10,7 +10,7 @@ import {
 export const generateCensusDailyRaw = async (date: string) => {
   const workbook = await buildDailyRawWorkbookOrNull(date);
   if (!workbook) return;
-  await downloadWorkbookFile({ workbook, filename: `Censo_HangaRoa_Bruto_${date}.xlsx` });
+  await downloadWorkbookFile({ workbook, filename: `Censo_HangaRoa_Bruto_Diario_${date}.xlsx` });
 };
 
 export const generateCensusRangeRaw = async (startDate: string, endDate: string) => {
@@ -18,7 +18,7 @@ export const generateCensusRangeRaw = async (startDate: string, endDate: string)
   if (!workbook) return;
   await downloadWorkbookFile({
     workbook,
-    filename: `Censo_HangaRoa_Rango_${startDate}_${endDate}.xlsx`,
+    filename: `Censo_HangaRoa_Bruto_Rango_${startDate}_${endDate}.xlsx`,
   });
 };
 
@@ -38,7 +38,7 @@ export const generateCensusDailyFormatted = async (date: string) => {
   if (!workbook) return;
   await downloadWorkbookFile({
     workbook,
-    filename: `Censo_HangaRoa_Formateado_${date}.xlsx`,
+    filename: `Censo_HangaRoa_Formateado_Diario_${date}.xlsx`,
   });
 };
 
@@ -47,7 +47,7 @@ export const generateCensusRangeFormatted = async (startDate: string, endDate: s
   if (!workbook) return;
   await downloadWorkbookFile({
     workbook,
-    filename: `Censo_HangaRoa_Formateado_${startDate}_${endDate}.xlsx`,
+    filename: `Censo_HangaRoa_Formateado_Rango_${startDate}_${endDate}.xlsx`,
   });
 };
 

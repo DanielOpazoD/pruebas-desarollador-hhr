@@ -1,0 +1,182 @@
+import type { BackupItem, BackupType } from '@/hooks/backupFileBrowserContracts';
+import type { StoredPdfFile } from '@/services/backup/pdfStorageService';
+import type { BaseStoredFile, StorageListReport } from '@/services/backup/baseStorageService';
+import type { StorageLookupResult } from '@/services/backup/storageLookupContracts';
+import {
+  createApplicationDegraded,
+  createApplicationFailed,
+  createApplicationSuccess,
+  type ApplicationOutcome,
+} from '@/application/shared/applicationOutcome';
+import { deletePdf, pdfExistsDetailed } from '@/services/backup/pdfStorageService';
+import {
+  deleteCensusFile,
+  checkCensusExistsDetailed,
+} from '@/services/backup/censusStorageService';
+import { cudyrExistsDetailed, deleteCudyrFile } from '@/services/backup/cudyrStorageService';
+import {
+  EMPTY_STORAGE_LIST_REPORT,
+  hasDegradedStorageListReport,
+  monthNameToNumber,
+  resolveBackupStorageServices,
+} from '@/application/backup-export/backupExportShared';
+
+export interface LookupBackupArchiveStatusInput {
+  backupType: BackupType;
+  date: string;
+  shift?: 'day' | 'night';
+}
+
+export interface LookupBackupArchiveStatusOutput {
+  exists: boolean;
+  lookup: StorageLookupResult;
+}
+
+export const executeLookupBackupArchiveStatus = async ({
+  backupType,
+  date,
+  shift = 'day',
+}: LookupBackupArchiveStatusInput): Promise<
+  ApplicationOutcome<LookupBackupArchiveStatusOutput>
+> => {
+  try {
+    const lookup =
+      backupType === 'handoff'
+        ? await pdfExistsDetailed(date, shift)
+        : backupType === 'census'
+          ? await checkCensusExistsDetailed(date)
+          : await cudyrExistsDetailed(date);
+
+    const data = { exists: lookup.exists, lookup };
+    if (lookup.status === 'restricted' || lookup.status === 'timeout') {
+      return createApplicationDegraded(data, [
+        {
+          kind: 'unknown',
+          message:
+            lookup.status === 'restricted'
+              ? 'No se pudo confirmar el respaldo por permisos de Storage.'
+              : 'La verificación del respaldo excedió el tiempo esperado.',
+        },
+      ]);
+    }
+
+    return createApplicationSuccess(data);
+  } catch (error) {
+    return createApplicationFailed(
+      {
+        exists: false,
+        lookup: { exists: false, status: 'error' },
+      },
+      [
+        {
+          kind: 'unknown',
+          message:
+            error instanceof Error ? error.message : 'Error al verificar el respaldo remoto.',
+        },
+      ]
+    );
+  }
+};
+
+export interface ListBackupFilesInput {
+  backupType: BackupType;
+  path: string[];
+}
+
+export interface ListBackupFilesOutput {
+  items: BackupItem[];
+  report: StorageListReport;
+}
+
+export const executeListBackupFiles = async ({
+  backupType,
+  path,
+}: ListBackupFilesInput): Promise<ApplicationOutcome<ListBackupFilesOutput>> => {
+  try {
+    const service = resolveBackupStorageServices(backupType);
+
+    if (path.length === 0) {
+      const years = await service.listYears();
+      return createApplicationSuccess({
+        items: years.map(year => ({
+          type: 'folder',
+          data: { name: year, type: 'year' as const },
+        })),
+        report: EMPTY_STORAGE_LIST_REPORT,
+      });
+    }
+
+    if (path.length === 1) {
+      const months = await service.listMonths(path[0]);
+      return createApplicationSuccess({
+        items: months.map(month => ({
+          type: 'folder',
+          data: { name: month.name, number: month.number, type: 'month' as const },
+        })),
+        report: EMPTY_STORAGE_LIST_REPORT,
+      });
+    }
+
+    if (path.length === 2) {
+      const filesResult = await service.listFilesInMonthWithReport(
+        path[0],
+        monthNameToNumber(path[1])
+      );
+      const data = {
+        items: filesResult.files.map(file => ({
+          type: 'file' as const,
+          data: file,
+        })),
+        report: filesResult.report,
+      };
+
+      if (hasDegradedStorageListReport(filesResult.report)) {
+        return createApplicationDegraded(data, [
+          {
+            kind: 'unknown',
+            message: 'La lista remota de respaldos quedó incompleta o degradada.',
+          },
+        ]);
+      }
+
+      return createApplicationSuccess(data);
+    }
+
+    return createApplicationSuccess({ items: [], report: EMPTY_STORAGE_LIST_REPORT });
+  } catch (error) {
+    return createApplicationFailed({ items: [], report: EMPTY_STORAGE_LIST_REPORT }, [
+      {
+        kind: 'unknown',
+        message: error instanceof Error ? error.message : 'Error al cargar respaldos remotos.',
+      },
+    ]);
+  }
+};
+
+export interface DeleteBackupFileInput {
+  backupType: BackupType;
+  file: BaseStoredFile | StoredPdfFile;
+}
+
+export const executeDeleteBackupFile = async (
+  input: DeleteBackupFileInput
+): Promise<ApplicationOutcome<null>> => {
+  try {
+    if (input.backupType === 'handoff') {
+      const pdfFile = input.file as StoredPdfFile;
+      await deletePdf(pdfFile.date, pdfFile.shiftType);
+    } else if (input.backupType === 'census') {
+      await deleteCensusFile(input.file.date);
+    } else {
+      await deleteCudyrFile(input.file.date);
+    }
+    return createApplicationSuccess(null);
+  } catch (error) {
+    return createApplicationFailed(null, [
+      {
+        kind: 'unknown',
+        message: error instanceof Error ? error.message : 'Error al eliminar archivo',
+      },
+    ]);
+  }
+};

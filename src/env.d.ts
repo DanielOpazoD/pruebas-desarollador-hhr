@@ -22,6 +22,8 @@ interface ImportMetaEnv {
   readonly VITE_LEGACY_COMPATIBILITY_MODE?: string;
   readonly VITE_DEBUG_REPOSITORY?: string;
   readonly VITE_WHATSAPP_BOT_URL?: string;
+  readonly VITE_OPERATIONAL_TELEMETRY_ENDPOINT?: string;
+  readonly VITE_OPERATIONAL_TELEMETRY_SAMPLE_RATE?: string;
 }
 
 interface _ImportMeta {

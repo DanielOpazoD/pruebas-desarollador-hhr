@@ -1,3 +1,5 @@
+import { dispatchOperationalTelemetryExternally } from '@/services/observability/operationalTelemetryExternalAdapter';
+
 export type OperationalTelemetryCategory =
   | 'sync'
   | 'indexeddb'
@@ -32,6 +34,9 @@ export interface OperationalTelemetrySummary {
   exportObservedCount: number;
   backupObservedCount: number;
   exportOrBackupObservedCount: number;
+  topObservedCategory?: OperationalTelemetryCategory;
+  topObservedOperation?: string;
+  latestObservedOperation?: string;
   latestIssueAt?: string;
 }
 
@@ -142,6 +147,7 @@ export const recordOperationalTelemetry = (
 
   const nextEvents = [...readPersistedEvents(), event];
   persistEvents(nextEvents);
+  void dispatchOperationalTelemetryExternally(event);
 };
 
 export const getOperationalTelemetryEvents = (): OperationalTelemetryEvent[] =>
@@ -163,9 +169,20 @@ export const buildOperationalTelemetrySummary = (
   const observedEvents = recentEvents.filter(
     event => event.status === 'partial' || event.status === 'degraded' || event.status === 'failed'
   );
+  const buildTopKey = <T extends string>(values: T[]): T | undefined => {
+    if (values.length === 0) return undefined;
+    const counts = values.reduce<Record<string, number>>((acc, value) => {
+      acc[value] = (acc[value] || 0) + 1;
+      return acc;
+    }, {});
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] as T | undefined;
+  };
   const failedEvents = recentEvents.filter(event => event.status === 'failed');
   const observedCategoryCount = (category: OperationalTelemetryCategory): number =>
     recentEvents.filter(event => event.category === category && event.status !== 'success').length;
+  const topObservedCategory = buildTopKey(observedEvents.map(event => event.category));
+  const topObservedOperation = buildTopKey(observedEvents.map(event => event.operation));
+  const latestObservedOperation = observedEvents.at(-1)?.operation;
 
   return {
     recentEventCount: recentEvents.length,
@@ -189,6 +206,9 @@ export const buildOperationalTelemetrySummary = (
       event =>
         (event.category === 'export' || event.category === 'backup') && event.status !== 'success'
     ).length,
+    topObservedCategory,
+    topObservedOperation,
+    latestObservedOperation,
     latestIssueAt: observedEvents.at(-1)?.timestamp,
   };
 };

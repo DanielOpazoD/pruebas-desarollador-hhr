@@ -1,29 +1,17 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo } from 'react';
 
 // Sub-hooks
 import { usePersistence } from './usePersistence';
-import { useInventory } from './useInventory';
-import { useValidation } from './useValidation';
 
 // Sync hooks
 import { useDailyRecordSyncQuery } from './useDailyRecordSyncQuery';
 
 // Domain hooks
-import { useBedManagement } from './useBedManagement';
-import { usePatientDischarges } from './usePatientDischarges';
-import { usePatientTransfers } from './usePatientTransfers';
-import { useNurseManagement, useTensManagement } from './useNurseManagement';
-import { useCMA } from './useCMA';
-import { useHandoffManagement } from './useHandoffManagement';
-import { useStabilityRules } from './useStabilityRules';
 import { useRepositories } from '@/services/RepositoryContext';
 import { useNotification } from '@/context/UIContext';
-import {
-  buildDailyRecordContextValue,
-  resolveCopyPatientRequest,
-} from '@/hooks/controllers/dailyRecordController';
-import { hasCriticalLegacyRepairSignal } from '@/hooks/controllers/legacyRepairWarningController';
-import { buildCopyPatientNotifications } from '@/hooks/controllers/persistenceFeedbackController';
+import { buildDailyRecordContextValue } from '@/hooks/controllers/dailyRecordController';
+import { useDailyRecordDomainModules } from '@/hooks/useDailyRecordDomainModules';
+import { useDailyRecordCopyActions } from '@/hooks/useDailyRecordCopyActions';
 
 // Types
 import { DailyRecordContextType } from './useDailyRecordTypes';
@@ -63,56 +51,28 @@ export const useDailyRecord = (
     setRecord,
   });
 
-  const inventory = useInventory(record);
-  const stabilityRules = useStabilityRules(record);
-  const { validateRecordSchema, canMovePatient, canDischargePatient } = useValidation();
-
-  // ========================================================================
-  // Domain Hooks Composition
-  // ========================================================================
-  const bedManagement = useBedManagement(record, saveAndUpdate, patchRecord);
-  const dischargeManagement = usePatientDischarges(record, saveAndUpdate);
-  const transferManagement = usePatientTransfers(record, saveAndUpdate);
-  const nurseManagement = useNurseManagement(record, patchRecord);
-  const tensManagement = useTensManagement(record, patchRecord);
-  const cmaManagement = useCMA(record, saveAndUpdate);
-  const handoffManagement = useHandoffManagement(record, saveAndUpdate, patchRecord);
+  const {
+    inventory,
+    stabilityRules,
+    validation: { validateRecordSchema, canMovePatient, canDischargePatient },
+    bedManagement,
+    dischargeManagement,
+    transferManagement,
+    nurseManagement,
+    tensManagement,
+    cmaManagement,
+    handoffManagement,
+  } = useDailyRecordDomainModules(record, saveAndUpdate, patchRecord);
 
   // ========================================================================
   // Cross-date Copy
   // ========================================================================
-  const copyPatientToDate = useCallback(
-    async (bedId: string, targetDate: string, targetBedId?: string) => {
-      const copyRequest = resolveCopyPatientRequest({
-        record,
-        bedId,
-        targetDate,
-        targetBedId,
-      });
-      if (!copyRequest) return;
-
-      try {
-        const copyResult = await dailyRecord.copyPatientToDateDetailed(
-          copyRequest.sourceDate,
-          copyRequest.sourceBedId,
-          copyRequest.targetDate,
-          copyRequest.targetBedId
-        );
-        const notifications = buildCopyPatientNotifications({
-          outcome: copyResult.outcome,
-          hasCriticalLegacyRepair: hasCriticalLegacyRepairSignal(copyResult),
-        });
-        for (const notification of notifications) {
-          warning(notification.title, notification.message);
-        }
-        await refresh();
-      } catch (error) {
-        console.error('Error copying patient to date:', error);
-        throw error;
-      }
-    },
-    [record, refresh, dailyRecord, warning]
-  );
+  const copyPatientToDate = useDailyRecordCopyActions({
+    record,
+    refresh,
+    dailyRecord,
+    warning,
+  });
 
   // ========================================================================
   // Public API (memoized to prevent unnecessary re-renders)

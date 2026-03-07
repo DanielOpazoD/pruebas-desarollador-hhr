@@ -1,0 +1,58 @@
+import { describe, expect, it, vi } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
+import { useBedManagementActionCreators } from '@/hooks/useBedManagementActionCreators';
+
+describe('useBedManagementActionCreators', () => {
+  it('should dispatch update and toggle actions with the expected payloads', () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useBedManagementActionCreators(dispatch));
+
+    act(() => {
+      result.current.updatePatient('R1', 'age', '52');
+      result.current.updateClinicalCrib('R1', 'create');
+      result.current.moveOrCopyPatient('copy', 'R1', 'R2');
+      result.current.toggleBlockBed('R1', 'Mantencion');
+    });
+
+    expect(dispatch).toHaveBeenNthCalledWith(1, {
+      type: 'UPDATE_PATIENT',
+      bedId: 'R1',
+      field: 'age',
+      value: '52',
+    });
+    expect(dispatch).toHaveBeenNthCalledWith(2, {
+      type: 'CREATE_CLINICAL_CRIB',
+      bedId: 'R1',
+    });
+    expect(dispatch).toHaveBeenNthCalledWith(3, {
+      type: 'COPY_PATIENT',
+      sourceBedId: 'R1',
+      targetBedId: 'R2',
+    });
+    expect(dispatch).toHaveBeenNthCalledWith(4, {
+      type: 'TOGGLE_BLOCK_BED',
+      bedId: 'R1',
+      reason: 'Mantencion',
+    });
+  });
+
+  it('should route remove clinical crib and move actions correctly', () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useBedManagementActionCreators(dispatch));
+
+    act(() => {
+      result.current.updateClinicalCrib('R1', 'remove');
+      result.current.moveOrCopyPatient('move', 'R1', 'R2');
+    });
+
+    expect(dispatch).toHaveBeenNthCalledWith(1, {
+      type: 'REMOVE_CLINICAL_CRIB',
+      bedId: 'R1',
+    });
+    expect(dispatch).toHaveBeenNthCalledWith(2, {
+      type: 'MOVE_PATIENT',
+      sourceBedId: 'R1',
+      targetBedId: 'R2',
+    });
+  });
+});

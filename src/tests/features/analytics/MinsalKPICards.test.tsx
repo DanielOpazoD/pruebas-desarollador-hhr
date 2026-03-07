@@ -37,15 +37,18 @@ describe('MinsalKPICards', () => {
     expect(screen.getByText('Estada media del período')).toBeInTheDocument();
     expect(screen.getByText('Egresos del período')).toBeInTheDocument();
     expect(
-      screen.getByText('Altas, fallecidos y traslados del rango · 36 vivos, 2 trasl.')
+      screen.getByText('Total acumulado del rango seleccionado · 36 vivos, 2 trasl.')
     ).toBeInTheDocument();
     expect(screen.getByText('Mortalidad del período')).toBeInTheDocument();
     expect(
-      screen.getByText('Fallecidos sobre egresos del rango · 2 fallecidos')
+      screen.getByText('Fallecidos sobre egresos acumulados del rango · 2 fallecidos')
     ).toBeInTheDocument();
     expect(screen.getByText('Rotación del período')).toBeInTheDocument();
-    expect(screen.getByText('Egresos por cama dentro del rango')).toBeInTheDocument();
+    expect(screen.getByText('Índice estimado sobre el acumulado del rango')).toBeInTheDocument();
     expect(screen.getByText('Días cama del período')).toBeInTheDocument();
+    expect(
+      screen.getByText('Acumulado ocupado dentro del rango seleccionado · 558 disponibles')
+    ).toBeInTheDocument();
     expect(screen.getByText('69.9%')).toBeInTheDocument();
   });
 });

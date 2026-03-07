@@ -80,13 +80,13 @@ export async function exportMinsalToExcel(
   // Headers
   const specialtyHeaders = [
     'Especialidad',
-    'Pacientes Actuales',
-    'Egresos',
+    'Pacientes del último registro',
+    'Egresos del período',
     'Fallecidos',
-    'Días Ocupados',
+    'Días-cama del período',
     'Contribución (%)',
-    'Mortalidad (%)',
-    'Estada Media (días)',
+    'Mortalidad del período (%)',
+    'Estada media del período (días)',
   ];
 
   const headerRow = specialtySheet.addRow(specialtyHeaders);

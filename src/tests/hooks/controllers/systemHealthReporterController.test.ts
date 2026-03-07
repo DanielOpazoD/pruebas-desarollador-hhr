@@ -56,6 +56,9 @@ describe('systemHealthReporterController', () => {
         exportObservedCount: 1,
         backupObservedCount: 1,
         exportOrBackupObservedCount: 2,
+        topObservedCategory: 'backup',
+        topObservedOperation: 'backup_handoff_pdf',
+        latestObservedOperation: 'backup_handoff_pdf',
         latestIssueAt: '2026-03-02T00:00:00.000Z',
       },
     });
@@ -74,6 +77,9 @@ describe('systemHealthReporterController', () => {
     expect(status.operationalClinicalDocumentObservedCount).toBe(1);
     expect(status.operationalCreateDayObservedCount).toBe(1);
     expect(status.operationalExportBackupObservedCount).toBe(2);
+    expect(status.operationalTopObservedCategory).toBe('backup');
+    expect(status.operationalTopObservedOperation).toBe('backup_handoff_pdf');
+    expect(status.latestOperationalOperation).toBe('backup_handoff_pdf');
     expect(status.appVersion).toContain('sync-batch:25');
   });
 });

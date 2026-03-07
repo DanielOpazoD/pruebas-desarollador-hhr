@@ -84,7 +84,7 @@ export const buildDailyRawWorkbookOrNull = async (date: string) => {
 export const buildRangeRawWorkbookOrNull = async (startDate: string, endDate: string) => {
   const rangeData = await getRangeDatesOrAlert(startDate, endDate);
   if (!rangeData) return null;
-  return createRecordRangeSheet('Datos Brutos', rangeData.dates, rangeData.allRecords);
+  return createRecordRangeSheet('Censo Bruto del Rango', rangeData.dates, rangeData.allRecords);
 };
 
 export const buildDailyFormattedWorkbookOrNull = async (date: string) => {
@@ -104,11 +104,11 @@ export const buildRangeFormattedWorkbookOrNull = async (startDate: string, endDa
   if (!rangeData) return null;
 
   const workbook = await createRecordRangeSheet(
-    'Censo Formateado',
+    'Censo Formateado del Rango',
     rangeData.dates,
     rangeData.allRecords
   );
-  const worksheet = workbook.getWorksheet('Censo Formateado');
+  const worksheet = workbook.getWorksheet('Censo Formateado del Rango');
   if (worksheet) {
     applyCensusRawFormatting(worksheet);
   }

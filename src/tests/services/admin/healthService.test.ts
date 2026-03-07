@@ -49,6 +49,9 @@ describe('healthService', () => {
     operationalClinicalDocumentObservedCount: 0,
     operationalCreateDayObservedCount: 0,
     operationalExportBackupObservedCount: 0,
+    operationalTopObservedCategory: undefined,
+    operationalTopObservedOperation: undefined,
+    latestOperationalOperation: undefined,
     appVersion: '1.0.0',
     platform: 'MacIntel',
     userAgent: 'Mozilla/5.0',
@@ -179,6 +182,7 @@ describe('healthService', () => {
       expect(normalized.isOnline).toBe(false);
       expect(normalized.operationalObservedCount).toBe(0);
       expect(normalized.operationalSyncObservedCount).toBe(0);
+      expect(normalized.operationalTopObservedOperation).toBeUndefined();
     });
   });
 
@@ -204,6 +208,9 @@ describe('healthService', () => {
           operationalClinicalDocumentObservedCount: 1,
           operationalCreateDayObservedCount: 1,
           operationalExportBackupObservedCount: 3,
+          operationalTopObservedCategory: 'backup',
+          operationalTopObservedOperation: 'backup_handoff_pdf',
+          latestOperationalOperation: 'backup_handoff_pdf',
         },
       ]);
 
@@ -225,6 +232,8 @@ describe('healthService', () => {
       expect(summary.totalOperationalClinicalDocumentObservedCount).toBe(1);
       expect(summary.totalOperationalCreateDayObservedCount).toBe(1);
       expect(summary.totalOperationalExportBackupObservedCount).toBe(3);
+      expect(summary.topOperationalCategory).toBe('backup');
+      expect(summary.topOperationalOperation).toBe('backup_handoff_pdf');
       expect(summary.usersWithRecentOperationalIssues).toBe(0);
       expect(summary.latestOperationalIssueAt).toBeUndefined();
     });

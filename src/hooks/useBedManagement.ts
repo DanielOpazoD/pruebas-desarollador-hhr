@@ -1,9 +1,10 @@
-import { useCallback, useRef, useEffect, useMemo } from 'react';
-import { DailyRecord, PatientData, CudyrScore, PatientFieldValue, DailyRecordPatch } from '@/types';
+import { useCallback, useRef, useEffect } from 'react';
+import { DailyRecord, DailyRecordPatch, PatientData, CudyrScore, PatientFieldValue } from '@/types';
 import { usePatientValidation } from './usePatientValidation';
 import { useBedAudit } from './useBedAudit';
 import { BedAction } from './useBedManagementReducer';
 import { executeBedManagementAction } from '@/hooks/controllers/bedManagementDispatchController';
+import { useBedManagementActionCreators } from '@/hooks/useBedManagementActionCreators';
 
 /**
  * Interface defining the actions available for bed management.
@@ -88,7 +89,7 @@ export interface BedManagementActions {
  */
 export const useBedManagement = (
   record: DailyRecord | null,
-  saveAndUpdate: (updatedRecord: DailyRecord) => void, // Kept for legacy compat
+  _saveAndUpdate: (updatedRecord: DailyRecord) => void, // Kept for legacy compat
   patchRecord: (partial: DailyRecordPatch) => Promise<void>
 ): BedManagementActions => {
   const validation = usePatientValidation();
@@ -117,141 +118,5 @@ export const useBedManagement = (
     [validation, patchRecord, bedAudit]
   );
 
-  // ========================================================================
-  // Action Creators (Adapters to match BedManagementActions interface)
-  // ========================================================================
-
-  const updatePatient = useCallback(
-    (bedId: string, field: keyof PatientData, value: PatientFieldValue) => {
-      dispatch({ type: 'UPDATE_PATIENT', bedId, field, value });
-    },
-    [dispatch]
-  );
-
-  const updatePatientMultiple = useCallback(
-    (bedId: string, fields: Partial<PatientData>) => {
-      dispatch({ type: 'UPDATE_PATIENT_MULTIPLE', bedId, fields });
-    },
-    [dispatch]
-  );
-
-  const updateCudyr = useCallback(
-    (bedId: string, field: keyof CudyrScore, value: number) => {
-      dispatch({ type: 'UPDATE_CUDYR', bedId, field, value });
-    },
-    [dispatch]
-  );
-
-  const updateClinicalCrib = useCallback(
-    (bedId: string, field: keyof PatientData | 'create' | 'remove', value?: PatientFieldValue) => {
-      if (field === 'create') {
-        dispatch({ type: 'CREATE_CLINICAL_CRIB', bedId });
-      } else if (field === 'remove') {
-        dispatch({ type: 'REMOVE_CLINICAL_CRIB', bedId });
-      } else {
-        dispatch({ type: 'UPDATE_CLINICAL_CRIB', bedId, field, value: value! });
-      }
-    },
-    [dispatch]
-  );
-
-  const updateClinicalCribMultiple = useCallback(
-    (bedId: string, fields: Partial<PatientData>) => {
-      dispatch({ type: 'UPDATE_CLINICAL_CRIB_MULTIPLE', bedId, fields });
-    },
-    [dispatch]
-  );
-
-  const updateClinicalCribCudyr = useCallback(
-    (bedId: string, field: keyof CudyrScore, value: number) => {
-      dispatch({ type: 'UPDATE_CLINICAL_CRIB_CUDYR', bedId, field, value });
-    },
-    [dispatch]
-  );
-
-  const clearPatient = useCallback(
-    (bedId: string) => {
-      dispatch({ type: 'CLEAR_PATIENT', bedId });
-    },
-    [dispatch]
-  );
-
-  // Legacy bulk operation - handled separately or via reducer loop?
-  // It's cleaner to keep the clearAll logic in reducer if possible, but BEDS dependency makes it tricky
-  // Re-using the logic from useBedOperations but wrapped
-  const clearAllBeds = useCallback(() => {
-    dispatch({ type: 'CLEAR_ALL_BEDS' });
-  }, [dispatch]);
-
-  const moveOrCopyPatient = useCallback(
-    (type: 'move' | 'copy', sourceBedId: string, targetBedId: string) => {
-      if (type === 'move') dispatch({ type: 'MOVE_PATIENT', sourceBedId, targetBedId });
-      else dispatch({ type: 'COPY_PATIENT', sourceBedId, targetBedId });
-    },
-    [dispatch]
-  );
-
-  const toggleBlockBed = useCallback(
-    (bedId: string, reason?: string) => {
-      dispatch({ type: 'TOGGLE_BLOCK_BED', bedId, reason });
-    },
-    [dispatch]
-  );
-
-  const updateBlockedReason = useCallback(
-    (bedId: string, reason: string) => {
-      dispatch({ type: 'UPDATE_BLOCKED_REASON', bedId, reason });
-    },
-    [dispatch]
-  );
-
-  const toggleExtraBed = useCallback(
-    (bedId: string) => {
-      dispatch({ type: 'TOGGLE_EXTRA_BED', bedId });
-    },
-    [dispatch]
-  );
-
-  const toggleBedType = useCallback(
-    (bedId: string) => {
-      dispatch({ type: 'TOGGLE_BED_TYPE', bedId });
-    },
-    [dispatch]
-  );
-
-  // ========================================================================
-  // Public API
-  // ========================================================================
-  return useMemo(
-    () => ({
-      updatePatient,
-      updatePatientMultiple,
-      updateClinicalCrib,
-      updateClinicalCribMultiple,
-      updateClinicalCribCudyr,
-      updateCudyr,
-      clearPatient,
-      clearAllBeds,
-      moveOrCopyPatient,
-      toggleBlockBed,
-      updateBlockedReason,
-      toggleExtraBed,
-      toggleBedType,
-    }),
-    [
-      updatePatient,
-      updatePatientMultiple,
-      updateClinicalCrib,
-      updateClinicalCribMultiple,
-      updateClinicalCribCudyr,
-      updateCudyr,
-      clearPatient,
-      clearAllBeds,
-      moveOrCopyPatient,
-      toggleBlockBed,
-      updateBlockedReason,
-      toggleExtraBed,
-      toggleBedType,
-    ]
-  );
+  return useBedManagementActionCreators(dispatch);
 };

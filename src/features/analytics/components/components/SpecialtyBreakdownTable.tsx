@@ -88,7 +88,7 @@ export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = (
               Especialidad
             </th>
             <th className="text-center px-4 py-3 font-semibold text-slate-700">
-              Pacientes (Días-Cama del período)
+              Días-cama del período
             </th>
             <th className="text-center px-4 py-3 font-semibold text-slate-700">
               Egresos del período

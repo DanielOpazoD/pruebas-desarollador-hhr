@@ -467,6 +467,44 @@ describe('minsalStatsCalculator', () => {
       const stats = calculateMinsalStats([record], '2026-01-01', '2026-01-01');
       expect(stats.indiceRotacion).toBeCloseTo(8.3, 1);
     });
+
+    it('should keep period discharges and mortality independent from latest snapshot occupancy', () => {
+      const firstRecord = createMockRecord('2026-01-01', 8);
+      firstRecord.discharges = [
+        {
+          id: '1',
+          status: 'Vivo',
+          patientName: 'Alta 1',
+          bedName: '',
+          bedId: '',
+          bedType: '',
+          rut: '',
+          diagnosis: '',
+          time: '',
+        },
+        {
+          id: '2',
+          status: 'Fallecido',
+          patientName: 'Alta 2',
+          bedName: '',
+          bedId: '',
+          bedType: '',
+          rut: '',
+          diagnosis: '',
+          time: '',
+        },
+      ];
+
+      const latestRecord = createMockRecord('2026-01-02', 12);
+      const stats = calculateMinsalStats([firstRecord, latestRecord], '2026-01-01', '2026-01-02');
+
+      expect(stats.egresosTotal).toBe(2);
+      expect(stats.egresosVivos).toBe(1);
+      expect(stats.egresosFallecidos).toBe(1);
+      expect(stats.mortalidadHospitalaria).toBe(50);
+      expect(stats.pacientesActuales).toBe(12);
+      expect(stats.camasOcupadas).toBe(12);
+    });
   });
 
   describe('generateDailyTrend', () => {

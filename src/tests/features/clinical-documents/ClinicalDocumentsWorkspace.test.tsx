@@ -150,7 +150,7 @@ describe('ClinicalDocumentsWorkspace', () => {
         isLocked: true,
         audit: {
           ...document.audit,
-          signedAt: '2026-03-06T10:45:00.000Z',
+          signedAt: new Date().toISOString(),
           signedBy: {
             uid: 'u1',
             email: 'doctor@test.com',

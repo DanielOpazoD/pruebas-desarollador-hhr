@@ -48,18 +48,20 @@ export const useHandoffManagementPersistence = ({
   userId,
   notifyError,
 }: HandoffManagementPersistenceInput) => {
+  const getCurrentRecord = useCallback(() => recordRef.current, [recordRef]);
+
   const updateHandoffChecklist = useCallback(
     (shift: 'day' | 'night', field: string, value: boolean | string) => {
-      const currentRecord = recordRef.current;
+      const currentRecord = getCurrentRecord();
       if (!currentRecord) return;
       void saveAndUpdate(buildChecklistUpdateRecord(currentRecord, shift, field, value));
     },
-    [recordRef, saveAndUpdate]
+    [getCurrentRecord, saveAndUpdate]
   );
 
   const updateHandoffNovedades = useCallback(
     (shift: 'day' | 'night' | 'medical', value: string) => {
-      const currentRecord = recordRef.current;
+      const currentRecord = getCurrentRecord();
       if (!currentRecord) return;
       void saveAndUpdate(buildNovedadesUpdateRecord(currentRecord, shift, value));
 
@@ -91,12 +93,12 @@ export const useHandoffManagementPersistence = ({
         authors
       );
     },
-    [logDebouncedEvent, recordRef, saveAndUpdate, userId]
+    [getCurrentRecord, logDebouncedEvent, saveAndUpdate, userId]
   );
 
   const updateMedicalSpecialtyNote = useCallback(
     async (specialty: MedicalSpecialty, value: string, actor: Partial<MedicalHandoffActor>) => {
-      const currentRecord = recordRef.current;
+      const currentRecord = getCurrentRecord();
       if (!currentRecord) return;
       const currentNote = currentRecord.medicalHandoffBySpecialty?.[specialty];
       const updatedRecord = buildMedicalSpecialtyNoteRecord(currentRecord, specialty, value, actor);
@@ -119,12 +121,12 @@ export const useHandoffManagementPersistence = ({
         currentRecord.date
       );
     },
-    [logDebouncedEvent, recordRef, saveAndUpdate]
+    [getCurrentRecord, logDebouncedEvent, saveAndUpdate]
   );
 
   const confirmMedicalSpecialtyNoChanges = useCallback(
     async ({ specialty, actor, comment, dateKey }: ConfirmMedicalSpecialtyNoChangesInput) => {
-      const currentRecord = recordRef.current;
+      const currentRecord = getCurrentRecord();
       if (!currentRecord) return;
 
       const currentNote = currentRecord.medicalHandoffBySpecialty?.[specialty];
@@ -175,12 +177,12 @@ export const useHandoffManagementPersistence = ({
         currentRecord.date
       );
     },
-    [logEvent, notifyError, recordRef, saveAndUpdate]
+    [getCurrentRecord, logEvent, notifyError, saveAndUpdate]
   );
 
   const updateHandoffStaff = useCallback(
     (shift: 'day' | 'night', type: 'delivers' | 'receives' | 'tens', staffList: string[]) => {
-      const currentRecord = recordRef.current;
+      const currentRecord = getCurrentRecord();
       if (!currentRecord) return;
 
       const updatedRecord = { ...currentRecord };
@@ -206,12 +208,12 @@ export const useHandoffManagementPersistence = ({
       updatedRecord.lastUpdated = new Date().toISOString();
       void saveAndUpdate(updatedRecord);
     },
-    [recordRef, saveAndUpdate]
+    [getCurrentRecord, saveAndUpdate]
   );
 
   const updateMedicalSignature = useCallback(
     async (doctorName: string, scope: MedicalHandoffScope = 'all') => {
-      const currentRecord = recordRef.current;
+      const currentRecord = getCurrentRecord();
       if (!currentRecord) return;
       const updatedRecord = buildMedicalSignatureRecord(currentRecord, doctorName, scope);
       await saveAndUpdate(updatedRecord);
@@ -229,12 +231,12 @@ export const useHandoffManagementPersistence = ({
         currentRecord.date
       );
     },
-    [logEvent, recordRef, saveAndUpdate]
+    [getCurrentRecord, logEvent, saveAndUpdate]
   );
 
   const updateMedicalHandoffDoctor = useCallback(
     async (doctorName: string): Promise<void> => {
-      const currentRecord = recordRef.current;
+      const currentRecord = getCurrentRecord();
       if (!currentRecord) return;
 
       const updatedRecord = { ...currentRecord };
@@ -242,11 +244,11 @@ export const useHandoffManagementPersistence = ({
       updatedRecord.lastUpdated = new Date().toISOString();
       await saveAndUpdate(updatedRecord);
     },
-    [recordRef, saveAndUpdate]
+    [getCurrentRecord, saveAndUpdate]
   );
 
   const resetMedicalHandoffState = useCallback(async () => {
-    const currentRecord = recordRef.current;
+    const currentRecord = getCurrentRecord();
     if (!currentRecord) return;
     const clearedFields: string[] = [];
 
@@ -281,7 +283,7 @@ export const useHandoffManagementPersistence = ({
       undefined,
       currentRecord.date
     );
-  }, [logEvent, recordRef, saveAndUpdate]);
+  }, [getCurrentRecord, logEvent, saveAndUpdate]);
 
   return {
     updateHandoffChecklist,

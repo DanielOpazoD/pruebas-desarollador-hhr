@@ -95,7 +95,7 @@ export const buildHandoffPdfContent = async (
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
-  const title = `ENTREGA TURNO ENFERMERÍA - ${shiftType === 'day' ? 'LARGO' : 'NOCHE'}`;
+  const title = `ENTREGA DE TURNO ENFERMERÍA - TURNO ${shiftType === 'day' ? 'LARGO' : 'NOCHE'}`;
   doc.text(title, margin + logoSize + 4, margin + 4);
 
   doc.setFontSize(10);

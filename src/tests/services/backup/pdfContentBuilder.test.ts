@@ -78,6 +78,11 @@ describe('pdfContentBuilder', () => {
 
     expect(mockDoc.text).toHaveBeenCalled();
     expect(mockAutoTable).toHaveBeenCalled();
+    expect(mockDoc.text).toHaveBeenCalledWith(
+      expect.stringContaining('ENTREGA DE TURNO ENFERMERÍA - TURNO LARGO'),
+      expect.any(Number),
+      expect.any(Number)
+    );
     const tableBody = mockAutoTable.mock.calls[0][1].body;
     expect(
       tableBody.some((row: Array<{ content?: string }>) => row[1]?.content?.includes('John Doe'))
@@ -131,10 +136,9 @@ describe('pdfContentBuilder', () => {
 
     // More flexible assertion for text
     expect(mockDoc.text).toHaveBeenCalledWith(
-      expect.stringContaining('TURNO NOCHE'),
+      expect.stringContaining('ENTREGA DE TURNO ENFERMERÍA - TURNO NOCHE'),
       expect.any(Number),
-      expect.any(Number),
-      expect.any(Object)
+      expect.any(Number)
     );
   });
 

@@ -4,7 +4,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { DailyRecord } from '@/types';
 
 const FIXED_ISO_TIMESTAMP = '2026-01-15T10:30:00.000Z';
@@ -21,6 +21,10 @@ vi.mock('file-saver', () => ({
 // Mock dataService
 vi.mock('../../services/dataService', () => ({
   getRecordForDate: vi.fn(),
+}));
+
+vi.mock('@/services/repositories/DailyRecordRepository', () => ({
+  getForDate: vi.fn(),
 }));
 
 // Mock indexedDBService
@@ -176,13 +180,17 @@ describe('censusRawWorkbook', () => {
 
 describe('reportService', () => {
   describe('saveWorkbook helper', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
     it('should use file-saver to download file', async () => {
       const { saveAs } = await import('file-saver');
       const { generateCensusDailyRaw } = await import('@/services/exporters/reportService');
-      const { getRecordForDate } = await import('@/services/dataService');
+      const dailyRecordRepository = await import('@/services/repositories/DailyRecordRepository');
 
       // Mock getRecordForDate to return a valid record
-      vi.mocked(getRecordForDate).mockResolvedValue({
+      vi.mocked(dailyRecordRepository.getForDate).mockResolvedValue({
         date: '2025-12-25',
         beds: {},
         createdAt: FIXED_ISO_TIMESTAMP,
@@ -198,14 +206,17 @@ describe('reportService', () => {
 
       // Verify saveAs was called
       expect(saveAs).toHaveBeenCalled();
+      expect(vi.mocked(saveAs).mock.lastCall?.[1]).toBe(
+        'Censo_HangaRoa_Bruto_Diario_2025-12-25.xlsx'
+      );
     });
 
     it('should generate formatted daily report when record exists', async () => {
       const { saveAs } = await import('file-saver');
       const { generateCensusDailyFormatted } = await import('@/services/exporters/reportService');
-      const { getRecordForDate } = await import('@/services/dataService');
+      const dailyRecordRepository = await import('@/services/repositories/DailyRecordRepository');
 
-      vi.mocked(getRecordForDate).mockResolvedValue({
+      vi.mocked(dailyRecordRepository.getForDate).mockResolvedValue({
         date: '2025-12-25',
         beds: {},
         createdAt: FIXED_ISO_TIMESTAMP,
@@ -219,6 +230,9 @@ describe('reportService', () => {
 
       await generateCensusDailyFormatted('2025-12-25');
       expect(saveAs).toHaveBeenCalled();
+      expect(vi.mocked(saveAs).mock.lastCall?.[1]).toBe(
+        'Censo_HangaRoa_Formateado_Diario_2025-12-25.xlsx'
+      );
     });
 
     it('should generate formatted range report with available records', async () => {
@@ -241,6 +255,61 @@ describe('reportService', () => {
 
       await generateCensusRangeFormatted('2025-12-24', '2025-12-25');
       expect(saveAs).toHaveBeenCalled();
+      expect(vi.mocked(saveAs).mock.lastCall?.[1]).toBe(
+        'Censo_HangaRoa_Formateado_Rango_2025-12-24_2025-12-25.xlsx'
+      );
     });
+
+    it('should generate raw range report with explicit range filename', async () => {
+      const { saveAs } = await import('file-saver');
+      const { generateCensusRangeRaw } = await import('@/services/exporters/reportService');
+      const indexedDbService = await import('@/services/storage/indexedDBService');
+
+      vi.mocked(indexedDbService.getAllRecords).mockResolvedValue({
+        '2025-12-24': toDailyRecord({
+          date: '2025-12-24',
+          beds: {},
+          discharges: [],
+          transfers: [],
+          cma: [],
+          nurses: [],
+          activeExtraBeds: [],
+          lastUpdated: FIXED_ISO_TIMESTAMP,
+        }),
+      });
+
+      await generateCensusRangeRaw('2025-12-24', '2025-12-25');
+      expect(saveAs).toHaveBeenCalled();
+      expect(vi.mocked(saveAs).mock.lastCall?.[1]).toBe(
+        'Censo_HangaRoa_Bruto_Rango_2025-12-24_2025-12-25.xlsx'
+      );
+    });
+  });
+});
+
+describe('reportWorkbookBuilders', () => {
+  it('uses explicit worksheet names for raw and formatted range reports', async () => {
+    const { buildRangeRawWorkbookOrNull, buildRangeFormattedWorkbookOrNull } =
+      await import('@/services/exporters/reportWorkbookBuilders');
+    const indexedDbService = await import('@/services/storage/indexedDBService');
+
+    vi.mocked(indexedDbService.getAllRecords).mockResolvedValue({
+      '2025-12-24': toDailyRecord({
+        date: '2025-12-24',
+        beds: {},
+        discharges: [],
+        transfers: [],
+        cma: [],
+        nurses: [],
+        activeExtraBeds: [],
+        lastUpdated: FIXED_ISO_TIMESTAMP,
+      }),
+    });
+
+    const rawWorkbook = await buildRangeRawWorkbookOrNull('2025-12-24', '2025-12-25');
+    const formattedWorkbook = await buildRangeFormattedWorkbookOrNull('2025-12-24', '2025-12-25');
+
+    expect(rawWorkbook?.worksheets[0]?.name).toBe('Censo Bruto del Rango');
+    expect(formattedWorkbook?.worksheets[0]?.name).toBe('Censo Formateado del Rango');
   });
 });

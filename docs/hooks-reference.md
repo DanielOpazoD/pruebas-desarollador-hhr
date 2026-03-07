@@ -42,6 +42,8 @@ Taxonomía operativa para el core del sistema. La idea es reducir carga cognitiv
 | Hook                                          | Categoría                            | Notas                                                |
 | --------------------------------------------- | ------------------------------------ | ---------------------------------------------------- |
 | `useDailyRecord`                              | `facade`                             | Orquestador principal del censo.                     |
+| `useDailyRecordDomainModules`                 | `policy/controller-backed`           | Compone módulos de dominio del censo sin exponer UI. |
+| `useDailyRecordCopyActions`                   | `delivery`                           | Copia cross-date con feedback y refresh.             |
 | `useDailyRecordQuery`                         | `query`                              | Lectura/caché/optimistic updates.                    |
 | `useDailyRecordSyncQuery`                     | `query` + `policy/controller-backed` | Refresh, status y compatibilidad de API.             |
 | `usePersistence`                              | `persistence`                        | Crear, copiar y eliminar día.                        |

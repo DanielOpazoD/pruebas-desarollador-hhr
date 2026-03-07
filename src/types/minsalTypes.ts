@@ -44,7 +44,7 @@ export interface PatientTraceability {
 export interface SpecialtyStats {
   /** Medical specialty name */
   specialty: Specialty | string;
-  /** Current hospitalized patients in this specialty */
+  /** Current hospitalized patients in this specialty, based on the latest snapshot in the selected range */
   pacientesActuales: number;
   /** Total discharges in the period */
   egresos: number;
@@ -56,13 +56,13 @@ export interface SpecialtyStats {
   aerocardal: number;
   /** Transfers in the period via FACH */
   fach: number;
-  /** Total occupied bed-days */
+  /** Total occupied bed-days accumulated across the selected period */
   diasOcupados: number;
-  /** Relative contribution to total hospitalized (percentage) */
+  /** Relative contribution to total occupied bed-days in the selected period (percentage) */
   contribucionRelativa: number;
-  /** Mortality rate for this specialty (percentage) */
+  /** Mortality rate for this specialty over period discharges (percentage) */
   tasaMortalidad: number;
-  /** Average length of stay in days */
+  /** Average length of stay in days across the selected period */
   promedioDiasEstada: number;
 
   // ===== Traceability Lists =====

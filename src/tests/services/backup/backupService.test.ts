@@ -50,6 +50,7 @@ describe('backupService', () => {
           type: 'NURSING_HANDOFF',
           date: mockDate,
           shiftType: mockShift,
+          title: 'Entrega de Turno Enfermería - Turno Largo - 01-01-2025',
         })
       );
     });

@@ -13,6 +13,9 @@ node_modules
 dist
 dist-man
 dist-ssr
+dev-dist
+output
+tmp
 **/dist/
 **/dist-man/
 
@@ -23,6 +26,7 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 .DS_Store
+**/.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
