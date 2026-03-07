@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useRef, useEffect } from 'react';
+import { useMemo, useCallback } from 'react';
 
 // Sub-hooks
 import { usePersistence } from './usePersistence';
@@ -54,11 +54,6 @@ export const useDailyRecord = (
     patchRecord,
   } = useDailyRecordSyncQuery(currentDateString, isOfflineMode, isFirebaseConnected);
 
-  const recordRef = useRef(record);
-  useEffect(() => {
-    recordRef.current = record;
-  }, [record]);
-
   // ========================================================================
   // Orchestrated Sub-hooks
   // ========================================================================
@@ -89,7 +84,7 @@ export const useDailyRecord = (
   const copyPatientToDate = useCallback(
     async (bedId: string, targetDate: string, targetBedId?: string) => {
       const copyRequest = resolveCopyPatientRequest({
-        record: recordRef.current,
+        record,
         bedId,
         targetDate,
         targetBedId,
@@ -116,7 +111,7 @@ export const useDailyRecord = (
         throw error;
       }
     },
-    [refresh, dailyRecord, warning]
+    [record, refresh, dailyRecord, warning]
   );
 
   // ========================================================================

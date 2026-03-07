@@ -12,6 +12,13 @@ import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils
 vi.mock('@/services/repositories/DailyRecordRepository', () => {
   const repo = {
     getForDate: vi.fn(),
+    getForDateWithMeta: vi.fn().mockResolvedValue({
+      record: null,
+      source: 'not_found',
+      compatibilityTier: 'none',
+      compatibilityIntensity: 'none',
+      migrationRulesApplied: [],
+    }),
     subscribe: vi.fn(() => vi.fn()),
     save: vi.fn().mockResolvedValue(undefined),
     saveDetailed: vi.fn().mockResolvedValue({
@@ -99,10 +106,28 @@ describe('useDailyRecord', () => {
     };
 
     const repo = DailyRecordRepository.DailyRecordRepository;
+    const repoWithMeta = repo as typeof repo & {
+      getForDateWithMeta: (date: string) => Promise<{
+        date: string;
+        record: DailyRecord | null;
+        source: string;
+        compatibilityTier: string;
+        compatibilityIntensity: string;
+        migrationRulesApplied: string[];
+      }>;
+    };
 
     vi.mocked(repo.getForDate).mockImplementation(async date => {
       return recordsMap[date] || null;
     });
+    vi.mocked(repoWithMeta.getForDateWithMeta).mockImplementation(async (date: string) => ({
+      date,
+      record: recordsMap[date] || null,
+      source: recordsMap[date] ? 'cache' : 'not_found',
+      compatibilityTier: 'none',
+      compatibilityIntensity: 'none',
+      migrationRulesApplied: [],
+    }));
 
     vi.mocked(repo.initializeDay).mockImplementation(async date => {
       const rec = DataFactory.createMockDailyRecord(date);
@@ -190,6 +215,27 @@ describe('useDailyRecord', () => {
     expect(
       DailyRecordRepository.DailyRecordRepository.initializeDayDetailed
     ).not.toHaveBeenCalledWith(futureDate, mockDate);
+
+    vi.useRealTimers();
+  });
+
+  it('should create a copied day when the selected day has reached 08:00', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2025, 0, 2, 8, 1, 0));
+
+    const sourceDate = '2025-01-01';
+    const targetDate = '2025-01-02';
+    recordsMap[sourceDate] = DataFactory.createMockDailyRecord(sourceDate);
+    const { result } = renderHook(() => useDailyRecord(targetDate), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.createDay(true, sourceDate);
+    });
+
+    expect(DailyRecordRepository.DailyRecordRepository.initializeDay).toHaveBeenCalledWith(
+      targetDate,
+      sourceDate
+    );
 
     vi.useRealTimers();
   });

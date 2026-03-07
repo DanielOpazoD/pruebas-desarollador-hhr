@@ -26,7 +26,7 @@ describe('dailyRecordRefreshOutcomeController', () => {
       createApplicationPartial(emptySyncOutcome, [{ kind: 'unknown', message: 'partial warning' }])
     );
     expect(notice.channel).toBe('warning');
-    expect(notice.title).toBe('Sincronización parcial');
+    expect(notice.title).toBe('Sincronización con observaciones');
   });
 
   it('maps degraded to warning', () => {
@@ -36,7 +36,7 @@ describe('dailyRecordRefreshOutcomeController', () => {
       ])
     );
     expect(notice.channel).toBe('warning');
-    expect(notice.title).toBe('Sincronización degradada');
+    expect(notice.title).toBe('Sincronización con observaciones');
   });
 
   it('maps failure to error', () => {

@@ -1,5 +1,5 @@
 import { buildCensusEmailBody } from '@/constants/email';
-import type { CensusEmailSendStatus } from '@/hooks/useCensusEmailActions';
+import type { CensusEmailSendStatus } from '@/hooks/useCensusEmailDeliveryActions';
 
 interface CensusEmailMessageState {
   key: string;

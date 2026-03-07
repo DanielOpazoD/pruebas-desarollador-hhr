@@ -27,7 +27,7 @@ export const resolveCensusEmailSendOutcomePresentation = <T>(
     };
   }
 
-  if (result.status === 'partial') {
+  if (result.status === 'partial' || result.status === 'degraded') {
     return {
       nextStatus: 'success',
       error: null,

@@ -23,13 +23,13 @@ import {
 
 describe('zodSchemas', () => {
   describe('BedTypeSchema', () => {
-    it('should accept valid bed types', () => {
-      expect(BedTypeSchema.parse('UTI')).toBe('UTI');
-      expect(BedTypeSchema.parse('MEDIA')).toBe('MEDIA');
-    });
-
     it('should reject invalid bed types', () => {
       expect(() => BedTypeSchema.parse('INVALID')).toThrow();
+    });
+
+    it('should tolerate every supported bed type used in clinical flows', () => {
+      const parsed = ['UTI', 'UCI', 'MEDIA'].map(value => BedTypeSchema.parse(value));
+      expect(parsed).toEqual(['UTI', 'UCI', 'MEDIA']);
     });
   });
 

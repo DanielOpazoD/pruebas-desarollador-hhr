@@ -7,6 +7,7 @@ import { reportUserHealth, UserHealthStatus } from '@/services/admin/healthServi
 import { getSyncQueueTelemetry } from '@/services/storage/syncQueueService';
 import { isDatabaseInFallbackMode } from '@/services/storage/indexedDBService';
 import { getRepositoryPerformanceSummary } from '@/services/repositories/repositoryPerformance';
+import { getOperationalTelemetrySummary } from '@/services/observability/operationalTelemetryService';
 import {
   buildUserHealthStatus,
   canReportSystemHealthForRole,
@@ -40,6 +41,7 @@ export const useSystemHealthReporter = () => {
         const oldestPendingAgeMs = syncTelemetry.oldestPendingAgeMs;
         const syncBatchSize = syncTelemetry.batchSize;
         const repositoryPerformance = getRepositoryPerformanceSummary();
+        const operationalTelemetry = getOperationalTelemetrySummary();
 
         const status: UserHealthStatus = buildUserHealthStatus({
           uid: user.uid,
@@ -62,6 +64,7 @@ export const useSystemHealthReporter = () => {
             batchSize: syncBatchSize,
           },
           repositoryPerformance,
+          operationalTelemetry,
         });
 
         await reportUserHealth(status);

@@ -41,7 +41,6 @@ export const buildInitializedDayRecord = (
       : ({} as Record<string, BedType>),
     lastUpdated: new Date().toISOString(),
     dateTimestamp: createRecordDateTimestamp(date),
-    nurses: ['', ''],
     nursesDayShift: inheritedStaff.nursesDay,
     nursesNightShift: inheritedStaff.nursesNight,
     tensDayShift: inheritedStaff.tensDay,

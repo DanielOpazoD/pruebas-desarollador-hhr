@@ -24,6 +24,23 @@ export const formatCopyUnlockCountdown = (remainingMs: number): string => {
   return [hours, minutes, seconds].map(value => String(value).padStart(2, '0')).join(':');
 };
 
+export const buildCopyUnlockDescription = (
+  currentDateString: string,
+  now: Date = new Date()
+): string => {
+  const availability = resolveCreateDayCopyAvailability(currentDateString, now);
+  const [year, month, day] = currentDateString.split('-');
+  const monthName = new Date(Number(year), Number(month) - 1, Number(day)).toLocaleString('es-CL', {
+    month: 'long',
+  });
+  const capitalizedMonthName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+  const formattedDate = `${parseInt(day, 10)} de ${capitalizedMonthName}`;
+
+  return availability.isTargetToday
+    ? `Disponible hoy desde las ${COPY_PREVIOUS_DAY_UNLOCK_HOUR}:00 hrs.`
+    : `Disponible desde el ${formattedDate} a las ${COPY_PREVIOUS_DAY_UNLOCK_HOUR}:00 hrs.`;
+};
+
 export const resolveCreateDayCopyAvailability = (
   currentDateString: string,
   now: Date = new Date()

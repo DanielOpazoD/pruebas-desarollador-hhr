@@ -1,16 +1,16 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNotification, useConfirmDialog } from '@/context/UIContext';
 import { useBackupFilesQuery } from '@/hooks/useBackupFilesQuery';
 import { useAuth } from '@/context/AuthContext';
-import { useBackupFileBrowserNavigation } from '@/hooks/useBackupFileBrowserNavigation';
 import { useBackupFileBrowserActions } from '@/hooks/useBackupFileBrowserActions';
 import {
+  buildInitialBackupBrowserPath,
   filterBackupBrowserItems,
   resolveCanRunMagicBackfill,
 } from '@/hooks/backupFileBrowserController';
 import { presentBackupListingOutcome } from '@/hooks/controllers/backupStorageOutcomeController';
-
-export type BackupType = 'handoff' | 'census' | 'cudyr';
+import type { BackupFolder, BackupType } from '@/hooks/backupFileBrowserContracts';
+import type { BaseStoredFile, StoredPdfFile } from '@/types/backupArtifacts';
 
 export const useBackupFileBrowser = (initialBackupType: BackupType = 'handoff') => {
   const { success, warning, info, error: notifyError } = useNotification();
@@ -18,23 +18,30 @@ export const useBackupFileBrowser = (initialBackupType: BackupType = 'handoff') 
   const { role } = useAuth();
   const canDelete = role === 'admin';
   const lastReportSignatureRef = useRef('');
+  const [selectedBackupType, setSelectedBackupType] = useState<BackupType>(initialBackupType);
+  const [path, setPath] = useState<string[]>(() => buildInitialBackupBrowserPath());
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [previewFile, setPreviewFile] = useState<BaseStoredFile | StoredPdfFile | null>(null);
 
-  const navigation = useBackupFileBrowserNavigation({
-    initialBackupType,
-  });
-  const {
-    selectedBackupType,
-    path,
-    viewMode,
-    searchQuery,
-    previewFile,
-    setViewMode,
-    setSearchQuery,
-    setPreviewFile,
-    changeBackupType,
-    handleFolderClick,
-    handleBreadcrumbNavigate,
-  } = navigation;
+  const handleFolderClick = useCallback((folderData: BackupFolder) => {
+    if (folderData.type === 'year') {
+      setPath([folderData.name]);
+      return;
+    }
+
+    if (folderData.type === 'month') {
+      setPath(currentPath => [currentPath[0], folderData.name]);
+    }
+  }, []);
+
+  const handleBreadcrumbNavigate = useCallback((index: number) => {
+    setPath(currentPath => (index === -1 ? [] : currentPath.slice(0, index + 1)));
+  }, []);
+
+  const changeBackupType = useCallback((type: BackupType) => {
+    setSelectedBackupType(type);
+  }, []);
 
   const {
     data: items = [],

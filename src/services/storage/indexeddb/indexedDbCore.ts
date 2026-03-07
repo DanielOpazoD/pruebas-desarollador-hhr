@@ -11,6 +11,7 @@ import {
   shouldUseStickyIndexedDbFallback,
 } from './indexedDbRecoveryPolicy';
 import { attachIndexedDbWarningBindings } from './indexedDbWarningBindings';
+import { recordOperationalTelemetry } from '@/services/observability/operationalTelemetryService';
 
 export class HangaRoaDatabase extends Dexie {
   dailyRecords!: Table<DailyRecord>;
@@ -379,11 +380,24 @@ export const ensureDbReady = async (options: EnsureDbReadyOptions = {}): Promise
         return;
       } catch (recoveryError) {
         console.error('[IndexedDB] ❌ Recovery failed:', recoveryError);
+        recordOperationalTelemetry({
+          category: 'indexeddb',
+          status: 'failed',
+          operation: 'indexeddb_recovery',
+          issues: [recoveryError instanceof Error ? recoveryError.message : 'Recovery failed'],
+        });
         stickyFallbackMode = stickyFallbackMode || shouldUseStickyIndexedDbFallback(recoveryError);
       }
     }
 
     console.error('[IndexedDB] 💨 Falling back to degraded local storage mode');
+    recordOperationalTelemetry({
+      category: 'indexeddb',
+      status: 'degraded',
+      operation: 'indexeddb_fallback_mode',
+      issues: [errorMessage || 'IndexedDB fallback activated'],
+      context: { errorName },
+    });
     stickyFallbackMode = stickyFallbackMode || shouldUseStickyIndexedDbFallback(error);
     isUsingMock = true;
     assignMockTables(createMockDatabase());

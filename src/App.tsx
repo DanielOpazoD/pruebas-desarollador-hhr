@@ -33,6 +33,7 @@ import { RepositoryProvider, defaultRepositories } from '@/services/RepositoryCo
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/config/queryClient';
 import { setFirestoreEnabled } from '@/services/repositories/DailyRecordRepository';
+import { resolveShiftNurseSignature } from '@/services/staff/dailyRecordStaffing';
 
 // ============================================================================
 // Sync Effect - Keeps repository in sync with Firebase connection status
@@ -53,18 +54,6 @@ const useSyncFirestoreStatus = (isFirebaseConnected: boolean) => {
       console.error('[App] Failed to sync Firestore status', error);
     }
   }, [isFirebaseConnected]);
-};
-
-// ============================================================================
-// Nurse Signature - Derives signature from record
-// ============================================================================
-const useNurseSignature = (record: ReturnType<typeof useDailyRecord>['record']) => {
-  return React.useMemo(() => {
-    if (!record) return '';
-    const nightShift = record.nursesNightShift?.filter(n => n && n.trim()) || [];
-    if (nightShift.length > 0) return nightShift.join(' / ');
-    return (record.nurses?.filter(n => n && n.trim()) || []).join(' / ');
-  }, [record]);
 };
 
 // ============================================================================
@@ -156,7 +145,7 @@ function AppInner({ auth, dateNav, sharedCensus }: AppInnerProps) {
     dateNav.selectedYear,
     dateNav.selectedMonth
   );
-  const nurseSignature = useNurseSignature(record);
+  const nurseSignature = React.useMemo(() => resolveShiftNurseSignature(record, 'night'), [record]);
 
   const censusEmail = useCensusEmail({
     record,

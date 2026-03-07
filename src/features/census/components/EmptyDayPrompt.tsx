@@ -3,7 +3,7 @@ import { MONTH_NAMES } from '@/constants';
 import { Copy, Calendar, Plus, ChevronDown, ShieldCheck } from 'lucide-react';
 import clsx from 'clsx';
 import {
-  COPY_PREVIOUS_DAY_UNLOCK_HOUR,
+  buildCopyUnlockDescription,
   resolveCreateDayCopyAvailability,
 } from '@/features/census/controllers/censusCreateDayAvailabilityController';
 
@@ -64,9 +64,7 @@ export const EmptyDayPrompt: React.FC<EmptyDayPromptProps> = ({
     onCreateDay(true, date);
   };
 
-  const unlockDescription = copyAvailability.isTargetToday
-    ? `Disponible hoy desde las ${COPY_PREVIOUS_DAY_UNLOCK_HOUR}:00 hrs.`
-    : `Disponible desde el ${formatDate(currentDateString)}a las ${COPY_PREVIOUS_DAY_UNLOCK_HOUR}:00 hrs.`;
+  const unlockDescription = buildCopyUnlockDescription(currentDateString, now);
 
   return (
     <div className="card flex flex-col items-center justify-center py-16 mt-8 print:hidden animate-fade-in overflow-visible">

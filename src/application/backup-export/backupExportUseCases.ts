@@ -1,9 +1,8 @@
 import type { DailyRecord } from '@/types';
 import type { JsonImportResult } from '@/services/exporters/exportImportJson';
-import type { BackupType } from '@/hooks/useBackupFileBrowser';
+import type { BackupItem, BackupType } from '@/hooks/backupFileBrowserContracts';
 import type { StoredPdfFile } from '@/services/backup/pdfStorageService';
 import type { BaseStoredFile, StorageListReport } from '@/services/backup/baseStorageService';
-import type { BackupItem } from '@/hooks/useBackupFilesQuery';
 import { importDataJSONDetailed } from '@/services/exporters/exportImportJson';
 import {
   createApplicationFailed,

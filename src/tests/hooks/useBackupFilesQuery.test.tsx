@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useBackupFilesQuery } from '@/hooks/useBackupFilesQuery';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
-import type { BackupFolder } from '@/hooks/useBackupFilesQuery';
+import type { BackupFolder } from '@/hooks/backupFileBrowserContracts';
 import * as backupExportUseCases from '@/application/backup-export/backupExportUseCases';
 
 vi.mock('@/application/backup-export/backupExportUseCases', async () => {

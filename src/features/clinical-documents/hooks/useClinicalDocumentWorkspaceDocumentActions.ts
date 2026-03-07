@@ -22,6 +22,10 @@ import {
   executeSignClinicalDocument,
   executeUnsignClinicalDocument,
 } from '@/application/clinical-documents/clinicalDocumentUseCases';
+import {
+  recordOperationalOutcome,
+  recordOperationalTelemetry,
+} from '@/services/observability/operationalTelemetryService';
 
 interface NotificationPort {
   success: (title: string, message?: string) => void;
@@ -93,6 +97,11 @@ export const useClinicalDocumentWorkspaceDocumentActions = ({
       });
 
       const result = await executeCreateClinicalDocumentDraft(record, hospitalId);
+      recordOperationalOutcome('clinical_document', 'create_clinical_document', result, {
+        date: episode.sourceDailyRecordDate,
+        context: { templateId },
+        allowSuccess: true,
+      });
       if (result.status !== 'success' || !result.data) {
         throw new Error(result.issues[0]?.message || 'No se pudo crear el documento clínico.');
       }
@@ -102,6 +111,13 @@ export const useClinicalDocumentWorkspaceDocumentActions = ({
       notify.success(`${result.data.title} creada`, 'Se generó el borrador inicial del documento.');
     } catch (error) {
       console.error('[ClinicalDocumentsWorkspace] Create document failed', error);
+      recordOperationalTelemetry({
+        category: 'clinical_document',
+        status: 'failed',
+        operation: 'create_clinical_document',
+        date: episode.sourceDailyRecordDate,
+        issues: [error instanceof Error ? error.message : 'No se pudo crear el documento clínico.'],
+      });
       notify.error(
         'No se pudo crear el documento',
         error instanceof Error ? error.message : 'Ocurrió un error al crear el borrador clínico.'
@@ -146,6 +162,11 @@ export const useClinicalDocumentWorkspaceDocumentActions = ({
 
       try {
         const result = await executeDeleteClinicalDocument(document.id, hospitalId);
+        recordOperationalOutcome('clinical_document', 'delete_clinical_document', result, {
+          date: document.sourceDailyRecordDate,
+          context: { documentId: document.id },
+          allowSuccess: true,
+        });
         if (result.status !== 'success') {
           throw new Error(result.issues[0]?.message || 'No se pudo eliminar el documento.');
         }
@@ -157,6 +178,14 @@ export const useClinicalDocumentWorkspaceDocumentActions = ({
         notify.success('Documento eliminado', `${document.title} fue eliminado correctamente.`);
       } catch (error) {
         console.error('[ClinicalDocumentsWorkspace] Delete failed', error);
+        recordOperationalTelemetry({
+          category: 'clinical_document',
+          status: 'failed',
+          operation: 'delete_clinical_document',
+          date: document.sourceDailyRecordDate,
+          issues: [error instanceof Error ? error.message : 'No se pudo eliminar el documento.'],
+          context: { documentId: document.id },
+        });
         notify.error(
           'No se pudo eliminar',
           error instanceof Error ? error.message : 'Intenta nuevamente.'
@@ -185,6 +214,11 @@ export const useClinicalDocumentWorkspaceDocumentActions = ({
         actor,
         'manual'
       );
+      recordOperationalOutcome('clinical_document', 'save_clinical_document', result, {
+        date: selectedDocument.sourceDailyRecordDate,
+        context: { documentId: selectedDocument.id, mode: 'manual' },
+        allowSuccess: true,
+      });
       if (result.status !== 'success' || !result.data) {
         throw new Error(result.issues[0]?.message || 'No se pudo guardar el documento.');
       }
@@ -193,6 +227,14 @@ export const useClinicalDocumentWorkspaceDocumentActions = ({
       notify.success('Documento guardado', 'Los cambios se guardaron correctamente.');
     } catch (error) {
       console.error('[ClinicalDocumentsWorkspace] Save failed', error);
+      recordOperationalTelemetry({
+        category: 'clinical_document',
+        status: 'failed',
+        operation: 'save_clinical_document',
+        date: selectedDocument?.sourceDailyRecordDate,
+        issues: [error instanceof Error ? error.message : 'No se pudo guardar el documento.'],
+        context: { documentId: selectedDocument?.id },
+      });
       notify.error('No se pudo guardar', 'Intenta nuevamente.');
     } finally {
       setIsSaving(false);
@@ -221,6 +263,11 @@ export const useClinicalDocumentWorkspaceDocumentActions = ({
     try {
       const actor = buildClinicalDocumentActor(user, role);
       const result = await executeSignClinicalDocument(selectedDocument, hospitalId, actor);
+      recordOperationalOutcome('clinical_document', 'sign_clinical_document', result, {
+        date: selectedDocument.sourceDailyRecordDate,
+        context: { documentId: selectedDocument.id },
+        allowSuccess: true,
+      });
       if (result.status !== 'success' || !result.data) {
         throw new Error(result.issues[0]?.message || 'No se pudo firmar el documento.');
       }
@@ -229,6 +276,14 @@ export const useClinicalDocumentWorkspaceDocumentActions = ({
       notify.success('Documento firmado', `${result.data.title} quedó cerrado y bloqueado.`);
     } catch (error) {
       console.error('[ClinicalDocumentsWorkspace] Sign failed', error);
+      recordOperationalTelemetry({
+        category: 'clinical_document',
+        status: 'failed',
+        operation: 'sign_clinical_document',
+        date: selectedDocument?.sourceDailyRecordDate,
+        issues: [error instanceof Error ? error.message : 'No se pudo firmar el documento.'],
+        context: { documentId: selectedDocument?.id },
+      });
       notify.error('No se pudo firmar', 'Intenta nuevamente.');
     } finally {
       setIsSaving(false);
@@ -258,6 +313,11 @@ export const useClinicalDocumentWorkspaceDocumentActions = ({
     try {
       const actor = buildClinicalDocumentActor(user, role);
       const result = await executeUnsignClinicalDocument(selectedDocument, hospitalId, actor);
+      recordOperationalOutcome('clinical_document', 'unsign_clinical_document', result, {
+        date: selectedDocument.sourceDailyRecordDate,
+        context: { documentId: selectedDocument.id },
+        allowSuccess: true,
+      });
       if (result.status !== 'success' || !result.data) {
         throw new Error(result.issues[0]?.message || 'No se pudo quitar la firma.');
       }
@@ -266,6 +326,14 @@ export const useClinicalDocumentWorkspaceDocumentActions = ({
       notify.success('Firma quitada', 'La epicrisis volvió a borrador con registro en auditoría.');
     } catch (error) {
       console.error('[ClinicalDocumentsWorkspace] Unsign failed', error);
+      recordOperationalTelemetry({
+        category: 'clinical_document',
+        status: 'failed',
+        operation: 'unsign_clinical_document',
+        date: selectedDocument?.sourceDailyRecordDate,
+        issues: [error instanceof Error ? error.message : 'No se pudo quitar la firma.'],
+        context: { documentId: selectedDocument?.id },
+      });
       notify.error('No se pudo quitar la firma', 'Intenta nuevamente.');
     } finally {
       setIsSaving(false);

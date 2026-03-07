@@ -12,6 +12,7 @@ import {
   executeSeedClinicalDocumentTemplates,
 } from '@/application/clinical-documents/clinicalDocumentTemplateUseCases';
 import { subscribeClinicalDocumentsByEpisode } from '@/application/clinical-documents/clinicalDocumentUseCases';
+import { recordOperationalOutcome } from '@/services/observability/operationalTelemetryService';
 
 interface UseClinicalDocumentWorkspaceBootstrapParams {
   patient: PatientData;
@@ -70,6 +71,15 @@ export const useClinicalDocumentWorkspaceBootstrap = ({
 
     const loadTemplates = async () => {
       const remoteTemplatesOutcome = await executeListActiveClinicalDocumentTemplates(hospitalId);
+      recordOperationalOutcome(
+        'clinical_document',
+        'list_clinical_document_templates',
+        remoteTemplatesOutcome,
+        {
+          date: currentDateString,
+          context: { hospitalId },
+        }
+      );
       const remoteTemplates = remoteTemplatesOutcome.data;
       if (!cancelled) {
         setTemplates(remoteTemplates);
@@ -81,7 +91,7 @@ export const useClinicalDocumentWorkspaceBootstrap = ({
     return () => {
       cancelled = true;
     };
-  }, [canRead, hospitalId, isActive]);
+  }, [canRead, currentDateString, hospitalId, isActive]);
 
   useEffect(() => {
     if (!isActive || role !== 'admin' || templates.length > 0) {
@@ -89,6 +99,11 @@ export const useClinicalDocumentWorkspaceBootstrap = ({
     }
 
     void executeSeedClinicalDocumentTemplates(hospitalId).then(outcome => {
+      recordOperationalOutcome('clinical_document', 'seed_clinical_document_templates', outcome, {
+        date: currentDateString,
+        context: { hospitalId },
+        allowSuccess: true,
+      });
       if (outcome.status === 'failed') {
         console.error('[ClinicalDocumentsWorkspace] Failed to seed templates:', outcome.issues);
         setTemplates(listActiveClinicalDocumentTemplates());
@@ -96,7 +111,7 @@ export const useClinicalDocumentWorkspaceBootstrap = ({
       }
       setTemplates(outcome.data);
     });
-  }, [hospitalId, isActive, role, templates.length]);
+  }, [currentDateString, hospitalId, isActive, role, templates.length]);
 
   useEffect(() => {
     if (!isActive || !canRead) {

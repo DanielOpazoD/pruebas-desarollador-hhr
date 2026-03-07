@@ -31,6 +31,7 @@ import {
 } from '@/hooks/controllers/dailyRecordSyncController';
 import { executeSyncDailyRecord } from '@/application/daily-record/syncDailyRecordUseCase';
 import { presentDailyRecordRefreshOutcome } from '@/hooks/controllers/dailyRecordRefreshOutcomeController';
+import { recordOperationalOutcome } from '@/services/observability/operationalTelemetryService';
 
 export const useDailyRecordSyncQuery = (
   currentDateString: string,
@@ -181,6 +182,9 @@ export const useDailyRecordSyncQuery = (
       date: currentDateString,
       repository: dailyRecord,
     }).then(outcome => {
+      recordOperationalOutcome('sync', 'refresh_daily_record', outcome, {
+        date: currentDateString,
+      });
       const notice = presentDailyRecordRefreshOutcome(outcome);
       if (notice.channel === 'warning') {
         warning(notice.title || 'Sincronización', notice.message);

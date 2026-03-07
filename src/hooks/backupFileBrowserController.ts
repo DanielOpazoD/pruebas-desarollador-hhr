@@ -1,4 +1,4 @@
-import type { BackupFolder } from '@/hooks/useBackupFilesQuery';
+import type { BackupFolder } from '@/hooks/backupFileBrowserContracts';
 import type { BaseStoredFile, StoredPdfFile } from '@/types/backupArtifacts';
 import { MONTH_NAMES } from '@/types/backupArtifacts';
 

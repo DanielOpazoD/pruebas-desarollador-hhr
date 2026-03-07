@@ -42,6 +42,15 @@ describe('systemHealthReporterController', () => {
         latestWarningAt: '2026-03-01T00:00:00.000Z',
         recentWarningOperations: [],
       },
+      operationalTelemetry: {
+        recentEventCount: 5,
+        recentFailedCount: 2,
+        recentObservedCount: 3,
+        syncFailureCount: 1,
+        degradedLocalCount: 1,
+        exportOrBackupObservedCount: 2,
+        latestIssueAt: '2026-03-02T00:00:00.000Z',
+      },
     });
 
     expect(status.pendingMutations).toBe(6);
@@ -50,6 +59,9 @@ describe('systemHealthReporterController', () => {
     expect(status.degradedLocalPersistence).toBe(true);
     expect(status.repositoryWarningCount).toBe(3);
     expect(status.slowestRepositoryOperationMs).toBe(480);
+    expect(status.operationalObservedCount).toBe(3);
+    expect(status.operationalFailureCount).toBe(2);
+    expect(status.operationalExportBackupObservedCount).toBe(2);
     expect(status.appVersion).toContain('sync-batch:25');
   });
 });

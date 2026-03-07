@@ -10,18 +10,10 @@ export interface DailyRecordRefreshOutcomePresentation {
 export const presentDailyRecordRefreshOutcome = (
   outcome: ApplicationOutcome<SyncOutcome>
 ): DailyRecordRefreshOutcomePresentation => {
-  if (outcome.status === 'partial') {
+  if (outcome.status === 'partial' || outcome.status === 'degraded') {
     return {
       channel: 'warning',
-      title: 'Sincronización parcial',
-      message: outcome.issues[0]?.message,
-    };
-  }
-
-  if (outcome.status === 'degraded') {
-    return {
-      channel: 'warning',
-      title: 'Sincronización degradada',
+      title: 'Sincronización con observaciones',
       message: outcome.issues[0]?.message,
     };
   }

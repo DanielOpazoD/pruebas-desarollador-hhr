@@ -81,6 +81,18 @@ export const SystemHealthDashboard = () => {
             {summary.maxSlowRepositoryOperationMs} ms
           </p>
         </div>
+        <div className="card p-3">
+          <p className="text-[10px] uppercase font-bold text-slate-400">
+            Operaciones con observaciones
+          </p>
+          <p className="text-2xl font-black text-amber-600">
+            {summary.totalOperationalObservedCount}
+          </p>
+          <p className="text-[10px] text-slate-400">
+            Fallidas: {summary.totalOperationalFailureCount} · Export/backup:{' '}
+            {summary.totalOperationalExportBackupObservedCount}
+          </p>
+        </div>
       </div>
 
       <div className="flex justify-end">

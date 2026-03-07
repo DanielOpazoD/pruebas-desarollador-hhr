@@ -7,6 +7,10 @@ import {
   serializeClinicalDocument,
 } from '@/features/clinical-documents/controllers/clinicalDocumentWorkspaceController';
 import { executePersistClinicalDocumentDraft } from '@/application/clinical-documents/clinicalDocumentUseCases';
+import {
+  recordOperationalOutcome,
+  recordOperationalTelemetry,
+} from '@/services/observability/operationalTelemetryService';
 
 interface UseClinicalDocumentWorkspaceDraftParams {
   documents: ClinicalDocumentRecord[];
@@ -92,6 +96,10 @@ export const useClinicalDocumentWorkspaceDraft = ({
           actor,
           'autosave'
         );
+        recordOperationalOutcome('clinical_document', 'autosave_clinical_document', result, {
+          date: draft.sourceDailyRecordDate,
+          context: { documentId: draft.id },
+        });
         if (result.status === 'success' && result.data) {
           lastPersistedSnapshotRef.current = serializeClinicalDocument(result.data);
           setDraft(result.data);
@@ -100,6 +108,14 @@ export const useClinicalDocumentWorkspaceDraft = ({
         }
       } catch (error) {
         console.error('[ClinicalDocumentsWorkspace] Autosave failed', error);
+        recordOperationalTelemetry({
+          category: 'clinical_document',
+          status: 'failed',
+          operation: 'autosave_clinical_document',
+          date: draft.sourceDailyRecordDate,
+          issues: [error instanceof Error ? error.message : 'Autosave failed'],
+          context: { documentId: draft.id },
+        });
       } finally {
         setIsSaving(false);
       }

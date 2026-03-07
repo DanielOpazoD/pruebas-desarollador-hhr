@@ -1,0 +1,74 @@
+import { describe, expect, it } from 'vitest';
+import {
+  resolveDayShiftNurses,
+  resolveExportableNursesText,
+  resolveNightShiftNurses,
+  resolvePrimaryDayShiftNurse,
+  resolveShiftNurseSignature,
+} from '@/services/staff/dailyRecordStaffing';
+import type { DailyRecord } from '@/types';
+
+const buildRecord = (overrides: Partial<DailyRecord> = {}): DailyRecord =>
+  ({
+    date: '2026-03-06',
+    patients: [],
+    beds: {},
+    previousDayPatients: [],
+    totalBeds: 0,
+    availableBeds: 0,
+    occupiedBeds: 0,
+    reservedBeds: 0,
+    wardStats: {},
+    transferStats: {},
+    shift: 'day',
+    nursesDayShift: ['', ''],
+    nursesNightShift: ['', ''],
+    ...overrides,
+  }) as DailyRecord;
+
+describe('dailyRecordStaffing', () => {
+  it('prefers canonical day and night shift staffing', () => {
+    const record = buildRecord({
+      nursesDayShift: [' Ana ', 'Berta'],
+      nursesNightShift: ['Claudia', ''],
+      nurses: ['Legacy Day'],
+      nurseName: 'Legacy Principal',
+    });
+
+    expect(resolveDayShiftNurses(record)).toEqual(['Ana', 'Berta']);
+    expect(resolveNightShiftNurses(record)).toEqual(['Claudia']);
+    expect(resolvePrimaryDayShiftNurse(record)).toBe('Ana');
+    expect(resolveExportableNursesText(record)).toBe('Ana & Berta');
+  });
+
+  it('promotes legacy day staff when canonical fields are empty', () => {
+    const record = buildRecord({
+      nursesDayShift: ['', ''],
+      nurses: [' Legacy A ', 'Legacy B'],
+      nurseName: 'Legacy Principal',
+    });
+
+    expect(resolveDayShiftNurses(record)).toEqual(['Legacy A', 'Legacy B']);
+    expect(resolvePrimaryDayShiftNurse(record)).toBe('Legacy A');
+  });
+
+  it('falls back between shifts for nurse signature text', () => {
+    const record = buildRecord({
+      nursesDayShift: ['Ana'],
+      nursesNightShift: [''],
+    });
+
+    expect(resolveShiftNurseSignature(record, 'night')).toBe('Ana');
+    expect(resolveShiftNurseSignature(record, 'day')).toBe('Ana');
+  });
+
+  it('uses legacy nurseName when no array data is available', () => {
+    const record = buildRecord({
+      nursesDayShift: ['', ''],
+      nurses: [],
+      nurseName: 'Enfermera Legacy',
+    });
+
+    expect(resolveDayShiftNurses(record)).toEqual(['Enfermera Legacy']);
+  });
+});

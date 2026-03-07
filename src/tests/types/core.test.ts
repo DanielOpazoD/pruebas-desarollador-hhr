@@ -1,281 +1,188 @@
 /**
- * Tests for core.ts type definitions
- * Tests enums and type structure
+ * Tests for core contracts that still add behavioral signal.
+ * Avoids trivial enum/constant assertions.
  */
 
 import { describe, it, expect } from 'vitest';
 import {
-    BedType,
-    Specialty,
-    PatientStatus,
-    PatientData,
-    DischargeData,
-    TransferData,
-    CMAData,
-    DailyRecord,
-    Statistics,
+  Specialty,
+  PatientStatus,
+  PatientData,
+  DischargeData,
+  TransferData,
+  CMAData,
+  DailyRecord,
+  Statistics,
 } from '@/types/core';
 
-describe('core types', () => {
-    describe('BedType enum', () => {
-        it('should have UTI type', () => {
-            expect(BedType.UTI).toBe('UTI');
-        });
-
-        it('should have UCI type', () => {
-            expect(BedType.UCI).toBe('UCI');
-        });
-
-        it('should have MEDIA type', () => {
-            expect(BedType.MEDIA).toBe('MEDIA');
-        });
-
-        it('should have exactly 3 bed types', () => {
-            const values = Object.values(BedType);
-            expect(values).toHaveLength(3);
-        });
+describe('core contracts', () => {
+  describe('PatientData interface structure', () => {
+    it('should allow creating valid patient data', () => {
+      const patient: PatientData = {
+        bedId: 'R1',
+        isBlocked: false,
+        bedMode: 'Cama',
+        hasCompanionCrib: false,
+        patientName: 'Juan Pérez',
+        rut: '12.345.678-9',
+        pathology: 'Neumonía',
+        specialty: Specialty.MEDICINA,
+        status: PatientStatus.ESTABLE,
+        admissionDate: '2026-01-15',
+        admissionTime: '10:00',
+        age: '45',
+        hasWristband: false,
+        devices: [],
+        surgicalComplication: false,
+        isUPC: false,
+      };
+      expect(patient.patientName).toBe('Juan Pérez');
+      expect(patient.specialty).toBe('Med Interna');
     });
 
-    describe('Specialty enum', () => {
-        it('should have Medicina Interna', () => {
-            expect(Specialty.MEDICINA).toBe('Med Interna');
-        });
-
-        it('should have Cirugía', () => {
-            expect(Specialty.CIRUGIA).toBe('Cirugía');
-        });
-
-        it('should have Ginecobstetricia', () => {
-            expect(Specialty.GINECOBSTETRICIA).toBe('Ginecobstetricia');
-        });
-
-        it('should have Pediatría', () => {
-            expect(Specialty.PEDIATRIA).toBe('Pediatría');
-        });
-
-        it('should have Psiquiatría', () => {
-            expect(Specialty.PSIQUIATRIA).toBe('Psiquiatría');
-        });
-
-        it('should have Otro', () => {
-            expect(Specialty.OTRO).toBe('Otro');
-        });
-
-        it('should have empty option', () => {
-            expect(Specialty.EMPTY).toBe('');
-        });
+    it('should allow blocked bed configuration', () => {
+      const bed: PatientData = {
+        bedId: 'R2',
+        isBlocked: true,
+        blockedReason: 'Mantención',
+        bedMode: 'Cama',
+        hasCompanionCrib: false,
+        patientName: '',
+        rut: '',
+        pathology: '',
+        specialty: Specialty.EMPTY,
+        status: PatientStatus.EMPTY,
+        admissionDate: '',
+        admissionTime: '',
+        age: '',
+        hasWristband: false,
+        devices: [],
+        surgicalComplication: false,
+        isUPC: false,
+      };
+      expect(bed.isBlocked).toBe(true);
+      expect(bed.blockedReason).toBe('Mantención');
     });
 
-    describe('PatientStatus enum', () => {
-        it('should have Grave status', () => {
-            expect(PatientStatus.GRAVE).toBe('Grave');
-        });
+    it('should allow patient with CUDYR score and invasive devices', () => {
+      const patient: PatientData = {
+        bedId: 'H1C1',
+        isBlocked: false,
+        bedMode: 'Cama',
+        hasCompanionCrib: false,
+        patientName: 'María López',
+        rut: '11.111.111-1',
+        pathology: 'Test',
+        specialty: Specialty.CIRUGIA,
+        status: PatientStatus.DE_CUIDADO,
+        admissionDate: '2026-01-10',
+        admissionTime: '08:00',
+        age: '60',
+        cudyr: {
+          changeClothes: 2,
+          mobilization: 3,
+          feeding: 1,
+          elimination: 2,
+          psychosocial: 1,
+          surveillance: 2,
+          vitalSigns: 2,
+          fluidBalance: 1,
+          oxygenTherapy: 0,
+          airway: 0,
+          proInterventions: 1,
+          skinCare: 2,
+          pharmacology: 2,
+          invasiveElements: 1,
+        },
+        hasWristband: true,
+        devices: ['CVC'],
+        surgicalComplication: false,
+        isUPC: true,
+      };
+      expect(patient.cudyr?.mobilization).toBe(3);
+      expect(patient.devices).toContain('CVC');
+    });
+  });
 
-        it('should have De cuidado status', () => {
-            expect(PatientStatus.DE_CUIDADO).toBe('De cuidado');
-        });
-
-        it('should have Estable status', () => {
-            expect(PatientStatus.ESTABLE).toBe('Estable');
-        });
-
-        it('should have empty option', () => {
-            expect(PatientStatus.EMPTY).toBe('');
-        });
-
-        it('should have exactly 4 statuses', () => {
-            const values = Object.values(PatientStatus);
-            expect(values).toHaveLength(4);
-        });
+  describe('movement-related structures', () => {
+    it('should allow discharge records with operational status', () => {
+      const discharge: DischargeData = {
+        id: 'discharge-1',
+        bedName: 'R1',
+        bedId: 'R1',
+        bedType: 'UTI',
+        patientName: 'Test Patient',
+        rut: '12.345.678-9',
+        diagnosis: 'Recuperado',
+        time: '10:00',
+        status: 'Vivo',
+      };
+      expect(discharge.status).toBe('Vivo');
     });
 
-    describe('PatientData interface structure', () => {
-        it('should allow creating valid patient data', () => {
-            const patient: PatientData = {
-                bedId: 'R1',
-                isBlocked: false,
-                bedMode: 'Cama',
-                hasCompanionCrib: false,
-                patientName: 'Juan Pérez',
-                rut: '12.345.678-9',
-                pathology: 'Neumonía',
-                specialty: Specialty.MEDICINA,
-                status: PatientStatus.ESTABLE,
-                admissionDate: '2026-01-15',
-                admissionTime: '10:00',
-                age: '45',
-                hasWristband: false,
-                devices: [],
-                surgicalComplication: false,
-                isUPC: false,
-            };
-            expect(patient.patientName).toBe('Juan Pérez');
-            expect(patient.specialty).toBe('Med Interna');
-        });
-
-        it('should allow blocked bed', () => {
-            const bed: PatientData = {
-                bedId: 'R2',
-                isBlocked: true,
-                blockedReason: 'Mantención',
-                bedMode: 'Cama',
-                hasCompanionCrib: false,
-                patientName: '',
-                rut: '',
-                pathology: '',
-                specialty: Specialty.EMPTY,
-                status: PatientStatus.EMPTY,
-                admissionDate: '',
-                admissionTime: '',
-                age: '',
-                hasWristband: false,
-                devices: [],
-                surgicalComplication: false,
-                isUPC: false,
-            };
-            expect(bed.isBlocked).toBe(true);
-            expect(bed.blockedReason).toBe('Mantención');
-        });
-
-        it('should allow patient with CUDYR score', () => {
-            const patient: PatientData = {
-                bedId: 'H1C1',
-                isBlocked: false,
-                bedMode: 'Cama',
-                hasCompanionCrib: false,
-                patientName: 'María López',
-                rut: '11.111.111-1',
-                pathology: 'Test',
-                specialty: Specialty.CIRUGIA,
-                status: PatientStatus.DE_CUIDADO,
-                admissionDate: '2026-01-10',
-                admissionTime: '08:00',
-                age: '60',
-                cudyr: {
-                    changeClothes: 2,
-                    mobilization: 3,
-                    feeding: 1,
-                    elimination: 2,
-                    psychosocial: 1,
-                    surveillance: 2,
-                    vitalSigns: 2,
-                    fluidBalance: 1,
-                    oxygenTherapy: 0,
-                    airway: 0,
-                    proInterventions: 1,
-                    skinCare: 2,
-                    pharmacology: 2,
-                    invasiveElements: 1,
-                },
-                hasWristband: true,
-                devices: ['CVC'],
-                surgicalComplication: false,
-                isUPC: true,
-            };
-            expect(patient.cudyr?.changeClothes).toBe(2);
-            expect(patient.cudyr?.mobilization).toBe(3);
-        });
+    it('should allow transfer records with destination metadata', () => {
+      const transfer: TransferData = {
+        id: 'transfer-1',
+        bedName: 'UTI-01',
+        bedId: 'R1',
+        bedType: 'UTI',
+        patientName: 'Transfer Patient',
+        rut: '12.345.678-9',
+        diagnosis: 'Requiere cirugía mayor',
+        time: '12:00',
+        evacuationMethod: 'Ambulancia',
+        receivingCenter: 'Hospital Regional',
+      };
+      expect(transfer.receivingCenter).toBe('Hospital Regional');
+      expect(transfer.evacuationMethod).toBe('Ambulancia');
     });
 
-    describe('DischargeData structure', () => {
-        it('should allow Vivo status', () => {
-            const discharge: DischargeData = {
-                id: 'discharge-1',
-                bedName: 'R1',
-                bedId: 'R1',
-                bedType: 'UTI',
-                patientName: 'Test Patient',
-                rut: '12.345.678-9',
-                diagnosis: 'Recuperado',
-                time: '10:00',
-                status: 'Vivo',
-            };
-            expect(discharge.status).toBe('Vivo');
-        });
+    it('should allow CMA records with intervention metadata', () => {
+      const cma: CMAData = {
+        id: 'cma-1',
+        bedName: 'CMA',
+        patientName: 'CMA Patient',
+        rut: '12.345.678-9',
+        age: '50',
+        diagnosis: 'Hernia inguinal',
+        specialty: 'Cirugía',
+        interventionType: 'Cirugía Mayor Ambulatoria',
+      };
+      expect(cma.interventionType).toBe('Cirugía Mayor Ambulatoria');
+    });
+  });
 
-        it('should allow Fallecido status', () => {
-            const discharge: DischargeData = {
-                id: 'discharge-2',
-                bedName: 'H1C1',
-                bedId: 'H1C1',
-                bedType: 'MEDIA',
-                patientName: 'Test Patient',
-                rut: '11.111.111-1',
-                diagnosis: 'Complicaciones',
-                time: '15:00',
-                status: 'Fallecido',
-            };
-            expect(discharge.status).toBe('Fallecido');
-        });
+  describe('DailyRecord and Statistics contracts', () => {
+    it('should support canonical staff contracts for day and night shifts', () => {
+      const record: DailyRecord = {
+        date: '2026-01-15',
+        beds: {},
+        discharges: [],
+        transfers: [],
+        cma: [],
+        lastUpdated: '2026-01-15T00:00:00.000Z',
+        nursesDayShift: ['Enfermera 1', 'Enfermera 2'],
+        nursesNightShift: ['Enfermera 3', 'Enfermera 4'],
+        activeExtraBeds: [],
+      };
+      expect(record.nursesDayShift).toHaveLength(2);
+      expect(record.nursesNightShift).toContain('Enfermera 4');
     });
 
-    describe('TransferData structure', () => {
-        it('should include receiving center', () => {
-            const transfer: TransferData = {
-                id: 'transfer-1',
-                bedName: 'UTI-01',
-                bedId: 'R1',
-                bedType: 'UTI',
-                patientName: 'Transfer Patient',
-                rut: '12.345.678-9',
-                diagnosis: 'Requiere cirugía mayor',
-                time: '12:00',
-                evacuationMethod: 'Ambulancia',
-                receivingCenter: 'Hospital Regional',
-            };
-            expect(transfer.receivingCenter).toBe('Hospital Regional');
-            expect(transfer.evacuationMethod).toBe('Ambulancia');
-        });
+    it('should include service capacity metrics', () => {
+      const stats: Statistics = {
+        occupiedBeds: 15,
+        occupiedCribs: 2,
+        clinicalCribsCount: 1,
+        companionCribs: 1,
+        totalCribsUsed: 2,
+        totalHospitalized: 17,
+        blockedBeds: 1,
+        serviceCapacity: 18,
+        availableCapacity: 2,
+      };
+      expect(stats.totalHospitalized).toBe(17);
+      expect(stats.availableCapacity).toBe(2);
     });
-
-    describe('CMAData structure', () => {
-        it('should include intervention type', () => {
-            const cma: CMAData = {
-                id: 'cma-1',
-                bedName: 'CMA',
-                patientName: 'CMA Patient',
-                rut: '12.345.678-9',
-                age: '50',
-                diagnosis: 'Hernia inguinal',
-                specialty: 'Cirugía',
-                interventionType: 'Cirugía Mayor Ambulatoria',
-            };
-            expect(cma.interventionType).toBe('Cirugía Mayor Ambulatoria');
-        });
-    });
-
-    describe('DailyRecord structure', () => {
-        it('should include all required fields', () => {
-            const record: DailyRecord = {
-                date: '2026-01-15',
-                beds: {},
-                discharges: [],
-                transfers: [],
-                cma: [],
-                lastUpdated: '2026-01-15T00:00:00.000Z',
-                nurses: ['Enfermera 1', 'Enfermera 2'],
-                activeExtraBeds: [],
-            };
-            expect(record.date).toBe('2026-01-15');
-            expect(record.nurses).toHaveLength(2);
-        });
-    });
-
-    describe('Statistics structure', () => {
-        it('should include capacity metrics', () => {
-            const stats: Statistics = {
-                occupiedBeds: 15,
-                occupiedCribs: 2,
-                clinicalCribsCount: 1,
-                companionCribs: 1,
-                totalCribsUsed: 2,
-                totalHospitalized: 17,
-                blockedBeds: 1,
-                serviceCapacity: 18,
-                availableCapacity: 2,
-            };
-            expect(stats.occupiedBeds).toBe(15);
-            expect(stats.serviceCapacity).toBe(18);
-        });
-    });
+  });
 });

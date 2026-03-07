@@ -21,6 +21,10 @@ export interface UserHealthStatus {
   degradedLocalPersistence: boolean;
   repositoryWarningCount: number;
   slowestRepositoryOperationMs: number;
+  operationalObservedCount: number;
+  operationalFailureCount: number;
+  operationalExportBackupObservedCount: number;
+  latestOperationalIssueAt?: string;
   appVersion: string;
   platform: string;
   userAgent: string;
@@ -41,6 +45,9 @@ export interface SystemHealthSummary {
   totalRepositoryWarnings: number;
   maxSlowRepositoryOperationMs: number;
   oldestObservedPendingAgeMs: number;
+  totalOperationalObservedCount: number;
+  totalOperationalFailureCount: number;
+  totalOperationalExportBackupObservedCount: number;
 }
 
 const toNumber = (value: unknown, fallback = 0): number => {
@@ -78,6 +85,11 @@ export const normalizeUserHealthStatus = (raw: Partial<UserHealthStatus>): UserH
   degradedLocalPersistence: toBoolean(raw.degradedLocalPersistence, false),
   repositoryWarningCount: toNumber(raw.repositoryWarningCount),
   slowestRepositoryOperationMs: toNumber(raw.slowestRepositoryOperationMs),
+  operationalObservedCount: toNumber(raw.operationalObservedCount),
+  operationalFailureCount: toNumber(raw.operationalFailureCount),
+  operationalExportBackupObservedCount: toNumber(raw.operationalExportBackupObservedCount),
+  latestOperationalIssueAt:
+    typeof raw.latestOperationalIssueAt === 'string' ? raw.latestOperationalIssueAt : undefined,
   appVersion: toStringValue(raw.appVersion, 'unknown'),
   platform: toStringValue(raw.platform, 'unknown'),
   userAgent: toStringValue(raw.userAgent, 'unknown'),
@@ -104,6 +116,18 @@ export const buildSystemHealthSummary = (statuses: UserHealthStatus[]): SystemHe
   ),
   oldestObservedPendingAgeMs: statuses.reduce(
     (max, status) => Math.max(max, status.oldestPendingAgeMs),
+    0
+  ),
+  totalOperationalObservedCount: statuses.reduce(
+    (sum, status) => sum + status.operationalObservedCount,
+    0
+  ),
+  totalOperationalFailureCount: statuses.reduce(
+    (sum, status) => sum + status.operationalFailureCount,
+    0
+  ),
+  totalOperationalExportBackupObservedCount: statuses.reduce(
+    (sum, status) => sum + status.operationalExportBackupObservedCount,
     0
   ),
 });

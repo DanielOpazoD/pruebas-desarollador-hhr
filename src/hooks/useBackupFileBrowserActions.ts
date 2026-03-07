@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { MONTH_NAMES, type BaseStoredFile, type StoredPdfFile } from '@/types/backupArtifacts';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
-import type { BackupType } from '@/hooks/useBackupFileBrowser';
+import type { BackupType } from '@/hooks/backupFileBrowserContracts';
 import { resolveBackupModuleLabel } from '@/hooks/backupFileBrowserController';
 import type { ConfirmOptions } from '@/context/uiContracts';
 import {
@@ -9,6 +9,7 @@ import {
   executeRunMonthlyBackfill,
 } from '@/application/backup-export/backupExportUseCases';
 import { presentBackupExportOutcome } from '@/hooks/controllers/backupExportOutcomeController';
+import { recordOperationalOutcome } from '@/services/observability/operationalTelemetryService';
 
 interface MagicBackfillProgressState {
   completed: number;
@@ -74,6 +75,11 @@ export const useBackupFileBrowserActions = ({
       const outcome = await executeDeleteBackupFile({
         backupType: selectedBackupType,
         file,
+      });
+      recordOperationalOutcome('backup', 'delete_backup_file', outcome, {
+        date: file.date,
+        context: { backupType: selectedBackupType, filePath: file.fullPath },
+        allowSuccess: true,
       });
       const notice = presentBackupExportOutcome(outcome, {
         successTitle: 'Archivo eliminado',
@@ -144,6 +150,10 @@ export const useBackupFileBrowserActions = ({
         monthNumber,
         existingFiles: monthFiles,
         onProgress: progress => setMagicBackfillProgress(progress),
+      });
+      recordOperationalOutcome('backup', 'run_monthly_backfill', outcome, {
+        context: { backupType: selectedBackupType, year, monthNumber },
+        allowSuccess: true,
       });
       const result = outcome.data;
 

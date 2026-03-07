@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { type CensusEmailSendStatus } from '@/hooks/useCensusEmailActions';
+import { type CensusEmailSendStatus } from '@/hooks/useCensusEmailDeliveryActions';
 import {
   createInitialCensusSendState,
   resolveDateBoundSendState,

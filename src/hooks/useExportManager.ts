@@ -13,6 +13,7 @@ import {
 } from '@/application/backup-export/backupExportUseCases';
 import { presentBackupExportOutcome } from '@/hooks/controllers/backupExportOutcomeController';
 import { presentBackupLookupOutcome } from '@/hooks/controllers/backupStorageOutcomeController';
+import { recordOperationalOutcome } from '@/services/observability/operationalTelemetryService';
 
 interface UseExportManagerProps {
   currentDateString: string;
@@ -60,6 +61,10 @@ export const useExportManager = ({
       date: currentDateString,
       shift: selectedShift,
     }).then(outcome => {
+      recordOperationalOutcome('backup', 'lookup_archive_status', outcome, {
+        date: currentDateString,
+        context: { backupType, shift: selectedShift },
+      });
       setIsArchived(buildArchiveStatusState(outcome.data.lookup));
       const notice = presentBackupLookupOutcome(outcome);
       if (notice?.channel === 'warning') {
@@ -72,6 +77,11 @@ export const useExportManager = ({
 
   const handleExportPDF = useCallback(async () => {
     const outcome = await executeExportHandoffPdf({ record, selectedShift });
+    recordOperationalOutcome('export', 'export_handoff_pdf', outcome, {
+      date: record?.date,
+      context: { shift: selectedShift },
+      allowSuccess: true,
+    });
     const notice = presentBackupExportOutcome(outcome, {
       successTitle: 'PDF generado',
       partialTitle: 'PDF generado con observaciones',
@@ -96,6 +106,10 @@ export const useExportManager = ({
         selectedDay,
         currentDateString,
         record,
+      });
+      recordOperationalOutcome('backup', 'backup_census_excel', outcome, {
+        date: currentDateString,
+        allowSuccess: true,
       });
       const notice = presentBackupExportOutcome(outcome, {
         successTitle: 'Excel archivado',
@@ -154,6 +168,11 @@ export const useExportManager = ({
       setIsBackingUp(true);
       try {
         const outcome = await executeBackupHandoffPdf({ record, selectedShift });
+        recordOperationalOutcome('backup', 'backup_handoff_pdf', outcome, {
+          date: record.date,
+          context: { shift: selectedShift },
+          allowSuccess: true,
+        });
         const notice = presentBackupExportOutcome(outcome, {
           successTitle: selectedShift === 'night' ? 'Respaldos guardados' : 'Respaldo PDF guardado',
           successMessage: selectedShift === 'night' ? 'PDF + CUDYR mensual' : undefined,

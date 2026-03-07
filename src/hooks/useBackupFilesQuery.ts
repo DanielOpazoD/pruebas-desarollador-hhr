@@ -5,22 +5,17 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import type { BaseStoredFile, StorageListReport, StoredPdfFile } from '@/types/backupArtifacts';
+import { useEffect } from 'react';
+import type { StorageListReport } from '@/types/backupArtifacts';
 import { executeListBackupFiles } from '@/application/backup-export/backupExportUseCases';
-import type { BackupType } from '@/hooks/useBackupFileBrowser';
-
-export type BackupItemType = 'folder' | 'file';
-
-export interface BackupFolder {
-  name: string;
-  type: 'year' | 'month';
-  number?: string;
-}
-
-export interface BackupItem {
-  type: BackupItemType;
-  data: BackupFolder | StoredPdfFile | BaseStoredFile;
-}
+import type {
+  BackupFolder,
+  BackupItem,
+  BackupItemType,
+  BackupType,
+} from '@/hooks/backupFileBrowserContracts';
+import { recordOperationalOutcome } from '@/services/observability/operationalTelemetryService';
+export type { BackupFolder, BackupItem, BackupItemType };
 
 export const EMPTY_STORAGE_LIST_REPORT: StorageListReport = {
   skippedNotFound: 0,
@@ -40,6 +35,13 @@ export const useBackupFilesQuery = (backupType: string, path: string[]) => {
   });
 
   const listingOutcome = query.data;
+
+  useEffect(() => {
+    if (!listingOutcome) return;
+    recordOperationalOutcome('backup', 'list_backup_files', listingOutcome, {
+      context: { backupType, depth: path.length },
+    });
+  }, [backupType, listingOutcome, path.length]);
 
   return {
     ...query,

@@ -58,9 +58,9 @@ export interface DailyRecord {
   dateTimestamp?: number;
   /** Version of the data structure, used to prevent corruption from old clients */
   schemaVersion?: number;
-  /** @deprecated Use nursesDayShift / nursesNightShift instead. Maintained for legacy sync support. */
-  nurses: string[];
-  /** @deprecated Use nursesDayShift[0]. Maintained for legacy sync support. */
+  /** @deprecated Use nursesDayShift / nursesNightShift instead. Maintained only for legacy compatibility on read. */
+  nurses?: string[];
+  /** @deprecated Use nursesDayShift[0]. Maintained only for legacy compatibility on read. */
   nurseName?: string;
   nursesDayShift?: string[]; // Turno Largo nurses
   nursesNightShift?: string[]; // Turno Noche nurses

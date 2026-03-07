@@ -14,6 +14,10 @@ import {
 } from '@/hooks/controllers/fileOperationsController';
 import { executeImportJsonBackup } from '@/application/backup-export/backupExportUseCases';
 import { presentBackupExportOutcome } from '@/hooks/controllers/backupExportOutcomeController';
+import {
+  recordOperationalOutcome,
+  recordOperationalTelemetry,
+} from '@/services/observability/operationalTelemetryService';
 
 export interface UseFileOperationsReturn {
   handleExportJSON: () => void;
@@ -66,6 +70,10 @@ export const useFileOperations = (
   const handleImportFile = async (file: File) => {
     if (isJsonImportFile(file)) {
       const outcome = await executeImportJsonBackup(file);
+      recordOperationalOutcome('backup', 'import_json_backup', outcome, {
+        context: { fileName: file.name },
+        allowSuccess: true,
+      });
       if (outcome.status === 'success' || outcome.status === 'partial') {
         for (const notification of buildJsonImportNotifications(outcome.data)) {
           dispatchNotification(notification);
@@ -87,6 +95,13 @@ export const useFileOperations = (
         });
       }
     } else {
+      recordOperationalTelemetry({
+        category: 'backup',
+        status: 'failed',
+        operation: 'import_json_backup',
+        issues: ['Se intentó importar un formato no compatible.'],
+        context: { fileName: file.name, mimeType: file.type || 'unknown' },
+      });
       dispatchNotification(buildImportFileErrorNotification('invalid_format'));
     }
   };

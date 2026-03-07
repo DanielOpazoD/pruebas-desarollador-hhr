@@ -19,13 +19,13 @@ import {
   BarChart3,
   type LucideIcon,
 } from 'lucide-react';
-import { useBackupFileBrowser, BackupType } from '@/hooks/useBackupFileBrowser';
+import { useBackupFileBrowser } from '@/hooks/useBackupFileBrowser';
+import type { BackupFolder, BackupType } from '@/hooks/backupFileBrowserContracts';
 import { FolderCard, FileCard, Breadcrumbs } from './components/BackupDriveItems';
 import { HandoffCalendarView } from './components/HandoffCalendarView';
 import { DailyBackupCalendarView } from './components/DailyBackupCalendarView';
 import { PdfViewerModal } from '@/components/shared/PdfViewerModal';
 import { formatFileSize, type BaseStoredFile, type StoredPdfFile } from '@/types/backupArtifacts';
-import { BackupFolder } from '@/hooks/useBackupFilesQuery';
 import clsx from 'clsx';
 
 // Tab configuration for backup types

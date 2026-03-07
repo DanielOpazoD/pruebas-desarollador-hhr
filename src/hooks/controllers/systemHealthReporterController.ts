@@ -4,6 +4,7 @@ import type { RepositoryPerformanceSummary } from '@/services/repositories/repos
 import { CURRENT_SCHEMA_VERSION } from '@/constants/version';
 import { BACKEND_RUNTIME_CONTRACT_VERSION } from '@/constants/runtimeContracts';
 import type { UserRole } from '@/types';
+import type { OperationalTelemetrySummary } from '@/services/observability/operationalTelemetryService';
 
 export interface BuildUserHealthStatusOptions {
   uid: string;
@@ -19,6 +20,7 @@ export interface BuildUserHealthStatusOptions {
   userAgent: string;
   syncTelemetry: SyncQueueTelemetry;
   repositoryPerformance: RepositoryPerformanceSummary;
+  operationalTelemetry: OperationalTelemetrySummary;
 }
 
 const HEALTH_REPORTER_ROLES = new Set<UserRole>(['admin', 'nurse_hospital']);
@@ -43,6 +45,10 @@ export const buildUserHealthStatus = (options: BuildUserHealthStatusOptions): Us
   degradedLocalPersistence: options.degradedLocalPersistence,
   repositoryWarningCount: options.repositoryPerformance.warningCount,
   slowestRepositoryOperationMs: options.repositoryPerformance.slowestOperationMs,
+  operationalObservedCount: options.operationalTelemetry.recentObservedCount,
+  operationalFailureCount: options.operationalTelemetry.recentFailedCount,
+  operationalExportBackupObservedCount: options.operationalTelemetry.exportOrBackupObservedCount,
+  latestOperationalIssueAt: options.operationalTelemetry.latestIssueAt,
   appVersion: `v${CURRENT_SCHEMA_VERSION} (sync-batch:${options.syncTelemetry.batchSize}, backend-contract:${BACKEND_RUNTIME_CONTRACT_VERSION})`,
   platform: options.platform,
   userAgent: options.userAgent,

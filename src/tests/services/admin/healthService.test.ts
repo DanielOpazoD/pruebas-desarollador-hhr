@@ -41,6 +41,9 @@ describe('healthService', () => {
     degradedLocalPersistence: false,
     repositoryWarningCount: 0,
     slowestRepositoryOperationMs: 0,
+    operationalObservedCount: 0,
+    operationalFailureCount: 0,
+    operationalExportBackupObservedCount: 0,
     appVersion: '1.0.0',
     platform: 'MacIntel',
     userAgent: 'Mozilla/5.0',
@@ -169,6 +172,7 @@ describe('healthService', () => {
       expect(normalized.email).toBe('unknown@local');
       expect(normalized.pendingMutations).toBe(0);
       expect(normalized.isOnline).toBe(false);
+      expect(normalized.operationalObservedCount).toBe(0);
     });
   });
 
@@ -186,6 +190,9 @@ describe('healthService', () => {
           localErrorCount: 3,
           repositoryWarningCount: 4,
           slowestRepositoryOperationMs: 280,
+          operationalObservedCount: 5,
+          operationalFailureCount: 2,
+          operationalExportBackupObservedCount: 3,
         },
       ]);
 
@@ -199,6 +206,9 @@ describe('healthService', () => {
       expect(summary.totalRepositoryWarnings).toBe(4);
       expect(summary.maxSlowRepositoryOperationMs).toBe(280);
       expect(summary.oldestObservedPendingAgeMs).toBe(0);
+      expect(summary.totalOperationalObservedCount).toBe(5);
+      expect(summary.totalOperationalFailureCount).toBe(2);
+      expect(summary.totalOperationalExportBackupObservedCount).toBe(3);
     });
   });
 });

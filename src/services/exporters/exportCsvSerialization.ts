@@ -1,6 +1,7 @@
 import { DailyRecord, DischargeData, PatientData, TransferData } from '@/types';
 import { BEDS, CSV_HEADERS } from '@/constants';
 import { formatDateDDMMYYYY } from '@/utils/dateUtils';
+import { resolveExportableNursesText } from '@/services/staff/dailyRecordStaffing';
 
 const escapeCsvValue = (value: unknown): string => {
   if (value === null || value === undefined) return '';
@@ -11,12 +12,7 @@ const escapeCsvValue = (value: unknown): string => {
   return stringValue;
 };
 
-const resolveNurseField = (record: DailyRecord): string => {
-  if (record.nurses && Array.isArray(record.nurses)) {
-    return record.nurses.filter(Boolean).join(' & ');
-  }
-  return record.nurseName || '';
-};
+const resolveNurseField = (record: DailyRecord): string => resolveExportableNursesText(record);
 
 const generatePatientRow = (
   record: DailyRecord,

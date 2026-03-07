@@ -18,6 +18,7 @@ Cuando una operación necesita coordinar repositorios, clasificar outcomes remot
 | `useBedManagement.ts`        | Operaciones de camas/paciente                         |
 | `useHandoff*`                | Familia de hooks de entrega de turno                  |
 | `useCensusEmail*`            | Preparación/envío de email de censo                   |
+| `useBackup*`                 | Navegación, listing y acciones de respaldos           |
 | `controllers/`               | Lógica pura usada por hooks (sin React UI)            |
 | `admin/`                     | Hooks auxiliares del módulo admin                     |
 | `whatsapp/`                  | Hooks de integración WhatsApp                         |
@@ -47,6 +48,18 @@ Cuando una operación necesita coordinar repositorios, clasificar outcomes remot
 - **LatestRef pattern**: evita stale closures en callbacks largos.
 - `useTransferViewStates.ts` ahora delega preparación/caché documental a [controllers/transferDocumentPackageController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/transferDocumentPackageController.ts) para mantener el hook enfocado en estado de modales y selección.
 
+## Taxonomía rápida
+
+- `facade`: API pública estable del subdominio.
+- `state`: estado local o draft.
+- `bootstrap`: carga/selección inicial.
+- `delivery`: envío/export/comunicación remota.
+- `persistence`: save/patch/delete.
+- `query`: lectura reactiva y caché.
+- `compat`: bridge temporal o adapter técnico.
+
+Referencia detallada: [docs/hooks-reference.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/hooks-reference.md)
+
 ## Ejemplo
 
 ```ts
@@ -62,6 +75,7 @@ dailyRecord.updatePatient('R1', 'patientName', 'Paciente Demo');
 3. Si ya existe use-case o port equivalente, el hook no debe importar directo `auditService`, `DailyRecordRepository`, `ClinicalDocumentRepository` ni `censusEmailService`.
 4. Los tests de hooks deben mockear use-cases, ports o adapters antes que servicios concretos.
 5. Mantener API estable y documentar breaking changes en este README.
+6. Evitar `ReturnType<typeof hook>` para contratos semánticos del core cuando ya exista `*Contracts.ts` o `*Types.ts`.
 
 ## Guardrails activos
 

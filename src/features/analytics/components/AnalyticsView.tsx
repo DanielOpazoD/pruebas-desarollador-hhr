@@ -10,10 +10,12 @@ import { DateRangeSelector } from './components/DateRangeSelector';
 import { MinsalKPICards } from './components/MinsalKPICards';
 import { SpecialtyBreakdownTable } from './components/SpecialtyBreakdownTable';
 import { OccupancyTrendChart } from './components/OccupancyTrendChart';
+import { resolveAnalyticsPresentationCopy } from '@/features/analytics/controllers/minsalAnalyticsPresentationController';
 import { formatDateDDMMYYYY } from '@/utils/dateUtils';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 
 export const AnalyticsView: React.FC = () => {
+  const copy = resolveAnalyticsPresentationCopy();
   const {
     stats,
     trendData,
@@ -147,7 +149,7 @@ export const AnalyticsView: React.FC = () => {
 
         {/* Current Snapshot */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <h3 className="font-bold text-slate-700 mb-4">Situación de hoy</h3>
+          <h3 className="font-bold text-slate-700 mb-4">{copy.currentSnapshotTitle}</h3>
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-sky-50 rounded-lg p-4 text-center">
               <div className="text-4xl font-bold text-sky-600">{stats.pacientesActuales ?? 0}</div>
@@ -165,7 +167,7 @@ export const AnalyticsView: React.FC = () => {
               <div className="text-4xl font-bold text-purple-600">
                 {stats.tasaOcupacionActual ?? 0}%
               </div>
-              <div className="text-sm text-purple-800 mt-1">Ocupación Actual</div>
+              <div className="text-sm text-purple-800 mt-1">{copy.currentOccupancyLabel}</div>
             </div>
           </div>
         </div>

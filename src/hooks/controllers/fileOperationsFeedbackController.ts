@@ -10,13 +10,13 @@ export const buildExportJsonNotification = (
   outcome === 'success'
     ? {
         channel: 'success',
-        title: 'Datos exportados exitosamente',
-        message: 'Export JSON',
+        title: 'JSON exportado',
+        message: 'Se generó el respaldo JSON correctamente.',
       }
     : {
         channel: 'error',
-        title: 'Error al exportar datos',
-        message: 'Export Error',
+        title: 'Exportación fallida',
+        message: 'No se pudo generar el respaldo JSON.',
       };
 
 export const buildExportCsvNotification = (
@@ -25,13 +25,13 @@ export const buildExportCsvNotification = (
   outcome === 'success'
     ? {
         channel: 'success',
-        title: 'CSV exportado exitosamente',
-        message: 'Export CSV',
+        title: 'CSV exportado',
+        message: 'Se generó el archivo CSV correctamente.',
       }
     : {
         channel: 'error',
-        title: 'Error al exportar CSV',
-        message: 'Export Error',
+        title: 'Exportación fallida',
+        message: 'No se pudo generar el archivo CSV.',
       };
 
 export const buildImportFileErrorNotification = (
@@ -41,20 +41,20 @@ export const buildImportFileErrorNotification = (
     case 'invalid_format':
       return {
         channel: 'error',
-        title: 'Por favor seleccione un archivo .json válido',
-        message: 'Formato Inválido',
+        title: 'Formato no compatible',
+        message: 'Selecciona un archivo .json válido.',
       };
     case 'processing_failed':
       return {
         channel: 'error',
-        title: 'Error al procesar archivo',
-        message: 'Import Error',
+        title: 'Importación fallida',
+        message: 'No se pudo procesar el archivo seleccionado.',
       };
     default:
       return {
         channel: 'error',
-        title: 'Error al importar datos',
-        message: 'Import Error',
+        title: 'Importación fallida',
+        message: 'No se pudieron importar los datos.',
       };
   }
 };

@@ -4,6 +4,10 @@ import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domai
 import { openClinicalDocumentBrowserPrintPreview } from '@/features/clinical-documents/services/clinicalDocumentPrintPdfService';
 import { buildClinicalDocumentPdfFileName } from '@/features/clinical-documents/controllers/clinicalDocumentWorkspaceController';
 import { executeExportClinicalDocumentPdf } from '@/application/clinical-documents/clinicalDocumentUseCases';
+import {
+  recordOperationalOutcome,
+  recordOperationalTelemetry,
+} from '@/services/observability/operationalTelemetryService';
 
 interface NotificationPort {
   success: (title: string, message?: string) => void;
@@ -32,12 +36,30 @@ export const useClinicalDocumentWorkspaceExportActions = ({
     if (!selectedDocument) return;
     const opened = openClinicalDocumentBrowserPrintPreview(selectedDocument.title);
     if (!opened) {
+      recordOperationalTelemetry({
+        category: 'export',
+        status: 'failed',
+        operation: 'open_clinical_document_print_preview',
+        date: selectedDocument.sourceDailyRecordDate,
+        context: { documentId: selectedDocument.id },
+        issues: ['El navegador bloqueó la ventana emergente de impresión.'],
+      });
       notify.warning(
         'No se pudo abrir la vista de impresión',
         'Permite ventanas emergentes para usar la impresión PDF del navegador.'
       );
       return;
     }
+    recordOperationalTelemetry(
+      {
+        category: 'export',
+        status: 'success',
+        operation: 'open_clinical_document_print_preview',
+        date: selectedDocument.sourceDailyRecordDate,
+        context: { documentId: selectedDocument.id },
+      },
+      { allowSuccess: true }
+    );
     notify.info(
       'Vista de impresión abierta',
       'Ajusta escala, márgenes y destino en el cuadro de impresión del navegador.'
@@ -60,6 +82,11 @@ export const useClinicalDocumentWorkspaceExportActions = ({
         hospitalId,
         fileName: buildClinicalDocumentPdfFileName(selectedDocument),
       });
+      recordOperationalOutcome('export', 'export_clinical_document_pdf', result, {
+        date: selectedDocument.sourceDailyRecordDate,
+        context: { documentId: selectedDocument.id },
+        allowSuccess: true,
+      });
       if (result.status !== 'success' || !result.data) {
         throw new Error(result.issues[0]?.message || 'No se pudo exportar el PDF clínico.');
       }
@@ -67,6 +94,14 @@ export const useClinicalDocumentWorkspaceExportActions = ({
       notify.success('PDF exportado', 'El documento quedó respaldado en Google Drive.');
     } catch (error) {
       console.error('[ClinicalDocumentsWorkspace] Drive upload failed', error);
+      recordOperationalTelemetry({
+        category: 'export',
+        status: 'failed',
+        operation: 'export_clinical_document_pdf',
+        date: selectedDocument?.sourceDailyRecordDate,
+        issues: [error instanceof Error ? error.message : 'No se pudo exportar el PDF clínico.'],
+        context: { documentId: selectedDocument?.id },
+      });
       setDraft(prev =>
         prev
           ? {

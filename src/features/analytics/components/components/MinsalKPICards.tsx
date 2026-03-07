@@ -6,6 +6,7 @@
 import React from 'react';
 import { Bed, TrendingUp, Calendar, Users, Activity, RefreshCw } from 'lucide-react';
 import { MinsalStatistics } from '@/types/minsalTypes';
+import { resolveAnalyticsPresentationCopy } from '@/features/analytics/controllers/minsalAnalyticsPresentationController';
 
 interface MinsalKPICardsProps {
   stats: MinsalStatistics;
@@ -69,13 +70,15 @@ const KPICard: React.FC<KPICardProps> = ({ title, value, subtitle, icon, color }
 };
 
 export const MinsalKPICards: React.FC<MinsalKPICardsProps> = ({ stats }) => {
+  const copy = resolveAnalyticsPresentationCopy();
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
       {/* Tasa de Ocupación */}
       <KPICard
-        title="Ocupación del período"
+        title={copy.periodOccupancyTitle}
         value={`${stats.tasaOcupacion}%`}
-        subtitle="Promedio del rango seleccionado"
+        subtitle={copy.periodOccupancySubtitle}
         icon={<Bed className="w-5 h-5" />}
         color="blue"
       />
