@@ -37,9 +37,9 @@ export const DEFAULT_ANALYTICS_PRESENTATION_COPY: AnalyticsPresentationCopy = {
   trendSubtitle: 'Serie diaria del rango seleccionado',
   trendOccupancyLabel: 'Ocupación del día',
   trendAverageLabel: 'Promedio del período',
-  currentSnapshotTitle: 'Situación actual',
+  currentSnapshotTitle: 'Último registro disponible',
   currentSnapshotSubtitle: 'Último registro disponible del rango seleccionado',
-  currentOccupancyLabel: 'Ocupación Actual',
+  currentOccupancyLabel: 'Ocupación del último registro',
 };
 
 export const resolveAnalyticsPresentationCopy = (): AnalyticsPresentationCopy =>

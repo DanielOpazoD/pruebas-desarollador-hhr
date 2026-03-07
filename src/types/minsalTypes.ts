@@ -149,15 +149,15 @@ export interface MinsalStatistics {
   indiceRotacion: number;
 
   // ===== Current Snapshot =====
-  /** Current hospitalized patients */
+  /** Hospitalized patients in the latest available snapshot of the selected range */
   pacientesActuales: number;
-  /** Current occupied beds */
+  /** Occupied beds in the latest available snapshot of the selected range */
   camasOcupadas: number;
-  /** Current blocked beds */
+  /** Blocked beds in the latest available snapshot of the selected range */
   camasBloqueadas: number;
-  /** Current available beds (unblocked) */
+  /** Available beds (unblocked) in the latest available snapshot of the selected range */
   camasDisponibles: number;
-  /** Current free beds (available - occupied) */
+  /** Free beds in the latest available snapshot of the selected range */
   camasLibres: number;
   /** Occupancy rate from the latest available snapshot inside the selected range */
   tasaOcupacionActual: number;

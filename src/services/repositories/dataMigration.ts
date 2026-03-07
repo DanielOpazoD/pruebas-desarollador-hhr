@@ -45,7 +45,7 @@ const migrateLegacyNurses = (
   if (
     Array.isArray(record.nurses) &&
     record.nurses.some(n => !!n) &&
-    (!migrated.nursesDayShift || migrated.nursesDayShift.every(n => !n))
+    (!record.nursesDayShift || record.nursesDayShift.every(n => !n))
   ) {
     pushRule(appliedRules, 'legacy_nurses_promoted_to_day_shift');
   }
@@ -53,7 +53,7 @@ const migrateLegacyNurses = (
   if (
     typeof record.nurseName === 'string' &&
     record.nurseName &&
-    (!migrated.nursesDayShift || !migrated.nursesDayShift[0])
+    (!record.nursesDayShift || !record.nursesDayShift[0])
   ) {
     pushRule(appliedRules, 'legacy_single_nurse_promoted');
   }

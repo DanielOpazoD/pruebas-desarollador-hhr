@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import clsx from 'clsx';
 import { AlertTriangle, CheckCircle2, Clock3, LockKeyhole, Stethoscope } from 'lucide-react';
 import type { AuthUser, DailyRecord, MedicalHandoffActor, MedicalSpecialty } from '@/types';
@@ -72,35 +72,24 @@ export const MedicalSpecialtyHandoffSection: React.FC<MedicalSpecialtyHandoffSec
     Partial<Record<MedicalSpecialty, string>>
   >({});
 
-  useEffect(() => {
-    if (editableSpecialties.length > 0 && !editableSpecialties.includes(activeSpecialty)) {
-      setActiveSpecialty(editableSpecialties[0]);
-    }
-  }, [activeSpecialty, editableSpecialties]);
-
-  useEffect(() => {
-    setContinuityDrafts(previous => {
-      const nextDrafts = { ...previous };
-      MEDICAL_SPECIALTY_ORDER.forEach(specialty => {
-        const note = getMedicalSpecialtyNote(record, specialty);
-        const continuity = note?.dailyContinuity?.[record.date];
-        if (!nextDrafts[specialty]) {
-          nextDrafts[specialty] = continuity?.comment || DEFAULT_NO_CHANGES_COMMENT;
-        }
-      });
-      return nextDrafts;
-    });
-  }, [record]);
+  const resolvedActiveSpecialty =
+    editableSpecialties.length > 0 && !editableSpecialties.includes(activeSpecialty)
+      ? editableSpecialties[0]
+      : activeSpecialty;
 
   const actor = useMemo(() => buildActor(user, role), [role, user]);
   const canConfirmToday = canConfirmMedicalSpecialtyNoChanges(role) && !readOnly;
 
-  const activeNote = getMedicalSpecialtyNote(record, activeSpecialty);
+  const activeNote = getMedicalSpecialtyNote(record, resolvedActiveSpecialty);
   const activeStatus = resolveMedicalSpecialtyDailyStatus(activeNote, record.date);
   const activeContinuity = activeNote?.dailyContinuity?.[record.date];
-  const canEditActiveSpecialty = !readOnly && editableSpecialties.includes(activeSpecialty);
+  const canEditActiveSpecialty = !readOnly && editableSpecialties.includes(resolvedActiveSpecialty);
   const activeStatusMeta = STATUS_STYLES[activeStatus];
   const ActiveStatusIcon = activeStatusMeta.icon;
+  const activeContinuityDraft =
+    continuityDrafts[resolvedActiveSpecialty] ||
+    activeContinuity?.comment ||
+    DEFAULT_NO_CHANGES_COMMENT;
   const hasSpecialtyData = MEDICAL_SPECIALTY_ORDER.some(specialty =>
     Boolean(getMedicalSpecialtyNote(record, specialty))
   );
@@ -137,7 +126,7 @@ export const MedicalSpecialtyHandoffSection: React.FC<MedicalSpecialtyHandoffSec
                   onClick={() => setActiveSpecialty(specialty)}
                   className={clsx(
                     'rounded-lg border px-3 py-2 text-left transition-colors min-w-[160px]',
-                    activeSpecialty === specialty
+                    resolvedActiveSpecialty === specialty
                       ? 'border-sky-400 bg-sky-50'
                       : 'border-slate-200 bg-white hover:bg-slate-50'
                   )}
@@ -167,7 +156,7 @@ export const MedicalSpecialtyHandoffSection: React.FC<MedicalSpecialtyHandoffSec
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="text-sm font-semibold text-slate-800">
-                {getMedicalSpecialtyLabel(activeSpecialty)}
+                {getMedicalSpecialtyLabel(resolvedActiveSpecialty)}
               </div>
               <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
                 <span>
@@ -207,7 +196,7 @@ export const MedicalSpecialtyHandoffSection: React.FC<MedicalSpecialtyHandoffSec
             <DebouncedTextarea
               value={activeNote?.note || ''}
               onChangeValue={value => {
-                void onUpdateMedicalSpecialtyNote(activeSpecialty, value, actor);
+                void onUpdateMedicalSpecialtyNote(resolvedActiveSpecialty, value, actor);
               }}
               disabled={!canEditActiveSpecialty}
               debounceMs={1200}
@@ -239,11 +228,11 @@ export const MedicalSpecialtyHandoffSection: React.FC<MedicalSpecialtyHandoffSec
             </div>
 
             <textarea
-              value={continuityDrafts[activeSpecialty] || DEFAULT_NO_CHANGES_COMMENT}
+              value={activeContinuityDraft}
               onChange={event =>
                 setContinuityDrafts(previous => ({
                   ...previous,
-                  [activeSpecialty]: event.target.value,
+                  [resolvedActiveSpecialty]: event.target.value,
                 }))
               }
               disabled={!canConfirmToday || activeStatus === 'updated_by_specialist'}
@@ -266,9 +255,9 @@ export const MedicalSpecialtyHandoffSection: React.FC<MedicalSpecialtyHandoffSec
                   type="button"
                   onClick={() =>
                     void onConfirmMedicalSpecialtyNoChanges({
-                      specialty: activeSpecialty,
+                      specialty: resolvedActiveSpecialty,
                       actor,
-                      comment: continuityDrafts[activeSpecialty] || DEFAULT_NO_CHANGES_COMMENT,
+                      comment: activeContinuityDraft,
                       dateKey: record.date,
                     })
                   }

@@ -113,10 +113,8 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
     scopedMedicalScope,
     effectiveVisibleBeds,
     medicalSpecialties,
-    specialtyFilteredBeds,
     scopedMedicalSignature,
     scopedMedicalHandoffSentAt,
-    hasAnyVisiblePatients,
   } = React.useMemo(
     () =>
       resolveHandoffScreenState({
@@ -124,20 +122,36 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
         record,
         isMedical,
         medicalScope,
-        selectedMedicalSpecialty,
+        selectedMedicalSpecialty: 'all',
         shouldShowPatient,
       }),
-    [visibleBeds, record, isMedical, medicalScope, selectedMedicalSpecialty, shouldShowPatient]
+    [visibleBeds, record, isMedical, medicalScope, shouldShowPatient]
   );
 
-  useEffect(() => {
-    if (
-      selectedMedicalSpecialty !== 'all' &&
-      !medicalSpecialties.includes(selectedMedicalSpecialty)
-    ) {
-      setSelectedMedicalSpecialty('all');
-    }
-  }, [medicalSpecialties, selectedMedicalSpecialty]);
+  const effectiveSelectedMedicalSpecialty =
+    selectedMedicalSpecialty !== 'all' && !medicalSpecialties.includes(selectedMedicalSpecialty)
+      ? 'all'
+      : selectedMedicalSpecialty;
+
+  const { specialtyFilteredBeds, hasAnyVisiblePatients } = React.useMemo(
+    () =>
+      resolveHandoffScreenState({
+        visibleBeds,
+        record,
+        isMedical,
+        medicalScope,
+        selectedMedicalSpecialty: effectiveSelectedMedicalSpecialty,
+        shouldShowPatient,
+      }),
+    [
+      visibleBeds,
+      record,
+      isMedical,
+      medicalScope,
+      effectiveSelectedMedicalSpecialty,
+      shouldShowPatient,
+    ]
+  );
 
   // MINSAL Traceability: Log when clinical data is viewed
   const { userId } = useAuditContext();
@@ -279,7 +293,7 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
           updateMedicalHandoffDoctor={updateMedicalHandoffDoctor}
           markMedicalHandoffAsSent={markMedicalHandoffAsSent}
           resetMedicalHandoffState={resetMedicalHandoffState}
-          selectedMedicalSpecialty={selectedMedicalSpecialty}
+          selectedMedicalSpecialty={effectiveSelectedMedicalSpecialty}
           setSelectedMedicalSpecialty={setSelectedMedicalSpecialty}
           medicalSpecialties={medicalSpecialties}
           success={success}

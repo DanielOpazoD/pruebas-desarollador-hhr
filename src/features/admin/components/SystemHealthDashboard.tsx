@@ -83,7 +83,7 @@ export const SystemHealthDashboard = () => {
         </div>
         <div className="card p-3">
           <p className="text-[10px] uppercase font-bold text-slate-400">
-            Operaciones con observaciones
+            Operaciones con observaciones (12h)
           </p>
           <p className="text-2xl font-black text-amber-600">
             {summary.totalOperationalObservedCount}
@@ -110,7 +110,8 @@ export const SystemHealthDashboard = () => {
             {summary.usersWithRecentOperationalIssues} usuarios recientes
           </p>
           <p className="text-[10px] text-slate-400">
-            Última hora {summary.totalOperationalLastHourObservedCount} ·{' '}
+            12h {summary.totalOperationalObservedCount} · 1h{' '}
+            {summary.totalOperationalLastHourObservedCount} ·{' '}
             {summary.latestOperationalIssueAt
               ? `Última observación ${new Date(summary.latestOperationalIssueAt).toLocaleTimeString(
                   [],
@@ -279,11 +280,12 @@ export const SystemHealthDashboard = () => {
 
                   {u.operationalObservedCount > 0 && (
                     <div className="text-[10px] text-slate-500 flex flex-wrap gap-x-3 gap-y-1">
+                      <span>12h {u.operationalObservedCount}</span>
+                      <span>1h {u.operationalLastHourObservedCount}</span>
                       <span>Sync {u.operationalSyncObservedCount}</span>
                       <span>Local {u.operationalIndexedDbObservedCount}</span>
                       <span>Docs {u.operationalClinicalDocumentObservedCount}</span>
                       <span>Día {u.operationalCreateDayObservedCount}</span>
-                      <span>1h {u.operationalLastHourObservedCount}</span>
                       {u.latestOperationalIssueAt && (
                         <span className="text-slate-400">
                           Última obs.{' '}

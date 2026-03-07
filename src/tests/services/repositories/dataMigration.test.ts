@@ -28,6 +28,7 @@ describe('Data Migration Service - Staff Fields', () => {
     const migrated = migrateLegacyData(legacyRecord, mockDate);
 
     expect(migrated.nursesDayShift).toEqual(['Nurse A', 'Nurse B']);
+    expect(migrated.nurses).toEqual(['Nurse A', 'Nurse B']);
   });
 
   it('should migrate legacy nurseName to first element of nursesDayShift', () => {
@@ -39,6 +40,7 @@ describe('Data Migration Service - Staff Fields', () => {
     const migrated = migrateLegacyData(legacyRecord, mockDate);
 
     expect(migrated.nursesDayShift?.[0]).toBe('Nurse Single');
+    expect(migrated.nurses?.[0]).toBe('Nurse Single');
   });
 
   it('should migrate legacy tens array to tensDayShift', () => {
@@ -71,8 +73,8 @@ describe('Data Migration Service - Staff Fields', () => {
 
     const migrated = migrateLegacyData(record, mockDate);
 
-    expect(migrated.nursesDayShift).toEqual([]);
-    expect(migrated.nursesNightShift).toEqual([]);
+    expect(migrated.nursesDayShift).toEqual(['', '']);
+    expect(migrated.nursesNightShift).toEqual(['', '']);
     expect(migrated.tensDayShift).toEqual([]);
     expect(migrated.tensNightShift).toEqual([]);
   });

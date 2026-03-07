@@ -20,9 +20,14 @@ describe('minsalAnalyticsPresentationController', () => {
     );
     expect(DEFAULT_ANALYTICS_PRESENTATION_COPY.trendTitle).toBe('Tendencia diaria de ocupación');
     expect(DEFAULT_ANALYTICS_PRESENTATION_COPY.trendOccupancyLabel).toBe('Ocupación del día');
-    expect(DEFAULT_ANALYTICS_PRESENTATION_COPY.currentSnapshotTitle).toBe('Situación actual');
+    expect(DEFAULT_ANALYTICS_PRESENTATION_COPY.currentSnapshotTitle).toBe(
+      'Último registro disponible'
+    );
     expect(DEFAULT_ANALYTICS_PRESENTATION_COPY.currentSnapshotSubtitle).toBe(
       'Último registro disponible del rango seleccionado'
+    );
+    expect(DEFAULT_ANALYTICS_PRESENTATION_COPY.currentOccupancyLabel).toBe(
+      'Ocupación del último registro'
     );
   });
 });

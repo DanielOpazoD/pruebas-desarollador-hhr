@@ -84,6 +84,7 @@ describe('operationalTelemetryService', () => {
     const summary = buildOperationalTelemetrySummary(getOperationalTelemetryEvents());
     expect(summary.recentObservedCount).toBe(5);
     expect(summary.recentFailedCount).toBe(2);
+    expect(summary.lastHourObservedCount).toBe(5);
     expect(summary.syncFailureCount).toBe(1);
     expect(summary.syncObservedCount).toBe(1);
     expect(summary.degradedLocalCount).toBe(1);
