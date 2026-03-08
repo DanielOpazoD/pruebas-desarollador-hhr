@@ -33,6 +33,7 @@ const baseStatus = (): UserHealthStatus => ({
   operationalIndexedDbObservedCount: 0,
   operationalClinicalDocumentObservedCount: 0,
   operationalCreateDayObservedCount: 0,
+  operationalHandoffObservedCount: 0,
   operationalExportBackupObservedCount: 0,
   operationalTopObservedCategory: undefined,
   operationalTopObservedOperation: undefined,

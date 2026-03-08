@@ -5,12 +5,22 @@ type DailyRecordStaffingCompatShape = Pick<
   'nurses' | 'nurseName' | 'nursesDayShift' | 'nursesNightShift'
 >;
 
+type DailyRecordShiftStaffingShape = Pick<
+  DailyRecord,
+  'nurses' | 'nurseName' | 'nursesDayShift' | 'nursesNightShift'
+>;
+
+type DailyRecordUnknownStaffingShape = Record<
+  'nurses' | 'nurseName' | 'nursesDayShift' | 'nursesNightShift',
+  unknown
+>;
+
 const normalizeStaffList = (staff?: string[] | null): string[] =>
   Array.isArray(staff) ? staff.map(value => value?.trim() || '').filter(Boolean) : [];
 
 const toEmptyShiftPair = (staff: string[]): string[] => (staff.length > 0 ? staff : ['', '']);
 
-const resolveLegacyDayShiftNurses = (record: DailyRecord): string[] => {
+const resolveLegacyDayShiftNurses = (record: DailyRecordShiftStaffingShape): string[] => {
   const legacy = normalizeStaffList(record.nurses);
   if (legacy.length > 0) {
     return legacy;
@@ -19,13 +29,17 @@ const resolveLegacyDayShiftNurses = (record: DailyRecord): string[] => {
   return record.nurseName?.trim() ? [record.nurseName.trim()] : [];
 };
 
-export const resolveDayShiftNurses = (record: DailyRecord | null | undefined): string[] => {
+export const resolveDayShiftNurses = (
+  record: DailyRecordShiftStaffingShape | null | undefined
+): string[] => {
   if (!record) return [];
   const canonical = normalizeStaffList(record.nursesDayShift);
   return canonical.length > 0 ? canonical : resolveLegacyDayShiftNurses(record);
 };
 
-export const resolveNightShiftNurses = (record: DailyRecord | null | undefined): string[] => {
+export const resolveNightShiftNurses = (
+  record: DailyRecordShiftStaffingShape | null | undefined
+): string[] => {
   if (!record) return [];
   return normalizeStaffList(record.nursesNightShift);
 };
@@ -46,12 +60,47 @@ export const applyDailyRecordStaffingCompatibility = <T extends DailyRecordStaff
   };
 };
 
+export const buildCompatibleDayShiftStaffingMirror = (
+  staff: string[] | null | undefined
+): Pick<DailyRecordStaffingCompatShape, 'nurses' | 'nursesDayShift'> => {
+  const resolvedDayShift = toEmptyShiftPair(normalizeStaffList(staff));
+  return {
+    nurses: [...resolvedDayShift],
+    nursesDayShift: [...resolvedDayShift],
+  };
+};
+
+export const normalizeUnknownDailyRecordStaffing = (
+  record: Partial<DailyRecordUnknownStaffingShape>,
+  ensurePair: (value: unknown) => string[]
+): DailyRecordStaffingCompatShape =>
+  applyDailyRecordStaffingCompatibility({
+    nurses: ensurePair(record.nurses),
+    nurseName: typeof record.nurseName === 'string' ? record.nurseName : undefined,
+    nursesDayShift: ensurePair(record.nursesDayShift),
+    nursesNightShift: ensurePair(record.nursesNightShift),
+  });
+
 export const resolvePrimaryDayShiftNurse = (
-  record: DailyRecord | null | undefined
+  record: DailyRecordShiftStaffingShape | null | undefined
 ): string | undefined => resolveDayShiftNurses(record)[0];
 
+export const hasLegacyDayShiftNurses = (
+  record: DailyRecordShiftStaffingShape | null | undefined
+): boolean => {
+  if (!record) return false;
+  return normalizeStaffList(record.nurses).length > 0;
+};
+
+export const hasLegacyPrimaryDayShiftNurse = (
+  record: DailyRecordShiftStaffingShape | null | undefined
+): boolean => {
+  if (!record) return false;
+  return Boolean(record.nurseName?.trim());
+};
+
 export const resolveShiftNurseSignature = (
-  record: DailyRecord | null | undefined,
+  record: DailyRecordShiftStaffingShape | null | undefined,
   preferredShift: 'day' | 'night' = 'night'
 ): string => {
   if (!record) return '';
@@ -67,6 +116,32 @@ export const resolveShiftNurseSignature = (
 };
 
 export const resolveExportableNursesText = (
-  record: DailyRecord | null | undefined,
+  record: DailyRecordShiftStaffingShape | null | undefined,
   separator = ' & '
 ): string => resolveDayShiftNurses(record).join(separator);
+
+export const resolveHandoffShiftStaff = (
+  record:
+    | Pick<
+        DailyRecord,
+        'nurses' | 'nurseName' | 'nursesDayShift' | 'nursesNightShift' | 'handoffNightReceives'
+      >
+    | null
+    | undefined,
+  shift: 'day' | 'night'
+): { delivers: string[]; receives: string[] } => {
+  if (!record) {
+    return {
+      delivers: [],
+      receives: [],
+    };
+  }
+
+  return {
+    delivers: shift === 'day' ? resolveDayShiftNurses(record) : resolveNightShiftNurses(record),
+    receives:
+      shift === 'day'
+        ? resolveNightShiftNurses(record)
+        : normalizeStaffList(record.handoffNightReceives),
+  };
+};

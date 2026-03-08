@@ -14,6 +14,10 @@ import {
   createApplicationFailed,
   type ApplicationOutcome,
 } from '@/application/shared/applicationOutcome';
+import {
+  recordOperationalOutcome,
+  recordOperationalTelemetry,
+} from '@/services/observability/operationalTelemetryService';
 
 const generateMedicalSignatureLinkToken = (): string => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -98,6 +102,13 @@ export const useHandoffManagementDelivery = ({
     async (templateContent: string, targetGroupId: string) => {
       const currentRecord = getCurrentRecord();
       if (!currentRecord) {
+        recordOperationalTelemetry({
+          category: 'handoff',
+          status: 'failed',
+          operation: 'send_medical_handoff',
+          issues: ['No hay entrega médica disponible para enviar.'],
+          context: { targetGroupId, scope: 'all' },
+        });
         notifyError('Error al enviar', 'No hay entrega médica disponible para enviar.');
         return;
       }
@@ -111,12 +122,26 @@ export const useHandoffManagementDelivery = ({
           getPreviousDay: defaultDailyRecordReadPort.getPreviousDay,
           scope: 'all',
         });
+        recordOperationalOutcome('handoff', 'send_medical_handoff', outcome, {
+          date: currentRecord.date,
+          context: { targetGroupId, scope: 'all' },
+        });
         if (outcome.status === 'failed') {
           throw createApplicationFailed(null, outcome.issues);
         }
 
         success('WhatsApp Enviado', 'Entrega médica enviada correctamente.');
       } catch (err: unknown) {
+        if (!(typeof err === 'object' && err && 'status' in err)) {
+          recordOperationalTelemetry({
+            category: 'handoff',
+            status: 'failed',
+            operation: 'send_medical_handoff',
+            date: currentRecord.date,
+            issues: [err instanceof Error ? err.message : 'Error desconocido al enviar entrega'],
+            context: { targetGroupId, scope: 'all' },
+          });
+        }
         const errorMessage =
           typeof err === 'object' && err && 'status' in err
             ? getFailedOutcomeMessage(err as ApplicationOutcome<unknown>)

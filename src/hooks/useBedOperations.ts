@@ -15,6 +15,8 @@ import {
   resolveToggleBedTypeOperation,
   resolveToggleBlockedOperation,
   resolveToggleExtraBedOperation,
+  toBedOperationAuditArgs,
+  type BedOperationResolution,
 } from '@/hooks/controllers/bedOperationsAuditController';
 
 // ============================================================================
@@ -64,6 +66,17 @@ export const useBedOperations = (
 ): BedOperationsActions => {
   const { logEvent, logPatientCleared } = useAuditContext();
 
+  const applyResolvedOperation = useCallback(
+    (resolvedOperation: BedOperationResolution): void => {
+      if (resolvedOperation.kind === 'noop') {
+        return;
+      }
+      patchRecord(resolvedOperation.patch);
+      logEvent(...toBedOperationAuditArgs(resolvedOperation));
+    },
+    [logEvent, patchRecord]
+  );
+
   // ========================================================================
   // Clear Operations
   // ========================================================================
@@ -101,20 +114,9 @@ export const useBedOperations = (
     (type: 'move' | 'copy', sourceBedId: string, targetBedId: string) => {
       if (!record) return;
       const resolvedOperation = resolveMoveOrCopyOperation(record, type, sourceBedId, targetBedId);
-      if (resolvedOperation.kind === 'noop') {
-        return;
-      }
-      patchRecord(resolvedOperation.patch);
-      logEvent(
-        resolvedOperation.audit.action,
-        resolvedOperation.audit.entityType,
-        resolvedOperation.audit.entityId,
-        resolvedOperation.audit.details,
-        resolvedOperation.audit.patientRut,
-        resolvedOperation.audit.recordDate
-      );
+      applyResolvedOperation(resolvedOperation);
     },
-    [record, patchRecord, logEvent]
+    [applyResolvedOperation, record]
   );
 
   // ========================================================================
@@ -125,17 +127,9 @@ export const useBedOperations = (
     (bedId: string, reason?: string) => {
       if (!record) return;
       const resolvedOperation = resolveToggleBlockedOperation(record, bedId, reason);
-      patchRecord(resolvedOperation.patch);
-      logEvent(
-        resolvedOperation.audit.action,
-        resolvedOperation.audit.entityType,
-        resolvedOperation.audit.entityId,
-        resolvedOperation.audit.details,
-        undefined,
-        resolvedOperation.audit.recordDate
-      );
+      applyResolvedOperation(resolvedOperation);
     },
-    [record, patchRecord, logEvent]
+    [applyResolvedOperation, record]
   );
 
   /**
@@ -145,57 +139,27 @@ export const useBedOperations = (
     (bedId: string, reason: string) => {
       if (!record) return;
       const resolvedOperation = resolveBlockedReasonUpdate(record, bedId, reason);
-      if (resolvedOperation.kind === 'noop') {
-        return;
-      }
-      patchRecord(resolvedOperation.patch);
-      logEvent(
-        resolvedOperation.audit.action,
-        resolvedOperation.audit.entityType,
-        resolvedOperation.audit.entityId,
-        resolvedOperation.audit.details,
-        undefined,
-        resolvedOperation.audit.recordDate
-      );
+      applyResolvedOperation(resolvedOperation);
     },
-    [record, patchRecord, logEvent]
+    [applyResolvedOperation, record]
   );
 
   const toggleExtraBed = useCallback(
     (bedId: string) => {
       if (!record) return;
       const resolvedOperation = resolveToggleExtraBedOperation(record, bedId);
-      patchRecord(resolvedOperation.patch);
-      logEvent(
-        resolvedOperation.audit.action,
-        resolvedOperation.audit.entityType,
-        resolvedOperation.audit.entityId,
-        resolvedOperation.audit.details,
-        undefined,
-        resolvedOperation.audit.recordDate
-      );
+      applyResolvedOperation(resolvedOperation);
     },
-    [record, patchRecord, logEvent]
+    [applyResolvedOperation, record]
   );
 
   const toggleBedType = useCallback(
     (bedId: string) => {
       if (!record) return;
       const resolvedOperation = resolveToggleBedTypeOperation(record, bedId);
-      if (resolvedOperation.kind === 'noop') {
-        return;
-      }
-      patchRecord(resolvedOperation.patch);
-      logEvent(
-        resolvedOperation.audit.action,
-        resolvedOperation.audit.entityType,
-        resolvedOperation.audit.entityId,
-        resolvedOperation.audit.details,
-        resolvedOperation.audit.patientRut,
-        resolvedOperation.audit.recordDate
-      );
+      applyResolvedOperation(resolvedOperation);
     },
-    [record, patchRecord, logEvent]
+    [applyResolvedOperation, record]
   );
 
   // ========================================================================

@@ -91,8 +91,22 @@ describe('operationalTelemetryService', () => {
     expect(summary.indexedDbObservedCount).toBe(1);
     expect(summary.clinicalDocumentObservedCount).toBe(1);
     expect(summary.createDayObservedCount).toBe(1);
+    expect(summary.handoffObservedCount).toBe(0);
     expect(summary.backupObservedCount).toBe(1);
     expect(summary.exportOrBackupObservedCount).toBe(1);
     expect(summary.latestIssueAt).toBeDefined();
+  });
+
+  it('tracks handoff observations separately from export and backup', () => {
+    recordOperationalTelemetry({
+      category: 'handoff',
+      status: 'degraded',
+      operation: 'send_medical_handoff',
+    });
+
+    const summary = buildOperationalTelemetrySummary(getOperationalTelemetryEvents());
+    expect(summary.handoffObservedCount).toBe(1);
+    expect(summary.topObservedCategory).toBe('handoff');
+    expect(summary.topObservedOperation).toBe('send_medical_handoff');
   });
 });

@@ -28,6 +28,7 @@ export interface UserHealthStatus {
   operationalIndexedDbObservedCount: number;
   operationalClinicalDocumentObservedCount: number;
   operationalCreateDayObservedCount: number;
+  operationalHandoffObservedCount: number;
   operationalExportBackupObservedCount: number;
   operationalTopObservedCategory?: string;
   operationalTopObservedOperation?: string;
@@ -60,6 +61,7 @@ export interface SystemHealthSummary {
   totalOperationalIndexedDbObservedCount: number;
   totalOperationalClinicalDocumentObservedCount: number;
   totalOperationalCreateDayObservedCount: number;
+  totalOperationalHandoffObservedCount: number;
   totalOperationalExportBackupObservedCount: number;
   topOperationalCategory?: string;
   topOperationalOperation?: string;
@@ -109,6 +111,7 @@ export const normalizeUserHealthStatus = (raw: Partial<UserHealthStatus>): UserH
   operationalIndexedDbObservedCount: toNumber(raw.operationalIndexedDbObservedCount),
   operationalClinicalDocumentObservedCount: toNumber(raw.operationalClinicalDocumentObservedCount),
   operationalCreateDayObservedCount: toNumber(raw.operationalCreateDayObservedCount),
+  operationalHandoffObservedCount: toNumber(raw.operationalHandoffObservedCount),
   operationalExportBackupObservedCount: toNumber(raw.operationalExportBackupObservedCount),
   operationalTopObservedCategory:
     typeof raw.operationalTopObservedCategory === 'string'
@@ -206,6 +209,10 @@ export const buildSystemHealthSummary = (statuses: UserHealthStatus[]): SystemHe
     ),
     totalOperationalCreateDayObservedCount: statuses.reduce(
       (sum, status) => sum + status.operationalCreateDayObservedCount,
+      0
+    ),
+    totalOperationalHandoffObservedCount: statuses.reduce(
+      (sum, status) => sum + status.operationalHandoffObservedCount,
       0
     ),
     totalOperationalExportBackupObservedCount: statuses.reduce(

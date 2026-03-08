@@ -101,7 +101,8 @@ export const SystemHealthDashboard = () => {
           </p>
           <p className="text-[10px] text-slate-400">
             Docs {summary.totalOperationalClinicalDocumentObservedCount} · Día{' '}
-            {summary.totalOperationalCreateDayObservedCount}
+            {summary.totalOperationalCreateDayObservedCount} · Handoff{' '}
+            {summary.totalOperationalHandoffObservedCount}
           </p>
         </div>
         <div className="card p-3">
@@ -297,6 +298,7 @@ export const SystemHealthDashboard = () => {
                       <span>Local {u.operationalIndexedDbObservedCount}</span>
                       <span>Docs {u.operationalClinicalDocumentObservedCount}</span>
                       <span>Día {u.operationalCreateDayObservedCount}</span>
+                      <span>Handoff {u.operationalHandoffObservedCount}</span>
                       {u.operationalTopObservedCategory && (
                         <span>Tipo {u.operationalTopObservedCategory}</span>
                       )}

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   resolveDayShiftNurses,
   resolveExportableNursesText,
+  normalizeUnknownDailyRecordStaffing,
   resolveNightShiftNurses,
   resolvePrimaryDayShiftNurse,
   resolveShiftNurseSignature,
@@ -70,5 +71,29 @@ describe('dailyRecordStaffing', () => {
     });
 
     expect(resolveDayShiftNurses(record)).toEqual(['Enfermera Legacy']);
+  });
+
+  it('normalizes unknown storage payloads into canonical staffing with legacy compatibility', () => {
+    const normalized = normalizeUnknownDailyRecordStaffing(
+      {
+        nurses: { '0': ' Legacy A ', '1': 'Legacy B' },
+        nurseName: 'Legacy Principal',
+        nursesDayShift: ['', ''],
+        nursesNightShift: { '0': ' Noche 1 ' },
+      },
+      value =>
+        Array.isArray(value)
+          ? value.map(item => String(item ?? ''))
+          : value && typeof value === 'object'
+            ? [
+                String((value as Record<string, unknown>)['0'] ?? ''),
+                String((value as Record<string, unknown>)['1'] ?? ''),
+              ]
+            : ['', '']
+    );
+
+    expect(normalized.nursesDayShift).toEqual(['Legacy A', 'Legacy B']);
+    expect(normalized.nurses).toEqual(['Legacy A', 'Legacy B']);
+    expect(normalized.nursesNightShift).toEqual(['Noche 1']);
   });
 });

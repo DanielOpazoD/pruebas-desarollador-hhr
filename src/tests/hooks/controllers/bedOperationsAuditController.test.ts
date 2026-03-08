@@ -6,6 +6,7 @@ import {
   resolveToggleBedTypeOperation,
   resolveToggleBlockedOperation,
   resolveToggleExtraBedOperation,
+  toBedOperationAuditArgs,
 } from '@/hooks/controllers/bedOperationsAuditController';
 
 const createPatient = (bedId: string, patientName = 'Paciente', location = 'Sala A'): PatientData =>
@@ -50,6 +51,18 @@ describe('bedOperationsAuditController', () => {
         targetBed: 'R2',
       })
     );
+    expect(toBedOperationAuditArgs(move)).toEqual([
+      'PATIENT_MODIFIED',
+      'patient',
+      'R2',
+      expect.objectContaining({
+        action: 'move',
+        sourceBed: 'R1',
+        targetBed: 'R2',
+      }),
+      '12.345.678-9',
+      '2026-03-07',
+    ]);
 
     const noop = resolveMoveOrCopyOperation(buildRecord(), 'copy', 'R2', 'R1');
     expect(noop).toEqual({

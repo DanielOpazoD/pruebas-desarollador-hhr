@@ -28,6 +28,26 @@ interface BedOperationApply {
 
 export type BedOperationResolution = BedOperationNoop | BedOperationApply;
 
+export type BedOperationAuditArgs = [
+  action: BedOperationApply['audit']['action'],
+  entityType: BedOperationApply['audit']['entityType'],
+  entityId: string,
+  details: Record<string, unknown>,
+  patientRut: string | undefined,
+  recordDate: string,
+];
+
+export const toBedOperationAuditArgs = (
+  resolvedOperation: BedOperationApply
+): BedOperationAuditArgs => [
+  resolvedOperation.audit.action,
+  resolvedOperation.audit.entityType,
+  resolvedOperation.audit.entityId,
+  resolvedOperation.audit.details,
+  resolvedOperation.audit.patientRut,
+  resolvedOperation.audit.recordDate,
+];
+
 export const resolveMoveOrCopyOperation = (
   record: DailyRecord,
   type: 'move' | 'copy',

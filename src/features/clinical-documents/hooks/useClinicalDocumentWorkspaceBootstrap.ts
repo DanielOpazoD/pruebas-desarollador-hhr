@@ -46,8 +46,8 @@ export const useClinicalDocumentWorkspaceBootstrap = ({
   const [templates, setTemplates] = useState<ClinicalDocumentTemplate[]>(
     listActiveClinicalDocumentTemplates()
   );
-  const [hasLoadedRemoteTemplates, setHasLoadedRemoteTemplates] = useState(false);
   const [remoteTemplateCount, setRemoteTemplateCount] = useState<number | null>(null);
+  const [hasLoadedRemoteTemplates, setHasLoadedRemoteTemplates] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('epicrisis');
   const [documents, setDocuments] = useState<ClinicalDocumentRecord[]>([]);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
@@ -84,11 +84,9 @@ export const useClinicalDocumentWorkspaceBootstrap = ({
       );
       const remoteTemplates = remoteTemplatesOutcome.data;
       if (!cancelled) {
-        setHasLoadedRemoteTemplates(true);
+        setTemplates(remoteTemplates);
         setRemoteTemplateCount(remoteTemplates.length);
-        setTemplates(
-          remoteTemplates.length > 0 ? remoteTemplates : listActiveClinicalDocumentTemplates()
-        );
+        setHasLoadedRemoteTemplates(true);
       }
     };
 
@@ -121,7 +119,6 @@ export const useClinicalDocumentWorkspaceBootstrap = ({
         setTemplates(listActiveClinicalDocumentTemplates());
         return;
       }
-      setRemoteTemplateCount(outcome.data.length);
       setTemplates(outcome.data);
     });
   }, [
@@ -144,10 +141,10 @@ export const useClinicalDocumentWorkspaceBootstrap = ({
         const hydrated = docs.map(document => hydrateLegacyClinicalDocument(document));
         setDocuments(hydrated);
         setSelectedDocumentId(prev => {
-          if (prev && hydrated.some(document => document.id === prev)) {
-            return prev;
+          if (!prev) {
+            return hydrated[0]?.id || null;
           }
-          return hydrated[0]?.id || null;
+          return hydrated.some(document => document.id === prev) ? prev : hydrated[0]?.id || null;
         });
       },
       hospitalId

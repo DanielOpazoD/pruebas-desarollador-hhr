@@ -1,6 +1,7 @@
 import { Worksheet } from 'exceljs';
 import { DailyRecord } from '@/types';
 import { MAIN_TITLE_STYLE } from '../styles';
+import { resolveNightShiftNurses } from '@/services/staff/dailyRecordStaffing';
 
 export function addHeaderSection(
   sheet: Worksheet,
@@ -23,7 +24,7 @@ export function addHeaderSection(
   dateRow.getCell(1).font = { bold: true };
 
   // Nurses (Night Shift only as per requirement)
-  const nurses = record.nursesNightShift?.filter(n => n && n.trim()) || [];
+  const nurses = resolveNightShiftNurses(record);
   const nurseText = nurses.length > 0 ? nurses.join(', ') : 'Sin asignar';
   const nurseRow = sheet.getRow(startRow + 2);
   nurseRow.getCell(1).value = `Enfermeros/as Turno Noche: ${nurseText}`;

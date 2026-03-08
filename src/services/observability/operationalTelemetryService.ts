@@ -6,7 +6,8 @@ export type OperationalTelemetryCategory =
   | 'export'
   | 'backup'
   | 'clinical_document'
-  | 'create_day';
+  | 'create_day'
+  | 'handoff';
 
 export type OperationalTelemetryStatus = 'success' | 'partial' | 'degraded' | 'failed';
 
@@ -31,6 +32,7 @@ export interface OperationalTelemetrySummary {
   indexedDbObservedCount: number;
   clinicalDocumentObservedCount: number;
   createDayObservedCount: number;
+  handoffObservedCount: number;
   exportObservedCount: number;
   backupObservedCount: number;
   exportOrBackupObservedCount: number;
@@ -200,6 +202,7 @@ export const buildOperationalTelemetrySummary = (
     indexedDbObservedCount: observedCategoryCount('indexeddb'),
     clinicalDocumentObservedCount: observedCategoryCount('clinical_document'),
     createDayObservedCount: observedCategoryCount('create_day'),
+    handoffObservedCount: observedCategoryCount('handoff'),
     exportObservedCount: observedCategoryCount('export'),
     backupObservedCount: observedCategoryCount('backup'),
     exportOrBackupObservedCount: recentEvents.filter(

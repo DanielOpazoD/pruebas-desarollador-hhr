@@ -28,7 +28,10 @@ import {
   mergeObject,
   mergePatientData,
 } from '@/services/repositories/conflictResolutionMergeUtils';
-import { resolveDayShiftNurses } from '@/services/staff/dailyRecordStaffing';
+import {
+  buildCompatibleDayShiftStaffingMirror,
+  resolveDayShiftNurses,
+} from '@/services/staff/dailyRecordStaffing';
 
 interface ConflictResolutionOptions {
   changedPaths?: string[];
@@ -266,8 +269,10 @@ const resolveByChangedPaths = (
 
     if (root === 'nurses' || root === 'nursesDayShift') {
       const mergedDayShift = resolveCanonicalDayShiftNurses(remote, local, true, traceContext);
-      (patches as Record<string, unknown>).nursesDayShift = mergedDayShift;
-      (patches as Record<string, unknown>)['nurses'] = [...mergedDayShift];
+      Object.assign(
+        patches as Record<string, unknown>,
+        buildCompatibleDayShiftStaffingMirror(mergedDayShift)
+      );
       continue;
     }
 

@@ -53,6 +53,7 @@ export const buildUserHealthStatus = (options: BuildUserHealthStatusOptions): Us
   operationalClinicalDocumentObservedCount:
     options.operationalTelemetry.clinicalDocumentObservedCount,
   operationalCreateDayObservedCount: options.operationalTelemetry.createDayObservedCount,
+  operationalHandoffObservedCount: options.operationalTelemetry.handoffObservedCount,
   operationalExportBackupObservedCount: options.operationalTelemetry.exportOrBackupObservedCount,
   operationalTopObservedCategory: options.operationalTelemetry.topObservedCategory,
   operationalTopObservedOperation: options.operationalTelemetry.topObservedOperation,

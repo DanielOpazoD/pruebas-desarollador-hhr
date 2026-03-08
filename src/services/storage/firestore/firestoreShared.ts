@@ -3,7 +3,7 @@ import { db } from '@/firebaseConfig';
 import { DailyRecord } from '@/types';
 import { COLLECTIONS, getActiveHospitalId, HOSPITAL_COLLECTIONS } from '@/constants/firestorePaths';
 import { migrateLegacyData } from '@/services/repositories/dataMigration';
-import { applyDailyRecordStaffingCompatibility } from '@/services/staff/dailyRecordStaffing';
+import { normalizeUnknownDailyRecordStaffing } from '@/services/staff/dailyRecordStaffing';
 
 export const getRecordsCollection = () =>
   collection(db, COLLECTIONS.HOSPITALS, getActiveHospitalId(), HOSPITAL_COLLECTIONS.DAILY_RECORDS);
@@ -88,20 +88,21 @@ export const docToRecord = (docData: Record<string, unknown>, docId: string): Da
     rawData.lastUpdated = rawData.lastUpdated.toDate().toISOString();
   }
 
-  const normalizedStaffing = applyDailyRecordStaffingCompatibility({
-    nurses: ensureArray(rawData.nurses, 2),
-    nurseName: typeof rawData.nurseName === 'string' ? rawData.nurseName : undefined,
-    nursesDayShift: ensureArray(rawData.nursesDayShift, 2),
-    nursesNightShift: ensureArray(rawData.nursesNightShift, 2),
+  const normalizedStaffing = normalizeUnknownDailyRecordStaffing(rawData, value =>
+    ensureArray(value, 2)
+  );
+  const nurses = normalizedStaffing['nurses'];
+  const nursesDayShift = normalizedStaffing['nursesDayShift'];
+  const nursesNightShift = normalizedStaffing['nursesNightShift'];
+
+  Object.assign(rawData, {
+    nurses,
+    nursesDayShift,
+    nursesNightShift,
+    tensDayShift: ensureArray(rawData.tensDayShift, 3),
+    tensNightShift: ensureArray(rawData.tensNightShift, 3),
+    activeExtraBeds: Array.isArray(rawData.activeExtraBeds) ? rawData.activeExtraBeds : [],
   });
-
-  rawData.nurses = normalizedStaffing.nurses;
-  rawData.nursesDayShift = normalizedStaffing.nursesDayShift;
-  rawData.nursesNightShift = normalizedStaffing.nursesNightShift;
-  rawData.tensDayShift = ensureArray(rawData.tensDayShift, 3);
-  rawData.tensNightShift = ensureArray(rawData.tensNightShift, 3);
-
-  rawData.activeExtraBeds = Array.isArray(rawData.activeExtraBeds) ? rawData.activeExtraBeds : [];
 
   return migrateLegacyData(rawData as unknown as DailyRecord, docId);
 };

@@ -53,6 +53,7 @@ describe('systemHealthReporterController', () => {
         indexedDbObservedCount: 1,
         clinicalDocumentObservedCount: 1,
         createDayObservedCount: 1,
+        handoffObservedCount: 1,
         exportObservedCount: 1,
         backupObservedCount: 1,
         exportOrBackupObservedCount: 2,
@@ -76,6 +77,7 @@ describe('systemHealthReporterController', () => {
     expect(status.operationalIndexedDbObservedCount).toBe(1);
     expect(status.operationalClinicalDocumentObservedCount).toBe(1);
     expect(status.operationalCreateDayObservedCount).toBe(1);
+    expect(status.operationalHandoffObservedCount).toBe(1);
     expect(status.operationalExportBackupObservedCount).toBe(2);
     expect(status.operationalTopObservedCategory).toBe('backup');
     expect(status.operationalTopObservedOperation).toBe('backup_handoff_pdf');

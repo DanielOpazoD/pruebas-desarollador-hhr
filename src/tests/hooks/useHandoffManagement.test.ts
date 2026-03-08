@@ -30,8 +30,17 @@ vi.mock('@/services/admin/attributionService', () => ({
   getAttributedAuthors: vi.fn().mockReturnValue([]),
 }));
 
+vi.mock('@/services/observability/operationalTelemetryService', () => ({
+  recordOperationalOutcome: vi.fn(),
+  recordOperationalTelemetry: vi.fn(),
+}));
+
 import { useHandoffManagement } from '@/hooks/useHandoffManagement';
 import { DailyRecord, DailyRecordPatch } from '@/types';
+import {
+  recordOperationalOutcome,
+  recordOperationalTelemetry,
+} from '@/services/observability/operationalTelemetryService';
 
 describe('useHandoffManagement', () => {
   let mockRecord: DailyRecord;
@@ -290,6 +299,15 @@ describe('useHandoffManagement', () => {
         medicalHandoffSentAt: expect.any(String),
       })
     );
+    expect(recordOperationalOutcome).toHaveBeenCalledWith(
+      'handoff',
+      'send_medical_handoff',
+      expect.objectContaining({ status: 'failed' }),
+      expect.objectContaining({
+        date: mockRecord.date,
+        context: expect.objectContaining({ targetGroupId: 'group-xyz' }),
+      })
+    );
     expect(mockNotifyError).toHaveBeenCalledWith('Error al enviar', 'Falla remota');
   });
 
@@ -305,6 +323,13 @@ describe('useHandoffManagement', () => {
     expect(mockNotifyError).toHaveBeenCalledWith(
       'Error al enviar',
       'No hay entrega médica disponible para enviar.'
+    );
+    expect(recordOperationalTelemetry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        category: 'handoff',
+        status: 'failed',
+        operation: 'send_medical_handoff',
+      })
     );
   });
 });

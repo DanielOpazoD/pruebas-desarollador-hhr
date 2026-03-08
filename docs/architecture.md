@@ -163,7 +163,15 @@ npm run test
 - **Feature-first híbrido**: módulos por feature + capas transversales (`services`, `shared`, `types`).
 - **Controller pattern**: lógica de validación, transformación y comandos fuera de componentes.
 - **Application use cases**: coordinación explícita de operaciones críticas sobre repositorios y outcomes homogéneos.
-- **Operational telemetry**: el core reporta eventos estructurados (`sync`, `indexeddb`, `export`, `backup`, `clinical_document`, `create_day`) a una telemetría local persistida y puede reenviarlos a un adapter externo opt-in vía `VITE_OPERATIONAL_TELEMETRY_ENDPOINT`.
+- **Operational telemetry**: el core reporta eventos estructurados (`sync`, `indexeddb`, `export`, `backup`, `clinical_document`, `create_day`, `handoff`) a una telemetría local persistida y puede reenviarlos a un adapter externo opt-in vía `VITE_OPERATIONAL_TELEMETRY_ENDPOINT`.
+- **Configuración de observabilidad externa**:
+  - `VITE_OPERATIONAL_TELEMETRY_ENDPOINT`: endpoint HTTP `POST` vendor-agnostic para reenviar eventos del core.
+  - `VITE_OPERATIONAL_TELEMETRY_SAMPLE_RATE`: fracción `0..1` usada por el adapter para muestrear eventos.
+  - Política de emisión:
+    - `failed`: siempre.
+    - `partial` / `degraded`: siempre que afecten operación clínica, sync o respaldo.
+    - `success`: solo para operaciones críticas seleccionadas.
+  - El payload reenviado mantiene `category`, `status`, `operation`, `date`, `issues`, `context` y `source=hhr_operational_telemetry`.
 - **Ports/adapters**: los use-cases hablan con contratos (`AuditPort`, `DailyRecordReadPort`, `DailyRecordWritePort`, `CensusEmailDeliveryPort`, `ClinicalDocumentPort`) y los adapters por defecto viven en `src/application/ports/*`.
 - Casos ya migrados en primera ola:
   - inicialización/sync de `dailyRecord`

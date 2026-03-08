@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildHandoffNovedadesAuditPayload,
+  buildMedicalHandoffDoctorPersistencePayload,
   buildMedicalNoChangesAuditPayload,
+  buildMedicalNoChangesPersistencePayload,
   buildMedicalSignatureAuditPayload,
   buildMedicalSpecialtyNoteAuditPayload,
+  buildMedicalSpecialtyPersistencePayload,
   buildResetMedicalHandoffAuditPayload,
+  buildUpdatedHandoffStaffPersistencePayload,
   buildUpdatedMedicalHandoffDoctorRecord,
   buildUpdatedHandoffStaffRecord,
 } from '@/hooks/controllers/handoffManagementPersistenceController';
@@ -127,5 +131,55 @@ describe('handoffManagementPersistenceController', () => {
 
     expect(updated.medicalHandoffDoctor).toBe('Dr. Nuevo');
     expect(updated.lastUpdated).toBeTypeOf('string');
+  });
+
+  it('builds persistence payload helpers for staff and doctor updates', () => {
+    const staffPayload = buildUpdatedHandoffStaffPersistencePayload(
+      baseRecord(),
+      'day',
+      'receives',
+      ['Recibe Día']
+    );
+    expect(staffPayload.updatedRecord.nursesNightShift).toEqual(['Recibe Día']);
+
+    const doctorPayload = buildMedicalHandoffDoctorPersistencePayload(baseRecord(), 'Dr. Nuevo');
+    expect(doctorPayload.updatedRecord.medicalHandoffDoctor).toBe('Dr. Nuevo');
+    expect(doctorPayload.updatedRecord.lastUpdated).toBeTypeOf('string');
+  });
+
+  it('builds specialty persistence payload with updated record and audit details', () => {
+    const payload = buildMedicalSpecialtyPersistencePayload(baseRecord(), 'cirugia', 'Nueva nota', {
+      displayName: 'Dr. Test',
+      email: 'dr@test.cl',
+    });
+
+    expect(payload.updatedRecord.medicalHandoffBySpecialty?.cirugia?.note).toBe('Nueva nota');
+    expect(payload.auditDetails).toEqual(
+      expect.objectContaining({
+        specialty: 'cirugia',
+        operation: 'specialty_note_update',
+      })
+    );
+  });
+
+  it('builds no-changes persistence payload with effective date and continuity update', () => {
+    const payload = buildMedicalNoChangesPersistencePayload(baseRecord(), {
+      specialty: 'cirugia',
+      actor: { displayName: 'Dra. Test', email: 'dra@test.cl' },
+      comment: 'Sin cambios',
+      dateKey: '2026-03-08',
+    });
+
+    expect(payload.effectiveDateKey).toBe('2026-03-08');
+    expect(
+      payload.updatedRecord.medicalHandoffBySpecialty?.cirugia?.dailyContinuity?.['2026-03-08']
+        ?.status
+    ).toBe('confirmed_no_changes');
+    expect(payload.auditDetails).toEqual(
+      expect.objectContaining({
+        specialty: 'cirugia',
+        operation: 'confirm_no_changes',
+      })
+    );
   });
 });

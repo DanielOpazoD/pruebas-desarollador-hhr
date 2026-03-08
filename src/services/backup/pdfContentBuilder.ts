@@ -11,6 +11,7 @@ import type jsPDF from 'jspdf';
 import { DailyRecord, PatientData, ShiftType, DeviceDetails } from '@/types';
 import { BEDS } from '@/constants';
 import { formatDateDDMMYYYY } from '@/utils/dateUtils';
+import { resolveHandoffShiftStaff } from '@/services/staff/dailyRecordStaffing';
 
 // Logo path
 const LOGO_PATH = '/images/logos/logo_HHR.svg';
@@ -121,10 +122,7 @@ export const buildHandoffPdfContent = async (
   // Nurse/Staff Info
   let currentY = margin + 18;
 
-  const delivers =
-    shiftType === 'day' ? record.nursesDayShift || [] : record.nursesNightShift || [];
-  const receives =
-    shiftType === 'day' ? record.nursesNightShift || [] : record.handoffNightReceives || [];
+  const { delivers, receives } = resolveHandoffShiftStaff(record, shiftType);
   const tens = shiftType === 'day' ? record.tensDayShift || [] : record.tensNightShift || [];
 
   doc.setFontSize(8);

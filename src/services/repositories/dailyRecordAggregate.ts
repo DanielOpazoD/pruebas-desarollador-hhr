@@ -1,5 +1,9 @@
 import type { DailyRecord, PatientData } from '@/types';
 import { buildMedicalHandoffSummary } from '@/features/handoff/controllers';
+import {
+  resolveDayShiftNurses,
+  resolveNightShiftNurses,
+} from '@/services/staff/dailyRecordStaffing';
 
 export interface DailyRecordClinicalFacet {
   beds: DailyRecord['beds'];
@@ -55,8 +59,8 @@ export const createDailyRecordAggregate = (record: DailyRecord): DailyRecordAggr
     },
   },
   staffing: {
-    nursesDay: record.nursesDayShift || [],
-    nursesNight: record.nursesNightShift || [],
+    nursesDay: resolveDayShiftNurses(record),
+    nursesNight: resolveNightShiftNurses(record),
     tensDay: record.tensDayShift || [],
     tensNight: record.tensNightShift || [],
   },

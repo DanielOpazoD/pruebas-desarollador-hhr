@@ -1,5 +1,6 @@
 import type { DailyRecord } from '@/types';
 import type { StorageLookupResult } from '@/services/backup/storageLookupContracts';
+import { resolveHandoffShiftStaff } from '@/services/staff/dailyRecordStaffing';
 
 export const shouldCheckArchiveStatus = (
   currentDateString: string,
@@ -28,10 +29,6 @@ export const mergeMonthlyRecordsForBackup = (
 export const resolveHandoffBackupStaff = (
   record: DailyRecord,
   selectedShift: 'day' | 'night'
-): { delivers: string[]; receives: string[] } => ({
-  delivers: selectedShift === 'day' ? record.nursesDayShift || [] : record.nursesNightShift || [],
-  receives:
-    selectedShift === 'day' ? record.nursesNightShift || [] : record.handoffNightReceives || [],
-});
+): { delivers: string[]; receives: string[] } => resolveHandoffShiftStaff(record, selectedShift);
 
 export const buildArchiveStatusState = (result: StorageLookupResult): boolean => result.exists;

@@ -11,7 +11,6 @@ const ALLOWLIST = [
   'src/schemas/',
   'src/services/repositories/dataMigration.ts',
   'src/services/repositories/dailyRecordAggregate.ts',
-  'src/services/storage/firestore/firestoreShared.ts',
   'src/services/staff/dailyRecordStaffing.ts',
   'src/tests/',
   'src/types/domain/dailyRecord.ts',

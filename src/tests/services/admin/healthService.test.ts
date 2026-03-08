@@ -48,6 +48,7 @@ describe('healthService', () => {
     operationalIndexedDbObservedCount: 0,
     operationalClinicalDocumentObservedCount: 0,
     operationalCreateDayObservedCount: 0,
+    operationalHandoffObservedCount: 0,
     operationalExportBackupObservedCount: 0,
     operationalTopObservedCategory: undefined,
     operationalTopObservedOperation: undefined,
@@ -207,6 +208,7 @@ describe('healthService', () => {
           operationalIndexedDbObservedCount: 1,
           operationalClinicalDocumentObservedCount: 1,
           operationalCreateDayObservedCount: 1,
+          operationalHandoffObservedCount: 2,
           operationalExportBackupObservedCount: 3,
           operationalTopObservedCategory: 'backup',
           operationalTopObservedOperation: 'backup_handoff_pdf',
@@ -231,6 +233,7 @@ describe('healthService', () => {
       expect(summary.totalOperationalIndexedDbObservedCount).toBe(1);
       expect(summary.totalOperationalClinicalDocumentObservedCount).toBe(1);
       expect(summary.totalOperationalCreateDayObservedCount).toBe(1);
+      expect(summary.totalOperationalHandoffObservedCount).toBe(2);
       expect(summary.totalOperationalExportBackupObservedCount).toBe(3);
       expect(summary.topOperationalCategory).toBe('backup');
       expect(summary.topOperationalOperation).toBe('backup_handoff_pdf');
