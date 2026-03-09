@@ -6,6 +6,7 @@ const { HOSPITAL_ID } = require('./runtime/runtimeConfig');
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive';
 const FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
 const EXPORT_ALLOWED_ROLES = new Set(['admin', 'doctor_urgency']);
+const CLINICAL_DRIVE_SERVICE_ACCOUNT = 'documentos-hhr@hhr-pruebas.iam.gserviceaccount.com';
 const SPANISH_MONTH_NAMES = [
   'Enero',
   'Febrero',
@@ -229,53 +230,55 @@ const createClinicalDocumentExportFunctions = ({
   resolveRoleForEmail,
   buildDriveClientOverride,
 }) => ({
-  exportClinicalDocumentPdfToDrive: functions.https.onCall(async (data, context) => {
-    await assertExportAccess(context, resolveRoleForEmail);
+  exportClinicalDocumentPdfToDrive: functions
+    .runWith({ serviceAccount: CLINICAL_DRIVE_SERVICE_ACCOUNT })
+    .https.onCall(async (data, context) => {
+      await assertExportAccess(context, resolveRoleForEmail);
 
-    const rootFolderId = process.env.CLINICAL_DRIVE_ROOT_FOLDER_ID;
-    if (!rootFolderId) {
-      throw new functions.https.HttpsError(
-        'failed-precondition',
-        'CLINICAL_DRIVE_ROOT_FOLDER_ID is not configured.'
-      );
-    }
+      const rootFolderId = process.env.CLINICAL_DRIVE_ROOT_FOLDER_ID;
+      if (!rootFolderId) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          'CLINICAL_DRIVE_ROOT_FOLDER_ID is not configured.'
+        );
+      }
 
-    const fileName = assertString(data?.fileName, 'fileName');
-    const documentType = assertString(data?.documentType, 'documentType');
-    const patientName = assertString(data?.patientName, 'patientName');
-    const patientRut = assertString(data?.patientRut, 'patientRut');
-    const episodeKey = assertString(data?.episodeKey, 'episodeKey');
-    const mimeType = typeof data?.mimeType === 'string' ? data.mimeType : 'application/pdf';
-    const content = decodeBase64Payload(data?.contentBase64);
+      const fileName = assertString(data?.fileName, 'fileName');
+      const documentType = assertString(data?.documentType, 'documentType');
+      const patientName = assertString(data?.patientName, 'patientName');
+      const patientRut = assertString(data?.patientRut, 'patientRut');
+      const episodeKey = assertString(data?.episodeKey, 'episodeKey');
+      const mimeType = typeof data?.mimeType === 'string' ? data.mimeType : 'application/pdf';
+      const content = decodeBase64Payload(data?.contentBase64);
 
-    const now = new Date();
-    const year = now.getFullYear().toString();
-    const monthFolderName = buildDriveMonthFolderName(now);
-    const drive = buildDriveClientOverride ? buildDriveClientOverride() : buildDriveClient();
-    const yearFolderId = await getOrCreateFolder(drive, year, rootFolderId);
-    const monthFolderId = await getOrCreateFolder(drive, monthFolderName, yearFolderId);
+      const now = new Date();
+      const year = now.getFullYear().toString();
+      const monthFolderName = buildDriveMonthFolderName(now);
+      const drive = buildDriveClientOverride ? buildDriveClientOverride() : buildDriveClient();
+      const yearFolderId = await getOrCreateFolder(drive, year, rootFolderId);
+      const monthFolderId = await getOrCreateFolder(drive, monthFolderName, yearFolderId);
 
-    const upload = await upsertPdfFile(drive, monthFolderId, fileName, mimeType, content);
-    await writeAuditEntry({
-      admin,
-      documentId: typeof data?.documentId === 'string' ? data.documentId : null,
-      documentType,
-      patientRut,
-      episodeKey,
-      caller: {
-        uid: context.auth?.uid || null,
-        email: context.auth?.token?.email || null,
-        name: context.auth?.token?.name || null,
-      },
-    });
+      const upload = await upsertPdfFile(drive, monthFolderId, fileName, mimeType, content);
+      await writeAuditEntry({
+        admin,
+        documentId: typeof data?.documentId === 'string' ? data.documentId : null,
+        documentType,
+        patientRut,
+        episodeKey,
+        caller: {
+          uid: context.auth?.uid || null,
+          email: context.auth?.token?.email || null,
+          name: context.auth?.token?.name || null,
+        },
+      });
 
-    return {
-      fileId: upload.id,
-      webViewLink: upload.webViewLink,
-      folderPath: `${year}/${monthFolderName}`,
-      usedBackend: true,
-    };
-  }),
+      return {
+        fileId: upload.id,
+        webViewLink: upload.webViewLink,
+        folderPath: `${year}/${monthFolderName}`,
+        usedBackend: true,
+      };
+    }),
 });
 
 module.exports = {

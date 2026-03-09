@@ -53,8 +53,34 @@ export const ClinicalDocumentRichTextEditor: React.FC<ClinicalDocumentRichTextEd
   const historyIndexRef = useRef(-1);
   const isApplyingHistoryRef = useRef(false);
   const isActiveRef = useRef(false);
+  const onActivateRef = useRef(onActivate);
+  const onDeactivateRef = useRef(onDeactivate);
+  const applyEditorCommandRef = useRef<
+    | ((
+        command:
+          | 'bold'
+          | 'italic'
+          | 'underline'
+          | 'foreColor'
+          | 'hiliteColor'
+          | 'insertUnorderedList'
+          | 'insertOrderedList'
+          | 'indent'
+          | 'outdent'
+          | 'removeFormat'
+          | 'undo'
+          | 'redo',
+        value?: string
+      ) => void)
+    | null
+  >(null);
   const normalizedValue = useMemo(() => normalizeClinicalDocumentContentForStorage(value), [value]);
   const [historyState, setHistoryState] = useState({ canUndo: false, canRedo: false });
+
+  useEffect(() => {
+    onActivateRef.current = onActivate;
+    onDeactivateRef.current = onDeactivate;
+  }, [onActivate, onDeactivate]);
 
   const updateHistoryState = useCallback(
     (nextIndex = historyIndexRef.current, history = historyRef.current) => {
@@ -148,6 +174,10 @@ export const ClinicalDocumentRichTextEditor: React.FC<ClinicalDocumentRichTextEd
     [disabled, onChange, pushHistorySnapshot, updateHistoryState]
   );
 
+  useEffect(() => {
+    applyEditorCommandRef.current = applyEditorCommand;
+  }, [applyEditorCommand]);
+
   const handleInput = useCallback(() => {
     const editor = editorRef.current;
     if (!editor) return;
@@ -156,21 +186,32 @@ export const ClinicalDocumentRichTextEditor: React.FC<ClinicalDocumentRichTextEd
     onChange(html);
   }, [onChange, pushHistorySnapshot]);
 
-  const notifyActive = useCallback(() => {
-    isActiveRef.current = true;
-    onActivate?.(sectionId, {
+  const notifyActive = useCallback(
+    (history = historyState) => {
+      isActiveRef.current = true;
+      onActivateRef.current?.(sectionId, {
+        element: editorRef.current,
+        canUndo: history.canUndo,
+        canRedo: history.canRedo,
+        applyCommand: (command, value) => applyEditorCommandRef.current?.(command, value),
+      });
+    },
+    [historyState, sectionId]
+  );
+
+  const handleActivateInteraction = useCallback(() => {
+    notifyActive();
+  }, [notifyActive]);
+
+  useEffect(() => {
+    if (!isActiveRef.current) return;
+    onActivateRef.current?.(sectionId, {
       element: editorRef.current,
       canUndo: historyState.canUndo,
       canRedo: historyState.canRedo,
-      applyCommand: applyEditorCommand,
+      applyCommand: (command, value) => applyEditorCommandRef.current?.(command, value),
     });
-  }, [applyEditorCommand, historyState.canRedo, historyState.canUndo, onActivate, sectionId]);
-
-  useEffect(() => {
-    if (isActiveRef.current) {
-      notifyActive();
-    }
-  }, [notifyActive]);
+  }, [historyState.canRedo, historyState.canUndo, sectionId]);
 
   return (
     <div className="clinical-document-rich-text-wrap">
@@ -186,11 +227,11 @@ export const ClinicalDocumentRichTextEditor: React.FC<ClinicalDocumentRichTextEd
           disabled && 'is-readonly'
         )}
         onInput={handleInput}
-        onFocus={notifyActive}
-        onMouseUp={notifyActive}
+        onFocus={handleActivateInteraction}
+        onMouseUp={handleActivateInteraction}
         onBlur={() => {
           isActiveRef.current = false;
-          onDeactivate?.(sectionId);
+          onDeactivateRef.current?.(sectionId);
         }}
         onKeyDown={event => {
           if (!editorRef.current || disabled) return;

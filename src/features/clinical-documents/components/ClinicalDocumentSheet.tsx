@@ -3,6 +3,7 @@ import {
   ArrowDown,
   ArrowUp,
   Bold,
+  CheckCircle2,
   Eye,
   Eraser,
   GripVertical,
@@ -200,7 +201,7 @@ export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
     .sort((left, right) => left.order - right.order);
   const hiddenSections = selectedDocument.sections.filter(section => section.visible === false);
   const formattingDisabled = !canEdit || selectedDocument.isLocked || !activeEditorSectionId;
-
+  const driveExported = selectedDocument.pdf?.exportStatus === 'exported';
   const formattingActions = [
     { command: 'bold' as const, label: 'Negrita', icon: Bold },
     { command: 'italic' as const, label: 'Cursiva', icon: Italic },
@@ -300,10 +301,18 @@ export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
             type="button"
             onClick={onUploadPdf}
             disabled={isUploadingPdf || selectedDocument.status !== 'signed'}
-            className="rounded-xl border border-blue-200 px-3 py-2 text-xs font-black uppercase tracking-widest text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:border-slate-200"
+            className={`rounded-xl px-3 py-2 text-xs font-black uppercase tracking-widest disabled:cursor-not-allowed disabled:text-slate-300 disabled:border-slate-200 ${
+              driveExported
+                ? 'border border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+                : 'border border-blue-200 text-blue-700 hover:bg-blue-50'
+            }`}
           >
-            <UploadCloud size={14} className="inline mr-2" />
-            Drive
+            {driveExported ? (
+              <CheckCircle2 size={14} className="inline mr-2" />
+            ) : (
+              <UploadCloud size={14} className="inline mr-2" />
+            )}
+            {driveExported ? 'Guardado en Drive' : 'Drive'}
           </button>
           <button
             type="button"

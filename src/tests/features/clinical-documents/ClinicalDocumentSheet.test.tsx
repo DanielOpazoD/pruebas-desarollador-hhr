@@ -155,4 +155,31 @@ describe('ClinicalDocumentSheet', () => {
     expect(defaultHandlers.setSectionVisibility).toHaveBeenCalledWith('antecedentes', false);
     expect(defaultHandlers.setPatientFieldVisibility).toHaveBeenCalledWith('nombre', false);
   });
+
+  it('shows drive link and saved state when the PDF is exported to institutional drive', () => {
+    const document = buildDocument();
+    document.status = 'signed';
+    document.isLocked = true;
+    document.pdf = {
+      exportStatus: 'exported',
+      webViewLink: 'https://drive.google.com/test-file',
+    };
+
+    render(
+      <ClinicalDocumentSheet
+        selectedDocument={document}
+        hasPendingRemoteUpdate={false}
+        canEdit={true}
+        canUnsignSelectedDocument={true}
+        role="doctor_urgency"
+        isSaving={false}
+        isUploadingPdf={false}
+        validationIssues={[]}
+        {...defaultHandlers}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /guardado en drive/i })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /abrir drive/i })).not.toBeInTheDocument();
+  });
 });

@@ -25,6 +25,12 @@ interface UseClinicalDocumentWorkspaceExportActionsParams {
   setDraft: React.Dispatch<React.SetStateAction<ClinicalDocumentRecord | null>>;
 }
 
+interface UploadPdfOptions {
+  notifySuccess?: boolean;
+  successTitle?: string;
+  successMessage?: string;
+}
+
 export const useClinicalDocumentWorkspaceExportActions = ({
   selectedDocument,
   hospitalId,
@@ -32,6 +38,72 @@ export const useClinicalDocumentWorkspaceExportActions = ({
   setDraft,
 }: UseClinicalDocumentWorkspaceExportActionsParams) => {
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+
+  const handleUploadPdf = useCallback(
+    async (options: UploadPdfOptions = {}) => {
+      if (!selectedDocument || selectedDocument.status !== 'signed') {
+        notify.warning(
+          'Documento no firmado',
+          'Solo los documentos firmados pueden exportarse a Google Drive.'
+        );
+        return;
+      }
+
+      setIsUploadingPdf(true);
+      try {
+        const result = await executeExportClinicalDocumentPdf({
+          record: selectedDocument,
+          hospitalId,
+          fileName: buildClinicalDocumentPdfFileName(selectedDocument),
+        });
+        recordOperationalOutcome('export', 'export_clinical_document_pdf', result, {
+          date: selectedDocument.sourceDailyRecordDate,
+          context: { documentId: selectedDocument.id },
+          allowSuccess: true,
+        });
+        if (result.status !== 'success' || !result.data) {
+          throw new Error(result.issues[0]?.message || 'No se pudo exportar el PDF clínico.');
+        }
+        setDraft(prev => (prev ? { ...prev, pdf: result.data!.pdf } : prev));
+        if (options.notifySuccess !== false) {
+          notify.success(
+            options.successTitle || 'PDF exportado',
+            options.successMessage ||
+              'El documento quedó respaldado en el Google Drive institucional.'
+          );
+        }
+      } catch (error) {
+        console.error('[ClinicalDocumentsWorkspace] Drive upload failed', error);
+        recordOperationalTelemetry({
+          category: 'export',
+          status: 'failed',
+          operation: 'export_clinical_document_pdf',
+          date: selectedDocument?.sourceDailyRecordDate,
+          issues: [error instanceof Error ? error.message : 'No se pudo exportar el PDF clínico.'],
+          context: { documentId: selectedDocument?.id },
+        });
+        setDraft(prev =>
+          prev
+            ? {
+                ...prev,
+                pdf: {
+                  ...prev.pdf,
+                  exportStatus: 'failed',
+                  exportError: error instanceof Error ? error.message : 'Error desconocido',
+                },
+              }
+            : prev
+        );
+        notify.error(
+          'Falló la exportación',
+          'El documento quedó guardado, pero el PDF no se pudo subir.'
+        );
+      } finally {
+        setIsUploadingPdf(false);
+      }
+    },
+    [hospitalId, notify, selectedDocument, setDraft]
+  );
 
   const handlePrint = useCallback(async () => {
     if (!selectedDocument) return;
@@ -65,67 +137,16 @@ export const useClinicalDocumentWorkspaceExportActions = ({
       'Vista de impresión abierta',
       'Ajusta escala, márgenes y destino en el cuadro de impresión del navegador.'
     );
-  }, [notify, selectedDocument]);
 
-  const handleUploadPdf = useCallback(async () => {
-    if (!selectedDocument || selectedDocument.status !== 'signed') {
-      notify.warning(
-        'Documento no firmado',
-        'Solo los documentos firmados pueden exportarse a Google Drive.'
-      );
-      return;
+    if (selectedDocument.status === 'signed' && !isUploadingPdf) {
+      void handleUploadPdf({
+        notifySuccess: true,
+        successTitle: 'PDF enviado a Drive',
+        successMessage:
+          'La vista de impresión quedó abierta y el PDF se está respaldando en el Drive institucional.',
+      });
     }
-
-    setIsUploadingPdf(true);
-    try {
-      const result = await executeExportClinicalDocumentPdf({
-        record: selectedDocument,
-        hospitalId,
-        fileName: buildClinicalDocumentPdfFileName(selectedDocument),
-      });
-      recordOperationalOutcome('export', 'export_clinical_document_pdf', result, {
-        date: selectedDocument.sourceDailyRecordDate,
-        context: { documentId: selectedDocument.id },
-        allowSuccess: true,
-      });
-      if (result.status !== 'success' || !result.data) {
-        throw new Error(result.issues[0]?.message || 'No se pudo exportar el PDF clínico.');
-      }
-      setDraft(prev => (prev ? { ...prev, pdf: result.data!.pdf } : prev));
-      notify.success(
-        'PDF exportado',
-        'El documento quedó respaldado en el Google Drive institucional.'
-      );
-    } catch (error) {
-      console.error('[ClinicalDocumentsWorkspace] Drive upload failed', error);
-      recordOperationalTelemetry({
-        category: 'export',
-        status: 'failed',
-        operation: 'export_clinical_document_pdf',
-        date: selectedDocument?.sourceDailyRecordDate,
-        issues: [error instanceof Error ? error.message : 'No se pudo exportar el PDF clínico.'],
-        context: { documentId: selectedDocument?.id },
-      });
-      setDraft(prev =>
-        prev
-          ? {
-              ...prev,
-              pdf: {
-                ...prev.pdf,
-                exportStatus: 'failed',
-                exportError: error instanceof Error ? error.message : 'Error desconocido',
-              },
-            }
-          : prev
-      );
-      notify.error(
-        'Falló la exportación',
-        'El documento quedó guardado, pero el PDF no se pudo subir.'
-      );
-    } finally {
-      setIsUploadingPdf(false);
-    }
-  }, [hospitalId, notify, selectedDocument, setDraft]);
+  }, [handleUploadPdf, isUploadingPdf, notify, selectedDocument]);
 
   return {
     handlePrint,
