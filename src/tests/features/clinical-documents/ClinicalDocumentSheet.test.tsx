@@ -4,6 +4,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ClinicalDocumentSheet } from '@/features/clinical-documents/components/ClinicalDocumentSheet';
 import { createClinicalDocumentDraft } from '@/features/clinical-documents/domain/factories';
 import { getDefaultClinicalDocumentIndicationsCatalog } from '@/features/clinical-documents/services/clinicalDocumentIndicationsCatalogService';
+import { getClinicalDocumentPlanSubsectionTitle } from '@/features/clinical-documents/controllers/clinicalDocumentPlanSectionController';
 
 const buildDocument = () =>
   createClinicalDocumentDraft({
@@ -120,14 +121,23 @@ describe('ClinicalDocumentSheet', () => {
     );
 
     expect(screen.getByDisplayValue(document.medico)).toBeInTheDocument();
-    expect(screen.getByText(/falta completar diagnóstico/i)).toBeInTheDocument();
+    expect(screen.queryByText(/falta completar diagnóstico/i)).not.toBeInTheDocument();
     expect(
-      screen.getByText(
+      screen.getByText(getClinicalDocumentPlanSubsectionTitle('generales'))
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getClinicalDocumentPlanSubsectionTitle('farmacologicas'))
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getClinicalDocumentPlanSubsectionTitle('control_clinico'))
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
         /hay cambios remotos pendientes\. guarda o recarga el documento para sincronizar/i
       )
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /recargar/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /descartar cambios locales/i })).toBeInTheDocument();
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /recargar remoto/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /descartar local/i })).toBeInTheDocument();
     expect(screen.getByAltText(/logo institucional izquierdo/i)).toHaveAttribute(
       'src',
       '/images/logos/logo_HHR.png'
@@ -139,7 +149,7 @@ describe('ClinicalDocumentSheet', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /guardar/i }));
     fireEvent.click(screen.getByRole('button', { name: /pdf/i }));
-    fireEvent.click(screen.getByRole('button', { name: /descartar cambios locales/i }));
+    fireEvent.click(screen.getByRole('button', { name: /descartar local/i }));
     fireEvent.click(screen.getByRole('button', { name: /formato/i }));
     expect(screen.getByRole('button', { name: /deshacer/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /rehacer/i })).toBeDisabled();
@@ -170,7 +180,10 @@ describe('ClinicalDocumentSheet', () => {
     expect(defaultHandlers.onSave).toHaveBeenCalled();
     expect(defaultHandlers.onPrint).toHaveBeenCalled();
     expect(defaultHandlers.onDiscardLocalDraftChanges).toHaveBeenCalled();
-    expect(defaultHandlers.appendSectionText).toHaveBeenCalledWith('plan', 'Reposo Absoluto');
+    expect(defaultHandlers.patchSection).toHaveBeenCalledWith(
+      'plan',
+      expect.stringContaining('Reposo Absoluto')
+    );
     expect(defaultHandlers.moveSection).toHaveBeenCalledWith('antecedentes', 'down');
     expect(defaultHandlers.reorderSection).toHaveBeenCalledWith(
       'antecedentes',

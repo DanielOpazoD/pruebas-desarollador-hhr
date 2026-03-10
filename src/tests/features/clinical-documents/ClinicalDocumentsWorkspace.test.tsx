@@ -29,9 +29,13 @@ vi.mock('@/context/UIContext', () => ({
   useNotification: () => notificationApi,
 }));
 
-vi.mock('@/constants/firestorePaths', () => ({
-  getActiveHospitalId: () => 'hhr',
-}));
+vi.mock('@/constants/firestorePaths', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/constants/firestorePaths')>();
+  return {
+    ...actual,
+    getActiveHospitalId: () => 'hhr',
+  };
+});
 
 vi.mock('@/features/clinical-documents/services/clinicalDocumentPrintPdfService', () => ({
   openClinicalDocumentBrowserPrintPreview: vi.fn(() => true),
@@ -392,21 +396,13 @@ describe('ClinicalDocumentsWorkspace', () => {
     });
 
     await waitFor(() => {
-      expect(
-        screen.getByText(
-          /hay cambios remotos pendientes\. guarda o recarga el documento para sincronizar/i
-        )
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /recargar remoto/i })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /recargar/i }));
+    fireEvent.click(screen.getByRole('button', { name: /recargar remoto/i }));
 
     await waitFor(() => {
-      expect(
-        screen.queryByText(
-          /hay cambios remotos pendientes\. guarda o recarga el documento para sincronizar/i
-        )
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /recargar remoto/i })).not.toBeInTheDocument();
       expect(screen.getByText('Cambio remoto pendiente')).toBeInTheDocument();
     });
   });
@@ -463,24 +459,14 @@ describe('ClinicalDocumentsWorkspace', () => {
     });
 
     await waitFor(() => {
-      expect(
-        screen.getByText(
-          /hay cambios remotos pendientes\. guarda o recarga el documento para sincronizar/i
-        )
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: /descartar cambios locales/i })
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /recargar remoto/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /descartar local/i })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /descartar cambios locales/i }));
+    fireEvent.click(screen.getByRole('button', { name: /descartar local/i }));
 
     await waitFor(() => {
-      expect(
-        screen.queryByText(
-          /hay cambios remotos pendientes\. guarda o recarga el documento para sincronizar/i
-        )
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /recargar remoto/i })).not.toBeInTheDocument();
       expect(screen.getByText('Cambio remoto definitivo')).toBeInTheDocument();
     });
   });

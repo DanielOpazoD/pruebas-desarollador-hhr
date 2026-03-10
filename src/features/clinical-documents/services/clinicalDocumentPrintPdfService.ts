@@ -7,6 +7,15 @@ import { CLINICAL_DOCUMENT_BRANDING } from '@/features/clinical-documents/domain
 import clinicalDocumentSheetStyles from '@/features/clinical-documents/styles/clinicalDocumentSheet.css?raw';
 
 const CLINICAL_DOCUMENT_SHEET_ID = 'clinical-document-sheet';
+const CLINICAL_DOCUMENT_INLINE_PRINT_ROOT_ID = 'clinical-document-inline-print-root';
+const CLINICAL_DOCUMENT_INLINE_PRINT_STYLE_ID = 'clinical-document-inline-print-style';
+const CLINICAL_DOCUMENT_INLINE_PRINT_MEASURE_ID = 'clinical-document-inline-print-measure';
+const MM_TO_PX = 96 / 25.4;
+const LETTER_PAGE_HEIGHT_MM = 279.4;
+const PRINT_MARGIN_MM = 8;
+const PRINT_USABLE_HEIGHT_PX = (LETTER_PAGE_HEIGHT_MM - PRINT_MARGIN_MM * 2) * MM_TO_PX;
+const PRINT_FOOTER_RESERVE_PX = 72;
+const PRINT_SECTION_HEIGHT_BUFFER_PX = 36;
 
 interface RenderClinicalDocumentPdfPayload {
   html: string;
@@ -18,11 +27,6 @@ interface RenderClinicalDocumentPdfResult {
 }
 
 const ASSET_LOAD_TIMEOUT_MS = 4_000;
-const MM_TO_PX = 96 / 25.4;
-const LETTER_PAGE_HEIGHT_MM = 279.4;
-const PRINT_MARGIN_MM = 8;
-const PRINT_USABLE_HEIGHT_PX = (LETTER_PAGE_HEIGHT_MM - PRINT_MARGIN_MM * 2) * MM_TO_PX;
-
 interface PrintHtmlOptions {
   pageTitle?: string;
   autoPrint?: boolean;
@@ -159,20 +163,11 @@ const collectAppStyleTags = (): string => {
     .join('\n');
 };
 
-export const buildClinicalDocumentPrintHtml = async (
-  options: PrintHtmlOptions = {}
-): Promise<string | null> => {
-  if (typeof document === 'undefined' || typeof window === 'undefined') {
-    return null;
-  }
-
-  const sheet = document.getElementById(CLINICAL_DOCUMENT_SHEET_ID);
-  if (!sheet) {
-    return null;
-  }
-
-  const sheetClone = sheet.cloneNode(true) as HTMLElement;
-  await inlineSheetImages(sheet, sheetClone);
+const sanitizeSheetClone = async (
+  originalSheet: HTMLElement,
+  sheetClone: HTMLElement
+): Promise<void> => {
+  await inlineSheetImages(originalSheet, sheetClone);
   await inlineBrandingImages(sheetClone);
   sheetClone.removeAttribute('contenteditable');
   sheetClone
@@ -188,6 +183,22 @@ export const buildClinicalDocumentPrintHtml = async (
       node.readOnly = true;
     }
   });
+};
+
+export const buildClinicalDocumentPrintHtml = async (
+  options: PrintHtmlOptions = {}
+): Promise<string | null> => {
+  if (typeof document === 'undefined' || typeof window === 'undefined') {
+    return null;
+  }
+
+  const sheet = document.getElementById(CLINICAL_DOCUMENT_SHEET_ID);
+  if (!sheet) {
+    return null;
+  }
+
+  const sheetClone = sheet.cloneNode(true) as HTMLElement;
+  await sanitizeSheetClone(sheet, sheetClone);
 
   const baseHref = escapeHtmlAttr(`${window.location.origin}/`);
   const pageTitle = escapeHtmlText(options.pageTitle?.trim() || 'Epicrisis médica');
@@ -213,6 +224,7 @@ export const buildClinicalDocumentPrintHtml = async (
     appStyles,
     `<style>body{font-family:${bodyFontFamily};}</style>`,
     `<style>${escapeStyleText(clinicalDocumentSheetStyles)}${printOverrides}</style>`,
+    '<style id="clinical-document-page-style">@page { size: letter; margin: 8mm; }</style>',
     '</head>',
     '<body class="clinical-documents-print">',
     sheetClone.outerHTML,
@@ -221,8 +233,8 @@ export const buildClinicalDocumentPrintHtml = async (
     '    <div class="clinical-document-patient-signature-line"></div>',
     '    <div class="clinical-document-patient-signature-label">Firma paciente/familiar responsable</div>',
     '  </div>',
-    '  <div class="clinical-document-print-footer-right">1/1</div>',
     '</div>',
+    '<div class="clinical-document-print-page-markers" aria-hidden="true"></div>',
     printScript,
     '</body>',
     '</html>',
@@ -280,15 +292,241 @@ const waitForSheetAssets = async (
   }
 };
 
-const updatePrintFooterPageCounter = (ownerDocument: Document): void => {
-  const sheet = ownerDocument.getElementById(CLINICAL_DOCUMENT_SHEET_ID);
-  const counter = ownerDocument.querySelector('.clinical-document-print-footer-right');
-  if (!(sheet instanceof HTMLElement) || !(counter instanceof HTMLElement)) {
-    return;
+const createInlinePrintMeasureSheet = async (
+  sheetClone: HTMLElement
+): Promise<HTMLElement | null> => {
+  if (typeof document === 'undefined') {
+    return null;
   }
 
-  const estimatedTotalPages = Math.max(1, Math.ceil(sheet.scrollHeight / PRINT_USABLE_HEIGHT_PX));
-  counter.textContent = `1/${estimatedTotalPages}`;
+  const existingMeasureRoot = document.getElementById(CLINICAL_DOCUMENT_INLINE_PRINT_MEASURE_ID);
+  if (existingMeasureRoot) {
+    existingMeasureRoot.remove();
+  }
+
+  const measureRoot = document.createElement('div');
+  measureRoot.id = CLINICAL_DOCUMENT_INLINE_PRINT_MEASURE_ID;
+  measureRoot.style.position = 'fixed';
+  measureRoot.style.left = '-99999px';
+  measureRoot.style.top = '0';
+  measureRoot.style.width = `${(215.9 - PRINT_MARGIN_MM * 2) * MM_TO_PX}px`;
+  measureRoot.style.visibility = 'hidden';
+  measureRoot.style.pointerEvents = 'none';
+  measureRoot.style.zIndex = '-1';
+
+  const measureSheet = sheetClone.cloneNode(true) as HTMLElement;
+  measureSheet.style.maxWidth = 'none';
+  measureSheet.style.width = '100%';
+  measureSheet.style.border = 'none';
+  measureSheet.style.borderRadius = '0';
+  measureSheet.style.boxShadow = 'none';
+  measureSheet.style.padding = '8mm 8mm 12mm';
+
+  measureRoot.appendChild(measureSheet);
+  document.body.appendChild(measureRoot);
+  await waitForSheetAssets(measureSheet, document, window);
+
+  return measureSheet;
+};
+
+interface PrintableSheetBlock {
+  kind: 'single' | 'section';
+  element: HTMLElement;
+  groupId?: string;
+}
+
+const explodePrintableSectionBlock = (
+  sectionChild: HTMLElement,
+  sectionIndex: number
+): PrintableSheetBlock[] => {
+  const sectionGroupId = `section-${sectionIndex}`;
+  const subsectionContainer = sectionChild.querySelector('.clinical-document-plan-subsections');
+
+  if (!(subsectionContainer instanceof HTMLElement)) {
+    return [
+      {
+        kind: 'section',
+        element: sectionChild.cloneNode(true) as HTMLElement,
+        groupId: sectionGroupId,
+      },
+    ];
+  }
+
+  const subsectionNodes = Array.from(subsectionContainer.children).filter(
+    child =>
+      child instanceof HTMLElement && child.classList.contains('clinical-document-plan-subsection')
+  ) as HTMLElement[];
+
+  if (subsectionNodes.length === 0) {
+    return [
+      {
+        kind: 'section',
+        element: sectionChild.cloneNode(true) as HTMLElement,
+        groupId: sectionGroupId,
+      },
+    ];
+  }
+
+  return subsectionNodes.map(subsectionNode => {
+    const partialSection = sectionChild.cloneNode(true) as HTMLElement;
+    const partialSubsectionContainer = partialSection.querySelector(
+      '.clinical-document-plan-subsections'
+    );
+    if (partialSubsectionContainer instanceof HTMLElement) {
+      partialSubsectionContainer.innerHTML = '';
+      partialSubsectionContainer.appendChild(subsectionNode.cloneNode(true));
+    }
+    return {
+      kind: 'section' as const,
+      element: partialSection,
+      groupId: sectionGroupId,
+    };
+  });
+};
+
+const extractPrintableSheetBlocks = (sheet: HTMLElement): PrintableSheetBlock[] => {
+  const blocks: PrintableSheetBlock[] = [];
+
+  Array.from(sheet.children).forEach(child => {
+    if (!(child instanceof HTMLElement)) {
+      return;
+    }
+
+    if (child.classList.contains('space-y-3')) {
+      Array.from(child.children).forEach((sectionChild, sectionIndex) => {
+        if (!(sectionChild instanceof HTMLElement)) {
+          return;
+        }
+        blocks.push(...explodePrintableSectionBlock(sectionChild, sectionIndex));
+      });
+      return;
+    }
+
+    blocks.push({
+      kind: 'single',
+      element: child.cloneNode(true) as HTMLElement,
+    });
+  });
+
+  return blocks;
+};
+
+const paginateInlinePrintSheet = async (
+  sheetClone: HTMLElement
+): Promise<
+  Array<{ sheetHtml: string; pageNumber: number; totalPages: number; isLastPage: boolean }>
+> => {
+  const measureSheet = await createInlinePrintMeasureSheet(sheetClone);
+  const sourceBlocks = extractPrintableSheetBlocks(sheetClone);
+  const fallbackPage = [
+    {
+      sheetHtml: sheetClone.outerHTML,
+      pageNumber: 1,
+      totalPages: 1,
+      isLastPage: true,
+    },
+  ];
+
+  if (!(measureSheet instanceof HTMLElement) || sourceBlocks.length === 0) {
+    document.getElementById(CLINICAL_DOCUMENT_INLINE_PRINT_MEASURE_ID)?.remove();
+    return fallbackPage;
+  }
+
+  const measuredBlocks = extractPrintableSheetBlocks(measureSheet).map(block => block.element);
+
+  const heights = measuredBlocks.map((child, index) => {
+    const currentTop = child instanceof HTMLElement ? child.offsetTop : 0;
+    const nextTop =
+      index < measuredBlocks.length - 1 && measuredBlocks[index + 1] instanceof HTMLElement
+        ? (measuredBlocks[index + 1] as HTMLElement).offsetTop
+        : measureSheet.scrollHeight;
+    return Math.max(0, nextTop - currentTop);
+  });
+
+  const usableContentHeightPx = Math.max(1, PRINT_USABLE_HEIGHT_PX - PRINT_FOOTER_RESERVE_PX);
+  const pages: PrintableSheetBlock[][] = [];
+  let currentPage: PrintableSheetBlock[] = [];
+  let currentHeight = 0;
+
+  sourceBlocks.forEach((block, index) => {
+    const measuredHeight = heights[index] || block.element.scrollHeight || 0;
+    const childHeight =
+      measuredHeight + (block.kind === 'section' ? PRINT_SECTION_HEIGHT_BUFFER_PX : 0);
+    const exceedsCurrentPage =
+      currentPage.length > 0 && currentHeight + childHeight > usableContentHeightPx;
+
+    if (exceedsCurrentPage) {
+      pages.push(currentPage);
+      currentPage = [];
+      currentHeight = 0;
+    }
+
+    currentPage.push(block);
+    currentHeight += childHeight;
+  });
+
+  if (currentPage.length > 0) {
+    pages.push(currentPage);
+  }
+
+  document.getElementById(CLINICAL_DOCUMENT_INLINE_PRINT_MEASURE_ID)?.remove();
+
+  if (pages.length === 0) {
+    return fallbackPage;
+  }
+
+  const totalPages = pages.length;
+  return pages.map((pageChildren, index) => {
+    const pageSheet = sheetClone.cloneNode(false) as HTMLElement;
+    pageSheet.innerHTML = '';
+    let sectionsWrapper: HTMLDivElement | null = null;
+    let lastMergedSection: { groupId?: string; element: HTMLElement } | null = null;
+
+    pageChildren.forEach(block => {
+      if (block.kind === 'section') {
+        if (!sectionsWrapper) {
+          sectionsWrapper = document.createElement('div');
+          sectionsWrapper.className = 'space-y-3';
+          pageSheet.appendChild(sectionsWrapper);
+          lastMergedSection = null;
+        }
+
+        if (lastMergedSection && lastMergedSection.groupId === block.groupId) {
+          const targetContainer = lastMergedSection.element.querySelector(
+            '.clinical-document-plan-subsections'
+          );
+          const sourceContainer = block.element.querySelector(
+            '.clinical-document-plan-subsections'
+          );
+          if (targetContainer instanceof HTMLElement && sourceContainer instanceof HTMLElement) {
+            Array.from(sourceContainer.children).forEach(subsectionNode => {
+              targetContainer.appendChild(subsectionNode.cloneNode(true));
+            });
+            return;
+          }
+        }
+
+        const clonedSection = block.element.cloneNode(true) as HTMLElement;
+        sectionsWrapper.appendChild(clonedSection);
+        lastMergedSection = {
+          groupId: block.groupId,
+          element: clonedSection,
+        };
+        return;
+      }
+
+      sectionsWrapper = null;
+      lastMergedSection = null;
+      pageSheet.appendChild(block.element.cloneNode(true) as HTMLElement);
+    });
+
+    return {
+      sheetHtml: pageSheet.outerHTML,
+      pageNumber: index + 1,
+      totalPages,
+      isLastPage: index === totalPages - 1,
+    };
+  });
 };
 
 const createIsolatedPrintFrame = async (
@@ -362,7 +600,6 @@ const generateDomSnapshotPdfBlob = async (html: string): Promise<Blob> => {
 
   try {
     await waitForSheetAssets(isolated.sheet, isolated.frameDocument, isolated.frameWindow);
-    updatePrintFooterPageCounter(isolated.frameDocument);
 
     const canvas = await html2canvas(isolated.sheet, {
       backgroundColor: '#ffffff',
@@ -452,65 +689,76 @@ export const openClinicalDocumentBrowserPrintPreview = async (
     return false;
   }
 
-  const html = await buildClinicalDocumentPrintHtml({
-    pageTitle,
-    autoPrint: false,
-    hidePatientInfoTitle: false,
-    includeAppStyles: true,
-  });
-  if (!html) {
+  const sheet = document.getElementById(CLINICAL_DOCUMENT_SHEET_ID);
+  if (!(sheet instanceof HTMLElement)) {
     return false;
   }
 
-  const iframe = document.createElement('iframe');
-  iframe.setAttribute('aria-hidden', 'true');
-  iframe.style.position = 'fixed';
-  iframe.style.left = '-99999px';
-  iframe.style.top = '0';
-  iframe.style.width = '1200px';
-  iframe.style.height = '1800px';
-  iframe.style.opacity = '0';
-  iframe.style.pointerEvents = 'none';
-  iframe.style.border = '0';
-  document.body.appendChild(iframe);
-
-  const frameDocument = iframe.contentDocument;
-  const frameWindow = iframe.contentWindow;
-  if (!frameDocument || !frameWindow) {
-    iframe.remove();
-    return false;
+  const existingRoot = document.getElementById(CLINICAL_DOCUMENT_INLINE_PRINT_ROOT_ID);
+  if (existingRoot) {
+    existingRoot.remove();
   }
 
-  frameDocument.open();
-  frameDocument.write(html);
-  frameDocument.close();
+  const existingStyle = document.getElementById(CLINICAL_DOCUMENT_INLINE_PRINT_STYLE_ID);
+  if (existingStyle) {
+    existingStyle.remove();
+  }
 
-  updatePrintFooterPageCounter(frameDocument);
+  const sheetClone = sheet.cloneNode(true) as HTMLElement;
+  await sanitizeSheetClone(sheet, sheetClone);
 
-  let printed = false;
+  const paginatedSheets = await paginateInlinePrintSheet(sheetClone);
+  const printRoot = document.createElement('div');
+  printRoot.id = CLINICAL_DOCUMENT_INLINE_PRINT_ROOT_ID;
+  printRoot.innerHTML = paginatedSheets
+    .map(
+      page => `
+        <div class="clinical-document-print-page">
+          ${page.sheetHtml}
+          <div class="clinical-document-print-page-footer" aria-hidden="true">
+            <div class="clinical-document-print-footer-left">
+              ${
+                page.isLastPage
+                  ? '<div class="clinical-document-patient-signature-line"></div><div class="clinical-document-patient-signature-label">Firma paciente/familiar responsable</div>'
+                  : ''
+              }
+            </div>
+            <div class="clinical-document-print-footer-right">${page.pageNumber}/${page.totalPages}</div>
+          </div>
+        </div>
+      `
+    )
+    .join('');
+
+  const printStyle = document.createElement('style');
+  printStyle.id = CLINICAL_DOCUMENT_INLINE_PRINT_STYLE_ID;
+  printStyle.textContent = '@page { margin: 8mm; }';
+
+  const originalTitle = document.title;
+  document.title = pageTitle || originalTitle;
+  document.head.appendChild(printStyle);
+  document.body.appendChild(printRoot);
+  document.body.classList.add('clinical-document-inline-print-mode');
+
+  let cleanedUp = false;
   const cleanup = () => {
-    frameWindow.removeEventListener('afterprint', cleanup);
-    iframe.remove();
+    if (cleanedUp) return;
+    cleanedUp = true;
+    document.body.classList.remove('clinical-document-inline-print-mode');
+    printRoot.remove();
+    printStyle.remove();
+    document.getElementById(CLINICAL_DOCUMENT_INLINE_PRINT_MEASURE_ID)?.remove();
+    document.title = originalTitle;
+    window.removeEventListener('afterprint', cleanup);
   };
 
-  const triggerPrint = () => {
-    if (printed) return;
-    printed = true;
-    updatePrintFooterPageCounter(frameDocument);
-    frameWindow.addEventListener('afterprint', cleanup, { once: true });
-    window.setTimeout(cleanup, 60_000);
-    frameWindow.focus();
-    frameWindow.print();
-  };
-
-  if (frameDocument.readyState === 'complete') {
-    window.setTimeout(triggerPrint, 100);
-  } else {
-    frameWindow.addEventListener('load', () => window.setTimeout(triggerPrint, 100), {
-      once: true,
-    });
-    window.setTimeout(triggerPrint, 1_500);
-  }
+  window.addEventListener('afterprint', cleanup, { once: true });
+  window.setTimeout(() => {
+    cleanup();
+  }, 60_000);
+  window.setTimeout(() => {
+    window.print();
+  }, 100);
 
   return true;
 };

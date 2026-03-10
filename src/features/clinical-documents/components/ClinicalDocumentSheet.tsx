@@ -24,6 +24,13 @@ import {
 
 import type { UserRole } from '@/types';
 import {
+  CLINICAL_DOCUMENT_PLAN_SUBSECTIONS,
+  appendClinicalDocumentPlanSubsectionText,
+  parseClinicalDocumentPlanSectionContent,
+  type ClinicalDocumentPlanSubsectionId,
+  updateClinicalDocumentPlanSubsectionContent,
+} from '@/features/clinical-documents/controllers/clinicalDocumentPlanSectionController';
+import {
   resolveClinicalDocumentIndicationSpecialty,
   type ClinicalDocumentIndicationSpecialtyId,
 } from '@/features/clinical-documents/controllers/clinicalDocumentIndicationsController';
@@ -133,6 +140,8 @@ export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
   const [isIndicationsPanelOpen, setIsIndicationsPanelOpen] = useState(false);
   const [activeIndicationsSpecialtyId, setActiveIndicationsSpecialtyId] =
     useState<ClinicalDocumentIndicationSpecialtyId>('cirugia_tmt');
+  const [activePlanSubsectionId, setActivePlanSubsectionId] =
+    useState<ClinicalDocumentPlanSubsectionId>('generales');
   const [activeEditorSectionId, setActiveEditorSectionId] = useState<string | null>(null);
   const [activeEditorHistoryState, setActiveEditorHistoryState] = useState({
     canUndo: false,
@@ -224,6 +233,7 @@ export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
     setActiveIndicationsSpecialtyId(
       resolveClinicalDocumentIndicationSpecialty(selectedDocument.especialidad)
     );
+    setActivePlanSubsectionId('generales');
     setIsIndicationsPanelOpen(false);
   }, [selectedDocument?.especialidad, selectedDocument?.id]);
 
@@ -283,24 +293,21 @@ export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
     <div className="mx-auto max-w-6xl space-y-3">
       <div className="flex flex-wrap items-center justify-end gap-3 rounded-2xl bg-white border border-slate-200 px-4 py-3">
         {hasPendingRemoteUpdate && (
-          <div className="mr-auto flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
-            <span>
-              Hay cambios remotos pendientes. Guarda o recarga el documento para sincronizar.
-            </span>
+          <div className="mr-auto flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={onApplyPendingRemoteUpdate}
-              className="rounded-lg border border-amber-300 bg-white px-2 py-1 text-[11px] font-black uppercase tracking-widest text-amber-800 hover:bg-amber-100"
+              className="rounded-xl border border-slate-200 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50"
             >
-              Recargar
+              Recargar remoto
             </button>
             {hasLocalDraftChanges && (
               <button
                 type="button"
                 onClick={onDiscardLocalDraftChanges}
-                className="rounded-lg border border-amber-300 bg-white px-2 py-1 text-[11px] font-black uppercase tracking-widest text-amber-800 hover:bg-amber-100"
+                className="rounded-xl border border-slate-200 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50"
               >
-                Descartar cambios locales
+                Descartar local
               </button>
             )}
           </div>
@@ -408,12 +415,6 @@ export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
           </span>
         )}
       </div>
-
-      {validationIssues.length > 0 && selectedDocument.status !== 'signed' && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          {validationIssues[0]?.message}
-        </div>
-      )}
 
       <div id="clinical-document-sheet" className="clinical-document-sheet">
         <div className="clinical-document-sheet-header">
@@ -598,7 +599,16 @@ export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
                         customIndicationError={customIndicationError}
                         onToggle={() => setIsIndicationsPanelOpen(current => !current)}
                         onSelectSpecialty={setActiveIndicationsSpecialtyId}
-                        onInsertIndication={text => appendSectionText(section.id, text)}
+                        onInsertIndication={text =>
+                          patchSection(
+                            section.id,
+                            appendClinicalDocumentPlanSubsectionText(
+                              section.content,
+                              activePlanSubsectionId,
+                              text
+                            )
+                          )
+                        }
                         onAddCustomIndication={addCustomIndication}
                         onUpdateIndication={updateIndication}
                         onDeleteIndication={deleteIndication}
@@ -645,15 +655,55 @@ export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
                         </>
                       )}
                   </div>
-                  <ClinicalDocumentRichTextEditor
-                    sectionId={section.id}
-                    sectionTitle={section.title}
-                    value={section.content}
-                    onChange={content => patchSection(section.id, content)}
-                    onActivate={handleEditorActivate}
-                    onDeactivate={handleEditorDeactivate}
-                    disabled={!canEdit || selectedDocument.isLocked}
-                  />
+                  {selectedDocument.documentType === 'epicrisis' && section.id === 'plan' ? (
+                    <div className="clinical-document-plan-subsections-shell">
+                      <div className="clinical-document-plan-subsections">
+                        {CLINICAL_DOCUMENT_PLAN_SUBSECTIONS.map(subsection => {
+                          const parsedPlanContent = parseClinicalDocumentPlanSectionContent(
+                            section.content
+                          );
+                          return (
+                            <div key={subsection.id} className="clinical-document-plan-subsection">
+                              <div className="clinical-document-plan-subsection-title">
+                                {subsection.title}
+                              </div>
+                              <ClinicalDocumentRichTextEditor
+                                sectionId={`${section.id}:${subsection.id}`}
+                                sectionTitle={subsection.title}
+                                value={parsedPlanContent[subsection.id]}
+                                onChange={content =>
+                                  patchSection(
+                                    section.id,
+                                    updateClinicalDocumentPlanSubsectionContent(
+                                      section.content,
+                                      subsection.id,
+                                      content
+                                    )
+                                  )
+                                }
+                                onActivate={(activeSectionId, editorApi) => {
+                                  setActivePlanSubsectionId(subsection.id);
+                                  handleEditorActivate(activeSectionId, editorApi);
+                                }}
+                                onDeactivate={handleEditorDeactivate}
+                                disabled={!canEdit || selectedDocument.isLocked}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <ClinicalDocumentRichTextEditor
+                      sectionId={section.id}
+                      sectionTitle={section.title}
+                      value={section.content}
+                      onChange={content => patchSection(section.id, content)}
+                      onActivate={handleEditorActivate}
+                      onDeactivate={handleEditorDeactivate}
+                      disabled={!canEdit || selectedDocument.isLocked}
+                    />
+                  )}
                 </div>
               </div>
             </div>

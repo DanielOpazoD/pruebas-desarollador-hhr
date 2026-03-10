@@ -115,11 +115,11 @@ export const useClinicalDocumentWorkspaceExportActions = ({
         operation: 'open_clinical_document_print_preview',
         date: selectedDocument.sourceDailyRecordDate,
         context: { documentId: selectedDocument.id },
-        issues: ['El navegador bloqueó la ventana emergente de impresión.'],
+        issues: ['No se pudo preparar la impresión del documento clínico.'],
       });
       notify.warning(
-        'No se pudo abrir la vista de impresión',
-        'Permite ventanas emergentes para usar la impresión PDF del navegador.'
+        'No se pudo imprimir el documento',
+        'Recarga la página e inténtalo nuevamente.'
       );
       return;
     }
