@@ -5,7 +5,13 @@ import { PatientRowModals } from '@/features/census/components/patient-row/Patie
 import { DataFactory } from '@/tests/factories/DataFactory';
 
 vi.mock('@/components/modals/DemographicsModal', () => ({
-  DemographicsModal: ({ bedId }: { bedId: string }) => <div>Demographics {bedId}</div>,
+  DemographicsModal: ({
+    bedId,
+    isClinicalCribPatient,
+  }: {
+    bedId: string;
+    isClinicalCribPatient?: boolean;
+  }) => <div data-rn-context={String(Boolean(isClinicalCribPatient))}>Demographics {bedId}</div>,
 }));
 
 vi.mock('@/components/modals/ExamRequestModal', () => ({
@@ -60,6 +66,7 @@ describe('PatientRowModals', () => {
     );
 
     expect(screen.getByText('Demographics R1')).toBeInTheDocument();
+    expect(screen.getByText('Demographics R1')).toHaveAttribute('data-rn-context', 'false');
     expect(screen.getByText('Exam Request')).toBeInTheDocument();
     expect(screen.getByText('Imaging Request')).toBeInTheDocument();
     expect(screen.getByText('Patient History')).toBeInTheDocument();
@@ -78,5 +85,21 @@ describe('PatientRowModals', () => {
     render(<PatientRowModals {...baseProps} showClinicalDocuments canOpenClinicalDocuments />);
 
     expect(screen.getByText('Clinical Documents')).toBeInTheDocument();
+  });
+
+  it('enables RN identity context for main-row patients in Cuna mode', () => {
+    render(
+      <PatientRowModals
+        {...baseProps}
+        showDemographics
+        data={DataFactory.createMockPatient('R1', {
+          patientName: 'RN principal',
+          rut: '',
+          bedMode: 'Cuna',
+        })}
+      />
+    );
+
+    expect(screen.getByText('Demographics R1')).toHaveAttribute('data-rn-context', 'true');
   });
 });

@@ -30,6 +30,7 @@ export const PatientRowModals: React.FC<PatientRowModalsProps> = ({
   const demographicsBinding = resolvePatientRowDemographicsBinding({
     bedId,
     isSubRow,
+    data,
     onSaveDemographics,
     onSaveCribDemographics,
   });
@@ -49,7 +50,7 @@ export const PatientRowModals: React.FC<PatientRowModalsProps> = ({
           onSave={demographicsBinding.onSave}
           bedId={demographicsBinding.targetBedId}
           recordDate={currentDateString}
-          isClinicalCribPatient={isSubRow}
+          isClinicalCribPatient={demographicsBinding.isRnIdentityContext}
         />
       ) : null}
 

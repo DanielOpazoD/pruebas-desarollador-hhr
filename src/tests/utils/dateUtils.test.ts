@@ -10,6 +10,7 @@ import {
   isBusinessDay,
   getShiftSchedule,
   resolveClinicalDayBounds,
+  resolveClinicalDayForDateTime,
   isNewAdmissionForClinicalDay,
   isWithinDayShift,
   isAdmittedDuringShift,
@@ -163,9 +164,24 @@ describe('dateUtils', () => {
   describe('resolveClinicalDayBounds', () => {
     it('should resolve next day and configured night cutoff for a record date', () => {
       const bounds = resolveClinicalDayBounds('2024-12-27');
+      expect(bounds.dayStart).toBe('08:00');
+      expect(bounds.dayStartMinutes).toBe(8 * 60);
       expect(bounds.nextDay).toBe('2024-12-28');
       expect(bounds.nightEnd).toBe('09:00');
       expect(bounds.nightEndMinutes).toBe(9 * 60);
+    });
+  });
+
+  describe('resolveClinicalDayForDateTime', () => {
+    it('assigns early-morning admissions to the previous clinical day', () => {
+      expect(resolveClinicalDayForDateTime('2026-03-11', '02:00')).toBe('2026-03-10');
+      expect(resolveClinicalDayForDateTime('2026-03-11', '07:59')).toBe('2026-03-10');
+      expect(resolveClinicalDayForDateTime('2026-03-11', '08:00')).toBe('2026-03-11');
+    });
+
+    it('uses 09:00 as clinical-day start on non-business days', () => {
+      expect(resolveClinicalDayForDateTime('2024-12-28', '08:59')).toBe('2024-12-27');
+      expect(resolveClinicalDayForDateTime('2024-12-28', '09:00')).toBe('2024-12-28');
     });
   });
 
@@ -178,6 +194,11 @@ describe('dateUtils', () => {
     it('treats madrugada admissions before the weekday cutoff as new admissions for the previous clinical day', () => {
       expect(isNewAdmissionForClinicalDay('2026-03-05', '2026-03-06', '07:59')).toBe(true);
       expect(isNewAdmissionForClinicalDay('2026-03-05', '2026-03-06', '08:00')).toBe(false);
+    });
+
+    it('does not carry over next-day madrugada admissions into the copied census of the next date', () => {
+      expect(isNewAdmissionForClinicalDay('2026-03-10', '2026-03-11', '02:00')).toBe(true);
+      expect(isNewAdmissionForClinicalDay('2026-03-11', '2026-03-11', '02:00')).toBe(false);
     });
 
     it('uses the configured 09:00 cutoff when the next day is not business day', () => {

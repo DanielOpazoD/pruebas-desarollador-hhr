@@ -164,6 +164,8 @@ export interface ShiftSchedule {
 }
 
 export interface ClinicalDayBounds {
+  dayStart: string;
+  dayStartMinutes: number;
   nextDay: string;
   nightEnd: string;
   nightEndMinutes: number;
@@ -217,13 +219,42 @@ export const getShiftSchedule = (dateString: string): ShiftSchedule => {
 
 export const resolveClinicalDayBounds = (recordDate: string): ClinicalDayBounds => {
   const schedule = getShiftSchedule(recordDate);
+  const dayStartMinutes = parseTimeMinutes(schedule.dayStart) ?? 8 * 60;
   const nightEndMinutes = parseTimeMinutes(schedule.nightEnd) ?? 8 * 60;
 
   return {
+    dayStart: schedule.dayStart,
+    dayStartMinutes,
     nextDay: getNextDay(recordDate),
     nightEnd: schedule.nightEnd,
     nightEndMinutes,
   };
+};
+
+const getPreviousDay = (dateString: string): string => {
+  const date = new Date(`${dateString}T12:00:00`);
+  date.setDate(date.getDate() - 1);
+  return date.toISOString().split('T')[0];
+};
+
+export const resolveClinicalDayForDateTime = (
+  eventDate?: string,
+  eventTime?: string
+): string | undefined => {
+  const normalizedEventDate = normalizeDateOnly(eventDate);
+  if (!normalizedEventDate) {
+    return undefined;
+  }
+
+  const eventTimeMinutes = parseTimeMinutes(eventTime);
+  if (eventTimeMinutes === null) {
+    return normalizedEventDate;
+  }
+
+  const { dayStartMinutes } = resolveClinicalDayBounds(normalizedEventDate);
+  return eventTimeMinutes < dayStartMinutes
+    ? getPreviousDay(normalizedEventDate)
+    : normalizedEventDate;
 };
 
 /**
@@ -264,21 +295,24 @@ export const isNewAdmissionForClinicalDay = (
     return false;
   }
 
-  if (normalizedAdmissionDate === normalizedRecordDate) {
-    return true;
+  if (parseTimeMinutes(admissionTime) === null) {
+    if (normalizedAdmissionDate === normalizedRecordDate) {
+      return true;
+    }
+
+    const { nextDay } = resolveClinicalDayBounds(normalizedRecordDate);
+    return normalizedAdmissionDate === nextDay;
   }
 
-  const { nextDay, nightEndMinutes } = resolveClinicalDayBounds(normalizedRecordDate);
-  if (normalizedAdmissionDate !== nextDay) {
+  const clinicalAdmissionDate = resolveClinicalDayForDateTime(
+    normalizedAdmissionDate,
+    admissionTime
+  );
+  if (!clinicalAdmissionDate) {
     return false;
   }
 
-  const admissionTimeMinutes = parseTimeMinutes(admissionTime);
-  if (admissionTimeMinutes === null) {
-    return true;
-  }
-
-  return admissionTimeMinutes < nightEndMinutes;
+  return clinicalAdmissionDate === normalizedRecordDate;
 };
 
 /**

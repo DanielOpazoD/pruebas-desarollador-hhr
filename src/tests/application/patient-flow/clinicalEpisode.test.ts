@@ -36,14 +36,15 @@ describe('clinicalEpisode application model', () => {
   it('builds presence snapshots and movement classification with shared rules', () => {
     const patient = DataFactory.createMockPatient('R1', {
       rut: '11.111.111-1',
-      admissionDate: '2026-03-05',
+      admissionDate: '2026-03-06',
       admissionTime: '02:00',
     });
 
     expect(buildPatientPresenceSnapshot(patient, 'R1')).toMatchObject({
       bedId: 'R1',
-      episodeKey: '11.111.111-1__2026-03-05',
+      episodeKey: '11.111.111-1__2026-03-06',
     });
     expect(classifyPatientMovementForRecord('2026-03-05', patient).isNewAdmission).toBe(true);
+    expect(classifyPatientMovementForRecord('2026-03-06', patient).isNewAdmission).toBe(false);
   });
 });
