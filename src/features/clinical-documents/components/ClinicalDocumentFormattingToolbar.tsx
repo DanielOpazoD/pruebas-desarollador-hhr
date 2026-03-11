@@ -25,8 +25,6 @@ import type {
 
 interface ClinicalDocumentFormattingToolbarProps {
   selectedDocument: NonNullable<ClinicalDocumentSheetProps['selectedDocument']>;
-  hasPendingRemoteUpdate: boolean;
-  hasLocalDraftChanges: boolean;
   canEdit: boolean;
   canUnsignSelectedDocument: boolean;
   role: ClinicalDocumentSheetProps['role'];
@@ -35,8 +33,6 @@ interface ClinicalDocumentFormattingToolbarProps {
   formattingDisabled: boolean;
   isFormattingOpen: boolean;
   activeEditorHistoryState: { canUndo: boolean; canRedo: boolean };
-  onApplyPendingRemoteUpdate?: () => void;
-  onDiscardLocalDraftChanges?: () => void;
   onSign: () => void;
   onUnsign: () => void;
   onPrint: () => void;

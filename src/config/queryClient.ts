@@ -81,5 +81,6 @@ export const queryKeys = {
   transfers: {
     all: ['transfers'] as const,
     activeByBed: (bedId: string) => ['transfers', 'activeByBed', bedId] as const,
+    activeByPatientRut: (rut: string) => ['transfers', 'activeByPatientRut', rut] as const,
   },
 } as const;

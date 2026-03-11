@@ -2,10 +2,11 @@ import React from 'react';
 import { Plane, RefreshCcw } from 'lucide-react';
 import { MedicalBadge } from '@/components/ui/base/MedicalBadge';
 import { BedType } from '@/types';
-import { useBedActiveTransferQuery } from '@/features/census/components/patient-row/useBedActiveTransferQuery';
+import { usePatientActiveTransferQuery } from '@/features/census/components/patient-row/useBedActiveTransferQuery';
 
 export interface PatientMainRowBedTypeCellProps {
   bedId: string;
+  patientRut?: string | null;
   bedType: BedType;
   hasPatient: boolean;
   canToggleBedType: boolean;
@@ -14,12 +15,13 @@ export interface PatientMainRowBedTypeCellProps {
 
 export const PatientMainRowBedTypeCell: React.FC<PatientMainRowBedTypeCellProps> = ({
   bedId,
+  patientRut,
   bedType,
   hasPatient,
   canToggleBedType,
   onToggleBedType,
 }) => {
-  const activeTransferQuery = useBedActiveTransferQuery(bedId, hasPatient);
+  const activeTransferQuery = usePatientActiveTransferQuery(patientRut, hasPatient);
   const activeTransfer = activeTransferQuery.data;
   const hasActiveTransfer = Boolean(activeTransfer);
   const isAcceptedTransfer = activeTransfer?.status === 'ACCEPTED';

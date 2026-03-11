@@ -11,6 +11,7 @@ import {
   getActiveTransfers,
   getTransferById,
   getLatestOpenTransferRequestByBedId,
+  getLatestOpenTransferRequestByPatientRut,
   deleteTransferRequest,
   subscribeToTransfers,
   completeTransfer,
@@ -366,6 +367,51 @@ describe('Transfer Service', () => {
 
       const result = await getLatestOpenTransferRequestByBedId('BED_2');
       expect(result).toBeNull();
+    });
+  });
+
+  describe('getLatestOpenTransferRequestByPatientRut', () => {
+    it('returns the most recent non-closed transfer request for the patient rut', async () => {
+      const getDocsMock = vi.mocked(firestore.getDocs);
+      getDocsMock.mockResolvedValueOnce({
+        docs: [
+          {
+            id: 'TR-OLD',
+            data: () => ({
+              bedId: 'BED_1',
+              patientSnapshot: { rut: '12.345.678-9' },
+              status: 'REQUESTED',
+              archived: false,
+              requestDate: '2026-02-02',
+              updatedAt: '2026-02-02T10:00:00.000Z',
+              createdAt: '2026-02-02T09:00:00.000Z',
+              statusHistory: [],
+            }),
+          },
+          {
+            id: 'TR-NEW',
+            data: () => ({
+              bedId: 'BED_9',
+              patientSnapshot: { rut: '12.345.678-9' },
+              status: 'ACCEPTED',
+              archived: false,
+              requestDate: '2026-02-03',
+              updatedAt: '2026-02-03T10:00:00.000Z',
+              createdAt: '2026-02-03T09:00:00.000Z',
+              statusHistory: [],
+            }),
+          },
+        ],
+      } as unknown as Awaited<ReturnType<typeof firestore.getDocs>>);
+
+      const result = await getLatestOpenTransferRequestByPatientRut('12.345.678-9');
+      expect(result?.id).toBe('TR-NEW');
+    });
+
+    it('returns null when patient rut is empty', async () => {
+      const result = await getLatestOpenTransferRequestByPatientRut('   ');
+      expect(result).toBeNull();
+      expect(firestore.getDocs).not.toHaveBeenCalled();
     });
   });
 

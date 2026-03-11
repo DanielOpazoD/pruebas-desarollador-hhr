@@ -21,22 +21,16 @@ export interface ClinicalDocumentSheetEditorApi {
   canUndo: boolean;
   canRedo: boolean;
   applyCommand: (command: ClinicalDocumentFormattingCommand, value?: string) => void;
-  insertText: (text: string) => boolean;
 }
 
 export interface ClinicalDocumentSheetProps {
   selectedDocument: ClinicalDocumentRecord | null;
-  hasPendingRemoteUpdate?: boolean;
-  hasLocalDraftChanges?: boolean;
-  onApplyPendingRemoteUpdate?: () => void;
-  onDiscardLocalDraftChanges?: () => void;
   canEdit: boolean;
   canUnsignSelectedDocument: boolean;
   role: UserRole | undefined;
   isSaving: boolean;
   isUploadingPdf: boolean;
   validationIssues: Array<{ message: string }>;
-  onSave: () => void;
   onSign: () => void;
   onUnsign: () => void;
   onPrint: () => void;
@@ -48,7 +42,6 @@ export interface ClinicalDocumentSheetProps {
   setPatientFieldVisibility: (fieldId: string, visible: boolean) => void;
   patchSectionTitle: (sectionId: string, title: string) => void;
   patchSection: (sectionId: string, content: string) => void;
-  appendSectionText: (sectionId: string, text: string) => void;
   setSectionVisibility: (sectionId: string, visible: boolean) => void;
   moveSection: (sectionId: string, direction: 'up' | 'down') => void;
   reorderSection: (sourceSectionId: string, targetSectionId: string) => void;
@@ -83,7 +76,6 @@ export interface ClinicalDocumentSpecialSectionRendererProps {
   activePlanSubsectionId: ClinicalDocumentPlanSubsectionId;
   setActivePlanSubsectionId: (subsectionId: ClinicalDocumentPlanSubsectionId) => void;
   onPatchSection: (sectionId: string, content: string) => void;
-  onAppendSectionText: (sectionId: string, text: string) => void;
   onEditorActivate: (activeSectionId: string, editorApi: ClinicalDocumentSheetEditorApi) => void;
   onEditorDeactivate: (sectionId: string) => void;
   indicationsCatalog: ClinicalDocumentIndicationsCatalog;

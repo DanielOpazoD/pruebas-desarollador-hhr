@@ -91,17 +91,6 @@ export const useClinicalDocumentSheetState = (selectedDocument: ClinicalDocument
     [formattingDisabled]
   );
 
-  const insertIntoActiveEditor = useCallback(
-    (text: string): boolean => {
-      if (formattingDisabled || !text.trim()) {
-        return false;
-      }
-
-      return activeEditorApiRef.current?.insertText(text) ?? false;
-    },
-    [formattingDisabled]
-  );
-
   const sectionDragHandlers = useMemo(
     () => ({
       onDragStart: (event: DragEvent<HTMLButtonElement>, sectionId: string) => {
@@ -148,7 +137,6 @@ export const useClinicalDocumentSheetState = (selectedDocument: ClinicalDocument
     activeEditorHistoryState,
     formattingDisabled,
     applyFormatting,
-    insertIntoActiveEditor,
     handleEditorActivate,
     handleEditorDeactivate,
     sectionDragHandlers,

@@ -39,9 +39,6 @@ const buildDocument = () =>
   });
 
 const defaultHandlers = {
-  onApplyPendingRemoteUpdate: vi.fn(),
-  onDiscardLocalDraftChanges: vi.fn(),
-  onSave: vi.fn(),
   onSign: vi.fn(),
   onUnsign: vi.fn(),
   onPrint: vi.fn(),
@@ -54,7 +51,6 @@ const defaultHandlers = {
   setPatientFieldVisibility: vi.fn(),
   patchSectionTitle: vi.fn(),
   patchSection: vi.fn(),
-  appendSectionText: vi.fn(),
   setSectionVisibility: vi.fn(),
   moveSection: vi.fn(),
   reorderSection: vi.fn(),
@@ -79,7 +75,6 @@ describe('ClinicalDocumentSheet', () => {
     render(
       <ClinicalDocumentSheet
         selectedDocument={null}
-        hasPendingRemoteUpdate={false}
         canEdit={true}
         canUnsignSelectedDocument={false}
         role="doctor_urgency"
@@ -107,8 +102,6 @@ describe('ClinicalDocumentSheet', () => {
     render(
       <ClinicalDocumentSheet
         selectedDocument={document}
-        hasPendingRemoteUpdate={true}
-        hasLocalDraftChanges={true}
         canEdit={true}
         canUnsignSelectedDocument={false}
         role="doctor_urgency"
@@ -206,7 +199,6 @@ describe('ClinicalDocumentSheet', () => {
     render(
       <ClinicalDocumentSheet
         selectedDocument={document}
-        hasPendingRemoteUpdate={false}
         canEdit={true}
         canUnsignSelectedDocument={true}
         role="doctor_urgency"
@@ -233,7 +225,6 @@ describe('ClinicalDocumentSheet', () => {
     render(
       <ClinicalDocumentSheet
         selectedDocument={document}
-        hasPendingRemoteUpdate={false}
         canEdit={true}
         canUnsignSelectedDocument={false}
         role="doctor_urgency"
@@ -270,7 +261,6 @@ describe('ClinicalDocumentSheet', () => {
     render(
       <ClinicalDocumentSheet
         selectedDocument={document}
-        hasPendingRemoteUpdate={false}
         canEdit={true}
         canUnsignSelectedDocument={false}
         role="doctor_urgency"

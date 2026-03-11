@@ -11,16 +11,11 @@ import { useClinicalDocumentSheetState } from '@/features/clinical-documents/hoo
 
 export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
   selectedDocument,
-  hasPendingRemoteUpdate = false,
-  hasLocalDraftChanges = false,
-  onApplyPendingRemoteUpdate,
-  onDiscardLocalDraftChanges,
   canEdit,
   canUnsignSelectedDocument,
   role,
   isSaving,
   isUploadingPdf,
-  onSave,
   onSign,
   onUnsign,
   onPrint,
@@ -71,8 +66,6 @@ export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
     <div className="mx-auto max-w-6xl space-y-3">
       <ClinicalDocumentFormattingToolbar
         selectedDocument={selectedDocument}
-        hasPendingRemoteUpdate={hasPendingRemoteUpdate}
-        hasLocalDraftChanges={hasLocalDraftChanges}
         canEdit={canEdit}
         canUnsignSelectedDocument={canUnsignSelectedDocument}
         role={role}
@@ -81,8 +74,6 @@ export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
         formattingDisabled={sheetState.formattingDisabled || !canEdit}
         isFormattingOpen={sheetState.isFormattingOpen}
         activeEditorHistoryState={sheetState.activeEditorHistoryState}
-        onApplyPendingRemoteUpdate={onApplyPendingRemoteUpdate}
-        onDiscardLocalDraftChanges={onDiscardLocalDraftChanges}
         onSign={onSign}
         onUnsign={onUnsign}
         onPrint={onPrint}

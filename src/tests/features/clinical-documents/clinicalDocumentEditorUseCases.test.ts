@@ -4,6 +4,7 @@ import { createClinicalDocumentDraft } from '@/features/clinical-documents/domai
 import type { ClinicalDocumentDraftBaseState } from '@/features/clinical-documents/hooks/clinicalDocumentDraftReducer';
 import {
   executeOpenClinicalDocumentPrint,
+  resolveClinicalDocumentAutosaveCommit,
   resolveClinicalDocumentDraftLoad,
 } from '@/application/clinical-documents/clinicalDocumentEditorUseCases';
 
@@ -106,6 +107,22 @@ describe('clinicalDocumentEditorUseCases', () => {
     });
 
     expect(resolution.kind).toBe('preserve');
+  });
+
+  it('marks autosave as clean only when the current draft still matches the requested snapshot', () => {
+    expect(
+      resolveClinicalDocumentAutosaveCommit({
+        requestedSnapshot: 'snapshot-a',
+        currentDraftSnapshot: 'snapshot-a',
+      })
+    ).toBe('mark_clean');
+
+    expect(
+      resolveClinicalDocumentAutosaveCommit({
+        requestedSnapshot: 'snapshot-a',
+        currentDraftSnapshot: 'snapshot-b',
+      })
+    ).toBe('commit_base');
   });
 
   it('delegates browser print opening through the print use case', async () => {

@@ -305,15 +305,9 @@ export const getTransferById = async (id: string): Promise<TransferRequest | nul
   return null;
 };
 
-/**
- * Find latest active (non-closed, non-archived) transfer request by bed ID.
- */
-export const getLatestOpenTransferRequestByBedId = async (
-  bedId: string
-): Promise<TransferRequest | null> => {
-  const q = query(getTransfersCollection(), where('bedId', '==', bedId));
-  const querySnapshot = await getDocs(q);
-
+const pickLatestOpenTransferRequest = (querySnapshot: {
+  docs: Array<{ id: string; data: () => Record<string, unknown> }>;
+}): TransferRequest | null => {
   const candidates = querySnapshot.docs
     .map(doc => docToTransfer(doc.data(), doc.id))
     .filter(transfer => !transfer.archived && !isClosedTransferStatus(transfer.status))
@@ -324,6 +318,35 @@ export const getLatestOpenTransferRequestByBedId = async (
     });
 
   return candidates[0] || null;
+};
+
+/**
+ * Find latest active (non-closed, non-archived) transfer request by bed ID.
+ */
+export const getLatestOpenTransferRequestByBedId = async (
+  bedId: string
+): Promise<TransferRequest | null> => {
+  const q = query(getTransfersCollection(), where('bedId', '==', bedId));
+  const querySnapshot = await getDocs(q);
+
+  return pickLatestOpenTransferRequest(querySnapshot);
+};
+
+/**
+ * Find latest active (non-closed, non-archived) transfer request by patient RUT.
+ */
+export const getLatestOpenTransferRequestByPatientRut = async (
+  patientRut: string
+): Promise<TransferRequest | null> => {
+  const normalizedRut = patientRut.trim();
+  if (!normalizedRut) {
+    return null;
+  }
+
+  const q = query(getTransfersCollection(), where('patientSnapshot.rut', '==', normalizedRut));
+  const querySnapshot = await getDocs(q);
+
+  return pickLatestOpenTransferRequest(querySnapshot);
 };
 
 /**

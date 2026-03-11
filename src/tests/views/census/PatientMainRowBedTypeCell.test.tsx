@@ -7,7 +7,7 @@ import { PatientMainRowBedTypeCell } from '@/features/census/components/patient-
 const mockUseBedActiveTransferQuery = vi.fn();
 
 vi.mock('@/features/census/components/patient-row/useBedActiveTransferQuery', () => ({
-  useBedActiveTransferQuery: (...args: unknown[]) => mockUseBedActiveTransferQuery(...args),
+  usePatientActiveTransferQuery: (...args: unknown[]) => mockUseBedActiveTransferQuery(...args),
 }));
 
 describe('PatientMainRowBedTypeCell', () => {
@@ -22,6 +22,7 @@ describe('PatientMainRowBedTypeCell', () => {
           <tr>
             <PatientMainRowBedTypeCell
               bedId="R1"
+              patientRut="11.111.111-1"
               bedType={BedType.UTI}
               hasPatient={true}
               canToggleBedType={false}
@@ -46,6 +47,7 @@ describe('PatientMainRowBedTypeCell', () => {
           <tr>
             <PatientMainRowBedTypeCell
               bedId="R1"
+              patientRut="11.111.111-1"
               bedType={BedType.UTI}
               hasPatient={true}
               canToggleBedType={false}
@@ -73,6 +75,7 @@ describe('PatientMainRowBedTypeCell', () => {
           <tr>
             <PatientMainRowBedTypeCell
               bedId="R1"
+              patientRut="11.111.111-1"
               bedType={BedType.MEDIA}
               hasPatient={true}
               canToggleBedType={false}

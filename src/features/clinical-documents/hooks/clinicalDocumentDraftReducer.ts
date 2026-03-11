@@ -1,5 +1,4 @@
 import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domain/entities';
-import { appendClinicalDocumentIndicationText } from '@/features/clinical-documents/controllers/clinicalDocumentIndicationsController';
 import { normalizeClinicalDocumentContentForStorage } from '@/features/clinical-documents/controllers/clinicalDocumentRichTextController';
 import {
   moveClinicalDocumentVisibleSection,
@@ -34,7 +33,6 @@ export type ClinicalDocumentDraftAction =
   | { type: 'PATCH_FIELD_LABEL'; fieldId: string; label: string }
   | { type: 'SET_FIELD_VISIBILITY'; fieldId: string; visible: boolean }
   | { type: 'PATCH_SECTION'; sectionId: string; content: string }
-  | { type: 'APPEND_SECTION_TEXT'; sectionId: string; text: string }
   | { type: 'PATCH_SECTION_TITLE'; sectionId: string; title: string }
   | { type: 'SET_SECTION_VISIBILITY'; sectionId: string; visible: boolean }
   | { type: 'MOVE_SECTION'; sectionId: string; direction: 'up' | 'down' }
@@ -165,18 +163,6 @@ export const clinicalDocumentDraftReducer = (
             ? {
                 ...section,
                 content: normalizeClinicalDocumentContentForStorage(action.content),
-              }
-            : section
-        ),
-      }));
-    case 'APPEND_SECTION_TEXT':
-      return patchDraft(state, draft => ({
-        ...draft,
-        sections: draft.sections.map(section =>
-          section.id === action.sectionId
-            ? {
-                ...section,
-                content: appendClinicalDocumentIndicationText(section.content, action.text),
               }
             : section
         ),

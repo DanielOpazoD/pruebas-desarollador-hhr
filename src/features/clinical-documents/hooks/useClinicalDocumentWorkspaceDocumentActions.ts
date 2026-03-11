@@ -18,7 +18,6 @@ import {
 import {
   executeCreateClinicalDocumentDraft,
   executeDeleteClinicalDocument,
-  executePersistClinicalDocumentDraft,
   executeSignClinicalDocument,
   executeUnsignClinicalDocument,
 } from '@/application/clinical-documents/clinicalDocumentUseCases';
@@ -201,53 +200,6 @@ export const useClinicalDocumentWorkspaceDocumentActions = ({
     ]
   );
 
-  const handleSaveNow = useCallback(async () => {
-    if (!selectedDocument || !canEdit || !user) return;
-    setIsSaving(true);
-    try {
-      const actor = buildClinicalDocumentActor(user, role);
-      const result = await executePersistClinicalDocumentDraft(
-        selectedDocument,
-        hospitalId,
-        actor,
-        'manual'
-      );
-      recordOperationalOutcome('clinical_document', 'save_clinical_document', result, {
-        date: selectedDocument.sourceDailyRecordDate,
-        context: { documentId: selectedDocument.id, mode: 'manual' },
-        allowSuccess: true,
-      });
-      if (result.status !== 'success' || !result.data) {
-        throw new Error(result.issues[0]?.message || 'No se pudo guardar el documento.');
-      }
-      lastPersistedSnapshotRef.current = serializeClinicalDocument(result.data);
-      setDraft(result.data);
-      notify.success('Documento guardado', 'Los cambios se guardaron correctamente.');
-    } catch (error) {
-      recordOperationalTelemetry({
-        category: 'clinical_document',
-        status: 'failed',
-        operation: 'save_clinical_document',
-        date: selectedDocument?.sourceDailyRecordDate,
-        issues: [error instanceof Error ? error.message : 'No se pudo guardar el documento.'],
-        context: { documentId: selectedDocument?.id },
-      });
-      notify.error('No se pudo guardar', 'Intenta nuevamente.');
-    } finally {
-      setIsSaving(false);
-    }
-  }, [
-    canEdit,
-    hospitalId,
-    lastPersistedSnapshotRef,
-    notify,
-    role,
-    selectedDocument,
-    setDraft,
-    setIsSaving,
-    user,
-  ]);
-
   const handleSign = useCallback(async () => {
     if (!selectedDocument || !user || !canSignClinicalDocument(role, selectedDocument)) {
       return;
@@ -347,7 +299,6 @@ export const useClinicalDocumentWorkspaceDocumentActions = ({
   return {
     createDocument,
     handleDeleteDocument,
-    handleSaveNow,
     handleSign,
     handleUnsign,
   };

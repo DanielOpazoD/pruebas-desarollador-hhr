@@ -8,18 +8,12 @@ import {
   serializeClinicalDocument,
 } from '@/features/clinical-documents/controllers/clinicalDocumentWorkspaceController';
 import {
-  executePersistClinicalDocumentEditorDraft,
-  resolveClinicalDocumentDraftLoad,
-} from '@/application/clinical-documents/clinicalDocumentEditorUseCases';
-import {
-  recordOperationalOutcome,
-  recordOperationalTelemetry,
-} from '@/services/observability/operationalTelemetryService';
-import {
   clinicalDocumentDraftReducer,
   createClinicalDocumentDraftReducerInitialState,
   type ClinicalDocumentDraftBaseState,
 } from '@/features/clinical-documents/hooks/clinicalDocumentDraftReducer';
+import { useClinicalDocumentDraftAutosave } from '@/features/clinical-documents/hooks/useClinicalDocumentDraftAutosave';
+import { useClinicalDocumentDraftRemoteSync } from '@/features/clinical-documents/hooks/useClinicalDocumentDraftRemoteSync';
 
 interface UseClinicalDocumentWorkspaceDraftParams {
   documents: ClinicalDocumentRecord[];
@@ -50,7 +44,6 @@ export interface ClinicalDocumentWorkspaceDraftState {
   patchPatientFieldLabel: (fieldId: string, label: string) => void;
   setPatientFieldVisibility: (fieldId: string, visible: boolean) => void;
   patchSection: (sectionId: string, content: string) => void;
-  appendSectionText: (sectionId: string, text: string) => void;
   patchSectionTitle: (sectionId: string, title: string) => void;
   setSectionVisibility: (sectionId: string, visible: boolean) => void;
   moveSection: (sectionId: string, direction: 'up' | 'down') => void;
@@ -83,7 +76,6 @@ export const useClinicalDocumentWorkspaceDraft = ({
     undefined,
     createClinicalDocumentDraftReducerInitialState
   );
-  const autosaveTimerRef = useRef<number | null>(null);
   const lastPersistedSnapshotRef = useRef<string>('');
   const draftRef = useRef<ClinicalDocumentRecord | null>(null);
   const draftDirtyRef = useRef(false);
@@ -101,137 +93,28 @@ export const useClinicalDocumentWorkspaceDraft = ({
     lastPersistedSnapshotRef.current = state.baseState.snapshot;
   }, [hasLocalDraftChanges, state.baseState, state.draft]);
 
-  useEffect(() => {
-    const resolution = resolveClinicalDocumentDraftLoad({
-      documents,
-      selectedDocumentId,
-      currentDraft: draftRef.current,
-      baseState: baseStateRef.current,
-      hasLocalDraftChanges: draftDirtyRef.current,
-    });
+  useClinicalDocumentDraftRemoteSync({
+    documents,
+    selectedDocumentId,
+    hasPendingRemoteUpdate: state.hasPendingRemoteUpdate,
+    pendingRemoteState: state.pendingRemoteState,
+    dispatch,
+    draftRef,
+    draftDirtyRef,
+    baseStateRef,
+  });
 
-    if (resolution.kind === 'clear') {
-      dispatch({ type: 'LOAD_DOCUMENT', document: null, snapshot: '' });
-      return;
-    }
-
-    if (resolution.kind === 'preserve') {
-      return;
-    }
-
-    if (resolution.kind === 'stage_remote') {
-      dispatch({
-        type: 'REMOTE_UPDATE_RECEIVED',
-        document: resolution.document,
-        snapshot: resolution.snapshot,
-      });
-      return;
-    }
-
-    dispatch({
-      type: 'LOAD_DOCUMENT',
-      document: resolution.document,
-      snapshot: resolution.snapshot,
-    });
-  }, [documents, selectedDocumentId]);
-
-  useEffect(() => {
-    if (!state.hasPendingRemoteUpdate || draftDirtyRef.current) {
-      return;
-    }
-
-    if (!state.pendingRemoteState.document || !state.pendingRemoteState.snapshot) {
-      return;
-    }
-
-    dispatch({ type: 'APPLY_REMOTE_UPDATE' });
-  }, [
-    state.hasPendingRemoteUpdate,
-    state.pendingRemoteState.document,
-    state.pendingRemoteState.snapshot,
-  ]);
-
-  useEffect(() => {
-    if (!state.draft || !canEdit || state.draft.isLocked || !isActive || !user) {
-      return;
-    }
-
-    const draftSnapshot = serializeClinicalDocument(state.draft);
-    if (draftSnapshot === lastPersistedSnapshotRef.current) {
-      return;
-    }
-
-    if (autosaveTimerRef.current) {
-      window.clearTimeout(autosaveTimerRef.current);
-    }
-
-    autosaveTimerRef.current = window.setTimeout(async () => {
-      const requestedSnapshot = draftSnapshot;
-      dispatch({ type: 'AUTOSAVE_REQUESTED' });
-
-      try {
-        const result = await executePersistClinicalDocumentEditorDraft({
-          record: state.draft!,
-          hospitalId,
-          role,
-          user,
-          reason: 'autosave',
-        });
-        recordOperationalOutcome('clinical_document', 'autosave_clinical_document', result, {
-          date: state.draft?.sourceDailyRecordDate,
-          context: { documentId: state.draft?.id },
-        });
-
-        if (result.status === 'success' && result.data) {
-          const savedSnapshot = serializeClinicalDocument(result.data);
-          const currentDraftSnapshot = serializeClinicalDocument(draftRef.current);
-
-          if (currentDraftSnapshot === requestedSnapshot) {
-            lastPersistedSnapshotRef.current = savedSnapshot;
-            dispatch({
-              type: 'AUTOSAVE_MARK_CLEAN',
-              document: result.data,
-              snapshot: savedSnapshot,
-            });
-          } else {
-            dispatch({
-              type: 'AUTOSAVE_COMMIT_BASE',
-              document: result.data,
-              snapshot: savedSnapshot,
-            });
-          }
-          return;
-        }
-
-        recordOperationalTelemetry({
-          category: 'clinical_document',
-          status: 'failed',
-          operation: 'autosave_clinical_document_rejected',
-          date: state.draft?.sourceDailyRecordDate,
-          issues: [result.issues[0]?.message || 'Autosave rejected'],
-          context: { documentId: state.draft?.id },
-        });
-        dispatch({ type: 'AUTOSAVE_FAILED' });
-      } catch (error) {
-        recordOperationalTelemetry({
-          category: 'clinical_document',
-          status: 'failed',
-          operation: 'autosave_clinical_document',
-          date: state.draft?.sourceDailyRecordDate,
-          issues: [error instanceof Error ? error.message : 'Autosave failed'],
-          context: { documentId: state.draft?.id },
-        });
-        dispatch({ type: 'AUTOSAVE_FAILED' });
-      }
-    }, 900);
-
-    return () => {
-      if (autosaveTimerRef.current) {
-        window.clearTimeout(autosaveTimerRef.current);
-        autosaveTimerRef.current = null;
-      }
-    };
-  }, [canEdit, hospitalId, isActive, role, state.draft, user]);
+  useClinicalDocumentDraftAutosave({
+    draft: state.draft,
+    canEdit,
+    isActive,
+    hospitalId,
+    role,
+    user,
+    dispatch,
+    draftRef,
+    lastPersistedSnapshotRef,
+  });
 
   const validationIssues = useMemo(
     () => (state.draft ? validateClinicalDocument(state.draft) : []),
@@ -282,8 +165,6 @@ export const useClinicalDocumentWorkspaceDraft = ({
     setPatientFieldVisibility: (fieldId, visible) =>
       dispatch({ type: 'SET_FIELD_VISIBILITY', fieldId, visible }),
     patchSection: (sectionId, content) => dispatch({ type: 'PATCH_SECTION', sectionId, content }),
-    appendSectionText: (sectionId, text) =>
-      dispatch({ type: 'APPEND_SECTION_TEXT', sectionId, text }),
     patchSectionTitle: (sectionId, title) =>
       dispatch({ type: 'PATCH_SECTION_TITLE', sectionId, title }),
     setSectionVisibility: (sectionId, visible) =>

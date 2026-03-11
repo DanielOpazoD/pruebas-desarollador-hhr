@@ -64,10 +64,6 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
 
   const {
     draft,
-    hasPendingRemoteUpdate,
-    hasLocalDraftChanges,
-    applyPendingRemoteUpdate,
-    discardLocalDraftChanges,
     setDraft,
     isSaving,
     setIsSaving,
@@ -77,7 +73,6 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
     patchPatientFieldLabel,
     setPatientFieldVisibility,
     patchSection,
-    appendSectionText,
     patchSectionTitle,
     setSectionVisibility,
     moveSection,
@@ -114,7 +109,7 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
     canEdit,
   });
 
-  const { createDocument, handleDeleteDocument, handleSaveNow, handleSign, handleUnsign } =
+  const { createDocument, handleDeleteDocument, handleSign, handleUnsign } =
     useClinicalDocumentWorkspaceDocumentActions({
       patient,
       role,
@@ -190,17 +185,12 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
       <section className="bg-[#f3f4f6] p-3 overflow-y-auto">
         <ClinicalDocumentSheet
           selectedDocument={selectedDocument}
-          hasPendingRemoteUpdate={hasPendingRemoteUpdate}
-          hasLocalDraftChanges={hasLocalDraftChanges}
-          onApplyPendingRemoteUpdate={applyPendingRemoteUpdate}
-          onDiscardLocalDraftChanges={discardLocalDraftChanges}
           canEdit={canEdit}
           canUnsignSelectedDocument={Boolean(canUnsignSelectedDocument)}
           role={role}
           isSaving={isSaving}
           isUploadingPdf={isUploadingPdf}
           validationIssues={validationIssues}
-          onSave={handleSaveNow}
           onSign={handleSign}
           onUnsign={() => void handleUnsign()}
           onPrint={handlePrint}
@@ -213,7 +203,6 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
           setPatientFieldVisibility={setPatientFieldVisibility}
           patchSectionTitle={patchSectionTitle}
           patchSection={patchSection}
-          appendSectionText={appendSectionText}
           setSectionVisibility={setSectionVisibility}
           moveSection={moveSection}
           reorderSection={reorderSection}

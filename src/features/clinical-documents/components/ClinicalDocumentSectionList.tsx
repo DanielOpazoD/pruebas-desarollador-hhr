@@ -201,7 +201,6 @@ export const ClinicalDocumentSectionList: React.FC<ClinicalDocumentSectionListPr
               activePlanSubsectionId,
               setActivePlanSubsectionId: onSetActivePlanSubsectionId,
               onPatchSection,
-              onAppendSectionText: (_sectionId, _text) => undefined,
               onEditorActivate,
               onEditorDeactivate,
               indicationsCatalog,

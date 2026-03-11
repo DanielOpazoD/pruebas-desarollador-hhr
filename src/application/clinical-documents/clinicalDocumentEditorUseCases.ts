@@ -73,6 +73,17 @@ export const resolveClinicalDocumentDraftLoad = ({
   };
 };
 
+interface ResolveClinicalDocumentAutosaveCommitInput {
+  requestedSnapshot: string;
+  currentDraftSnapshot: string;
+}
+
+export const resolveClinicalDocumentAutosaveCommit = ({
+  requestedSnapshot,
+  currentDraftSnapshot,
+}: ResolveClinicalDocumentAutosaveCommitInput): 'mark_clean' | 'commit_base' =>
+  currentDraftSnapshot === requestedSnapshot ? 'mark_clean' : 'commit_base';
+
 interface PersistClinicalDocumentEditorDraftInput {
   record: ClinicalDocumentRecord;
   hospitalId: string;

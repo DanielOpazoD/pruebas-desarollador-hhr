@@ -1,11 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/config/queryClient';
-import { getLatestOpenTransferRequestByBedId } from '@/services/transfers/transferService';
+import { getLatestOpenTransferRequestByPatientRut } from '@/services/transfers/transferService';
 
-export const useBedActiveTransferQuery = (bedId: string, enabled: boolean) =>
+export const usePatientActiveTransferQuery = (
+  patientRut: string | null | undefined,
+  enabled: boolean
+) =>
   useQuery({
-    queryKey: queryKeys.transfers.activeByBed(bedId),
-    queryFn: async () => getLatestOpenTransferRequestByBedId(bedId),
-    enabled,
+    queryKey: queryKeys.transfers.activeByPatientRut(patientRut || ''),
+    queryFn: async () => getLatestOpenTransferRequestByPatientRut(patientRut || ''),
+    enabled: enabled && Boolean(patientRut),
     staleTime: 60 * 1000,
   });

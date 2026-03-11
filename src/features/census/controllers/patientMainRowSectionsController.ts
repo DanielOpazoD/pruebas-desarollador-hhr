@@ -38,6 +38,7 @@ export const buildPatientMainRowSections = (
   },
   bedType: {
     bedId: props.bed.id,
+    patientRut: props.data.rut || '',
     bedType: props.bedType,
     hasPatient: Boolean(props.data.patientName),
     canToggleBedType: props.mainRowViewState.canToggleBedType,
