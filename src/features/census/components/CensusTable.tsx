@@ -1,10 +1,7 @@
 import React from 'react';
-import { useCensusTableViewModel } from '@/features/census/hooks/useCensusTableViewModel';
 import { CensusTableHeader } from '@/features/census/components/CensusTableHeader';
 import { CensusTableBody } from '@/features/census/components/CensusTableBody';
-import { buildCensusTableLayoutBindings } from '@/features/census/controllers/censusTableLayoutController';
-import { useClinicalDocumentPresenceByBed } from '@/features/census/hooks/useClinicalDocumentPresenceByBed';
-import { canReadClinicalDocuments } from '@/features/clinical-documents/controllers/clinicalDocumentPermissionController';
+import { useCensusTableBindingsModel } from '@/features/census/hooks/useCensusTableBindingsModel';
 export type { DiagnosisMode } from '@/features/census/types/censusTableTypes';
 
 interface CensusTableProps {
@@ -16,54 +13,14 @@ export const CensusTable: React.FC<CensusTableProps> = ({
   currentDateString,
   readOnly = false,
 }) => {
-  const {
-    beds,
-    columns,
-    isEditMode,
-    handleColumnResize,
-    canDeleteRecord,
-    resetDayDeniedMessage,
-    occupiedRows,
-    emptyBeds,
-    bedTypes,
-    totalWidth,
-    handleClearAll,
-    diagnosisMode,
-    toggleDiagnosisMode,
-    handleRowAction,
-    activateEmptyBed,
-    role,
-  } = useCensusTableViewModel({ currentDateString });
-
-  const canReadClinical = canReadClinicalDocuments(role);
-  const clinicalDocumentPresenceByBedId = useClinicalDocumentPresenceByBed({
-    occupiedRows,
-    currentDateString,
-    enabled: canReadClinical,
-  });
-
-  if (!beds) return null;
-
-  const { headerProps, bodyProps, tableStyle } = buildCensusTableLayoutBindings({
+  const { isReady, bindings } = useCensusTableBindingsModel({
     currentDateString,
     readOnly,
-    columns,
-    isEditMode,
-    canDeleteRecord,
-    resetDayDeniedMessage,
-    onClearAll: handleClearAll,
-    diagnosisMode,
-    onToggleDiagnosisMode: toggleDiagnosisMode,
-    onResizeColumn: handleColumnResize,
-    occupiedRows,
-    emptyBeds,
-    bedTypes,
-    role,
-    clinicalDocumentPresenceByBedId,
-    onAction: handleRowAction,
-    onActivateEmptyBed: activateEmptyBed,
-    totalWidth,
   });
+
+  if (!isReady || !bindings) return null;
+
+  const { headerProps, bodyProps, tableStyle } = bindings;
 
   return (
     <div className="card print:border-none print:shadow-none !overflow-visible">
