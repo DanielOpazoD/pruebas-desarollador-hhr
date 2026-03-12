@@ -16,7 +16,7 @@ describe('censusTableBodyController', () => {
         bed: { id: 'R1', name: 'R1', type: BedType.MEDIA, isCuna: false },
         data: DataFactory.createMockPatient('R1', {
           admissionDate: '2026-03-05',
-          admissionTime: '01:20',
+          admissionTime: '14:20',
         }),
         isSubRow: false,
       },

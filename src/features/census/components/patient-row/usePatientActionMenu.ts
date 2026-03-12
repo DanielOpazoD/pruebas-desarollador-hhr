@@ -1,10 +1,10 @@
 import { useCallback, useMemo } from 'react';
 import { useDropdownMenu } from '@/hooks/useDropdownMenu';
+import type { UtilityActionConfig } from '@/features/census/components/patient-row/patientActionMenuConfig';
 import {
-  getVisibleUtilityActions,
-  type UtilityActionConfig,
-} from '@/features/census/components/patient-row/patientActionMenuConfig';
-import { resolvePatientActionMenuBinding } from '@/features/census/controllers/patientActionMenuBindingController';
+  buildPatientActionMenuModel,
+  resolvePatientActionMenuCallbackAvailability,
+} from '@/features/census/controllers/patientActionMenuController';
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';
 import type {
   PatientActionMenuBinding,
@@ -53,19 +53,20 @@ export const usePatientActionMenu = ({
 }: UsePatientActionMenuParams): UsePatientActionMenuResult => {
   const { isOpen, menuRef, toggle, close } = useDropdownMenu();
 
-  const utilityActions = useMemo(() => getVisibleUtilityActions(isBlocked), [isBlocked]);
-  const binding = useMemo(
+  const menuModel = useMemo(
     () =>
-      resolvePatientActionMenuBinding({
+      buildPatientActionMenuModel({
         align,
         showCmaAction,
         isBlocked,
         readOnly,
-        hasHistoryAction: typeof onViewHistory === 'function',
-        hasClinicalDocumentsAction: typeof onViewClinicalDocuments === 'function',
-        hasExamRequestAction: typeof onViewExamRequest === 'function',
-        hasImagingRequestAction: typeof onViewImagingRequest === 'function',
         indicators,
+        callbackAvailability: resolvePatientActionMenuCallbackAvailability({
+          onViewHistory,
+          onViewClinicalDocuments,
+          onViewExamRequest,
+          onViewImagingRequest,
+        }),
       }),
     [
       align,
@@ -111,8 +112,8 @@ export const usePatientActionMenu = ({
   return {
     isOpen,
     menuRef,
-    binding,
-    utilityActions,
+    binding: menuModel.binding,
+    utilityActions: menuModel.utilityActions,
     toggle,
     close,
     handleAction,

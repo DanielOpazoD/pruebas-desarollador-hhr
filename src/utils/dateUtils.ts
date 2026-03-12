@@ -296,6 +296,9 @@ export const isNewAdmissionForClinicalDay = (
   }
 
   if (parseTimeMinutes(admissionTime) === null) {
+    // Fallback conservador para datos legacy o incompletos:
+    // si falta la hora, mantenemos visibilidad del ingreso en el día base
+    // y en la madrugada del día siguiente para no ocultar ingresos reales.
     if (normalizedAdmissionDate === normalizedRecordDate) {
       return true;
     }

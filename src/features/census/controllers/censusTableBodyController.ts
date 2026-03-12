@@ -1,5 +1,5 @@
 import type { RowMenuAlign } from '@/features/census/components/patient-row/patientRowContracts';
-import { resolveIsNewAdmissionForRecord } from '@/features/census/controllers/patientRowNewAdmissionIndicatorController';
+import { buildOccupiedPatientRowIndicators } from '@/features/census/controllers/patientRowIndicatorsController';
 import type { CensusTableResolvedOccupiedRow } from '@/features/census/types/censusTableComponentContracts';
 import type { OccupiedBedRow } from '@/features/census/types/censusTableTypes';
 
@@ -25,14 +25,11 @@ export const buildResolvedOccupiedRows = ({
   occupiedRows.map((row, index) => ({
     row,
     actionMenuAlign: resolvePatientRowMenuAlign(index, occupiedRows.length),
-    indicators: {
-      hasClinicalDocument: !row.isSubRow && Boolean(clinicalDocumentPresenceByBedId[row.bed.id]),
-      isNewAdmission:
-        !row.isSubRow &&
-        resolveIsNewAdmissionForRecord({
-          recordDate: currentDateString,
-          admissionDate: row.data.admissionDate,
-          admissionTime: row.data.admissionTime,
-        }),
-    },
+    indicators: buildOccupiedPatientRowIndicators({
+      isSubRow: row.isSubRow,
+      currentDateString,
+      admissionDate: row.data.admissionDate,
+      admissionTime: row.data.admissionTime,
+      hasClinicalDocument: Boolean(clinicalDocumentPresenceByBedId[row.bed.id]),
+    }),
   }));

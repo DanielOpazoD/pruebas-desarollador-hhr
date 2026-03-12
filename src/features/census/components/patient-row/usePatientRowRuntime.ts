@@ -5,6 +5,7 @@ import { usePatientRowDependencies } from '@/features/census/components/patient-
 import type { PatientRowRuntime } from '@/features/census/components/patient-row/patientRowRuntimeContracts';
 import { usePatientRowEditingRuntime } from '@/features/census/components/patient-row/usePatientRowEditingRuntime';
 import { usePatientRowInteractionRuntime } from '@/features/census/components/patient-row/usePatientRowInteractionRuntime';
+import { buildPatientRowRuntime } from '@/features/census/controllers/patientRowRuntimeController';
 
 interface UsePatientRowRuntimeParams {
   bed: BedDefinition;
@@ -47,9 +48,9 @@ export const usePatientRowRuntime = ({
     alert,
   });
 
-  return {
+  return buildPatientRowRuntime({
     rowState,
-    ...interactionRuntime,
-    ...editingRuntime,
-  };
+    interactionRuntime,
+    editingRuntime,
+  });
 };

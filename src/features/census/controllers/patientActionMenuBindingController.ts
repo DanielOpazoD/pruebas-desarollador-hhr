@@ -3,6 +3,7 @@ import type {
   PatientActionMenuIndicators,
   RowMenuAlign,
 } from '@/features/census/components/patient-row/patientRowContracts';
+import { EMPTY_PATIENT_ROW_INDICATORS } from '@/features/census/controllers/patientRowIndicatorsController';
 import {
   resolvePatientActionMenuViewState,
   type ResolvePatientActionMenuViewParams,
@@ -29,10 +30,7 @@ export const resolvePatientActionMenuBinding = ({
   isBlocked,
   readOnly,
   showCmaAction,
-  indicators: indicators || {
-    hasClinicalDocument: false,
-    isNewAdmission: false,
-  },
+  indicators: indicators || EMPTY_PATIENT_ROW_INDICATORS,
   availability: resolvePatientActionMenuViewState({
     isBlocked,
     readOnly,

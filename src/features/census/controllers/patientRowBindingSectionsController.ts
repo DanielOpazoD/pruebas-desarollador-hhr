@@ -8,12 +8,8 @@ import type {
   PatientRowRuntime,
 } from '@/features/census/components/patient-row/patientRowRuntimeContracts';
 import type { PatientRowCapabilities } from '@/features/census/controllers/patientRowCapabilitiesController';
+import type { PatientRowResolvedIndicators } from '@/features/census/controllers/patientRowIndicatorsController';
 import { buildPatientMainRowViewState } from '@/features/census/controllers/patientRowMainViewController';
-
-export interface PatientRowResolvedIndicators {
-  hasClinicalDocument: boolean;
-  isNewAdmission: boolean;
-}
 
 export interface PatientRowViewContext {
   capabilities: PatientRowCapabilities;
@@ -136,8 +132,11 @@ export const buildPatientModalSectionBindings = ({
   showClinicalDocuments: runtime.uiState.showClinicalDocuments,
   canOpenClinicalDocuments: viewContext.capabilities.canOpenClinicalDocuments,
   showExamRequest: runtime.uiState.showExamRequest,
+  canOpenExamRequest: viewContext.capabilities.canOpenExamRequest,
   showImagingRequest: runtime.uiState.showImagingRequest,
+  canOpenImagingRequest: viewContext.capabilities.canOpenImagingRequest,
   showHistory: runtime.uiState.showHistory,
+  canOpenHistory: viewContext.capabilities.canOpenHistory,
   onCloseDemographics: runtime.uiState.closeDemographics,
   onCloseClinicalDocuments: runtime.uiState.closeClinicalDocuments,
   onCloseExamRequest: runtime.uiState.closeExamRequest,

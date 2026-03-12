@@ -15,10 +15,14 @@ import {
   buildPatientMainSectionBindings,
   buildPatientModalSectionBindings,
   buildPatientSubSectionBindings,
-  type PatientRowResolvedIndicators,
   type PatientRowViewContext,
 } from '@/features/census/controllers/patientRowBindingSectionsController';
 import { resolvePatientRowCapabilities } from '@/features/census/controllers/patientRowCapabilitiesController';
+import {
+  EMPTY_PATIENT_ROW_INDICATORS,
+  type PatientRowResolvedIndicators,
+  resolvePatientRowIndicators,
+} from '@/features/census/controllers/patientRowIndicatorsController';
 
 export interface BuildPatientRowBindingsParams {
   bed: BedDefinition;
@@ -36,14 +40,6 @@ export interface BuildPatientRowBindingsParams {
 }
 
 export type PatientRowBindingsInput = Omit<BuildPatientRowBindingsParams, 'runtime'>;
-
-const resolvePatientRowIndicators = (
-  indicators: PatientActionMenuIndicators | undefined,
-  canShowClinicalDocumentIndicator: boolean
-): PatientRowResolvedIndicators => ({
-  hasClinicalDocument: Boolean(indicators?.hasClinicalDocument) && canShowClinicalDocumentIndicator,
-  isNewAdmission: Boolean(indicators?.isNewAdmission),
-});
 
 const resolvePatientRowViewContext = ({
   role,
@@ -63,10 +59,10 @@ const resolvePatientRowViewContext = ({
 
   return {
     capabilities,
-    indicators: resolvePatientRowIndicators(
+    indicators: resolvePatientRowIndicators({
       indicators,
-      capabilities.canShowClinicalDocumentIndicator
-    ),
+      canShowClinicalDocumentIndicator: capabilities.canShowClinicalDocumentIndicator,
+    }),
   };
 };
 
@@ -171,10 +167,7 @@ export const buildPatientRowModalsBindings = ({
           runtime,
           indicators: undefined,
         }).capabilities,
-      indicators: {
-        hasClinicalDocument: false,
-        isNewAdmission: false,
-      },
+      indicators: EMPTY_PATIENT_ROW_INDICATORS,
     },
   });
 

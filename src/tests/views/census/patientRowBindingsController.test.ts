@@ -92,6 +92,9 @@ describe('patientRowBindingsController', () => {
     expect(result.modalsProps.onSaveDemographics).toBe(runtime.modalSavers.onSaveDemographics);
     expect(result.modalsProps.showClinicalDocuments).toBe(false);
     expect(result.modalsProps.canOpenClinicalDocuments).toBe(true);
+    expect(result.modalsProps.canOpenExamRequest).toBe(true);
+    expect(result.modalsProps.canOpenImagingRequest).toBe(true);
+    expect(result.modalsProps.canOpenHistory).toBe(true);
   });
 
   it('builds split bindings with consistent runtime wiring', () => {
@@ -181,6 +184,9 @@ describe('patientRowBindingsController', () => {
     expect(sub.onOpenDemographics).toBe(runtime.uiState.openDemographics);
     expect(modals.showClinicalDocuments).toBe(true);
     expect(modals.canOpenClinicalDocuments).toBe(false);
+    expect(modals.canOpenExamRequest).toBe(true);
+    expect(modals.canOpenImagingRequest).toBe(true);
+    expect(modals.canOpenHistory).toBe(true);
     expect(modals.showHistory).toBe(true);
   });
 });

@@ -43,8 +43,11 @@ describe('PatientRowModals', () => {
     showClinicalDocuments: false,
     canOpenClinicalDocuments: false,
     showExamRequest: false,
+    canOpenExamRequest: true,
     showImagingRequest: false,
+    canOpenImagingRequest: true,
     showHistory: false,
+    canOpenHistory: true,
     onCloseDemographics: vi.fn(),
     onCloseClinicalDocuments: vi.fn(),
     onCloseExamRequest: vi.fn(),
@@ -85,6 +88,24 @@ describe('PatientRowModals', () => {
     render(<PatientRowModals {...baseProps} showClinicalDocuments canOpenClinicalDocuments />);
 
     expect(screen.getByText('Clinical Documents')).toBeInTheDocument();
+  });
+
+  it('does not mount history, exam or imaging modals when capability is missing', () => {
+    render(
+      <PatientRowModals
+        {...baseProps}
+        showExamRequest
+        canOpenExamRequest={false}
+        showImagingRequest
+        canOpenImagingRequest={false}
+        showHistory
+        canOpenHistory={false}
+      />
+    );
+
+    expect(screen.queryByText('Exam Request')).not.toBeInTheDocument();
+    expect(screen.queryByText('Imaging Request')).not.toBeInTheDocument();
+    expect(screen.queryByText('Patient History')).not.toBeInTheDocument();
   });
 
   it('enables RN identity context for main-row patients in Cuna mode', () => {

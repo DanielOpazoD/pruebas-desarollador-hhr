@@ -1,11 +1,8 @@
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import { usePatientRowUiState } from '@/features/census/components/patient-row/usePatientRowUiState';
 import { usePatientRowBedConfigActions } from '@/features/census/components/patient-row/usePatientRowBedConfigActions';
-import {
-  buildPatientRowActionDispatcher,
-  buildPatientRowBedTypeToggles,
-} from '@/features/census/controllers/patientRowRuntimeController';
+import { buildPatientRowInteractionRuntime } from '@/features/census/controllers/patientRowRuntimeController';
 import type { ControllerConfirmDescriptor } from '@/features/census/controllers/controllerConfirmDescriptor';
 import type { PatientData } from '@/types';
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';
@@ -54,26 +51,17 @@ export const usePatientRowInteractionRuntime = ({
     alert,
   });
 
-  const handleAction = useCallback(
-    (action: PatientRowAction) =>
-      buildPatientRowActionDispatcher({ onAction, bedId, patient: data })(action),
-    [onAction, bedId, data]
-  );
-
-  const bedTypeToggles = useMemo(
+  return useMemo(
     () =>
-      buildPatientRowBedTypeToggles({
+      buildPatientRowInteractionRuntime({
+        uiState,
+        bedConfigActions,
+        onAction,
         bedId,
+        patient: data,
         toggleBedType,
         updateClinicalCrib,
       }),
-    [bedId, toggleBedType, updateClinicalCrib]
+    [bedConfigActions, bedId, data, onAction, toggleBedType, uiState, updateClinicalCrib]
   );
-
-  return {
-    uiState,
-    bedConfigActions,
-    handleAction,
-    bedTypeToggles,
-  };
 };

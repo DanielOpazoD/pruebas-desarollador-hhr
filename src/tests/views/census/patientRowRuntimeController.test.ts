@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  buildPatientRowInteractionRuntime,
   buildPatientRowActionDispatcher,
   buildPatientRowBedTypeToggles,
+  buildPatientRowRuntime,
 } from '@/features/census/controllers/patientRowRuntimeController';
 import { PatientData } from '@/types';
 
@@ -38,5 +40,66 @@ describe('patientRowRuntimeController', () => {
 
     expect(toggleBedType).toHaveBeenCalledWith('R1');
     expect(updateClinicalCrib).toHaveBeenCalledWith('R1', 'remove');
+  });
+
+  it('builds interaction runtime with ui state, action dispatcher and bed toggles', () => {
+    const onAction = vi.fn();
+    const uiState = { showDemographics: false } as never;
+    const bedConfigActions = { toggleBedMode: vi.fn() } as never;
+    const toggleBedType = vi.fn();
+    const updateClinicalCrib = vi.fn();
+
+    const runtime = buildPatientRowInteractionRuntime({
+      uiState,
+      bedConfigActions,
+      onAction,
+      bedId: 'R1',
+      patient: mockPatient,
+      toggleBedType,
+      updateClinicalCrib,
+    });
+
+    runtime.handleAction('move');
+    runtime.bedTypeToggles.onToggleBedType();
+
+    expect(runtime.uiState).toBe(uiState);
+    expect(runtime.bedConfigActions).toBe(bedConfigActions);
+    expect(onAction).toHaveBeenCalledWith('move', 'R1', mockPatient);
+    expect(toggleBedType).toHaveBeenCalledWith('R1');
+  });
+
+  it('builds the final row runtime from row, interaction and editing state', () => {
+    const runtime = buildPatientRowRuntime({
+      rowState: {
+        isCunaMode: false,
+        hasCompanion: false,
+        hasClinicalCrib: false,
+        isBlocked: false,
+        isEmpty: false,
+      },
+      interactionRuntime: {
+        uiState: { showDemographics: false } as never,
+        bedConfigActions: { toggleBedMode: vi.fn() } as never,
+        handleAction: vi.fn(),
+        bedTypeToggles: {
+          onToggleBedType: vi.fn(),
+          onUpdateClinicalCrib: vi.fn(),
+        },
+      },
+      editingRuntime: {
+        handlers: {
+          mainInputChangeHandlers: {} as never,
+          cribInputChangeHandlers: {} as never,
+        },
+        modalSavers: {
+          onSaveDemographics: vi.fn(),
+          onSaveCribDemographics: vi.fn(),
+        },
+      },
+    });
+
+    expect(runtime.rowState.isEmpty).toBe(false);
+    expect(runtime.handleAction).toBeTypeOf('function');
+    expect(runtime.modalSavers.onSaveCribDemographics).toBeTypeOf('function');
   });
 });

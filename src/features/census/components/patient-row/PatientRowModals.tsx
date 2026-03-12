@@ -17,8 +17,11 @@ export const PatientRowModals: React.FC<PatientRowModalsProps> = ({
   showClinicalDocuments,
   canOpenClinicalDocuments,
   showExamRequest,
+  canOpenExamRequest,
   showImagingRequest,
+  canOpenImagingRequest,
   showHistory,
+  canOpenHistory,
   onCloseDemographics,
   onCloseClinicalDocuments,
   onCloseExamRequest,
@@ -35,13 +38,20 @@ export const PatientRowModals: React.FC<PatientRowModalsProps> = ({
     onSaveCribDemographics,
   });
   const visibilityState = resolvePatientRowModalVisibilityState({
+    showDemographics,
     showClinicalDocuments,
     canOpenClinicalDocuments,
+    showExamRequest,
+    canOpenExamRequest,
+    showImagingRequest,
+    canOpenImagingRequest,
+    showHistory,
+    canOpenHistory,
   });
 
   return (
     <>
-      {showDemographics ? (
+      {visibilityState.shouldRenderDemographics ? (
         <DemographicsModal
           key={`demographics-${demographicsBinding.targetBedId}-${showDemographics ? 'open' : 'closed'}-${data.patientName}-${data.rut}-${data.identityStatus || 'na'}`}
           isOpen={showDemographics}
@@ -54,7 +64,7 @@ export const PatientRowModals: React.FC<PatientRowModalsProps> = ({
         />
       ) : null}
 
-      {showExamRequest && (
+      {visibilityState.shouldRenderExamRequest && (
         <ExamRequestModal
           key={`exam-request-${bedId}-${showExamRequest}`}
           isOpen={showExamRequest}
@@ -63,7 +73,7 @@ export const PatientRowModals: React.FC<PatientRowModalsProps> = ({
         />
       )}
 
-      {showImagingRequest ? (
+      {visibilityState.shouldRenderImagingRequest ? (
         <ImagingRequestDialog
           isOpen={showImagingRequest}
           onClose={onCloseImagingRequest}
@@ -81,7 +91,7 @@ export const PatientRowModals: React.FC<PatientRowModalsProps> = ({
         />
       ) : null}
 
-      {showHistory ? (
+      {visibilityState.shouldRenderHistory ? (
         <PatientHistoryModal
           isOpen={showHistory}
           onClose={onCloseHistory}

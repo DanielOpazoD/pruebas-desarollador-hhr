@@ -76,8 +76,11 @@ export interface PatientRowModalsProps {
   showClinicalDocuments: boolean;
   canOpenClinicalDocuments: boolean;
   showExamRequest: boolean;
+  canOpenExamRequest: boolean;
   showImagingRequest: boolean;
+  canOpenImagingRequest: boolean;
   showHistory: boolean;
+  canOpenHistory: boolean;
   onCloseDemographics: () => void;
   onCloseClinicalDocuments: () => void;
   onCloseExamRequest: () => void;
