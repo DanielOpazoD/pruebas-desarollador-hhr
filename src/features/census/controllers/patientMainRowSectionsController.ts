@@ -1,10 +1,10 @@
-import type { PatientBedConfigProps } from '@/features/census/components/patient-row/PatientBedConfig';
 import type {
   PatientInputCellsProps,
+  PatientBedConfigProps,
   PatientMainRowViewProps,
+  PatientMainRowBedTypeCellProps,
+  PatientMainRowBlockedCellProps,
 } from '@/features/census/components/patient-row/patientRowViewContracts';
-import type { PatientMainRowBedTypeCellProps } from '@/features/census/components/patient-row/PatientMainRowBedTypeCell';
-import type { PatientMainRowBlockedCellProps } from '@/features/census/components/patient-row/PatientMainRowBlockedCell';
 import type { PatientActionSectionBinding } from '@/features/census/controllers/patientRowActionSectionBindingsController';
 
 export interface PatientMainRowSections {

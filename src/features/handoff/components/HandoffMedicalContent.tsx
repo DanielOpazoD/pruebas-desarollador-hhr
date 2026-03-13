@@ -2,6 +2,10 @@ import React from 'react';
 import type { BedDefinition, DailyRecord, Specialty } from '@/types';
 import type { MedicalHandoffScope } from '@/features/handoff/controllers';
 import type { HandoffMedicalActions } from './handoffRowContracts';
+import {
+  defaultBrowserWindowRuntime,
+  writeClipboardText,
+} from '@/shared/runtime/browserWindowRuntime';
 import { MedicalHandoffHeader } from './MedicalHandoffHeader';
 import { MedicalHandoffTabs } from './MedicalHandoffTabs';
 import {
@@ -78,15 +82,13 @@ export const HandoffMedicalContent: React.FC<HandoffMedicalContentProps> = ({
           type="button"
           onClick={async () => {
             const url = buildMedicalSpecialtyLink(
-              window.location.origin,
-              window.location.pathname,
+              defaultBrowserWindowRuntime.getLocationOrigin(),
+              defaultBrowserWindowRuntime.getLocationPathname(),
               record.date,
               selectedMedicalSpecialty
             );
-            if (navigator.clipboard?.writeText) {
-              await navigator.clipboard.writeText(url);
-              success('Link copiado', 'Comparte este enlace con el especialista autorizado.');
-            }
+            await writeClipboardText(url);
+            success('Link copiado', 'Comparte este enlace con el especialista autorizado.');
           }}
           className="rounded-lg bg-sky-100 px-3 py-1.5 text-xs font-bold text-sky-800 hover:bg-sky-200 transition-colors"
         >

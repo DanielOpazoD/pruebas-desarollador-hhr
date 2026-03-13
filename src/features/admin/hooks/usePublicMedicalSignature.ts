@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { DailyRecord } from '@/types';
-import type { MedicalHandoffScope } from '@/features/handoff/controllers';
+import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import {
   fetchPublicMedicalHandoffRecord,
   submitPublicMedicalHandoffSignature,

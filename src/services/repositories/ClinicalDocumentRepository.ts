@@ -3,18 +3,20 @@ import { getActiveHospitalId } from '@/constants/firestorePaths';
 import type {
   ClinicalDocumentPdfMeta,
   ClinicalDocumentRecord,
-} from '@/features/clinical-documents/domain/entities';
-import { buildClinicalDocumentRenderedText } from '@/features/clinical-documents/domain/factories';
-import { createHash } from '@/features/clinical-documents/utils/hash';
+} from '@/domain/clinical-documents/entities';
+import {
+  buildClinicalDocumentIntegrityHash,
+  buildClinicalDocumentRenderedText,
+} from '@/domain/clinical-documents/rendering';
 import {
   hydrateLegacyClinicalDocument,
   normalizeClinicalDocumentForPersistence,
-} from '@/features/clinical-documents/controllers/clinicalDocumentCompatibilityController';
+} from '@/domain/clinical-documents/compatibility';
 import {
   formatClinicalDocumentContractIssues,
   parseClinicalDocumentRecord,
   safeParseClinicalDocumentRecord,
-} from '@/features/clinical-documents/contracts/clinicalDocumentRuntimeContracts';
+} from '@/domain/clinical-documents/runtimeContracts';
 import { recordOperationalTelemetry } from '@/services/observability/operationalTelemetryService';
 
 const getClinicalDocumentsCollectionPath = (hospitalId: string = getActiveHospitalId()): string =>
@@ -64,7 +66,7 @@ const enrichRecord = (record: ClinicalDocumentRecord): ClinicalDocumentRecord =>
   return {
     ...hydrated,
     renderedText,
-    integrityHash: createHash(renderedText),
+    integrityHash: buildClinicalDocumentIntegrityHash(hydrated),
   };
 };
 

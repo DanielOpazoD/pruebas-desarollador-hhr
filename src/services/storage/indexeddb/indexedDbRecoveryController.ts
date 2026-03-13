@@ -18,3 +18,17 @@ export const recordIndexedDbFallbackMode = (errorName: string, errorMessage: str
     context: { errorName },
   });
 };
+
+export const recordIndexedDbRecoveryNotice = (
+  operation: string,
+  issue: string,
+  context?: Record<string, unknown>
+): void => {
+  recordOperationalTelemetry({
+    category: 'indexeddb',
+    status: 'degraded',
+    operation,
+    issues: [issue],
+    context,
+  });
+};

@@ -1,10 +1,11 @@
 {
   "features": {
-    "admin": ["handoff"],
+    "admin": ["clinical-documents", "handoff"],
     "analytics": [],
     "auth": ["games"],
     "backup": [],
-    "census": ["analytics"],
+    "census": ["analytics", "clinical-documents"],
+    "clinical-documents": [],
     "cudyr": [],
     "games": [],
     "handoff": ["cudyr"],

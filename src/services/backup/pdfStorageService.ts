@@ -23,6 +23,7 @@ import {
   isExpectedStorageLookupMiss,
   shouldLogStorageError,
   resolveStorageLookupStatus,
+  toStorageOperationalError,
 } from './storageErrorPolicy';
 import { isBackupDateValidationError, parseBackupDateParts } from './storageContracts';
 import { measureStorageOperation } from './storageObservability';
@@ -32,6 +33,10 @@ import {
   type StorageLookupResult,
   withStorageLookupTimeout,
 } from './storageLookupContracts';
+import {
+  recordOperationalErrorTelemetry,
+  recordOperationalTelemetry,
+} from '@/services/observability/operationalTelemetryService';
 
 // ============= Types =============
 
@@ -210,8 +215,18 @@ export const pdfExistsDetailed = async (
           );
         }
         if (shouldLogStorageError(error)) {
-          const storageError = error as { message?: string };
-          console.warn(`[PdfStorage] ❌ Error (possibly CORS):`, storageError.message || error);
+          recordOperationalErrorTelemetry(
+            'backup',
+            'pdf_exists_detailed',
+            error,
+            toStorageOperationalError(error, {
+              code: 'pdf_exists_lookup_failed',
+              message: `No fue posible verificar el PDF ${date}/${shiftType}.`,
+              context: { date, shiftType },
+              userSafeMessage: 'No fue posible verificar la disponibilidad del PDF.',
+            }),
+            { context: { date, shiftType } }
+          );
         }
         return createStorageLookupResult(false, resolveStorageLookupStatus(error));
       }
@@ -220,7 +235,14 @@ export const pdfExistsDetailed = async (
   );
 
   return withStorageLookupTimeout(checkPromise, TIMEOUT_MS, () => {
-    console.warn(`[PdfStorage] ⏱️ Timeout check for ${date}`);
+    recordOperationalTelemetry({
+      category: 'backup',
+      operation: 'pdf_exists_timeout',
+      status: 'degraded',
+      date,
+      issues: ['La verificacion del PDF excedio el tiempo esperado.'],
+      context: { shiftType },
+    });
   });
 };
 

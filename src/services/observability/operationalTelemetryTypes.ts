@@ -3,6 +3,7 @@ export type OperationalTelemetryCategory =
   | 'firestore'
   | 'sync'
   | 'indexeddb'
+  | 'integration'
   | 'export'
   | 'backup'
   | 'transfers'

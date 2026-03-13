@@ -12,8 +12,10 @@ import {
 } from './indexedDbRecoveryPolicy';
 import { createMockDatabase } from './indexedDbMockFactory';
 import { attachIndexedDbEvents } from './indexedDbBootstrap';
+import type { IndexedDbDatabaseLike } from './indexedDbContracts';
 import {
   recordIndexedDbFallbackMode,
+  recordIndexedDbRecoveryNotice,
   recordIndexedDbRecoveryFailure,
 } from './indexedDbRecoveryController';
 
@@ -75,14 +77,17 @@ const initializeDatabase = () => {
     db = new HangaRoaDatabase();
     attachDatabaseEvents(db);
   } catch (error) {
-    console.error('[IndexedDB] ❌ Failed to construct HangaRoaDatabase:', error);
-    db = createMockDatabase();
+    recordIndexedDbRecoveryFailure(error);
+    db = createMockDatabase() as unknown as HangaRoaDatabase;
     isUsingMock = true;
-    console.error('[IndexedDB] !!! USING MOCK DATABASE !!! Data will be lost on reload.');
+    recordIndexedDbFallbackMode(
+      'construct_failed',
+      'IndexedDB no pudo inicializarse y se activo el modo fallback local.'
+    );
   }
 };
 
-const assignMockTables = (mock: HangaRoaDatabase) => {
+const assignMockTables = (mock: IndexedDbDatabaseLike) => {
   db.dailyRecords = mock.dailyRecords;
   db.catalogs = mock.catalogs;
   db.errorLogs = mock.errorLogs;
@@ -103,14 +108,18 @@ const scheduleBackgroundRecoveryRetry = () => {
   ) {
     if (stickyFallbackMode && !stickyFallbackWarningShown) {
       stickyFallbackWarningShown = true;
-      console.warn(
-        '[IndexedDB] 🛑 Recovery disabled for this session after persistent backing-store failure. Using fallback mode.'
+      recordIndexedDbRecoveryNotice(
+        'indexeddb_recovery_disabled',
+        'La recuperacion de IndexedDB fue deshabilitada por esta sesion tras fallos persistentes.',
+        { stickyFallbackMode: true }
       );
       return;
     }
 
-    console.warn(
-      `[IndexedDB] 🛑 Stopped background recovery after ${MAX_BACKGROUND_RECOVERY_ATTEMPTS} attempts. Using fallback mode.`
+    recordIndexedDbRecoveryNotice(
+      'indexeddb_recovery_stopped',
+      'Se detuvo la recuperacion en segundo plano de IndexedDB.',
+      { attempts: MAX_BACKGROUND_RECOVERY_ATTEMPTS }
     );
     return;
   }
@@ -159,7 +168,7 @@ export const ensureDbReady = async (options: EnsureDbReadyOptions = {}): Promise
       attachDatabaseEvents(db);
       isUsingMock = false;
     } catch (error) {
-      console.error('[IndexedDB] ❌ Failed to reconstruct database during recovery:', error);
+      recordIndexedDbRecoveryFailure(error);
       isUsingMock = true;
       assignMockTables(createMockDatabase());
       return;
@@ -176,7 +185,11 @@ export const ensureDbReady = async (options: EnsureDbReadyOptions = {}): Promise
         typeof error === 'object' &&
         (error as { name?: string }).name === 'DatabaseClosedError'
       ) {
-        console.warn('[IndexedDB] 🔄 Detected DatabaseClosedError, attempting to re-open...');
+        recordIndexedDbRecoveryNotice(
+          'indexeddb_database_closed',
+          'Se detecto cierre inesperado de IndexedDB; se intentara reabrir.',
+          { errorName: 'DatabaseClosedError' }
+        );
       } else {
         return;
       }
@@ -191,7 +204,11 @@ export const ensureDbReady = async (options: EnsureDbReadyOptions = {}): Promise
       if (db.isOpen() || isUsingMock) return;
     }
     if (isOpening) {
-      console.warn('[IndexedDB] ⏳ Still opening after 5s, forcing fallback');
+      recordIndexedDbRecoveryNotice(
+        'indexeddb_open_stalled',
+        'La apertura de IndexedDB excedio el tiempo esperado; se activo fallback.',
+        { waitedMs: 5000 }
+      );
       isUsingMock = true;
       return;
     }
@@ -229,9 +246,13 @@ export const ensureDbReady = async (options: EnsureDbReadyOptions = {}): Promise
         ? String(error.message)
         : String(error);
 
-    console.warn(
-      '[IndexedDB] ⚠️ Initial open failed, attempting auto-recovery:',
-      errorName || errorMessage
+    recordIndexedDbRecoveryNotice(
+      'indexeddb_initial_open_failed',
+      'La apertura inicial de IndexedDB fallo; se intentara recuperacion automatica.',
+      {
+        errorName,
+        errorMessage,
+      }
     );
 
     if (errorName === 'UnknownError' || errorName === 'VersionError') {
@@ -257,13 +278,11 @@ export const ensureDbReady = async (options: EnsureDbReadyOptions = {}): Promise
         onDatabaseRecreated?.();
         return;
       } catch (recoveryError) {
-        console.error('[IndexedDB] ❌ Recovery failed:', recoveryError);
         recordIndexedDbRecoveryFailure(recoveryError);
         stickyFallbackMode = stickyFallbackMode || shouldUseStickyIndexedDbFallback(recoveryError);
       }
     }
 
-    console.error('[IndexedDB] 💨 Falling back to degraded local storage mode');
     recordIndexedDbFallbackMode(errorName, errorMessage || 'IndexedDB fallback activated');
     stickyFallbackMode = stickyFallbackMode || shouldUseStickyIndexedDbFallback(error);
     isUsingMock = true;

@@ -15,7 +15,7 @@ import {
   MovementType,
 } from '@/services/patient/patientHistoryService';
 import type { PatientData } from '@/types';
-import { ClinicalDocumentsPanel } from '@/features/clinical-documents';
+import type { ReactNode } from 'react';
 
 interface PatientHistoryModalProps {
   isOpen: boolean;
@@ -25,6 +25,7 @@ interface PatientHistoryModalProps {
   patient?: PatientData;
   currentDateString?: string;
   bedId?: string;
+  documentsPanel?: ReactNode;
 }
 
 // Movement type styling
@@ -77,6 +78,7 @@ export const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({
   patient,
   currentDateString,
   bedId,
+  documentsPanel,
 }) => {
   const [history, setHistory] = useState<PatientHistoryResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -180,11 +182,7 @@ export const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({
         )}
 
         {activeTab === 'documents' && patient && currentDateString && bedId ? (
-          <ClinicalDocumentsPanel
-            patient={patient}
-            currentDateString={currentDateString}
-            bedId={bedId}
-          />
+          documentsPanel
         ) : isLoading ? (
           <div className="flex flex-col items-center justify-center py-8 text-slate-400">
             <Loader2 size={24} className="animate-spin mb-2 text-blue-500" />

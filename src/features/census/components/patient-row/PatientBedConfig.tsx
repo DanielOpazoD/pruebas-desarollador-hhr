@@ -2,24 +2,10 @@ import React from 'react';
 import { BedDefinition, PatientData } from '@/types';
 import { Baby, Clock, Plus } from 'lucide-react';
 import clsx from 'clsx';
-import type { EventTextHandler } from './inputCellTypes';
-import type { PatientBedConfigCallbacks, RowMenuAlign } from './patientRowContracts';
 import { usePatientBedConfigController } from '@/features/census/components/patient-row/usePatientBedConfigController';
 import { PatientBedConfigMenuPanel } from '@/features/census/components/patient-row/PatientBedConfigMenuPanel';
 import { buildPatientBedConfigSections } from '@/features/census/controllers/patientBedConfigSectionsController';
-
-export interface PatientBedConfigProps extends PatientBedConfigCallbacks {
-  bed: BedDefinition;
-  data: PatientData;
-  currentDateString: string;
-  isBlocked: boolean;
-  hasCompanion: boolean;
-  hasClinicalCrib: boolean;
-  isCunaMode: boolean;
-  onTextChange: EventTextHandler;
-  readOnly?: boolean;
-  align?: RowMenuAlign;
-}
+import type { PatientBedConfigProps } from '@/features/census/components/patient-row/patientRowViewContracts';
 
 export const PatientBedConfig: React.FC<PatientBedConfigProps> = ({
   bed,

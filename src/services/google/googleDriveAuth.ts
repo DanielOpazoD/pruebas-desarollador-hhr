@@ -1,3 +1,5 @@
+import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
+
 interface TokenClient {
   requestAccessToken: () => void;
 }
@@ -108,8 +110,19 @@ export const requestAccessToken = async (): Promise<string> => {
         scope: DRIVE_SCOPES,
         callback: response => {
           if (response.error) {
-            console.error('[GoogleDrive] Auth error:', response.error);
-            reject(response.error);
+            reject(
+              recordOperationalErrorTelemetry(
+                'integration',
+                'google_drive_request_access_token',
+                response.error,
+                {
+                  code: 'google_drive_auth_failed',
+                  message: 'Google Drive auth returned an error.',
+                  severity: 'error',
+                  userSafeMessage: 'No fue posible autorizar Google Drive.',
+                }
+              )
+            );
             return;
           }
 
@@ -121,8 +134,14 @@ export const requestAccessToken = async (): Promise<string> => {
 
       client.requestAccessToken();
     } catch (error) {
-      console.error('[GoogleDrive] Failed to initialize token client:', error);
-      reject(error);
+      reject(
+        recordOperationalErrorTelemetry('integration', 'google_drive_init_token_client', error, {
+          code: 'google_drive_token_client_init_failed',
+          message: 'Failed to initialize Google Drive token client.',
+          severity: 'error',
+          userSafeMessage: 'No fue posible iniciar la autenticación de Google Drive.',
+        })
+      );
     }
   });
 };

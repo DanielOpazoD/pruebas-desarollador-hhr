@@ -7,8 +7,8 @@ import {
   buildMedicalEntryNoteFields,
   buildMedicalEntrySpecialtyFields,
   buildMedicalPrimaryNoteFields,
-  getPatientMedicalHandoffEntries,
-} from '@/features/handoff/controllers';
+} from '@/domain/handoff/patientEntryMutations';
+import { getPatientMedicalHandoffEntries } from '@/domain/handoff/patientEntries';
 
 type MedicalPatientFields = Pick<
   PatientData,

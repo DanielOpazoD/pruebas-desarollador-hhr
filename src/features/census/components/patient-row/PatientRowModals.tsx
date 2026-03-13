@@ -3,7 +3,7 @@ import { DemographicsModal } from '@/components/modals/DemographicsModal';
 import { ExamRequestModal } from '@/components/modals/ExamRequestModal';
 import { ImagingRequestDialog } from '@/components/modals/ImagingRequestDialog';
 import { PatientHistoryModal } from '@/components/modals/PatientHistoryModal';
-import { ClinicalDocumentsModal } from '@/features/clinical-documents';
+import { ClinicalDocumentsModal, ClinicalDocumentsPanel } from '@/features/clinical-documents';
 import { buildPatientRowModalRenderModel } from '@/features/census/controllers/patientRowModalRenderController';
 import type { PatientRowModalsProps } from '@/features/census/components/patient-row/patientRowViewContracts';
 
@@ -103,6 +103,13 @@ export const PatientRowModals: React.FC<PatientRowModalsProps> = ({
           patient={data}
           currentDateString={currentDateString}
           bedId={bedId}
+          documentsPanel={
+            <ClinicalDocumentsPanel
+              patient={data}
+              currentDateString={currentDateString}
+              bedId={bedId}
+            />
+          }
         />
       ) : null}
     </>

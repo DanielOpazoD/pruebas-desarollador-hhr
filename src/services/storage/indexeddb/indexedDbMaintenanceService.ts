@@ -1,4 +1,5 @@
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
+import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 
 const canUseWindow = (): boolean => typeof window !== 'undefined';
 
@@ -13,7 +14,12 @@ const clearIndexedDatabases = async (): Promise<void> => {
       }
     }
   } catch (error) {
-    console.error('Failed to clear IndexedDB databases:', error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_clear_databases', error, {
+      code: 'indexeddb_clear_databases_failed',
+      message: 'No fue posible limpiar las bases locales IndexedDB.',
+      severity: 'warning',
+      userSafeMessage: 'No fue posible limpiar las bases locales del navegador.',
+    });
   }
 };
 
@@ -31,7 +37,12 @@ const unregisterServiceWorkers = async (): Promise<void> => {
     const registrations = await navigator.serviceWorker.getRegistrations();
     await Promise.all(registrations.map(registration => registration.unregister()));
   } catch (error) {
-    console.error('Failed to unregister service workers:', error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_unregister_service_workers', error, {
+      code: 'indexeddb_unregister_service_workers_failed',
+      message: 'No fue posible desregistrar service workers locales.',
+      severity: 'warning',
+      userSafeMessage: 'No fue posible limpiar service workers del navegador.',
+    });
   }
 };
 

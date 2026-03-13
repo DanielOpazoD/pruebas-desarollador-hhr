@@ -1,5 +1,5 @@
 import type { MedicalHandoffActor, MedicalSpecialty } from '@/types';
-import type { MedicalHandoffScope } from '@/features/handoff/controllers';
+import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 
 export interface ConfirmMedicalSpecialtyNoChangesInput {
   specialty: MedicalSpecialty;

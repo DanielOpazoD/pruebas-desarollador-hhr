@@ -13,7 +13,7 @@ import {
   buildCreateTransferPayload,
   resolvePreviousTransferStatus,
 } from '@/hooks/controllers/transferManagementController';
-import { getLocalDateInputValue } from '@/features/transfers/utils/localDate';
+import { getLocalDateInputValue } from '@/utils/localDate';
 import {
   buildTransferCompletionTimestamp,
   getTransferActionErrorMessage,

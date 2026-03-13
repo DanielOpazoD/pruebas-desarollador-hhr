@@ -1,18 +1,6 @@
 import React from 'react';
 import { PatientActionMenu } from './PatientActionMenu';
-import type {
-  PatientActionMenuCallbacks,
-  PatientActionMenuIndicators,
-  RowMenuAlign,
-} from './patientRowContracts';
-
-export interface PatientMainRowActionCellProps
-  extends PatientActionMenuCallbacks, Required<PatientActionMenuIndicators> {
-  isBlocked: boolean;
-  readOnly: boolean;
-  align: RowMenuAlign;
-  showCmaAction?: boolean;
-}
+import type { PatientMainRowActionCellProps } from '@/features/census/components/patient-row/patientRowViewContracts';
 
 export const PatientMainRowActionCell: React.FC<PatientMainRowActionCellProps> = ({
   isBlocked,

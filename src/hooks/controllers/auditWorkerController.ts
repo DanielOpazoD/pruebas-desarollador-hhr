@@ -1,4 +1,4 @@
-import type { AuditWorkerResults } from '@/hooks/useAuditWorker';
+import type { AuditWorkerResults } from '@/hooks/controllers/auditWorkerContracts';
 
 export const buildInitialAuditWorkerResults = (): AuditWorkerResults => ({
   filteredLogs: [],

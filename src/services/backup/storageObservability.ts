@@ -1,3 +1,5 @@
+import { recordOperationalTelemetry } from '@/services/observability/operationalTelemetryService';
+
 type MetricLevel = 'warn' | 'silent';
 
 interface MeasureStorageOperationOptions {
@@ -21,8 +23,16 @@ const logMetric = (
   context?: string
 ): void => {
   if (level !== 'warn') return;
-  const message = `[StoragePerf] ${operation} took ${Math.round(elapsedMs)}ms${context ? ` (${context})` : ''}`;
-  console.warn(message);
+  recordOperationalTelemetry({
+    category: 'backup',
+    operation,
+    status: 'degraded',
+    issues: [`Operacion lenta de storage: ${Math.round(elapsedMs)}ms`],
+    context: {
+      elapsedMs: Math.round(elapsedMs),
+      storageContext: context,
+    },
+  });
 };
 
 export const measureStorageOperation = async <T>(

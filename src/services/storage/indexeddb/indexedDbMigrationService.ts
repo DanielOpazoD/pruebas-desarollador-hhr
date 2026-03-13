@@ -1,6 +1,7 @@
 import { DailyRecord } from '@/types';
 import { AuditLogEntry } from '@/types/audit';
 import { safeJsonParse } from '@/utils/jsonUtils';
+import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 
 import { ensureDbReady, hospitalDB as db, registerDatabaseRecreatedHandler } from './indexedDbCore';
 import { saveCatalog } from './indexedDbCatalogService';
@@ -68,7 +69,12 @@ export const migrateFromLocalStorage = async (): Promise<boolean> => {
     localStorage.setItem(MIGRATION_FLAG, 'true');
     return true;
   } catch (error) {
-    console.error('❌ Migration failed:', error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_migrate_from_local_storage', error, {
+      code: 'indexeddb_local_storage_migration_failed',
+      message: 'No fue posible migrar datos legacy desde localStorage a IndexedDB.',
+      severity: 'warning',
+      userSafeMessage: 'No fue posible completar la migracion local de datos.',
+    });
     return false;
   }
 };

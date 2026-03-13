@@ -21,8 +21,13 @@ import {
   isExpectedStorageLookupMiss,
   shouldLogStorageError,
   classifyStorageError,
+  toStorageOperationalError,
 } from '@/services/backup/storageErrorPolicy';
 import { measureStorageOperation } from '@/services/backup/storageObservability';
+import {
+  recordOperationalErrorTelemetry,
+  recordOperationalTelemetry,
+} from '@/services/observability/operationalTelemetryService';
 
 // ============= Types =============
 
@@ -141,7 +146,18 @@ export const createListYears = (storageRoot: string) => {
         return [];
       }
       if (shouldLogStorageError(error)) {
-        console.warn(`[BaseStorage] Error listing years for ${storageRoot}:`, error);
+        recordOperationalErrorTelemetry(
+          'backup',
+          'list_storage_years',
+          error,
+          toStorageOperationalError(error, {
+            code: 'backup_list_years_failed',
+            message: `No fue posible listar años de respaldo para ${storageRoot}.`,
+            context: { storageRoot },
+            userSafeMessage: 'No fue posible listar años disponibles del respaldo.',
+          }),
+          { context: { storageRoot } }
+        );
       }
       return [];
     }
@@ -182,7 +198,18 @@ export const createListMonths = (storageRoot: string) => {
         return [];
       }
       if (shouldLogStorageError(error)) {
-        console.warn(`[BaseStorage] Error listing months for ${storageRoot}/${year}:`, error);
+        recordOperationalErrorTelemetry(
+          'backup',
+          'list_storage_months',
+          error,
+          toStorageOperationalError(error, {
+            code: 'backup_list_months_failed',
+            message: `No fue posible listar meses de respaldo para ${storageRoot}/${year}.`,
+            context: { storageRoot, year },
+            userSafeMessage: 'No fue posible listar meses disponibles del respaldo.',
+          }),
+          { context: { storageRoot, year } }
+        );
       }
       return [];
     }
@@ -228,7 +255,13 @@ export const createListFilesInMonthWithReport = <
       const timeoutPromise = new Promise<StorageListResult<T>>(resolve =>
         setTimeout(() => {
           report.timedOut = true;
-          console.warn(`[BaseStorage] ⏱️ Timeout reached for ${fullStoragePath}`);
+          recordOperationalTelemetry({
+            category: 'backup',
+            operation: 'list_storage_files_timeout',
+            status: 'degraded',
+            issues: ['La consulta de respaldo excedio el tiempo esperado.'],
+            context: { fullStoragePath },
+          });
           resolve({ files: [], report: { ...report } });
         }, DEFAULT_FILES_TIMEOUT_MS)
       );
@@ -260,7 +293,13 @@ export const createListFilesInMonthWithReport = <
                 }
 
                 report.skippedUnparsed += 1;
-                console.warn(`[BaseStorage] ⚠️ File skipped (failed parsing): ${item.fullPath}`);
+                recordOperationalTelemetry({
+                  category: 'backup',
+                  operation: 'list_storage_file_unparsed',
+                  status: 'degraded',
+                  issues: ['Se omitio un archivo de respaldo por formato no reconocido.'],
+                  context: { fullStoragePath, filePath: item.fullPath },
+                });
                 return null;
               } catch (error: unknown) {
                 const category = classifyStorageError(error);
@@ -274,7 +313,18 @@ export const createListFilesInMonthWithReport = <
                 }
                 report.skippedUnknown += 1;
                 if (shouldLogStorageError(error)) {
-                  console.error(`[BaseStorage] ‼️ Error getting file info: ${item.name}`, error);
+                  recordOperationalErrorTelemetry(
+                    'backup',
+                    'get_storage_file_info',
+                    error,
+                    toStorageOperationalError(error, {
+                      code: 'backup_get_file_info_failed',
+                      message: `No fue posible leer el archivo ${item.name}.`,
+                      context: { fullStoragePath, fileName: item.name },
+                      userSafeMessage: 'No fue posible leer uno de los archivos del respaldo.',
+                    }),
+                    { context: { fullStoragePath, fileName: item.name } }
+                  );
                 }
                 return null;
               }
@@ -296,7 +346,18 @@ export const createListFilesInMonthWithReport = <
         return { files: [], report };
       }
       if (shouldLogStorageError(error)) {
-        console.warn(`[BaseStorage] Error listing files for ${fullStoragePath}:`, error);
+        recordOperationalErrorTelemetry(
+          'backup',
+          'list_storage_files',
+          error,
+          toStorageOperationalError(error, {
+            code: 'backup_list_files_failed',
+            message: `No fue posible listar archivos para ${fullStoragePath}.`,
+            context: { fullStoragePath },
+            userSafeMessage: 'No fue posible listar archivos del respaldo.',
+          }),
+          { context: { fullStoragePath } }
+        );
       }
       report.skippedUnknown += 1;
       return { files: [], report };

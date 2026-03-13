@@ -9,8 +9,8 @@ import {
   resolveMedicalHandoffScope,
   resolveScopedMedicalHandoffSentAt,
   resolveScopedMedicalSignature,
-  type MedicalHandoffScope,
 } from './medicalHandoffScopeController';
+import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 
 interface ResolveHandoffScreenStateInput {
   visibleBeds: BedDefinition[];

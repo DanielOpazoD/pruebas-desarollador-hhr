@@ -26,6 +26,7 @@ import {
 import { db, auth } from '@/firebaseConfig';
 import { BackupFile, BackupFilePreview, BackupFilters, BackupFileType } from '@/types/backup';
 import { COLLECTIONS, getActiveHospitalId } from '@/constants/firestorePaths';
+import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 
 // ============= Collection Reference =============
 
@@ -150,7 +151,13 @@ export const checkBackupExists = async (
     const docSnap = await getDoc(docRef);
     return docSnap.exists();
   } catch (error) {
-    console.error('Error checking backup existence:', error);
+    recordOperationalErrorTelemetry('backup', 'check_backup_exists', error, {
+      code: 'backup_exists_check_failed',
+      message: 'No fue posible verificar si existe el respaldo solicitado.',
+      severity: 'warning',
+      userSafeMessage: 'No fue posible verificar la disponibilidad del respaldo.',
+      context: { date, shiftType },
+    });
     return false;
   }
 };
@@ -173,7 +180,13 @@ export const getBackupByDateShift = async (
 
     return docToBackupFile(docSnap);
   } catch (error) {
-    console.error('Error fetching backup by date/shift:', error);
+    recordOperationalErrorTelemetry('backup', 'get_backup_by_date_shift', error, {
+      code: 'backup_fetch_by_shift_failed',
+      message: 'No fue posible recuperar el respaldo por fecha y turno.',
+      severity: 'warning',
+      userSafeMessage: 'No fue posible recuperar el respaldo solicitado.',
+      context: { date, shiftType },
+    });
     return null;
   }
 };
@@ -192,7 +205,13 @@ export const getBackupFile = async (id: string): Promise<BackupFile | null> => {
 
     return docToBackupFile(docSnap);
   } catch (error) {
-    console.error('Error fetching backup file:', error);
+    recordOperationalErrorTelemetry('backup', 'get_backup_file', error, {
+      code: 'backup_fetch_file_failed',
+      message: 'No fue posible recuperar el archivo de respaldo.',
+      severity: 'warning',
+      userSafeMessage: 'No fue posible recuperar el archivo de respaldo.',
+      context: { id },
+    });
     return null;
   }
 };
@@ -232,7 +251,13 @@ export const listBackupFiles = async (
 
     return files;
   } catch (error) {
-    console.error('Error listing backup files:', error);
+    recordOperationalErrorTelemetry('backup', 'list_backup_files', error, {
+      code: 'backup_list_files_failed',
+      message: 'No fue posible listar archivos de respaldo.',
+      severity: 'warning',
+      userSafeMessage: 'No fue posible listar los respaldos disponibles.',
+      context: { maxResults, hasFilters: Boolean(filters) },
+    });
     return [];
   }
 };

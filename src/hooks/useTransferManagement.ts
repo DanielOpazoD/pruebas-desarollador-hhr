@@ -17,7 +17,7 @@ import {
   filterVisibleTransfers,
 } from '@/hooks/controllers/transferManagementController';
 import { useTransferManagementActions } from '@/hooks/useTransferManagementActions';
-import { useTransferSubscriptions } from '@/features/transfers/hooks/useTransferSubscriptions';
+import { useTransferSubscriptions } from '@/hooks/useTransferSubscriptions';
 
 interface UseTransferManagementReturn {
   // State

@@ -1,9 +1,6 @@
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
-
-export interface PatientMainRowBlockedCellProps {
-  blockedReason?: string;
-}
+import type { PatientMainRowBlockedCellProps } from '@/features/census/components/patient-row/patientRowViewContracts';
 
 export const PatientMainRowBlockedCell: React.FC<PatientMainRowBlockedCellProps> = ({
   blockedReason,

@@ -13,6 +13,7 @@ import {
   buildSyncQueueDomainMetrics,
   type SyncQueueDomainMetrics,
 } from '@/services/storage/sync/syncDomainPolicy';
+import type { SyncQueueTelemetry } from '@/services/storage/sync/syncQueueTelemetryContracts';
 import {
   resolveSyncQueueFailureDecision,
   buildSyncQueueTaskContextMeta,
@@ -21,15 +22,6 @@ import {
   buildSyncQueueTelemetryFromRows,
   recordSyncQueueDecisionTelemetry,
 } from '@/services/storage/sync/syncQueueTelemetryController';
-
-export interface SyncQueueTelemetry {
-  pending: number;
-  failed: number;
-  conflict: number;
-  retrying: number;
-  oldestPendingAgeMs: number;
-  batchSize: number;
-}
 
 export interface SyncQueueOperationSnapshot {
   id?: number;
@@ -285,3 +277,4 @@ export const createSyncQueueEngine = ({
 };
 
 export type { SyncQueueDomainMetrics } from '@/services/storage/sync/syncDomainPolicy';
+export type { SyncQueueTelemetry } from '@/services/storage/sync/syncQueueTelemetryContracts';

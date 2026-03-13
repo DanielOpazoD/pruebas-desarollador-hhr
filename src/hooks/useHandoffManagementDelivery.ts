@@ -1,12 +1,12 @@
 import { useCallback } from 'react';
 import type { RefObject } from 'react';
 import type { DailyRecord, DailyRecordPatch } from '@/types';
-import type { MedicalHandoffScope } from '@/features/handoff/controllers';
+import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import {
   buildMedicalHandoffSignatureLink,
   resolveScopedMedicalSignatureToken,
-} from '@/features/handoff/controllers';
-import { buildMedicalSentPatch } from '@/features/handoff/controllers/handoffManagementController';
+} from '@/domain/handoff/scope';
+import { buildMedicalSentPatch } from '@/domain/handoff/management';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 import { executeSendMedicalHandoff } from '@/application/handoff/sendMedicalHandoffUseCase';
 import { defaultDailyRecordReadPort } from '@/application/ports/dailyRecordPort';

@@ -1,7 +1,10 @@
 /**
  * Sync queue task contracts shared by storage services.
  */
-import type { SyncDomainContext, SyncTaskOrigin } from '@/services/storage/sync/syncDomainPolicy';
+import type {
+  SyncDomainContext,
+  SyncTaskOrigin,
+} from '@/services/storage/sync/syncDomainContracts';
 
 export interface SyncTask {
   id?: number;

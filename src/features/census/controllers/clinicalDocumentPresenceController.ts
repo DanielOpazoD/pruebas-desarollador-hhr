@@ -29,12 +29,10 @@ export const buildBedEpisodeBindings = (occupiedRows: OccupiedBedRow[]): BedEpis
     });
 
 export const buildActiveClinicalDocumentEpisodeKeys = (
-  documents: ClinicalDocumentPresenceRecord[] | undefined
+  records: ClinicalDocumentPresenceRecord[] | undefined
 ): Set<string> =>
   new Set(
-    (documents || [])
-      .filter(document => document.status !== 'archived')
-      .map(document => document.episodeKey)
+    (records || []).filter(record => record.status !== 'archived').map(record => record.episodeKey)
   );
 
 export const buildClinicalDocumentPresenceByBed = (

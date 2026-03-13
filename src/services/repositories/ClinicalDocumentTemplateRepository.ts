@@ -1,12 +1,12 @@
 import { db } from '@/services/infrastructure/db';
 import { getActiveHospitalId } from '@/constants/firestorePaths';
-import type { ClinicalDocumentTemplate } from '@/features/clinical-documents/domain/entities';
-import { CLINICAL_DOCUMENT_TEMPLATES } from '@/features/clinical-documents/domain/rules';
+import type { ClinicalDocumentTemplate } from '@/domain/clinical-documents/entities';
+import { CLINICAL_DOCUMENT_TEMPLATES } from '@/domain/clinical-documents/rules';
 import {
   formatClinicalDocumentContractIssues,
   parseClinicalDocumentTemplate,
   safeParseClinicalDocumentTemplate,
-} from '@/features/clinical-documents/contracts/clinicalDocumentRuntimeContracts';
+} from '@/domain/clinical-documents/runtimeContracts';
 import { recordOperationalTelemetry } from '@/services/observability/operationalTelemetryService';
 
 const getClinicalDocumentTemplatesCollectionPath = (

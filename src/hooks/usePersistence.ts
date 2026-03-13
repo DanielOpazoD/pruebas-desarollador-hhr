@@ -10,7 +10,7 @@ import { useAuditContext } from '@/context/AuditContext';
 import {
   buildCopyUnlockDescription,
   resolveCreateDayCopyAvailability,
-} from '@/features/census/controllers/censusCreateDayAvailabilityController';
+} from '@/hooks/controllers/createDayCopyAvailabilityController';
 import {
   defaultDailyRecordReadPort,
   defaultDailyRecordWritePort,

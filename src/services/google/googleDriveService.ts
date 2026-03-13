@@ -5,6 +5,7 @@
 
 export { requestAccessToken } from './googleDriveAuth';
 import { requestAccessToken } from './googleDriveAuth';
+import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 import {
   buildMultipartBody,
   createMultipartHeaders,
@@ -37,7 +38,13 @@ export const uploadToDrive = async (blob: Blob, fileName: string): Promise<Drive
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('[GoogleDrive] Upload failed:', errorData);
+      recordOperationalErrorTelemetry('integration', 'google_drive_upload_file', errorData, {
+        code: 'google_drive_upload_failed',
+        message: 'Google Drive upload failed.',
+        severity: 'error',
+        context: { fileName },
+        userSafeMessage: 'No se pudo subir el archivo a Google Drive.',
+      });
       throw new Error(
         `Error en subida a Google Drive: ${errorData.error?.message || response.statusText}`
       );
@@ -45,7 +52,13 @@ export const uploadToDrive = async (blob: Blob, fileName: string): Promise<Drive
 
     return parseDriveUploadResult(response);
   } catch (error) {
-    console.error('[GoogleDrive] Error in uploadToDrive:', error);
+    recordOperationalErrorTelemetry('integration', 'google_drive_upload_to_drive', error, {
+      code: 'google_drive_upload_to_drive_failed',
+      message: 'Error in uploadToDrive.',
+      severity: 'error',
+      context: { fileName },
+      userSafeMessage: 'No fue posible completar la subida a Google Drive.',
+    });
     throw error;
   }
 };
@@ -73,10 +86,27 @@ export const makeFilePubliclyEditable = async (fileId: string): Promise<void> =>
     );
 
     if (!response.ok) {
-      console.warn('[GoogleDrive] Could not set public permissions');
+      recordOperationalErrorTelemetry(
+        'integration',
+        'google_drive_make_public_permissions',
+        response.statusText,
+        {
+          code: 'google_drive_permission_request_failed',
+          message: 'Google Drive permission request failed.',
+          severity: 'warning',
+          context: { fileId, status: response.status },
+          userSafeMessage: 'No se pudieron aplicar permisos públicos en Google Drive.',
+        }
+      );
     }
   } catch (error) {
-    console.warn('[GoogleDrive] Permission error skipped:', error);
+    recordOperationalErrorTelemetry('integration', 'google_drive_make_public_permissions', error, {
+      code: 'google_drive_permission_error',
+      message: 'Google Drive permission flow failed.',
+      severity: 'warning',
+      context: { fileId },
+      userSafeMessage: 'Se omitió la actualización de permisos de Google Drive.',
+    });
   }
 };
 

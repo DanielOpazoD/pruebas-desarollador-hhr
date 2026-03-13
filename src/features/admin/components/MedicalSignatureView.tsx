@@ -4,10 +4,7 @@ import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRunti
 import { HandoffView } from '@/features/handoff';
 import { DailyRecordProvider } from '@/context/DailyRecordContext';
 import { StaffContextProvider, type StaffContextType } from '@/context/StaffContext';
-import {
-  resolveMedicalHandoffScope,
-  resolveScopedMedicalSignature,
-} from '@/features/handoff/controllers';
+import { resolveMedicalHandoffScope, resolveScopedMedicalSignature } from '@/features/handoff';
 import { createPublicMedicalSignatureContextValue } from '@/features/admin/controllers/publicMedicalSignatureContextController';
 import { usePublicMedicalSignature } from '@/features/admin/hooks/usePublicMedicalSignature';
 

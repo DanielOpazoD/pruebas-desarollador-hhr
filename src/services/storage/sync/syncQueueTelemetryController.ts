@@ -1,5 +1,5 @@
 import type { SyncTask } from '@/services/storage/syncQueueTypes';
-import type { SyncQueueTelemetry } from '@/services/storage/sync/syncQueueEngine';
+import type { SyncQueueTelemetry } from '@/services/storage/sync/syncQueueTelemetryContracts';
 import { recordOperationalTelemetry } from '@/services/observability/operationalTelemetryService';
 
 export interface SyncQueueTelemetrySnapshot extends SyncQueueTelemetry {

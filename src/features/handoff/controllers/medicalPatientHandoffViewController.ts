@@ -1,5 +1,5 @@
 import type { BedDefinition, DailyRecord, Specialty } from '@/types';
-import type { MedicalHandoffScope } from './medicalHandoffScopeController';
+import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 
 export const resolveInitialMedicalSpecialtyFromSearch = (
   search: string | undefined

@@ -1,11 +1,11 @@
 import type { DailyRecord, MedicalHandoffActor, MedicalSpecialty } from '@/types';
-import type { MedicalHandoffScope } from '@/features/handoff/controllers';
+import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import { getAttributedAuthors } from '@/services/admin/attributionService';
 import {
   buildMedicalNoChangesRecord,
   buildMedicalSpecialtyNoteRecord,
   normalizeMedicalHandoffActor,
-} from '@/features/handoff/controllers/handoffManagementController';
+} from '@/domain/handoff/management';
 import type { ConfirmMedicalSpecialtyNoChangesInput } from '@/hooks/handoffManagementTypes';
 
 type HandoffShift = 'day' | 'night' | 'medical';

@@ -1,18 +1,8 @@
 import type { SyncTask } from '@/services/storage/syncQueueTypes';
-
-export type SyncDomainContext =
-  | 'clinical'
-  | 'staffing'
-  | 'movements'
-  | 'handoff'
-  | 'metadata'
-  | 'unknown';
-
-export type SyncTaskOrigin =
-  | 'direct_queue'
-  | 'full_save_retry'
-  | 'partial_update_retry'
-  | 'conflict_auto_merge';
+import type {
+  SyncDomainContext,
+  SyncTaskOrigin,
+} from '@/services/storage/sync/syncDomainContracts';
 
 export interface SyncDomainRetryProfile {
   id:

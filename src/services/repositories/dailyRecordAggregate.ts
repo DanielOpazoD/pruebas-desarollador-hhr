@@ -1,5 +1,5 @@
 import type { DailyRecord, PatientData } from '@/types';
-import { buildMedicalHandoffSummary } from '@/features/handoff/controllers';
+import { buildMedicalHandoffSummary } from '@/domain/handoff/specialty';
 import {
   resolveDayShiftNurses,
   resolveNightShiftNurses,

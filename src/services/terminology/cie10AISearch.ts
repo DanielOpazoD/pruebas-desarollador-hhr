@@ -9,6 +9,7 @@
 import { CIE10Entry } from './cie10SpanishDatabase';
 import { aiRequestManager } from '../ai/aiRequestManager';
 import { GoogleGenAI } from '@google/genai';
+import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 
 let aiAvailabilityChecked = false;
 let aiIsAvailable = false;
@@ -125,7 +126,13 @@ async function searchWithLocalDevAPI(query: string, signal?: AbortSignal): Promi
 
     return parseAIResults(response.text || '');
   } catch (error) {
-    console.error('[CIE10 AI] Local dev fallback failed:', error);
+    recordOperationalErrorTelemetry('integration', 'cie10_ai_local_fallback', error, {
+      code: 'cie10_ai_local_fallback_failed',
+      message: 'Fallo el fallback local de IA para CIE-10.',
+      severity: 'warning',
+      userSafeMessage: 'La busqueda IA local no esta disponible en este momento.',
+      context: { devMode: import.meta.env.DEV },
+    });
     return [];
   }
 }

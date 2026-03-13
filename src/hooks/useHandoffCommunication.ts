@@ -8,7 +8,7 @@ import {
   defaultBrowserWindowRuntime,
   writeClipboardText,
 } from '@/shared/runtime/browserWindowRuntime';
-import { type MedicalHandoffScope } from '@/features/handoff/controllers';
+import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 
 /**
  * useHandoffCommunication Hook

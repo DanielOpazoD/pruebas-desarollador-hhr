@@ -16,6 +16,7 @@ import {
   isExpectedStorageLookupMiss,
   shouldLogStorageError,
   resolveStorageLookupStatus,
+  toStorageOperationalError,
 } from './storageErrorPolicy';
 import { isBackupDateValidationError, parseBackupDateParts } from './storageContracts';
 import { measureStorageOperation } from './storageObservability';
@@ -25,6 +26,10 @@ import {
   type StorageLookupResult,
   withStorageLookupTimeout,
 } from './storageLookupContracts';
+import {
+  recordOperationalErrorTelemetry,
+  recordOperationalTelemetry,
+} from '@/services/observability/operationalTelemetryService';
 
 // ============= Types =============
 
@@ -121,7 +126,18 @@ export const checkCensusExistsDetailed = async (date: string): Promise<StorageLo
           );
         }
         if (shouldLogStorageError(error)) {
-          console.warn('[CensusStorage] Error checking file existence:', error);
+          recordOperationalErrorTelemetry(
+            'backup',
+            'census_exists_detailed',
+            error,
+            toStorageOperationalError(error, {
+              code: 'census_exists_lookup_failed',
+              message: `No fue posible verificar el censo ${date}.`,
+              context: { date },
+              userSafeMessage: 'No fue posible verificar la disponibilidad del censo.',
+            }),
+            { context: { date } }
+          );
         }
         return createStorageLookupResult(false, resolveStorageLookupStatus(error));
       }
@@ -129,7 +145,15 @@ export const checkCensusExistsDetailed = async (date: string): Promise<StorageLo
     { context: date }
   );
 
-  return withStorageLookupTimeout(checkPromise, TIMEOUT_MS);
+  return withStorageLookupTimeout(checkPromise, TIMEOUT_MS, () => {
+    recordOperationalTelemetry({
+      category: 'backup',
+      operation: 'census_exists_timeout',
+      status: 'degraded',
+      date,
+      issues: ['La verificacion del censo excedio el tiempo esperado.'],
+    });
+  });
 };
 
 /**

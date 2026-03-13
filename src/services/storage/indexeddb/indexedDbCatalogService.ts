@@ -1,5 +1,6 @@
 import { ensureDbReady, hospitalDB as db } from './indexedDbCore';
 import { CatalogRecord } from './indexedDbCatalogContracts';
+import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 
 export const getCatalogValues = async <T = string>(catalogId: string): Promise<T[]> => {
   try {
@@ -7,7 +8,13 @@ export const getCatalogValues = async <T = string>(catalogId: string): Promise<T
     const catalog = (await db.catalogs.get(catalogId)) as CatalogRecord<T> | undefined;
     return catalog?.list || [];
   } catch (error) {
-    console.error(`Failed to get catalog ${catalogId}:`, error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_get_catalog', error, {
+      code: 'indexeddb_get_catalog_failed',
+      message: `No fue posible recuperar el catalogo ${catalogId}.`,
+      severity: 'warning',
+      userSafeMessage: 'No fue posible recuperar un catalogo local.',
+      context: { catalogId },
+    });
     return [];
   }
 };
@@ -25,7 +32,13 @@ export const saveCatalogValues = async <T = string>(
     };
     await db.catalogs.put(payload);
   } catch (error) {
-    console.error(`Failed to save catalog ${catalogId}:`, error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_save_catalog', error, {
+      code: 'indexeddb_save_catalog_failed',
+      message: `No fue posible guardar el catalogo ${catalogId}.`,
+      severity: 'warning',
+      userSafeMessage: 'No fue posible guardar un catalogo local.',
+      context: { catalogId, itemCount: list.length },
+    });
   }
 };
 
@@ -34,7 +47,13 @@ export const clearCatalog = async (catalogId: string): Promise<void> => {
     await ensureDbReady();
     await db.catalogs.delete(catalogId);
   } catch (error) {
-    console.error(`Failed to clear catalog ${catalogId}:`, error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_clear_catalog', error, {
+      code: 'indexeddb_clear_catalog_failed',
+      message: `No fue posible limpiar el catalogo ${catalogId}.`,
+      severity: 'warning',
+      userSafeMessage: 'No fue posible limpiar un catalogo local.',
+      context: { catalogId },
+    });
   }
 };
 

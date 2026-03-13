@@ -1,4 +1,5 @@
 import { localPersistence } from '@/services/storage/localpersistence/localPersistenceService';
+import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 
 import { ensureDbReady, hospitalDB as db, isDatabaseInFallbackMode } from './indexedDbCore';
 
@@ -11,7 +12,13 @@ export const saveSetting = async (id: string, value: unknown): Promise<void> => 
     }
     await db.settings.put({ id, value });
   } catch (error) {
-    console.error(`[IndexedDB] Failed to save setting ${id}:`, error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_save_setting', error, {
+      code: 'indexeddb_save_setting_failed',
+      message: `No fue posible guardar la configuracion ${id}.`,
+      severity: 'warning',
+      userSafeMessage: 'No fue posible guardar una configuracion local.',
+      context: { settingId: id },
+    });
   }
 };
 
@@ -31,7 +38,13 @@ export const getSetting = async <T>(id: string, defaultValue: T): Promise<T> => 
       typeof error === 'object' &&
       (error as { name?: string }).name !== 'DatabaseClosedError'
     ) {
-      console.error(`[IndexedDB] Failed to get setting ${id}:`, error);
+      recordOperationalErrorTelemetry('indexeddb', 'indexeddb_get_setting', error, {
+        code: 'indexeddb_get_setting_failed',
+        message: `No fue posible obtener la configuracion ${id}.`,
+        severity: 'warning',
+        userSafeMessage: 'No fue posible recuperar una configuracion local.',
+        context: { settingId: id },
+      });
     }
     return defaultValue;
   }
@@ -46,6 +59,11 @@ export const clearAllSettings = async (): Promise<void> => {
     }
     await db.settings.clear();
   } catch (error) {
-    console.error('[IndexedDB] Failed to clear all settings:', error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_clear_all_settings', error, {
+      code: 'indexeddb_clear_all_settings_failed',
+      message: 'No fue posible limpiar las configuraciones locales.',
+      severity: 'warning',
+      userSafeMessage: 'No fue posible limpiar las configuraciones locales.',
+    });
   }
 };

@@ -4,6 +4,7 @@ import type { PatientRowAction } from '@/features/census/types/patientRowActionT
 import type { BedDefinition, BedType, PatientData, UserRole } from '@/types';
 import type {
   ClinicalCribInputChangeHandlers,
+  EventTextHandler,
   MainPatientInputChangeHandlers,
   PatientInputChangeHandlers,
 } from '@/features/census/components/patient-row/inputCellTypes';
@@ -24,6 +25,40 @@ export interface PatientInputCellsProps {
   onDemo: () => void;
   readOnly?: boolean;
   diagnosisMode?: DiagnosisMode;
+}
+
+export interface PatientBedConfigProps extends PatientBedConfigCallbacks {
+  bed: BedDefinition;
+  data: PatientData;
+  currentDateString: string;
+  isBlocked: boolean;
+  hasCompanion: boolean;
+  hasClinicalCrib: boolean;
+  isCunaMode: boolean;
+  onTextChange: EventTextHandler;
+  readOnly?: boolean;
+  align?: RowMenuAlign;
+}
+
+export interface PatientMainRowBedTypeCellProps {
+  bedId: string;
+  patientRut?: string | null;
+  bedType: BedType;
+  hasPatient: boolean;
+  canToggleBedType: boolean;
+  onToggleBedType: () => void;
+}
+
+export interface PatientMainRowBlockedCellProps {
+  blockedReason?: string;
+}
+
+export interface PatientMainRowActionCellProps
+  extends PatientActionMenuCallbacks, Required<PatientActionMenuIndicators> {
+  isBlocked: boolean;
+  readOnly: boolean;
+  align: RowMenuAlign;
+  showCmaAction?: boolean;
 }
 
 export interface PatientMainRowViewProps

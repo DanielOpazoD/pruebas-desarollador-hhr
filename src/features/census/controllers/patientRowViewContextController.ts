@@ -1,21 +1,26 @@
 import type { PatientActionMenuIndicators } from '@/features/census/components/patient-row/patientRowContracts';
-import type { BuildPatientRowBindingsParams } from '@/features/census/controllers/patientRowBindingsController';
 import type { PatientRowViewContext } from '@/features/census/controllers/patientRowBindingSectionsController';
 import { resolvePatientRowCapabilities } from '@/features/census/controllers/patientRowCapabilitiesController';
 import {
   EMPTY_PATIENT_ROW_INDICATORS,
   resolvePatientRowIndicators,
 } from '@/features/census/controllers/patientRowIndicatorsController';
+import type { PatientData, UserRole } from '@/types';
+import type { PatientRowRuntime } from '@/features/census/components/patient-row/patientRowRuntimeContracts';
+
+interface PatientRowViewContextInput {
+  role?: UserRole;
+  data: PatientData;
+  runtime: PatientRowRuntime;
+  indicators?: PatientActionMenuIndicators;
+}
 
 export const resolvePatientRowViewContext = ({
   role,
   data,
   runtime,
   indicators,
-}: Pick<
-  BuildPatientRowBindingsParams,
-  'role' | 'data' | 'runtime' | 'indicators'
->): PatientRowViewContext => {
+}: PatientRowViewContextInput): PatientRowViewContext => {
   const capabilities = resolvePatientRowCapabilities({
     role,
     patient: data,
@@ -36,7 +41,7 @@ export const buildPatientRowModalViewContext = ({
   role,
   data,
   runtime,
-}: Pick<BuildPatientRowBindingsParams, 'role' | 'data' | 'runtime'>): PatientRowViewContext => ({
+}: Pick<PatientRowViewContextInput, 'role' | 'data' | 'runtime'>): PatientRowViewContext => ({
   capabilities: resolvePatientRowViewContext({
     role,
     data,

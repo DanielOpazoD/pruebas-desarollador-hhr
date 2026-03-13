@@ -1,4 +1,5 @@
 import { db } from '@/services/infrastructure/db';
+import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EMAIL_RECIPIENT_LISTS_COLLECTION = 'emailRecipientLists';
@@ -115,7 +116,13 @@ export const getGlobalEmailRecipientList = async (
     );
     return normalizeGlobalEmailRecipientList(listId, raw);
   } catch (error) {
-    console.error('[EmailRecipientListService] Failed to fetch global recipient list:', error);
+    recordOperationalErrorTelemetry('integration', 'get_global_email_recipient_list', error, {
+      code: 'email_recipient_list_fetch_failed',
+      message: 'Failed to fetch global recipient list.',
+      severity: 'error',
+      context: { listId },
+      userSafeMessage: 'No se pudo cargar la lista global de destinatarios.',
+    });
     return null;
   }
 };
@@ -134,7 +141,12 @@ export const getGlobalEmailRecipientLists = async (): Promise<GlobalEmailRecipie
       .map(raw => normalizeGlobalEmailRecipientList(typeof raw.id === 'string' ? raw.id : '', raw))
       .filter((list): list is GlobalEmailRecipientList => Boolean(list && list.id));
   } catch (error) {
-    console.error('[EmailRecipientListService] Failed to fetch global recipient lists:', error);
+    recordOperationalErrorTelemetry('integration', 'get_global_email_recipient_lists', error, {
+      code: 'email_recipient_lists_fetch_failed',
+      message: 'Failed to fetch global recipient lists.',
+      severity: 'error',
+      userSafeMessage: 'No se pudieron cargar las listas globales de destinatarios.',
+    });
     return [];
   }
 };

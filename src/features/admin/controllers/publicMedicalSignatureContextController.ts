@@ -1,6 +1,6 @@
 import type { DailyRecord } from '@/types';
 import type { DailyRecordContextType } from '@/hooks/useDailyRecordTypes';
-import type { MedicalHandoffScope } from '@/features/handoff/controllers';
+import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 
 const noop = () => {};
 const asyncNoop = async () => {};

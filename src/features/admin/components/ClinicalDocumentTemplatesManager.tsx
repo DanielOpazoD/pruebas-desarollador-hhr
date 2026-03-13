@@ -17,8 +17,8 @@ import type {
   ClinicalDocumentSectionTemplate,
   ClinicalDocumentTemplate,
 } from '@/features/clinical-documents';
-import { normalizeTemplateForSave } from '@/features/clinical-documents/controllers/clinicalDocumentTemplateEditorController';
-import { ClinicalDocumentTemplateRepository } from '@/services/repositories';
+import { normalizeTemplateForSave } from '@/features/clinical-documents';
+import { ClinicalDocumentTemplateRepository } from '@/services/repositories/ClinicalDocumentTemplateRepository';
 
 export const ClinicalDocumentTemplatesManager: React.FC = () => {
   const [templates, setTemplates] = useState<ClinicalDocumentTemplate[]>([]);

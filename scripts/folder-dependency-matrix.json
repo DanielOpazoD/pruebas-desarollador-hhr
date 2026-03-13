@@ -36,6 +36,7 @@
     "hooks": {
       "responsibility": "Reusable behavior and UI orchestration hooks.",
       "allowedDependencies": [
+        "domain",
         "services",
         "context",
         "types",
@@ -52,7 +53,15 @@
     },
     "services": {
       "responsibility": "Business operations, I/O and integrations.",
-      "allowedDependencies": ["types", "constants", "utils", "schemas", "shared", "config"]
+      "allowedDependencies": [
+        "domain",
+        "types",
+        "constants",
+        "utils",
+        "schemas",
+        "shared",
+        "config"
+      ]
     },
     "domain": {
       "responsibility": "Pure domain rules and value logic.",

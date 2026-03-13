@@ -1,7 +1,7 @@
 import { httpsCallable } from 'firebase/functions';
 import { getFunctionsInstance } from '@/firebaseConfig';
 import type { DailyRecord } from '@/types';
-import type { MedicalHandoffScope } from '@/features/handoff/controllers';
+import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 
 interface PublicMedicalHandoffPayload {
   record: DailyRecord;

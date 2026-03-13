@@ -1,19 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { AuditLogEntry, GroupedAuditLogEntry, AuditStats, WorkerFilterParams } from '@/types/audit';
+import { AuditLogEntry, WorkerFilterParams } from '@/types/audit';
 import {
   buildInitialAuditWorkerResults,
   normalizeAuditWorkerErrorMessage,
 } from '@/hooks/controllers/auditWorkerController';
+import type { AuditWorkerResults } from '@/hooks/controllers/auditWorkerContracts';
 import {
   createAuditWorkerAdapter,
   type AuditWorkerAdapter,
 } from '@/hooks/controllers/auditWorkerAdapter';
-
-export interface AuditWorkerResults {
-  filteredLogs: AuditLogEntry[];
-  displayLogs: (AuditLogEntry | GroupedAuditLogEntry)[];
-  stats: AuditStats | null;
-}
 
 export const useAuditWorker = () => {
   const [results, setResults] = useState<AuditWorkerResults>(buildInitialAuditWorkerResults());

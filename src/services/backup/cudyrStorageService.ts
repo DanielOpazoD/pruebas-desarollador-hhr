@@ -22,6 +22,7 @@ import {
   isExpectedStorageLookupMiss,
   shouldLogStorageError,
   resolveStorageLookupStatus,
+  toStorageOperationalError,
 } from '@/services/backup/storageErrorPolicy';
 import {
   isBackupDateValidationError,
@@ -34,6 +35,10 @@ import {
   type StorageLookupResult,
   withStorageLookupTimeout,
 } from '@/services/backup/storageLookupContracts';
+import {
+  recordOperationalErrorTelemetry,
+  recordOperationalTelemetry,
+} from '@/services/observability/operationalTelemetryService';
 
 // ============= Types =============
 
@@ -169,8 +174,18 @@ export const cudyrExistsDetailed = async (date: string): Promise<StorageLookupRe
           );
         }
         if (shouldLogStorageError(error)) {
-          const storageError = error as { message?: string };
-          console.warn(`[CudyrStorage] Error checking:`, storageError.message || error);
+          recordOperationalErrorTelemetry(
+            'backup',
+            'cudyr_exists_detailed',
+            error,
+            toStorageOperationalError(error, {
+              code: 'cudyr_exists_lookup_failed',
+              message: `No fue posible verificar el respaldo CUDYR ${date}.`,
+              context: { date },
+              userSafeMessage: 'No fue posible verificar la disponibilidad del respaldo CUDYR.',
+            }),
+            { context: { date } }
+          );
         }
         return createStorageLookupResult(false, resolveStorageLookupStatus(error));
       }
@@ -178,7 +193,15 @@ export const cudyrExistsDetailed = async (date: string): Promise<StorageLookupRe
     { context: date }
   );
 
-  return withStorageLookupTimeout(checkPromise, TIMEOUT_MS);
+  return withStorageLookupTimeout(checkPromise, TIMEOUT_MS, () => {
+    recordOperationalTelemetry({
+      category: 'backup',
+      operation: 'cudyr_exists_timeout',
+      status: 'degraded',
+      date,
+      issues: ['La verificacion del respaldo CUDYR excedio el tiempo esperado.'],
+    });
+  });
 };
 
 /**

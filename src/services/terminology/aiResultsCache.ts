@@ -1,12 +1,13 @@
 /**
  * AI Results Cache - Local Storage for CIE-10 AI Search Results
- * 
+ *
  * Caches AI-generated diagnosis suggestions to avoid redundant API calls
  * and save tokens. Results are stored in localStorage with TTL.
  */
 
 import { CIE10Entry } from './cie10SpanishDatabase';
 import { safeJsonParse } from '@/utils/jsonUtils';
+import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 
 // Cache configuration
 const CACHE_KEY = 'cie10_ai_cache';
@@ -14,14 +15,14 @@ const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const MAX_CACHE_ENTRIES = 50;
 
 interface CacheEntry {
-    query: string;
-    results: CIE10Entry[];
-    timestamp: number;
+  query: string;
+  results: CIE10Entry[];
+  timestamp: number;
 }
 
 interface CacheData {
-    entries: CacheEntry[];
-    version: number;
+  entries: CacheEntry[];
+  version: number;
 }
 
 const CACHE_VERSION = 1;
@@ -30,53 +31,58 @@ const CACHE_VERSION = 1;
  * Get the current cache data from localStorage
  */
 function getCache(): CacheData {
-    try {
-        if (typeof window === 'undefined' || !window.localStorage) {
-            return { entries: [], version: CACHE_VERSION };
-        }
-        const raw = localStorage.getItem(CACHE_KEY);
-        if (!raw) {
-            return { entries: [], version: CACHE_VERSION };
-        }
-
-        const data = safeJsonParse<CacheData>(raw, { entries: [], version: CACHE_VERSION });
-
-        // Version check for future migrations
-        if (data.version !== CACHE_VERSION) {
-            return { entries: [], version: CACHE_VERSION };
-        }
-
-        return data;
-    } catch {
-        return { entries: [], version: CACHE_VERSION };
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return { entries: [], version: CACHE_VERSION };
     }
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) {
+      return { entries: [], version: CACHE_VERSION };
+    }
+
+    const data = safeJsonParse<CacheData>(raw, { entries: [], version: CACHE_VERSION });
+
+    // Version check for future migrations
+    if (data.version !== CACHE_VERSION) {
+      return { entries: [], version: CACHE_VERSION };
+    }
+
+    return data;
+  } catch {
+    return { entries: [], version: CACHE_VERSION };
+  }
 }
 
 /**
  * Save cache data to localStorage
  */
 function saveCache(data: CacheData): void {
-    try {
-        if (typeof window === 'undefined' || !window.localStorage) return;
-        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-    } catch (error) {
-        console.warn('Failed to save AI results cache:', error);
-    }
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  } catch (error) {
+    recordOperationalErrorTelemetry('integration', 'save_cie10_ai_cache', error, {
+      code: 'cie10_ai_cache_save_failed',
+      message: 'No fue posible guardar el cache local de resultados IA CIE-10.',
+      severity: 'warning',
+      userSafeMessage: 'No fue posible guardar temporalmente resultados IA.',
+    });
+  }
 }
 
 /**
  * Normalize query for cache key matching
  */
 function normalizeQuery(query: string): string {
-    return query.toLowerCase().trim();
+  return query.toLowerCase().trim();
 }
 
 /**
  * Check if a cache entry is still valid (not expired)
  */
 function isValidEntry(entry: CacheEntry): boolean {
-    const now = Date.now();
-    return (now - entry.timestamp) < CACHE_TTL_MS;
+  const now = Date.now();
+  return now - entry.timestamp < CACHE_TTL_MS;
 }
 
 /**
@@ -84,103 +90,96 @@ function isValidEntry(entry: CacheEntry): boolean {
  * Returns null if no valid cache exists
  */
 export function getCachedAIResults(query: string): CIE10Entry[] | null {
-    const normalized = normalizeQuery(query);
-    const cache = getCache();
+  const normalized = normalizeQuery(query);
+  const cache = getCache();
 
-    // console.debug(`🔍 Looking for cache: "${query}" (normalized: "${normalized}")`);
-    // console.debug(`📋 Cache has ${cache.entries.length} entries:`, cache.entries.map(e => e.query));
+  // console.debug(`🔍 Looking for cache: "${query}" (normalized: "${normalized}")`);
+  // console.debug(`📋 Cache has ${cache.entries.length} entries:`, cache.entries.map(e => e.query));
 
-    const entry = cache.entries.find(e =>
-        normalizeQuery(e.query) === normalized && isValidEntry(e)
-    );
+  const entry = cache.entries.find(e => normalizeQuery(e.query) === normalized && isValidEntry(e));
 
-    if (entry) {
-        // console.debug(`✅ Cache HIT for "${query}" (${entry.results.length} results)`);
-        return entry.results;
-    }
+  if (entry) {
+    // console.debug(`✅ Cache HIT for "${query}" (${entry.results.length} results)`);
+    return entry.results;
+  }
 
-    // console.debug(`❌ Cache MISS for "${query}"`);
-    return null;
+  // console.debug(`❌ Cache MISS for "${query}"`);
+  return null;
 }
 
 /**
  * Cache AI results for a query
  */
 export function cacheAIResults(query: string, results: CIE10Entry[]): void {
-    if (!query || results.length === 0) {
-        console.warn('⚠️ cacheAIResults: skipping - no query or no results');
-        return;
-    }
+  if (!query || results.length === 0) {
+    return;
+  }
 
-    const normalized = normalizeQuery(query);
-    const cache = getCache();
+  const normalized = normalizeQuery(query);
+  const cache = getCache();
 
-    // console.debug(`💾 Caching ${results.length} results for "${query}" (normalized: "${normalized}")`);
+  // console.debug(`💾 Caching ${results.length} results for "${query}" (normalized: "${normalized}")`);
 
-    // Remove existing entry for same query (update)
-    const prevCount = cache.entries.length;
-    cache.entries = cache.entries.filter(e =>
-        normalizeQuery(e.query) !== normalized
-    );
-    if (cache.entries.length < prevCount) {
-        // console.debug(`🔄 Replaced existing cache entry for "${normalized}"`);
-    }
+  // Remove existing entry for same query (update)
+  const prevCount = cache.entries.length;
+  cache.entries = cache.entries.filter(e => normalizeQuery(e.query) !== normalized);
+  if (cache.entries.length < prevCount) {
+    // console.debug(`🔄 Replaced existing cache entry for "${normalized}"`);
+  }
 
-    // Add new entry
-    cache.entries.push({
-        query: normalized,
-        results,
-        timestamp: Date.now()
-    });
+  // Add new entry
+  cache.entries.push({
+    query: normalized,
+    results,
+    timestamp: Date.now(),
+  });
 
-    // Remove expired entries
-    cache.entries = cache.entries.filter(isValidEntry);
+  // Remove expired entries
+  cache.entries = cache.entries.filter(isValidEntry);
 
-    // Limit cache size (remove oldest entries)
-    if (cache.entries.length > MAX_CACHE_ENTRIES) {
-        cache.entries.sort((a, b) => b.timestamp - a.timestamp);
-        cache.entries = cache.entries.slice(0, MAX_CACHE_ENTRIES);
-    }
+  // Limit cache size (remove oldest entries)
+  if (cache.entries.length > MAX_CACHE_ENTRIES) {
+    cache.entries.sort((a, b) => b.timestamp - a.timestamp);
+    cache.entries = cache.entries.slice(0, MAX_CACHE_ENTRIES);
+  }
 
-    saveCache(cache);
-    // console.debug(`✅ Cache saved! Now has ${cache.entries.length} entries:`, cache.entries.map(e => e.query));
+  saveCache(cache);
+  // console.debug(`✅ Cache saved! Now has ${cache.entries.length} entries:`, cache.entries.map(e => e.query));
 }
 
 /**
  * Get all cached queries (for debugging/display)
  */
 export function getCachedQueries(): string[] {
-    const cache = getCache();
-    return cache.entries
-        .filter(isValidEntry)
-        .map(e => e.query);
+  const cache = getCache();
+  return cache.entries.filter(isValidEntry).map(e => e.query);
 }
 
 /**
  * Clear all cached AI results
  */
 export function clearAICache(): void {
-    if (typeof window === 'undefined' || !window.localStorage) return;
-    localStorage.removeItem(CACHE_KEY);
-    // console.info('🗑️ AI results cache cleared');
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  localStorage.removeItem(CACHE_KEY);
+  // console.info('🗑️ AI results cache cleared');
 }
 
 /**
  * Get cache statistics
  */
 export function getCacheStats(): { entries: number; oldestAge: number } {
-    const cache = getCache();
-    const validEntries = cache.entries.filter(isValidEntry);
+  const cache = getCache();
+  const validEntries = cache.entries.filter(isValidEntry);
 
-    if (validEntries.length === 0) {
-        return { entries: 0, oldestAge: 0 };
-    }
+  if (validEntries.length === 0) {
+    return { entries: 0, oldestAge: 0 };
+  }
 
-    const oldest = Math.min(...validEntries.map(e => e.timestamp));
-    const oldestAge = Date.now() - oldest;
+  const oldest = Math.min(...validEntries.map(e => e.timestamp));
+  const oldestAge = Date.now() - oldest;
 
-    return {
-        entries: validEntries.length,
-        oldestAge: Math.round(oldestAge / 1000 / 60) // minutes
-    };
+  return {
+    entries: validEntries.length,
+    oldestAge: Math.round(oldestAge / 1000 / 60), // minutes
+  };
 }

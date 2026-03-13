@@ -1,4 +1,5 @@
 import { shouldLogIndexedDbRuntimeWarning } from './indexedDbRecoveryPolicy';
+import { recordIndexedDbRecoveryNotice } from './indexedDbRecoveryController';
 
 type IndexedDbEventSource = {
   on: (event: 'blocked' | 'close', callback: () => void) => void;
@@ -22,7 +23,11 @@ export const attachIndexedDbWarningBindings = (
         emittedWarnings
       )
     ) {
-      console.warn('[IndexedDB] ⏳ Database is blocked by another tab');
+      recordIndexedDbRecoveryNotice(
+        'indexeddb_blocked',
+        'La base IndexedDB fue bloqueada por otra pestana.',
+        { stickyFallbackMode: getRuntimeState().stickyFallbackMode }
+      );
     }
   });
 
@@ -36,7 +41,11 @@ export const attachIndexedDbWarningBindings = (
         emittedWarnings
       )
     ) {
-      console.warn('[IndexedDB] 🚪 Database connection closed unexpectedly.');
+      recordIndexedDbRecoveryNotice(
+        'indexeddb_unexpected_close',
+        'La conexion de IndexedDB se cerro de forma inesperada.',
+        { stickyFallbackMode: runtimeState.stickyFallbackMode }
+      );
     }
   });
 };

@@ -60,4 +60,4 @@ export {
   resolveScopedMedicalSignature,
   resolveScopedMedicalSignatureToken,
 } from './medicalHandoffScopeController';
-export type { MedicalHandoffScope } from './medicalHandoffScopeController';
+export type { MedicalHandoffScope } from '@/types/medicalHandoff';

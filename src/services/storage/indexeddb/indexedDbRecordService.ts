@@ -1,6 +1,7 @@
 import { DailyRecord } from '@/types';
 import { localPersistence } from '@/services/storage/localpersistence/localPersistenceService';
 import { buildMonthRecordPrefix } from '@/services/storage/storageDateSupport';
+import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 
 import { ensureDbReady, hospitalDB as db, isDatabaseInFallbackMode } from './indexedDbCore';
 
@@ -24,7 +25,12 @@ export const getAllRecords = async (): Promise<Record<string, DailyRecord>> => {
     const records = await db.dailyRecords.toArray();
     return toRecordMap(records);
   } catch (error) {
-    console.error('Failed to get all records from IndexedDB:', error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_get_all_records', error, {
+      code: 'indexeddb_get_all_records_failed',
+      message: 'No fue posible obtener todos los registros locales.',
+      severity: 'warning',
+      userSafeMessage: 'No fue posible recuperar todos los registros locales.',
+    });
     return {};
   }
 };
@@ -39,7 +45,13 @@ export const getRecordsForMonth = async (year: number, month: number): Promise<D
       await db.dailyRecords.where('date').startsWith(buildMonthRecordPrefix(year, month)).toArray()
     );
   } catch (error) {
-    console.error(`Failed to get records for month ${year}-${month}:`, error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_get_records_for_month', error, {
+      code: 'indexeddb_get_records_for_month_failed',
+      message: `No fue posible obtener registros del mes ${year}-${month}.`,
+      severity: 'warning',
+      userSafeMessage: 'No fue posible recuperar registros del mes solicitado.',
+      context: { year, month },
+    });
     return [];
   }
 };
@@ -56,7 +68,13 @@ export const getRecordsRange = async (
 
     return await db.dailyRecords.where('date').between(startDate, endDate, true, true).toArray();
   } catch (error) {
-    console.error(`Failed to get records in range ${startDate} to ${endDate}:`, error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_get_records_range', error, {
+      code: 'indexeddb_get_records_range_failed',
+      message: 'No fue posible obtener registros en el rango solicitado.',
+      severity: 'warning',
+      userSafeMessage: 'No fue posible recuperar registros del rango solicitado.',
+      context: { startDate, endDate },
+    });
     return [];
   }
 };
@@ -81,7 +99,13 @@ export const getRecordForDate = async (date: string): Promise<DailyRecord | null
     const record = await db.dailyRecords.get(date);
     return record || null;
   } catch (error) {
-    console.error(`Failed to get record for ${date}:`, error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_get_record_for_date', error, {
+      code: 'indexeddb_get_record_for_date_failed',
+      message: `No fue posible obtener el registro del dia ${date}.`,
+      severity: 'warning',
+      userSafeMessage: 'No fue posible recuperar el registro solicitado.',
+      context: { date },
+    });
     return null;
   }
 };
@@ -95,7 +119,13 @@ export const saveRecord = async (record: DailyRecord): Promise<void> => {
     }
     await db.dailyRecords.put(record);
   } catch (error) {
-    console.error('Failed to save record to IndexedDB:', error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_save_record', error, {
+      code: 'indexeddb_save_record_failed',
+      message: 'No fue posible guardar el registro local.',
+      severity: 'error',
+      userSafeMessage: 'No fue posible guardar el registro local.',
+      context: { date: record.date },
+    });
   }
 };
 
@@ -115,7 +145,13 @@ export const saveRecords = async (records: DailyRecord[]): Promise<void> => {
 
     await db.dailyRecords.bulkPut(records);
   } catch (error) {
-    console.error('Failed to save records to IndexedDB:', error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_save_records', error, {
+      code: 'indexeddb_save_records_failed',
+      message: 'No fue posible guardar registros locales en bloque.',
+      severity: 'error',
+      userSafeMessage: 'No fue posible guardar registros locales.',
+      context: { count: records.length },
+    });
   }
 };
 
@@ -128,7 +164,13 @@ export const deleteRecord = async (date: string): Promise<void> => {
     }
     await db.dailyRecords.delete(date);
   } catch (error) {
-    console.error('Failed to delete record from IndexedDB:', error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_delete_record', error, {
+      code: 'indexeddb_delete_record_failed',
+      message: 'No fue posible eliminar el registro local.',
+      severity: 'warning',
+      userSafeMessage: 'No fue posible eliminar el registro local.',
+      context: { date },
+    });
   }
 };
 
@@ -141,7 +183,12 @@ export const getAllDates = async (): Promise<string[]> => {
     const records = await db.dailyRecords.orderBy('date').reverse().keys();
     return records as string[];
   } catch (error) {
-    console.error('Failed to get all dates from IndexedDB:', error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_get_all_dates', error, {
+      code: 'indexeddb_get_all_dates_failed',
+      message: 'No fue posible obtener las fechas locales disponibles.',
+      severity: 'warning',
+      userSafeMessage: 'No fue posible recuperar las fechas locales disponibles.',
+    });
     return [];
   }
 };
@@ -155,7 +202,12 @@ export const getAllRecordsSorted = async (): Promise<DailyRecord[]> => {
 
     return await db.dailyRecords.orderBy('date').reverse().toArray();
   } catch (error) {
-    console.error('Failed to get sorted records from IndexedDB:', error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_get_sorted_records', error, {
+      code: 'indexeddb_get_sorted_records_failed',
+      message: 'No fue posible obtener registros locales ordenados.',
+      severity: 'warning',
+      userSafeMessage: 'No fue posible recuperar registros locales ordenados.',
+    });
     return [];
   }
 };
@@ -169,7 +221,13 @@ export const getPreviousDayRecord = async (currentDate: string): Promise<DailyRe
     const record = await db.dailyRecords.where('date').below(currentDate).reverse().first();
     return record || null;
   } catch (error) {
-    console.error('Failed to get previous day record:', error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_get_previous_day_record', error, {
+      code: 'indexeddb_get_previous_day_record_failed',
+      message: 'No fue posible obtener el registro del dia previo.',
+      severity: 'warning',
+      userSafeMessage: 'No fue posible recuperar el registro del dia previo.',
+      context: { currentDate },
+    });
     return null;
   }
 };
@@ -183,6 +241,11 @@ export const clearAllRecords = async (): Promise<void> => {
     }
     await db.dailyRecords.clear();
   } catch (error) {
-    console.error('Failed to clear all records from IndexedDB:', error);
+    recordOperationalErrorTelemetry('indexeddb', 'indexeddb_clear_all_records', error, {
+      code: 'indexeddb_clear_all_records_failed',
+      message: 'No fue posible limpiar los registros locales.',
+      severity: 'warning',
+      userSafeMessage: 'No fue posible limpiar los registros locales.',
+    });
   }
 };

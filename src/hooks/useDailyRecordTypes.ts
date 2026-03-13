@@ -15,7 +15,7 @@ import {
   MedicalSpecialty,
 } from '@/types';
 import type { PatientMovementActions } from '@/types/movements';
-import type { MedicalHandoffScope } from '@/features/handoff/controllers';
+import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 export type { DailyRecordPatch };
 
 // ============================================================================

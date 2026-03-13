@@ -16,12 +16,13 @@ import {
   generateXlsxFromTemplate,
 } from './templateGeneratorService';
 import {
-  generateTapaTraslado,
-  generateEncuestaCovid,
-  generateSolicitudCamaHDS,
-  generateSolicitudAmbulancia,
-  generateFormularioIAAS,
-} from './documentFallbacks';
+  recordTransferDocumentGenerationFailure,
+  recordTransferTemplateFallback,
+  recordUnknownTransferTemplate,
+} from './transferDocumentTelemetryController';
+import { createGeneratedDocument } from './transferGeneratedDocumentController';
+import { getSuggestedExtension } from './transferDocumentNamingController';
+import { resolveTransferFallbackGenerator } from './transferDocumentFallbackRegistry';
 
 const triggerBrowserDownload = (blob: Blob, fileName: string): void => {
   const url = URL.createObjectURL(blob);
@@ -32,11 +33,6 @@ const triggerBrowserDownload = (blob: Blob, fileName: string): void => {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
-};
-
-const getSuggestedExtension = (suggestedName: string): string => {
-  const extension = suggestedName.split('.').pop();
-  return extension ? `.${extension}` : '.bin';
 };
 
 type DirectoryHandle = {
@@ -80,6 +76,23 @@ const saveBlobWithPicker = async (
   return 'saved';
 };
 
+const createDocumentFromTemplateBlob = (
+  templateId: string,
+  templateName: string,
+  patientName: string,
+  templateFormat: 'docx' | 'xlsx' | 'pdf',
+  templateBlob: Blob,
+  processedBlob: Blob
+): GeneratedDocument =>
+  createGeneratedDocument(
+    templateId,
+    templateName,
+    patientName,
+    templateFormat,
+    templateBlob.type,
+    processedBlob
+  );
+
 // ============================================================================
 // Main Generator Function
 // ============================================================================
@@ -111,25 +124,24 @@ export const generateTransferDocuments = async (
             processedBlob = templateBlob;
           }
 
-          doc = {
-            templateId: template.id,
-            fileName: `${template.name}_${patientData.patientName.replace(/\s+/g, '_')}.${template.format}`,
-            mimeType: templateBlob.type,
-            blob: processedBlob,
-            generatedAt: new Date().toISOString(),
-          };
+          doc = createDocumentFromTemplateBlob(
+            template.id,
+            template.name,
+            patientData.patientName,
+            template.format,
+            templateBlob,
+            processedBlob
+          );
         }
 
         if (!doc) {
-          console.warn(
-            `[DocumentGenerator] Template ${template.id} not available in Storage, using code fallback`
-          );
+          recordTransferTemplateFallback(template.id, hospital.code);
           doc = await generateFallbackDocument(template.id, patientData, responses, hospital);
         }
 
         return doc;
       } catch (error) {
-        console.error(`Error generating ${template.id}:`, error);
+        recordTransferDocumentGenerationFailure(template.id, hospital.code, error);
         return null;
       }
     })
@@ -147,21 +159,12 @@ const generateFallbackDocument = async (
   responses: QuestionnaireResponse,
   hospital: HospitalConfig
 ): Promise<GeneratedDocument | null> => {
-  switch (templateId) {
-    case 'tapa-traslado':
-      return generateTapaTraslado(patientData, hospital);
-    case 'encuesta-covid':
-      return generateEncuestaCovid(patientData, responses, hospital);
-    case 'solicitud-cama-hds':
-      return generateSolicitudCamaHDS(patientData, responses, hospital);
-    case 'solicitud-ambulancia':
-      return generateSolicitudAmbulancia(patientData, responses, hospital);
-    case 'formulario-iaas':
-      return generateFormularioIAAS(patientData, responses, hospital);
-    default:
-      console.warn(`Unknown template: ${templateId}`);
-      return null;
+  const fallbackGenerator = resolveTransferFallbackGenerator(templateId);
+  if (!fallbackGenerator) {
+    recordUnknownTransferTemplate(templateId);
+    return null;
   }
+  return fallbackGenerator(patientData, responses, hospital);
 };
 
 /**

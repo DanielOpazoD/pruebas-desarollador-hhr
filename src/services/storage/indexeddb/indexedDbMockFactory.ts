@@ -1,6 +1,6 @@
-import type { HangaRoaDatabase } from '@/services/storage/indexeddb/indexedDbCore';
+import type { IndexedDbDatabaseLike } from '@/services/storage/indexeddb/indexedDbContracts';
 
-export const createMockDatabase = (): HangaRoaDatabase => {
+export const createMockDatabase = (): IndexedDbDatabaseLike => {
   const memoryStore: Record<string, Map<string, unknown>> = {
     dailyRecords: new Map<string, unknown>(),
     catalogs: new Map<string, unknown>(),
@@ -123,5 +123,5 @@ export const createMockDatabase = (): HangaRoaDatabase => {
     isOpen: () => true,
     open: () => Promise.resolve(),
     on: () => ({}),
-  } as unknown as HangaRoaDatabase;
+  } as unknown as IndexedDbDatabaseLike;
 };

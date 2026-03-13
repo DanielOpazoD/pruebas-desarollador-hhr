@@ -1,4 +1,4 @@
-export type MedicalHandoffScope = 'all' | 'upc' | 'no-upc';
+import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 
 interface ScopedMedicalSignature {
   doctorName: string;

@@ -2,13 +2,13 @@ import { useCallback } from 'react';
 import type { RefObject } from 'react';
 import type { DailyRecord, MedicalHandoffActor, MedicalSpecialty } from '@/types';
 import type { AuditAction, AuditLogEntry } from '@/types/audit';
-import type { MedicalHandoffScope } from '@/features/handoff/controllers';
+import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import {
   buildChecklistUpdateRecord,
   buildMedicalSignatureRecord,
   buildNovedadesUpdateRecord,
   buildResetMedicalHandoffRecord,
-} from '@/features/handoff/controllers/handoffManagementController';
+} from '@/domain/handoff/management';
 import type { ConfirmMedicalSpecialtyNoChangesInput } from '@/hooks/handoffManagementTypes';
 import {
   buildHandoffNovedadesAuditEvent,

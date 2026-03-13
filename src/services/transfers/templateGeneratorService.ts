@@ -1,27 +1,8 @@
-import { ref, getBlob } from 'firebase/storage';
-import { getStorageInstance } from '@/firebaseConfig';
 import { TransferPatientData, QuestionnaireResponse } from '@/types/transferDocuments';
 import { createWorkbook } from '@/services/exporters/excelUtils';
+import { fetchTransferTemplateBlob } from './transferTemplateFetchController';
+import { recordTransferTemplateFetchFailure } from './transferDocumentTelemetryController';
 // import ExcelJS from 'exceljs'; // Removed static import
-
-const TEMPLATE_FETCH_TIMEOUT_MS = 2500;
-
-const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, timeoutMessage: string) => {
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<T>((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
-      }),
-    ]);
-  } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-  }
-};
 
 /**
  * Maps system data and questionnaire responses to a flat object of template tags.
@@ -240,15 +221,9 @@ const calculateAge = (birthDateStr: string): string => {
  */
 export const fetchTemplateFromStorage = async (templateName: string): Promise<Blob | null> => {
   try {
-    const storage = await getStorageInstance();
-    const templateRef = ref(storage, `templates/${templateName}`);
-    return await withTimeout(
-      getBlob(templateRef),
-      TEMPLATE_FETCH_TIMEOUT_MS,
-      `Timed out fetching template ${templateName}`
-    );
+    return await fetchTransferTemplateBlob(templateName);
   } catch (error) {
-    console.warn(`[TemplateService] Template ${templateName} not found in Storage:`, error);
+    recordTransferTemplateFetchFailure(templateName, error);
     return null;
   }
 };

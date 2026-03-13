@@ -31,6 +31,7 @@
 import { searchCIE10, CIE10Entry, getCIE10DatabaseSync } from './cie10SpanishDatabase';
 import { searchCIE10WithAI } from './cie10AISearch';
 import { getCachedAIResults, cacheAIResults } from './aiResultsCache';
+import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 
 export interface TerminologyConcept {
   code: string; // CIE-10 code (e.g., E11.5)
@@ -87,7 +88,13 @@ export async function searchDiagnoses(
 
     return localConcepts;
   } catch (error) {
-    console.error('Error in searchDiagnoses:', error);
+    recordOperationalErrorTelemetry('integration', 'search_diagnoses', error, {
+      code: 'terminology_search_failed',
+      message: 'No fue posible buscar diagnosticos en CIE-10.',
+      severity: 'warning',
+      userSafeMessage: 'No fue posible buscar diagnosticos en este momento.',
+      context: { queryLength: query.length },
+    });
     return [];
   }
 }
@@ -108,7 +115,13 @@ export async function searchDiagnosesAI(
     const results = await forceAISearch(query, signal);
     return results;
   } catch (error) {
-    console.error('Error in searchDiagnosesAI:', error);
+    recordOperationalErrorTelemetry('integration', 'search_diagnoses_ai', error, {
+      code: 'terminology_search_ai_failed',
+      message: 'No fue posible buscar diagnosticos con IA.',
+      severity: 'warning',
+      userSafeMessage: 'La busqueda asistida por IA no esta disponible en este momento.',
+      context: { queryLength: query.length },
+    });
     return [];
   }
 }
@@ -171,7 +184,13 @@ export async function forceAISearch(
 
     return localConcepts;
   } catch (error) {
-    console.error('Error in forceAISearch:', error);
+    recordOperationalErrorTelemetry('integration', 'force_ai_search', error, {
+      code: 'terminology_force_ai_failed',
+      message: 'No fue posible forzar una busqueda IA de diagnosticos.',
+      severity: 'warning',
+      userSafeMessage: 'No fue posible obtener resultados IA actualizados.',
+      context: { queryLength: query.length },
+    });
     return [];
   }
 }

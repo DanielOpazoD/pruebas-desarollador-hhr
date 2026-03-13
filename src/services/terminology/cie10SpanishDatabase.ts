@@ -5,6 +5,11 @@
  * Fetches data asynchronously from a static JSON file to prevent bundle bloat.
  */
 
+import {
+  recordOperationalErrorTelemetry,
+  recordOperationalTelemetry,
+} from '@/services/observability/operationalTelemetryService';
+
 export interface CIE10Entry {
   code: string;
   description: string;
@@ -40,7 +45,12 @@ export const loadCIE10Database = async (): Promise<CIE10Entry[]> => {
       return data;
     })
     .catch(error => {
-      console.error('Error fetching CIE-10 data:', error);
+      recordOperationalErrorTelemetry('integration', 'load_cie10_database', error, {
+        code: 'cie10_database_load_failed',
+        message: 'No fue posible cargar la base local CIE-10.',
+        severity: 'warning',
+        userSafeMessage: 'No fue posible cargar la base local de diagnosticos.',
+      });
       fetchPromise = null;
       throw error;
     });
@@ -75,7 +85,12 @@ export const searchCIE10 = async (query: string, limit = 50): Promise<CIE10Entry
  */
 export const getCIE10DatabaseSync = (): CIE10Entry[] => {
   if (!cachedDatabase) {
-    console.warn('getCIE10DatabaseSync called before database was loaded.');
+    recordOperationalTelemetry({
+      category: 'integration',
+      operation: 'cie10_database_sync_before_load',
+      status: 'degraded',
+      issues: ['Se intento usar la base CIE-10 sincronica antes de completar la carga inicial.'],
+    });
     return [];
   }
   return cachedDatabase;
