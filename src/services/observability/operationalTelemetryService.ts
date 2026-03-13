@@ -1,25 +1,13 @@
 import { dispatchOperationalTelemetryExternally } from '@/services/observability/operationalTelemetryExternalAdapter';
-
-export type OperationalTelemetryCategory =
-  | 'sync'
-  | 'indexeddb'
-  | 'export'
-  | 'backup'
-  | 'clinical_document'
-  | 'create_day'
-  | 'handoff';
-
-export type OperationalTelemetryStatus = 'success' | 'partial' | 'degraded' | 'failed';
-
-export interface OperationalTelemetryEvent {
-  category: OperationalTelemetryCategory;
-  status: OperationalTelemetryStatus;
-  operation: string;
-  timestamp: string;
-  date?: string;
-  issues?: string[];
-  context?: Record<string, unknown>;
-}
+import {
+  normalizeOperationalError,
+  type OperationalErrorShape,
+} from '@/services/observability/operationalError';
+import type {
+  OperationalTelemetryCategory,
+  OperationalTelemetryEvent,
+  OperationalTelemetryStatus,
+} from '@/services/observability/operationalTelemetryTypes';
 
 export interface OperationalTelemetrySummary {
   recentEventCount: number;
@@ -241,4 +229,33 @@ export const recordOperationalOutcome = (
     },
     { allowSuccess: options.allowSuccess }
   );
+};
+
+export const recordOperationalErrorTelemetry = (
+  category: OperationalTelemetryCategory,
+  operation: string,
+  error: unknown,
+  fallback: OperationalErrorShape,
+  options: {
+    date?: string;
+    context?: Record<string, unknown>;
+  } = {}
+) => {
+  const operationalError = normalizeOperationalError(error, fallback);
+  recordOperationalTelemetry({
+    category,
+    operation,
+    status:
+      operationalError.severity === 'warning' || operationalError.severity === 'info'
+        ? 'degraded'
+        : 'failed',
+    date: options.date,
+    context: {
+      errorCode: operationalError.code,
+      ...operationalError.context,
+      ...options.context,
+    },
+    issues: [operationalError.userSafeMessage || operationalError.message],
+  });
+  return operationalError;
 };

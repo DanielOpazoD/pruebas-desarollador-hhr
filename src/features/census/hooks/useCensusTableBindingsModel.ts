@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { buildCensusTableLayoutBindings } from '@/features/census/controllers/censusTableLayoutController';
 import { useClinicalDocumentPresenceByBed } from '@/features/census/hooks/useClinicalDocumentPresenceByBed';
 import { useCensusTableViewModel } from '@/features/census/hooks/useCensusTableViewModel';
-import { canReadClinicalDocuments } from '@/features/clinical-documents/controllers/clinicalDocumentPermissionController';
+import { canReadClinicalDocuments } from '@/application/clinical-documents/clinicalDocumentAccessPolicy';
 
 interface UseCensusTableBindingsModelParams {
   currentDateString: string;

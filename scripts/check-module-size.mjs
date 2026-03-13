@@ -51,18 +51,19 @@ const countLines = filePath => {
 
 const loadAllowlist = () => {
   if (!fs.existsSync(ALLOWLIST_PATH)) {
-    return { globalMax: 400, allowlist: {} };
+    return { globalMax: 400, allowlist: {}, backlog: {} };
   }
 
   const parsed = JSON.parse(fs.readFileSync(ALLOWLIST_PATH, 'utf8'));
   return {
     globalMax: typeof parsed.globalMax === 'number' ? parsed.globalMax : 400,
     allowlist: parsed.allowlist && typeof parsed.allowlist === 'object' ? parsed.allowlist : {},
+    backlog: parsed.backlog && typeof parsed.backlog === 'object' ? parsed.backlog : {},
   };
 };
 
 const files = walkFiles(SRC_ROOT);
-const { globalMax, allowlist } = loadAllowlist();
+const { globalMax, allowlist, backlog } = loadAllowlist();
 const violations = [];
 const seen = new Set();
 
@@ -84,22 +85,50 @@ for (const absolutePath of files) {
   }
 }
 
-if (violations.length === 0) {
+const staleAllowlistEntries = Object.keys(allowlist).filter(filePath => !seen.has(filePath));
+const undocumentedHotspots = Object.entries(allowlist)
+  .filter(([, limit]) => typeof limit === 'number' && limit > globalMax)
+  .map(([filePath, limit]) => ({
+    filePath,
+    limit,
+    metadata: backlog[filePath],
+  }))
+  .filter(({ metadata }) => !metadata || typeof metadata !== 'object');
+
+if (
+  violations.length === 0 &&
+  staleAllowlistEntries.length === 0 &&
+  undocumentedHotspots.length === 0
+) {
   console.log(`Module size checks passed (global max: ${globalMax} lines).`);
   process.exit(0);
 }
 
-console.error('\nModule size violations:');
-for (const violation of violations.sort((a, b) => b.lines - a.lines)) {
-  const label = violation.mode === 'allowlist-overflow' ? 'allowlist exceeded' : 'new overflow';
-  console.error(`- [${label}] ${violation.file}: ${violation.lines} lines (limit ${violation.limit})`);
+if (violations.length > 0) {
+  console.error('\nModule size violations:');
+  for (const violation of violations.sort((a, b) => b.lines - a.lines)) {
+    const label = violation.mode === 'allowlist-overflow' ? 'allowlist exceeded' : 'new overflow';
+    console.error(
+      `- [${label}] ${violation.file}: ${violation.lines} lines (limit ${violation.limit})`
+    );
+  }
 }
 
-const staleAllowlistEntries = Object.keys(allowlist).filter(filePath => !seen.has(filePath));
 if (staleAllowlistEntries.length > 0) {
   console.error('\nStale allowlist entries (file missing or moved):');
   for (const filePath of staleAllowlistEntries.sort()) {
     console.error(`- ${filePath}`);
+  }
+}
+
+if (undocumentedHotspots.length > 0) {
+  console.error('\nUndocumented hotspot allowlist entries:');
+  for (const entry of undocumentedHotspots.sort((left, right) =>
+    left.filePath.localeCompare(right.filePath)
+  )) {
+    console.error(
+      `- ${entry.filePath}: limit ${entry.limit} must be documented in module-size-allowlist backlog`
+    );
   }
 }
 

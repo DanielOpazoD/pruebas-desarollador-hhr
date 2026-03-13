@@ -61,3 +61,19 @@
 - `npm run test:clinical-documents`
 - `npm run check:clinical-documents`
 - Nota de arquitectura en [ARCHITECTURE.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/features/clinical-documents/ARCHITECTURE.md)
+
+## Runtime boundaries
+
+- La hoja principal no debe recuperar `if` especiales por `documentType`; la extensibilidad entra por definiciones/section renderers.
+- Todo documento/template leído o persistido debe pasar por contratos runtime antes de salir del repositorio.
+- La impresión/exportación debe reportar fallos por telemetría operativa y no depender de logs sueltos.
+
+## Test entrypoints recomendados
+
+- `npm run test:clinical-documents`
+- `npx vitest run src/tests/features/clinical-documents src/tests/services/repositories/ClinicalDocumentRepository.test.ts`
+
+## Safe change links
+
+- [docs/QUALITY_GUARDRAILS.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/QUALITY_GUARDRAILS.md)
+- [docs/SAFE_CHANGE_CHECKLIST.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/SAFE_CHANGE_CHECKLIST.md)

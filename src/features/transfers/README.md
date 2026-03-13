@@ -129,6 +129,7 @@ Si un hospital no tiene configuración documental:
 ## Tests relevantes
 
 - [TransferManagementView.test.tsx](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/tests/features/transfers/TransferManagementView.test.tsx)
+- [transferManagementViewController.test.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/tests/features/transfers/transferManagementViewController.test.ts)
 - [useTransferSubscriptions.test.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/tests/features/transfers/useTransferSubscriptions.test.ts)
 - [TransferFormModal.test.tsx](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/tests/features/transfers/TransferFormModal.test.tsx)
 - [transferTableController.test.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/tests/features/transfers/transferTableController.test.ts)
@@ -136,3 +137,20 @@ Si un hospital no tiene configuración documental:
 - [transferSubscriptionController.test.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/tests/services/transfers/transferSubscriptionController.test.ts)
 - [useTransferViewStates.test.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/tests/hooks/useTransferViewStates.test.ts)
 - [transferDocumentPackageController.test.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/tests/hooks/controllers/transferDocumentPackageController.test.ts)
+
+## Runtime boundaries
+
+- `transferService.ts` sigue siendo la fachada pública; lógica nueva entra en queries, mutations, status o subscriptions.
+- La vista de management no debe volver a mezclar filtros de período, lifecycle y wiring de modales en un solo componente.
+- Las fallas realtime deben mapearse a error operativo estructurado + telemetría, no solo a `console.error`.
+
+## Comandos de validación del módulo
+
+- `npm run typecheck`
+- `npm run check:quality`
+- `npx vitest run src/tests/features/transfers src/tests/services/transfers`
+
+## Safe change links
+
+- [docs/QUALITY_GUARDRAILS.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/QUALITY_GUARDRAILS.md)
+- [docs/SAFE_CHANGE_CHECKLIST.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/SAFE_CHANGE_CHECKLIST.md)

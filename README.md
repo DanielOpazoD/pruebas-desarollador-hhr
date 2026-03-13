@@ -62,22 +62,26 @@ npm run preview
 
 ## Comandos Principales
 
-| Comando                          | Objetivo                                                                               |
-| -------------------------------- | -------------------------------------------------------------------------------------- |
-| `npm run dev`                    | Levantar app en modo desarrollo                                                        |
-| `npm run build`                  | Build de producción                                                                    |
-| `npm run preview`                | Preview local del build                                                                |
-| `npm run typecheck`              | Verificación TypeScript                                                                |
-| `npm run test`                   | Suite Vitest completa                                                                  |
-| `npm run test:watch`             | Vitest en watch mode                                                                   |
-| `npm run test:coverage`          | Cobertura de tests                                                                     |
-| `npm run test:e2e`               | End-to-end (Playwright)                                                                |
-| `npm run test:e2e:critical`      | E2E crítico emulador (Chromium por defecto; multi-browser por `E2E_CRITICAL_BROWSERS`) |
-| `npm run lint`                   | Lint global                                                                            |
-| `npm run check:quality`          | Checks de arquitectura, tamaño de módulo y boundaries runtime                          |
-| `npm run test:rules`             | Tests de reglas Firestore                                                              |
-| `npm run test:risk:admin-health` | Riesgo operativo de health dashboard y contratos                                       |
-| `npm run report:quality-metrics` | Snapshot de métricas de calidad para artefactos CI                                     |
+| Comando                             | Objetivo                                                                               |
+| ----------------------------------- | -------------------------------------------------------------------------------------- |
+| `npm run dev`                       | Levantar app en modo desarrollo                                                        |
+| `npm run build`                     | Build de producción                                                                    |
+| `npm run preview`                   | Preview local del build                                                                |
+| `npm run typecheck`                 | Verificación TypeScript                                                                |
+| `npm run test`                      | Suite Vitest completa                                                                  |
+| `npm run test:watch`                | Vitest en watch mode                                                                   |
+| `npm run test:coverage`             | Cobertura de tests                                                                     |
+| `npm run test:e2e`                  | End-to-end (Playwright)                                                                |
+| `npm run test:e2e:critical`         | E2E crítico emulador (Chromium por defecto; multi-browser por `E2E_CRITICAL_BROWSERS`) |
+| `npm run lint`                      | Lint global                                                                            |
+| `npm run check:quality`             | Checks de arquitectura, tamaño de módulo y boundaries runtime                          |
+| `npm run ci:quality-core`           | Gate transversal de Fase 4 (`typecheck`, lint estricto, quality checks, unit + rules)  |
+| `npm run test:rules`                | Tests de reglas Firestore                                                              |
+| `npm run test:risk:admin-health`    | Riesgo operativo de health dashboard y contratos                                       |
+| `npm run report:quality-metrics`    | Snapshot de métricas de calidad para artefactos CI                                     |
+| `npm run report:operational-health` | Snapshot operativo de budgets, sync y runbooks                                         |
+| `npm run report:runtime-contracts`  | Snapshot de contratos runtime y evolución de esquema                                   |
+| `npm run report:critical-coverage`  | Baseline report-only de zonas críticas                                                 |
 
 ## Estructura del Proyecto
 
@@ -133,6 +137,8 @@ import { useDailyRecord } from '@/hooks/useDailyRecord';
 - [Runbook de sync y resiliencia](docs/RUNBOOK_SYNC_RESILIENCE.md)
 - [Checklist diario admin (1 pagina)](docs/RUNBOOK_DAILY_ADMIN_CHECKLIST.md)
 - [Runbook técnico de soporte](docs/RUNBOOK_SUPPORT_OPERATIONS.md)
+- [Guardrails de calidad](docs/QUALITY_GUARDRAILS.md)
+- [Checklist de cambio seguro](docs/SAFE_CHANGE_CHECKLIST.md)
 - [Mapa de código fuente](src/README.md)
 
 ### Documentación existente relevante
@@ -208,14 +214,18 @@ E2E_CRITICAL_BROWSERS=chromium,firefox npm run test:e2e:critical
 
 La pipeline en `.github/workflows/ci-cd.yml` bloquea merge si falla alguno:
 
-- Quality gates (`lint`, `typecheck`, `check:quality`)
-- Unit/integration (`test:ci:unit`)
-- Resiliencia crítica (`test:resilience`)
-- Riesgo operativo admin health (`test:risk:admin-health`)
-- Carga base de sync queue (`test:sync-load`)
-- Firestore rules + sync emulator (`test:rules:ci`, `test:emulator:sync:ci`)
-- E2E críticos con emulador (`test:e2e:critical:ci`)
-- Build de producción (`build`)
+- `quality-static`
+- `unit-risk`
+- `rules-emulator`
+- `e2e-critical`
+- `build-budget`
+
+Artifacts operativos publicados por CI:
+
+- `quality-metrics`
+- `operational-health`
+- `runtime-contracts`
+- `critical-coverage`
 
 ## Baseline de Calidad
 

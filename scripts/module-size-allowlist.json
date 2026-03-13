@@ -13,5 +13,79 @@
     "src/services/integrations/whatsapp/whatsappService.ts": 470,
     "src/services/admin/auditService.ts": 460,
     "src/components/shared/TerminologySuggestor.tsx": 410
+  },
+  "backlog": {
+    "src/services/auth/authService.ts": {
+      "limit": 610,
+      "reason": "Fachada legacy de auth que todavía concentra flujos históricos; seguirá fragmentándose en fases posteriores.",
+      "owner": "auth-platform",
+      "status": "active"
+    },
+    "src/services/pdf/handoffPdfSections.ts": {
+      "limit": 590,
+      "reason": "Composición PDF clínica aún concentrada por layout compartido y compatibilidad histórica.",
+      "owner": "handoff-pdf",
+      "status": "active"
+    },
+    "src/types/core.ts": {
+      "limit": 555,
+      "reason": "Contrato tipado central del dominio; requiere partición con estrategia de compatibilidad.",
+      "owner": "core-types",
+      "status": "active"
+    },
+    "src/utils/dateUtils.ts": {
+      "limit": 545,
+      "reason": "Compatibilidad legacy mientras migra a utilidades separadas de calendario clínico y formato.",
+      "owner": "census-calendar",
+      "status": "shrinking"
+    },
+    "src/services/exporters/censusMasterWorkbook.ts": {
+      "limit": 545,
+      "reason": "Builder Excel principal con layout tabular complejo todavía concentrado por hoja maestra.",
+      "owner": "exports",
+      "status": "active"
+    },
+    "src/features/cudyr/services/cudyrExportService.ts": {
+      "limit": 520,
+      "reason": "Servicio de exportación CUDYR todavía mezcla serialización y layout de hoja.",
+      "owner": "cudyr",
+      "status": "active"
+    },
+    "src/schemas/zodSchemas.ts": {
+      "limit": 520,
+      "reason": "Esquemas runtime concentrados mientras se termina de versionar y particionar por feature.",
+      "owner": "runtime-contracts",
+      "status": "active"
+    },
+    "src/services/google/googleDriveService.ts": {
+      "limit": 505,
+      "reason": "Integración Google Drive aún concentra varios endpoints y helpers de autenticación.",
+      "owner": "integrations",
+      "status": "active"
+    },
+    "src/services/calculations/minsalStatsCalculator.ts": {
+      "limit": 500,
+      "reason": "Calculadora MINSAL mantiene compatibilidad de fórmulas y salidas históricas.",
+      "owner": "analytics",
+      "status": "active"
+    },
+    "src/services/integrations/whatsapp/whatsappService.ts": {
+      "limit": 470,
+      "reason": "Orquestación de envío y fallback de WhatsApp todavía concentrada en un solo servicio.",
+      "owner": "integrations",
+      "status": "active"
+    },
+    "src/services/admin/auditService.ts": {
+      "limit": 460,
+      "reason": "Servicio de auditoría con queries y serialización aún pendiente de partición.",
+      "owner": "admin-audit",
+      "status": "active"
+    },
+    "src/components/shared/TerminologySuggestor.tsx": {
+      "limit": 410,
+      "reason": "Componente compartido todavía mezcla UI y modelo de sugerencias.",
+      "owner": "shared-ui",
+      "status": "active"
+    }
   }
 }

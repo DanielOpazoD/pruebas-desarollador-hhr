@@ -56,6 +56,17 @@ flowchart TB
 Para más detalle de flujos y decisiones, ver `docs/architecture.md`.
 Para resumen ejecutivo y stack, ver este documento.
 
+## Guardrails de calidad
+
+- La guía transversal de calidad está en `docs/QUALITY_GUARDRAILS.md`.
+- El checklist mínimo de cambios seguros está en `docs/SAFE_CHANGE_CHECKLIST.md`.
+- Los entrypoints operativos de CI/reporting de Fase 4 son:
+  - `npm run ci:quality-core`
+  - `npm run check:quality`
+  - `npm run report:quality-metrics`
+  - `npm run report:operational-health`
+  - `npm run report:runtime-contracts`
+
 ---
 
 ## 📦 Stack Tecnológico

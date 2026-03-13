@@ -1,6 +1,10 @@
 import { buildPatientPresenceSnapshot } from '@/application/patient-flow/clinicalEpisode';
-import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domain/entities';
 import type { OccupiedBedRow } from '@/features/census/types/censusTableTypes';
+
+type ClinicalDocumentPresenceRecord = {
+  status: string;
+  episodeKey: string;
+};
 
 export interface BedEpisodeBinding {
   bedId: string;
@@ -25,7 +29,7 @@ export const buildBedEpisodeBindings = (occupiedRows: OccupiedBedRow[]): BedEpis
     });
 
 export const buildActiveClinicalDocumentEpisodeKeys = (
-  documents: ClinicalDocumentRecord[] | undefined
+  documents: ClinicalDocumentPresenceRecord[] | undefined
 ): Set<string> =>
   new Set(
     (documents || [])

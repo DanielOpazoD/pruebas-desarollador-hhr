@@ -9,6 +9,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import { COLLECTIONS, getActiveHospitalId, HOSPITAL_COLLECTIONS } from '@/constants/firestorePaths';
+import { createOperationalError } from '@/services/observability/operationalError';
+import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 import { getRecordDocRef } from '@/services/storage/firestore/firestoreShared';
 
 export class ConcurrencyError extends Error {
@@ -45,8 +47,26 @@ export const assertFirestoreConcurrency = async (
 
     const remoteLastUpdated = getRemoteLastUpdatedIso(remoteDoc.data());
     if (remoteLastUpdated && new Date(remoteLastUpdated) > new Date(expectedLastUpdated)) {
-      console.warn(
-        `[Firestore] ${contextLabel} concurrency conflict. Remote: ${remoteLastUpdated}, Local base: ${expectedLastUpdated}`
+      recordOperationalErrorTelemetry(
+        'firestore',
+        'verify_record_concurrency',
+        createOperationalError({
+          code: 'firestore_concurrency_conflict',
+          message: conflictMessage,
+          severity: 'warning',
+          userSafeMessage: conflictMessage,
+          context: {
+            contextLabel,
+            remoteLastUpdated,
+            expectedLastUpdated,
+          },
+        }),
+        {
+          code: 'firestore_concurrency_conflict',
+          message: conflictMessage,
+          severity: 'warning',
+          userSafeMessage: conflictMessage,
+        }
       );
       throw new ConcurrencyError(conflictMessage);
     }
@@ -55,7 +75,15 @@ export const assertFirestoreConcurrency = async (
       throw error;
     }
 
-    console.warn(`[Firestore] Could not verify ${contextLabel} concurrency, proceeding.`);
+    recordOperationalErrorTelemetry('firestore', 'verify_record_concurrency', error, {
+      code: 'firestore_concurrency_verification_failed',
+      message: `No se pudo verificar concurrencia para ${contextLabel}.`,
+      severity: 'warning',
+      userSafeMessage: `No se pudo verificar concurrencia para ${contextLabel}.`,
+      context: {
+        contextLabel,
+      },
+    });
   }
 };
 
@@ -76,7 +104,15 @@ export const saveHistorySnapshot = async (date: string): Promise<void> => {
       snapshotTimestamp: Timestamp.now(),
     });
   } catch (error) {
-    console.error('❌ Failed to create history snapshot:', error);
+    recordOperationalErrorTelemetry('firestore', 'save_history_snapshot', error, {
+      code: 'firestore_history_snapshot_failed',
+      message: 'No se pudo crear el snapshot histórico del registro.',
+      severity: 'warning',
+      userSafeMessage: 'No se pudo crear el snapshot histórico del registro.',
+      context: {
+        date,
+      },
+    });
   }
 };
 

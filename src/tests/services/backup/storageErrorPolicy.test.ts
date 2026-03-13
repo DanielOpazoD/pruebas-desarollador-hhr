@@ -2,6 +2,7 @@ import {
   classifyStorageError,
   isExpectedStorageLookupMiss,
   shouldLogStorageError,
+  toStorageOperationalError,
 } from '@/services/backup/storageErrorPolicy';
 import { describe, expect, it } from 'vitest';
 
@@ -34,5 +35,21 @@ describe('storageErrorPolicy', () => {
     expect(classifyStorageError(error)).toBe('unknown');
     expect(isExpectedStorageLookupMiss(error)).toBe(false);
     expect(shouldLogStorageError(error)).toBe(true);
+  });
+
+  it('maps storage errors into the shared operational error contract', () => {
+    const operationalError = toStorageOperationalError(
+      { message: 'FirebaseError: Missing or insufficient permissions.' },
+      { context: { storageRoot: 'backups' } }
+    );
+
+    expect(operationalError.code).toBe('storage_permission_denied');
+    expect(operationalError.severity).toBe('warning');
+    expect(operationalError.userSafeMessage).toBe('No fue posible acceder al archivo solicitado.');
+    expect(operationalError.context).toEqual({
+      storageCategory: 'permission_denied',
+      lookupStatus: 'restricted',
+      storageRoot: 'backups',
+    });
   });
 });

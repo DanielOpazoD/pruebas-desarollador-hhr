@@ -10,6 +10,7 @@ import {
   createInitialTransferSubscriptionState,
   mergeSubscribedTransfers,
 } from '@/services/transfers/transferSubscriptionController';
+import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 
 interface SubscribeToTransfersOptions {
   onError?: (message: string, error: unknown) => void;
@@ -35,6 +36,15 @@ export const subscribeToTransfersRealtime = (
     }
 
     options.onError?.(buildTransferSubscriptionErrorMessage(source, error), error);
+    recordOperationalErrorTelemetry('transfers', `subscribe_transfers_${source}`, error, {
+      code: `transfer_${source}_subscription_failed`,
+      message: buildTransferSubscriptionErrorMessage(source, error),
+      severity: 'warning',
+      userSafeMessage: buildTransferSubscriptionErrorMessage(source, error),
+      context: {
+        source,
+      },
+    });
     emitMergedTransfers();
   };
 
@@ -44,10 +54,7 @@ export const subscribeToTransfersRealtime = (
       state.activeTransfers = querySnapshotToTransfers(snapshot);
       emitMergedTransfers();
     },
-    error => {
-      console.error('❌ Error subscribing to active transfers:', error);
-      handleSubscriptionError('active', error);
-    }
+    error => handleSubscriptionError('active', error)
   );
 
   const unsubscribeHistory = onSnapshot(
@@ -56,10 +63,7 @@ export const subscribeToTransfersRealtime = (
       state.historyTransfers = querySnapshotToTransfers(snapshot);
       emitMergedTransfers();
     },
-    error => {
-      console.error('❌ Error subscribing to transfer history:', error);
-      handleSubscriptionError('history', error);
-    }
+    error => handleSubscriptionError('history', error)
   );
 
   return () => {

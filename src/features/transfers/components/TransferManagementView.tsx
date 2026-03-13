@@ -14,11 +14,10 @@ import { useTransferManagement } from '@/hooks/useTransferManagement';
 import { useTransferViewStates } from '@/hooks/useTransferViewStates';
 import { useDailyRecordData } from '@/context/DailyRecordContext';
 import { getHospitalConfigById } from '@/constants/hospitalConfigs';
-import type { TransferRequest, TransferStatus } from '@/types/transfers';
 import {
-  ACTIVE_TRANSFER_STATUSES,
-  FINALIZED_TRANSFER_STATUSES,
-} from './controllers/transferTableController';
+  buildTransferManagementPeriodModel,
+  TRANSFER_MONTH_LABELS,
+} from './controllers/transferManagementViewController';
 
 const TransferQuestionnaireModal = React.lazy(() =>
   import('./components/TransferQuestionnaireModal').then(module => ({
@@ -75,82 +74,15 @@ export const TransferManagementView: React.FC = () => {
     cancelTransfer
   );
 
-  const monthLabels = useMemo(
-    () => ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
-    []
-  );
-
-  const closedStatuses = useMemo<Set<TransferStatus>>(
-    () => new Set<TransferStatus>(FINALIZED_TRANSFER_STATUSES),
-    []
-  );
-
-  const parseDate = (value: string | undefined): Date | null => {
-    if (!value) return null;
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  };
-
-  const selectedPeriodStart = useMemo(
-    () => new Date(selectedYear, selectedMonth - 1, 1, 0, 0, 0, 0),
-    [selectedYear, selectedMonth]
-  );
-  const selectedPeriodEnd = useMemo(
-    () => new Date(selectedYear, selectedMonth, 0, 23, 59, 59, 999),
-    [selectedYear, selectedMonth]
-  );
-
-  const availableYears = useMemo(() => {
-    const years = new Set<number>([currentYear]);
-    transfers.forEach(transfer => {
-      const requestDate = parseDate(transfer.requestDate);
-      if (requestDate) years.add(requestDate.getFullYear());
-      const latestStatusDate = parseDate(transfer.statusHistory.at(-1)?.timestamp);
-      if (latestStatusDate) years.add(latestStatusDate.getFullYear());
-    });
-    return Array.from(years).sort((a, b) => b - a);
-  }, [currentYear, transfers]);
-
-  const filteredTransfers = useMemo<TransferRequest[]>(() => {
-    return transfers
-      .filter(transfer => {
-        const requestDate = parseDate(transfer.requestDate);
-        if (!requestDate) {
-          return false;
-        }
-
-        const isClosed = closedStatuses.has(transfer.status);
-        if (!isClosed) {
-          // Active/intermediate requests must carry over to following months.
-          return requestDate <= selectedPeriodEnd;
-        }
-
-        const requestInPeriod =
-          requestDate >= selectedPeriodStart && requestDate <= selectedPeriodEnd;
-        const latestStatusDate = parseDate(transfer.statusHistory.at(-1)?.timestamp);
-        const closedInPeriod = latestStatusDate
-          ? latestStatusDate >= selectedPeriodStart && latestStatusDate <= selectedPeriodEnd
-          : false;
-
-        return requestInPeriod || closedInPeriod;
-      })
-      .sort((a, b) => b.requestDate.localeCompare(a.requestDate));
-  }, [closedStatuses, selectedPeriodEnd, selectedPeriodStart, transfers]);
-
-  const filteredActiveCount = useMemo(
-    () => filteredTransfers.filter(transfer => !closedStatuses.has(transfer.status)).length,
-    [closedStatuses, filteredTransfers]
-  );
-
-  const activeTransfers = useMemo(
-    () => filteredTransfers.filter(transfer => ACTIVE_TRANSFER_STATUSES.includes(transfer.status)),
-    [filteredTransfers]
-  );
-
-  const finalizedTransfers = useMemo(
+  const { availableYears, filteredActiveCount, activeTransfers, finalizedTransfers } = useMemo(
     () =>
-      filteredTransfers.filter(transfer => FINALIZED_TRANSFER_STATUSES.includes(transfer.status)),
-    [filteredTransfers]
+      buildTransferManagementPeriodModel({
+        transfers,
+        selectedYear,
+        selectedMonth,
+        currentYear,
+      }),
+    [currentYear, selectedMonth, selectedYear, transfers]
   );
 
   return (
@@ -196,7 +128,7 @@ export const TransferManagementView: React.FC = () => {
           ))}
         </div>
         <div className="grid grid-cols-6 gap-1.5 md:grid-cols-12">
-          {monthLabels.map((label, index) => {
+          {TRANSFER_MONTH_LABELS.map((label, index) => {
             const monthValue = index + 1;
             return (
               <button

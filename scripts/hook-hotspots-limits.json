@@ -5,5 +5,37 @@
     "src/hooks/useBedManagement.ts": 360,
     "src/hooks/useExportManager.ts": 280,
     "src/hooks/useBackupFileBrowser.ts": 320
+  },
+  "backlog": {
+    "src/hooks/useCensusEmail.ts": {
+      "limit": 640,
+      "reason": "Orquesta bootstrap, destinatarios, envío y auditoría; pendiente de partición adicional por flujo.",
+      "owner": "census-email",
+      "status": "active"
+    },
+    "src/hooks/useTransferManagement.ts": {
+      "limit": 360,
+      "reason": "Hook de management ya en reducción progresiva tras la fase 3; sigue siendo hotspot controlado.",
+      "owner": "transfers",
+      "status": "shrinking"
+    },
+    "src/hooks/useBedManagement.ts": {
+      "limit": 360,
+      "reason": "Concentra estado operativo de camas y restricciones UI todavía no separadas por completo.",
+      "owner": "census-bed-management",
+      "status": "active"
+    },
+    "src/hooks/useExportManager.ts": {
+      "limit": 280,
+      "reason": "Coordina múltiples exportadores y políticas de storage; pendiente de controllers adicionales.",
+      "owner": "exports",
+      "status": "active"
+    },
+    "src/hooks/useBackupFileBrowser.ts": {
+      "limit": 320,
+      "reason": "Hook de exploración de respaldos todavía mezcla queries, filtro y runtime de navegación.",
+      "owner": "backup",
+      "status": "active"
+    }
   }
 }

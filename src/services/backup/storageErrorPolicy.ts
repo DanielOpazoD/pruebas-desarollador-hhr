@@ -1,3 +1,8 @@
+import {
+  createOperationalError,
+  type OperationalError,
+} from '@/services/observability/operationalError';
+
 type StorageErrorLike = {
   code?: string;
   message?: string;
@@ -112,4 +117,41 @@ export const resolveStorageLookupStatus = (
     return 'timeout';
   }
   return 'error';
+};
+
+export const toStorageOperationalError = (
+  error: unknown,
+  options: {
+    code?: string;
+    message?: string;
+    context?: Record<string, unknown>;
+    userSafeMessage?: string;
+  } = {}
+): OperationalError => {
+  const category = classifyStorageError(error);
+  const lookupStatus = resolveStorageLookupStatus(error);
+
+  return createOperationalError({
+    code: options.code || `storage_${category}`,
+    message:
+      options.message ||
+      (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string'
+        ? error.message
+        : 'Error operacional de storage.'),
+    severity: category === 'unknown' ? 'error' : 'warning',
+    userSafeMessage:
+      options.userSafeMessage ||
+      (lookupStatus === 'restricted'
+        ? 'No fue posible acceder al archivo solicitado.'
+        : lookupStatus === 'missing'
+          ? 'El archivo solicitado no se encuentra disponible.'
+          : lookupStatus === 'timeout'
+            ? 'La consulta al respaldo tardó demasiado.'
+            : 'No fue posible completar la consulta de respaldo.'),
+    context: {
+      storageCategory: category,
+      lookupStatus,
+      ...options.context,
+    },
+  });
 };

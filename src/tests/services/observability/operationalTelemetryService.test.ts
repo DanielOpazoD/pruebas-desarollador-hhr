@@ -3,6 +3,7 @@ import {
   buildOperationalTelemetrySummary,
   clearOperationalTelemetryEvents,
   getOperationalTelemetryEvents,
+  recordOperationalErrorTelemetry,
   recordOperationalOutcome,
   recordOperationalTelemetry,
 } from '@/services/observability/operationalTelemetryService';
@@ -108,5 +109,26 @@ describe('operationalTelemetryService', () => {
     expect(summary.handoffObservedCount).toBe(1);
     expect(summary.topObservedCategory).toBe('handoff');
     expect(summary.topObservedOperation).toBe('send_medical_handoff');
+  });
+
+  it('records structured operational errors with code and safe message in context', () => {
+    recordOperationalErrorTelemetry(
+      'transfers',
+      'subscribe_transfers_active',
+      new Error('socket down'),
+      {
+        code: 'transfer_active_subscription_failed',
+        message: 'socket down',
+        severity: 'warning',
+        userSafeMessage: 'No se pudo sincronizar traslados activos.',
+      }
+    );
+
+    const event = getOperationalTelemetryEvents()[0];
+    expect(event?.issues).toEqual(['No se pudo sincronizar traslados activos.']);
+    expect(event?.context).toEqual(
+      expect.objectContaining({ errorCode: 'transfer_active_subscription_failed' })
+    );
+    expect(event?.status).toBe('degraded');
   });
 });

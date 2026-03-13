@@ -1,5 +1,5 @@
 import type { UserRole } from '@/types';
-import { canReadClinicalDocuments } from '@/features/clinical-documents/controllers/clinicalDocumentPermissionController';
+import { canReadClinicalDocuments } from '@/application/clinical-documents/clinicalDocumentAccessPolicy';
 
 interface ResolvePatientRowCapabilitiesParams {
   role?: UserRole;

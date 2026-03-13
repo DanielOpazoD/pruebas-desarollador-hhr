@@ -55,3 +55,31 @@ clinicalShiftCalendarController
 
 - Cobertura alta en `src/tests/views/census/**`.
 - Checks de arquitectura y boundaries runtime en CI local (`check:quality`).
+
+## Invariantes
+
+- El cálculo de `nuevo ingreso` debe salir del dominio temporal compartido, no de helpers locales de tabla.
+- Los indicadores clínicos de fila deben depender del sujeto correcto: paciente/episodio cuando corresponda, no cama por arrastre.
+- Los modales visibles deben derivar de capabilities/runtime de fila, no solo de estado UI.
+
+## Runtime boundaries
+
+- `controllers/` no debe importar React ni hooks.
+- `components/` no debe recalcular reglas clínicas ya resueltas por controllers.
+- Las acciones del censo deben salir de los command/runtime controllers, no de callbacks ad hoc embebidos.
+
+## Test entrypoints recomendados
+
+- `npx vitest run src/tests/views/census`
+- `npm run test:ci:unit`
+
+## Comandos de validación del módulo
+
+- `npm run typecheck`
+- `npm run check:quality`
+- `npm run test:ci:unit -- src/tests/views/census`
+
+## Safe change links
+
+- [docs/QUALITY_GUARDRAILS.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/QUALITY_GUARDRAILS.md)
+- [docs/SAFE_CHANGE_CHECKLIST.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/SAFE_CHANGE_CHECKLIST.md)

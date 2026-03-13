@@ -13,6 +13,8 @@ import {
 import { authorizeFirebaseUser } from '@/services/auth/authAccessResolution';
 import { getAuthRedirectRuntimeSupport } from '@/services/auth/authRedirectRuntime';
 import { AUTH_UI_COPY } from '@/services/auth/authUiCopy';
+import { createOperationalError } from '@/services/observability/operationalError';
+import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 
 const runE2ERedirectMode = async (mode: 'success' | 'error' | 'timeout'): Promise<void> => {
   if (mode === 'error') {
@@ -46,9 +48,16 @@ export const signInWithGoogleRedirect = async (): Promise<void> => {
   try {
     const redirectRuntimeSupport = getAuthRedirectRuntimeSupport();
     if (!redirectRuntimeSupport.canUseRedirectAuth) {
-      throw new Error(
-        redirectRuntimeSupport.redirectDisabledReason || AUTH_UI_COPY.redirectUnavailable
-      );
+      throw createOperationalError({
+        code: 'auth_redirect_unavailable',
+        message: redirectRuntimeSupport.redirectDisabledReason || AUTH_UI_COPY.redirectUnavailable,
+        severity: 'warning',
+        userSafeMessage:
+          redirectRuntimeSupport.redirectDisabledReason || AUTH_UI_COPY.redirectUnavailable,
+        context: {
+          canUseRedirectAuth: redirectRuntimeSupport.canUseRedirectAuth,
+        },
+      });
     }
 
     const e2eRedirectMode = readE2ERedirectMode();
@@ -57,12 +66,26 @@ export const signInWithGoogleRedirect = async (): Promise<void> => {
       return;
     }
 
-    console.warn('[authService] 🔄 Starting Google Sign-In redirect flow...');
     markAuthBootstrapPending('redirect');
     await signInWithRedirect(auth, googleProvider);
   } catch (error) {
-    console.error('[authService] Google redirect failed', error);
-    throw error;
+    const operationalError = recordOperationalErrorTelemetry(
+      'auth',
+      'sign_in_google_redirect',
+      error,
+      {
+        code: 'auth_redirect_start_failed',
+        message: AUTH_UI_COPY.redirectUnavailable,
+        severity: 'error',
+        userSafeMessage: AUTH_UI_COPY.redirectUnavailable,
+      },
+      {
+        context: {
+          hasActiveFirebaseSession: hasActiveFirebaseSession(),
+        },
+      }
+    );
+    throw operationalError;
   }
 };
 
@@ -77,7 +100,12 @@ export const handleSignInRedirectResult = async (): Promise<AuthUser | null> => 
     if (!result) return null;
     return await authorizeFirebaseUser(result.user);
   } catch (error) {
-    console.error('[authService] Error handling redirect result', error);
+    recordOperationalErrorTelemetry('auth', 'handle_sign_in_redirect_result', error, {
+      code: 'auth_redirect_result_failed',
+      message: 'No se pudo completar el retorno del acceso con Google.',
+      severity: 'warning',
+      userSafeMessage: 'No se pudo completar el retorno del acceso con Google.',
+    });
     return null;
   } finally {
     clearAuthBootstrapPending();

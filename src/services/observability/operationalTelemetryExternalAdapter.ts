@@ -1,7 +1,7 @@
 import type {
   OperationalTelemetryEvent,
   OperationalTelemetryStatus,
-} from '@/services/observability/operationalTelemetryService';
+} from '@/services/observability/operationalTelemetryTypes';
 
 export interface OperationalTelemetryExternalConfig {
   enabled: boolean;
