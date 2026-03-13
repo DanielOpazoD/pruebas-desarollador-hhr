@@ -5,31 +5,8 @@ import { checkSharedCensusAccess, isSharedCensusMode } from '@/services/auth/sha
 import { clearRoleCacheForEmail } from '@/services/auth/authPolicy';
 import { toAuthUser } from '@/services/auth/authShared';
 import { resolveFirebaseUserRole } from '@/services/auth/authAccessResolution';
-
-const toAnonymousAuthUser = (firebaseUser: User): AuthUser => ({
-  uid: firebaseUser.uid,
-  email: null,
-  displayName: 'Anonymous Doctor',
-  role: 'viewer',
-});
-
-const resolveAuthenticatedUser = async (firebaseUser: User): Promise<AuthUser | null> => {
-  if (firebaseUser.isAnonymous) {
-    return toAnonymousAuthUser(firebaseUser);
-  }
-
-  if (isSharedCensusMode()) {
-    const sharedAccess = await checkSharedCensusAccess(firebaseUser.email);
-    if (!sharedAccess.authorized) {
-      await firebaseSignOut(auth);
-      return null;
-    }
-    return toAuthUser(firebaseUser, 'viewer_census');
-  }
-
-  const role = await resolveFirebaseUserRole(firebaseUser);
-  return toAuthUser(firebaseUser, role);
-};
+import { resolveAuthSessionUser, toAnonymousAuthUser } from '@/services/auth/authSessionController';
+import { recordAuthOperationalError } from '@/services/auth/authOperationalTelemetry';
 
 export const signOut = async (): Promise<void> => {
   const userEmail = auth.currentUser?.email;
@@ -38,8 +15,16 @@ export const signOut = async (): Promise<void> => {
   if (userEmail) {
     try {
       await clearRoleCacheForEmail(userEmail);
-    } catch (e) {
-      console.warn('[authService] Failed to clear role cache on signOut:', e);
+    } catch (error) {
+      recordAuthOperationalError('sign_out_clear_role_cache', error, {
+        code: 'auth_role_cache_clear_failed',
+        message: 'Failed to clear role cache on sign out.',
+        severity: 'warning',
+        userSafeMessage: 'La sesión se cerró, pero no se pudo limpiar el cache de roles.',
+        context: {
+          email: userEmail,
+        },
+      });
     }
   }
 };
@@ -51,7 +36,14 @@ export const onAuthChange = (callback: (user: AuthUser | null) => void): (() => 
       return;
     }
 
-    callback(await resolveAuthenticatedUser(firebaseUser));
+    callback(
+      await resolveAuthSessionUser(firebaseUser, {
+        isSharedCensusMode,
+        checkSharedCensusAccess,
+        signOutUnauthorizedUser: () => firebaseSignOut(auth),
+        resolveFirebaseUserRole,
+      })
+    );
   });
 };
 

@@ -4,6 +4,7 @@ import { AuthUser, UserRole } from '@/types';
 import { checkSharedCensusAccess, isSharedCensusMode } from '@/services/auth/sharedCensusAuth';
 import { checkEmailInFirestore } from '@/services/auth/authPolicy';
 import { toAuthUser } from '@/services/auth/authShared';
+import { recordAuthOperationalError } from '@/services/auth/authOperationalTelemetry';
 
 const SHARED_CENSUS_UNAUTHORIZED_MESSAGE =
   'Acceso no autorizado. Tu correo no tiene permisos para censo compartido.';
@@ -64,7 +65,15 @@ export const resolveFirebaseUserRole = async (firebaseUser: User): Promise<UserR
 
     return role || 'viewer';
   } catch (error) {
-    console.error('[useAuthState] Error getting ID token result:', error);
+    recordAuthOperationalError('resolve_firebase_user_role', error, {
+      code: 'auth_token_role_resolution_failed',
+      message: 'Error getting ID token result.',
+      severity: 'warning',
+      userSafeMessage: 'No se pudo resolver el rol desde la sesión actual.',
+      context: {
+        email: firebaseUser.email || null,
+      },
+    });
     const { role } = await checkEmailInFirestore(firebaseUser.email || '');
     return role || 'viewer';
   }

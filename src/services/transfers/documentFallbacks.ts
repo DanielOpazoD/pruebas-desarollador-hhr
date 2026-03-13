@@ -9,17 +9,14 @@ import {
   formatDate,
   getCurrentDate,
   createOfficialHeader,
-  createTableRow,
   calculateAge,
   getResponse,
 } from './documentGeneratorUtils';
 import { createWorkbook } from '@/services/exporters/excelUtils';
 import { createGeneratedDocument } from './transferGeneratedDocumentController';
-
-const createDocxSection = (children: (Paragraph | Table)[]) => ({
-  properties: { page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } },
-  children,
-});
+import { createTransferDocxSection } from './transferDocxSectionFactory';
+import { createTransferDocxTable, type TransferTableRowInput } from './transferDocxTableController';
+import { populateTransferIaasWorkbook } from './transferIaasWorkbookController';
 
 const packDocxDocument = async (
   templateId: string,
@@ -38,13 +35,15 @@ const packDocxDocument = async (
   );
 };
 
+const table = (...rows: TransferTableRowInput[]) => createTransferDocxTable(rows);
+
 export const generateTapaTraslado = async (
   patientData: TransferPatientData,
   hospital: HospitalConfig
 ): Promise<GeneratedDocument> => {
   const doc = new Document({
     sections: [
-      createDocxSection([
+      createTransferDocxSection([
         createOfficialHeader('TRASLADO DE PACIENTE'),
         new Paragraph({
           children: [
@@ -62,19 +61,13 @@ export const generateTapaTraslado = async (
           children: [new TextRun({ text: '1. IDENTIFICACIÓN DEL PACIENTE', bold: true, size: 24 })],
           spacing: { before: 400, after: 200 },
         }),
-        new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          rows: [
-            createTableRow('Nombre Completo', patientData.patientName),
-            createTableRow('RUT / RUN', patientData.rut),
-            createTableRow('Fecha Nacimiento', formatDate(patientData.birthDate)),
-            createTableRow('Diagnóstico Ingreso', patientData.diagnosis || '-'),
-            createTableRow(
-              'Servicio / Cama Origen',
-              `${patientData.originHospital} - ${patientData.bedName}`
-            ),
-          ],
-        }),
+        table(
+          ['Nombre Completo', patientData.patientName],
+          ['RUT / RUN', patientData.rut],
+          ['Fecha Nacimiento', formatDate(patientData.birthDate)],
+          ['Diagnóstico Ingreso', patientData.diagnosis || '-'],
+          ['Servicio / Cama Origen', `${patientData.originHospital} - ${patientData.bedName}`]
+        ),
         new Paragraph({
           children: [
             new TextRun({
@@ -100,20 +93,14 @@ export const generateEncuestaCovid = async (
 ): Promise<GeneratedDocument> => {
   const doc = new Document({
     sections: [
-      createDocxSection([
+      createTransferDocxSection([
         createOfficialHeader('ENCUESTA EPIDEMIOLÓGICA COVID-19'),
         new Paragraph({
           heading: HeadingLevel.HEADING_2,
           children: [new TextRun({ text: 'I. IDENTIFICACIÓN', bold: true, size: 24 })],
           spacing: { after: 200 },
         }),
-        new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          rows: [
-            createTableRow('NOMBRE COMPLETO', patientData.patientName),
-            createTableRow('RUN / PASAPORTE', patientData.rut),
-          ],
-        }),
+        table(['NOMBRE COMPLETO', patientData.patientName], ['RUN / PASAPORTE', patientData.rut]),
         new Paragraph({
           heading: HeadingLevel.HEADING_2,
           children: [
@@ -162,14 +149,11 @@ export const generateEncuestaCovid = async (
           ],
           spacing: { after: 200 },
         }),
-        new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          rows: [
-            createTableRow('NOMBRE RESPONSABLE', getResponse(responses, 'responsableEncuesta')),
-            createTableRow('CARGO / FUNCIÓN', getResponse(responses, 'cargoResponsable')),
-            createTableRow('FECHA', getCurrentDate()),
-          ],
-        }),
+        table(
+          ['NOMBRE RESPONSABLE', getResponse(responses, 'responsableEncuesta')],
+          ['CARGO / FUNCIÓN', getResponse(responses, 'cargoResponsable')],
+          ['FECHA', getCurrentDate()]
+        ),
       ]),
     ],
   });
@@ -184,7 +168,7 @@ export const generateSolicitudCamaHDS = async (
 ): Promise<GeneratedDocument> => {
   const doc = new Document({
     sections: [
-      createDocxSection([
+      createTransferDocxSection([
         createOfficialHeader('SOLICITUD DE CAMA HOSPITALARIA'),
         new Paragraph({
           children: [
@@ -199,33 +183,27 @@ export const generateSolicitudCamaHDS = async (
           children: [new TextRun({ text: '1. ANTECEDENTES DEL PACIENTE', bold: true, size: 24 })],
           spacing: { after: 200 },
         }),
-        new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          rows: [
-            createTableRow('Nombre Completo', patientData.patientName),
-            createTableRow('RUT / Cédula', patientData.rut),
-            createTableRow('Edad', String(calculateAge(patientData.birthDate))),
-            createTableRow('Previsión', 'FONASA / Isapre'),
-            createTableRow('Diagnóstico', patientData.diagnosis || '-'),
-            createTableRow(
-              'Motivo Transferencia',
-              getResponse(responses, 'observaciones') || 'Continuidad de cuidados'
-            ),
-          ],
-        }),
+        table(
+          ['Nombre Completo', patientData.patientName],
+          ['RUT / Cédula', patientData.rut],
+          ['Edad', String(calculateAge(patientData.birthDate))],
+          ['Previsión', 'FONASA / Isapre'],
+          ['Diagnóstico', patientData.diagnosis || '-'],
+          [
+            'Motivo Transferencia',
+            getResponse(responses, 'observaciones') || 'Continuidad de cuidados',
+          ]
+        ),
         new Paragraph({
           heading: HeadingLevel.HEADING_2,
           children: [new TextRun({ text: '2. ANTECEDENTES DE ORIGEN', bold: true, size: 24 })],
           spacing: { before: 400, after: 200 },
         }),
-        new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          rows: [
-            createTableRow('Centro Derivador', patientData.originHospital),
-            createTableRow('Médico Solicitante', getResponse(responses, 'medicoTratante')),
-            createTableRow('Especialidad Requerida', 'Medicina Interna / Cirugía'),
-          ],
-        }),
+        table(
+          ['Centro Derivador', patientData.originHospital],
+          ['Médico Solicitante', getResponse(responses, 'medicoTratante')],
+          ['Especialidad Requerida', 'Medicina Interna / Cirugía']
+        ),
         new Paragraph({
           children: [
             new TextRun({ text: '\n\n\n__________________________', bold: true }),
@@ -248,22 +226,19 @@ export const generateSolicitudAmbulancia = async (
 ): Promise<GeneratedDocument> => {
   const doc = new Document({
     sections: [
-      createDocxSection([
+      createTransferDocxSection([
         createOfficialHeader('SOLICITUD DE TRASLADO / MOVILIZACIÓN'),
         new Paragraph({
           heading: HeadingLevel.HEADING_2,
           children: [new TextRun({ text: '1. IDENTIFICACIÓN', bold: true, size: 24 })],
           spacing: { after: 200 },
         }),
-        new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          rows: [
-            createTableRow('Nombre Paciente', patientData.patientName),
-            createTableRow('Rut', patientData.rut),
-            createTableRow('Diagnóstico', patientData.diagnosis || '-'),
-            createTableRow('Médico Tratante', getResponse(responses, 'medicoTratante')),
-          ],
-        }),
+        table(
+          ['Nombre Paciente', patientData.patientName],
+          ['Rut', patientData.rut],
+          ['Diagnóstico', patientData.diagnosis || '-'],
+          ['Médico Tratante', getResponse(responses, 'medicoTratante')]
+        ),
         ...processConditionSection(responses),
         ...processItinerarySection(responses),
         new Paragraph({
@@ -295,15 +270,12 @@ const processConditionSection = (responses: QuestionnaireResponse) => {
       children: [new TextRun({ text: '2. CONDICIONES CLÍNICAS', bold: true, size: 24 })],
       spacing: { before: 400, after: 200 },
     }),
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        createTableRow('Posición Traslado', getResponse(responses, 'posicionTraslado')),
-        createTableRow('Acompañante HHR', getResponse(responses, 'requiereAcompanante')),
-        createTableRow('Oxígeno / Soporte', getResponse(responses, 'requiereOxigeno')),
-        createTableRow('Observaciones', getResponse(responses, 'otrasCondiciones') || '-'),
-      ],
-    }),
+    table(
+      ['Posición Traslado', getResponse(responses, 'posicionTraslado')],
+      ['Acompañante HHR', getResponse(responses, 'requiereAcompanante')],
+      ['Oxígeno / Soporte', getResponse(responses, 'requiereOxigeno')],
+      ['Observaciones', getResponse(responses, 'otrasCondiciones') || '-']
+    ),
   ];
 };
 
@@ -314,15 +286,12 @@ const processItinerarySection = (responses: QuestionnaireResponse) => {
       children: [new TextRun({ text: '3. ITINERARIO DE TRASLADO', bold: true, size: 24 })],
       spacing: { before: 400, after: 200 },
     }),
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        createTableRow('Línea Aérea / Empresa', getResponse(responses, 'lineaAerea')),
-        createTableRow('Número de Vuelo / Móvil', getResponse(responses, 'numeroVuelo')),
-        createTableRow('ETD (Salida)', getResponse(responses, 'horaDespegue')),
-        createTableRow('ETA (Llegada)', getResponse(responses, 'horaArribo')),
-      ],
-    }),
+    table(
+      ['Línea Aérea / Empresa', getResponse(responses, 'lineaAerea')],
+      ['Número de Vuelo / Móvil', getResponse(responses, 'numeroVuelo')],
+      ['ETD (Salida)', getResponse(responses, 'horaDespegue')],
+      ['ETA (Llegada)', getResponse(responses, 'horaArribo')]
+    ),
   ];
 };
 
@@ -332,32 +301,7 @@ export const generateFormularioIAAS = async (
   _hospital: HospitalConfig
 ): Promise<GeneratedDocument> => {
   const workbook = await createWorkbook();
-  const sheet = workbook.addWorksheet('Formulario IAAS');
-
-  // Simple layout for IAAS
-  sheet.getColumn('A').width = 40;
-  sheet.getColumn('B').width = 50;
-
-  sheet.mergeCells('A1:B1');
-  const titleCell = sheet.getCell('A1');
-  titleCell.value = 'HOSPITAL DEL SALVADOR - FORMULARIO IAAS';
-  titleCell.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
-  titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
-  titleCell.alignment = { horizontal: 'center' };
-
-  const dataRows = [
-    ['Nombre:', patientData.patientName],
-    ['Rut:', patientData.rut],
-    ['Precauciones:', getResponse(responses, 'tipoPrecauciones') || 'Estándar'],
-    ['Estudio Micro:', getResponse(responses, 'estudioMicrobiologico')],
-    ['Resultados:', getResponse(responses, 'resultadosMicrobiologicos') || 'Pendientes'],
-    ['Fecha Emisión:', getCurrentDate()],
-  ];
-
-  dataRows.forEach((row, _i) => {
-    const r = sheet.addRow(row);
-    r.getCell(1).font = { bold: true };
-  });
+  populateTransferIaasWorkbook(workbook, patientData, responses);
 
   const buffer = await workbook.xlsx.writeBuffer();
   return createGeneratedDocument(

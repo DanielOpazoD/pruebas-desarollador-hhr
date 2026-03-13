@@ -8,6 +8,11 @@ import {
   getStaticRoleForEmail,
 } from '@/services/auth/authRoleLookup';
 import { getCachedRole, saveRoleToCache } from '@/services/auth/authRoleCache';
+import {
+  recordAuthOperationalError,
+  emitAuthOperationalEvent,
+} from '@/services/auth/authOperationalTelemetry';
+import { resolveAllowedRoleForEmail } from '@/services/auth/authRoleResolutionController';
 
 export { clearRoleCacheForEmail } from '@/services/auth/authRoleCache';
 
@@ -16,40 +21,40 @@ export const checkEmailInFirestore = async (
 ): Promise<{ allowed: boolean; role?: UserRole }> => {
   try {
     const cleanEmail = normalizeEmail(email);
+    const { role, source } = await resolveAllowedRoleForEmail(cleanEmail, {
+      getStaticRoleForEmail,
+      getCachedRole,
+      getCloudRoleForEmail,
+      getDynamicRoleForEmail,
+      getAllowedUserRoleForEmail,
+      saveRoleToCache,
+    });
 
-    const staticRole = getStaticRoleForEmail(cleanEmail);
-    if (staticRole) {
-      void saveRoleToCache(cleanEmail, staticRole);
-      return { allowed: true, role: staticRole };
+    if (role) {
+      return { allowed: true, role };
     }
 
-    const cachedRole = await getCachedRole(cleanEmail);
-    if (cachedRole) {
-      return { allowed: true, role: cachedRole as UserRole };
-    }
-
-    const cloudRole = await getCloudRoleForEmail(cleanEmail);
-    if (cloudRole) {
-      void saveRoleToCache(cleanEmail, cloudRole);
-      return { allowed: true, role: cloudRole };
-    }
-
-    const dynamicRole = await getDynamicRoleForEmail(cleanEmail);
-    if (dynamicRole) {
-      void saveRoleToCache(cleanEmail, dynamicRole);
-      return { allowed: true, role: dynamicRole };
-    }
-
-    const allowedUserRole = await getAllowedUserRoleForEmail(cleanEmail);
-    if (allowedUserRole) {
-      void saveRoleToCache(cleanEmail, allowedUserRole);
-      return { allowed: true, role: allowedUserRole };
-    }
-
-    console.warn(`[authService] ❌ Email not found in whitelist: ${email}`);
+    emitAuthOperationalEvent('check_email_in_firestore', 'degraded', {
+      code: 'auth_email_not_whitelisted',
+      message: `Email not found in whitelist: ${cleanEmail}`,
+      severity: 'warning',
+      userSafeMessage: 'El correo no está autorizado para ingresar.',
+      context: {
+        email: cleanEmail,
+        source,
+      },
+    });
     return { allowed: false };
   } catch (error) {
-    console.error('[authService] ‼️ Error checking allowed users in Firestore:', error);
+    recordAuthOperationalError('check_email_in_firestore', error, {
+      code: 'auth_role_lookup_failed',
+      message: 'Error checking allowed users in Firestore.',
+      severity: 'error',
+      userSafeMessage: 'No se pudo validar el acceso del correo.',
+      context: {
+        email: normalizeEmail(email),
+      },
+    });
     return { allowed: false };
   }
 };

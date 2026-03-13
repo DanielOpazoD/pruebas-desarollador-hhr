@@ -9,15 +9,15 @@ import {
   startGoogleLoginLockHeartbeat,
 } from '@/services/auth/googleLoginLock';
 import { createAuthError, googleProvider } from '@/services/auth/authShared';
-import {
-  isPopupRecoverableAuthError,
-  shouldDowngradeGoogleAuthLogLevel,
-  toGoogleAuthError,
-} from '@/services/auth/authErrorPolicy';
+import { isPopupRecoverableAuthError, toGoogleAuthError } from '@/services/auth/authErrorPolicy';
 import {
   authorizeCurrentFirebaseUser,
   authorizeFirebaseUser,
 } from '@/services/auth/authAccessResolution';
+import {
+  emitAuthOperationalEvent,
+  recordAuthOperationalError,
+} from '@/services/auth/authOperationalTelemetry';
 
 const GOOGLE_POPUP_TIMEOUT_MS = 12000;
 
@@ -117,16 +117,23 @@ export const signInWithGoogle = async (): Promise<AuthUser> =>
       }
 
       const mappedError = toGoogleAuthError(error);
-      if (shouldDowngradeGoogleAuthLogLevel(error)) {
-        console.warn(`[authService] Google sign-in recoverable issue: ${mappedError.code}`);
-      } else {
-        console.error('[authService] Google sign-in failed', error);
-      }
+      recordAuthOperationalError('sign_in_google', error, {
+        code: mappedError.code,
+        message: mappedError.message,
+        severity: isPopupRecoverableAuthError(error) ? 'warning' : 'error',
+        userSafeMessage: mappedError.message,
+      });
 
       if (isPopupRecoverableAuthError(error)) {
-        console.warn(
-          '[authService] Trying alternate Google sign-in flow after browser popup issue'
-        );
+        emitAuthOperationalEvent('sign_in_google_popup_recovery', 'degraded', {
+          code: 'auth_google_popup_recovery_suggested',
+          message: 'Trying alternate Google sign-in flow after browser popup issue.',
+          severity: 'warning',
+          userSafeMessage: 'Puedes probar la forma alternativa de ingreso con Google.',
+          context: {
+            errorCode: mappedError.code,
+          },
+        });
       }
 
       throw mappedError;

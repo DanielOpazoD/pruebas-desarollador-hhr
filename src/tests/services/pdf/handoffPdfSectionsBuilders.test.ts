@@ -1,0 +1,115 @@
+import { describe, expect, it } from 'vitest';
+
+import { buildPatientTableBody } from '@/services/pdf/handoffPdfPatientTableSection';
+import { buildMovementsSummaryTables } from '@/services/pdf/handoffPdfMovementsSummarySection';
+import { resolveStatusTextStyles } from '@/services/pdf/handoffPdfTableFormattingController';
+import type { DailyRecord } from '@/types';
+
+const baseRecord: DailyRecord = {
+  date: '2026-03-10',
+  beds: {
+    H1C1: {
+      bedId: 'H1C1',
+      isBlocked: false,
+      bedMode: 'Cama',
+      hasCompanionCrib: false,
+      patientName: 'Juan Perez',
+      rut: '1-9',
+      age: '45a',
+      pathology: 'Neumonia',
+      specialty: 'Medicina' as DailyRecord['beds'][string]['specialty'],
+      status: 'Grave' as DailyRecord['beds'][string]['status'],
+      admissionDate: '2026-03-05',
+      hasWristband: false,
+      surgicalComplication: false,
+      isUPC: false,
+      devices: ['VVP'],
+      deviceDetails: {
+        VVP: { installationDate: '2026-03-08' },
+      },
+      handoffNoteDayShift: 'Observacion dia',
+      handoffNoteNightShift: 'Observacion noche',
+      medicalHandoffNote: 'Observacion medica',
+    },
+  } as DailyRecord['beds'],
+  discharges: [
+    {
+      id: 'd1',
+      bedId: 'a1',
+      bedName: 'A1',
+      bedType: 'Básica',
+      patientName: 'Juan Perez',
+      rut: '1-9',
+      diagnosis: 'Neumonia',
+      time: '12:00',
+      status: 'Vivo',
+      dischargeType: 'Domicilio (Habitual)',
+    },
+  ],
+  transfers: [
+    {
+      id: 't1',
+      bedId: 'a1',
+      bedName: 'A1',
+      bedType: 'Básica',
+      patientName: 'Juan Perez',
+      rut: '1-9',
+      diagnosis: 'Neumonia',
+      time: '12:00',
+      receivingCenter: 'HDS',
+      evacuationMethod: 'Ambulancia',
+    },
+  ],
+  cma: [
+    {
+      id: 'c1',
+      bedName: 'CMA1',
+      patientName: 'Ana Diaz',
+      rut: '2-7',
+      age: '34a',
+      diagnosis: 'Biopsia',
+      specialty: 'Cirugía',
+      interventionType: 'Cirugía Mayor Ambulatoria',
+      timestamp: '2026-03-10T12:00:00Z',
+    },
+  ],
+  nurses: ['', ''],
+  nursesDayShift: ['', ''],
+  nursesNightShift: ['', ''],
+  tensDayShift: ['', '', ''],
+  tensNightShift: ['', '', ''],
+  activeExtraBeds: [],
+  handoffDayChecklist: {},
+  handoffNightChecklist: {},
+  handoffNovedadesDayShift: '',
+  handoffNovedadesNightShift: '',
+  medicalHandoffNovedades: '',
+  handoffNightReceives: [],
+  lastUpdated: '2026-03-10T12:00:00Z',
+  schemaVersion: 1,
+};
+
+describe('handoffPdf section builders', () => {
+  it('arma filas de pacientes con dias y observacion correctos', () => {
+    const rows = buildPatientTableBody(baseRecord, false, 'day');
+    expect(rows).toHaveLength(1);
+    expect(rows[0][1]).toMatchObject({ content: expect.stringContaining('Juan Perez') });
+    expect(rows[0][4]).toBe('VVP (3d)');
+    expect(rows[0][5]).toBe('Observacion dia');
+    expect(rows[0]._daysStr).toBe('6d');
+  });
+
+  it('resuelve estilos por estado clinico', () => {
+    expect(resolveStatusTextStyles('grave')).toMatchObject({ fontStyle: 'bold' });
+    expect(resolveStatusTextStyles('estable')).toMatchObject({ textColor: [21, 128, 61] });
+    expect(resolveStatusTextStyles('otro')).toBeNull();
+  });
+
+  it('arma las tablas de resumen de movimientos', () => {
+    const tables = buildMovementsSummaryTables(baseRecord);
+    expect(tables).toHaveLength(3);
+    expect(tables[0].rows[0][0]).toBe('A1');
+    expect(tables[1].rows[0][3]).toBe('HDS');
+    expect(tables[2].rows[0][0]).toBe('Ana Diaz');
+  });
+});

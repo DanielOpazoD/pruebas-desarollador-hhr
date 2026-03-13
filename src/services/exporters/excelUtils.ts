@@ -9,32 +9,7 @@
  */
 
 import type { Workbook, Worksheet } from 'exceljs';
-
-// ExcelJS import - Vite pre-bundles this from CommonJS to ESM
-// import * as ExcelJSModule from 'exceljs';
-
-interface ExcelJSModuleType {
-  Workbook: typeof import('exceljs').Workbook;
-  default?:
-    | {
-        Workbook: typeof import('exceljs').Workbook;
-      }
-    | typeof import('exceljs').Workbook; // Handle case where default IS the module
-}
-
-const loadExcelJSModule = async (): Promise<ExcelJSModuleType> => {
-  const isBrowserRuntime = typeof window !== 'undefined' && typeof document !== 'undefined';
-
-  if (isBrowserRuntime) {
-    try {
-      return (await import('exceljs/dist/exceljs.min.js')) as unknown as ExcelJSModuleType;
-    } catch {
-      // Fall back to standard entrypoint if the browser build cannot be loaded.
-    }
-  }
-
-  return (await import('exceljs')) as unknown as ExcelJSModuleType;
-};
+import { loadExcelJSModule, resolveExcelWorkbookConstructor } from './excelJsModuleLoader';
 
 /**
  * Creates a new ExcelJS Workbook instance.
@@ -50,34 +25,8 @@ const loadExcelJSModule = async (): Promise<ExcelJSModuleType> => {
  */
 export const createWorkbook = async (): Promise<Workbook> => {
   const ExcelJS = await loadExcelJSModule();
-
-  if (ExcelJS.Workbook) {
-    return new ExcelJS.Workbook();
-  }
-
-  // Check if default has Workbook property
-  if (ExcelJS.default && 'Workbook' in ExcelJS.default) {
-    return new ExcelJS.default.Workbook();
-  }
-
-  // Check if default export IS the module (common in some CJS -> ESM interops)
-  /* if (typeof ExcelJS.default === 'function' && 'Workbook' in ExcelJS.default) {
-       // This branch is harder to type safely without more complex conditional types, 
-       // but the 'Workbook' check above usually covers it if default is an object
-    } */
-
-  // For CommonJS interop where default is an object containing Workbook
-  if (typeof ExcelJS.default === 'object' && ExcelJS.default !== null) {
-    // unsafe cast but bounded scope - last resort
-    const defaultObj = ExcelJS.default as { Workbook?: typeof import('exceljs').Workbook };
-    if (defaultObj.Workbook) {
-      return new defaultObj.Workbook();
-    }
-  }
-
-  throw new Error(
-    'ExcelJS module could not be loaded correctly. Check vite.config.ts optimizeDeps.include.'
-  );
+  const WorkbookConstructor = resolveExcelWorkbookConstructor(ExcelJS);
+  return new WorkbookConstructor();
 };
 
 /**
