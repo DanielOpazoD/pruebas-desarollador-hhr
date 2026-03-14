@@ -1,11 +1,11 @@
 import { getRedirectResult, signInWithRedirect } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
 import { AuthUser } from '@/types';
+import { googleProvider } from '@/services/auth/authShared';
 import {
   consumeE2ERedirectPendingUser,
-  googleProvider,
   readE2ERedirectMode,
-} from '@/services/auth/authShared';
+} from '@/services/auth/authE2ERedirectRuntime';
 import {
   clearAuthBootstrapPending,
   markAuthBootstrapPending,
@@ -46,6 +46,12 @@ export const hasActiveFirebaseSession = (): boolean => auth.currentUser !== null
 
 export const signInWithGoogleRedirect = async (): Promise<void> => {
   try {
+    const e2eRedirectMode = readE2ERedirectMode();
+    if (e2eRedirectMode) {
+      await runE2ERedirectMode(e2eRedirectMode);
+      return;
+    }
+
     const redirectRuntimeSupport = getAuthRedirectRuntimeSupport();
     if (!redirectRuntimeSupport.canUseRedirectAuth) {
       throw createOperationalError({
@@ -58,12 +64,6 @@ export const signInWithGoogleRedirect = async (): Promise<void> => {
           canUseRedirectAuth: redirectRuntimeSupport.canUseRedirectAuth,
         },
       });
-    }
-
-    const e2eRedirectMode = readE2ERedirectMode();
-    if (e2eRedirectMode) {
-      await runE2ERedirectMode(e2eRedirectMode);
-      return;
     }
 
     markAuthBootstrapPending('redirect');

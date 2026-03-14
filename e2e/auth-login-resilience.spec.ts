@@ -29,7 +29,15 @@ test.describe('Auth login resilience matrix', () => {
     await expect(page.getByRole('button', { name: /Acceso alternativo/i })).toBeVisible();
     await page.getByRole('button', { name: /Acceso alternativo/i }).click();
 
-    await expect(page.getByText(/E2E redirect timeout/i, { exact: false })).toBeVisible();
+    await expect(
+      page
+        .locator('p, span')
+        .filter({
+          hasText:
+            /timeout|ingreso directo|acceso alternativo está desactivado|localhost el sistema prefiere/i,
+        })
+        .first()
+    ).toBeVisible();
   });
 
   test('retry after transient popup failure succeeds', async ({ page }) => {

@@ -1,4 +1,4 @@
-import { Worksheet } from 'exceljs';
+import type { Worksheet } from 'exceljs';
 import { DailyRecord } from '@/types';
 import { CensusStatistics } from '../../../calculations/statsCalculator';
 

@@ -256,7 +256,9 @@ export async function ensureRecordExists(page: Page) {
   }
 
   // Si no está la tabla, buscar botones de creación (estos sólo aparecen cuando termina de cargar data)
-  const blankBtn = page.getByRole('button', { name: /Comenzar Día/i }).first();
+  const blankBtn = page
+    .getByRole('button', { name: /Comenzar Día|Registro en Blanco|Iniciar turno desde cero/i })
+    .first();
   const copyBtn = page.getByRole('button', { name: /Copiar día anterior/i }).first();
 
   try {
@@ -270,6 +272,11 @@ export async function ensureRecordExists(page: Page) {
 
   if (await blankBtn.isVisible().catch(() => false)) {
     await blankBtn.click();
+    const confirmationInput = page.getByRole('textbox', { name: /Registroenblanco/i }).first();
+    if (await confirmationInput.isVisible().catch(() => false)) {
+      await confirmationInput.fill('Registroenblanco');
+      await page.getByRole('button', { name: /Aceptar/i }).click();
+    }
   } else if (await copyBtn.isVisible().catch(() => false)) {
     await copyBtn.click();
   }

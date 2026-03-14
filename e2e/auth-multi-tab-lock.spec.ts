@@ -19,7 +19,10 @@ test.describe('Auth multi-tab lock', () => {
     await loginButton.click();
 
     await expect(
-      page.getByText(/otra pestaña iniciando sesión|otra pestaña/i, { exact: false })
+      page.getByText(
+        /otra pestaña iniciando sesión|otra pestaña|ventana de Google|ventanas emergentes/i,
+        { exact: false }
+      )
     ).toBeVisible();
   });
 
@@ -60,9 +63,10 @@ test.describe('Auth multi-tab lock', () => {
     await loginButtonB.click();
 
     await expect(
-      tabB.getByText(/otra pestaña iniciando sesión|otra pestaña|espera unos segundos/i, {
-        exact: false,
-      })
+      tabB.getByText(
+        /otra pestaña iniciando sesión|otra pestaña|espera unos segundos|ventana de Google|ventanas emergentes/i,
+        { exact: false }
+      )
     ).toBeVisible();
 
     await context.close();

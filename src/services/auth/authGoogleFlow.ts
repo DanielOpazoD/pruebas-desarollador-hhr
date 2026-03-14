@@ -22,7 +22,7 @@ import {
 const GOOGLE_POPUP_TIMEOUT_MS = 12000;
 
 const waitForE2EPopupDelay = async (): Promise<void> => {
-  const { consumeE2EPopupDelayMs } = await import('@/services/auth/authShared');
+  const { consumeE2EPopupDelayMs } = await import('@/services/auth/authE2EPopupRuntime');
   const e2ePopupDelayMs = consumeE2EPopupDelayMs();
   if (e2ePopupDelayMs > 0) {
     await new Promise(resolve => setTimeout(resolve, e2ePopupDelayMs));
@@ -31,7 +31,7 @@ const waitForE2EPopupDelay = async (): Promise<void> => {
 
 const resolveE2EPopupUser = async (): Promise<AuthUser | null> => {
   const { consumeE2EPopupErrorCode, consumeE2EPopupMockUser } =
-    await import('@/services/auth/authShared');
+    await import('@/services/auth/authE2EPopupRuntime');
   const e2ePopupErrorCode = consumeE2EPopupErrorCode();
   if (e2ePopupErrorCode) {
     throw createAuthError(e2ePopupErrorCode, `E2E popup error: ${e2ePopupErrorCode}`);

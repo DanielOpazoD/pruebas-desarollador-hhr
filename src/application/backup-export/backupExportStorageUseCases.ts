@@ -8,18 +8,16 @@ import {
   createApplicationSuccess,
   type ApplicationOutcome,
 } from '@/application/shared/applicationOutcome';
-import { deletePdf, pdfExistsDetailed } from '@/services/backup/pdfStorageService';
-import {
-  deleteCensusFile,
-  checkCensusExistsDetailed,
-} from '@/services/backup/censusStorageService';
-import { cudyrExistsDetailed, deleteCudyrFile } from '@/services/backup/cudyrStorageService';
 import {
   EMPTY_STORAGE_LIST_REPORT,
   hasDegradedStorageListReport,
   monthNameToNumber,
-  resolveBackupStorageServices,
 } from '@/application/backup-export/backupExportShared';
+import {
+  deleteBackupArchiveFile,
+  lookupBackupArchiveStatus,
+  resolveBackupStorageListServices,
+} from '@/application/backup-export/backupStorageResolvers';
 
 export interface LookupBackupArchiveStatusInput {
   backupType: BackupType;
@@ -40,12 +38,7 @@ export const executeLookupBackupArchiveStatus = async ({
   ApplicationOutcome<LookupBackupArchiveStatusOutput>
 > => {
   try {
-    const lookup =
-      backupType === 'handoff'
-        ? await pdfExistsDetailed(date, shift)
-        : backupType === 'census'
-          ? await checkCensusExistsDetailed(date)
-          : await cudyrExistsDetailed(date);
+    const lookup = await lookupBackupArchiveStatus(backupType, date, shift);
 
     const data = { exists: lookup.exists, lookup };
     if (lookup.status === 'restricted' || lookup.status === 'timeout') {
@@ -93,7 +86,7 @@ export const executeListBackupFiles = async ({
   path,
 }: ListBackupFilesInput): Promise<ApplicationOutcome<ListBackupFilesOutput>> => {
   try {
-    const service = resolveBackupStorageServices(backupType);
+    const service = await resolveBackupStorageListServices(backupType);
 
     if (path.length === 0) {
       const years = await service.listYears();
@@ -162,14 +155,7 @@ export const executeDeleteBackupFile = async (
   input: DeleteBackupFileInput
 ): Promise<ApplicationOutcome<null>> => {
   try {
-    if (input.backupType === 'handoff') {
-      const pdfFile = input.file as StoredPdfFile;
-      await deletePdf(pdfFile.date, pdfFile.shiftType);
-    } else if (input.backupType === 'census') {
-      await deleteCensusFile(input.file.date);
-    } else {
-      await deleteCudyrFile(input.file.date);
-    }
+    await deleteBackupArchiveFile(input.backupType, input.file);
     return createApplicationSuccess(null);
   } catch (error) {
     return createApplicationFailed(null, [

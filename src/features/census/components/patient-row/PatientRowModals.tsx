@@ -1,11 +1,42 @@
-import React from 'react';
-import { DemographicsModal } from '@/components/modals/DemographicsModal';
-import { ExamRequestModal } from '@/components/modals/ExamRequestModal';
-import { ImagingRequestDialog } from '@/components/modals/ImagingRequestDialog';
-import { PatientHistoryModal } from '@/components/modals/PatientHistoryModal';
-import { ClinicalDocumentsModal, ClinicalDocumentsPanel } from '@/features/clinical-documents';
+import React, { lazy, Suspense } from 'react';
 import { buildPatientRowModalRenderModel } from '@/features/census/controllers/patientRowModalRenderController';
 import type { PatientRowModalsProps } from '@/features/census/components/patient-row/patientRowViewContracts';
+
+const LazyDemographicsModal = lazy(() =>
+  import('@/components/modals/DemographicsModal').then(module => ({
+    default: module.DemographicsModal,
+  }))
+);
+
+const LazyExamRequestModal = lazy(() =>
+  import('@/components/modals/ExamRequestModal').then(module => ({
+    default: module.ExamRequestModal,
+  }))
+);
+
+const LazyImagingRequestDialog = lazy(() =>
+  import('@/components/modals/ImagingRequestDialog').then(module => ({
+    default: module.ImagingRequestDialog,
+  }))
+);
+
+const LazyPatientHistoryModal = lazy(() =>
+  import('@/components/modals/PatientHistoryModal').then(module => ({
+    default: module.PatientHistoryModal,
+  }))
+);
+
+const LazyClinicalDocumentsModal = lazy(() =>
+  import('@/features/clinical-documents').then(module => ({
+    default: module.ClinicalDocumentsModal,
+  }))
+);
+
+const LazyClinicalDocumentsPanel = lazy(() =>
+  import('@/features/clinical-documents').then(module => ({
+    default: module.ClinicalDocumentsPanel,
+  }))
+);
 
 export const PatientRowModals: React.FC<PatientRowModalsProps> = ({
   bedId,
@@ -55,62 +86,74 @@ export const PatientRowModals: React.FC<PatientRowModalsProps> = ({
   return (
     <>
       {visibilityState.shouldRenderDemographics ? (
-        <DemographicsModal
-          key={demographicsKey}
-          isOpen={showDemographics}
-          onClose={onCloseDemographics}
-          data={data}
-          onSave={demographicsBinding.onSave}
-          bedId={demographicsBinding.targetBedId}
-          recordDate={currentDateString}
-          isClinicalCribPatient={demographicsBinding.isRnIdentityContext}
-        />
+        <Suspense fallback={null}>
+          <LazyDemographicsModal
+            key={demographicsKey}
+            isOpen={showDemographics}
+            onClose={onCloseDemographics}
+            data={data}
+            onSave={demographicsBinding.onSave}
+            bedId={demographicsBinding.targetBedId}
+            recordDate={currentDateString}
+            isClinicalCribPatient={demographicsBinding.isRnIdentityContext}
+          />
+        </Suspense>
       ) : null}
 
       {visibilityState.shouldRenderExamRequest && (
-        <ExamRequestModal
-          key={`exam-request-${bedId}-${showExamRequest}`}
-          isOpen={showExamRequest}
-          onClose={onCloseExamRequest}
-          patient={data}
-        />
+        <Suspense fallback={null}>
+          <LazyExamRequestModal
+            key={`exam-request-${bedId}-${showExamRequest}`}
+            isOpen={showExamRequest}
+            onClose={onCloseExamRequest}
+            patient={data}
+          />
+        </Suspense>
       )}
 
       {visibilityState.shouldRenderImagingRequest ? (
-        <ImagingRequestDialog
-          isOpen={showImagingRequest}
-          onClose={onCloseImagingRequest}
-          patient={data}
-        />
+        <Suspense fallback={null}>
+          <LazyImagingRequestDialog
+            isOpen={showImagingRequest}
+            onClose={onCloseImagingRequest}
+            patient={data}
+          />
+        </Suspense>
       ) : null}
 
       {visibilityState.shouldRenderClinicalDocuments ? (
-        <ClinicalDocumentsModal
-          isOpen={showClinicalDocuments}
-          onClose={onCloseClinicalDocuments}
-          patient={data}
-          currentDateString={currentDateString}
-          bedId={bedId}
-        />
+        <Suspense fallback={null}>
+          <LazyClinicalDocumentsModal
+            isOpen={showClinicalDocuments}
+            onClose={onCloseClinicalDocuments}
+            patient={data}
+            currentDateString={currentDateString}
+            bedId={bedId}
+          />
+        </Suspense>
       ) : null}
 
       {visibilityState.shouldRenderHistory ? (
-        <PatientHistoryModal
-          isOpen={showHistory}
-          onClose={onCloseHistory}
-          patientRut={historyPatientRut}
-          patientName={historyPatientName}
-          patient={data}
-          currentDateString={currentDateString}
-          bedId={bedId}
-          documentsPanel={
-            <ClinicalDocumentsPanel
-              patient={data}
-              currentDateString={currentDateString}
-              bedId={bedId}
-            />
-          }
-        />
+        <Suspense fallback={null}>
+          <LazyPatientHistoryModal
+            isOpen={showHistory}
+            onClose={onCloseHistory}
+            patientRut={historyPatientRut}
+            patientName={historyPatientName}
+            patient={data}
+            currentDateString={currentDateString}
+            bedId={bedId}
+            documentsPanel={
+              <Suspense fallback={null}>
+                <LazyClinicalDocumentsPanel
+                  patient={data}
+                  currentDateString={currentDateString}
+                  bedId={bedId}
+                />
+              </Suspense>
+            }
+          />
+        </Suspense>
       ) : null}
     </>
   );

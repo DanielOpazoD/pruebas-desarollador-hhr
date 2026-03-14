@@ -1,4 +1,4 @@
-import { Workbook } from 'exceljs';
+import type { Workbook } from 'exceljs';
 import { DailyRecord } from '@/types';
 import { createWorkbook } from '../excelUtils';
 import type { CensusMasterWorkbookOptions } from './censusWorkbookContracts';

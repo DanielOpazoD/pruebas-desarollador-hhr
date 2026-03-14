@@ -93,15 +93,15 @@ describe('CensusView', () => {
     expect(screen.getByTestId('analytics-view')).toBeInTheDocument();
   });
 
-  it('renders EmptyDayPrompt when record is missing', () => {
+  it('renders EmptyDayPrompt when record is missing', async () => {
     vi.mocked(useCensusViewModel).mockReturnValue(buildViewModel({ beds: null }));
 
     render(<CensusView {...defaultProps} />);
 
-    expect(screen.getByTestId('empty-day-prompt')).toBeInTheDocument();
+    expect(await screen.findByTestId('empty-day-prompt')).toBeInTheDocument();
   });
 
-  it('renders main census sections when record is present', () => {
+  it('renders main census sections when record is present', async () => {
     vi.mocked(useCensusViewModel).mockReturnValue(
       buildViewModel({
         beds: {},
@@ -111,14 +111,14 @@ describe('CensusView', () => {
 
     render(<CensusView {...defaultProps} />);
 
-    expect(screen.getByTestId('census-staff-header')).toBeInTheDocument();
-    expect(screen.getByTestId('census-table')).toBeInTheDocument();
-    expect(screen.getByTestId('discharges-section')).toBeInTheDocument();
-    expect(screen.getByTestId('transfers-section')).toBeInTheDocument();
-    expect(screen.getByTestId('cma-section')).toBeInTheDocument();
+    expect(await screen.findByTestId('census-staff-header')).toBeInTheDocument();
+    expect(await screen.findByTestId('census-table')).toBeInTheDocument();
+    expect(await screen.findByTestId('discharges-section')).toBeInTheDocument();
+    expect(await screen.findByTestId('transfers-section')).toBeInTheDocument();
+    expect(await screen.findByTestId('cma-section')).toBeInTheDocument();
   });
 
-  it('renders CensusModals when not in readOnly mode', () => {
+  it('renders CensusModals when not in readOnly mode', async () => {
     vi.mocked(useCensusViewModel).mockReturnValue(
       buildViewModel({
         beds: {},
@@ -127,7 +127,7 @@ describe('CensusView', () => {
 
     render(<CensusView {...defaultProps} readOnly={false} />);
 
-    expect(screen.getByTestId('census-modals')).toBeInTheDocument();
+    expect(await screen.findByTestId('census-modals')).toBeInTheDocument();
   });
 
   it('hides CensusModals in readOnly mode', () => {
@@ -142,7 +142,7 @@ describe('CensusView', () => {
     expect(screen.queryByTestId('census-modals')).not.toBeInTheDocument();
   });
 
-  it('renders 3D map when localViewMode is 3D', () => {
+  it('renders 3D map when localViewMode is 3D', async () => {
     vi.mocked(useCensusViewModel).mockReturnValue(
       buildViewModel({
         beds: {},
@@ -152,7 +152,7 @@ describe('CensusView', () => {
 
     render(<CensusView {...defaultProps} localViewMode="3D" />);
 
-    const floorMap = screen.getByTestId('hospital-floor-map');
+    const floorMap = await screen.findByTestId('hospital-floor-map');
     expect(floorMap).toBeInTheDocument();
     expect(floorMap.textContent).toContain('E1');
   });

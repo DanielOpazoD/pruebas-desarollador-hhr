@@ -1,4 +1,4 @@
-import { Worksheet } from 'exceljs';
+import type { Worksheet } from 'exceljs';
 import { DailyRecord, PatientData } from '@/types';
 import { BEDS } from '@/constants';
 import { getBedTypeForRecord } from '@/utils/bedTypeUtils';

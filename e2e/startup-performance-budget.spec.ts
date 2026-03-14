@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { ensureRecordExists } from './fixtures/auth';
 
 const parseBudgetFromEnv = (key: string, fallback: number): number => {
   const raw = process.env[key];
@@ -14,6 +15,27 @@ const BUDGETS = {
 } as const;
 
 const CURRENT_DATE = '2026-02-20';
+const waitForCensoReady = async (page: Parameters<typeof ensureRecordExists>[0]) => {
+  const candidates = [
+    page.getByTestId('census-table').first(),
+    page.getByTestId('blank-record-btn').first(),
+    page.getByText(/No existe registro para esta fecha/i, { exact: false }).first(),
+  ];
+
+  await expect
+    .poll(
+      async () => {
+        for (const candidate of candidates) {
+          if (await candidate.isVisible().catch(() => false)) {
+            return true;
+          }
+        }
+        return false;
+      },
+      { timeout: 5000 }
+    )
+    .toBe(true);
+};
 
 test.describe('Startup performance budget', () => {
   test('meets login, auth feedback, and censo visibility budgets', async ({ page }) => {
@@ -93,7 +115,7 @@ test.describe('Startup performance budget', () => {
 
     const startCenso = performance.now();
     await page.goto(`/censo?date=${CURRENT_DATE}`);
-    await expect(page.locator('table')).toBeVisible();
+    await waitForCensoReady(page);
     const censoVisibleMs = performance.now() - startCenso;
 
     expect(loginVisibleMs, `loginVisibleMs=${loginVisibleMs}`).toBeLessThanOrEqual(

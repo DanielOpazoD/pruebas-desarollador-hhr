@@ -1,5 +1,4 @@
 import { triggerCensusEmail } from '@/services/integrations/censusEmailService';
-import { uploadCensus } from '@/services/backup/censusStorageService';
 import type { DailyRecord } from '@/types';
 import type { CensusWorkbookSheetDescriptor } from '@/services/exporters/censusMasterWorkbook';
 
@@ -35,6 +34,7 @@ export const defaultCensusEmailDeliveryPort: CensusEmailDeliveryPort = {
     }
   },
   uploadBackup: async (blob, date) => {
+    const { uploadCensus } = await import('@/services/backup/censusStorageService');
     await uploadCensus(blob, date);
   },
 };

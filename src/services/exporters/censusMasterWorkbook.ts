@@ -3,7 +3,7 @@
  */
 
 import { DailyRecord } from '@/types';
-import { Workbook } from 'exceljs';
+import type { Workbook } from 'exceljs';
 import { buildCensusMasterWorkbook as buildWorkbook } from './excel/builder';
 import type {
   CensusMasterWorkbookOptions,

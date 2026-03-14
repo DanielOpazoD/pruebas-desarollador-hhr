@@ -1,4 +1,4 @@
-import { Worksheet } from 'exceljs';
+import type { Worksheet } from 'exceljs';
 import { TransferData } from '@/types';
 import { TITLE_STYLE, HEADER_FILL, BORDER_THIN } from '../styles';
 import { formatAge } from '../formatters';

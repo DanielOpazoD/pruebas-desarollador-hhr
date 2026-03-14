@@ -7,10 +7,7 @@ import {
   defaultCensusAccessPort,
   type CensusAccessPort,
 } from '@/application/ports/censusAccessPort';
-import {
-  listCensusFilesInMonth,
-  type StoredCensusFile,
-} from '@/services/backup/censusStorageService';
+import type { StoredCensusFile } from '@/services/backup/censusStorageService';
 import { executeLoadSharedCensusFilesController } from '@/hooks/controllers/sharedCensusFilesController';
 import type { CensusAccessLog } from '@/types/censusAccess';
 
@@ -19,7 +16,10 @@ export interface SharedCensusFilesPort {
 }
 
 export const defaultSharedCensusFilesPort: SharedCensusFilesPort = {
-  listFilesInMonth: async (year, month) => listCensusFilesInMonth(year, month),
+  listFilesInMonth: async (year, month) => {
+    const { listCensusFilesInMonth } = await import('@/services/backup/censusStorageService');
+    return listCensusFilesInMonth(year, month);
+  },
 };
 
 interface SharedCensusFilesUseCaseDependencies {

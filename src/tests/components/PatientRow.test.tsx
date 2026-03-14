@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, fireEvent } from '@testing-library/react';
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { PatientRow } from '@/features/census/components/PatientRow';
 import { Specialty, PatientStatus, BedType } from '@/types';
 import { render } from '../integration/setup';
@@ -25,6 +26,32 @@ describe('PatientRow Component', () => {
       }),
     };
   });
+
+  vi.mock('@/components/modals/DemographicsModal', () => ({
+    // Mirror the real modal behavior by rendering through a portal instead of
+    // inserting raw divs inside <tbody> during table-based component tests.
+    DemographicsModal: ({
+      isOpen,
+      onSave,
+    }: {
+      isOpen: boolean;
+      onSave: (payload: Record<string, unknown>) => void;
+    }) => {
+      if (!isOpen) {
+        return null;
+      }
+
+      return createPortal(
+        <div>
+          <div>Datos Demográficos</div>
+          <button onClick={() => onSave({ patientName: 'Paciente Actualizado' })}>
+            Guardar Cambios
+          </button>
+        </div>,
+        document.body
+      );
+    },
+  }));
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -261,7 +288,7 @@ describe('PatientRow Component', () => {
       fireEvent.click(demoBtn);
 
       // Modal is open. Let's find the save button.
-      const saveBtn = screen.getByText(/Guardar Cambios/i);
+      const saveBtn = await screen.findByText(/Guardar Cambios/i);
       fireEvent.click(saveBtn);
 
       expect(mockContext.updatePatientMultiple).toHaveBeenCalledWith('R1', expect.any(Object));
@@ -470,7 +497,7 @@ describe('PatientRow Component', () => {
       expect(screen.getByDisplayValue('Sub Patient')).toBeInTheDocument();
     });
 
-    it('opens sub-row demographics modal', () => {
+    it('opens sub-row demographics modal', async () => {
       const dataWithCrib = {
         ...mockPatient,
         clinicalCrib: DataFactory.createMockPatient('R1-C', {
@@ -501,7 +528,7 @@ describe('PatientRow Component', () => {
       const subDemoBtn = subDemoBtns.find(el => el.tagName === 'BUTTON');
       if (subDemoBtn) {
         fireEvent.click(subDemoBtn);
-        expect(screen.getByText(/Datos Demográficos/i)).toBeInTheDocument();
+        expect(await screen.findByText(/Datos Demográficos/i)).toBeInTheDocument();
       }
     });
   });

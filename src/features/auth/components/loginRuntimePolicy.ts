@@ -14,10 +14,17 @@ type LoginRuntimePolicy = {
 
 export const getLoginRuntimePolicy = (): LoginRuntimePolicy => {
   const redirectRuntimeSupport = getAuthRedirectRuntimeSupport();
+  const isLocalE2ERuntime =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const hasE2ERedirectOverride =
+    typeof window !== 'undefined' && !!window.localStorage?.getItem('hhr_e2e_redirect_mode');
   const forcePopupForE2E =
-    import.meta.env.VITE_E2E_MODE === 'true' &&
+    (import.meta.env.VITE_E2E_MODE === 'true' || isLocalE2ERuntime) &&
     typeof window !== 'undefined' &&
     window.localStorage?.getItem('hhr_e2e_force_popup') === 'true';
+  const canUseE2EAlternateAccess =
+    hasE2ERedirectOverride && (forcePopupForE2E || isLocalE2ERuntime);
   const autoRedirectFallbackEnabled =
     String(import.meta.env.VITE_AUTH_AUTO_REDIRECT_FALLBACK || 'true').toLowerCase() !== 'false';
 
@@ -26,13 +33,19 @@ export const getLoginRuntimePolicy = (): LoginRuntimePolicy => {
     isLocalhostRuntime: redirectRuntimeSupport.isLocalhostRuntime,
     forcePopupForE2E,
     shouldAutoFallbackToRedirect:
-      autoRedirectFallbackEnabled && !forcePopupForE2E && redirectRuntimeSupport.canUseRedirectAuth,
-    canUseRedirectAuth: redirectRuntimeSupport.canUseRedirectAuth,
+      autoRedirectFallbackEnabled &&
+      !forcePopupForE2E &&
+      (canUseE2EAlternateAccess || redirectRuntimeSupport.canUseRedirectAuth),
+    canUseRedirectAuth: canUseE2EAlternateAccess || redirectRuntimeSupport.canUseRedirectAuth,
     redirectSupportLevel: redirectRuntimeSupport.supportLevel,
-    redirectDisabledReason: redirectRuntimeSupport.redirectDisabledReason,
-    alternateAccessHint: redirectRuntimeSupport.canUseRedirectAuth
+    redirectDisabledReason: canUseE2EAlternateAccess
+      ? null
+      : redirectRuntimeSupport.redirectDisabledReason,
+    alternateAccessHint: canUseE2EAlternateAccess
       ? AUTH_UI_COPY.alternateAccessHint
-      : redirectRuntimeSupport.supportSummary,
+      : redirectRuntimeSupport.canUseRedirectAuth
+        ? AUTH_UI_COPY.alternateAccessHint
+        : redirectRuntimeSupport.supportSummary,
   };
 };
 

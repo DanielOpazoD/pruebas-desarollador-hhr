@@ -1,4 +1,4 @@
-import { Fill, Font } from 'exceljs';
+import type { Fill, Font } from 'exceljs';
 
 export const BORDER_THIN = {
   top: { style: 'thin' as const },

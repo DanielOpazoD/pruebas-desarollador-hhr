@@ -21,12 +21,13 @@ import { UseDateNavigationReturn } from '@/hooks/useDateNavigation';
 import { useStorageMigration } from '@/hooks/useStorageMigration';
 import { useSystemHealthReporter } from '@/hooks/admin/useSystemHealthReporter';
 import { LoginPage } from '@/features/auth';
-import { MedicalSignatureView } from '@/features/admin';
 import { GlobalErrorBoundary } from '@/components/shared/GlobalErrorBoundary';
 import { AppContent } from '@/components/layout/AppContent';
 import { CensusProvider, CensusContextType } from '@/context/CensusContext';
 import { VersionProvider } from '@/context/VersionContext';
 import { VersionMismatchOverlay } from '@/components/shared/VersionMismatchOverlay';
+import { ViewLoader } from '@/components/ui/ViewLoader';
+import { MedicalSignatureView } from '@/views/LazyViews';
 import { AuditProvider, useAuth, AuthContextType, AuthProvider, UIProvider } from './context';
 import { HospitalProvider } from './context/HospitalContext';
 import { RepositoryProvider, defaultRepositories } from '@/services/RepositoryContext';
@@ -84,7 +85,9 @@ function App() {
     return (
       <VersionProvider>
         <VersionMismatchOverlay />
-        <MedicalSignatureView />
+        <React.Suspense fallback={<ViewLoader />}>
+          <MedicalSignatureView />
+        </React.Suspense>
       </VersionProvider>
     );
   }

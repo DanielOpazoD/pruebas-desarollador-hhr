@@ -58,7 +58,7 @@ describe('PatientRowModals', () => {
     onSaveCribDemographics: vi.fn(),
   } as const;
 
-  it('mounts only active modals', () => {
+  it('mounts only active modals', async () => {
     render(
       <PatientRowModals
         {...baseProps}
@@ -69,11 +69,11 @@ describe('PatientRowModals', () => {
       />
     );
 
-    expect(screen.getByText('Demographics R1')).toBeInTheDocument();
-    expect(screen.getByText('Demographics R1')).toHaveAttribute('data-rn-context', 'false');
-    expect(screen.getByText('Exam Request')).toBeInTheDocument();
-    expect(screen.getByText('Imaging Request')).toBeInTheDocument();
-    expect(screen.getByText('Patient History')).toBeInTheDocument();
+    expect(await screen.findByText('Demographics R1')).toBeInTheDocument();
+    expect(await screen.findByText('Demographics R1')).toHaveAttribute('data-rn-context', 'false');
+    expect(await screen.findByText('Exam Request')).toBeInTheDocument();
+    expect(await screen.findByText('Imaging Request')).toBeInTheDocument();
+    expect(await screen.findByText('Patient History')).toBeInTheDocument();
     expect(screen.queryByText('Clinical Documents')).not.toBeInTheDocument();
   });
 
@@ -85,10 +85,10 @@ describe('PatientRowModals', () => {
     expect(screen.queryByText('Clinical Documents')).not.toBeInTheDocument();
   });
 
-  it('mounts clinical documents modal when requested and authorized', () => {
+  it('mounts clinical documents modal when requested and authorized', async () => {
     render(<PatientRowModals {...baseProps} showClinicalDocuments canOpenClinicalDocuments />);
 
-    expect(screen.getByText('Clinical Documents')).toBeInTheDocument();
+    expect(await screen.findByText('Clinical Documents')).toBeInTheDocument();
   });
 
   it('does not mount history, exam or imaging modals when capability is missing', () => {
@@ -109,7 +109,7 @@ describe('PatientRowModals', () => {
     expect(screen.queryByText('Patient History')).not.toBeInTheDocument();
   });
 
-  it('enables RN identity context for main-row patients in Cuna mode', () => {
+  it('enables RN identity context for main-row patients in Cuna mode', async () => {
     render(
       <PatientRowModals
         {...baseProps}
@@ -122,6 +122,6 @@ describe('PatientRowModals', () => {
       />
     );
 
-    expect(screen.getByText('Demographics R1')).toHaveAttribute('data-rn-context', 'true');
+    expect(await screen.findByText('Demographics R1')).toHaveAttribute('data-rn-context', 'true');
   });
 });

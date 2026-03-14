@@ -3,22 +3,42 @@
     "src/features/census/controllers": {
       "tests": "src/tests/views/census",
       "minTestFileCount": 200,
-      "minTestToSourceRatio": 1.5
+      "minTestToSourceRatio": 1.5,
+      "coverageBaseline": {
+        "lines": 93.6,
+        "functions": 97.5,
+        "branches": 83.8
+      }
     },
     "src/features/clinical-documents": {
       "tests": "src/tests/features/clinical-documents",
       "minTestFileCount": 15,
-      "minTestToSourceRatio": 0.25
+      "minTestToSourceRatio": 0.25,
+      "coverageBaseline": {
+        "lines": 60.6,
+        "functions": 63.8,
+        "branches": 53.8
+      }
     },
     "src/services/transfers": {
       "tests": "src/tests/services/transfers",
       "minTestFileCount": 6,
-      "minTestToSourceRatio": 0.3
+      "minTestToSourceRatio": 0.3,
+      "coverageBaseline": {
+        "lines": 67.5,
+        "functions": 69.3,
+        "branches": 62.6
+      }
     },
     "src/services/storage/firestore": {
       "tests": "src/tests/services/storage",
       "minTestFileCount": 12,
-      "minTestToSourceRatio": 2
+      "minTestToSourceRatio": 2,
+      "coverageBaseline": {
+        "lines": 80,
+        "functions": 85,
+        "branches": 75
+      }
     }
   }
 }

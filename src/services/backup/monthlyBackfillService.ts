@@ -2,10 +2,8 @@ import type jsPDF from 'jspdf';
 import type { DailyRecord, ShiftType } from '@/types';
 import { getMonthRecordsFromFirestore } from '@/services/storage/firestoreService';
 import { generateDateRange, getShiftSchedule } from '@/utils/dateUtils';
-import { uploadCensus } from '@/services/backup/censusStorageService';
-import { uploadCudyrExcel } from '@/services/backup/cudyrStorageService';
-import { uploadPdf, StoredPdfFile } from '@/services/backup/pdfStorageService';
 import type { BaseStoredFile } from '@/services/backup/baseStorageService';
+import type { StoredPdfFile } from '@/services/backup/pdfStorageService';
 
 export type MonthlyBackfillType = 'handoff' | 'census' | 'cudyr';
 
@@ -123,9 +121,13 @@ const createTaskProcessor = async (
   monthNumber: number
 ): Promise<(task: BackfillTask) => Promise<void>> => {
   if (backupType === 'handoff') {
-    const [{ default: JsPdfCtor }, autoTableModule, { buildHandoffPdfContent }] = await Promise.all(
-      [import('jspdf'), import('jspdf-autotable'), import('@/services/backup/pdfContentBuilder')]
-    );
+    const [{ default: JsPdfCtor }, autoTableModule, { buildHandoffPdfContent }, { uploadPdf }] =
+      await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+        import('@/services/backup/pdfContentBuilder'),
+        import('@/services/backup/pdfStorageService'),
+      ]);
 
     const autoTable = autoTableModule.default as Parameters<typeof buildHandoffPdfContent>[4];
 
@@ -143,7 +145,10 @@ const createTaskProcessor = async (
   }
 
   if (backupType === 'census') {
-    const { buildCensusMasterWorkbook } = await import('@/services/exporters/censusMasterWorkbook');
+    const [{ buildCensusMasterWorkbook }, { uploadCensus }] = await Promise.all([
+      import('@/services/exporters/censusMasterWorkbook'),
+      import('@/services/backup/censusStorageService'),
+    ]);
     const recordIndexByDate = new Map(sortedRecords.map((record, index) => [record.date, index]));
 
     return async task => {
@@ -162,7 +167,10 @@ const createTaskProcessor = async (
     };
   }
 
-  const { generateCudyrMonthlyExcelBlob } = await import('@/services/cudyr/cudyrExportService');
+  const [{ generateCudyrMonthlyExcelBlob }, { uploadCudyrExcel }] = await Promise.all([
+    import('@/services/cudyr/cudyrExportService'),
+    import('@/services/backup/cudyrStorageService'),
+  ]);
 
   return async task => {
     if (task.type !== 'cudyr') return;

@@ -13,7 +13,7 @@ const logSalvageSummary = (
     return;
   }
 
-  console.info(`[RepositoryValidation] Salvaged ${date}`, report);
+  console.warn(`[RepositoryValidation] Salvaged ${date}`, report);
 };
 
 /**

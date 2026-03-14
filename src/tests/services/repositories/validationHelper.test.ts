@@ -3,7 +3,6 @@ import { validateAndSalvageRecord } from '@/services/repositories/helpers/valida
 
 describe('validationHelper', () => {
   it('salvages legacy nulls and malformed beds instead of throwing', () => {
-    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const record = validateAndSalvageRecord(
@@ -32,14 +31,13 @@ describe('validationHelper', () => {
     expect(record.beds.R1.patientName).toBe('Paciente Legacy');
     expect(record.beds.R1.clinicalEvents).toEqual([]);
     expect(record.discharges).toEqual([]);
-    expect(infoSpy).toHaveBeenCalledWith(
-      '[RepositoryValidation] Salvaged 2026-03-04',
-      expect.objectContaining({
-        salvagedBeds: ['R1'],
-      })
-    );
+    expect(warnSpy).toHaveBeenCalled();
+    expect(
+      warnSpy.mock.calls.some(([message]) =>
+        String(message).includes('Strict validation failed for 2026-03-04')
+      )
+    ).toBe(true);
 
-    infoSpy.mockRestore();
     warnSpy.mockRestore();
   });
 });

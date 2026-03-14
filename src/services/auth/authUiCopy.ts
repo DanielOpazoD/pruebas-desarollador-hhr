@@ -1,5 +1,5 @@
 export const AUTH_UI_COPY = {
-  alternateAccessButton: 'Ingresar sin ventana emergente',
+  alternateAccessButton: 'Acceso alternativo',
   alternateAccessHint:
     'Si tu navegador no abrió la ventana de Google, esta opción intenta el ingreso de una forma más directa.',
   blockedPopupRetrying:

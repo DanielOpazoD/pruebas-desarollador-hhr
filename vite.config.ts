@@ -44,6 +44,32 @@ export default defineConfig(({ mode }) => {
     const inNodeModules = normalizedId.includes('/node_modules/');
     const has = (fragment: string): boolean => normalizedId.includes(fragment);
 
+    if (!inNodeModules) {
+      if (has('/src/features/census/components/patient-row/')) {
+        return 'feature-census-patient-row';
+      }
+
+      if (
+        has('/src/features/census/controllers/') ||
+        has('/src/features/census/domain/movements/') ||
+        has('/src/features/census/validation/')
+      ) {
+        return 'feature-census-runtime';
+      }
+
+      if (has('/src/features/clinical-documents/')) {
+        return 'feature-clinical-documents';
+      }
+
+      if (has('/src/features/transfers/')) {
+        return 'feature-transfers';
+      }
+
+      if (has('/src/application/backup-export/') || has('/src/services/backup/')) {
+        return 'feature-backup-storage';
+      }
+    }
+
     if (inNodeModules) {
       // Keep React together with UI libs that depend on it
       if (
