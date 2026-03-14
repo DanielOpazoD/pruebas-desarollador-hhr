@@ -6,20 +6,14 @@ import {
 } from '@/schemas/zodSchemas';
 
 const logSalvageSummary = (
-  _date: string,
+  date: string,
   report: ReturnType<typeof parseDailyRecordWithDefaultsReport>['report']
 ): void => {
-  const {
-    nullNormalization,
-    salvagedBeds,
-    droppedDischargeItems,
-    droppedTransferItems,
-    droppedCmaItems,
-  } = report;
-
   if (!hasStructuralRepairs(report)) {
     return;
   }
+
+  console.info(`[RepositoryValidation] Salvaged ${date}`, report);
 };
 
 /**

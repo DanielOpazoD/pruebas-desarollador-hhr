@@ -2,23 +2,27 @@
  * Audit Consolidation Service
  * Consolidates duplicate audit logs in Firestore by merging entries
  * for the same patient/entity within a configurable time window.
- *
- * Web-based version that runs in the browser using the user's credentials.
  */
 
-import { collection, getDocs, query, orderBy, limit, writeBatch, doc } from 'firebase/firestore';
+import { collection, doc, getDocs, limit, orderBy, query, writeBatch } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
-import { AuditLogEntry } from '@/types/audit';
 import { getActiveHospitalId } from '@/constants/firestorePaths';
-import { parseAuditTimestamp } from './utils/auditUtils';
-
-// = : ===========================================================================
-// Configuration
-// ===========================================================================
+import type {
+  AuditLogWithId,
+  ConsolidationGroup,
+  PreparedConsolidationGroup,
+} from './auditConsolidationPolicy';
+import {
+  createConsolidationBatches,
+  getConsolidationOperationCount,
+  groupLogs,
+  mergeDetails,
+  prepareConsolidationGroups,
+} from './auditConsolidationPolicy';
 
 const getAuditCollectionPath = () => `hospitals/${getActiveHospitalId()}/auditLogs`;
 const DEFAULT_WINDOW_MINUTES = 5;
-const MAX_BATCH_OPERATIONS = 500; // Firestore hard limit
+const MAX_BATCH_OPERATIONS = 500;
 
 export interface ConsolidationResult {
   success: boolean;
@@ -41,176 +45,76 @@ export interface ConsolidationPreview {
   estimatedDeletions: number;
 }
 
-interface AuditLogWithId extends AuditLogEntry {
-  id: string;
-}
+const fetchAuditLogs = async (): Promise<AuditLogWithId[]> => {
+  const auditRef = collection(db, getAuditCollectionPath());
+  const auditQuery = query(auditRef, orderBy('timestamp', 'desc'), limit(5000));
+  const snapshot = await getDocs(auditQuery);
 
-interface ConsolidationGroup {
-  key: string;
-  logs: AuditLogWithId[];
-  merged: Record<string, unknown>;
-  keepId: string;
-  deleteIds: string[];
-}
+  return snapshot.docs.map(
+    currentDoc =>
+      ({
+        id: currentDoc.id,
+        ...currentDoc.data(),
+      }) as AuditLogWithId
+  );
+};
 
-interface PreparedConsolidationGroup extends ConsolidationGroup {
-  operationCount: number;
-}
+const filterLogsByAction = (logs: AuditLogWithId[], actionFilter?: string) =>
+  actionFilter ? logs.filter(log => log.action === actionFilter) : logs;
 
-// ============================================================================
-// Helpers
-// ============================================================================
-
-export function mergeDetails(logs: AuditLogWithId[]): Record<string, unknown> {
-  // Sort by timestamp ascending (oldest first)
-  const sorted = [...logs].sort(
-    (a, b) =>
-      parseAuditTimestamp(a.timestamp).getTime() - parseAuditTimestamp(b.timestamp).getTime()
+const selectDuplicateGroups = (
+  logs: AuditLogWithId[],
+  windowMinutes: number
+): ConsolidationGroup[] =>
+  Array.from(groupLogs([...logs].reverse(), windowMinutes).values()).filter(
+    group => group.logs.length > 1
   );
 
-  // Start with first log's details
-  const merged: Record<string, unknown> = { ...sorted[0].details };
-  const mergedChanges: Record<string, { old: unknown; new: unknown }> =
-    (merged.changes as Record<string, { old: unknown; new: unknown }>) || {};
+const buildPreview = (groups: ConsolidationGroup[], totalLogs: number): ConsolidationPreview => ({
+  totalLogs,
+  duplicateGroups: groups.map(group => ({
+    action: group.logs[0].action,
+    entityId: group.logs[0].entityId,
+    count: group.logs.length,
+    firstTimestamp: group.logs[0].timestamp,
+    lastTimestamp: group.logs[group.logs.length - 1].timestamp,
+  })),
+  estimatedDeletions: groups.reduce((sum, group) => sum + group.logs.length - 1, 0),
+});
 
-  // Merge subsequent logs
-  for (let i = 1; i < sorted.length; i++) {
-    const log = sorted[i];
-    const changes = (log.details.changes || {}) as Record<string, { old: unknown; new: unknown }>;
-
-    Object.entries(changes).forEach(([field, change]) => {
-      if (mergedChanges[field]) {
-        // Keep original 'old', update 'new'
-        mergedChanges[field] = {
-          old: mergedChanges[field].old,
-          new: change.new,
-        };
-      } else {
-        mergedChanges[field] = change;
-      }
-    });
-
-    // Copy other details (patientName, etc.)
-    Object.entries(log.details).forEach(([key, value]) => {
-      if (key !== 'changes') {
-        merged[key] = value;
-      }
-    });
-  }
-
-  merged.changes = mergedChanges;
-  merged.consolidatedFrom = logs.map(l => l.id);
-  merged.consolidatedAt = new Date().toISOString();
-
-  return merged;
-}
-
-export function getConsolidationOperationCount(logs: AuditLogWithId[]): number {
-  if (logs.length <= 1) {
-    return 0;
-  }
-
-  return 1 + (logs.length - 1);
-}
-
-export function prepareConsolidationGroups(
-  groups: ConsolidationGroup[]
-): PreparedConsolidationGroup[] {
-  return groups.map(group => {
-    const keepId = group.logs[0].id;
-    const deleteIds = group.logs.slice(1).map(log => log.id);
-
-    return {
-      ...group,
-      merged: mergeDetails(group.logs),
-      keepId,
-      deleteIds,
-      operationCount: getConsolidationOperationCount(group.logs),
-    };
-  });
-}
-
-export function createConsolidationBatches(
+const applyConsolidationBatch = async (
   groups: PreparedConsolidationGroup[],
-  maxOperations: number = MAX_BATCH_OPERATIONS
-): PreparedConsolidationGroup[][] {
-  const batches: PreparedConsolidationGroup[][] = [];
-  let currentBatch: PreparedConsolidationGroup[] = [];
-  let currentOperations = 0;
+  result: ConsolidationResult
+) => {
+  const batch = writeBatch(db);
 
   for (const group of groups) {
-    if (group.operationCount > maxOperations) {
-      throw new Error(
-        `Consolidation group ${group.key} requires ${group.operationCount} operations and exceeds Firestore batch limit (${maxOperations}).`
-      );
-    }
+    const keepRef = doc(db, getAuditCollectionPath(), group.keepId);
+    batch.update(keepRef, {
+      details: group.merged,
+      consolidatedCount: group.logs.length,
+      lastTimestamp: group.logs[group.logs.length - 1].timestamp,
+    });
+    result.logsConsolidated += 1;
 
-    if (currentOperations + group.operationCount > maxOperations) {
-      batches.push(currentBatch);
-      currentBatch = [];
-      currentOperations = 0;
+    for (const deleteId of group.deleteIds) {
+      batch.delete(doc(db, getAuditCollectionPath(), deleteId));
+      result.logsDeleted += 1;
     }
-
-    currentBatch.push(group);
-    currentOperations += group.operationCount;
   }
 
-  if (currentBatch.length > 0) {
-    batches.push(currentBatch);
-  }
+  await batch.commit();
+};
 
-  return batches;
-}
-
-// ============================================================================
-// Main Functions
-// ============================================================================
-
-/**
- * Preview what will be consolidated without making changes
- */
 export async function previewConsolidation(
   windowMinutes: number = DEFAULT_WINDOW_MINUTES,
   actionFilter?: string
 ): Promise<ConsolidationPreview> {
-  const auditRef = collection(db, getAuditCollectionPath());
-  const q = query(auditRef, orderBy('timestamp', 'desc'), limit(5000));
-
-  const snapshot = await getDocs(q);
-  const logs: AuditLogWithId[] = snapshot.docs.map(
-    doc =>
-      ({
-        id: doc.id,
-        ...doc.data(),
-      }) as AuditLogWithId
-  );
-
-  // Filter by action if specified
-  let filtered = logs;
-  if (actionFilter) {
-    filtered = filtered.filter(l => l.action === actionFilter);
-  }
-
-  // Group logs
-  const groups = groupLogs(filtered.reverse(), windowMinutes); // Reverse to process oldest to newest within groups
-  const duplicateGroups = Array.from(groups.values()).filter(g => g.logs.length > 1);
-
-  return {
-    totalLogs: filtered.length,
-    duplicateGroups: duplicateGroups.map(g => ({
-      action: g.logs[0].action,
-      entityId: g.logs[0].entityId,
-      count: g.logs.length,
-      firstTimestamp: g.logs[0].timestamp,
-      lastTimestamp: g.logs[g.logs.length - 1].timestamp,
-    })),
-    estimatedDeletions: duplicateGroups.reduce((sum, g) => sum + g.logs.length - 1, 0),
-  };
+  const logs = filterLogsByAction(await fetchAuditLogs(), actionFilter);
+  const duplicateGroups = selectDuplicateGroups(logs, windowMinutes);
+  return buildPreview(duplicateGroups, logs.length);
 }
 
-/**
- * Execute consolidation
- */
 export async function executeConsolidation(
   windowMinutes: number = DEFAULT_WINDOW_MINUTES,
   actionFilter?: string,
@@ -228,32 +132,13 @@ export async function executeConsolidation(
   try {
     onProgress?.('Cargando logs de auditoría...');
 
-    const auditRef = collection(db, getAuditCollectionPath());
-    const q = query(auditRef, orderBy('timestamp', 'desc'), limit(5000));
-    const snapshot = await getDocs(q);
-
-    const logs: AuditLogWithId[] = snapshot.docs.map(
-      doc =>
-        ({
-          id: doc.id,
-          ...doc.data(),
-        }) as AuditLogWithId
-    );
-
+    const logs = await fetchAuditLogs();
     result.totalLogs = logs.length;
 
-    // Filter by action if specified
-    let filtered = logs;
-    if (actionFilter) {
-      filtered = filtered.filter(l => l.action === actionFilter);
-    }
+    const filteredLogs = filterLogsByAction(logs, actionFilter);
+    onProgress?.(`Analizando ${filteredLogs.length} logs...`);
 
-    onProgress?.(`Analizando ${filtered.length} logs...`);
-
-    // Group logs
-    const groups = groupLogs(filtered.reverse(), windowMinutes);
-    const duplicateGroups = Array.from(groups.values()).filter(g => g.logs.length > 1);
-
+    const duplicateGroups = selectDuplicateGroups(filteredLogs, windowMinutes);
     result.groupsFound = duplicateGroups.length;
 
     if (duplicateGroups.length === 0) {
@@ -265,32 +150,11 @@ export async function executeConsolidation(
     onProgress?.(`Consolidando ${duplicateGroups.length} grupos...`);
 
     const preparedGroups = prepareConsolidationGroups(duplicateGroups);
-    const batches = createConsolidationBatches(preparedGroups);
+    const batches = createConsolidationBatches(preparedGroups, MAX_BATCH_OPERATIONS);
 
-    // Process in batches due to Firestore limits
-    for (let i = 0; i < batches.length; i++) {
-      const batch = writeBatch(db);
-      const batchGroups = batches[i];
-
-      for (const group of batchGroups) {
-        // Update the kept log
-        const keepRef = doc(db, getAuditCollectionPath(), group.keepId);
-        batch.update(keepRef, {
-          details: group.merged,
-          consolidatedCount: group.logs.length,
-          lastTimestamp: group.logs[group.logs.length - 1].timestamp,
-        });
-        result.logsConsolidated++;
-
-        // Delete duplicates
-        for (const deleteId of group.deleteIds) {
-          batch.delete(doc(db, getAuditCollectionPath(), deleteId));
-          result.logsDeleted++;
-        }
-      }
-
-      await batch.commit();
-      onProgress?.(`Procesado batch ${i + 1}/${batches.length}...`);
+    for (let index = 0; index < batches.length; index += 1) {
+      await applyConsolidationBatch(batches[index], result);
+      onProgress?.(`Procesado batch ${index + 1}/${batches.length}...`);
     }
 
     result.success = true;
@@ -303,61 +167,11 @@ export async function executeConsolidation(
   return result;
 }
 
-/**
- * Group logs by action + entityId + user within time window
- */
-export function groupLogs(
-  logs: AuditLogWithId[],
-  windowMinutes: number
-): Map<string, ConsolidationGroup> {
-  const groups: Map<string, ConsolidationGroup> = new Map();
-  const windowMs = windowMinutes * 60 * 1000;
-
-  // First sort all logs by time to ensure window checking works correctly
-  const sortedLogs = [...logs].sort(
-    (a, b) =>
-      parseAuditTimestamp(a.timestamp).getTime() - parseAuditTimestamp(b.timestamp).getTime()
-  );
-
-  sortedLogs.forEach(log => {
-    const actionStr = (log.action || '').trim();
-    const entityStr = (log.entityId || '').trim();
-    const userStr = (log.userId || 'unknown').trim();
-    const baseKey = `${actionStr}-${entityStr}-${userStr}`;
-    const logTime = parseAuditTimestamp(log.timestamp).getTime();
-
-    // Find existing group within time window (check most recent compatible group)
-    let foundGroup: ConsolidationGroup | undefined;
-
-    // Optimized lookup for the same base key within window
-    for (const group of groups.values()) {
-      if (group.key.startsWith(baseKey)) {
-        // Check if this log fits in this group's time window
-        // A log belongs if it's close to the FIRST or LAST log of the group
-        const firstTime = parseAuditTimestamp(group.logs[0].timestamp).getTime();
-        const lastTime = parseAuditTimestamp(group.logs[group.logs.length - 1].timestamp).getTime();
-
-        // Allow a sliding window: as long as it's close to the last one, it joins
-        if (Math.abs(logTime - lastTime) <= windowMs || Math.abs(logTime - firstTime) <= windowMs) {
-          foundGroup = group;
-          break;
-        }
-      }
-    }
-
-    if (foundGroup) {
-      foundGroup.logs.push(log);
-    } else {
-      const key = `${baseKey}-${logTime}`;
-      groups.set(key, {
-        key,
-        logs: [log],
-        merged: {},
-        keepId: log.id,
-        deleteIds: [],
-      });
-    }
-  });
-
-  return groups;
-}
+export {
+  createConsolidationBatches,
+  getConsolidationOperationCount,
+  groupLogs,
+  mergeDetails,
+  prepareConsolidationGroups,
+};
+export type { AuditLogWithId, ConsolidationGroup, PreparedConsolidationGroup };

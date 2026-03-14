@@ -6,7 +6,7 @@
  * 📘 GUÍA DE ESTILO: Para elegir el hook correcto y evitar problemas de performance,
  * consulta src/docs/HOOKS_STYLE_GUIDE.md
  */
-import React, { createContext, useContext } from 'react';
+import React, { createContext } from 'react';
 import {
   DailyRecordContextType,
   DailyRecordDataContextType,

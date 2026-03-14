@@ -86,6 +86,19 @@ for (const absolutePath of files) {
 }
 
 const staleAllowlistEntries = Object.keys(allowlist).filter(filePath => !seen.has(filePath));
+const redundantAllowlistEntries = Object.entries(allowlist)
+  .filter(([, limit]) => typeof limit === 'number' && limit > globalMax)
+  .map(([filePath, limit]) => ({
+    filePath,
+    limit,
+    absolutePath: path.join(ROOT, filePath),
+  }))
+  .filter(({ absolutePath }) => fs.existsSync(absolutePath))
+  .map(entry => ({
+    ...entry,
+    lines: countLines(entry.absolutePath),
+  }))
+  .filter(entry => entry.lines <= globalMax);
 const undocumentedHotspots = Object.entries(allowlist)
   .filter(([, limit]) => typeof limit === 'number' && limit > globalMax)
   .map(([filePath, limit]) => ({
@@ -98,6 +111,7 @@ const undocumentedHotspots = Object.entries(allowlist)
 if (
   violations.length === 0 &&
   staleAllowlistEntries.length === 0 &&
+  redundantAllowlistEntries.length === 0 &&
   undocumentedHotspots.length === 0
 ) {
   console.log(`Module size checks passed (global max: ${globalMax} lines).`);
@@ -118,6 +132,15 @@ if (staleAllowlistEntries.length > 0) {
   console.error('\nStale allowlist entries (file missing or moved):');
   for (const filePath of staleAllowlistEntries.sort()) {
     console.error(`- ${filePath}`);
+  }
+}
+
+if (redundantAllowlistEntries.length > 0) {
+  console.error('\nRedundant allowlist entries (module already fits global limit):');
+  for (const entry of redundantAllowlistEntries.sort((left, right) =>
+    left.filePath.localeCompare(right.filePath)
+  )) {
+    console.error(`- ${entry.filePath}: ${entry.lines} lines (global max ${globalMax})`);
   }
 }
 

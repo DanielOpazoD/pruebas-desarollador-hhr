@@ -115,7 +115,7 @@ describe('clinicalDocumentDraftReducer', () => {
     expect(reordered.draft?.sections[0]?.id).toBe('diagnosticos');
     expect(
       reordered.draft?.sections.find(section => section.id === 'examenes-complementarios')?.order
-    ).toBe(reordered.draft?.sections.length! - 1);
+    ).toBe((reordered.draft?.sections.length ?? 0) - 1);
   });
 
   it('updates the persisted base after autosave without overwriting a newer local draft', () => {

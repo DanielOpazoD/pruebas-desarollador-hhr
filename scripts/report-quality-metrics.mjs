@@ -97,14 +97,20 @@ const getSourceMetrics = () => {
 const getModuleSizeMetrics = () => {
   const allowlist = safeReadJson(MODULE_ALLOWLIST_PATH) || {};
   const globalMax = typeof allowlist.globalMax === 'number' ? allowlist.globalMax : 400;
-  const perFileAllowlist = allowlist.allowlist && typeof allowlist.allowlist === 'object' ? allowlist.allowlist : {};
+  const perFileAllowlist =
+    allowlist.allowlist && typeof allowlist.allowlist === 'object' ? allowlist.allowlist : {};
+  const allowlistEntries = Object.entries(perFileAllowlist).filter(
+    ([, limit]) => typeof limit === 'number' && limit > globalMax
+  );
 
   const files = walkFiles(SRC_ROOT).filter(filePath => {
     const extension = path.extname(filePath);
     if (!['.ts', '.tsx'].includes(extension)) return false;
     if (filePath.endsWith('.d.ts')) return false;
     const relative = toPosix(path.relative(ROOT, filePath));
-    return !relative.includes('/tests/') && !relative.includes('.test.') && !relative.includes('.spec.');
+    return (
+      !relative.includes('/tests/') && !relative.includes('.test.') && !relative.includes('.spec.')
+    );
   });
 
   const violations = [];
@@ -112,7 +118,8 @@ const getModuleSizeMetrics = () => {
   for (const filePath of files) {
     const relative = toPosix(path.relative(ROOT, filePath));
     const lineCount = countLines(fs.readFileSync(filePath, 'utf8'));
-    const fileLimit = typeof perFileAllowlist[relative] === 'number' ? perFileAllowlist[relative] : globalMax;
+    const fileLimit =
+      typeof perFileAllowlist[relative] === 'number' ? perFileAllowlist[relative] : globalMax;
 
     if (lineCount > fileLimit) {
       violations.push({
@@ -127,6 +134,7 @@ const getModuleSizeMetrics = () => {
 
   return {
     globalMax,
+    allowlistHotspots: allowlistEntries.length,
     oversizedCount: violations.length,
     topOversized: violations.slice(0, 10),
   };
@@ -173,7 +181,9 @@ const getFolderDependencyDebtMetrics = () => {
     if (!SOURCE_EXTENSIONS.has(extension)) return false;
     if (filePath.endsWith('.d.ts')) return false;
     const relative = toPosix(path.relative(ROOT, filePath));
-    return !relative.includes('/tests/') && !relative.includes('.test.') && !relative.includes('.spec.');
+    return (
+      !relative.includes('/tests/') && !relative.includes('.test.') && !relative.includes('.spec.')
+    );
   });
 
   const getZone = relativePath => {
@@ -267,7 +277,12 @@ const getTestMetrics = () => {
     const explicitlyMarkedFlakeSafe = /@flake-safe/.test(content);
     const isQuarantined = quarantinedFiles.has(relative);
 
-    if (hasNonDeterministicSignals && !hasFakeTimerControls && !explicitlyMarkedFlakeSafe && !isQuarantined) {
+    if (
+      hasNonDeterministicSignals &&
+      !hasFakeTimerControls &&
+      !explicitlyMarkedFlakeSafe &&
+      !isQuarantined
+    ) {
       flakeRiskFiles += 1;
     }
   }
@@ -298,7 +313,9 @@ const getTypeSafetySignals = () => {
 
     const relative = toPosix(path.relative(ROOT, filePath));
     const isTest =
-      relative.includes('/tests/') || TEST_FILE_PATTERN.test(relative) || relative.includes('.spec.');
+      relative.includes('/tests/') ||
+      TEST_FILE_PATTERN.test(relative) ||
+      relative.includes('.spec.');
 
     if (isTest) {
       explicitAnyTestCount += count;
@@ -338,6 +355,7 @@ const mdLines = [
   '## Module Size',
   '',
   `- Global line limit: ${metrics.moduleSize.globalMax}`,
+  `- Allowlist hotspots: ${metrics.moduleSize.allowlistHotspots}`,
   `- Oversized modules: ${metrics.moduleSize.oversizedCount}`,
   '',
   '## Folder Dependency Debt',
@@ -361,4 +379,6 @@ const mdLines = [
 
 fs.writeFileSync(MD_OUTPUT, `${mdLines.join('\n')}`, 'utf8');
 
-console.log(`Quality metrics written to ${path.relative(ROOT, JSON_OUTPUT)} and ${path.relative(ROOT, MD_OUTPUT)}.`);
+console.log(
+  `Quality metrics written to ${path.relative(ROOT, JSON_OUTPUT)} and ${path.relative(ROOT, MD_OUTPUT)}.`
+);

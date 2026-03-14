@@ -28,6 +28,7 @@ vi.mock('@/components/modals/PatientHistoryModal', () => ({
 
 vi.mock('@/features/clinical-documents', () => ({
   ClinicalDocumentsModal: () => <div>Clinical Documents</div>,
+  ClinicalDocumentsPanel: () => <div>Clinical Documents Panel</div>,
 }));
 
 describe('PatientRowModals', () => {

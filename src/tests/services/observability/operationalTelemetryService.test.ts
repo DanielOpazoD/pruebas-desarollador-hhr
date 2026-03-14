@@ -111,6 +111,68 @@ describe('operationalTelemetryService', () => {
     expect(summary.topObservedOperation).toBe('send_medical_handoff');
   });
 
+  it('filters malformed persisted events and sanitizes persisted issues/context', () => {
+    window.localStorage.setItem(
+      'operationalTelemetryEvents',
+      JSON.stringify([
+        {
+          category: 'sync',
+          status: 'failed',
+          operation: 'sync_daily_record',
+          timestamp: '2026-03-06T20:00:00.000Z',
+          issues: [' Error ', '', 1],
+          context: { attempt: 3, nested: { reason: 'timeout' }, ignored: undefined },
+        },
+        {
+          category: 'sync',
+          status: 'unknown',
+          operation: 'broken_event',
+          timestamp: '2026-03-06T20:00:00.000Z',
+        },
+        {
+          category: 'sync',
+          status: 'failed',
+          operation: '',
+          timestamp: 'invalid-date',
+        },
+      ])
+    );
+
+    const events = getOperationalTelemetryEvents();
+    expect(events).toHaveLength(1);
+    expect(events[0]).toEqual({
+      category: 'sync',
+      status: 'failed',
+      operation: 'sync_daily_record',
+      timestamp: '2026-03-06T20:00:00.000Z',
+      issues: ['Error', '1'],
+      context: { attempt: 3, nested: JSON.stringify({ reason: 'timeout' }) },
+    });
+  });
+
+  it('does not count success statuses as observed in hourly and export/backup metrics', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-03-06T20:00:00.000Z'));
+
+    recordOperationalTelemetry(
+      {
+        category: 'export',
+        status: 'success',
+        operation: 'export_pdf',
+      },
+      { allowSuccess: true }
+    );
+    recordOperationalTelemetry({
+      category: 'backup',
+      status: 'partial',
+      operation: 'backup_handoff_pdf',
+    });
+
+    const summary = buildOperationalTelemetrySummary(getOperationalTelemetryEvents());
+    expect(summary.lastHourObservedCount).toBe(1);
+    expect(summary.exportOrBackupObservedCount).toBe(1);
+  });
+
   it('records structured operational errors with code and safe message in context', () => {
     recordOperationalErrorTelemetry(
       'transfers',

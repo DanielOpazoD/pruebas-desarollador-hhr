@@ -1,12 +1,9 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type { PatientData } from '@/types';
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';
-import { type CensusActionNotification } from '@/features/census/controllers/censusActionNotificationController';
-import {
-  buildCensusActionCommandsControllerValue,
-  buildCensusActionNotifyErrorAdapter,
-} from '@/features/census/controllers/censusActionCommandsController';
+import { buildCensusActionCommandsControllerValue } from '@/features/census/controllers/censusActionCommandsController';
+import type { CensusActionNotification } from '@/features/census/controllers/censusActionNotificationController';
 import type {
   DischargeExecutionInput,
   TransferExecutionInput,
@@ -57,11 +54,10 @@ export const useCensusActionCommandsController = ({
   setTransferState,
   getCurrentTime,
 }: UseCensusActionCommandsControllerParams): CensusActionCommandsController => {
-  const notifyError = useMemo(
-    () =>
-      buildCensusActionNotifyErrorAdapter((title, message) =>
-        notifyErrorRef.current(title, message)
-      ),
+  const notifyError = useCallback(
+    ({ title, message }: CensusActionNotification) => {
+      notifyErrorRef.current(title, message);
+    },
     [notifyErrorRef]
   );
 

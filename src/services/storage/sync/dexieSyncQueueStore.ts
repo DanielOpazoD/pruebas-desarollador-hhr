@@ -1,4 +1,3 @@
-import type { SyncTask } from '@/services/storage/syncQueueTypes';
 import type { SyncQueueStorePort } from '@/services/storage/sync/syncQueuePorts';
 import { hospitalDB } from '@/services/storage/indexedDBService';
 

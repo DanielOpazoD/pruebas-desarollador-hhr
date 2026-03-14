@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { PatientData, DailyRecord, CudyrScore, DischargeData, TransferData } from '@/types';
+import type { PatientData, DailyRecord, CudyrScore } from '@/types';
 
 import { DATE_REGEX, RUT_REGEX } from './zod/helpers';
 import { PatientDataSchema, CudyrScoreSchema } from './zod/patient';

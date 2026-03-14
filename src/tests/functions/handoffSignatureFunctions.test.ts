@@ -28,7 +28,7 @@ const createAdminMock = (record: Record<string, unknown>) => {
     admin: {
       firestore: () => ({
         collection: () => ({
-          doc: (docId: string) => ({
+          doc: (_docId: string) => ({
             collection: () => ({
               doc: () => ({
                 get: vi.fn().mockResolvedValue({

@@ -6,7 +6,7 @@ import { usePatientActiveTransferQuery } from '@/features/census/components/pati
 import type { PatientMainRowBedTypeCellProps } from '@/features/census/components/patient-row/patientRowViewContracts';
 
 export const PatientMainRowBedTypeCell: React.FC<PatientMainRowBedTypeCellProps> = ({
-  bedId,
+  bedId: _bedId,
   patientRut,
   bedType,
   hasPatient,

@@ -1,4 +1,3 @@
-import type { PatientData } from '@/types';
 import { resolvePatientRowDemographicsBinding } from '@/features/census/controllers/patientRowModalController';
 import { resolvePatientRowModalVisibilityState } from '@/features/census/controllers/patientRowModalVisibilityController';
 import type { PatientRowModalsProps } from '@/features/census/components/patient-row/patientRowViewContracts';

@@ -16,7 +16,6 @@ import {
 import {
   asFirestoreUpdatePayload,
   assertFirestoreConcurrency,
-  ConcurrencyError,
   createDeletedRecordRef,
   saveHistorySnapshot,
 } from '@/services/storage/firestore/firestoreWriteSupport';

@@ -1,7 +1,6 @@
 import type { TransferRequest, TransferStatus } from '@/types/transfers';
 import {
   ACTIVE_TRANSFER_STATUSES as ACTIVE_TRANSFER_LIFECYCLE_STATUSES,
-  CLOSED_TRANSFER_STATUSES as CLOSED_TRANSFER_LIFECYCLE_STATUSES,
   isActiveTransferStatus,
   isFinalizedTransferStatus,
   isTransferredTransferStatus,

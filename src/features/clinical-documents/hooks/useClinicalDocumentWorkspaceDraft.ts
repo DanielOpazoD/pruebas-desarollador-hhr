@@ -82,8 +82,8 @@ export const useClinicalDocumentWorkspaceDraft = ({
   const baseStateRef = useRef<ClinicalDocumentDraftBaseState>(state.baseState);
 
   const hasLocalDraftChanges = useMemo(
-    () => serializeClinicalDocument(state.draft) !== lastPersistedSnapshotRef.current,
-    [state.draft]
+    () => serializeClinicalDocument(state.draft) !== state.baseState.snapshot,
+    [state.baseState.snapshot, state.draft]
   );
 
   useEffect(() => {

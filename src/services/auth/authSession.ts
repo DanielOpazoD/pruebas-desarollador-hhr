@@ -5,7 +5,7 @@ import { checkSharedCensusAccess, isSharedCensusMode } from '@/services/auth/sha
 import { clearRoleCacheForEmail } from '@/services/auth/authPolicy';
 import { toAuthUser } from '@/services/auth/authShared';
 import { resolveFirebaseUserRole } from '@/services/auth/authAccessResolution';
-import { resolveAuthSessionUser, toAnonymousAuthUser } from '@/services/auth/authSessionController';
+import { resolveAuthSessionUser } from '@/services/auth/authSessionController';
 import { recordAuthOperationalError } from '@/services/auth/authOperationalTelemetry';
 
 export const signOut = async (): Promise<void> => {

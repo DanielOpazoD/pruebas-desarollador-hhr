@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { DragEvent } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import type { Dispatch, DragEvent, SetStateAction } from 'react';
 
 import type { ClinicalDocumentIndicationSpecialtyId } from '@/features/clinical-documents/controllers/clinicalDocumentIndicationsController';
 import { resolveClinicalDocumentIndicationSpecialty } from '@/features/clinical-documents/controllers/clinicalDocumentIndicationsController';
@@ -12,16 +12,35 @@ import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domai
 
 const DEFAULT_ACTIVE_SPECIALTY_ID: ClinicalDocumentIndicationSpecialtyId = 'tmt';
 
+interface DocumentScopedSheetState {
+  documentSignature: string;
+  isIndicationsPanelOpen: boolean;
+  activeIndicationsSpecialtyId: ClinicalDocumentIndicationSpecialtyId;
+  activePlanSubsectionId: ClinicalDocumentPlanSubsectionId;
+}
+
+const getDocumentSignature = (selectedDocument: ClinicalDocumentRecord | null) =>
+  selectedDocument ? `${selectedDocument.id}:${selectedDocument.especialidad}` : 'none';
+
+const createDocumentScopedSheetState = (
+  selectedDocument: ClinicalDocumentRecord | null
+): DocumentScopedSheetState => ({
+  documentSignature: getDocumentSignature(selectedDocument),
+  isIndicationsPanelOpen: false,
+  activeIndicationsSpecialtyId: selectedDocument
+    ? resolveClinicalDocumentIndicationSpecialty(selectedDocument.especialidad)
+    : DEFAULT_ACTIVE_SPECIALTY_ID,
+  activePlanSubsectionId: 'generales',
+});
+
 export const useClinicalDocumentSheetState = (selectedDocument: ClinicalDocumentRecord | null) => {
   const [activeTitleTarget, setActiveTitleTarget] = useState<string | null>(null);
   const [isFormattingOpen, setIsFormattingOpen] = useState(false);
   const [draggedSectionId, setDraggedSectionId] = useState<string | null>(null);
   const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
-  const [isIndicationsPanelOpen, setIsIndicationsPanelOpen] = useState(false);
-  const [activeIndicationsSpecialtyId, setActiveIndicationsSpecialtyId] =
-    useState<ClinicalDocumentIndicationSpecialtyId>(DEFAULT_ACTIVE_SPECIALTY_ID);
-  const [activePlanSubsectionId, setActivePlanSubsectionId] =
-    useState<ClinicalDocumentPlanSubsectionId>('generales');
+  const [documentScopedState, setDocumentScopedState] = useState<DocumentScopedSheetState>(() =>
+    createDocumentScopedSheetState(selectedDocument)
+  );
   const [activeEditorSectionId, setActiveEditorSectionId] = useState<string | null>(null);
   const [activeEditorHistoryState, setActiveEditorHistoryState] = useState({
     canUndo: false,
@@ -30,6 +49,26 @@ export const useClinicalDocumentSheetState = (selectedDocument: ClinicalDocument
 
   const activeEditorSectionIdRef = useRef<string | null>(null);
   const activeEditorApiRef = useRef<ClinicalDocumentSheetEditorApi | null>(null);
+  const currentDocumentScopedState = useMemo(() => {
+    const expectedSignature = getDocumentSignature(selectedDocument);
+    return documentScopedState.documentSignature === expectedSignature
+      ? documentScopedState
+      : createDocumentScopedSheetState(selectedDocument);
+  }, [documentScopedState, selectedDocument]);
+
+  const updateDocumentScopedState = useCallback(
+    (updater: SetStateAction<DocumentScopedSheetState>) => {
+      setDocumentScopedState(previous => {
+        const baseState =
+          previous.documentSignature === getDocumentSignature(selectedDocument)
+            ? previous
+            : createDocumentScopedSheetState(selectedDocument);
+
+        return typeof updater === 'function' ? updater(baseState) : updater;
+      });
+    },
+    [selectedDocument]
+  );
 
   const clearActiveEditor = useCallback((sectionId: string) => {
     setActiveEditorSectionId(current => (current === sectionId ? null : current));
@@ -66,18 +105,38 @@ export const useClinicalDocumentSheetState = (selectedDocument: ClinicalDocument
     [clearActiveEditor]
   );
 
-  useEffect(() => {
-    if (!selectedDocument) {
-      setIsIndicationsPanelOpen(false);
-      return;
-    }
+  const setIsIndicationsPanelOpen = useCallback<Dispatch<SetStateAction<boolean>>>(
+    nextValueOrUpdater => {
+      updateDocumentScopedState(current => ({
+        ...current,
+        isIndicationsPanelOpen:
+          typeof nextValueOrUpdater === 'function'
+            ? nextValueOrUpdater(current.isIndicationsPanelOpen)
+            : nextValueOrUpdater,
+      }));
+    },
+    [updateDocumentScopedState]
+  );
 
-    setActiveIndicationsSpecialtyId(
-      resolveClinicalDocumentIndicationSpecialty(selectedDocument.especialidad)
-    );
-    setActivePlanSubsectionId('generales');
-    setIsIndicationsPanelOpen(false);
-  }, [selectedDocument?.especialidad, selectedDocument?.id]);
+  const setActiveIndicationsSpecialtyId = useCallback(
+    (specialtyId: ClinicalDocumentIndicationSpecialtyId) => {
+      updateDocumentScopedState(current => ({
+        ...current,
+        activeIndicationsSpecialtyId: specialtyId,
+      }));
+    },
+    [updateDocumentScopedState]
+  );
+
+  const setActivePlanSubsectionId = useCallback(
+    (subsectionId: ClinicalDocumentPlanSubsectionId) => {
+      updateDocumentScopedState(current => ({
+        ...current,
+        activePlanSubsectionId: subsectionId,
+      }));
+    },
+    [updateDocumentScopedState]
+  );
 
   const formattingDisabled =
     !selectedDocument || selectedDocument.isLocked || !activeEditorSectionId;
@@ -128,11 +187,11 @@ export const useClinicalDocumentSheetState = (selectedDocument: ClinicalDocument
     dragOverSectionId,
     setDragOverSectionId,
     setDraggedSectionId,
-    isIndicationsPanelOpen,
+    isIndicationsPanelOpen: currentDocumentScopedState.isIndicationsPanelOpen,
     setIsIndicationsPanelOpen,
-    activeIndicationsSpecialtyId,
+    activeIndicationsSpecialtyId: currentDocumentScopedState.activeIndicationsSpecialtyId,
     setActiveIndicationsSpecialtyId,
-    activePlanSubsectionId,
+    activePlanSubsectionId: currentDocumentScopedState.activePlanSubsectionId,
     setActivePlanSubsectionId,
     activeEditorHistoryState,
     formattingDisabled,

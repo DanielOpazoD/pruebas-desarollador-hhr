@@ -81,7 +81,8 @@ npm run preview
 | `npm run report:quality-metrics`    | Snapshot de métricas de calidad para artefactos CI                                     |
 | `npm run report:operational-health` | Snapshot operativo de budgets, sync y runbooks                                         |
 | `npm run report:runtime-contracts`  | Snapshot de contratos runtime y evolución de esquema                                   |
-| `npm run report:critical-coverage`  | Baseline report-only de zonas críticas                                                 |
+| `npm run report:critical-coverage`  | Reporte gated de cobertura crítica por zona                                            |
+| `npm run check:critical-coverage`   | Gate de cobertura crítica por volumen y ratio de tests                                 |
 
 ## Estructura del Proyecto
 

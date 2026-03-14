@@ -38,6 +38,16 @@ interface ApplicationOutcomeLike {
 const STORAGE_KEY = 'operationalTelemetryEvents';
 const MAX_EVENTS = 200;
 const DEFAULT_WINDOW_MS = 12 * 60 * 60 * 1000;
+const OBSERVED_STATUSES: OperationalTelemetryStatus[] = ['partial', 'degraded', 'failed'];
+const OBSERVED_CATEGORY_ORDER: OperationalTelemetryCategory[] = [
+  'sync',
+  'indexeddb',
+  'clinical_document',
+  'create_day',
+  'handoff',
+  'export',
+  'backup',
+];
 
 let memoryEvents: OperationalTelemetryEvent[] = [];
 
@@ -75,6 +85,57 @@ const sanitizeContext = (
 const trimEvents = (events: OperationalTelemetryEvent[]): OperationalTelemetryEvent[] =>
   events.slice(-MAX_EVENTS);
 
+const isOperationalTelemetryStatus = (value: unknown): value is OperationalTelemetryStatus =>
+  value === 'success' || value === 'partial' || value === 'degraded' || value === 'failed';
+
+const isOperationalTelemetryCategory = (value: unknown): value is OperationalTelemetryCategory =>
+  value === 'auth' ||
+  value === 'firestore' ||
+  value === 'sync' ||
+  value === 'indexeddb' ||
+  value === 'integration' ||
+  value === 'export' ||
+  value === 'backup' ||
+  value === 'transfers' ||
+  value === 'clinical_document' ||
+  value === 'create_day' ||
+  value === 'handoff';
+
+const sanitizePersistedEvent = (value: unknown): OperationalTelemetryEvent | null => {
+  if (!value || typeof value !== 'object') return null;
+  const event = value as Partial<OperationalTelemetryEvent>;
+  if (
+    !isOperationalTelemetryCategory(event.category) ||
+    !isOperationalTelemetryStatus(event.status) ||
+    typeof event.operation !== 'string' ||
+    event.operation.trim().length === 0 ||
+    typeof event.timestamp !== 'string' ||
+    Number.isNaN(Date.parse(event.timestamp))
+  ) {
+    return null;
+  }
+
+  return {
+    category: event.category,
+    status: event.status,
+    operation: event.operation,
+    timestamp: event.timestamp,
+    date: typeof event.date === 'string' ? event.date : undefined,
+    issues: Array.isArray(event.issues) ? normalizeIssues(event.issues) : undefined,
+    context:
+      event.context && typeof event.context === 'object'
+        ? sanitizeContext(event.context as Record<string, unknown>)
+        : undefined,
+  };
+};
+
+const isObservedStatus = (status: OperationalTelemetryStatus): boolean =>
+  OBSERVED_STATUSES.includes(status);
+
+const isDefinedEvent = (
+  event: OperationalTelemetryEvent | null
+): event is OperationalTelemetryEvent => event !== null;
+
 const persistEvents = (events: OperationalTelemetryEvent[]): void => {
   memoryEvents = trimEvents(events);
 
@@ -103,7 +164,7 @@ const readPersistedEvents = (): OperationalTelemetryEvent[] => {
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    memoryEvents = parsed.filter(Boolean);
+    memoryEvents = trimEvents(parsed.map(sanitizePersistedEvent).filter(isDefinedEvent));
     return memoryEvents;
   } catch (error) {
     console.warn('[OperationalTelemetry] Failed to read persisted events:', error);
@@ -156,9 +217,7 @@ export const buildOperationalTelemetrySummary = (
   const lastHourEvents = events.filter(
     event => now - Date.parse(event.timestamp) <= 60 * 60 * 1000
   );
-  const observedEvents = recentEvents.filter(
-    event => event.status === 'partial' || event.status === 'degraded' || event.status === 'failed'
-  );
+  const observedEvents = recentEvents.filter(event => isObservedStatus(event.status));
   const buildTopKey = <T extends string>(values: T[]): T | undefined => {
     if (values.length === 0) return undefined;
     const counts = values.reduce<Record<string, number>>((acc, value) => {
@@ -168,8 +227,15 @@ export const buildOperationalTelemetrySummary = (
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] as T | undefined;
   };
   const failedEvents = recentEvents.filter(event => event.status === 'failed');
-  const observedCategoryCount = (category: OperationalTelemetryCategory): number =>
-    recentEvents.filter(event => event.category === category && event.status !== 'success').length;
+  const observedCategoryCounts = OBSERVED_CATEGORY_ORDER.reduce<Record<string, number>>(
+    (acc, category) => {
+      acc[category] = recentEvents.filter(
+        event => event.category === category && isObservedStatus(event.status)
+      ).length;
+      return acc;
+    },
+    {}
+  );
   const topObservedCategory = buildTopKey(observedEvents.map(event => event.category));
   const topObservedOperation = buildTopKey(observedEvents.map(event => event.operation));
   const latestObservedOperation = observedEvents.at(-1)?.operation;
@@ -178,24 +244,25 @@ export const buildOperationalTelemetrySummary = (
     recentEventCount: recentEvents.length,
     recentFailedCount: failedEvents.length,
     recentObservedCount: observedEvents.length,
-    lastHourObservedCount: lastHourEvents.filter(event => event.status !== 'success').length,
+    lastHourObservedCount: lastHourEvents.filter(event => isObservedStatus(event.status)).length,
     syncFailureCount: recentEvents.filter(
       event => event.category === 'sync' && event.status === 'failed'
     ).length,
-    syncObservedCount: observedCategoryCount('sync'),
+    syncObservedCount: observedCategoryCounts.sync || 0,
     degradedLocalCount: recentEvents.filter(
       event =>
         event.category === 'indexeddb' && (event.status === 'degraded' || event.status === 'failed')
     ).length,
-    indexedDbObservedCount: observedCategoryCount('indexeddb'),
-    clinicalDocumentObservedCount: observedCategoryCount('clinical_document'),
-    createDayObservedCount: observedCategoryCount('create_day'),
-    handoffObservedCount: observedCategoryCount('handoff'),
-    exportObservedCount: observedCategoryCount('export'),
-    backupObservedCount: observedCategoryCount('backup'),
+    indexedDbObservedCount: observedCategoryCounts.indexeddb || 0,
+    clinicalDocumentObservedCount: observedCategoryCounts.clinical_document || 0,
+    createDayObservedCount: observedCategoryCounts.create_day || 0,
+    handoffObservedCount: observedCategoryCounts.handoff || 0,
+    exportObservedCount: observedCategoryCounts.export || 0,
+    backupObservedCount: observedCategoryCounts.backup || 0,
     exportOrBackupObservedCount: recentEvents.filter(
       event =>
-        (event.category === 'export' || event.category === 'backup') && event.status !== 'success'
+        (event.category === 'export' || event.category === 'backup') &&
+        isObservedStatus(event.status)
     ).length,
     topObservedCategory,
     topObservedOperation,

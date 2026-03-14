@@ -1,26 +1,15 @@
-import { useState, useEffect } from 'react';
-import {
-  Users,
-  ShieldCheck,
-  Cloud,
-  RefreshCw,
-  Clock,
-  Bug,
-  User,
-  Search,
-  Wifi,
-  WifiOff,
-  AlertTriangle,
-} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { RefreshCw, Search, Users } from 'lucide-react';
 import {
   buildSystemHealthSummary,
   subscribeToSystemHealth,
-  UserHealthStatus,
+  type UserHealthStatus,
 } from '@/services/admin/healthService';
-import clsx from 'clsx';
-import { evaluateSystemHealthState } from './systemHealthStatusPolicy';
 import { DailyOpsChecklistCard } from './DailyOpsChecklistCard';
 import { SystemHealthAlertsPanel } from './SystemHealthAlertsPanel';
+import { SystemHealthSummaryGrid } from './SystemHealthSummaryGrid';
+import { SystemHealthUserCard } from './SystemHealthUserCard';
+import { filterSystemHealthStats } from './systemHealthDashboardUtils';
 
 export const SystemHealthDashboard = () => {
   const [stats, setStats] = useState<UserHealthStatus[]>([]);
@@ -35,11 +24,7 @@ export const SystemHealthDashboard = () => {
     return () => unsubscribe();
   }, []);
 
-  const filteredStats = stats.filter(
-    u =>
-      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.displayName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStats = filterSystemHealthStats(stats, searchTerm);
   const summary = buildSystemHealthSummary(stats);
 
   return (
@@ -47,95 +32,7 @@ export const SystemHealthDashboard = () => {
       <DailyOpsChecklistCard />
       <SystemHealthAlertsPanel stats={stats} />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3">
-        <div className="card p-3">
-          <p className="text-[10px] uppercase font-bold text-slate-400">Usuarios</p>
-          <p className="text-2xl font-black text-slate-900">{summary.totalUsers}</p>
-        </div>
-        <div className="card p-3">
-          <p className="text-[10px] uppercase font-bold text-slate-400">Offline</p>
-          <p className="text-2xl font-black text-red-600">{summary.offlineUsers}</p>
-        </div>
-        <div className="card p-3">
-          <p className="text-[10px] uppercase font-bold text-slate-400">Persistencia degradada</p>
-          <p className="text-2xl font-black text-amber-600">
-            {summary.degradedLocalPersistenceUsers}
-          </p>
-        </div>
-        <div className="card p-3">
-          <p className="text-[10px] uppercase font-bold text-slate-400">Sync fallido</p>
-          <p className="text-2xl font-black text-red-600">
-            {summary.totalFailedSyncTasks + summary.totalConflictSyncTasks}
-          </p>
-          <p className="text-[10px] text-slate-400">{summary.usersWithSyncFailures} usuarios</p>
-        </div>
-        <div className="card p-3">
-          <p className="text-[10px] uppercase font-bold text-slate-400">Errores locales</p>
-          <p className="text-2xl font-black text-slate-900">{summary.totalLocalErrorCount}</p>
-        </div>
-        <div className="card p-3">
-          <p className="text-[10px] uppercase font-bold text-slate-400">Repo warnings</p>
-          <p className="text-2xl font-black text-slate-900">{summary.totalRepositoryWarnings}</p>
-          <p className="text-[10px] text-slate-400">
-            {summary.usersWithRepositoryWarnings} usuarios, max{' '}
-            {summary.maxSlowRepositoryOperationMs} ms
-          </p>
-        </div>
-        <div className="card p-3">
-          <p className="text-[10px] uppercase font-bold text-slate-400">
-            Operaciones con observaciones (12h)
-          </p>
-          <p className="text-2xl font-black text-amber-600">
-            {summary.totalOperationalObservedCount}
-          </p>
-          <p className="text-[10px] text-slate-400">
-            Fallidas: {summary.totalOperationalFailureCount} · Export/backup:{' '}
-            {summary.totalOperationalExportBackupObservedCount}
-          </p>
-        </div>
-        <div className="card p-3">
-          <p className="text-[10px] uppercase font-bold text-slate-400">Observaciones por tipo</p>
-          <p className="text-sm font-black text-slate-900">
-            Sync {summary.totalOperationalSyncObservedCount} · Local{' '}
-            {summary.totalOperationalIndexedDbObservedCount}
-          </p>
-          <p className="text-[10px] text-slate-400">
-            Docs {summary.totalOperationalClinicalDocumentObservedCount} · Día{' '}
-            {summary.totalOperationalCreateDayObservedCount} · Handoff{' '}
-            {summary.totalOperationalHandoffObservedCount}
-          </p>
-        </div>
-        <div className="card p-3">
-          <p className="text-[10px] uppercase font-bold text-slate-400">Operación dominante</p>
-          <p className="text-sm font-black text-slate-900">
-            {summary.topOperationalOperation || 'Sin patrón dominante'}
-          </p>
-          <p className="text-[10px] text-slate-400">
-            {summary.topOperationalCategory
-              ? `Tipo principal: ${summary.topOperationalCategory}`
-              : 'Sin categoría dominante reciente'}
-          </p>
-        </div>
-        <div className="card p-3">
-          <p className="text-[10px] uppercase font-bold text-slate-400">Recencia operativa</p>
-          <p className="text-sm font-black text-slate-900">
-            {summary.usersWithRecentOperationalIssues} usuarios recientes
-          </p>
-          <p className="text-[10px] text-slate-400">
-            12h {summary.totalOperationalObservedCount} · 1h{' '}
-            {summary.totalOperationalLastHourObservedCount} ·{' '}
-            {summary.latestOperationalIssueAt
-              ? `Última observación ${new Date(summary.latestOperationalIssueAt).toLocaleTimeString(
-                  [],
-                  {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  }
-                )}`
-              : 'Sin observaciones recientes'}
-          </p>
-        </div>
-      </div>
+      <SystemHealthSummaryGrid summary={summary} />
 
       <div className="flex justify-end">
         <div className="relative w-full md:w-64">
@@ -164,225 +61,9 @@ export const SystemHealthDashboard = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredStats.map(u => {
-            const health = evaluateSystemHealthState(u);
-            const isOffline = !u.isOnline;
-            const syncIssueCount = u.failedSyncTasks + (u.conflictSyncTasks || 0);
-            const retryingSyncTasks = u.retryingSyncTasks || 0;
-            const oldestPendingAgeMs = u.oldestPendingAgeMs || 0;
-            const oldestPendingAgeMinutes = Math.floor(oldestPendingAgeMs / 60000);
-
-            return (
-              <div
-                key={u.uid}
-                className={clsx(
-                  'group relative overflow-hidden card p-0 bg-gradient-to-br transition-all duration-300 hover:shadow-xl hover:-translate-y-1',
-                  health.cardClassName
-                )}
-              >
-                {/* Status Banner */}
-                <div
-                  className={clsx(
-                    'px-4 py-1.5 flex justify-between items-center text-[10px] font-black tracking-widest uppercase',
-                    health.badgeClassName
-                  )}
-                >
-                  <span>{health.badgeLabel}</span>
-                  {u.isOutdated && <span className="bg-white/20 px-2 rounded">OBSOLETO</span>}
-                </div>
-
-                <div className="p-5 space-y-4">
-                  {/* User Info */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100">
-                        <User size={20} className="text-slate-400" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-slate-900 leading-none">{u.displayName}</h3>
-                        <p className="text-xs text-slate-500 mt-1 max-w-[150px] truncate">
-                          {u.email}
-                        </p>
-                      </div>
-                    </div>
-                    <div
-                      className={clsx(
-                        'flex items-center gap-1.5 px-2 py-1 rounded-lg text-[9px] font-bold border',
-                        isOffline
-                          ? 'bg-red-50 text-red-600 border-red-100'
-                          : 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                      )}
-                    >
-                      {isOffline ? <WifiOff size={12} /> : <Wifi size={12} />}
-                      {isOffline ? 'OFFLINE' : 'ONLINE'}
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-slate-200/50" />
-
-                  {/* Metrics */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-1">
-                      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                        Pendientes
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <Cloud
-                          className={clsx(
-                            u.pendingMutations > 0 ? 'text-amber-500' : 'text-slate-300'
-                          )}
-                          size={16}
-                        />
-                        <span
-                          className={clsx(
-                            'text-lg font-black',
-                            u.pendingMutations > 0 ? 'text-amber-600' : 'text-slate-700'
-                          )}
-                        >
-                          {u.pendingMutations}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                        Sync Fallido
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle
-                          className={clsx(syncIssueCount > 0 ? 'text-red-500' : 'text-slate-300')}
-                          size={16}
-                        />
-                        <span
-                          className={clsx(
-                            'text-lg font-black',
-                            syncIssueCount > 0 ? 'text-red-600' : 'text-slate-700'
-                          )}
-                        >
-                          {syncIssueCount}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                        Errores Locales
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <Bug
-                          className={clsx(
-                            u.localErrorCount > 0 ? 'text-red-500' : 'text-slate-300'
-                          )}
-                          size={16}
-                        />
-                        <span
-                          className={clsx(
-                            'text-lg font-black',
-                            u.localErrorCount > 0 ? 'text-red-600' : 'text-slate-700'
-                          )}
-                        >
-                          {u.localErrorCount}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-[10px] text-slate-500 flex items-center justify-between">
-                    <span>Reintentos: {retryingSyncTasks}</span>
-                    <span>Cola más antigua: {oldestPendingAgeMinutes} min</span>
-                  </div>
-
-                  {u.operationalObservedCount > 0 && (
-                    <div className="text-[10px] text-slate-500 flex flex-wrap gap-x-3 gap-y-1">
-                      <span>12h {u.operationalObservedCount}</span>
-                      <span>1h {u.operationalLastHourObservedCount}</span>
-                      <span>Sync {u.operationalSyncObservedCount}</span>
-                      <span>Local {u.operationalIndexedDbObservedCount}</span>
-                      <span>Docs {u.operationalClinicalDocumentObservedCount}</span>
-                      <span>Día {u.operationalCreateDayObservedCount}</span>
-                      <span>Handoff {u.operationalHandoffObservedCount}</span>
-                      {u.operationalTopObservedCategory && (
-                        <span>Tipo {u.operationalTopObservedCategory}</span>
-                      )}
-                      {u.operationalTopObservedOperation && (
-                        <span className="text-slate-400">
-                          Op. {u.operationalTopObservedOperation}
-                        </span>
-                      )}
-                      {u.latestOperationalIssueAt && (
-                        <span className="text-slate-400">
-                          Última obs.{' '}
-                          {u.latestOperationalOperation ? `${u.latestOperationalOperation} · ` : ''}
-                          {new Date(u.latestOperationalIssueAt).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  <div
-                    className={clsx(
-                      'text-[10px] rounded-md px-2 py-1 border',
-                      health.level === 'critical'
-                        ? 'bg-red-100 text-red-700 border-red-200'
-                        : health.level === 'warning'
-                          ? 'bg-amber-100 text-amber-700 border-amber-200'
-                          : 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                    )}
-                  >
-                    {health.actionHint}
-                  </div>
-
-                  {health.level !== 'healthy' && (
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                        Diagnostico
-                      </p>
-                      <ul className="space-y-1">
-                        {health.reasons.slice(0, 2).map(reason => (
-                          <li
-                            key={reason}
-                            className="text-[10px] bg-white/70 border border-slate-200 rounded px-2 py-1 text-slate-700"
-                          >
-                            {reason}
-                          </li>
-                        ))}
-                      </ul>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 pt-1">
-                        Siguiente accion
-                      </p>
-                      <ul className="space-y-1">
-                        {health.recommendedActions.slice(0, 2).map(action => (
-                          <li
-                            key={action}
-                            className="text-[10px] bg-white border border-slate-200 rounded px-2 py-1 text-slate-700"
-                          >
-                            {action}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Metadata */}
-                  <div className="pt-2 flex items-center justify-between text-[10px] font-medium text-slate-400 italic">
-                    <div className="flex items-center gap-1">
-                      <ShieldCheck size={12} /> {u.appVersion}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock size={12} />{' '}
-                      {new Date(u.lastSeen).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-white/20" />
-              </div>
-            );
-          })}
+          {filteredStats.map(user => (
+            <SystemHealthUserCard key={user.uid} user={user} />
+          ))}
         </div>
       )}
     </div>

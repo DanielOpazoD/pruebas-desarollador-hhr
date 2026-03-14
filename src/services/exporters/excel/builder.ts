@@ -1,10 +1,7 @@
 import { Workbook } from 'exceljs';
 import { DailyRecord } from '@/types';
 import { createWorkbook } from '../excelUtils';
-import type {
-  CensusMasterWorkbookOptions,
-  CensusWorkbookSheetDescriptor,
-} from './censusWorkbookContracts';
+import type { CensusMasterWorkbookOptions } from './censusWorkbookContracts';
 import { applyCensusWorkbookMetadata } from './censusWorkbookMetadataController';
 import { buildCensusWorkbookSheetDescriptors } from './censusWorkbookSheetDescriptorController';
 import { reserveUniqueCensusSheetName } from './censusWorkbookSheetNameController';

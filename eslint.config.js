@@ -6,7 +6,21 @@ import tseslint from 'typescript-eslint';
 import boundaries from 'eslint-plugin-boundaries';
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', '*.config.ts', 'dev-dist', 'coverage'] },
+  {
+    ignores: [
+      '.agent',
+      '.claude',
+      'coverage',
+      'dev-dist',
+      'dist',
+      'node_modules',
+      'output',
+      'playwright-report',
+      'reports',
+      'test-results',
+      '*.config.ts',
+    ],
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],

@@ -12,7 +12,7 @@ export const ClinicalDocumentPlanSection: React.FC<ClinicalDocumentSpecialSectio
   document,
   section,
   canEdit,
-  activePlanSubsectionId,
+  activePlanSubsectionId: _activePlanSubsectionId,
   setActivePlanSubsectionId,
   onPatchSection,
   onEditorActivate,

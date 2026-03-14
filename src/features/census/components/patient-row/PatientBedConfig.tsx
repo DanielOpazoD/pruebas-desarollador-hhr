@@ -1,5 +1,4 @@
 import React from 'react';
-import { BedDefinition, PatientData } from '@/types';
 import { Baby, Clock, Plus } from 'lucide-react';
 import clsx from 'clsx';
 import { usePatientBedConfigController } from '@/features/census/components/patient-row/usePatientBedConfigController';
