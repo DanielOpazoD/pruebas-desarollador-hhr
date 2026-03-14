@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fillIEEHForm } from '../../../services/pdf/ieehPdfService';
 import type { PatientData } from '../../../types';
-import { Specialty } from '../../../types/core';
+import { PatientStatus, Specialty } from '../../../types/core';
 
 // Use vi.hoisted to define mock objects that are used in vi.mock
 const { mockDrawText, mockGetPage, mockEmbedFont, mockSave } = vi.hoisted(() => {
@@ -20,9 +20,9 @@ const { mockDrawText, mockGetPage, mockEmbedFont, mockSave } = vi.hoisted(() => 
 
 // Mock pdf-lib
 vi.mock('pdf-lib', async () => {
-  const actual = await vi.importActual('pdf-lib');
+  const actual = await vi.importActual<typeof import('pdf-lib')>('pdf-lib');
   return {
-    ...(actual as any),
+    ...actual,
     PDFDocument: {
       load: vi.fn().mockResolvedValue({
         embedFont: mockEmbedFont,
@@ -32,6 +32,9 @@ vi.mock('pdf-lib', async () => {
     },
   };
 });
+
+const collectDrawnText = (): string =>
+  mockDrawText.mock.calls.map(([text]) => String(text)).join('');
 
 // Mock fetch
 global.fetch = vi.fn().mockResolvedValue({
@@ -50,7 +53,7 @@ describe('ieehPdfService - fillIEEHForm logic', () => {
     pathology: 'DIAGNOSTICO BASE',
     cie10Code: 'A00',
     specialty: Specialty.MEDICINA,
-    status: '' as any,
+    status: PatientStatus.EMPTY,
     admissionDate: '01-01-2024',
     admissionTime: '10:00',
     insurance: 'Fonasa',
@@ -72,7 +75,7 @@ describe('ieehPdfService - fillIEEHForm logic', () => {
 
     await fillIEEHForm(mockPatient, discharge);
 
-    const drawnChars = mockDrawText.mock.calls.map((call: any) => call[0]).join('');
+    const drawnChars = collectDrawnText();
 
     expect(drawnChars).toContain('DIAGNOSTICO DIALOGO');
     expect(drawnChars).toContain('B00');
@@ -82,7 +85,7 @@ describe('ieehPdfService - fillIEEHForm logic', () => {
   it('falls back to patient data when dialog overrides are missing', async () => {
     await fillIEEHForm(mockPatient, {});
 
-    const drawnChars = mockDrawText.mock.calls.map((call: any) => call[0]).join('');
+    const drawnChars = collectDrawnText();
 
     expect(drawnChars).toContain('DIAGNOSTICO BASE');
     expect(drawnChars).toContain('A00');
@@ -91,7 +94,7 @@ describe('ieehPdfService - fillIEEHForm logic', () => {
   it('correctly maps insurance and origin codes', async () => {
     await fillIEEHForm(mockPatient, {});
 
-    const drawnChars = mockDrawText.mock.calls.map((call: any) => call[0]).join('');
+    const drawnChars = collectDrawnText();
 
     // Fonasa -> '1'
     expect(drawnChars).toContain('1');
@@ -110,7 +113,7 @@ describe('ieehPdfService - fillIEEHForm logic', () => {
 
     await fillIEEHForm(mockPatient, discharge);
 
-    const drawnChars = mockDrawText.mock.calls.map((call: any) => call[0]).join('');
+    const drawnChars = collectDrawnText();
 
     expect(drawnChars).toContain('APENDICECTOMIA');
     expect(drawnChars).toContain('ECOGRAFIA');

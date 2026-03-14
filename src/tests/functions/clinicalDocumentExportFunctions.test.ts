@@ -42,9 +42,12 @@ const {
 } = require('../../../functions/lib/clinicalDocumentExportFunctions.js');
 
 describe('functions clinicalDocumentExportFunctions', () => {
+  let nextFolderId = 1;
+
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.CLINICAL_DRIVE_ROOT_FOLDER_ID = 'root-folder-id';
+    nextFolderId = 1;
   });
 
   it('rejects unauthenticated calls', async () => {
@@ -65,7 +68,9 @@ describe('functions clinicalDocumentExportFunctions', () => {
     driveMocks.create.mockImplementation(
       async ({ requestBody }: { requestBody: { mimeType?: string } }) => {
         if (requestBody.mimeType === 'application/vnd.google-apps.folder') {
-          return { data: { id: `folder-${Math.random().toString(36).slice(2, 6)}` } };
+          const id = `folder-${nextFolderId}`;
+          nextFolderId += 1;
+          return { data: { id } };
         }
         return {
           data: { id: 'file-1', webViewLink: 'https://drive.google.com/file/d/file-1/view' },

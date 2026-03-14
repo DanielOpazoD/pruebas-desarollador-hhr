@@ -135,7 +135,7 @@ describe('syncQueueService', () => {
       .where('status')
       .equals('PENDING')
       .modify(task => {
-        task.nextAttemptAt = Date.now() + 60_000;
+        task.nextAttemptAt = 2_000_000_000_000;
       });
 
     await processSyncQueue();

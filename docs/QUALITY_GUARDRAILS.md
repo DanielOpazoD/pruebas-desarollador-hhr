@@ -32,6 +32,9 @@ Evitar que la deuda estructural vuelva a crecer después de las fases de estabil
 
 ## Entry points de calidad
 
+- `npm run ci:inner-loop`
+- `npm run ci:merge-gate`
+- `npm run ci:release-gate`
 - `npm run ci:quality-core`
 - `npm run check:quality`
 - `npm run check:hotspot-growth`
@@ -39,6 +42,13 @@ Evitar que la deuda estructural vuelva a crecer después de las fases de estabil
 - `npm run report:operational-health`
 - `npm run report:runtime-contracts`
 - `npm run report:critical-coverage`
+
+## Operación diaria
+
+- El mapa corto de ejecución y fallback vive en [docs/CI_GATES_AND_FAILURE_RUNBOOKS.md](./CI_GATES_AND_FAILURE_RUNBOOKS.md).
+- `ci:inner-loop` es la ruta local rápida.
+- `ci:merge-gate` es la ruta blocking previa a merge.
+- `ci:release-gate` agrega emuladores, reglas y E2E críticos.
 
 ## Cuándo abrir una excepción
 

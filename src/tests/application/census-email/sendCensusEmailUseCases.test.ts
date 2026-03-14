@@ -5,6 +5,8 @@ import {
   executeSendCensusEmail,
   executeSendCensusEmailWithLink,
 } from '@/application/census-email/sendCensusEmailUseCases';
+import type { DailyRecord } from '@/types';
+import type { CensusEmailBrowserRuntime } from '@/hooks/controllers/censusEmailBrowserRuntimeController';
 
 vi.mock('@/services/storage/firestoreService', () => ({
   getMonthRecordsFromFirestore: vi.fn().mockResolvedValue([]),
@@ -29,6 +31,25 @@ vi.mock('@/services/exporters/censusMasterWorkbook', () => ({
 }));
 
 describe('sendCensusEmailUseCases', () => {
+  const browserRuntime: CensusEmailBrowserRuntime = {
+    getOrigin: () => 'https://hhr.test',
+    getLegacyRecipients: () => null,
+    clearLegacyRecipients: vi.fn(),
+    writeClipboard: vi.fn().mockResolvedValue(undefined),
+  };
+
+  const record: DailyRecord = {
+    date: '2026-03-06',
+    beds: {},
+    discharges: [],
+    transfers: [],
+    cma: [],
+    lastUpdated: '2026-03-06T10:00:00.000Z',
+    activeExtraBeds: [],
+    nursesDayShift: [],
+    nursesNightShift: [],
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -70,9 +91,7 @@ describe('sendCensusEmailUseCases', () => {
   });
 
   it('returns success when share link is generated', async () => {
-    const result = await executeGenerateCensusShareLink({
-      getOrigin: () => 'https://hhr.test',
-    } as any);
+    const result = await executeGenerateCensusShareLink(browserRuntime);
 
     expect(result.status).toBe('success');
     expect(result.data).toContain('/censo-compartido');
@@ -80,23 +99,14 @@ describe('sendCensusEmailUseCases', () => {
 
   it('sends an email with link successfully', async () => {
     const result = await executeSendCensusEmailWithLink({
-      record: {
-        date: '2026-03-06',
-        beds: {},
-        discharges: [],
-        transfers: [],
-        lastUpdated: '',
-        nurses: [],
-        activeExtraBeds: [],
-        cma: [],
-      } as any,
+      record,
       currentDateString: '2026-03-06',
       nurseSignature: 'Nurse',
       user: { email: 'admin@test.com', role: 'admin' },
       role: 'admin',
       recipients: ['a@test.com'],
       message: 'test',
-      browserRuntime: { getOrigin: () => 'https://hhr.test' } as any,
+      browserRuntime,
     });
 
     expect(result.status).toBe('success');

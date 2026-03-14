@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearRepositoryPerformanceMetrics,
   getRepositoryPerformanceSummary,
@@ -8,13 +8,18 @@ import {
 describe('repositoryPerformance', () => {
   beforeEach(() => {
     clearRepositoryPerformanceMetrics();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('records warning operations and exposes recent warning summaries', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     await measureRepositoryOperation('fast-op', async () => 'ok', { thresholdMs: 9999 });
-    await measureRepositoryOperation(
+    const slowOperation = measureRepositoryOperation(
       'slow-op',
       async () => {
         await new Promise(resolve => setTimeout(resolve, 5));
@@ -22,6 +27,8 @@ describe('repositoryPerformance', () => {
       },
       { thresholdMs: 0, context: 'daily-record' }
     );
+    await vi.advanceTimersByTimeAsync(5);
+    await slowOperation;
 
     const summary = getRepositoryPerformanceSummary();
     expect(summary.totalRecorded).toBe(2);

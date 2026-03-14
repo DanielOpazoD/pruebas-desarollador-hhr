@@ -8,6 +8,7 @@ import {
 } from '@/application/census-email/censusRecipientListUseCases';
 import * as emailRecipientListService from '@/services/email/emailRecipientListService';
 import * as bootstrapController from '@/hooks/controllers/censusEmailRecipientsBootstrapController';
+import type { CensusEmailBrowserRuntime } from '@/hooks/controllers/censusEmailBrowserRuntimeController';
 
 vi.mock('@/services/email/emailRecipientListService', () => ({
   CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST: {
@@ -27,6 +28,13 @@ vi.mock('@/hooks/controllers/censusEmailRecipientsBootstrapController', () => ({
 }));
 
 describe('censusRecipientListUseCases', () => {
+  const browserRuntime: CensusEmailBrowserRuntime = {
+    getOrigin: () => 'https://hhr.test',
+    getLegacyRecipients: () => null,
+    clearLegacyRecipients: vi.fn(),
+    writeClipboard: vi.fn().mockResolvedValue(undefined),
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -42,10 +50,7 @@ describe('censusRecipientListUseCases', () => {
 
     const result = await executeBootstrapCensusRecipientLists({
       canManageGlobalRecipientLists: true,
-      browserRuntime: {
-        getLegacyRecipients: () => null,
-        clearLegacyRecipients: vi.fn(),
-      } as any,
+      browserRuntime,
       activeListStorageKey: 'key',
       user: null,
     });

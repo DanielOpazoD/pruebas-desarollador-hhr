@@ -4,26 +4,7 @@ import clsx from 'clsx';
 
 import { getClinicalDocumentTypeLabel } from '@/features/clinical-documents/controllers/clinicalDocumentTemplateController';
 import { formatClinicalDocumentDateTime } from '@/features/clinical-documents/controllers/clinicalDocumentWorkspaceController';
-import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domain/entities';
-
-interface TemplateOption {
-  id: string;
-  name: string;
-}
-
-interface ClinicalDocumentsSidebarProps {
-  canEdit: boolean;
-  canDelete: boolean;
-  patientName?: string;
-  templates: TemplateOption[];
-  selectedTemplateId: string;
-  onSelectTemplate: (templateId: string) => void;
-  onCreateDocument: () => void;
-  documents: ClinicalDocumentRecord[];
-  selectedDocumentId: string | null;
-  onSelectDocument: (documentId: string) => void;
-  onDeleteDocument: (document: ClinicalDocumentRecord) => void;
-}
+import type { ClinicalDocumentsSidebarProps } from '@/features/clinical-documents/contracts/clinicalDocumentsSidebarContracts';
 
 export const ClinicalDocumentsSidebar: React.FC<ClinicalDocumentsSidebarProps> = ({
   canEdit,

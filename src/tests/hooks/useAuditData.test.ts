@@ -7,6 +7,7 @@ import * as fetchAuditLogsUseCase from '@/application/audit/fetchAuditLogsUseCas
 import { AUDIT_ACTION_LABELS } from '@/services/admin/auditConstants';
 import { AuditLogEntry, WorkerFilterParams } from '@/types/audit';
 import * as auditWorkerLogic from '@/services/admin/auditWorkerLogic';
+import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 
 vi.mock('@/application/audit/fetchAuditLogsUseCase', () => ({
   executeFetchAuditLogs: vi.fn(),
@@ -249,11 +250,12 @@ describe('useAuditData', () => {
   });
 
   it('falls back to a stable empty list when fetch is degraded', async () => {
-    vi.mocked(fetchAuditLogsUseCase.executeFetchAuditLogs).mockResolvedValueOnce({
+    const degradedResult: ApplicationOutcome<AuditLogEntry[]> = {
       status: 'degraded',
-      data: null,
+      data: [],
       issues: [{ kind: 'unknown', message: 'Sin acceso remoto temporal.' }],
-    } as any);
+    };
+    vi.mocked(fetchAuditLogsUseCase.executeFetchAuditLogs).mockResolvedValueOnce(degradedResult);
 
     const { result } = renderHook(() => useAuditData());
 

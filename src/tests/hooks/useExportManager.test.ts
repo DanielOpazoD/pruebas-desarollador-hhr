@@ -3,6 +3,9 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { useExportManager } from '@/hooks/useExportManager';
 import { DailyRecord } from '@/types';
 import * as backupExportUseCases from '@/application/backup-export/backupExportUseCases';
+import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
+import type { LookupBackupArchiveStatusOutput } from '@/application/backup-export/backupExportStorageUseCases';
+import type { BackupHandoffPdfOutput } from '@/application/backup-export/backupExportArchiveUseCases';
 
 const notificationApi = {
   success: vi.fn(),
@@ -134,11 +137,14 @@ describe('useExportManager', () => {
   });
 
   it('surfaces degraded lookup as warning on mount', async () => {
-    vi.mocked(backupExportUseCases.executeLookupBackupArchiveStatus).mockResolvedValueOnce({
+    const degradedLookup: ApplicationOutcome<LookupBackupArchiveStatusOutput> = {
       status: 'degraded',
       data: { exists: false, lookup: { exists: false, status: 'restricted' } },
       issues: [{ kind: 'unknown', message: 'Storage restringido' }],
-    } as any);
+    };
+    vi.mocked(backupExportUseCases.executeLookupBackupArchiveStatus).mockResolvedValueOnce(
+      degradedLookup
+    );
 
     renderHook(() => useExportManager(defaultProps));
 
@@ -148,11 +154,14 @@ describe('useExportManager', () => {
   });
 
   it('treats a missing lookup as a non-fatal unarchived state', async () => {
-    vi.mocked(backupExportUseCases.executeLookupBackupArchiveStatus).mockResolvedValueOnce({
+    const missingLookup: ApplicationOutcome<LookupBackupArchiveStatusOutput> = {
       status: 'success',
       data: { exists: false, lookup: { exists: false, status: 'missing' } },
       issues: [],
-    } as any);
+    };
+    vi.mocked(backupExportUseCases.executeLookupBackupArchiveStatus).mockResolvedValueOnce(
+      missingLookup
+    );
 
     const { result } = renderHook(() => useExportManager(defaultProps));
 
@@ -165,11 +174,14 @@ describe('useExportManager', () => {
   });
 
   it('surfaces partial handoff backup and still marks archive state', async () => {
-    vi.mocked(backupExportUseCases.executeBackupHandoffPdf).mockResolvedValueOnce({
+    const partialHandoffBackup: ApplicationOutcome<BackupHandoffPdfOutput | null> = {
       status: 'partial',
       data: { shift: 'day', createdCudyrBackup: false },
       issues: [{ kind: 'unknown', message: 'CUDYR mensual no pudo guardarse.' }],
-    } as any);
+    };
+    vi.mocked(backupExportUseCases.executeBackupHandoffPdf).mockResolvedValueOnce(
+      partialHandoffBackup
+    );
 
     const { result } = renderHook(() =>
       useExportManager({

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createClinicalDocumentDraft } from '@/features/clinical-documents/domain/factories';
+import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domain/entities';
 import {
   parseClinicalDocumentRecord,
   parseClinicalDocumentTemplate,
@@ -47,10 +48,10 @@ describe('clinicalDocumentRuntimeContracts', () => {
   });
 
   it('rejects a record without required identifiers', () => {
-    const record = buildRecord() as any;
+    const record: Partial<ClinicalDocumentRecord> = { ...buildRecord() };
     delete record.id;
 
-    expect(() => parseClinicalDocumentRecord(record)).toThrow();
+    expect(() => parseClinicalDocumentRecord(record as ClinicalDocumentRecord)).toThrow();
   });
 
   it('accepts default clinical document templates', () => {

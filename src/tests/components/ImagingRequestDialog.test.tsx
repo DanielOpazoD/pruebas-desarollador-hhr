@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ImagingRequestDialog } from '@/components/modals/ImagingRequestDialog';
 import { PatientData } from '@/types';
+import { PatientStatus, Specialty } from '@/types/core';
 
 // Mock the PDF service functions
 vi.mock('@/services/pdf/imagingRequestPdfService', () => ({
@@ -20,12 +21,23 @@ vi.mock('@/services/pdf/imagingRequestPdfService', () => ({
 }));
 
 const mockPatient: PatientData = {
-  id: 'patient-1',
+  bedId: 'R1',
+  isBlocked: false,
+  bedMode: 'Cama',
+  hasCompanionCrib: false,
   patientName: 'MARCELO VALDES AVILA',
   rut: '12.345.678-9',
+  age: '30',
   birthDate: '1996-01-01',
   pathology: 'TEST PATHOLOGY',
-} as any;
+  specialty: Specialty.MEDICINA,
+  status: PatientStatus.ESTABLE,
+  admissionDate: '2026-03-14',
+  hasWristband: false,
+  devices: [],
+  surgicalComplication: false,
+  isUPC: false,
+};
 
 describe('ImagingRequestDialog', () => {
   it('should render the dialog when open', () => {

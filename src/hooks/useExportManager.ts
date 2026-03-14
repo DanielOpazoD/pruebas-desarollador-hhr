@@ -100,6 +100,7 @@ export const useExportManager = ({
     selectedDay,
     record,
     currentDateString,
+    setIsArchived,
     success,
     warning,
     notifyError,
@@ -151,7 +152,7 @@ export const useExportManager = ({
         setIsBackingUp(false);
       }
     },
-    [record, selectedShift, success, warning, notifyError, confirm, isArchived]
+    [confirm, isArchived, notifyError, record, selectedShift, setIsArchived, success, warning]
   );
 
   return {

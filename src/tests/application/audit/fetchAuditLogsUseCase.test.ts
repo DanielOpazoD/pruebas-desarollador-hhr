@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { executeFetchAuditLogs } from '@/application/audit/fetchAuditLogsUseCase';
 import * as auditService from '@/services/admin/auditService';
+import type { AuditLogEntry } from '@/types/audit';
 
 vi.mock('@/services/admin/auditService', () => ({
   getAuditLogs: vi.fn(),
@@ -12,12 +13,23 @@ describe('executeFetchAuditLogs', () => {
   });
 
   it('returns fetched logs on success', async () => {
-    vi.mocked(auditService.getAuditLogs).mockResolvedValueOnce([{ id: '1' }] as any);
+    const logs: AuditLogEntry[] = [
+      {
+        id: '1',
+        timestamp: '2026-03-14T10:00:00.000Z',
+        userId: 'doctor@test.com',
+        action: 'USER_LOGIN',
+        entityType: 'user',
+        entityId: 'doctor@test.com',
+        details: {},
+      },
+    ];
+    vi.mocked(auditService.getAuditLogs).mockResolvedValueOnce(logs);
 
     const result = await executeFetchAuditLogs({ limit: 25 });
 
     expect(result.status).toBe('success');
-    expect(result.data).toEqual([{ id: '1' }]);
+    expect(result.data).toEqual(logs);
     expect(auditService.getAuditLogs).toHaveBeenCalledWith(25);
   });
 

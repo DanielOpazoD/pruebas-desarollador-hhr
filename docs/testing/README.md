@@ -1,47 +1,60 @@
 # Guía de Testing - Hospital Hanga Roa
 
-Este documento describe la estrategia de pruebas para asegurar la calidad y estabilidad del sistema de censo hospitalario.
+Este documento resume cómo se valida el repo hoy, con gates por capas y cobertura crítica instrumentada.
 
-## 1. Estructura de Tests
+## 1. Capas de prueba
 
-El proyecto utiliza **Vitest** como motor de pruebas y se divide en tres niveles:
+### Unitarias y de integración (`src/tests/`)
 
-### Unitarios (`tests/unit/`)
-Prueban funciones aisladas sin dependencias externas (ej. `statsCalculator.test.ts`).
+Cobren hooks, controllers, casos de uso, repositorios, contratos runtime y flujos integrados de negocio.
 
-### Hooks (`tests/hooks/`)
-Validan la lógica de estado y efectos de React usando `@testing-library/react-hooks` (ej. `usePatientTransfers.test.ts`).
+### Reglas y emulador
 
-### Integración (`tests/integration/`)
-Validan flujos completos de negocio y la interacción entre múltiples servicios, hooks y estados.
-- `census-export.test.ts`: Flujo de Excel Maestro.
-- `handoff-signature.test.ts`: Firma médica y entrega.
-- `audit-flow.test.ts`: Trazabilidad de acciones (MINSAL).
-- `offline-persistence.test.ts`: Resiliencia ante fallos de red.
-- `daily-record-sync.test.ts`: Sincronización Local ↔ Firestore.
-- `permissions.test.ts`: Matriz de seguridad RBAC.
+Validan seguridad Firestore, sincronización y comportamiento de adapters con emulador local.
 
 ### E2E (`e2e/`)
-Pruebas de caja negra con **Playwright** que validan la experiencia de usuario en navegadores reales.
-- `report-flow.spec.ts`: Flujo completo de entrega y exportación.
-- `medical-signature.spec.ts`: Firma anónima de médicos.
-- `patient-operations.spec.ts`: Operaciones críticas de pacientes.
 
-## 2. Ejecución de Tests
+Playwright cubre auth, startup, módulos críticos y regresiones de UX prioritaria.
 
-| Comando | Descripción |
-| :--- | :--- |
-| `npm test` | Ejecuta todos los tests en modo interactivo. |
-| `npm run ci` | Ejecuta Lint -> Test -> Build (usar antes de push). |
-| `npm run test:ui` | Abre la interfaz visual de Vitest. |
-| `npm run coverage` | Genera reporte de cobertura de código. |
+## 2. Comandos vigentes
 
-Para reglas de Firestore (emulador):
-- Iniciar emulador: `npx firebase emulators:start --only firestore`
-- Ejecutar: `RUN_FIRESTORE_RULES_TESTS=1 npm test -- src/tests/security/firestore-rules.test.ts`
+| Comando                          | Descripción                                             |
+| :------------------------------- | :------------------------------------------------------ |
+| `npm run test:ci:unit`           | Suite unitaria/integración de CI sin reglas ni emulador |
+| `npm run test:coverage:critical` | Cobertura crítica instrumentada por zona                |
+| `npm run test:e2e:critical`      | E2E críticos sobre emulador                             |
+| `npm run test:rules`             | Reglas Firestore                                        |
+| `npm run test:emulator:sync`     | Suite de emulador sync                                  |
+| `npm run test:emulator:ui`       | Suite de emulador UI                                    |
+| `npm run ci:inner-loop`          | Ruta rápida para desarrollo diario                      |
+| `npm run ci:merge-gate`          | Ruta blocking previa a merge                            |
+| `npm run ci:release-gate`        | Ruta completa con Firestore + E2E                       |
 
-## 3. Mejores Prácticas
+## 3. Cobertura crítica
 
-1. **Mocks de Firebase**: Siempre usar los mocks definidos en `tests/setup.ts` para evitar llamadas reales a la red.
-2. **Datos de Prueba**: Usar las funciones `createMockRecord` definidas en los tests de integración para mantener consistencia.
-3. **Regresión**: Si se modifica un flujo crítico (Censo, Firma, Excel), es obligatorio ejecutar la suite de integración correspondiente.
+La cobertura crítica ya no se gobierna por conteo de tests o ratios test/source.
+
+Ahora se valida por zonas instrumentadas:
+
+- `census/controllers`
+- `clinical-documents`
+- `services/transfers`
+- `services/storage/firestore`
+
+Artefactos:
+
+- `reports/critical-coverage.md`
+- `reports/critical-coverage.json`
+
+## 4. Criterio práctico
+
+1. Si la change es local o todavía exploratoria, correr `npm run ci:inner-loop`.
+2. Si toca código clínico, runtime, bundle o cobertura, correr `npm run ci:merge-gate`.
+3. Si toca Firestore, reglas, emulador o UX crítica, cerrar con `npm run ci:release-gate`.
+
+## 5. Buenas prácticas
+
+1. Usar mocks compartidos de `src/tests/setup.ts` cuando exista una variante oficial.
+2. Evitar `any` en tests; preferir fixtures tipadas y `ApplicationOutcome` explícito.
+3. Si aparece una falla E2E, migrar el spec a contratos estables (`data-testid`, ready states, errores visibles) antes de relajar assertions.
+4. Si cambia el estándar operativo, actualizar [docs/CI_GATES_AND_FAILURE_RUNBOOKS.md](../CI_GATES_AND_FAILURE_RUNBOOKS.md).

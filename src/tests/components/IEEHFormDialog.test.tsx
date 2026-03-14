@@ -3,7 +3,9 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { IEEHFormDialog } from '../../features/census/components/IEEHFormDialog';
 import { downloadIEEHForm } from '../../services/pdf/ieehPdfService';
-import { Specialty } from '../../types/core';
+import { PatientStatus, Specialty } from '../../types/core';
+import type { PatientData } from '../../types';
+import type { DischargeFormData } from '../../services/pdf/ieehPdfService';
 
 // Mock services
 vi.mock('../../services/pdf/ieehPdfService', () => ({
@@ -16,7 +18,7 @@ vi.mock('../../services/terminology/terminologyService', () => ({
 }));
 
 describe('IEEHFormDialog Component', () => {
-  const mockPatient = {
+  const mockPatient: PatientData = {
     bedId: '1',
     isBlocked: false,
     bedMode: 'Cama',
@@ -28,6 +30,7 @@ describe('IEEHFormDialog Component', () => {
     cie10Code: 'A00',
     cie10Description: 'DESC CIE10 BASE',
     specialty: Specialty.MEDICINA,
+    status: PatientStatus.ESTABLE,
     admissionDate: '01-01-2024',
     admissionTime: '10:00',
     insurance: 'Fonasa',
@@ -38,7 +41,7 @@ describe('IEEHFormDialog Component', () => {
     isUPC: false,
   };
 
-  const baseDischargeData = {
+  const baseDischargeData: DischargeFormData = {
     dischargeDate: '02-01-2024',
     dischargeTime: '11:00',
   };
@@ -52,8 +55,8 @@ describe('IEEHFormDialog Component', () => {
       <IEEHFormDialog
         isOpen={true}
         onClose={vi.fn()}
-        patient={mockPatient as any}
-        baseDischargeData={baseDischargeData as any}
+        patient={mockPatient}
+        baseDischargeData={baseDischargeData}
       />
     );
 
@@ -66,8 +69,8 @@ describe('IEEHFormDialog Component', () => {
       <IEEHFormDialog
         isOpen={true}
         onClose={vi.fn()}
-        patient={mockPatient as any}
-        baseDischargeData={baseDischargeData as any}
+        patient={mockPatient}
+        baseDischargeData={baseDischargeData}
       />
     );
 
@@ -84,8 +87,8 @@ describe('IEEHFormDialog Component', () => {
       <IEEHFormDialog
         isOpen={true}
         onClose={vi.fn()}
-        patient={mockPatient as any}
-        baseDischargeData={baseDischargeData as any}
+        patient={mockPatient}
+        baseDischargeData={baseDischargeData}
       />
     );
 

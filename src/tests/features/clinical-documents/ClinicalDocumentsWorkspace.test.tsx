@@ -2,11 +2,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { ClinicalDocumentsWorkspace } from '@/features/clinical-documents/components/ClinicalDocumentsWorkspace';
-import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domain/entities';
+import type {
+  ClinicalDocumentRecord,
+  ClinicalDocumentTemplate,
+} from '@/features/clinical-documents/domain/entities';
 import { createClinicalDocumentDraft } from '@/features/clinical-documents/domain/factories';
 import * as clinicalDocumentUseCases from '@/application/clinical-documents/clinicalDocumentUseCases';
+import type { ExportClinicalDocumentPdfOutput } from '@/application/clinical-documents/clinicalDocumentUseCases';
+import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 import { ClinicalDocumentRepository } from '@/services/repositories/ClinicalDocumentRepository';
 import { ClinicalDocumentTemplateRepository } from '@/services/repositories/ClinicalDocumentTemplateRepository';
+import type { PatientData } from '@/types';
+import { PatientStatus, Specialty } from '@/types/core';
 
 const authState = {
   user: { uid: 'u1', email: 'doctor@test.com', displayName: 'Doctor Test' },
@@ -16,6 +23,20 @@ const authState = {
 vi.mock('@/context/AuthContext', () => ({
   useAuth: () => authState,
 }));
+
+vi.mock(
+  '@/features/clinical-documents/controllers/clinicalDocumentPermissionController',
+  async importOriginal => {
+    const actual =
+      await importOriginal<
+        typeof import('@/features/clinical-documents/controllers/clinicalDocumentPermissionController')
+      >();
+    return {
+      ...actual,
+      canUnsignClinicalDocument: vi.fn(() => true),
+    };
+  }
+);
 
 const notificationApi = {
   success: vi.fn(),
@@ -77,6 +98,42 @@ clinicalDocument.sections = clinicalDocument.sections.map(section => ({
   content: `${section.title} completo`,
 }));
 
+const workspacePatient: PatientData = {
+  bedId: 'R1',
+  isBlocked: false,
+  bedMode: 'Cama',
+  hasCompanionCrib: false,
+  patientName: 'Paciente Test',
+  rut: '11.111.111-1',
+  age: '40a',
+  birthDate: '1986-01-01',
+  pathology: 'Diagnostico de prueba',
+  specialty: Specialty.MEDICINA,
+  status: PatientStatus.ESTABLE,
+  admissionDate: '2026-03-06',
+  hasWristband: false,
+  devices: [],
+  surgicalComplication: false,
+  isUPC: false,
+};
+
+const activeTemplate: ClinicalDocumentTemplate = {
+  id: 'epicrisis',
+  name: 'Epicrisis',
+  title: 'Epicrisis médica',
+  version: 1,
+  patientFields: [],
+  sections: [],
+  allowCustomTitle: false,
+  allowAddSection: false,
+  allowClinicalUpdateSections: false,
+  status: 'active',
+  documentType: 'epicrisis',
+  defaultPatientInfoTitle: 'Información del Paciente',
+  defaultFooterMedicoLabel: 'Médico',
+  defaultFooterEspecialidadLabel: 'Especialidad',
+};
+
 vi.mock('@/services/repositories/ClinicalDocumentRepository', () => ({
   ClinicalDocumentRepository: {
     subscribeByEpisode: vi.fn(),
@@ -115,24 +172,7 @@ describe('ClinicalDocumentsWorkspace', () => {
     authState.user = { uid: 'u1', email: 'doctor@test.com', displayName: 'Doctor Test' };
     authState.role = 'doctor_urgency';
 
-    vi.mocked(ClinicalDocumentTemplateRepository.listActive).mockResolvedValue([
-      {
-        id: 'epicrisis',
-        name: 'Epicrisis',
-        title: 'Epicrisis médica',
-        version: 1,
-        patientFields: [],
-        sections: [],
-        allowCustomTitle: false,
-        allowAddSection: false,
-        allowClinicalUpdateSections: false,
-        status: 'active',
-        documentType: 'epicrisis',
-        defaultPatientInfoTitle: 'Información del Paciente',
-        defaultFooterMedicoLabel: 'Médico',
-        defaultFooterEspecialidadLabel: 'Especialidad',
-      },
-    ] as any);
+    vi.mocked(ClinicalDocumentTemplateRepository.listActive).mockResolvedValue([activeTemplate]);
 
     vi.mocked(ClinicalDocumentRepository.subscribeByEpisode).mockImplementation(
       (_episodeKey, callback) => {
@@ -141,17 +181,23 @@ describe('ClinicalDocumentsWorkspace', () => {
       }
     );
 
-    vi.mocked(clinicalDocumentUseCases.executeCreateClinicalDocumentDraft).mockResolvedValue({
+    const createDraftResult: ApplicationOutcome<ClinicalDocumentRecord | null> = {
       status: 'success',
       data: { ...clinicalDocument, id: 'new-doc' },
       issues: [],
-    } as any);
-    vi.mocked(clinicalDocumentUseCases.executePersistClinicalDocumentDraft).mockResolvedValue({
+    };
+    vi.mocked(clinicalDocumentUseCases.executeCreateClinicalDocumentDraft).mockResolvedValue(
+      createDraftResult
+    );
+    const persistDraftResult: ApplicationOutcome<ClinicalDocumentRecord | null> = {
       status: 'success',
       data: clinicalDocument,
       issues: [],
-    } as any);
-    vi.mocked(clinicalDocumentUseCases.executeSignClinicalDocument).mockResolvedValue({
+    };
+    vi.mocked(clinicalDocumentUseCases.executePersistClinicalDocumentDraft).mockResolvedValue(
+      persistDraftResult
+    );
+    const signResult: ApplicationOutcome<ClinicalDocumentRecord | null> = {
       status: 'success',
       data: {
         ...clinicalDocument,
@@ -159,7 +205,7 @@ describe('ClinicalDocumentsWorkspace', () => {
         isLocked: true,
         audit: {
           ...clinicalDocument.audit,
-          signedAt: new Date().toISOString(),
+          signedAt: '2026-03-06T13:00:00.000Z',
           signedBy: {
             uid: 'u1',
             email: 'doctor@test.com',
@@ -169,36 +215,38 @@ describe('ClinicalDocumentsWorkspace', () => {
         },
       },
       issues: [],
-    } as any);
-    vi.mocked(clinicalDocumentUseCases.executeUnsignClinicalDocument).mockResolvedValue({
+    };
+    vi.mocked(clinicalDocumentUseCases.executeSignClinicalDocument).mockResolvedValue(signResult);
+    const unsignResult: ApplicationOutcome<ClinicalDocumentRecord | null> = {
       status: 'success',
       data: { ...clinicalDocument, status: 'draft', isLocked: false },
       issues: [],
-    } as any);
-    vi.mocked(clinicalDocumentUseCases.executeDeleteClinicalDocument).mockResolvedValue({
+    };
+    vi.mocked(clinicalDocumentUseCases.executeUnsignClinicalDocument).mockResolvedValue(
+      unsignResult
+    );
+    const deleteResult: ApplicationOutcome<null> = {
       status: 'success',
       data: null,
       issues: [],
-    } as any);
-    vi.mocked(clinicalDocumentUseCases.executeExportClinicalDocumentPdf).mockResolvedValue({
+    };
+    vi.mocked(clinicalDocumentUseCases.executeDeleteClinicalDocument).mockResolvedValue(
+      deleteResult
+    );
+    const exportResult: ApplicationOutcome<ExportClinicalDocumentPdfOutput | null> = {
       status: 'success',
       data: { pdf: { exportStatus: 'exported' } },
       issues: [],
-    } as any);
+    };
+    vi.mocked(clinicalDocumentUseCases.executeExportClinicalDocumentPdf).mockResolvedValue(
+      exportResult
+    );
   });
 
   it('renders the real shell and wires create/sign/pdf through use-case boundaries', async () => {
     render(
       <ClinicalDocumentsWorkspace
-        patient={
-          {
-            patientName: 'Paciente Test',
-            rut: '11.111.111-1',
-            admissionDate: '2026-03-06',
-            age: '40a',
-            birthDate: '1986-01-01',
-          } as any
-        }
+        patient={workspacePatient}
         currentDateString="2026-03-06"
         bedId="R1"
       />
@@ -225,15 +273,7 @@ describe('ClinicalDocumentsWorkspace', () => {
   it('supports sign -> upload -> unsign on the real shell boundary', async () => {
     render(
       <ClinicalDocumentsWorkspace
-        patient={
-          {
-            patientName: 'Paciente Test',
-            rut: '11.111.111-1',
-            admissionDate: '2026-03-06',
-            age: '40a',
-            birthDate: '1986-01-01',
-          } as any
-        }
+        patient={workspacePatient}
         currentDateString="2026-03-06"
         bedId="R1"
       />
@@ -272,15 +312,7 @@ describe('ClinicalDocumentsWorkspace', () => {
 
     render(
       <ClinicalDocumentsWorkspace
-        patient={
-          {
-            patientName: 'Paciente Test',
-            rut: '11.111.111-1',
-            admissionDate: '2026-03-06',
-            age: '40a',
-            birthDate: '1986-01-01',
-          } as any
-        }
+        patient={workspacePatient}
         currentDateString="2026-03-06"
         bedId="R1"
       />
@@ -297,15 +329,7 @@ describe('ClinicalDocumentsWorkspace', () => {
   it('allows hiding and restoring sections on the real shell boundary', async () => {
     render(
       <ClinicalDocumentsWorkspace
-        patient={
-          {
-            patientName: 'Paciente Test',
-            rut: '11.111.111-1',
-            admissionDate: '2026-03-06',
-            age: '40a',
-            birthDate: '1986-01-01',
-          } as any
-        }
+        patient={workspacePatient}
         currentDateString="2026-03-06"
         bedId="R1"
       />
@@ -339,15 +363,7 @@ describe('ClinicalDocumentsWorkspace', () => {
 
     render(
       <ClinicalDocumentsWorkspace
-        patient={
-          {
-            patientName: 'Paciente Test',
-            rut: '11.111.111-1',
-            admissionDate: '2026-03-06',
-            age: '40a',
-            birthDate: '1986-01-01',
-          } as any
-        }
+        patient={workspacePatient}
         currentDateString="2026-03-06"
         bedId="R1"
       />
@@ -397,15 +413,7 @@ describe('ClinicalDocumentsWorkspace', () => {
 
     render(
       <ClinicalDocumentsWorkspace
-        patient={
-          {
-            patientName: 'Paciente Test',
-            rut: '11.111.111-1',
-            admissionDate: '2026-03-06',
-            age: '40a',
-            birthDate: '1986-01-01',
-          } as any
-        }
+        patient={workspacePatient}
         currentDateString="2026-03-06"
         bedId="R1"
       />
