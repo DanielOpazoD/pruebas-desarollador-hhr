@@ -251,19 +251,34 @@ export async function ensureRecordExists(page: Page) {
   }
 
   const tableById = page.getByTestId('census-table');
-
-  // Esperar a que la página se hidrate lo suficiente (loading desaparezca si existe)
-  await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+  const blankBtn = page
+    .getByRole('button', { name: /Comenzar Día|Registro en Blanco|Iniciar turno desde cero/i })
+    .first();
+  const copyBtn = page.getByRole('button', { name: /Copiar día anterior/i }).first();
+  const hasVisibleCreatePrompt = async () =>
+    (await blankBtn.isVisible().catch(() => false)) ||
+    (await copyBtn.isVisible().catch(() => false));
 
   if (await tableById.isVisible().catch(() => false)) {
     return;
   }
 
-  // Si no está la tabla, buscar botones de creación (estos sólo aparecen cuando termina de cargar data)
-  const blankBtn = page
-    .getByRole('button', { name: /Comenzar Día|Registro en Blanco|Iniciar turno desde cero/i })
-    .first();
-  const copyBtn = page.getByRole('button', { name: /Copiar día anterior/i }).first();
+  await page.waitForLoadState('domcontentloaded');
+
+  if (await tableById.isVisible().catch(() => false)) {
+    return;
+  }
+
+  if (await hasVisibleCreatePrompt()) {
+    // El prompt visible ya implica que la pantalla está lista para interactuar.
+  } else {
+    // Solo esperar quietud de red si todavía no apareció ni tabla ni prompt.
+    await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+
+    if (await tableById.isVisible().catch(() => false)) {
+      return;
+    }
+  }
 
   try {
     // Si la tabla no cargó, uno de estos DEBE estar

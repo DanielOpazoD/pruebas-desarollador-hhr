@@ -31,24 +31,66 @@ export const useBackupArchiveStatus = ({
     }
 
     const backupType = currentModule === 'CENSUS' ? 'census' : 'handoff';
+    let isDisposed = false;
+    let timeoutId: number | undefined;
+    let idleCallbackId: number | undefined;
 
-    void executeLookupBackupArchiveStatus({
-      backupType,
-      date: currentDateString,
-      shift: selectedShift,
-    }).then(outcome => {
-      recordOperationalOutcome('backup', 'lookup_archive_status', outcome, {
+    const runLookup = () => {
+      void executeLookupBackupArchiveStatus({
+        backupType,
         date: currentDateString,
-        context: { backupType, shift: selectedShift },
+        shift: selectedShift,
+      }).then(outcome => {
+        if (isDisposed) {
+          return;
+        }
+
+        recordOperationalOutcome('backup', 'lookup_archive_status', outcome, {
+          date: currentDateString,
+          context: { backupType, shift: selectedShift },
+        });
+        setIsArchived(buildArchiveStatusState(outcome.data.lookup));
+        const notice = presentBackupLookupOutcome(outcome);
+        if (notice?.channel === 'warning') {
+          warning(notice.title || 'Respaldo', notice.message);
+        } else if (notice?.channel === 'error') {
+          error(notice.title || 'Respaldo', notice.message);
+        }
       });
-      setIsArchived(buildArchiveStatusState(outcome.data.lookup));
-      const notice = presentBackupLookupOutcome(outcome);
-      if (notice?.channel === 'warning') {
-        warning(notice.title || 'Respaldo', notice.message);
-      } else if (notice?.channel === 'error') {
-        error(notice.title || 'Respaldo', notice.message);
+    };
+
+    if (typeof window === 'undefined') {
+      runLookup();
+      return;
+    }
+
+    const browserWindow = window as Window & {
+      requestIdleCallback?: (callback: IdleRequestCallback) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+
+    if (typeof browserWindow.requestIdleCallback === 'function') {
+      idleCallbackId = browserWindow.requestIdleCallback(() => {
+        runLookup();
+      });
+    } else {
+      timeoutId = window.setTimeout(() => {
+        runLookup();
+      }, 150);
+    }
+
+    return () => {
+      isDisposed = true;
+      if (typeof timeoutId === 'number') {
+        window.clearTimeout(timeoutId);
       }
-    });
+      if (
+        typeof idleCallbackId === 'number' &&
+        typeof browserWindow.cancelIdleCallback === 'function'
+      ) {
+        browserWindow.cancelIdleCallback(idleCallbackId);
+      }
+    };
   }, [currentDateString, currentModule, error, selectedShift, warning]);
 
   return {

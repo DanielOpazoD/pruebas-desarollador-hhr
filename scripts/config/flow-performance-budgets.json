@@ -1,0 +1,28 @@
+{
+  "flows": {
+    "loginVisibleMs": {
+      "enforcedMaxMs": 4000,
+      "targetMs": 4000
+    },
+    "authFeedbackMs": {
+      "enforcedMaxMs": 2500,
+      "targetMs": 2500
+    },
+    "censoVisibleMs": {
+      "enforcedMaxMs": 2500,
+      "targetMs": 1500
+    },
+    "censoRecordReadyMs": {
+      "enforcedMaxMs": 5000,
+      "targetMs": 2500
+    },
+    "clinicalDocumentsVisibleMs": {
+      "enforcedMaxMs": 6000,
+      "targetMs": 4500
+    },
+    "backupFilesVisibleMs": {
+      "enforcedMaxMs": 4500,
+      "targetMs": 4500
+    }
+  }
+}

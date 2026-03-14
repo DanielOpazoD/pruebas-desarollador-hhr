@@ -1,5 +1,36 @@
 import { test, expect } from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
 import { ensureRecordExists } from './fixtures/auth';
+
+const FLOW_BUDGETS_PATH = path.join(
+  process.cwd(),
+  'scripts',
+  'config',
+  'flow-performance-budgets.json'
+);
+const FLOW_REPORT_PATH = path.join(process.cwd(), 'reports', 'e2e', 'flow-performance-budget.json');
+
+interface FlowBudgetDefinition {
+  enforcedMaxMs: number;
+  targetMs: number;
+}
+
+interface FlowBudgetConfig {
+  flows?: Record<string, FlowBudgetDefinition>;
+}
+
+const readFlowBudgets = (): FlowBudgetConfig => {
+  if (!fs.existsSync(FLOW_BUDGETS_PATH)) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(fs.readFileSync(FLOW_BUDGETS_PATH, 'utf8')) as FlowBudgetConfig;
+  } catch {
+    return {};
+  }
+};
 
 const parseBudgetFromEnv = (key: string, fallback: number): number => {
   const raw = process.env[key];
@@ -8,13 +39,111 @@ const parseBudgetFromEnv = (key: string, fallback: number): number => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
+const configuredBudgets = readFlowBudgets().flows || {};
+const resolveBudget = (
+  key: string,
+  envKey: string,
+  fallback: FlowBudgetDefinition
+): FlowBudgetDefinition => {
+  const configured = configuredBudgets[key];
+  return {
+    enforcedMaxMs: parseBudgetFromEnv(envKey, configured?.enforcedMaxMs ?? fallback.enforcedMaxMs),
+    targetMs: configured?.targetMs ?? fallback.targetMs,
+  };
+};
+
 const BUDGETS = {
-  loginVisibleMs: parseBudgetFromEnv('E2E_BUDGET_LOGIN_VISIBLE_MS', 4000),
-  authFeedbackMs: parseBudgetFromEnv('E2E_BUDGET_AUTH_FEEDBACK_MS', 2500),
-  censoVisibleMs: parseBudgetFromEnv('E2E_BUDGET_CENSO_VISIBLE_MS', 7000),
+  loginVisibleMs: resolveBudget('loginVisibleMs', 'E2E_BUDGET_LOGIN_VISIBLE_MS', {
+    enforcedMaxMs: 4000,
+    targetMs: 4000,
+  }),
+  authFeedbackMs: resolveBudget('authFeedbackMs', 'E2E_BUDGET_AUTH_FEEDBACK_MS', {
+    enforcedMaxMs: 2500,
+    targetMs: 2500,
+  }),
+  censoVisibleMs: resolveBudget('censoVisibleMs', 'E2E_BUDGET_CENSO_VISIBLE_MS', {
+    enforcedMaxMs: 2500,
+    targetMs: 1500,
+  }),
+  censoRecordReadyMs: resolveBudget('censoRecordReadyMs', 'E2E_BUDGET_CENSO_RECORD_READY_MS', {
+    enforcedMaxMs: 5000,
+    targetMs: 2500,
+  }),
+  backupFilesVisibleMs: resolveBudget(
+    'backupFilesVisibleMs',
+    'E2E_BUDGET_BACKUP_FILES_VISIBLE_MS',
+    {
+      enforcedMaxMs: 4500,
+      targetMs: 4500,
+    }
+  ),
 } as const;
 
 const CURRENT_DATE = '2026-02-20';
+const flowMetrics: Record<string, number> = {};
+const censoBreakdown: Record<string, number> = {};
+
+const bootstrapRecordAndUser = async (
+  page: Parameters<typeof ensureRecordExists>[0],
+  dateStr: string
+) => {
+  await page.addInitScript(
+    ({ bootstrapDate }: { bootstrapDate: string }) => {
+      const existing = JSON.parse(localStorage.getItem('hanga_roa_hospital_data') || '{}');
+      if (!existing[bootstrapDate]) {
+        existing[bootstrapDate] = {
+          date: bootstrapDate,
+          beds: {
+            R1: {
+              id: 'R1',
+              bedId: 'R1',
+              patientName: 'PERF TEST',
+              rut: '12.345.678-5',
+              age: '45a',
+              pathology: 'Control',
+              specialty: 'Medicina',
+              status: 'ESTABLE',
+              admissionDate: bootstrapDate,
+              devices: [],
+              isBlocked: false,
+              isUPC: false,
+            },
+          },
+          discharges: [],
+          transfers: [],
+          cma: [],
+          nurses: ['', ''],
+          nursesDayShift: ['', ''],
+          nursesNightShift: ['', ''],
+          tensDayShift: ['', ''],
+          lastUpdated: `${bootstrapDate}T12:00:00.000Z`,
+          activeExtraBeds: [],
+          schemaVersion: 1,
+        };
+      }
+      const record = existing[bootstrapDate];
+      localStorage.setItem('hanga_roa_hospital_data', JSON.stringify(existing));
+      (
+        window as unknown as { __HHR_E2E_OVERRIDE__?: Record<string, unknown> }
+      ).__HHR_E2E_OVERRIDE__ = {
+        ...((window as unknown as { __HHR_E2E_OVERRIDE__?: Record<string, unknown> })
+          .__HHR_E2E_OVERRIDE__ || {}),
+        [bootstrapDate]: record,
+      };
+      localStorage.setItem(
+        'hhr_e2e_bootstrap_user',
+        JSON.stringify({
+          uid: 'perf-user',
+          email: 'perf@hospital.cl',
+          displayName: 'Perf User',
+          role: 'admin',
+        })
+      );
+    },
+    { bootstrapDate: dateStr }
+  );
+};
+
 const waitForCensoReady = async (page: Parameters<typeof ensureRecordExists>[0]) => {
   const candidates = [
     page.getByTestId('census-table').first(),
@@ -37,13 +166,53 @@ const waitForCensoReady = async (page: Parameters<typeof ensureRecordExists>[0])
     .toBe(true);
 };
 
+const dismissBlockingOperationalBanner = async (page: Parameters<typeof ensureRecordExists>[0]) => {
+  const closeButton = page.getByRole('button', { name: /^Cerrar$/i }).last();
+  if (await closeButton.isVisible().catch(() => false)) {
+    await closeButton.click({ force: true });
+  }
+};
+
+const waitForBackupFilesReady = async (page: Parameters<typeof ensureRecordExists>[0]) => {
+  await dismissBlockingOperationalBanner(page);
+  await expect(page.getByTestId('backup-files-view')).toBeVisible();
+};
+
+test.afterAll(async () => {
+  fs.mkdirSync(path.dirname(FLOW_REPORT_PATH), { recursive: true });
+  fs.writeFileSync(
+    FLOW_REPORT_PATH,
+    JSON.stringify(
+      {
+        generatedAt: new Date().toISOString(),
+        status: 'measured',
+        budgets: BUDGETS,
+        metrics: flowMetrics,
+        breakdown: {
+          censo: censoBreakdown,
+        },
+        targetViolations: Object.entries(flowMetrics)
+          .filter(([key, value]) => value > (BUDGETS[key as keyof typeof BUDGETS]?.targetMs ?? 0))
+          .map(([key, value]) => ({
+            flow: key,
+            actualMs: value,
+            targetMs: BUDGETS[key as keyof typeof BUDGETS]?.targetMs ?? null,
+          })),
+      },
+      null,
+      2
+    )
+  );
+});
+
 test.describe('Startup performance budget', () => {
-  test('meets login, auth feedback, and censo visibility budgets', async ({ page }) => {
+  test('meets login, auth, censo, and backup visibility budgets', async ({ page }) => {
     const startLogin = performance.now();
     await page.goto('/');
     const loginButton = page.getByTestId('login-google-button');
     await expect(loginButton).toBeVisible();
     const loginVisibleMs = performance.now() - startLogin;
+    flowMetrics.loginVisibleMs = Number(loginVisibleMs.toFixed(2));
 
     await page.evaluate(() => {
       window.localStorage.setItem(
@@ -59,76 +228,44 @@ test.describe('Startup performance budget', () => {
       'google-loading'
     );
     const authFeedbackMs = performance.now() - startAuthFeedback;
-
-    await page.addInitScript(
-      ({ dateStr }: { dateStr: string }) => {
-        const existing = JSON.parse(localStorage.getItem('hanga_roa_hospital_data') || '{}');
-        if (!existing[dateStr]) {
-          existing[dateStr] = {
-            date: dateStr,
-            beds: {
-              R1: {
-                id: 'R1',
-                bedId: 'R1',
-                patientName: 'PERF TEST',
-                rut: '12.345.678-5',
-                age: '45a',
-                pathology: 'Control',
-                specialty: 'Medicina',
-                status: 'ESTABLE',
-                admissionDate: dateStr,
-                devices: [],
-                isBlocked: false,
-                isUPC: false,
-              },
-            },
-            discharges: [],
-            transfers: [],
-            cma: [],
-            nurses: ['', ''],
-            nursesDayShift: ['', ''],
-            nursesNightShift: ['', ''],
-            tensDayShift: ['', ''],
-            lastUpdated: `${dateStr}T12:00:00.000Z`,
-            activeExtraBeds: [],
-            schemaVersion: 1,
-          };
-        }
-        const record = existing[dateStr];
-        localStorage.setItem('hanga_roa_hospital_data', JSON.stringify(existing));
-        (
-          window as unknown as { __HHR_E2E_OVERRIDE__?: Record<string, unknown> }
-        ).__HHR_E2E_OVERRIDE__ = {
-          ...((window as unknown as { __HHR_E2E_OVERRIDE__?: Record<string, unknown> })
-            .__HHR_E2E_OVERRIDE__ || {}),
-          [dateStr]: record,
-        };
-        localStorage.setItem(
-          'hhr_e2e_bootstrap_user',
-          JSON.stringify({
-            uid: 'perf-user',
-            email: 'perf@hospital.cl',
-            displayName: 'Perf User',
-            role: 'admin',
-          })
-        );
-      },
-      { dateStr: CURRENT_DATE }
-    );
+    flowMetrics.authFeedbackMs = Number(authFeedbackMs.toFixed(2));
+    await bootstrapRecordAndUser(page, CURRENT_DATE);
 
     const startCenso = performance.now();
     await page.goto(`/censo?date=${CURRENT_DATE}`);
+    censoBreakdown.navigationMs = Number((performance.now() - startCenso).toFixed(2));
+    const startCensoReady = performance.now();
     await waitForCensoReady(page);
     const censoVisibleMs = performance.now() - startCenso;
+    censoBreakdown.readyStateMs = Number((performance.now() - startCensoReady).toFixed(2));
+    flowMetrics.censoVisibleMs = Number(censoVisibleMs.toFixed(2));
+    const startEnsureRecord = performance.now();
+    await ensureRecordExists(page);
+    const censoRecordReadyMs = performance.now() - startEnsureRecord;
+    censoBreakdown.ensureRecordMs = Number((performance.now() - startEnsureRecord).toFixed(2));
+    flowMetrics.censoRecordReadyMs = Number(censoRecordReadyMs.toFixed(2));
+
+    const startBackupFiles = performance.now();
+    await page.goto('/?module=BACKUP_FILES');
+    await waitForBackupFilesReady(page);
+    const backupFilesVisibleMs = performance.now() - startBackupFiles;
+    flowMetrics.backupFilesVisibleMs = Number(backupFilesVisibleMs.toFixed(2));
 
     expect(loginVisibleMs, `loginVisibleMs=${loginVisibleMs}`).toBeLessThanOrEqual(
-      BUDGETS.loginVisibleMs
+      BUDGETS.loginVisibleMs.enforcedMaxMs
     );
     expect(authFeedbackMs, `authFeedbackMs=${authFeedbackMs}`).toBeLessThanOrEqual(
-      BUDGETS.authFeedbackMs
+      BUDGETS.authFeedbackMs.enforcedMaxMs
     );
     expect(censoVisibleMs, `censoVisibleMs=${censoVisibleMs}`).toBeLessThanOrEqual(
-      BUDGETS.censoVisibleMs
+      BUDGETS.censoVisibleMs.enforcedMaxMs
     );
+    expect(censoRecordReadyMs, `censoRecordReadyMs=${censoRecordReadyMs}`).toBeLessThanOrEqual(
+      BUDGETS.censoRecordReadyMs.enforcedMaxMs
+    );
+    expect(
+      backupFilesVisibleMs,
+      `backupFilesVisibleMs=${backupFilesVisibleMs}`
+    ).toBeLessThanOrEqual(BUDGETS.backupFilesVisibleMs.enforcedMaxMs);
   });
 });

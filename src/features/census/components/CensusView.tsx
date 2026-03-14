@@ -3,7 +3,7 @@ import { ViewLoader } from '@/components/ui/ViewLoader';
 import { SectionErrorBoundary } from '@/components/shared/SectionErrorBoundary';
 import { AnalyticsView } from '@/features/analytics/public';
 import { useCensusMigrationBootstrap } from '@/features/census/hooks/useCensusMigrationBootstrap';
-import { useCensusViewModel } from '@/features/census/hooks/useCensusViewModel';
+import { useCensusViewRouteModel } from '@/features/census/hooks/useCensusViewRouteModel';
 
 const LazyCensusRegisterContent = lazy(() =>
   import('./CensusRegisterContent').then(module => ({
@@ -40,20 +40,20 @@ const CensusViewContent: React.FC<CensusViewProps> = ({
   readOnly = false,
   localViewMode = 'TABLE',
 }) => {
-  const {
-    beds,
-    previousRecordAvailable,
-    previousRecordDate,
-    availableDates,
-    createDay,
-    stats,
-    marginStyle,
-    visibleBeds,
-  } = useCensusViewModel(currentDateString);
+  const { branch, emptyDayPromptProps, registerContentProps } = useCensusViewRouteModel({
+    viewMode,
+    selectedDay,
+    selectedMonth,
+    currentDateString,
+    showBedManagerModal,
+    onCloseBedManagerModal,
+    readOnly,
+    localViewMode,
+  });
 
   useCensusMigrationBootstrap();
 
-  if (viewMode === 'ANALYTICS') {
+  if (branch === 'analytics') {
     return (
       <SectionErrorBoundary sectionName="Estadísticas">
         <AnalyticsView />
@@ -61,36 +61,17 @@ const CensusViewContent: React.FC<CensusViewProps> = ({
     );
   }
 
-  if (!beds) {
+  if (branch === 'empty') {
     return (
       <Suspense fallback={<ViewLoader />}>
-        <LazyEmptyDayPrompt
-          selectedDay={selectedDay}
-          selectedMonth={selectedMonth}
-          currentDateString={currentDateString}
-          previousRecordAvailable={previousRecordAvailable}
-          previousRecordDate={previousRecordDate}
-          availableDates={availableDates}
-          onCreateDay={createDay}
-          readOnly={readOnly}
-        />
+        <LazyEmptyDayPrompt {...emptyDayPromptProps} />
       </Suspense>
     );
   }
 
   return (
     <Suspense fallback={<ViewLoader />}>
-      <LazyCensusRegisterContent
-        currentDateString={currentDateString}
-        readOnly={readOnly}
-        localViewMode={localViewMode}
-        beds={beds}
-        visibleBeds={visibleBeds}
-        marginStyle={marginStyle}
-        stats={stats}
-        showBedManagerModal={showBedManagerModal}
-        onCloseBedManagerModal={onCloseBedManagerModal}
-      />
+      {registerContentProps ? <LazyCensusRegisterContent {...registerContentProps} /> : null}
     </Suspense>
   );
 };

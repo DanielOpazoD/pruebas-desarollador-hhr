@@ -18,17 +18,18 @@ Playwright cubre auth, startup, módulos críticos y regresiones de UX prioritar
 
 ## 2. Comandos vigentes
 
-| Comando                          | Descripción                                             |
-| :------------------------------- | :------------------------------------------------------ |
-| `npm run test:ci:unit`           | Suite unitaria/integración de CI sin reglas ni emulador |
-| `npm run test:coverage:critical` | Cobertura crítica instrumentada por zona                |
-| `npm run test:e2e:critical`      | E2E críticos sobre emulador                             |
-| `npm run test:rules`             | Reglas Firestore                                        |
-| `npm run test:emulator:sync`     | Suite de emulador sync                                  |
-| `npm run test:emulator:ui`       | Suite de emulador UI                                    |
-| `npm run ci:inner-loop`          | Ruta rápida para desarrollo diario                      |
-| `npm run ci:merge-gate`          | Ruta blocking previa a merge                            |
-| `npm run ci:release-gate`        | Ruta completa con Firestore + E2E                       |
+| Comando                             | Descripción                                                                                         |
+| :---------------------------------- | :-------------------------------------------------------------------------------------------------- |
+| `npm run test:ci:unit`              | Suite unitaria/integración de CI sin reglas ni emulador                                             |
+| `npm run test:coverage:critical`    | Cobertura crítica instrumentada por zona                                                            |
+| `npm run test:e2e:critical`         | E2E críticos sobre emulador                                                                         |
+| `npm run test:e2e:flow-performance` | Budgets de performance por flujo (`login`, `auth`, `censo visible`, `censo record-ready`, `backup`) |
+| `npm run test:rules`                | Reglas Firestore                                                                                    |
+| `npm run test:emulator:sync`        | Suite de emulador sync                                                                              |
+| `npm run test:emulator:ui`          | Suite de emulador UI                                                                                |
+| `npm run ci:inner-loop`             | Ruta rápida para desarrollo diario                                                                  |
+| `npm run ci:merge-gate`             | Ruta blocking previa a merge                                                                        |
+| `npm run ci:release-gate`           | Ruta completa con Firestore + E2E                                                                   |
 
 ## 3. Cobertura crítica
 
@@ -46,13 +47,29 @@ Artefactos:
 - `reports/critical-coverage.md`
 - `reports/critical-coverage.json`
 
-## 4. Criterio práctico
+## 4. Performance por flujo
+
+Artefacto actual:
+
+- `reports/e2e/flow-performance-budget.json`
+
+Comandos:
+
+- `npm run test:e2e:flow-performance`
+- `npm run check:flow-performance-budget`
+
+El budget diferencia entre:
+
+- `enforcedMaxMs`: límite blocking actual
+- `targetMs`: objetivo deseado, útil para exponer gaps sin romper CI de inmediato
+
+## 5. Criterio práctico
 
 1. Si la change es local o todavía exploratoria, correr `npm run ci:inner-loop`.
 2. Si toca código clínico, runtime, bundle o cobertura, correr `npm run ci:merge-gate`.
 3. Si toca Firestore, reglas, emulador o UX crítica, cerrar con `npm run ci:release-gate`.
 
-## 5. Buenas prácticas
+## 6. Buenas prácticas
 
 1. Usar mocks compartidos de `src/tests/setup.ts` cuando exista una variante oficial.
 2. Evitar `any` en tests; preferir fixtures tipadas y `ApplicationOutcome` explícito.

@@ -93,16 +93,14 @@ describe('useExportManager', () => {
   });
 
   it('should check archive status on mount for CENSUS module', async () => {
-    const { result } = renderHook(() => useExportManager(defaultProps));
+    renderHook(() => useExportManager(defaultProps));
 
     await waitFor(() => {
-      expect(result.current.isArchived).toBeDefined();
-    });
-
-    expect(backupExportUseCases.executeLookupBackupArchiveStatus).toHaveBeenCalledWith({
-      backupType: 'census',
-      date: '2024-12-28',
-      shift: 'day',
+      expect(backupExportUseCases.executeLookupBackupArchiveStatus).toHaveBeenCalledWith({
+        backupType: 'census',
+        date: '2024-12-28',
+        shift: 'day',
+      });
     });
   });
 
@@ -112,16 +110,14 @@ describe('useExportManager', () => {
       currentModule: 'NURSING_HANDOFF',
     };
 
-    const { result } = renderHook(() => useExportManager(props));
+    renderHook(() => useExportManager(props));
 
     await waitFor(() => {
-      expect(result.current.isArchived).toBeDefined();
-    });
-
-    expect(backupExportUseCases.executeLookupBackupArchiveStatus).toHaveBeenCalledWith({
-      backupType: 'handoff',
-      date: '2024-12-28',
-      shift: 'day',
+      expect(backupExportUseCases.executeLookupBackupArchiveStatus).toHaveBeenCalledWith({
+        backupType: 'handoff',
+        date: '2024-12-28',
+        shift: 'day',
+      });
     });
   });
 
@@ -142,13 +138,14 @@ describe('useExportManager', () => {
       data: { exists: false, lookup: { exists: false, status: 'restricted' } },
       issues: [{ kind: 'unknown', message: 'Storage restringido' }],
     };
-    vi.mocked(backupExportUseCases.executeLookupBackupArchiveStatus).mockResolvedValueOnce(
+    vi.mocked(backupExportUseCases.executeLookupBackupArchiveStatus).mockResolvedValue(
       degradedLookup
     );
 
     renderHook(() => useExportManager(defaultProps));
 
     await waitFor(() => {
+      expect(backupExportUseCases.executeLookupBackupArchiveStatus).toHaveBeenCalled();
       expect(notificationApi.warning).toHaveBeenCalled();
     });
   });

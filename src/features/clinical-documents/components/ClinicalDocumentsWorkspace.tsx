@@ -33,7 +33,10 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
   }
 
   return (
-    <div className="grid grid-cols-[260px_minmax(0,1fr)] min-h-[72vh]">
+    <div
+      className="grid grid-cols-[260px_minmax(0,1fr)] min-h-[72vh]"
+      data-testid="clinical-documents-workspace"
+    >
       <ClinicalDocumentsSidebar {...sidebarProps} />
 
       <section className="bg-[#f3f4f6] p-3 overflow-y-auto">

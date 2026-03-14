@@ -177,7 +177,7 @@ export const BackupFilesView: React.FC<BackupFilesViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500" data-testid="backup-files-view">
       {/* Tabs for Backup Types */}
       <div className="flex gap-1 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
         {BACKUP_TABS.map(({ type, label, icon: Icon }) => (

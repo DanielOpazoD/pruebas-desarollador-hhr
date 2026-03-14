@@ -93,6 +93,15 @@ Salida esperada:
 3. si el problema es rendimiento, revisar bundle por flujo antes de relajar el test
 4. si el cambio es intencional, actualizar el spec con el nuevo contrato explícito
 
+### Falla `check:flow-performance-budget`
+
+1. correr `npm run test:e2e:flow-performance`
+2. revisar `reports/e2e/flow-performance-budget.json`, especialmente `metrics` y `breakdown.censo`
+3. distinguir si el flujo rompe:
+   - `enforcedMaxMs`: deuda blocking;
+   - `targetMs`: gap conocido, todavía no blocking
+4. si el gap principal es `censoVisibleMs`, revisar bootstrap local, hydration y tabla antes de subir el límite
+
 ## Regla práctica
 
 - cambio local chico: `ci:inner-loop`
