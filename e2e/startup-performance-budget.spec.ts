@@ -69,6 +69,14 @@ const BUDGETS = {
     enforcedMaxMs: 5000,
     targetMs: 2500,
   }),
+  clinicalDocumentsVisibleMs: resolveBudget(
+    'clinicalDocumentsVisibleMs',
+    'E2E_BUDGET_CLINICAL_DOCUMENTS_VISIBLE_MS',
+    {
+      enforcedMaxMs: 6000,
+      targetMs: 4500,
+    }
+  ),
   backupFilesVisibleMs: resolveBudget(
     'backupFilesVisibleMs',
     'E2E_BUDGET_BACKUP_FILES_VISIBLE_MS',
@@ -82,6 +90,7 @@ const BUDGETS = {
 const CURRENT_DATE = '2026-02-20';
 const flowMetrics: Record<string, number> = {};
 const censoBreakdown: Record<string, number> = {};
+const clinicalDocumentsBreakdown: Record<string, number> = {};
 
 const bootstrapRecordAndUser = async (
   page: Parameters<typeof ensureRecordExists>[0],
@@ -178,6 +187,10 @@ const waitForBackupFilesReady = async (page: Parameters<typeof ensureRecordExist
   await expect(page.getByTestId('backup-files-view')).toBeVisible();
 };
 
+const waitForClinicalDocumentsReady = async (page: Parameters<typeof ensureRecordExists>[0]) => {
+  await expect(page.getByTestId('clinical-documents-workspace')).toBeVisible();
+};
+
 test.afterAll(async () => {
   fs.mkdirSync(path.dirname(FLOW_REPORT_PATH), { recursive: true });
   fs.writeFileSync(
@@ -190,6 +203,7 @@ test.afterAll(async () => {
         metrics: flowMetrics,
         breakdown: {
           censo: censoBreakdown,
+          clinicalDocuments: clinicalDocumentsBreakdown,
         },
         targetViolations: Object.entries(flowMetrics)
           .filter(([key, value]) => value > (BUDGETS[key as keyof typeof BUDGETS]?.targetMs ?? 0))
@@ -206,7 +220,9 @@ test.afterAll(async () => {
 });
 
 test.describe('Startup performance budget', () => {
-  test('meets login, auth, censo, and backup visibility budgets', async ({ page }) => {
+  test('meets login, auth, censo, clinical documents, and backup visibility budgets', async ({
+    page,
+  }) => {
     const startLogin = performance.now();
     await page.goto('/');
     const loginButton = page.getByTestId('login-google-button');
@@ -245,6 +261,25 @@ test.describe('Startup performance budget', () => {
     censoBreakdown.ensureRecordMs = Number((performance.now() - startEnsureRecord).toFixed(2));
     flowMetrics.censoRecordReadyMs = Number(censoRecordReadyMs.toFixed(2));
 
+    const patientRow = page.locator('[data-testid="patient-row"][data-bed-id="R1"]').first();
+    const openClinicalDocumentsMenuStart = performance.now();
+    await patientRow.locator('button[title="Acciones"]').evaluate(element => {
+      (element as HTMLButtonElement).click();
+    });
+    clinicalDocumentsBreakdown.openMenuMs = Number(
+      (performance.now() - openClinicalDocumentsMenuStart).toFixed(2)
+    );
+    await expect(page.getByText('Gestión Clínica')).toBeVisible();
+
+    const startClinicalDocuments = performance.now();
+    await page.getByTestId('patient-row-open-clinical-documents').evaluate(element => {
+      (element as HTMLButtonElement).click();
+    });
+    await waitForClinicalDocumentsReady(page);
+    const clinicalDocumentsVisibleMs = performance.now() - startClinicalDocuments;
+    clinicalDocumentsBreakdown.workspaceReadyMs = Number(clinicalDocumentsVisibleMs.toFixed(2));
+    flowMetrics.clinicalDocumentsVisibleMs = Number(clinicalDocumentsVisibleMs.toFixed(2));
+
     const startBackupFiles = performance.now();
     await page.goto('/?module=BACKUP_FILES');
     await waitForBackupFilesReady(page);
@@ -263,6 +298,10 @@ test.describe('Startup performance budget', () => {
     expect(censoRecordReadyMs, `censoRecordReadyMs=${censoRecordReadyMs}`).toBeLessThanOrEqual(
       BUDGETS.censoRecordReadyMs.enforcedMaxMs
     );
+    expect(
+      clinicalDocumentsVisibleMs,
+      `clinicalDocumentsVisibleMs=${clinicalDocumentsVisibleMs}`
+    ).toBeLessThanOrEqual(BUDGETS.clinicalDocumentsVisibleMs.enforcedMaxMs);
     expect(
       backupFilesVisibleMs,
       `backupFilesVisibleMs=${backupFilesVisibleMs}`

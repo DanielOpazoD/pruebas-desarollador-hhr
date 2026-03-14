@@ -6,7 +6,6 @@ import {
   serializeClinicalDocument,
 } from '@/features/clinical-documents/controllers/clinicalDocumentWorkspaceController';
 import { executePersistClinicalDocumentDraft } from '@/application/clinical-documents/clinicalDocumentUseCases';
-import { openClinicalDocumentBrowserPrintPreview } from '@/features/clinical-documents/services/clinicalDocumentPrintPdfService';
 import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 
 export type ClinicalDocumentDraftLoadResolution =
@@ -105,7 +104,3 @@ export const executePersistClinicalDocumentEditorDraft = (
     buildClinicalDocumentActor(input.user, input.role),
     input.reason
   );
-
-export const executeOpenClinicalDocumentPrint = (
-  record: ClinicalDocumentRecord
-): Promise<boolean> => openClinicalDocumentBrowserPrintPreview(record.title, record.documentType);

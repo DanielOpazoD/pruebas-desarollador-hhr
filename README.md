@@ -62,29 +62,31 @@ npm run preview
 
 ## Comandos Principales
 
-| Comando                             | Objetivo                                                                                        |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `npm run dev`                       | Levantar app en modo desarrollo                                                                 |
-| `npm run build`                     | Build de producción                                                                             |
-| `npm run preview`                   | Preview local del build                                                                         |
-| `npm run typecheck`                 | Verificación TypeScript                                                                         |
-| `npm run test`                      | Suite Vitest completa                                                                           |
-| `npm run test:watch`                | Vitest en watch mode                                                                            |
-| `npm run test:coverage`             | Cobertura de tests                                                                              |
-| `npm run test:e2e`                  | End-to-end (Playwright)                                                                         |
-| `npm run test:e2e:critical`         | E2E crítico emulador (Chromium por defecto; multi-browser por `E2E_CRITICAL_BROWSERS`)          |
-| `npm run lint`                      | Lint global                                                                                     |
-| `npm run check:quality`             | Checks de arquitectura, tamaño de módulo y boundaries runtime                                   |
-| `npm run ci:inner-loop`             | Gate corto para desarrollo diario (`typecheck`, lint estricto, quality y riesgo unitario)       |
-| `npm run ci:merge-gate`             | Gate blocking previo a merge (`quality`, unitarios completos, cobertura crítica, build, bundle) |
-| `npm run ci:release-gate`           | Gate final de release (`merge-gate` + Firestore rules/emulador/E2E crítico)                     |
-| `npm run test:rules`                | Tests de reglas Firestore                                                                       |
-| `npm run test:risk:admin-health`    | Riesgo operativo de health dashboard y contratos                                                |
-| `npm run report:quality-metrics`    | Snapshot de métricas de calidad para artefactos CI                                              |
-| `npm run report:operational-health` | Snapshot operativo de budgets, sync y runbooks                                                  |
-| `npm run report:runtime-contracts`  | Snapshot de contratos runtime y evolución de esquema                                            |
-| `npm run report:critical-coverage`  | Reporte gated de cobertura crítica por zona                                                     |
-| `npm run check:critical-coverage`   | Gate de cobertura crítica instrumentada por zona                                                |
+| Comando                                 | Objetivo                                                                                         |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `npm run dev`                           | Levantar app en modo desarrollo                                                                  |
+| `npm run build`                         | Build de producción                                                                              |
+| `npm run preview`                       | Preview local del build                                                                          |
+| `npm run typecheck`                     | Verificación TypeScript                                                                          |
+| `npm run test`                          | Suite Vitest completa                                                                            |
+| `npm run test:watch`                    | Vitest en watch mode                                                                             |
+| `npm run test:coverage`                 | Cobertura de tests                                                                               |
+| `npm run test:e2e`                      | End-to-end (Playwright)                                                                          |
+| `npm run test:e2e:critical`             | E2E crítico emulador (Chromium por defecto; multi-browser por `E2E_CRITICAL_BROWSERS`)           |
+| `npm run lint`                          | Lint global                                                                                      |
+| `npm run check:quality`                 | Checks de arquitectura, tamaño de módulo y boundaries runtime                                    |
+| `npm run ci:inner-loop`                 | Gate corto para desarrollo diario (`typecheck`, lint estricto, quality y riesgo unitario)        |
+| `npm run ci:merge-gate`                 | Gate blocking previo a merge (`quality`, unitarios completos, cobertura crítica, build, bundle)  |
+| `npm run ci:release-gate`               | Gate final de release (`merge-gate` + Firestore rules/emulador/E2E crítico)                      |
+| `npm run test:rules`                    | Tests de reglas Firestore                                                                        |
+| `npm run test:risk:admin-health`        | Riesgo operativo de health dashboard y contratos                                                 |
+| `npm run report:quality-metrics`        | Snapshot de métricas de calidad para artefactos CI                                               |
+| `npm run report:operational-health`     | Snapshot operativo de budgets, sync y runbooks                                                   |
+| `npm run report:runtime-contracts`      | Snapshot de contratos runtime y evolución de esquema                                             |
+| `npm run report:critical-coverage`      | Reporte gated de cobertura crítica por zona                                                      |
+| `npm run check:critical-coverage`       | Gate de cobertura crítica instrumentada por zona                                                 |
+| `npm run test:e2e:flow-performance`     | Medición E2E de performance por flujo (`login`, `auth`, `censo`, `clinical-documents`, `backup`) |
+| `npm run check:flow-performance-budget` | Gate y reporte de budgets operativos por flujo                                                   |
 
 ## Estructura del Proyecto
 
@@ -232,6 +234,7 @@ Artifacts operativos publicados por CI:
 - `operational-health`
 - `runtime-contracts`
 - `critical-coverage`
+- `flow-performance-budget`
 
 ## Baseline de Calidad
 
@@ -262,6 +265,8 @@ Hotspots secundarios:
 - `src/services/integrations/whatsapp/whatsappService.ts`
 - `src/hooks/useAuthState.ts`
 - `src/features/auth/components/LoginPage.tsx`
+- `src/services/cudyr/cudyrWorkbookBuilder.ts`
+- `src/features/handoff/components/HandoffCudyrPrint.tsx`
 
 ## Convenciones de Calidad (resumen)
 

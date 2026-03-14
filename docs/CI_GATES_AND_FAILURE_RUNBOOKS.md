@@ -96,11 +96,12 @@ Salida esperada:
 ### Falla `check:flow-performance-budget`
 
 1. correr `npm run test:e2e:flow-performance`
-2. revisar `reports/e2e/flow-performance-budget.json`, especialmente `metrics` y `breakdown.censo`
+2. revisar `reports/e2e/flow-performance-budget.md` y `reports/e2e/flow-performance-budget-summary.json`, especialmente `status` por flujo y `breakdown`
 3. distinguir si el flujo rompe:
    - `enforcedMaxMs`: deuda blocking;
    - `targetMs`: gap conocido, todavía no blocking
-4. si el gap principal es `censoVisibleMs`, revisar bootstrap local, hydration y tabla antes de subir el límite
+4. si el flujo queda en `near-limit`, corregir preload o trabajo no crítico antes de aceptar el margen
+5. si el gap principal es `censoVisibleMs` o `clinicalDocumentsVisibleMs`, revisar bootstrap local, hydration, tabla y lazy loading antes de subir el límite
 
 ## Regla práctica
 

@@ -1,10 +1,15 @@
-import React, { type CSSProperties } from 'react';
+import React, { Suspense, lazy, type CSSProperties } from 'react';
 import type { BedDefinition, DailyRecord, Statistics } from '@/types';
 import { CensusActionsProvider } from './CensusActionsContext';
 import { CensusPrintHeader } from './CensusPrintHeader';
-import { CensusRegisterSections } from './CensusRegisterSections';
 import { CensusStaffHeader } from './CensusStaffHeader';
 import { CensusRegisterMainContent } from './CensusRegisterMainContent';
+
+const LazyCensusRegisterSections = lazy(() =>
+  import('./CensusRegisterSections').then(module => ({
+    default: module.CensusRegisterSections,
+  }))
+);
 
 interface CensusRegisterContentProps {
   currentDateString: string;
@@ -43,11 +48,13 @@ export const CensusRegisterContent: React.FC<CensusRegisterContentProps> = ({
         beds={beds}
       />
 
-      <CensusRegisterSections
-        readOnly={readOnly}
-        showBedManagerModal={showBedManagerModal}
-        onCloseBedManagerModal={onCloseBedManagerModal}
-      />
+      <Suspense fallback={null}>
+        <LazyCensusRegisterSections
+          readOnly={readOnly}
+          showBedManagerModal={showBedManagerModal}
+          onCloseBedManagerModal={onCloseBedManagerModal}
+        />
+      </Suspense>
     </div>
   </CensusActionsProvider>
 );

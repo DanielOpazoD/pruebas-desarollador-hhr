@@ -73,6 +73,41 @@ const readJsonReport = relativePath => {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 };
 
+const readJsonConfig = relativePath => {
+  const filePath = path.join(workspaceRoot, relativePath);
+  if (!fs.existsSync(filePath)) return null;
+  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+};
+
+const NEAR_LIMIT_RATIO = 0.85;
+
+const classifyBudgetStatus = (actual, target, enforced) => {
+  if (!Number.isFinite(actual) || !Number.isFinite(target) || !Number.isFinite(enforced)) {
+    return 'unknown';
+  }
+  if (actual > enforced) return 'blocking';
+  if (actual > target) return 'target-miss';
+  if (actual >= enforced * NEAR_LIMIT_RATIO || actual >= target * NEAR_LIMIT_RATIO) {
+    return 'near-limit';
+  }
+  return 'ok';
+};
+
+const collectLargestBuildAssets = (relativeDir, limit = 8) => {
+  const assetsDir = path.join(workspaceRoot, relativeDir);
+  if (!fs.existsSync(assetsDir)) return [];
+
+  return fs
+    .readdirSync(assetsDir)
+    .filter(name => name.endsWith('.js'))
+    .map(name => ({
+      file: path.posix.join(relativeDir, name),
+      sizeBytes: fs.statSync(path.join(assetsDir, name)).size,
+    }))
+    .sort((left, right) => right.sizeBytes - left.sizeBytes)
+    .slice(0, limit);
+};
+
 const collectThresholds = () => {
   const thresholds = [];
   for (const relativePath of repositoryFiles) {
@@ -132,6 +167,16 @@ const runbooks = [
   'docs/RUNBOOK_SUPPORT_OPERATIONS.md',
   'docs/RUNBOOK_OPERATIONAL_BUDGETS.md',
 ];
+const flowPerformanceSummary = readJsonReport('reports/e2e/flow-performance-budget-summary.json');
+const criticalCoverageSummary = readJsonReport('reports/critical-coverage.json');
+const bundleBudgetConfig = readJsonConfig('scripts/config/bundle-budget.json');
+const largestBuildAssets = collectLargestBuildAssets('dist/assets');
+const chunkMaxBytes = bundleBudgetConfig?.chunkMaxBytes ?? null;
+const buildAssets = largestBuildAssets.map(asset => ({
+  ...asset,
+  maxBytes: chunkMaxBytes,
+  status: classifyBudgetStatus(asset.sizeBytes, chunkMaxBytes, chunkMaxBytes),
+}));
 
 const summary = {
   generatedAt: new Date().toISOString(),
@@ -148,6 +193,42 @@ const summary = {
   conflictContexts,
   legacyBridge: legacyBridgeReport,
   localPersistence,
+  flowPerformance: flowPerformanceSummary
+    ? {
+        status: flowPerformanceSummary.summary?.status ?? 'unknown',
+        blockingCount: flowPerformanceSummary.summary?.blockingCount ?? 0,
+        targetMissCount: flowPerformanceSummary.summary?.targetMissCount ?? 0,
+        nearLimitCount: flowPerformanceSummary.summary?.nearLimitCount ?? 0,
+        flows: Array.isArray(flowPerformanceSummary.flows)
+          ? flowPerformanceSummary.flows.map(flow => ({
+              flow: flow.flow,
+              actualMs: flow.actualMs,
+              targetMs: flow.targetMs,
+              enforcedMaxMs: flow.enforcedMaxMs,
+              status: flow.status,
+            }))
+          : [],
+      }
+    : null,
+  criticalCoverage: criticalCoverageSummary
+    ? {
+        status: criticalCoverageSummary.status ?? 'unknown',
+        mode: criticalCoverageSummary.mode ?? 'unknown',
+        zones: Array.isArray(criticalCoverageSummary.criticalZones)
+          ? criticalCoverageSummary.criticalZones.map(zone => ({
+              root: zone.root,
+              status: zone.passed ? 'PASS' : 'FAIL',
+              lines: zone.coverage?.lines?.pct ?? null,
+              functions: zone.coverage?.functions?.pct ?? null,
+              branches: zone.coverage?.branches?.pct ?? null,
+            }))
+          : [],
+      }
+    : null,
+  buildAssets: {
+    chunkMaxBytes,
+    largestAssets: buildAssets,
+  },
   repositoryPerformance: {
     monitoredOperations: thresholds.length,
     maxThresholdMs: thresholds.reduce((max, item) => Math.max(max, item.thresholdMs), 0),
@@ -230,6 +311,61 @@ ${Object.entries(summary.conflictContexts)
   summary.localPersistence.recoveryRetryDelaysMs.length > 0
     ? summary.localPersistence.recoveryRetryDelaysMs.join(', ')
     : 'unknown'
+}
+
+## Flow Performance Budgets
+
+- Status: ${summary.flowPerformance?.status ?? 'unknown'}
+- Blocking flows: ${summary.flowPerformance?.blockingCount ?? 'unknown'}
+- Target misses: ${summary.flowPerformance?.targetMissCount ?? 'unknown'}
+- Near-limit flows: ${summary.flowPerformance?.nearLimitCount ?? 'unknown'}
+
+| Flow | Actual (ms) | Target (ms) | Enforced (ms) | Status |
+| --- | ---: | ---: | ---: | --- |
+${
+  summary.flowPerformance?.flows?.length
+    ? summary.flowPerformance.flows
+        .map(
+          flow =>
+            `| \`${flow.flow}\` | ${flow.actualMs} | ${flow.targetMs} | ${flow.enforcedMaxMs} | ${flow.status} |`
+        )
+        .join('\n')
+    : '| `unavailable` | - | - | - | missing |'
+}
+
+## Critical Coverage
+
+- Status: ${summary.criticalCoverage?.status ?? 'unknown'}
+- Mode: ${summary.criticalCoverage?.mode ?? 'unknown'}
+
+| Zone | Lines | Functions | Branches | Status |
+| --- | ---: | ---: | ---: | --- |
+${
+  summary.criticalCoverage?.zones?.length
+    ? summary.criticalCoverage.zones
+        .map(
+          zone =>
+            `| \`${zone.root}\` | ${zone.lines ?? '-'} | ${zone.functions ?? '-'} | ${zone.branches ?? '-'} | ${zone.status} |`
+        )
+        .join('\n')
+    : '| `unavailable` | - | - | - | missing |'
+}
+
+## Largest Build Assets
+
+- Chunk budget max (bytes): ${summary.buildAssets.chunkMaxBytes ?? 'unknown'}
+
+| Asset | Size (bytes) | Max (bytes) | Status |
+| --- | ---: | ---: | --- |
+${
+  summary.buildAssets.largestAssets.length > 0
+    ? summary.buildAssets.largestAssets
+        .map(
+          asset =>
+            `| \`${asset.file}\` | ${asset.sizeBytes} | ${asset.maxBytes ?? '-'} | ${asset.status} |`
+        )
+        .join('\n')
+    : '| `unavailable` | - | - | missing |'
 }
 
 ## Repository Performance Thresholds

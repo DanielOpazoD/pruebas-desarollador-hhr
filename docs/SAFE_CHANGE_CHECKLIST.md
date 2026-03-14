@@ -14,3 +14,5 @@ Antes de cerrar una modificación relevante en este repo:
 9. Si se agrega una excepción de arquitectura o tamaño, documentarla en la allowlist correspondiente.
 10. Si se introduce un nuevo error operativo, mapearlo al contrato compartido y a telemetría.
 11. Dejar referencias en README/ARCHITECTURE del módulo si la decisión cambia una regla estable.
+12. Si la change toca startup, lazy loading o vistas críticas, correr `npm run check:flow-performance-budget`.
+13. Si el budget por flujo cambia, regenerar y revisar `reports/e2e/flow-performance-budget-summary.json` y `.md`.

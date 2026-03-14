@@ -6,6 +6,7 @@ import { AUTH_UI_COPY } from '@/services/auth/authUiCopy';
 const mockSignInWithGoogle = vi.fn();
 const mockSignInWithGoogleRedirect = vi.fn();
 const mockIsPopupRecoverableAuthError = vi.fn();
+const mockResolveAuthErrorCode = vi.fn();
 const mockGetLoginRuntimePolicy = vi.fn();
 
 vi.mock('@/services/auth/authService', () => ({
@@ -15,6 +16,7 @@ vi.mock('@/services/auth/authService', () => ({
 
 vi.mock('@/services/auth/authErrorPolicy', () => ({
   isPopupRecoverableAuthError: (...args: unknown[]) => mockIsPopupRecoverableAuthError(...args),
+  resolveAuthErrorCode: (...args: unknown[]) => mockResolveAuthErrorCode(...args),
 }));
 
 vi.mock('@/features/auth/components/loginRuntimePolicy', () => ({
@@ -39,6 +41,7 @@ describe('useLoginPageController', () => {
       alternateAccessHint: 'Usa esta opción si el navegador bloqueó la ventana.',
     });
     mockIsPopupRecoverableAuthError.mockReturnValue(false);
+    mockResolveAuthErrorCode.mockReturnValue(null);
     mockSignInWithGoogle.mockResolvedValue(undefined);
     mockSignInWithGoogleRedirect.mockResolvedValue(undefined);
   });

@@ -8,7 +8,8 @@ import type {
 } from '@/features/clinical-documents/domain/entities';
 import { createClinicalDocumentDraft } from '@/features/clinical-documents/domain/factories';
 import * as clinicalDocumentUseCases from '@/application/clinical-documents/clinicalDocumentUseCases';
-import type { ExportClinicalDocumentPdfOutput } from '@/application/clinical-documents/clinicalDocumentUseCases';
+import * as clinicalDocumentPdfExportUseCase from '@/application/clinical-documents/clinicalDocumentPdfExportUseCase';
+import type { ExportClinicalDocumentPdfOutput } from '@/application/clinical-documents/clinicalDocumentPdfExportUseCase';
 import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 import { ClinicalDocumentRepository } from '@/services/repositories/ClinicalDocumentRepository';
 import { ClinicalDocumentTemplateRepository } from '@/services/repositories/ClinicalDocumentTemplateRepository';
@@ -158,6 +159,15 @@ vi.mock('@/application/clinical-documents/clinicalDocumentUseCases', async () =>
     executeDeleteClinicalDocument: vi.fn(),
     executeSignClinicalDocument: vi.fn(),
     executeUnsignClinicalDocument: vi.fn(),
+  };
+});
+
+vi.mock('@/application/clinical-documents/clinicalDocumentPdfExportUseCase', async () => {
+  const actual = await vi.importActual<
+    typeof import('@/application/clinical-documents/clinicalDocumentPdfExportUseCase')
+  >('@/application/clinical-documents/clinicalDocumentPdfExportUseCase');
+  return {
+    ...actual,
     executeExportClinicalDocumentPdf: vi.fn(),
   };
 });
@@ -238,7 +248,7 @@ describe('ClinicalDocumentsWorkspace', () => {
       data: { pdf: { exportStatus: 'exported' } },
       issues: [],
     };
-    vi.mocked(clinicalDocumentUseCases.executeExportClinicalDocumentPdf).mockResolvedValue(
+    vi.mocked(clinicalDocumentPdfExportUseCase.executeExportClinicalDocumentPdf).mockResolvedValue(
       exportResult
     );
   });
@@ -293,7 +303,9 @@ describe('ClinicalDocumentsWorkspace', () => {
     fireEvent.click(screen.getByRole('button', { name: /quitar firma/i }));
 
     await waitFor(() => {
-      expect(clinicalDocumentUseCases.executeExportClinicalDocumentPdf).toHaveBeenCalledWith(
+      expect(
+        clinicalDocumentPdfExportUseCase.executeExportClinicalDocumentPdf
+      ).toHaveBeenCalledWith(
         expect.objectContaining({
           record: expect.objectContaining({
             id: clinicalDocument.id,

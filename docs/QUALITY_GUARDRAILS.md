@@ -42,6 +42,8 @@ Evitar que la deuda estructural vuelva a crecer después de las fases de estabil
 - `npm run report:operational-health`
 - `npm run report:runtime-contracts`
 - `npm run report:critical-coverage`
+- `npm run check:flow-performance-budget`
+- `npm run report:flow-performance-budget`
 
 ## Operación diaria
 
@@ -49,6 +51,8 @@ Evitar que la deuda estructural vuelva a crecer después de las fases de estabil
 - `ci:inner-loop` es la ruta local rápida.
 - `ci:merge-gate` es la ruta blocking previa a merge.
 - `ci:release-gate` agrega emuladores, reglas y E2E críticos.
+- Los budgets por flujo se leen desde `reports/e2e/flow-performance-budget.json` y su resumen en `reports/e2e/flow-performance-budget-summary.json` / `.md`.
+- El estado operativo por flujo distingue `ok`, `near-limit`, `target-miss` y `blocking`.
 
 ## Cuándo abrir una excepción
 

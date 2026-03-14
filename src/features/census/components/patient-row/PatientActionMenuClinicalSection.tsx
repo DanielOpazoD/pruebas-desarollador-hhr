@@ -46,6 +46,7 @@ export const PatientActionMenuClinicalSection: React.FC<PatientActionMenuClinica
         <div className="h-px bg-slate-100 mx-3 my-1"></div>
         <button
           onClick={onViewClinicalDocuments}
+          data-testid="patient-row-open-clinical-documents"
           className="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 group"
         >
           <ScrollText

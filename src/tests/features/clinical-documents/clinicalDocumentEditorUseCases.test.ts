@@ -3,10 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { createClinicalDocumentDraft } from '@/features/clinical-documents/domain/factories';
 import type { ClinicalDocumentDraftBaseState } from '@/features/clinical-documents/hooks/clinicalDocumentDraftReducer';
 import {
-  executeOpenClinicalDocumentPrint,
   resolveClinicalDocumentAutosaveCommit,
   resolveClinicalDocumentDraftLoad,
 } from '@/application/clinical-documents/clinicalDocumentEditorUseCases';
+import { executeOpenClinicalDocumentPrint } from '@/application/clinical-documents/clinicalDocumentPrintOpenUseCase';
 
 vi.mock('@/features/clinical-documents/services/clinicalDocumentPrintPdfService', () => ({
   openClinicalDocumentBrowserPrintPreview: vi.fn(async () => true),

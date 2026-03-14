@@ -3,8 +3,8 @@ import { useCallback, useState } from 'react';
 import type { ConfirmOptions } from '@/context/uiContracts';
 import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domain/entities';
 import { buildClinicalDocumentPdfFileName } from '@/features/clinical-documents/controllers/clinicalDocumentWorkspaceController';
-import { executeExportClinicalDocumentPdf } from '@/application/clinical-documents/clinicalDocumentUseCases';
-import { executeOpenClinicalDocumentPrint } from '@/application/clinical-documents/clinicalDocumentEditorUseCases';
+import type { ExportClinicalDocumentPdfOutput } from '@/application/clinical-documents/clinicalDocumentPdfExportUseCase';
+import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 import {
   recordOperationalOutcome,
   recordOperationalTelemetry,
@@ -31,6 +31,16 @@ interface UploadPdfOptions {
   successMessage?: string;
 }
 
+const loadClinicalDocumentPdfExportUseCase = async () =>
+  import('@/application/clinical-documents/clinicalDocumentPdfExportUseCase').then(
+    module => module.executeExportClinicalDocumentPdf
+  );
+
+const loadClinicalDocumentPrintUseCase = async () =>
+  import('@/application/clinical-documents/clinicalDocumentPrintOpenUseCase').then(
+    module => module.executeOpenClinicalDocumentPrint
+  );
+
 export const useClinicalDocumentWorkspaceExportActions = ({
   selectedDocument,
   hospitalId,
@@ -51,11 +61,13 @@ export const useClinicalDocumentWorkspaceExportActions = ({
 
       setIsUploadingPdf(true);
       try {
-        const result = await executeExportClinicalDocumentPdf({
-          record: selectedDocument,
-          hospitalId,
-          fileName: buildClinicalDocumentPdfFileName(selectedDocument),
-        });
+        const executeExportClinicalDocumentPdf = await loadClinicalDocumentPdfExportUseCase();
+        const result: ApplicationOutcome<ExportClinicalDocumentPdfOutput | null> =
+          await executeExportClinicalDocumentPdf({
+            record: selectedDocument,
+            hospitalId,
+            fileName: buildClinicalDocumentPdfFileName(selectedDocument),
+          });
         recordOperationalOutcome('export', 'export_clinical_document_pdf', result, {
           date: selectedDocument.sourceDailyRecordDate,
           context: { documentId: selectedDocument.id },
@@ -106,6 +118,7 @@ export const useClinicalDocumentWorkspaceExportActions = ({
 
   const handlePrint = useCallback(async () => {
     if (!selectedDocument) return;
+    const executeOpenClinicalDocumentPrint = await loadClinicalDocumentPrintUseCase();
     const opened = await executeOpenClinicalDocumentPrint(selectedDocument);
     if (!opened) {
       recordOperationalTelemetry({

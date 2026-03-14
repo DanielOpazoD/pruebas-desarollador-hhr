@@ -18,18 +18,18 @@ Playwright cubre auth, startup, módulos críticos y regresiones de UX prioritar
 
 ## 2. Comandos vigentes
 
-| Comando                             | Descripción                                                                                         |
-| :---------------------------------- | :-------------------------------------------------------------------------------------------------- |
-| `npm run test:ci:unit`              | Suite unitaria/integración de CI sin reglas ni emulador                                             |
-| `npm run test:coverage:critical`    | Cobertura crítica instrumentada por zona                                                            |
-| `npm run test:e2e:critical`         | E2E críticos sobre emulador                                                                         |
-| `npm run test:e2e:flow-performance` | Budgets de performance por flujo (`login`, `auth`, `censo visible`, `censo record-ready`, `backup`) |
-| `npm run test:rules`                | Reglas Firestore                                                                                    |
-| `npm run test:emulator:sync`        | Suite de emulador sync                                                                              |
-| `npm run test:emulator:ui`          | Suite de emulador UI                                                                                |
-| `npm run ci:inner-loop`             | Ruta rápida para desarrollo diario                                                                  |
-| `npm run ci:merge-gate`             | Ruta blocking previa a merge                                                                        |
-| `npm run ci:release-gate`           | Ruta completa con Firestore + E2E                                                                   |
+| Comando                             | Descripción                                                                                                               |
+| :---------------------------------- | :------------------------------------------------------------------------------------------------------------------------ |
+| `npm run test:ci:unit`              | Suite unitaria/integración de CI sin reglas ni emulador                                                                   |
+| `npm run test:coverage:critical`    | Cobertura crítica instrumentada por zona                                                                                  |
+| `npm run test:e2e:critical`         | E2E críticos sobre emulador                                                                                               |
+| `npm run test:e2e:flow-performance` | Budgets de performance por flujo (`login`, `auth`, `censo visible`, `censo record-ready`, `clinical-documents`, `backup`) |
+| `npm run test:rules`                | Reglas Firestore                                                                                                          |
+| `npm run test:emulator:sync`        | Suite de emulador sync                                                                                                    |
+| `npm run test:emulator:ui`          | Suite de emulador UI                                                                                                      |
+| `npm run ci:inner-loop`             | Ruta rápida para desarrollo diario                                                                                        |
+| `npm run ci:merge-gate`             | Ruta blocking previa a merge                                                                                              |
+| `npm run ci:release-gate`           | Ruta completa con Firestore + E2E                                                                                         |
 
 ## 3. Cobertura crítica
 
@@ -52,6 +52,8 @@ Artefactos:
 Artefacto actual:
 
 - `reports/e2e/flow-performance-budget.json`
+- `reports/e2e/flow-performance-budget-summary.json`
+- `reports/e2e/flow-performance-budget.md`
 
 Comandos:
 
@@ -62,6 +64,7 @@ El budget diferencia entre:
 
 - `enforcedMaxMs`: límite blocking actual
 - `targetMs`: objetivo deseado, útil para exponer gaps sin romper CI de inmediato
+- `status` por flujo en el reporte generado: `ok`, `near-limit`, `target-miss`, `blocking`
 
 ## 5. Criterio práctico
 
