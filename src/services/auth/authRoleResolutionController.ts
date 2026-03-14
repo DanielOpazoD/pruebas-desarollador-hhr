@@ -37,16 +37,16 @@ export const resolveAllowedRoleForEmail = async (
     return { role: cachedRole as UserRole, source: 'cache' };
   }
 
-  const cloudRole = await dependencies.getCloudRoleForEmail(email);
-  if (cloudRole) {
-    void dependencies.saveRoleToCache(email, cloudRole);
-    return { role: cloudRole, source: 'cloud' };
-  }
-
   const dynamicRole = await dependencies.getDynamicRoleForEmail(email);
   if (dynamicRole) {
     void dependencies.saveRoleToCache(email, dynamicRole);
     return { role: dynamicRole, source: 'dynamic' };
+  }
+
+  const cloudRole = await dependencies.getCloudRoleForEmail(email);
+  if (cloudRole) {
+    void dependencies.saveRoleToCache(email, cloudRole);
+    return { role: cloudRole, source: 'cloud' };
   }
 
   const allowedRole = await dependencies.getAllowedUserRoleForEmail(email);

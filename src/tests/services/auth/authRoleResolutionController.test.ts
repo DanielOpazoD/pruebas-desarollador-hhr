@@ -23,13 +23,15 @@ describe('authRoleResolutionController', () => {
     expect(dependencies.getCachedRole).not.toHaveBeenCalled();
   });
 
-  it('falls back to cloud role after cache miss', async () => {
+  it('prefers dynamic Firestore roles before cloud role fallback', async () => {
     const dependencies = createDependencies();
+    dependencies.getDynamicRoleForEmail.mockResolvedValue('doctor_specialist');
     dependencies.getCloudRoleForEmail.mockResolvedValue('doctor_urgency');
 
     const result = await resolveAllowedRoleForEmail('test@hospital.cl', dependencies);
 
-    expect(result).toEqual({ role: 'doctor_urgency', source: 'cloud' });
+    expect(result).toEqual({ role: 'doctor_specialist', source: 'dynamic' });
+    expect(dependencies.getCloudRoleForEmail).not.toHaveBeenCalled();
   });
 
   it('returns none when no lookup resolves a role', async () => {

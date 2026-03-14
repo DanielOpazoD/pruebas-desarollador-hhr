@@ -6,6 +6,7 @@ import { defaultAuditPort } from '@/application/ports/auditPort';
 import {
   clearAuthBootstrapPending,
   isAuthBootstrapPending,
+  restoreAuthBootstrapReturnTo,
 } from '@/services/auth/authBootstrapState';
 import {
   clearRecentManualLogout,
@@ -148,6 +149,7 @@ export const subscribeToResolvedAuthState = async ({
   try {
     const redirectUser = await handleSignInRedirectResult();
     if (redirectUser) {
+      restoreAuthBootstrapReturnTo();
       clearRecentManualLogout();
       setUser(redirectUser);
       setAuthLoading(false);
@@ -159,6 +161,9 @@ export const subscribeToResolvedAuthState = async ({
 
   return onAuthChange(async authUser => {
     if (authUser) {
+      if (isAuthBootstrapPending()) {
+        restoreAuthBootstrapReturnTo();
+      }
       clearRecentManualLogout();
       if (
         authUser.email &&

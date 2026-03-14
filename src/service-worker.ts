@@ -195,7 +195,12 @@ self.addEventListener('install', (event: Event) => {
 
 self.addEventListener('activate', (event: Event) => {
   const extendableEvent = event as ExtendableEvent;
-  extendableEvent.waitUntil(self.clients.claim());
+  extendableEvent.waitUntil(
+    self.clients.claim().catch(error => {
+      // During aggressive worker replacement, claim can race before the worker becomes active.
+      console.warn('[SW] clients.claim skipped', error);
+    })
+  );
 });
 
 self.addEventListener('message', (event: Event) => {

@@ -4,6 +4,12 @@ const AUTH_BOOTSTRAP_PENDING_TTL_MS = 90_000;
 type AuthBootstrapState = {
   startedAt: number;
   mode: 'redirect';
+  returnTo: string | null;
+};
+
+const resolveCurrentReturnTo = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  return `${window.location.pathname}${window.location.search}${window.location.hash}`;
 };
 
 const readState = (): AuthBootstrapState | null => {
@@ -22,22 +28,40 @@ const readState = (): AuthBootstrapState | null => {
       return null;
     }
 
-    return { startedAt: parsed.startedAt, mode: parsed.mode };
+    return {
+      startedAt: parsed.startedAt,
+      mode: parsed.mode,
+      returnTo: typeof parsed.returnTo === 'string' ? parsed.returnTo : null,
+    };
   } catch {
     return null;
   }
 };
 
-export const markAuthBootstrapPending = (mode: 'redirect' = 'redirect'): void => {
+export const markAuthBootstrapPending = (
+  mode: 'redirect' = 'redirect',
+  returnTo: string | null = resolveCurrentReturnTo()
+): void => {
   if (typeof window === 'undefined' || !window.localStorage) return;
   const payload: AuthBootstrapState = {
     startedAt: Date.now(),
     mode,
+    returnTo,
   };
   window.localStorage.setItem(AUTH_BOOTSTRAP_PENDING_KEY, JSON.stringify(payload));
 };
 
 export const isAuthBootstrapPending = (): boolean => Boolean(readState());
+
+export const restoreAuthBootstrapReturnTo = (): void => {
+  const state = readState();
+  if (!state?.returnTo || typeof window === 'undefined') return;
+
+  const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (current === state.returnTo) return;
+
+  window.history.replaceState(window.history.state, '', state.returnTo);
+};
 
 export const clearAuthBootstrapPending = (): void => {
   if (typeof window === 'undefined' || !window.localStorage) return;
