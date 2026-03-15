@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  canArchiveClinicalDocuments,
   canDeleteClinicalDocuments,
   canEditClinicalDocuments,
   canReadClinicalDocuments,
@@ -56,7 +57,17 @@ describe('clinicalDocumentPermissionController', () => {
     expect(canDeleteClinicalDocuments('doctor_urgency')).toBe(true);
     expect(canDeleteClinicalDocuments('nurse_hospital')).toBe(true);
     expect(canDeleteClinicalDocuments('editor')).toBe(true);
+    expect(canDeleteClinicalDocuments('doctor_specialist')).toBe(false);
     expect(canDeleteClinicalDocuments('viewer')).toBe(false);
+    expect(canDeleteClinicalDocuments(undefined)).toBe(false);
+  });
+
+  it('keeps archive permission restricted to admin only', () => {
+    expect(canArchiveClinicalDocuments('admin')).toBe(true);
+    expect(canArchiveClinicalDocuments('doctor_urgency')).toBe(false);
+    expect(canArchiveClinicalDocuments('doctor_specialist')).toBe(false);
+    expect(canArchiveClinicalDocuments('nurse_hospital')).toBe(false);
+    expect(canArchiveClinicalDocuments(undefined)).toBe(false);
   });
 
   it('allows unsign only for signed epicrisis on same day and editable roles', () => {
@@ -90,6 +101,19 @@ describe('clinicalDocumentPermissionController', () => {
       canUnsignClinicalDocument(
         'doctor_urgency',
         { ...signedToday, documentType: 'informe_medico' },
+        new Date('2026-03-04T20:00:00.000Z')
+      )
+    ).toBe(false);
+    expect(
+      canUnsignClinicalDocument(
+        'doctor_urgency',
+        {
+          ...signedToday,
+          audit: {
+            ...signedToday.audit,
+            signedAt: 'invalid-date',
+          },
+        },
         new Date('2026-03-04T20:00:00.000Z')
       )
     ).toBe(false);

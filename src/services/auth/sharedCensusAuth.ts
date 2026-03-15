@@ -1,5 +1,6 @@
 import { httpsCallable } from 'firebase/functions';
 import { auth, getFunctionsInstance } from '@/firebaseConfig';
+import { logger } from '@/services/utils/loggerService';
 
 type SharedCensusAccessResult = {
   authorized: boolean;
@@ -7,6 +8,7 @@ type SharedCensusAccessResult = {
 };
 
 const SHARED_CENSUS_ROUTE_PREFIXES = ['/censo-compartido', '/censo-publico'] as const;
+const sharedCensusAuthLogger = logger.child('SharedCensusAuth');
 
 const normalizeEmail = (email: string): string => {
   if (!email) return '';
@@ -42,7 +44,7 @@ export const checkSharedCensusAccess = async (
       role: response.data.role === 'downloader' ? 'downloader' : 'viewer',
     };
   } catch (error) {
-    console.error('[authService] Shared census authorization check failed', error);
+    sharedCensusAuthLogger.error('Shared census authorization check failed', error);
     return { authorized: false, role: 'viewer' };
   }
 };

@@ -1,6 +1,7 @@
 import { httpsCallable } from 'firebase/functions';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { z } from 'zod';
 
 import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domain/entities';
 import { getFunctionsInstance } from '@/firebaseConfig';
@@ -9,6 +10,7 @@ import {
   CLINICAL_DOCUMENT_SHEET_ID,
   waitForClinicalDocumentSheetAssets,
 } from '@/features/clinical-documents/services/clinicalDocumentPrintSupport';
+import { logger } from '@/services/utils/loggerService';
 
 interface RenderClinicalDocumentPdfPayload {
   html: string;
@@ -18,6 +20,13 @@ interface RenderClinicalDocumentPdfResult {
   contentBase64: string;
   mimeType: string;
 }
+
+const renderClinicalDocumentPdfResultSchema = z.object({
+  contentBase64: z.string().min(1),
+  mimeType: z.string().min(1),
+});
+
+const clinicalDocumentPdfRenderLogger = logger.child('ClinicalDocumentPdfRender');
 
 const decodeBase64Pdf = (contentBase64: string, mimeType: string): Blob => {
   const clean = contentBase64.replace(/\s+/g, '');
@@ -151,14 +160,8 @@ const generateBackendPrintStyledPdfBlob = async (html: string): Promise<Blob> =>
   );
 
   const response = await callable({ html });
-  const contentBase64 = response.data?.contentBase64;
-  const mimeType = response.data?.mimeType || 'application/pdf';
-
-  if (!contentBase64) {
-    throw new Error('No se recibió contenido PDF desde el render backend.');
-  }
-
-  return decodeBase64Pdf(contentBase64, mimeType);
+  const payload = renderClinicalDocumentPdfResultSchema.parse(response.data);
+  return decodeBase64Pdf(payload.contentBase64, payload.mimeType || 'application/pdf');
 };
 
 export const generateClinicalDocumentPrintStyledPdfBlob = async (
@@ -176,8 +179,8 @@ export const generateClinicalDocumentPrintStyledPdfBlob = async (
   try {
     return await generateBackendPrintStyledPdfBlob(html);
   } catch (error) {
-    console.warn(
-      '[clinicalDocumentPrintPdfService] backend render failed, falling back to client snapshot:',
+    clinicalDocumentPdfRenderLogger.warn(
+      'Backend render failed, falling back to client snapshot',
       error
     );
   }
@@ -185,7 +188,7 @@ export const generateClinicalDocumentPrintStyledPdfBlob = async (
   try {
     return await generateDomSnapshotPdfBlob(html);
   } catch (error) {
-    console.warn('[clinicalDocumentPrintPdfService] client snapshot failed:', error);
+    clinicalDocumentPdfRenderLogger.warn('Client snapshot render failed', error);
     return null;
   }
 };

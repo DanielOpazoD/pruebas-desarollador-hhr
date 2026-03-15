@@ -12,6 +12,9 @@ import {
   mapFirestoreRecords,
   toFirestoreRecordMap,
 } from '@/services/storage/firestore/firestoreQuerySupport';
+import { logger } from '@/services/utils/loggerService';
+
+const firestoreQueryLogger = logger.child('FirestoreQueries');
 
 export const getAvailableDatesFromFirestore = async (): Promise<string[]> => {
   try {
@@ -22,7 +25,7 @@ export const getAvailableDatesFromFirestore = async (): Promise<string[]> => {
       .sort()
       .reverse();
   } catch (error) {
-    console.error('[Firestore] Error fetching available dates:', error);
+    firestoreQueryLogger.error('Failed to fetch available dates', error);
     return [];
   }
 };
@@ -37,7 +40,7 @@ export const getRecordFromFirestore = async (date: string): Promise<DailyRecord 
     }
     return null;
   } catch (error) {
-    console.error('❌ Error getting record from Firestore:', error);
+    firestoreQueryLogger.error(`Failed to get record ${date}`, error);
     return null;
   }
 };
@@ -48,7 +51,7 @@ export const getAllRecordsFromFirestore = async (): Promise<Record<string, Daily
     const querySnapshot = await getDocs(q);
     return toFirestoreRecordMap(mapFirestoreRecords(querySnapshot, docToRecord));
   } catch (error) {
-    console.error('❌ Error getting all records from Firestore:', error);
+    firestoreQueryLogger.error('Failed to get all records', error);
     return {};
   }
 };
@@ -68,7 +71,7 @@ export const getRecordsRangeFromFirestore = async (
     const querySnapshot = await getDocs(q);
     return mapFirestoreRecords(querySnapshot.docs, docToRecord);
   } catch (error) {
-    console.error(`❌ Error getting records for range ${startDate} to ${endDate}:`, error);
+    firestoreQueryLogger.error(`Failed to get records for range ${startDate} to ${endDate}`, error);
     return [];
   }
 };
@@ -81,7 +84,7 @@ export const getMonthRecordsFromFirestore = async (
     const { startDate, endDate } = buildFirestoreMonthDateRange(year, month);
     return getRecordsRangeFromFirestore(startDate, endDate);
   } catch (error) {
-    console.error('❌ Error getting month records:', error);
+    firestoreQueryLogger.error(`Failed to get month records for ${year}-${month + 1}`, error);
     return [];
   }
 };
@@ -104,7 +107,7 @@ export const subscribeToRecord = (
       }
     },
     error => {
-      console.error('❌ Firestore subscription error:', error);
+      firestoreQueryLogger.error(`Subscription failed for record ${date}`, error);
       callback(null, false);
     }
   );

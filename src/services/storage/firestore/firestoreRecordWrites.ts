@@ -19,8 +19,11 @@ import {
   createDeletedRecordRef,
   saveHistorySnapshot,
 } from '@/services/storage/firestore/firestoreWriteSupport';
+import { logger } from '@/services/utils/loggerService';
 
 export { ConcurrencyError } from '@/services/storage/firestore/firestoreWriteSupport';
+
+const firestoreWriteLogger = logger.child('FirestoreWrites');
 
 export const saveRecordToFirestore = async (
   record: DailyRecord,
@@ -44,10 +47,10 @@ export const saveRecordToFirestore = async (
 
     await withRetry(() => setDoc(docRef, sanitizedRecord as Record<string, unknown>), {
       onRetry: (err: unknown, attempt: number) =>
-        console.warn(`[Firestore] Retry ${attempt} saving record ${record.date}:`, err),
+        firestoreWriteLogger.warn(`Retry ${attempt} saving record ${record.date}`, err),
     });
   } catch (error) {
-    console.error('❌ Error saving to Firestore:', error);
+    firestoreWriteLogger.error(`Failed to save record ${record.date}`, error);
     throw error;
   }
 };
@@ -80,14 +83,14 @@ export const updateRecordPartial = async (
           updateDoc(docRef, asFirestoreUpdatePayload(sanitizedData) as UpdateData<DocumentData>),
         {
           onRetry: (err: unknown, attempt: number) =>
-            console.warn(`[Firestore] Retry ${attempt} updating record ${date}:`, err),
+            firestoreWriteLogger.warn(`Retry ${attempt} updating record ${date}`, err),
         }
       );
     } catch (error: unknown) {
       const storageError = error as { code?: string };
       if (storageError?.code === 'not-found') {
-        console.warn(
-          `[Firestore] Document ${date} not found for partial update. Creating with setDoc.`
+        firestoreWriteLogger.warn(
+          `Document ${date} not found for partial update. Creating with setDoc.`
         );
         await withRetry(() => setDoc(docRef, sanitizedData, { merge: true }));
       } else {
@@ -95,7 +98,7 @@ export const updateRecordPartial = async (
       }
     }
   } catch (error) {
-    console.error('❌ Error in partial update to Firestore:', error);
+    firestoreWriteLogger.error(`Failed partial update for ${date}`, error);
     throw error;
   }
 };
@@ -105,10 +108,10 @@ export const deleteRecordFromFirestore = async (date: string): Promise<void> => 
     const docRef = getRecordDocRef(date);
     await withRetry(() => deleteDoc(docRef), {
       onRetry: (err: unknown, attempt: number) =>
-        console.warn(`[Firestore] Retry ${attempt} deleting record ${date}:`, err),
+        firestoreWriteLogger.warn(`Retry ${attempt} deleting record ${date}`, err),
     });
   } catch (error) {
-    console.error('❌ Error deleting from Firestore:', error);
+    firestoreWriteLogger.error(`Failed to delete record ${date}`, error);
     throw error;
   }
 };
@@ -125,7 +128,7 @@ export const moveRecordToTrash = async (record: DailyRecord): Promise<void> => {
       })
     );
   } catch (error) {
-    console.error('❌ Error moving record to trash:', error);
+    firestoreWriteLogger.error(`Failed to move record ${record.date} to trash`, error);
     throw error;
   }
 };

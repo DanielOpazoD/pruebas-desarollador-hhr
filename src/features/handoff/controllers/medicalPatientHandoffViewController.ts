@@ -104,5 +104,3 @@ export const buildMedicalHandoffDeepLink = (
   }
   return `${origin}${pathname}?${params.toString()}`;
 };
-
-export const buildMedicalSpecialistAccessLink = buildMedicalHandoffDeepLink;

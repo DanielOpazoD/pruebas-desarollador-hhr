@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   checkBotHealth,
+  fetchShiftsFromGroup,
   sendWhatsAppMessage,
   getWhatsAppGroups,
   getWhatsAppConfig,
@@ -71,6 +72,44 @@ describe('whatsappService', () => {
       const groups = await getWhatsAppGroups();
       expect(groups).toHaveLength(1);
       expect(groups[0].name).toBe('Group 1');
+    });
+
+    it('returns [] when WhatsApp groups payload is invalid', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve([{ invalid: true }]),
+      } as unknown as Response);
+
+      const groups = await getWhatsAppGroups();
+      expect(groups).toEqual([]);
+    });
+
+    it('returns disconnected health when bot health payload is invalid', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ ok: true }),
+      } as unknown as Response);
+
+      const health = await checkBotHealth();
+      expect(health).toEqual({
+        status: 'error',
+        whatsapp: 'disconnected',
+        error: 'Bot server returned an invalid health payload',
+      });
+    });
+
+    it('returns fallback error when shift payload is invalid', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ ok: true }),
+      } as unknown as Response);
+
+      const result = await fetchShiftsFromGroup();
+      expect(result).toEqual({
+        success: false,
+        message: '',
+        error: 'Respuesta inválida del bot de turnos',
+      });
     });
   });
 

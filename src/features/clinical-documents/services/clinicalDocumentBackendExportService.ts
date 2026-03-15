@@ -1,6 +1,7 @@
 import { httpsCallable } from 'firebase/functions';
 import { getFunctionsInstance } from '@/firebaseConfig';
 import type { ClinicalDocumentType } from '@/features/clinical-documents/domain/entities';
+import { z } from 'zod';
 
 interface ExportClinicalDocumentPdfPayload {
   documentId: string;
@@ -19,6 +20,13 @@ interface ExportClinicalDocumentPdfResult {
   folderPath: string;
   usedBackend: boolean;
 }
+
+const exportClinicalDocumentPdfResultSchema = z.object({
+  fileId: z.string(),
+  webViewLink: z.string().url(),
+  folderPath: z.string(),
+  usedBackend: z.boolean(),
+});
 
 const blobToBase64 = async (blob: Blob): Promise<string> => {
   const arrayBuffer = await blob.arrayBuffer();
@@ -79,5 +87,5 @@ export const exportClinicalDocumentPdfViaBackend = async ({
     mimeType: pdfBlob.type || 'application/pdf',
   });
 
-  return response.data;
+  return exportClinicalDocumentPdfResultSchema.parse(response.data);
 };

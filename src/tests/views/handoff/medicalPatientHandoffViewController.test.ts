@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { Specialty, type BedDefinition, type DailyRecord } from '@/types';
 import {
   buildMedicalHandoffDeepLink,
-  buildMedicalSpecialistAccessLink,
   buildMedicalSpecialtyLink,
   collectMedicalSpecialties,
   filterBedsByMedicalScope,
@@ -72,17 +71,6 @@ describe('medicalPatientHandoffViewController', () => {
     );
     expect(
       buildMedicalHandoffDeepLink(
-        'https://app.hospitalhangaroa.cl',
-        '/handoff',
-        '2026-03-03',
-        'upc',
-        Specialty.CIRUGIA
-      )
-    ).toBe(
-      'https://app.hospitalhangaroa.cl/handoff?module=MEDICAL_HANDOFF&date=2026-03-03&scope=upc&specialty=Cirug%C3%ADa'
-    );
-    expect(
-      buildMedicalSpecialistAccessLink(
         'https://app.hospitalhangaroa.cl',
         '/handoff',
         '2026-03-03',

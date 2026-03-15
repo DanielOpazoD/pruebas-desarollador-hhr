@@ -24,8 +24,35 @@ import {
   saveManualShift,
   subscribeToCurrentShift,
 } from '@/services/integrations/whatsapp/whatsappShiftStore';
+import { z } from 'zod';
 
 export type { MessageTemplate };
+
+const whatsAppHealthSchema = z.object({
+  status: z.enum(['ok', 'error']),
+  whatsapp: z.enum(['connected', 'disconnected']),
+  uptime: z.number().optional(),
+  error: z.string().optional(),
+});
+
+const whatsAppSendMessageSchema = z.object({
+  success: z.boolean().optional(),
+  messageId: z.string().optional(),
+  error: z.string().optional(),
+});
+
+const whatsAppGroupListSchema = z.array(
+  z.object({
+    id: z.string(),
+    name: z.string(),
+  })
+);
+
+const whatsAppShiftFetchSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  error: z.string().optional(),
+});
 
 export async function checkBotHealth(): Promise<{
   status: 'ok' | 'error';
@@ -43,7 +70,16 @@ export async function checkBotHealth(): Promise<{
       return { status: 'error', whatsapp: 'disconnected', error: 'Bot server not responding' };
     }
 
-    return await response.json();
+    const payload = whatsAppHealthSchema.safeParse(await response.json());
+    if (!payload.success) {
+      return {
+        status: 'error',
+        whatsapp: 'disconnected',
+        error: 'Bot server returned an invalid health payload',
+      };
+    }
+
+    return payload.data;
   } catch (_error) {
     return {
       status: 'error',
@@ -64,7 +100,8 @@ export async function sendWhatsAppMessage(
       body: JSON.stringify({ groupId, message }),
     });
 
-    const result = await response.json();
+    const payload = whatsAppSendMessageSchema.safeParse(await response.json());
+    const result = payload.success ? payload.data : { error: 'Invalid send-message payload' };
     if (!response.ok) {
       throw new Error(result.error || 'Failed to send message');
     }
@@ -96,7 +133,12 @@ export async function getWhatsAppGroups(): Promise<Array<{ id: string; name: str
       throw new Error('Failed to fetch groups');
     }
 
-    return await response.json();
+    const payload = whatsAppGroupListSchema.safeParse(await response.json());
+    if (!payload.success) {
+      throw new Error('Invalid WhatsApp groups payload');
+    }
+
+    return payload.data;
   } catch (error) {
     console.error('Error fetching groups:', error);
     return [];
@@ -114,7 +156,14 @@ export async function fetchShiftsFromGroup(): Promise<{
       headers: { 'Content-Type': 'application/json' },
     });
 
-    const result = await response.json();
+    const payload = whatsAppShiftFetchSchema.safeParse(await response.json());
+    const result = payload.success
+      ? payload.data
+      : {
+          success: false,
+          message: '',
+          error: 'Respuesta inválida del bot de turnos',
+        };
     if (!response.ok) {
       return {
         success: false,
@@ -126,6 +175,7 @@ export async function fetchShiftsFromGroup(): Promise<{
     return {
       success: result.success,
       message: result.message,
+      error: result.error,
     };
   } catch (_error: unknown) {
     return {

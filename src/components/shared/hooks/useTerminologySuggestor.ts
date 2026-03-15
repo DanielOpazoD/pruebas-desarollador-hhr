@@ -6,6 +6,7 @@ import {
 } from '@/services/terminology/terminologyService';
 import { checkAIAvailability } from '@/services/terminology/cie10AISearch';
 import { getCachedAIResults, cacheAIResults } from '@/services/terminology/aiResultsCache';
+import { logger } from '@/services/utils/loggerService';
 
 export interface UseTerminologySuggestorProps {
   value: string;
@@ -20,6 +21,7 @@ export const useTerminologySuggestor = ({
   cie10Code,
   freeTextValue,
 }: UseTerminologySuggestorProps) => {
+  const terminologySuggestorLogger = logger.child('TerminologySuggestor');
   const [query, setQuery] = useState(value);
   const [suggestions, setSuggestions] = useState<TerminologyConcept[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -139,7 +141,7 @@ export const useTerminologySuggestor = ({
           setSuggestions(results);
         } catch (err: unknown) {
           if (err instanceof Error && err.name !== 'AbortError') {
-            console.error('Search error:', err);
+            terminologySuggestorLogger.error(`Search failed for "${query}"`, err);
           }
         } finally {
           if (!controller.signal.aborted) {
@@ -198,7 +200,7 @@ export const useTerminologySuggestor = ({
       setSuggestions(results);
     } catch (err: unknown) {
       if (err instanceof Error && err.name !== 'AbortError') {
-        console.error('Force AI search error:', err);
+        terminologySuggestorLogger.error(`Force AI search failed for "${searchTerm}"`, err);
       }
     } finally {
       setIsLoading(false);

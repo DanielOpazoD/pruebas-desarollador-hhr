@@ -35,6 +35,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/config/queryClient';
 import { setFirestoreEnabled } from '@/services/repositories/DailyRecordRepository';
 import { resolveShiftNurseSignature } from '@/services/staff/dailyRecordStaffing';
+import { logger } from '@/services/utils/loggerService';
 
 // ============================================================================
 // Sync Effect - Keeps repository in sync with Firebase connection status
@@ -44,6 +45,8 @@ const isIgnorableWorkerShutdownImportError = (error: unknown): boolean => {
   return message.includes('[vitest-worker]: Closing rpc while "fetch" was pending');
 };
 
+const appLogger = logger.child('App');
+
 const useSyncFirestoreStatus = (isFirebaseConnected: boolean) => {
   React.useEffect(() => {
     try {
@@ -52,7 +55,7 @@ const useSyncFirestoreStatus = (isFirebaseConnected: boolean) => {
       if (isIgnorableWorkerShutdownImportError(error)) {
         return;
       }
-      console.error('[App] Failed to sync Firestore status', error);
+      appLogger.error('Failed to sync Firestore status', error);
     }
   }, [isFirebaseConnected]);
 };

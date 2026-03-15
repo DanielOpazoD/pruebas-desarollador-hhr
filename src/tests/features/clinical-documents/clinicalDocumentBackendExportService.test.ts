@@ -62,4 +62,30 @@ describe('clinicalDocumentBackendExportService', () => {
       usedBackend: true,
     });
   });
+
+  it('rejects malformed backend export payloads', async () => {
+    const pdfBlob = {
+      type: 'application/pdf',
+      arrayBuffer: vi.fn().mockResolvedValue(Uint8Array.from([80, 68, 70]).buffer),
+    } as unknown as Blob;
+
+    callableMock.mockResolvedValueOnce({
+      data: {
+        fileId: 'file-1',
+        usedBackend: true,
+      },
+    });
+
+    await expect(
+      exportClinicalDocumentPdfViaBackend({
+        documentId: 'doc-1',
+        fileName: 'epicrisis.pdf',
+        documentType: 'epicrisis',
+        patientName: 'Paciente Test',
+        patientRut: '11.111.111-1',
+        episodeKey: '11.111.111-1__2026-03-06',
+        pdfBlob,
+      })
+    ).rejects.toThrow();
+  });
 });

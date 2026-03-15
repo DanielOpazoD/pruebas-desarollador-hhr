@@ -1,6 +1,7 @@
 import { DailyRecord } from '@/types';
 import { saveRecord } from '@/services/storage/indexedDBService';
 import { hasStructuralRepairs, parseDailyRecordWithDefaultsReport } from '@/schemas/zodSchemas';
+import { logger } from '@/services/utils/loggerService';
 
 export interface JsonImportResult {
   success: boolean;
@@ -9,6 +10,8 @@ export interface JsonImportResult {
   repairedCount: number;
   skippedEntries: string[];
 }
+
+const jsonImportLogger = logger.child('JsonImport');
 
 const readFileAsText = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -74,7 +77,7 @@ export const importDataJSONDetailed = async (file: File): Promise<JsonImportResu
       skippedEntries,
     };
   } catch (error) {
-    console.error('Import failed', error);
+    jsonImportLogger.error('JSON import failed', error);
     alert('Error al procesar el archivo JSON.');
     return {
       success: false,

@@ -1,6 +1,7 @@
 import type { Workbook } from 'exceljs';
 
 import { validateExcelExport, XLSX_MIME_TYPE } from './excelValidation';
+import { logger } from '@/services/utils/loggerService';
 
 export interface DownloadWorkbookOptions {
   workbook: Workbook;
@@ -8,6 +9,8 @@ export interface DownloadWorkbookOptions {
   invalidAlertMessage?: string;
   successLogMessage?: (byteLength: number) => string;
 }
+
+const excelFileDownloadLogger = logger.child('ExcelFileDownload');
 
 export const downloadWorkbookFile = async ({
   workbook,
@@ -19,7 +22,7 @@ export const downloadWorkbookFile = async ({
   const validation = validateExcelExport(buffer, filename);
 
   if (!validation.valid) {
-    console.error(`❌ Validación de Excel fallida: ${validation.error}`);
+    excelFileDownloadLogger.error(`Excel validation failed for ${filename}`, validation.error);
     if (invalidAlertMessage) {
       alert(
         `${invalidAlertMessage}\n${validation.error}\n\nPor favor, recarga la página e intenta de nuevo.`
@@ -34,6 +37,6 @@ export const downloadWorkbookFile = async ({
   saveAs(blob, filename);
 
   if (successLogMessage) {
-    console.warn(successLogMessage(buffer.byteLength));
+    excelFileDownloadLogger.info(successLogMessage(buffer.byteLength));
   }
 };

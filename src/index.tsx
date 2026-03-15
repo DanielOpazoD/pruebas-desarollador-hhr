@@ -6,6 +6,7 @@ import { firebaseReady, mountConfigWarning } from '@/firebaseConfig';
 import { queryClient } from '@/config/queryClient';
 import { GlobalErrorBoundary } from '@/components/shared/GlobalErrorBoundary';
 import { getFirebaseStartupFailureMessage } from '@/services/auth/firebaseStartupUiPolicy';
+import { logger } from '@/services/utils/loggerService';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -13,6 +14,7 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement);
+const bootLogger = logger.child('Bootstrap');
 
 const clearLocalServiceWorkers = async (): Promise<void> => {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
@@ -32,12 +34,12 @@ const clearLocalServiceWorkers = async (): Promise<void> => {
     const registrations = await navigator.serviceWorker.getRegistrations();
     await Promise.all(registrations.map(registration => registration.unregister()));
   } catch (error) {
-    console.warn('[Index] Could not unregister local service workers', error);
+    bootLogger.warn('Could not unregister local service workers', error);
   }
 };
 
 const renderApp = () => {
-  console.warn('[Index] 🚀 Rendering Application...');
+  bootLogger.info('Rendering application');
   root.render(
     <React.StrictMode>
       <GlobalErrorBoundary>
@@ -52,6 +54,6 @@ const renderApp = () => {
 clearLocalServiceWorkers()
   .finally(() => firebaseReady.then(renderApp))
   .catch(error => {
-    console.error('Firebase initialization failed', error);
+    bootLogger.error('Firebase initialization failed', error);
     mountConfigWarning(getFirebaseStartupFailureMessage());
   });

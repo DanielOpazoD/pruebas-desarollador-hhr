@@ -32,6 +32,9 @@ import {
 import { executeSyncDailyRecord } from '@/application/daily-record/syncDailyRecordUseCase';
 import { presentDailyRecordRefreshOutcome } from '@/hooks/controllers/dailyRecordRefreshOutcomeController';
 import { recordOperationalOutcome } from '@/services/observability/operationalTelemetryService';
+import { logger } from '@/services/utils/loggerService';
+
+const dailyRecordSyncLogger = logger.child('DailyRecordSync');
 
 export const useDailyRecordSyncQuery = (
   currentDateString: string,
@@ -135,7 +138,7 @@ export const useDailyRecordSyncQuery = (
           notifyError(feedback.title, feedback.message);
 
           if (feedback.shouldLog) {
-            console.error(feedback.logLabel || '[Sync] Save blocked:', err);
+            dailyRecordSyncLogger.error(feedback.logLabel || 'Save blocked', err);
           }
 
           if (feedback.refetchDelayMs) {

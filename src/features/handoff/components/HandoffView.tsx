@@ -17,6 +17,9 @@ import { getAttributedAuthors } from '@/services/admin/attributionService';
 import { useUIState, UseUIStateReturn } from '@/hooks/useUIState';
 import { useAuth } from '@/context';
 import {
+  buildHandoffClinicalEventActions,
+  buildHandoffMedicalActions,
+  resolveEffectiveSelectedMedicalSpecialty,
   resolveInitialMedicalScopeFromSearch,
   resolveInitialMedicalSpecialtyFromSearch,
   resolveMedicalHandoffCapabilities,
@@ -132,10 +135,10 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
     [visibleBeds, record, isMedical, effectiveMedicalScope, shouldShowPatient]
   );
 
-  const effectiveSelectedMedicalSpecialty =
-    selectedMedicalSpecialty !== 'all' && !medicalSpecialties.includes(selectedMedicalSpecialty)
-      ? 'all'
-      : selectedMedicalSpecialty;
+  const effectiveSelectedMedicalSpecialty = React.useMemo(
+    () => resolveEffectiveSelectedMedicalSpecialty(selectedMedicalSpecialty, medicalSpecialties),
+    [medicalSpecialties, selectedMedicalSpecialty]
+  );
 
   const { specialtyFilteredBeds, hasAnyVisiblePatients } = React.useMemo(
     () =>
@@ -206,29 +209,42 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
       }),
     [readOnly, record?.date, role]
   );
-  const medicalActions: HandoffMedicalActions = {
-    onCreatePrimaryEntry: medicalCapabilities.canCreatePrimaryObservationEntry
-      ? handleMedicalPrimaryEntryCreate
-      : undefined,
-    onEntryNoteChange: medicalCapabilities.canEditObservationEntries
-      ? handleMedicalEntryNoteChange
-      : undefined,
-    onEntrySpecialtyChange: medicalCapabilities.canEditObservationEntrySpecialty
-      ? handleMedicalEntrySpecialtyChange
-      : undefined,
-    onEntryAdd: medicalCapabilities.canAddObservationEntries ? handleMedicalEntryAdd : undefined,
-    onEntryDelete: medicalCapabilities.canDeleteObservationEntries
-      ? handleMedicalEntryDelete
-      : undefined,
-    onContinuityConfirm: medicalCapabilities.canConfirmObservationContinuity
-      ? handleMedicalContinuityConfirm
-      : undefined,
-  };
-  const clinicalEventActions: HandoffClinicalEventActions = {
-    onAdd: medicalCapabilities.canEditClinicalEvents ? handleClinicalEventAdd : undefined,
-    onUpdate: medicalCapabilities.canEditClinicalEvents ? handleClinicalEventUpdate : undefined,
-    onDelete: medicalCapabilities.canEditClinicalEvents ? handleClinicalEventDelete : undefined,
-  };
+  const medicalActions: HandoffMedicalActions = React.useMemo(
+    () =>
+      buildHandoffMedicalActions({
+        capabilities: medicalCapabilities,
+        onCreatePrimaryEntry: handleMedicalPrimaryEntryCreate,
+        onEntryNoteChange: handleMedicalEntryNoteChange,
+        onEntrySpecialtyChange: handleMedicalEntrySpecialtyChange,
+        onEntryAdd: handleMedicalEntryAdd,
+        onEntryDelete: handleMedicalEntryDelete,
+        onContinuityConfirm: handleMedicalContinuityConfirm,
+      }),
+    [
+      handleMedicalContinuityConfirm,
+      handleMedicalEntryAdd,
+      handleMedicalEntryDelete,
+      handleMedicalEntryNoteChange,
+      handleMedicalEntrySpecialtyChange,
+      handleMedicalPrimaryEntryCreate,
+      medicalCapabilities,
+    ]
+  );
+  const clinicalEventActions: HandoffClinicalEventActions = React.useMemo(
+    () =>
+      buildHandoffClinicalEventActions({
+        canEditClinicalEvents: medicalCapabilities.canEditClinicalEvents,
+        onAdd: handleClinicalEventAdd,
+        onUpdate: handleClinicalEventUpdate,
+        onDelete: handleClinicalEventDelete,
+      }),
+    [
+      handleClinicalEventAdd,
+      handleClinicalEventDelete,
+      handleClinicalEventUpdate,
+      medicalCapabilities.canEditClinicalEvents,
+    ]
+  );
 
   const handleOpenCudyr = () => {
     if (ui) ui.setCurrentModule('CUDYR');

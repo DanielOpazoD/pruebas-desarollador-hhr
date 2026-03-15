@@ -1,7 +1,14 @@
+import { z } from 'zod';
+
 export interface DriveUploadResult {
   fileId: string;
   webViewLink: string;
 }
+
+const driveUploadResultSchema = z.object({
+  id: z.string(),
+  webViewLink: z.string().url(),
+});
 
 const MULTIPART_BOUNDARY = 'foo_bar_boundary';
 const MULTIPART_DELIMITER = `\r\n--${MULTIPART_BOUNDARY}\r\n`;
@@ -46,7 +53,7 @@ export const createMultipartHeaders = (token: string): HeadersInit => ({
 });
 
 export const parseDriveUploadResult = async (response: Response): Promise<DriveUploadResult> => {
-  const data = await response.json();
+  const data = driveUploadResultSchema.parse(await response.json());
   return {
     fileId: data.id,
     webViewLink: data.webViewLink,

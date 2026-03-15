@@ -43,7 +43,6 @@ export {
 export { resolveHandoffScreenState } from './handoffScreenController';
 export {
   buildMedicalHandoffDeepLink,
-  buildMedicalSpecialistAccessLink,
   buildMedicalSpecialtyLink,
   collectMedicalSpecialties,
   filterBedsByMedicalScope,
@@ -57,6 +56,11 @@ export {
   resolveMedicalEntryInlineMeta,
   resolveMedicalHandoffValidityViewModel,
 } from './medicalPatientHandoffRenderController';
+export {
+  buildHandoffClinicalEventActions,
+  buildHandoffMedicalActions,
+  resolveEffectiveSelectedMedicalSpecialty,
+} from './handoffViewBindingsController';
 export {
   buildMedicalHandoffSignatureLink,
   resolveMedicalHandoffScope,

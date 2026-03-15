@@ -14,6 +14,9 @@ import { getRecordsForMonth } from '../storage/indexedDBService';
 import { isFirestoreEnabled } from '../repositories/DailyRecordRepository';
 import { buildCensusMasterWorkbook, getCensusMasterFilename } from './censusMasterWorkbook';
 import { downloadWorkbookFile } from './excelFileDownload';
+import { logger } from '@/services/utils/loggerService';
+
+const censusMasterExportLogger = logger.child('CensusMasterExport');
 
 /**
  * Generate and download the Census Master Excel file for a given month.
@@ -39,18 +42,20 @@ export const generateCensusMasterExcel = async (
   try {
     if (isFirestoreEnabled()) {
       try {
-        console.warn(`📊 Cargando datos del mes ${MONTH_NAMES[month]} ${year} desde Firestore...`);
+        censusMasterExportLogger.info(
+          `Loading ${MONTH_NAMES[month]} ${year} census records from Firestore`
+        );
         allMonthRecords = await getMonthRecordsFromFirestore(year, month);
       } catch (remoteError) {
-        console.warn(
-          `⚠️ Firestore no disponible para exportación mensual. Usando almacenamiento local.`,
+        censusMasterExportLogger.warn(
+          'Firestore unavailable for monthly export. Falling back to local storage',
           remoteError
         );
         allMonthRecords = await getRecordsForMonth(year, month + 1);
       }
     } else {
-      console.warn(
-        `📊 Cargando datos del mes ${MONTH_NAMES[month]} ${year} desde almacenamiento local...`
+      censusMasterExportLogger.info(
+        `Loading ${MONTH_NAMES[month]} ${year} census records from local storage`
       );
       allMonthRecords = await getRecordsForMonth(year, month + 1);
     }
@@ -60,14 +65,14 @@ export const generateCensusMasterExcel = async (
       .sort((a, b) => a.date.localeCompare(b.date));
 
     if (monthRecords.length === 0) {
-      console.warn(`No hay datos para ${MONTH_NAMES[month]} ${year}`);
+      censusMasterExportLogger.warn(`No census records found for ${MONTH_NAMES[month]} ${year}`);
       alert(
         `No hay datos registrados para las fechas seleccionadas en ${MONTH_NAMES[month]} ${year}`
       );
       return;
     }
 
-    console.warn(`✅ Se encontraron ${monthRecords.length} días con datos`);
+    censusMasterExportLogger.info(`Found ${monthRecords.length} census days to export`);
 
     // Generate the workbook (without encryption - xlsx-populate doesn't work in browsers)
     const workbook = await buildCensusMasterWorkbook(monthRecords);
@@ -79,7 +84,7 @@ export const generateCensusMasterExcel = async (
       successLogMessage: byteLength => `📥 Archivo descargado: ${filename} (${byteLength} bytes)`,
     });
   } catch (error) {
-    console.error('❌ Error generando Excel:', error);
+    censusMasterExportLogger.error('Failed to generate census master Excel', error);
     const message = error instanceof Error ? error.message : 'Error desconocido';
     alert(
       `Error al generar el archivo Excel:\n${message}\n\nPor favor, recarga la página e intenta de nuevo.`
