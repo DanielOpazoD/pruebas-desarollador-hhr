@@ -30,8 +30,7 @@ export interface ReminderAdminSubmission {
 type ReminderSaveResult =
   | 'saved_without_image'
   | 'saved_with_image'
-  | 'permission_denied_image_upload'
-  | 'permission_denied_firestore';
+  | 'permission_denied_image_upload';
 
 export const useReminderAdmin = () => {
   const { user } = useAuth();
@@ -111,11 +110,15 @@ export const useReminderAdmin = () => {
           formReminder
         );
 
-        await ReminderRepository.create({
+        const createResult = await ReminderRepository.createWithResult({
           ...reminder,
           imageUrl: removeImage ? undefined : reminder.imageUrl,
           imagePath: removeImage ? undefined : formReminder?.imagePath,
         });
+
+        if (createResult.status !== 'success') {
+          throw createResult.error;
+        }
 
         let saveResult: ReminderSaveResult = 'saved_without_image';
 
@@ -133,11 +136,15 @@ export const useReminderAdmin = () => {
         if (imageFile) {
           try {
             const upload = await ReminderImageService.uploadImage(reminderId, imageFile);
-            await ReminderRepository.update(reminderId, {
+            const updateResult = await ReminderRepository.updateWithResult(reminderId, {
               imageUrl: upload.imageUrl,
               imagePath: upload.imagePath,
               updatedAt: new Date().toISOString(),
             });
+
+            if (updateResult.status !== 'success') {
+              throw updateResult.error;
+            }
 
             if (previousImagePath && previousImagePath !== upload.imagePath) {
               try {
@@ -191,7 +198,10 @@ export const useReminderAdmin = () => {
 
       setProcessing(true);
       try {
-        await ReminderRepository.remove(reminder.id);
+        const removeResult = await ReminderRepository.removeWithResult(reminder.id);
+        if (removeResult.status !== 'success') {
+          throw removeResult.error;
+        }
         await ReminderImageService.deleteImage(reminder.imagePath);
         success('Avisos al personal', 'El aviso fue eliminado.');
       } catch (error) {
@@ -206,16 +216,25 @@ export const useReminderAdmin = () => {
     [confirm, notifyError, success]
   );
 
-  const openReadStatus = React.useCallback(async (reminder: Reminder) => {
-    setReceiptsReminder(reminder);
-    setReceiptsLoading(true);
-    try {
-      const receipts = await ReminderReadService.getReadReceipts(reminder.id);
-      setReadReceipts(receipts);
-    } finally {
-      setReceiptsLoading(false);
-    }
-  }, []);
+  const openReadStatus = React.useCallback(
+    async (reminder: Reminder) => {
+      setReceiptsReminder(reminder);
+      setReceiptsLoading(true);
+      try {
+        const result = await ReminderReadService.getReadReceiptsWithResult(reminder.id);
+        setReadReceipts(result.receipts);
+        if (result.status !== 'success') {
+          notifyError(
+            'Avisos al personal',
+            resolveReminderAdminErrorMessage(result.error, { operation: 'firestore_read' })
+          );
+        }
+      } finally {
+        setReceiptsLoading(false);
+      }
+    },
+    [notifyError]
+  );
 
   const closeReadStatus = React.useCallback(() => {
     setReceiptsReminder(null);
@@ -258,10 +277,5 @@ const resolveSaveResultMessage = (
       ? 'El aviso fue actualizado, pero la imagen no pudo subirse.'
       : 'El aviso fue creado, pero la imagen no pudo subirse.';
   }
-
-  if (result === 'permission_denied_firestore') {
-    return 'No se pudo guardar el aviso por permisos insuficientes.';
-  }
-
   return formReminder ? 'El aviso fue actualizado.' : 'El aviso fue creado.';
 };

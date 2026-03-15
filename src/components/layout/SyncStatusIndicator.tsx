@@ -11,6 +11,10 @@ import { useDailyRecordStatus } from '@/context/DailyRecordContext';
 export const SyncStatusIndicator: React.FC = () => {
   const { syncStatus, lastSyncTime } = useDailyRecordStatus();
 
+  if (syncStatus === 'idle' || syncStatus === 'saved') {
+    return null;
+  }
+
   const getStatusConfig = () => {
     switch (syncStatus) {
       case 'saving':
@@ -23,16 +27,6 @@ export const SyncStatusIndicator: React.FC = () => {
           iconColor: 'text-blue-300',
           animate: true,
         };
-      case 'saved':
-        return {
-          icon: Check,
-          text: 'Sincronizado',
-          bgColor: 'bg-green-500/20',
-          borderColor: 'border-green-400/50',
-          textColor: 'text-green-200',
-          iconColor: 'text-green-300',
-          animate: false,
-        };
       case 'error':
         return {
           icon: AlertTriangle,
@@ -43,10 +37,10 @@ export const SyncStatusIndicator: React.FC = () => {
           iconColor: 'text-red-300',
           animate: false,
         };
-      default: // idle
+      default:
         return {
           icon: Cloud,
-          text: 'Conectado',
+          text: 'Estado',
           bgColor: 'bg-white/10',
           borderColor: 'border-white/20',
           textColor: 'text-white/70',

@@ -11,6 +11,7 @@ describe('UserMenu', () => {
   const defaultProps = {
     userEmail: 'doctor@hospital.cl',
     role: 'editor' as const,
+    isFirebaseConnected: true,
     onLogout: vi.fn(),
   };
 
@@ -32,6 +33,7 @@ describe('UserMenu', () => {
 
     expect(screen.getByText('Usuario')).toBeInTheDocument();
     expect(screen.getByText('doctor@hospital.cl')).toBeInTheDocument();
+    expect(screen.getByText('Conectado')).toBeInTheDocument();
   });
 
   it('displays role correctly', () => {
@@ -73,6 +75,14 @@ describe('UserMenu', () => {
 
     const button = screen.getByRole('button');
     expect(button.textContent).toBe('A');
+  });
+
+  it('shows offline state in dropdown when not connected', () => {
+    render(<UserMenu {...defaultProps} isFirebaseConnected={false} />);
+
+    fireEvent.click(screen.getByRole('button'));
+
+    expect(screen.getByText('Sin conexión')).toBeInTheDocument();
   });
 
   it('closes dropdown when clicking outside', () => {

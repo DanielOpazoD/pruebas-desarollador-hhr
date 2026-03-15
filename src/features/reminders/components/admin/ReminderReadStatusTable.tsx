@@ -2,6 +2,10 @@ import React from 'react';
 import { BellRing } from 'lucide-react';
 import { BaseModal } from '@/components/shared/BaseModal';
 import type { Reminder, ReminderReadReceipt } from '@/types';
+import {
+  formatReminderReceiptDate,
+  formatReminderShiftLabel,
+} from '@/shared/reminders/reminderPresentation';
 
 interface ReminderReadStatusTableProps {
   reminder: Reminder | null;
@@ -41,10 +45,7 @@ export const ReminderReadStatusTable: React.FC<ReminderReadStatusTableProps> = (
                   Usuario
                 </th>
                 <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
-                  Fecha turno
-                </th>
-                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
-                  Turno
+                  Fecha / turno
                 </th>
                 <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
                   Leido en
@@ -55,11 +56,15 @@ export const ReminderReadStatusTable: React.FC<ReminderReadStatusTableProps> = (
               {receipts.map(receipt => (
                 <tr key={`${receipt.userId}-${receipt.readAt}`}>
                   <td className="px-4 py-3 font-semibold text-slate-700">{receipt.userName}</td>
-                  <td className="px-4 py-3 font-semibold text-slate-500">
-                    {receipt.dateKey ?? 'Legacy'}
-                  </td>
-                  <td className="px-4 py-3 font-semibold capitalize text-slate-500">
-                    {receipt.shift}
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600">
+                        {formatReminderReceiptDate(receipt)}
+                      </span>
+                      <span className="rounded-full border border-slate-200 px-2 py-1 text-xs font-bold text-slate-500">
+                        {formatReminderShiftLabel(receipt.shift)}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-4 py-3 font-semibold text-slate-500">{receipt.readAt}</td>
                 </tr>

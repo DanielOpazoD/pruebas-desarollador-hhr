@@ -378,7 +378,8 @@ service cloud.firestore {
         allow create, update, delete: if isAdmin();
 
         match /readReceipts/{receiptId} {
-          allow read: if isAdmin();
+          allow read: if isAdmin() ||
+                       (isAuthenticated() && resource.data.userId == request.auth.uid);
           allow create, update: if isAuthenticated() &&
                                 request.resource.data.userId == request.auth.uid &&
                                 request.resource.data.userName is string &&

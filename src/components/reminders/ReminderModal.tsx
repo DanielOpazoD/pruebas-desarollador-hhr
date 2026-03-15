@@ -3,6 +3,8 @@ import { BellRing } from 'lucide-react';
 import { BaseModal } from '@/components/shared/BaseModal';
 import { useReminderCenter } from '@/hooks/useReminders';
 import { ReminderCard } from '@/components/reminders/ReminderCard';
+import { REMINDER_TYPE_LABELS, REMINDER_TYPE_STYLES } from '@/shared/reminders/reminderUiOptions';
+import { formatReminderPriorityLabel } from '@/shared/reminders/reminderPresentation';
 
 export const ReminderModal: React.FC = () => {
   const {
@@ -14,6 +16,7 @@ export const ReminderModal: React.FC = () => {
     closeCenter,
     markReminderAsRead,
   } = useReminderCenter();
+  const highlightedReminder = unreadReminders[0] ?? reminders[0];
 
   return (
     <BaseModal
@@ -24,6 +27,26 @@ export const ReminderModal: React.FC = () => {
       headerIconColor="text-sky-600"
       size="3xl"
       variant="white"
+      headerActions={
+        highlightedReminder ? (
+          <>
+            <span
+              className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.2em] ${REMINDER_TYPE_STYLES[highlightedReminder.type]}`}
+            >
+              {REMINDER_TYPE_LABELS[highlightedReminder.type]}
+            </span>
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+              {formatReminderPriorityLabel(highlightedReminder.priority)}
+            </span>
+            {unreadCount > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.2em] text-amber-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                {unreadCount}
+              </span>
+            )}
+          </>
+        ) : null
+      }
     >
       <div className="space-y-4">
         {!isAvailable ? (
@@ -36,14 +59,6 @@ export const ReminderModal: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {unreadCount > 0 && (
-              <div className="flex items-center justify-end">
-                <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                  <span className="h-2 w-2 rounded-full bg-amber-400" />
-                  {unreadCount}
-                </div>
-              </div>
-            )}
             {reminders.map(reminder => (
               <ReminderCard
                 key={reminder.id}

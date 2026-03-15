@@ -139,15 +139,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
 
             {!isFirebaseConnected && (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-red-500/20 border border-red-500/50 rounded-full text-red-200 text-xs font-bold uppercase tracking-wider">
-                <WifiOff size={12} />
-                OFFLINE
-              </div>
+              <WifiOff size={14} className="text-red-200/80" aria-hidden="true" />
             )}
           </div>
 
           {userEmail && onLogout && (
-            <UserMenu userEmail={userEmail} role={role} onLogout={onLogout} />
+            <UserMenu
+              userEmail={userEmail}
+              role={role}
+              isFirebaseConnected={isFirebaseConnected}
+              onLogout={onLogout}
+            />
           )}
         </div>
       </div>

@@ -33,7 +33,6 @@ interface ReminderCenterContextValue {
   openCenter: () => void;
   closeCenter: () => void;
   markReminderAsRead: (reminderId: string) => Promise<void>;
-  markAllAsRead: () => Promise<void>;
 }
 
 const ReminderCenterContext = React.createContext<ReminderCenterContextValue | undefined>(
@@ -120,7 +119,7 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
       const results = await Promise.all(
         visibleReminders.map(async reminder => ({
           reminderId: reminder.id,
-          hasRead: await ReminderReadService.hasUserRead(
+          hasRead: await ReminderReadService.hasUserReadForShiftWindow(
             reminder.id,
             user.uid,
             currentShift,
@@ -143,7 +142,7 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
       if (!user?.uid) return;
       if (readReminderIds.includes(reminderId)) return;
 
-      await ReminderReadService.markAsRead(
+      const result = await ReminderReadService.markAsReadWithResult(
         reminderId,
         ReminderReadService.buildReceipt({
           userId: user.uid,
@@ -153,14 +152,14 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
         })
       );
 
+      if (result.status !== 'success') {
+        return;
+      }
+
       setReadReminderIds(previous => [...previous, reminderId]);
     },
     [currentDate, currentShift, readReminderIds, user?.displayName, user?.email, user?.uid]
   );
-
-  const markAllAsRead = React.useCallback(async () => {
-    await Promise.all(unreadReminders.map(reminder => markReminderAsRead(reminder.id)));
-  }, [markReminderAsRead, unreadReminders]);
 
   const value = React.useMemo<ReminderCenterContextValue>(
     () => ({
@@ -186,7 +185,6 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
       openCenter: () => setIsOpen(true),
       closeCenter: () => setIsOpen(false),
       markReminderAsRead,
-      markAllAsRead,
     }),
     [
       currentDate,
@@ -194,7 +192,6 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
       currentShift,
       isOpen,
       loading,
-      markAllAsRead,
       markReminderAsRead,
       readReminderIds,
       role,

@@ -15,7 +15,11 @@ import {
   getRemindersCollectionRef,
   normalizeReminderRecord,
 } from './reminderShared';
-import { isReminderPermissionDeniedError } from './reminderErrorPolicy';
+import {
+  isReminderPermissionDeniedError,
+  resolveReminderOperationErrorKind,
+  type ReminderOperationErrorKind,
+} from './reminderErrorPolicy';
 
 const reminderRepositoryLogger = logger.child('ReminderRepository');
 
@@ -27,7 +31,15 @@ const sortReminders = (items: Reminder[]): Reminder[] =>
     return right.createdAt.localeCompare(left.createdAt);
   });
 
-export type ReminderRepositoryErrorKind = 'permission_denied' | 'unknown';
+export type ReminderRepositoryErrorKind = ReminderOperationErrorKind;
+
+export type ReminderRepositoryMutationResult =
+  | { status: 'success' }
+  | { status: ReminderRepositoryErrorKind; error: unknown };
+
+export type ReminderRepositoryListResult =
+  | { status: 'success'; reminders: Reminder[] }
+  | { status: ReminderRepositoryErrorKind; error: unknown; reminders: Reminder[] };
 
 export interface ReminderRepositorySubscriptionOptions {
   onError?: (error: unknown, kind: ReminderRepositoryErrorKind) => void;
@@ -62,14 +74,36 @@ export const ReminderRepository = {
   },
 
   async list(): Promise<Reminder[]> {
-    const snapshot = await getDocs(
-      query(getRemindersCollectionRef(), orderBy('createdAt', 'desc'))
-    );
-    return sortReminders(
-      snapshot.docs
-        .map(docSnap => normalizeReminderRecord({ id: docSnap.id, ...docSnap.data() }, docSnap.id))
-        .filter((item): item is Reminder => Boolean(item))
-    );
+    const result = await this.listWithResult();
+    if (result.status !== 'success') {
+      throw result.error;
+    }
+    return result.reminders;
+  },
+
+  async listWithResult(): Promise<ReminderRepositoryListResult> {
+    try {
+      const snapshot = await getDocs(
+        query(getRemindersCollectionRef(), orderBy('createdAt', 'desc'))
+      );
+      return {
+        status: 'success',
+        reminders: sortReminders(
+          snapshot.docs
+            .map(docSnap =>
+              normalizeReminderRecord({ id: docSnap.id, ...docSnap.data() }, docSnap.id)
+            )
+            .filter((item): item is Reminder => Boolean(item))
+        ),
+      };
+    } catch (error) {
+      reminderRepositoryLogger.error('Error listing reminders', error);
+      return {
+        status: resolveReminderOperationErrorKind(error),
+        error,
+        reminders: [],
+      };
+    }
   },
 
   async getById(reminderId: string): Promise<Reminder | null> {
@@ -79,14 +113,66 @@ export const ReminderRepository = {
   },
 
   async create(reminder: Reminder): Promise<void> {
-    await setDoc(getReminderDocRef(reminder.id), reminder);
+    const result = await this.createWithResult(reminder);
+    if (result.status !== 'success') {
+      throw result.error;
+    }
   },
 
   async update(reminderId: string, patch: Partial<Reminder>): Promise<void> {
-    await updateDoc(getReminderDocRef(reminderId), patch);
+    const result = await this.updateWithResult(reminderId, patch);
+    if (result.status !== 'success') {
+      throw result.error;
+    }
   },
 
   async remove(reminderId: string): Promise<void> {
-    await deleteDoc(getReminderDocRef(reminderId));
+    const result = await this.removeWithResult(reminderId);
+    if (result.status !== 'success') {
+      throw result.error;
+    }
+  },
+
+  async createWithResult(reminder: Reminder): Promise<ReminderRepositoryMutationResult> {
+    try {
+      await setDoc(getReminderDocRef(reminder.id), reminder);
+      reminderRepositoryLogger.info('Created reminder', {
+        reminderId: reminder.id,
+        type: reminder.type,
+        priority: reminder.priority,
+      });
+      return { status: 'success' };
+    } catch (error) {
+      reminderRepositoryLogger.error('Error creating reminder', error);
+      return { status: resolveReminderOperationErrorKind(error), error };
+    }
+  },
+
+  async updateWithResult(
+    reminderId: string,
+    patch: Partial<Reminder>
+  ): Promise<ReminderRepositoryMutationResult> {
+    try {
+      await updateDoc(getReminderDocRef(reminderId), patch);
+      reminderRepositoryLogger.info('Updated reminder', {
+        reminderId,
+        fields: Object.keys(patch),
+      });
+      return { status: 'success' };
+    } catch (error) {
+      reminderRepositoryLogger.error('Error updating reminder', error);
+      return { status: resolveReminderOperationErrorKind(error), error };
+    }
+  },
+
+  async removeWithResult(reminderId: string): Promise<ReminderRepositoryMutationResult> {
+    try {
+      await deleteDoc(getReminderDocRef(reminderId));
+      reminderRepositoryLogger.info('Removed reminder', { reminderId });
+      return { status: 'success' };
+    } catch (error) {
+      reminderRepositoryLogger.error('Error removing reminder', error);
+      return { status: resolveReminderOperationErrorKind(error), error };
+    }
   },
 };

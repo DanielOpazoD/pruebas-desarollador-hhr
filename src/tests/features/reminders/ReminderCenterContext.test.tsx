@@ -5,8 +5,17 @@ import { ReminderCenterProvider } from '@/context/ReminderCenterContext';
 import { useReminderCenter } from '@/hooks/useReminders';
 
 const subscribeMock = vi.fn();
-const hasUserReadMock = vi.fn();
-const markAsReadMock = vi.fn();
+const hasUserReadForShiftWindowMock = vi.fn();
+const markAsReadWithResultMock = vi.fn();
+let mockShift: 'day' | 'night' = 'day';
+
+const getCurrentDateKey = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = `${now.getMonth() + 1}`.padStart(2, '0');
+  const day = `${now.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 vi.mock('@/context/AuthContext', () => ({
   useAuth: () => ({
@@ -25,8 +34,8 @@ vi.mock('@/services/reminders', () => ({
     subscribe: (...args: unknown[]) => subscribeMock(...args),
   },
   ReminderReadService: {
-    hasUserRead: (...args: unknown[]) => hasUserReadMock(...args),
-    markAsRead: (...args: unknown[]) => markAsReadMock(...args),
+    hasUserReadForShiftWindow: (...args: unknown[]) => hasUserReadForShiftWindowMock(...args),
+    markAsReadWithResult: (...args: unknown[]) => markAsReadWithResultMock(...args),
     buildReceipt: vi.fn(({ userId, userName, shift, dateKey }) => ({
       userId,
       userName,
@@ -38,7 +47,7 @@ vi.mock('@/services/reminders', () => ({
 }));
 
 vi.mock('@/services/admin/attributionService', () => ({
-  getCurrentShift: () => 'day',
+  getCurrentShift: () => mockShift,
 }));
 
 const reminder = {
@@ -75,8 +84,10 @@ const ReminderProbe: React.FC = () => {
 describe('ReminderCenterProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockShift = 'day';
     window.localStorage.clear();
-    hasUserReadMock.mockResolvedValue(false);
+    hasUserReadForShiftWindowMock.mockResolvedValue(false);
+    markAsReadWithResultMock.mockResolvedValue({ status: 'success' });
     subscribeMock.mockImplementation((callback: (reminders: unknown[]) => void) => {
       callback([reminder]);
       return () => undefined;
@@ -113,24 +124,24 @@ describe('ReminderCenterProvider', () => {
     });
 
     await waitFor(() => {
-      expect(markAsReadMock).toHaveBeenCalledTimes(1);
+      expect(markAsReadWithResultMock).toHaveBeenCalledTimes(1);
       expect(screen.getByTestId('unread-count').textContent).toBe('0');
     });
 
-    expect(markAsReadMock).toHaveBeenCalledWith(
+    expect(markAsReadWithResultMock).toHaveBeenCalledWith(
       'rem-1',
       expect.objectContaining({
         userId: 'user-1',
         shift: 'day',
-        dateKey: '2026-03-15',
+        dateKey: getCurrentDateKey(),
       })
     );
   });
 
   it('vuelve a mostrar el aviso si cambia el turno o la fecha de lectura', async () => {
-    hasUserReadMock.mockImplementation(
+    hasUserReadForShiftWindowMock.mockImplementation(
       async (_reminderId: string, _userId: string, shift: string, dateKey: string) =>
-        shift === 'day' && dateKey === '2026-03-15'
+        shift === 'day' && dateKey === getCurrentDateKey()
     );
 
     render(
@@ -140,8 +151,36 @@ describe('ReminderCenterProvider', () => {
     );
 
     await waitFor(() => {
-      expect(hasUserReadMock).toHaveBeenCalledWith('rem-1', 'user-1', 'day', '2026-03-15');
+      expect(hasUserReadForShiftWindowMock).toHaveBeenCalledWith(
+        'rem-1',
+        'user-1',
+        'day',
+        getCurrentDateKey()
+      );
       expect(screen.getByTestId('unread-count').textContent).toBe('0');
+    });
+  });
+
+  it('no oculta el aviso si falla guardar el receipt de visto', async () => {
+    markAsReadWithResultMock.mockResolvedValue({ status: 'permission_denied', error: new Error() });
+
+    render(
+      <ReminderCenterProvider>
+        <ReminderProbe />
+      </ReminderCenterProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('unread-count').textContent).toBe('1');
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('mark'));
+    });
+
+    await waitFor(() => {
+      expect(markAsReadWithResultMock).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('unread-count').textContent).toBe('1');
     });
   });
 

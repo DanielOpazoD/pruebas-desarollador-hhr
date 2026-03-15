@@ -3,6 +3,8 @@ type ReminderErrorLike = {
   message?: string;
 };
 
+export type ReminderOperationErrorKind = 'permission_denied' | 'unknown';
+
 const normalizeText = (value: unknown): string => String(value || '').toLowerCase();
 
 export const isReminderPermissionDeniedError = (error: unknown): boolean => {
@@ -17,6 +19,9 @@ export const isReminderPermissionDeniedError = (error: unknown): boolean => {
     message.includes('permission denied')
   );
 };
+
+export const resolveReminderOperationErrorKind = (error: unknown): ReminderOperationErrorKind =>
+  isReminderPermissionDeniedError(error) ? 'permission_denied' : 'unknown';
 
 export const resolveReminderAdminErrorMessage = (
   error: unknown,

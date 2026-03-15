@@ -1,14 +1,9 @@
 import React from 'react';
-import { CalendarRange, CheckCircle2, Clock3, Users } from 'lucide-react';
+import { CalendarRange, CheckCircle2, Users } from 'lucide-react';
 import clsx from 'clsx';
 import type { Reminder } from '@/types';
-import {
-  getReminderRoleLabel,
-  REMINDER_PRIORITY_LABELS,
-  REMINDER_SHIFT_OPTIONS,
-  REMINDER_TYPE_LABELS,
-  REMINDER_TYPE_STYLES,
-} from '@/shared/reminders/reminderUiOptions';
+import { formatReminderDateRange } from '@/shared/reminders/reminderPresentation';
+import { getReminderRoleLabel } from '@/shared/reminders/reminderUiOptions';
 
 interface ReminderCardProps {
   reminder: Reminder;
@@ -21,9 +16,6 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({
   unread = false,
   onMarkAsRead,
 }) => {
-  const shiftSummary = reminder.targetShifts
-    .map(shift => REMINDER_SHIFT_OPTIONS.find(option => option.value === shift)?.label ?? shift)
-    .join(' / ');
   const rolesSummary = reminder.targetRoles.map(getReminderRoleLabel).join(', ');
 
   return (
@@ -35,21 +27,6 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            {unread && <span className="h-2 w-2 rounded-full bg-sky-500" />}
-            <span
-              className={clsx(
-                'rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.24em]',
-                REMINDER_TYPE_STYLES[reminder.type]
-              )}
-            >
-              {REMINDER_TYPE_LABELS[reminder.type]}
-            </span>
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-slate-600">
-              Prioridad {REMINDER_PRIORITY_LABELS[reminder.priority] ?? reminder.priority}
-            </span>
-          </div>
-
           <div>
             <h3 className="text-lg font-black tracking-tight text-slate-900">{reminder.title}</h3>
             <p className="mt-2 whitespace-pre-wrap text-[15px] font-medium leading-relaxed text-slate-600">
@@ -81,14 +58,10 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({
         </div>
       )}
 
-      <div className="mt-4 grid gap-3 text-xs font-semibold text-slate-500 md:grid-cols-3">
+      <div className="mt-4 grid gap-3 text-xs font-semibold text-slate-500 md:grid-cols-2">
         <div className="flex items-center gap-2">
           <CalendarRange size={14} />
-          Vigencia {reminder.startDate} a {reminder.endDate}
-        </div>
-        <div className="flex items-center gap-2">
-          <Clock3 size={14} />
-          {shiftSummary}
+          Vigencia {formatReminderDateRange(reminder.startDate, reminder.endDate)}
         </div>
         <div className="flex items-center gap-2">
           <Users size={14} />

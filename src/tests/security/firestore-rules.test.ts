@@ -545,7 +545,20 @@ describeRules('Firestore Security Rules', () => {
       );
     });
 
-    it('allows only admins to read aggregated receipts', async () => {
+    it('allows users to read their own receipt but blocks other users', async () => {
+      await setupDoc(admin(), receiptPath, {
+        userId: 'user_nurse',
+        userName: 'Nurse',
+        readAt: new Date(NOW_MS).toISOString(),
+        shift: 'day',
+        dateKey: CURRENT_RECORD_DATE,
+      });
+
+      await assertSucceeds(nurse().doc(receiptPath).get());
+      await assertFails(doctor().doc(receiptPath).get());
+    });
+
+    it('allows only admins to read aggregated receipts for any user', async () => {
       await setupDoc(admin(), receiptPath, {
         userId: 'user_nurse',
         userName: 'Nurse',
@@ -555,7 +568,6 @@ describeRules('Firestore Security Rules', () => {
       });
 
       await assertSucceeds(admin().doc(receiptPath).get());
-      await assertFails(nurse().doc(receiptPath).get());
     });
   });
 
