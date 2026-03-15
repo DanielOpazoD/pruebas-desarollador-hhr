@@ -25,6 +25,7 @@ import {
   resolveSpecialistCapabilities,
   resolveSpecialistCensusAccessProfile,
 } from '@/shared/access/specialistAccessPolicy';
+import { ReminderModal } from '@/components/reminders/ReminderModal';
 
 interface AppContentProps {
   ui: UseUIStateReturn;
@@ -203,6 +204,7 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
           onClose={ui.settingsModal.close}
           onRunTest={() => ui.setIsTestAgentRunning(true)}
         />
+        <ReminderModal />
 
         {censusEmail.showEmailConfig && (
           <React.Suspense fallback={null}>

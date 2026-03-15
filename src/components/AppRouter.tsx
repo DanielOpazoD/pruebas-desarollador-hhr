@@ -29,6 +29,7 @@ import {
   PatientMasterView,
   DataMaintenanceView,
   RoleManagementView,
+  ReminderAdminView,
 } from '@/views/LazyViews';
 import { useSharedCensusMode } from '@/hooks/useSharedCensusMode';
 import type { CensusAccessProfile } from '@/shared/access/censusAccessProfile';
@@ -47,6 +48,7 @@ export type AppModule =
   | 'DATA_MAINTENANCE'
   | 'DIAGNOSTICS'
   | 'ROLE_MANAGEMENT'
+  | 'REMINDERS'
   | 'ERRORS';
 export type CensusViewMode = 'REGISTER' | 'ANALYTICS';
 
@@ -183,6 +185,11 @@ export const AppRouter: React.FC<AppRouterProps> = ({
             {currentModule === 'ROLE_MANAGEMENT' && (role === 'admin' || role === undefined) && (
               <SectionErrorBoundary sectionName="Gestión de Roles">
                 <RoleManagementView />
+              </SectionErrorBoundary>
+            )}
+            {currentModule === 'REMINDERS' && role === 'admin' && (
+              <SectionErrorBoundary sectionName="Avisos al Personal">
+                <ReminderAdminView />
               </SectionErrorBoundary>
             )}
             {currentModule === 'ERRORS' && role === 'admin' && (

@@ -57,6 +57,8 @@ export const HOSPITAL_COLLECTIONS = {
   PATIENTS: 'patients',
   /** Print template configurations */
   PRINT_TEMPLATES: 'printTemplates',
+  /** Internal staff reminders/announcements */
+  REMINDERS: 'reminders',
 } as const;
 
 // ============================================================================

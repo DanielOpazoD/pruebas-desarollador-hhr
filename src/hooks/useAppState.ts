@@ -29,6 +29,7 @@ const MODULES_FROM_URL: readonly ModuleType[] = [
   'DATA_MAINTENANCE',
   'DIAGNOSTICS',
   'ROLE_MANAGEMENT',
+  'REMINDERS',
   'ERRORS',
 ] as const;
 

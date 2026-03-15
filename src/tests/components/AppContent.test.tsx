@@ -65,6 +65,10 @@ vi.mock('@/views/LazyViews', () => ({
   CensusEmailConfigModal: () => <div data-testid="email-modal">EmailModal</div>,
 }));
 
+vi.mock('@/components/reminders/ReminderModal', () => ({
+  ReminderModal: () => <div data-testid="reminder-modal">ReminderModal</div>,
+}));
+
 vi.mock('@/context/CensusContext', () => ({
   useCensusContext: vi.fn(),
 }));
@@ -167,6 +171,7 @@ describe('AppContent', () => {
     expect(screen.getByTestId('bookmark-bar')).toBeInTheDocument();
     expect(screen.getByTestId('app-router')).toBeInTheDocument();
     expect(screen.getByTestId('storage-badge')).toBeInTheDocument();
+    expect(screen.getByTestId('reminder-modal')).toBeInTheDocument();
   });
 
   it('hides Navbar and DateStrip in signature mode', () => {

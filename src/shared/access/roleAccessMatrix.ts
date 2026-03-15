@@ -39,6 +39,7 @@ const ROLE_ACCESS_MATRIX = {
       'TRANSFER_MANAGEMENT',
       'BACKUP_FILES',
       'ROLE_MANAGEMENT',
+      'REMINDERS',
     ],
     canEdit: [
       'CENSUS',
@@ -54,6 +55,7 @@ const ROLE_ACCESS_MATRIX = {
       'TRANSFER_MANAGEMENT',
       'BACKUP_FILES',
       'ROLE_MANAGEMENT',
+      'REMINDERS',
     ],
     censusAccessProfile: 'default',
     specialistRestrictedMedicalAccess: false,

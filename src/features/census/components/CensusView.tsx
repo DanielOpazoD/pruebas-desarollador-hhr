@@ -5,6 +5,7 @@ import { AnalyticsView } from '@/features/analytics/public';
 import { useCensusMigrationBootstrap } from '@/features/census/hooks/useCensusMigrationBootstrap';
 import { useCensusViewRouteModel } from '@/features/census/hooks/useCensusViewRouteModel';
 import type { CensusAccessProfile } from '@/features/census/types/censusAccessProfile';
+import { ReminderBanner } from '@/components/reminders/ReminderBanner';
 
 const LazyCensusRegisterContent = lazy(() =>
   import('./CensusRegisterContent').then(module => ({
@@ -74,9 +75,12 @@ const CensusViewContent: React.FC<CensusViewProps> = ({
   }
 
   return (
-    <Suspense fallback={<ViewLoader />}>
-      {registerContentProps ? <LazyCensusRegisterContent {...registerContentProps} /> : null}
-    </Suspense>
+    <div className="space-y-4">
+      <ReminderBanner />
+      <Suspense fallback={<ViewLoader />}>
+        {registerContentProps ? <LazyCensusRegisterContent {...registerContentProps} /> : null}
+      </Suspense>
+    </div>
   );
 };
 

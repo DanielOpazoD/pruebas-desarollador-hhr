@@ -12,6 +12,7 @@ import { NavbarMenu } from './NavbarMenu';
 import { NavbarTabs } from './NavbarTabs';
 import { UserMenu } from './UserMenu';
 import { SyncStatusIndicator } from './SyncStatusIndicator';
+import { ReminderBadge } from '@/components/reminders/ReminderBadge';
 
 import { ModuleType } from '@/constants/navigationConfig';
 type ViewMode = 'REGISTER' | 'ANALYTICS';
@@ -78,6 +79,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         return 'bg-slate-900 shadow-slate-900/20';
       case 'ROLE_MANAGEMENT':
         return 'bg-indigo-700 shadow-indigo-700/20';
+      case 'REMINDERS':
+        return 'bg-amber-700 shadow-amber-700/20';
       case 'ERRORS':
         return 'bg-rose-900 shadow-rose-900/20';
       default:
@@ -131,6 +134,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {!isSharedMode && (
               <>
                 <SyncStatusIndicator />
+                <ReminderBadge />
               </>
             )}
 

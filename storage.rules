@@ -13,6 +13,14 @@ service firebase.storage {
       return request.auth.token.email;
     }
 
+    function isBootstrapAdmin() {
+      return hasEmail() && userEmail() in [
+        'daniel.opazo@hospitalhangaroa.cl',
+        'd.opazo.damiani@gmail.com',
+        'd.opazo.damiani@hospitalhangaroa.cl'
+      ];
+    }
+
     function hasClinicalReadRole() {
       return isAuthenticated() && request.auth.token.role in [
         'admin',
@@ -30,6 +38,10 @@ service firebase.storage {
         'nurse_hospital',
         'editor'
       ];
+    }
+
+    function canWriteReminderAssets() {
+      return hasClinicalWriteRole() || isBootstrapAdmin();
     }
 
     function hasSharedCensusStaticAllowlistEmail() {
@@ -86,6 +98,11 @@ service firebase.storage {
     match /cudyr-backup/{allPaths=**} {
       allow read: if canReadClinicalStorage();
       allow write: if hasClinicalWriteRole();
+    }
+
+    match /reminders/{allPaths=**} {
+      allow read: if canReadClinicalStorage();
+      allow write: if canWriteReminderAssets();
     }
     
     // Default: deny all other access

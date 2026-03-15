@@ -91,6 +91,11 @@ export const RoleManagementView = lazy(() =>
     default: module.default,
   }))
 );
+export const ReminderAdminView = lazy(() =>
+  import('@/features/reminders/components/admin/ReminderAdminView').then(module => ({
+    default: module.ReminderAdminView,
+  }))
+);
 
 // WhatsApp module
 export const WhatsAppIntegrationView = lazy(() =>

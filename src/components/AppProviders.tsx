@@ -10,16 +10,17 @@ import { TableConfigProvider } from '@/context/TableConfigContext';
 import { UISettingsProvider } from '@/context/UISettingsContext';
 import { SecurityProvider } from '@/context/SecurityContext';
 import { DailyRecordContextType } from '@/hooks/useDailyRecordTypes';
+import { ReminderCenterProvider } from '@/context/ReminderCenterContext';
 
 interface AppProvidersProps {
-    children: ReactNode;
-    dailyRecordHook: DailyRecordContextType;
+  children: ReactNode;
+  dailyRecordHook: DailyRecordContextType;
 }
 
 /**
  * Wraps children with all necessary context providers.
  * Order matters for provider nesting.
- * 
+ *
  * @example
  * ```tsx
  * <AppProviders dailyRecordHook={dailyRecordHook}>
@@ -28,17 +29,17 @@ interface AppProvidersProps {
  * ```
  */
 export const AppProviders: React.FC<AppProvidersProps> = ({ children, dailyRecordHook }) => {
-    return (
-        <DailyRecordProvider value={dailyRecordHook}>
-            <StaffProvider>
-                <UISettingsProvider>
-                    <SecurityProvider>
-                        <TableConfigProvider>
-                            {children}
-                        </TableConfigProvider>
-                    </SecurityProvider>
-                </UISettingsProvider>
-            </StaffProvider>
-        </DailyRecordProvider>
-    );
+  return (
+    <DailyRecordProvider value={dailyRecordHook}>
+      <StaffProvider>
+        <UISettingsProvider>
+          <SecurityProvider>
+            <TableConfigProvider>
+              <ReminderCenterProvider>{children}</ReminderCenterProvider>
+            </TableConfigProvider>
+          </SecurityProvider>
+        </UISettingsProvider>
+      </StaffProvider>
+    </DailyRecordProvider>
+  );
 };

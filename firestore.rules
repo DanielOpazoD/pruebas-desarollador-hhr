@@ -369,6 +369,25 @@ service cloud.firestore {
         // Allow both Admins and Nurses to update catalogs and settings
         allow write: if canEdit();
       }
+
+      // ----------------------------------------
+      // REMINDERS / STAFF NOTICES
+      // ----------------------------------------
+      match /reminders/{reminderId} {
+        allow read: if canReadClinicalData();
+        allow create, update, delete: if isAdmin();
+
+        match /readReceipts/{userId} {
+          allow read: if isAdmin();
+          allow create, update: if isAuthenticated() &&
+                                request.auth.uid == userId &&
+                                request.resource.data.userId == userId &&
+                                request.resource.data.userName is string &&
+                                request.resource.data.readAt is string &&
+                                request.resource.data.shift in ['day', 'night'];
+          allow delete: if isAdmin();
+        }
+      }
       
       // ----------------------------------------
       // EXPORT PASSWORDS
