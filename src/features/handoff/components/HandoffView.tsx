@@ -2,10 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useDailyRecordData } from '@/context/DailyRecordContext';
 import { useDailyRecordHandoffActions } from '@/context/useDailyRecordScopedActions';
 import { useStaffContext } from '@/context/StaffContext';
-import { MessageSquare, Stethoscope, Activity } from 'lucide-react';
+import { MessageSquare, Stethoscope } from 'lucide-react';
 import { HandoffHeader } from './HandoffHeader';
 import { HandoffChecklistSection } from './HandoffChecklistSection';
 import { HandoffCudyrPrint } from './HandoffCudyrPrint';
+import { HandoffNightCudyrActionButton } from './HandoffNightCudyrActionButton';
 import { HandoffPrintHeader } from './HandoffPrintHeader';
 import { HandoffMedicalContent } from './HandoffMedicalContent';
 import { HandoffNursingContent } from './HandoffNursingContent';
@@ -45,14 +46,20 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
   ui: propUi,
   medicalScope,
 }) => {
-  const initialMedicalSpecialtyFromUrl = React.useMemo(() => {
-    if (typeof window === 'undefined') return 'all' as Specialty | 'all';
-    return resolveInitialMedicalSpecialtyFromSearch(window.location.search);
-  }, []);
-  const initialMedicalScopeFromUrl = React.useMemo(() => {
-    if (typeof window === 'undefined') return 'all' as MedicalHandoffScope;
-    return resolveInitialMedicalScopeFromSearch(window.location.search);
-  }, []);
+  const initialMedicalSpecialtyFromUrl = React.useMemo(
+    () =>
+      typeof window === 'undefined'
+        ? ('all' as Specialty | 'all')
+        : resolveInitialMedicalSpecialtyFromSearch(window.location.search),
+    []
+  );
+  const initialMedicalScopeFromUrl = React.useMemo(
+    () =>
+      typeof window === 'undefined'
+        ? ('all' as MedicalHandoffScope)
+        : resolveInitialMedicalScopeFromSearch(window.location.search),
+    []
+  );
   const effectiveMedicalScope = medicalScope ?? initialMedicalScopeFromUrl;
   const { record } = useDailyRecordData();
   const {
@@ -246,9 +253,7 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
     ]
   );
 
-  const handleOpenCudyr = () => {
-    if (ui) ui.setCurrentModule('CUDYR');
-  };
+  const handleOpenCudyr = () => ui?.setCurrentModule('CUDYR');
   const Icon = isMedical ? Stethoscope : MessageSquare;
   const tableHeaderClass = resolveHandoffTableHeaderClass({ isMedical, selectedShift });
 
@@ -286,13 +291,7 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
         extraAction={
           medicalCapabilities.canOpenNightCudyr &&
           shouldShowNightCudyrActions({ isMedical, selectedShift }) ? (
-            <button
-              onClick={handleOpenCudyr}
-              className="px-3 py-1.5 bg-slate-800 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-black transition-all shadow-lg flex items-center gap-2"
-            >
-              <Activity size={14} />
-              CUDYR
-            </button>
+            <HandoffNightCudyrActionButton onClick={handleOpenCudyr} />
           ) : undefined
         }
       />
@@ -307,7 +306,6 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
         onUpdateStaff={updateHandoffStaff}
         onUpdateChecklist={updateHandoffChecklist}
       />
-
       {isMedical ? (
         <HandoffMedicalContent
           record={record}

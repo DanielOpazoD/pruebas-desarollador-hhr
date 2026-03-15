@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import {
-  onAuthChange,
+  onAuthSessionStateChange,
   signOut,
   hasActiveFirebaseSession,
-  handleSignInRedirectResult,
 } from '@/services/auth/authService';
-import { AuthUser, UserRole } from '@/types';
-export type { UserRole };
+import { executeRedirectAuthResolution } from '@/application/auth';
+import { AuthSessionState, AuthUser, UserRole } from '@/types';
+export type { AuthSessionState, UserRole };
 import { canEditAnyModule } from '@/utils/permissions';
 import {
   createHandleLogout,
@@ -17,6 +17,12 @@ import {
   useResolvedAuthBootstrap,
 } from '@/hooks/useAuthStateSupport';
 import { hasRecentManualLogout } from '@/services/auth/authLogoutState';
+import {
+  createAuthenticatingAuthSessionState,
+  createUnauthenticatedAuthSessionState,
+  getAuthSessionStateUser,
+  toResolvedAuthSessionState,
+} from '@/services/auth/authSessionState';
 
 // UserRole and AuthUser are now imported from @/types
 
@@ -25,6 +31,8 @@ import { hasRecentManualLogout } from '@/services/auth/authLogoutState';
  * Provides user authentication state, role information, and auth actions.
  */
 export interface UseAuthStateReturn {
+  /** Canonical authentication session state */
+  sessionState: AuthSessionState;
   /** Current authenticated user or null if not logged in */
   user: AuthUser | null;
   /** True while authentication state is being determined */
@@ -56,20 +64,29 @@ export interface UseAuthStateReturn {
  */
 export const useAuthState = (): UseAuthStateReturn => {
   const [e2eBootstrapUser] = useState<AuthUser | null>(() => getE2EBootstrapUser());
-  const [user, setUser] = useState<AuthUser | null>(e2eBootstrapUser);
+  const [sessionState, setSessionState] = useState<AuthSessionState>(() => {
+    if (e2eBootstrapUser) {
+      return toResolvedAuthSessionState(e2eBootstrapUser);
+    }
+
+    return hasRecentManualLogout() && !hasActiveFirebaseSession()
+      ? createUnauthenticatedAuthSessionState()
+      : createAuthenticatingAuthSessionState();
+  });
+  const user = getAuthSessionStateUser(sessionState);
   const [authLoading, setAuthLoading] = useState(
     !e2eBootstrapUser && !(hasRecentManualLogout() && !hasActiveFirebaseSession())
   );
   const isOnline = useOnlineStatus();
-  const handleLogout = useMemo(() => createHandleLogout(user, signOut, setUser), [user]);
+  const handleLogout = useMemo(() => createHandleLogout(user, signOut, setSessionState), [user]);
   const isFirebaseConnected = useFirebaseConnectionStatus(user, isOnline, hasActiveFirebaseSession);
 
   useInactivityLogout(user, handleLogout);
   useResolvedAuthBootstrap({
     e2eBootstrapUser,
-    handleSignInRedirectResult,
-    onAuthChange,
-    setUser,
+    resolveRedirectAuthSessionOutcome: executeRedirectAuthResolution,
+    onAuthSessionStateChange,
+    setSessionState,
     setAuthLoading,
   });
 
@@ -79,6 +96,7 @@ export const useAuthState = (): UseAuthStateReturn => {
   const canEdit = isEditor;
 
   return {
+    sessionState,
     user,
     authLoading,
     isFirebaseConnected,

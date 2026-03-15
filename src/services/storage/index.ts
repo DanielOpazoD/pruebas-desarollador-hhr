@@ -1,5 +1,6 @@
 // Storage compatibility barrel.
 // Prefer direct module imports for new code. This file only exposes a curated stable surface.
+// Retirement is tracked in `reports/compatibility-governance.md`.
 export {
   deleteRecordFromFirestore,
   getAllRecordsFromFirestore,

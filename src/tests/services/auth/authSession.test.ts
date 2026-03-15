@@ -44,7 +44,7 @@ vi.mock('@/services/auth/authAccessResolution', () => ({
   resolveFirebaseUserRole: (user: unknown) => mockResolveFirebaseUserRole(user),
 }));
 
-import { onAuthChange } from '@/services/auth/authSession';
+import { onAuthChange, onAuthSessionStateChange } from '@/services/auth/authSession';
 
 describe('authSession', () => {
   beforeEach(() => {
@@ -79,6 +79,32 @@ describe('authSession', () => {
     );
   });
 
+  it('emits explicit shared-census session state during auth state rehydration', async () => {
+    const callback = vi.fn();
+    mockIsSharedCensusMode.mockReturnValue(true);
+    mockCheckSharedCensusAccess.mockResolvedValue({ authorized: true });
+
+    onAuthSessionStateChange(callback);
+
+    await authStateCallback?.({
+      uid: 'shared-1',
+      email: 'shared@hospital.cl',
+      displayName: 'Shared User',
+      photoURL: null,
+      isAnonymous: false,
+    });
+
+    expect(callback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'shared_census',
+        user: expect.objectContaining({
+          uid: 'shared-1',
+          role: 'viewer_census',
+        }),
+      })
+    );
+  });
+
   it('emits null for a removed user instead of exposing an app session', async () => {
     const callback = vi.fn();
     mockResolveFirebaseUserRole.mockResolvedValue(null);
@@ -96,7 +122,7 @@ describe('authSession', () => {
     expect(callback).toHaveBeenCalledWith(null);
   });
 
-  it('emits null for anonymous users without trying to build an app session', async () => {
+  it('maps anonymous users to the compatibility user contract', async () => {
     const callback = vi.fn();
     onAuthChange(callback);
 
@@ -109,6 +135,36 @@ describe('authSession', () => {
     });
 
     expect(mockResolveFirebaseUserRole).not.toHaveBeenCalled();
-    expect(callback).toHaveBeenCalledWith(null);
+    expect(callback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uid: 'anon-1',
+        displayName: 'Anonymous Doctor',
+        role: 'viewer',
+      })
+    );
+  });
+
+  it('emits anonymous signature session state explicitly', async () => {
+    const callback = vi.fn();
+    onAuthSessionStateChange(callback);
+
+    await authStateCallback?.({
+      uid: 'anon-1',
+      email: null,
+      displayName: null,
+      photoURL: null,
+      isAnonymous: true,
+    });
+
+    expect(mockResolveFirebaseUserRole).not.toHaveBeenCalled();
+    expect(callback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'anonymous_signature',
+        user: expect.objectContaining({
+          uid: 'anon-1',
+          role: 'viewer',
+        }),
+      })
+    );
   });
 });

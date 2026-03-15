@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { signInWithGoogle } from '@/services/auth/authService';
 import { isPopupRecoverableAuthError, resolveAuthErrorCode } from '@/services/auth/authErrorPolicy';
 import { AUTH_UI_COPY } from '@/services/auth/authUiCopy';
+import { executeGoogleSignIn } from '@/application/auth';
 
 type BackgroundMode = 'auto' | 'day' | 'night';
 
@@ -27,8 +27,33 @@ export const useLoginPageController = (onLoginSuccess: () => void): LoginPageCon
     setIsGoogleLoading(true);
 
     try {
-      await signInWithGoogle();
-      onLoginSuccess();
+      const outcome = await executeGoogleSignIn();
+      if (outcome.status === 'success') {
+        onLoginSuccess();
+        return;
+      }
+
+      const issue = outcome.issues[0];
+      const errorLike = {
+        code: issue?.code || outcome.reason || 'auth/google-signin-failed',
+        message:
+          issue?.userSafeMessage ||
+          outcome.userSafeMessage ||
+          issue?.message ||
+          'Error al iniciar sesión con Google',
+      };
+      const isPopupIssue = isPopupRecoverableAuthError(errorLike);
+      const resolvedErrorCode = resolveAuthErrorCode(errorLike);
+
+      if (isPopupIssue) {
+        setErrorCode(resolvedErrorCode || 'auth/popup-recoverable');
+        setError(AUTH_UI_COPY.blockedPopupStayOnPage);
+      } else {
+        console.error('[LoginPage] Google sign-in failed', outcome);
+        setErrorCode(resolvedErrorCode || 'auth/google-signin-failed');
+        setError(errorLike.message);
+      }
+      return;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       const isPopupIssue = isPopupRecoverableAuthError(err);

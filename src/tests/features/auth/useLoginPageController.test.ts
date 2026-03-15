@@ -2,13 +2,18 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AUTH_UI_COPY } from '@/services/auth/authUiCopy';
+import {
+  createApplicationFailed,
+  createApplicationSuccess,
+} from '@/application/shared/applicationOutcome';
+import type { AuthSessionState } from '@/types';
 
-const mockSignInWithGoogle = vi.fn();
+const mockExecuteGoogleSignIn = vi.fn();
 const mockIsPopupRecoverableAuthError = vi.fn();
 const mockResolveAuthErrorCode = vi.fn();
 
-vi.mock('@/services/auth/authService', () => ({
-  signInWithGoogle: (...args: unknown[]) => mockSignInWithGoogle(...args),
+vi.mock('@/application/auth', () => ({
+  executeGoogleSignIn: (...args: unknown[]) => mockExecuteGoogleSignIn(...args),
 }));
 
 vi.mock('@/services/auth/authErrorPolicy', () => ({
@@ -23,7 +28,17 @@ describe('useLoginPageController', () => {
     vi.clearAllMocks();
     mockIsPopupRecoverableAuthError.mockReturnValue(false);
     mockResolveAuthErrorCode.mockReturnValue(null);
-    mockSignInWithGoogle.mockResolvedValue(undefined);
+    mockExecuteGoogleSignIn.mockResolvedValue(
+      createApplicationSuccess<AuthSessionState>({
+        status: 'authorized',
+        user: {
+          uid: 'google-1',
+          email: 'test@hospital.cl',
+          displayName: 'Google User',
+          role: 'admin',
+        },
+      })
+    );
   });
 
   it('calls onLoginSuccess when Google login succeeds', async () => {
@@ -34,15 +49,28 @@ describe('useLoginPageController', () => {
       await result.current.handleGoogleSignIn();
     });
 
-    expect(mockSignInWithGoogle).toHaveBeenCalledTimes(1);
+    expect(mockExecuteGoogleSignIn).toHaveBeenCalledTimes(1);
     expect(onLoginSuccess).toHaveBeenCalledTimes(1);
     expect(result.current.error).toBeNull();
     expect(result.current.isAnyLoading).toBe(false);
   });
 
   it('keeps the user on the same login screen when the popup has a recoverable issue', async () => {
-    mockSignInWithGoogle.mockRejectedValueOnce(new Error('popup blocked'));
+    mockExecuteGoogleSignIn.mockResolvedValueOnce(
+      createApplicationFailed<AuthSessionState>(
+        {
+          status: 'auth_error',
+          user: null,
+          error: {
+            code: 'auth/popup-blocked',
+            message: 'popup blocked',
+          },
+        },
+        [{ kind: 'unknown', code: 'auth/popup-blocked', message: 'popup blocked' }]
+      )
+    );
     mockIsPopupRecoverableAuthError.mockReturnValueOnce(true);
+    mockResolveAuthErrorCode.mockReturnValueOnce('auth/popup-blocked');
 
     const { result } = renderHook(() => useLoginPageController(vi.fn()));
 
@@ -50,14 +78,26 @@ describe('useLoginPageController', () => {
       await result.current.handleGoogleSignIn();
     });
 
-    expect(result.current.errorCode).toBe('auth/popup-recoverable');
+    expect(result.current.errorCode).toBe('auth/popup-blocked');
     expect(result.current.error).toBe(AUTH_UI_COPY.blockedPopupStayOnPage);
     expect(result.current.isGoogleLoading).toBe(false);
     expect(result.current.isAnyLoading).toBe(false);
   });
 
   it('surfaces non-recoverable popup errors without switching flows', async () => {
-    mockSignInWithGoogle.mockRejectedValueOnce(new Error('google auth down'));
+    mockExecuteGoogleSignIn.mockResolvedValueOnce(
+      createApplicationFailed<AuthSessionState>(
+        {
+          status: 'auth_error',
+          user: null,
+          error: {
+            code: 'auth/google-signin-failed',
+            message: 'google auth down',
+          },
+        },
+        [{ kind: 'unknown', code: 'auth/google-signin-failed', message: 'google auth down' }]
+      )
+    );
     mockResolveAuthErrorCode.mockReturnValueOnce('auth/google-signin-failed');
 
     const { result } = renderHook(() => useLoginPageController(vi.fn()));

@@ -23,27 +23,67 @@ describe('dailyRecordRefreshOutcomeController', () => {
 
   it('maps partial to warning', () => {
     const notice = presentDailyRecordRefreshOutcome(
-      createApplicationPartial(emptySyncOutcome, [{ kind: 'unknown', message: 'partial warning' }])
+      createApplicationPartial(
+        {
+          ...emptySyncOutcome,
+          conflict: {
+            kind: 'missing_remote_record',
+            severity: 'warning',
+            retryStrategy: 'manual_retry',
+            recommendedAction: 'review_remote_record',
+            runbook: 'docs/RUNBOOK_SYNC_RESILIENCE.md',
+          },
+        },
+        [{ kind: 'unknown', message: 'partial warning', userSafeMessage: 'partial warning' }],
+        { userSafeMessage: 'partial warning' }
+      )
     );
     expect(notice.channel).toBe('warning');
-    expect(notice.title).toBe('Sincronización con observaciones');
+    expect(notice.title).toBe('Registro remoto no disponible');
+    expect(notice.message).toContain('Revisa el registro remoto');
   });
 
   it('maps degraded to warning', () => {
     const notice = presentDailyRecordRefreshOutcome(
-      createApplicationDegraded(emptySyncOutcome, [
-        { kind: 'unknown', message: 'degraded warning' },
-      ])
+      createApplicationDegraded(
+        {
+          ...emptySyncOutcome,
+          conflict: {
+            kind: 'remote_blocked',
+            severity: 'warning',
+            retryStrategy: 'manual_review',
+            recommendedAction: 'continue_with_local_copy',
+            runbook: 'docs/RUNBOOK_SYNC_RESILIENCE.md',
+          },
+        },
+        [{ kind: 'unknown', message: 'degraded warning', userSafeMessage: 'degraded warning' }],
+        { userSafeMessage: 'degraded warning' }
+      )
     );
     expect(notice.channel).toBe('warning');
-    expect(notice.title).toBe('Sincronización con observaciones');
+    expect(notice.title).toBe('Sincronización remota bloqueada');
+    expect(notice.message).toContain('copia local');
   });
 
   it('maps failure to error', () => {
     const notice = presentDailyRecordRefreshOutcome(
-      createApplicationFailed(emptySyncOutcome, [{ kind: 'unknown', message: 'failed' }])
+      createApplicationFailed(
+        {
+          ...emptySyncOutcome,
+          conflict: {
+            kind: 'sync_failed',
+            severity: 'error',
+            retryStrategy: 'automatic_retry',
+            recommendedAction: 'retry_sync',
+            runbook: 'docs/RUNBOOK_SYNC_RESILIENCE.md',
+          },
+        },
+        [{ kind: 'unknown', message: 'failed', userSafeMessage: 'failed' }],
+        { userSafeMessage: 'failed' }
+      )
     );
     expect(notice.channel).toBe('error');
     expect(notice.title).toBe('Sincronización fallida');
+    expect(notice.message).toContain('Intenta sincronizar nuevamente');
   });
 });

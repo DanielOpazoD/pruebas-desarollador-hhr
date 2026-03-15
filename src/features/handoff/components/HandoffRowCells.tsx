@@ -16,7 +16,8 @@ import {
   resolveMedicalObservationEntries,
   shouldRenderClinicalEventsPanel,
 } from '@/features/handoff/controllers';
-import { MedicalBadge, MedicalBadgeVariant } from '@/components/ui/base/MedicalBadge';
+import { MedicalBadge } from '@/components/ui/base/MedicalBadge';
+import type { MedicalBadgeVariant } from '@/shared/ui/medicalBadgeContracts';
 
 interface HandoffBedCellProps {
   bedName: string;

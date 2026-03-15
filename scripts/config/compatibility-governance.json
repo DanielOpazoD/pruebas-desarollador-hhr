@@ -1,0 +1,50 @@
+{
+  "policyVersion": "2026-03-v1",
+  "entries": [
+    {
+      "path": "src/services/auth/authService.ts",
+      "owner": "auth",
+      "kind": "compatibility_facade",
+      "reason": "Mantener una superficie estable mientras el consumo migra a session-state y modulos auth internos.",
+      "remainingConsumers": "app-level auth imports y tests legacy",
+      "retirementCriteria": "Consumers migrados a entrypoints auth especificos y session-state canónico.",
+      "target": "2026-Q2"
+    },
+    {
+      "path": "src/services/auth/index.ts",
+      "owner": "auth",
+      "kind": "compatibility_barrel",
+      "reason": "Evitar imports internos profundos desde consumidores externos al contexto auth.",
+      "remainingConsumers": "consumidores auth de alto nivel",
+      "retirementCriteria": "Entry points publicos auth estabilizados y uso directo del barrel minimizado.",
+      "target": "2026-Q2"
+    },
+    {
+      "path": "src/services/index.ts",
+      "owner": "platform",
+      "kind": "compatibility_barrel",
+      "reason": "Sostener imports legacy mientras el repo converge a imports por contexto.",
+      "remainingConsumers": "imports legacy transversales",
+      "retirementCriteria": "Imports profundos legacy removidos y surface del barrel reducida al minimo.",
+      "target": "2026-Q3"
+    },
+    {
+      "path": "src/services/dataService.ts",
+      "owner": "platform",
+      "kind": "legacy_bridge",
+      "reason": "Conservar compatibilidad temporal con utilidades historicas consolidadas.",
+      "remainingConsumers": "call sites historicos de datos locales/repositorio",
+      "retirementCriteria": "Call sites migrados a servicios dueños y sin nuevas dependencias.",
+      "target": "2026-Q3"
+    },
+    {
+      "path": "src/services/storage/index.ts",
+      "owner": "storage",
+      "kind": "compatibility_barrel",
+      "reason": "Exponer una surface curada mientras persisten dependencias legacy de storage.",
+      "remainingConsumers": "call sites legacy de storage e indexedDB",
+      "retirementCriteria": "Consumidores movidos a modulos storage dueños o adapters especificos.",
+      "target": "2026-Q3"
+    }
+  ]
+}

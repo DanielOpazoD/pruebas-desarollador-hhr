@@ -35,3 +35,41 @@ export interface AuthUser {
   /** Optional specialty claims for scoping medical handoff tabs */
   medicalSpecialties?: MedicalSpecialty[];
 }
+
+export type AuthSessionStatus =
+  | 'unauthenticated'
+  | 'authenticating'
+  | 'authorized'
+  | 'anonymous_signature'
+  | 'shared_census'
+  | 'unauthorized'
+  | 'auth_error';
+
+export type AuthSessionSeverity = 'info' | 'warning' | 'error';
+
+export interface AuthSessionError {
+  message: string;
+  code?: string;
+  userSafeMessage?: string;
+  retryable?: boolean;
+  severity?: AuthSessionSeverity;
+  technicalContext?: Record<string, unknown>;
+  telemetryTags?: string[];
+}
+
+export type AuthSessionState =
+  | {
+      status: 'unauthenticated' | 'authenticating' | 'unauthorized';
+      user: null;
+      reason?: string;
+      technicalContext?: Record<string, unknown>;
+    }
+  | {
+      status: 'authorized' | 'anonymous_signature' | 'shared_census';
+      user: AuthUser;
+    }
+  | {
+      status: 'auth_error';
+      user: null;
+      error: AuthSessionError;
+    };

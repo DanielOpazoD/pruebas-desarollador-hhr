@@ -82,4 +82,11 @@ export {
 } from './whatsapp';
 
 // Auth types
-export { type AuthUser, type UserRole } from './auth';
+export {
+  type AuthSessionError,
+  type AuthSessionState,
+  type AuthSessionSeverity,
+  type AuthSessionStatus,
+  type AuthUser,
+  type UserRole,
+} from './auth';

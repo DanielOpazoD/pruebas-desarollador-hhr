@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { resolveAuthSessionUser, toAnonymousAuthUser } from '@/services/auth/authSessionController';
+import {
+  resolveAuthSessionState,
+  resolveAuthSessionUser,
+  toAnonymousAuthUser,
+} from '@/services/auth/authSessionController';
 
 describe('authSessionController', () => {
   it('maps anonymous users to viewer auth users', () => {
@@ -44,6 +48,32 @@ describe('authSessionController', () => {
     expect(resolveFirebaseUserRole).not.toHaveBeenCalled();
   });
 
+  it('returns explicit session state for anonymous signature users', async () => {
+    const result = await resolveAuthSessionState(
+      {
+        uid: 'anon-signature',
+        email: null,
+        isAnonymous: true,
+      } as never,
+      {
+        isSharedCensusMode: () => false,
+        checkSharedCensusAccess: vi.fn(),
+        signOutUnauthorizedUser: vi.fn(),
+        resolveFirebaseUserRole: vi.fn(),
+      }
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        status: 'anonymous_signature',
+        user: expect.objectContaining({
+          uid: 'anon-signature',
+          role: 'viewer',
+        }),
+      })
+    );
+  });
+
   it('signs out unauthorized shared-census users', async () => {
     const signOutUnauthorizedUser = vi.fn().mockResolvedValue(undefined);
 
@@ -83,6 +113,33 @@ describe('authSessionController', () => {
     );
 
     expect(result).toBeNull();
+    expect(signOutUnauthorizedUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns unauthorized session state for removed users', async () => {
+    const signOutUnauthorizedUser = vi.fn().mockResolvedValue(undefined);
+
+    const result = await resolveAuthSessionState(
+      {
+        uid: 'user-unauthorized',
+        email: 'removed@hospital.cl',
+        isAnonymous: false,
+      } as never,
+      {
+        isSharedCensusMode: () => false,
+        checkSharedCensusAccess: vi.fn(),
+        signOutUnauthorizedUser,
+        resolveFirebaseUserRole: vi.fn().mockResolvedValue(null),
+      }
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        status: 'unauthorized',
+        user: null,
+        reason: 'role_not_resolved',
+      })
+    );
     expect(signOutUnauthorizedUser).toHaveBeenCalledTimes(1);
   });
 

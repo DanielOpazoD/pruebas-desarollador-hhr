@@ -466,6 +466,11 @@ vi.mock('../hooks/useStabilityRules', () => ({
 
 // Mock useAuthState hook
 const mockAuthState = {
+  sessionState: {
+    status: 'authorized',
+    user: mockUser,
+  },
+  user: mockUser,
   role: 'admin' as const,
   isEditor: true,
   isViewer: false,
@@ -486,6 +491,10 @@ const mockAuthService = {
   signIn: vi.fn(),
   signInWithGoogle: vi.fn(),
   signOut: vi.fn(),
+  onAuthSessionStateChange: vi.fn(cb => {
+    cb({ status: 'unauthenticated', user: null });
+    return () => {};
+  }),
   onAuthChange: vi.fn(cb => {
     cb(null);
     return () => {};
@@ -500,6 +509,17 @@ const mockAuthFactory = () => mockAuthService;
 
 vi.mock('@/services/auth/authService', () => mockAuthFactory());
 vi.mock('../services/auth/authService', () => mockAuthFactory());
+
+vi.mock('@/application/auth', () => ({
+  executeGoogleSignIn: vi.fn(),
+  executeCredentialSignIn: vi.fn(),
+  executeRedirectAuthResolution: vi.fn().mockResolvedValue({
+    status: 'success',
+    data: null,
+    issues: [],
+  }),
+  executeCurrentAuthSessionState: vi.fn(),
+}));
 
 // Mock AuthContext and useAuth
 const mockAuthContextValue = {

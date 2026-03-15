@@ -1,6 +1,6 @@
 import { getRedirectResult, signInWithRedirect } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
-import { AuthUser } from '@/types';
+import { AuthSessionState } from '@/types';
 import { googleProvider } from '@/services/auth/authShared';
 import {
   consumeE2ERedirectPendingUser,
@@ -15,6 +15,10 @@ import { getAuthRedirectRuntimeSupport } from '@/services/auth/authRedirectRunti
 import { AUTH_UI_COPY } from '@/services/auth/authUiCopy';
 import { createOperationalError } from '@/services/observability/operationalError';
 import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
+import {
+  createAuthErrorSessionState,
+  toResolvedAuthSessionState,
+} from '@/services/auth/authSessionState';
 
 const runE2ERedirectMode = async (mode: 'success' | 'error' | 'timeout'): Promise<void> => {
   if (mode === 'error') {
@@ -89,24 +93,36 @@ export const signInWithGoogleRedirect = async (): Promise<void> => {
   }
 };
 
-export const handleSignInRedirectResult = async (): Promise<AuthUser | null> => {
+export const handleSignInRedirectResult = async (): Promise<AuthSessionState | null> => {
   try {
     const e2eRedirectUser = consumeE2ERedirectPendingUser();
     if (e2eRedirectUser) {
-      return e2eRedirectUser;
+      return toResolvedAuthSessionState(e2eRedirectUser);
     }
 
     const result = await getRedirectResult(auth);
     if (!result) return null;
-    return await authorizeFirebaseUser(result.user);
+    return toResolvedAuthSessionState(await authorizeFirebaseUser(result.user));
   } catch (error) {
-    recordOperationalErrorTelemetry('auth', 'handle_sign_in_redirect_result', error, {
-      code: 'auth_redirect_result_failed',
-      message: 'No se pudo completar el retorno del acceso con Google.',
+    const operationalError = recordOperationalErrorTelemetry(
+      'auth',
+      'handle_sign_in_redirect_result',
+      error,
+      {
+        code: 'auth_redirect_result_failed',
+        message: 'No se pudo completar el retorno del acceso con Google.',
+        severity: 'warning',
+        userSafeMessage: 'No se pudo completar el retorno del acceso con Google.',
+      }
+    );
+    return createAuthErrorSessionState({
+      code: operationalError.code,
+      message: operationalError.message,
+      userSafeMessage: operationalError.userSafeMessage,
       severity: 'warning',
-      userSafeMessage: 'No se pudo completar el retorno del acceso con Google.',
+      technicalContext: operationalError.context,
+      telemetryTags: ['auth', 'redirect'],
     });
-    return null;
   } finally {
     clearAuthBootstrapPending();
   }

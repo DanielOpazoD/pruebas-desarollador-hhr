@@ -38,6 +38,14 @@ describe('syncDailyRecordUseCase', () => {
 
     expect(outcome.status).toBe('degraded');
     expect(outcome.data.degradationReason).toBe('remote_blocked');
+    expect(outcome.data.conflict).toEqual(
+      expect.objectContaining({
+        kind: 'remote_blocked',
+        retryStrategy: 'manual_review',
+      })
+    );
+    expect(outcome.reason).toBe('remote_blocked');
+    expect(outcome.retryable).toBe(true);
   });
 
   it('returns partial for missing remote data', async () => {
@@ -56,5 +64,13 @@ describe('syncDailyRecordUseCase', () => {
 
     expect(outcome.status).toBe('partial');
     expect(outcome.data.degradationReason).toBe('missing_remote_record');
+    expect(outcome.data.conflict).toEqual(
+      expect.objectContaining({
+        kind: 'missing_remote_record',
+        recommendedAction: 'review_remote_record',
+      })
+    );
+    expect(outcome.reason).toBe('missing_remote_record');
+    expect(outcome.userSafeMessage).toContain('registro remoto');
   });
 });

@@ -2,7 +2,7 @@ import {
   getDisplayMedicalHandoffEntries,
   getPatientMedicalHandoffEntries,
 } from '@/features/handoff/controllers';
-import type { MedicalBadgeVariant } from '@/components/ui/base/MedicalBadge';
+import type { MedicalBadgeVariant } from '@/shared/ui/medicalBadgeContracts';
 import type { PatientData } from '@/types';
 import { PatientStatus } from '@/types';
 

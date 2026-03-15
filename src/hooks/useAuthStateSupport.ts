@@ -1,5 +1,6 @@
+import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 import { useEffect, useState } from 'react';
-import { AuthUser } from '@/types';
+import { AuthSessionState, AuthUser } from '@/types';
 import { safeJsonParse } from '@/utils/jsonUtils';
 import { ACTIVITY_EVENTS, SESSION_TIMEOUT_MS } from '@/constants/security';
 import { defaultAuditPort } from '@/application/ports/auditPort';
@@ -13,6 +14,11 @@ import {
   hasRecentManualLogout,
   markRecentManualLogout,
 } from '@/services/auth/authLogoutState';
+import {
+  createUnauthenticatedAuthSessionState,
+  isAuthenticatedAuthSessionState,
+  toResolvedAuthSessionState,
+} from '@/services/auth/authSessionState';
 import { logger } from '@/services/utils/loggerService';
 
 const authStateLogger = logger.child('useAuthState');
@@ -75,7 +81,7 @@ export const createHandleLogout =
   (
     user: AuthUser | null,
     signOut: () => Promise<void>,
-    setUser: (user: AuthUser | null) => void
+    setSessionState: (sessionState: AuthSessionState) => void
   ): ((reason?: 'manual' | 'automatic') => Promise<void>) =>
   async (reason: 'manual' | 'automatic' = 'manual') => {
     if (user?.email) {
@@ -98,7 +104,7 @@ export const createHandleLogout =
       authStateLogger.warn('Firebase signOut failed (probably offline)', error);
     }
 
-    setUser(null);
+    setSessionState(createUnauthenticatedAuthSessionState());
   };
 
 export const useInactivityLogout = (
@@ -139,22 +145,34 @@ export const getAuthBootstrapTimeoutMs = (): number => {
 };
 
 export const subscribeToResolvedAuthState = async ({
-  handleSignInRedirectResult,
-  onAuthChange,
-  setUser,
+  resolveRedirectAuthSessionOutcome,
+  onAuthSessionStateChange,
+  setSessionState,
   setAuthLoading,
 }: {
-  handleSignInRedirectResult: () => Promise<AuthUser | null>;
-  onAuthChange: (callback: (user: AuthUser | null) => void | Promise<void>) => () => void;
-  setUser: (user: AuthUser | null) => void;
+  resolveRedirectAuthSessionOutcome: () => Promise<ApplicationOutcome<AuthSessionState | null>>;
+  onAuthSessionStateChange: (
+    callback: (sessionState: AuthSessionState) => void | Promise<void>
+  ) => () => void;
+  setSessionState: (sessionState: AuthSessionState) => void;
   setAuthLoading: (value: boolean) => void;
 }): Promise<() => void> => {
   try {
-    const redirectUser = await handleSignInRedirectResult();
-    if (redirectUser) {
+    const redirectOutcome = await resolveRedirectAuthSessionOutcome();
+    const redirectSessionState = redirectOutcome.data;
+    if (redirectSessionState) {
       restoreAuthBootstrapReturnTo();
       clearRecentManualLogout();
-      setUser(redirectUser);
+      if (
+        isAuthenticatedAuthSessionState(redirectSessionState) &&
+        redirectSessionState.user.email &&
+        typeof sessionStorage !== 'undefined' &&
+        !sessionStorage.getItem('hhr_logged_this_session')
+      ) {
+        void defaultAuditPort.logUserLogin(redirectSessionState.user.email);
+        sessionStorage.setItem('hhr_logged_this_session', 'true');
+      }
+      setSessionState(redirectSessionState);
       setAuthLoading(false);
       clearAuthBootstrapPending();
     }
@@ -162,33 +180,33 @@ export const subscribeToResolvedAuthState = async ({
     authStateLogger.warn('Redirect result check error', error);
   }
 
-  return onAuthChange(async authUser => {
-    if (authUser) {
+  return onAuthSessionStateChange(async sessionState => {
+    if (isAuthenticatedAuthSessionState(sessionState)) {
       if (isAuthBootstrapPending()) {
         restoreAuthBootstrapReturnTo();
       }
       clearRecentManualLogout();
       if (
-        authUser.email &&
+        sessionState.user.email &&
         typeof sessionStorage !== 'undefined' &&
         !sessionStorage.getItem('hhr_logged_this_session')
       ) {
-        void defaultAuditPort.logUserLogin(authUser.email);
+        void defaultAuditPort.logUserLogin(sessionState.user.email);
         sessionStorage.setItem('hhr_logged_this_session', 'true');
       }
-      setUser(authUser);
+      setSessionState(sessionState);
     } else {
       if (hasRecentManualLogout()) {
         clearRecentManualLogout();
         clearAuthBootstrapPending();
-        setUser(null);
+        setSessionState(createUnauthenticatedAuthSessionState());
         setAuthLoading(false);
         return;
       }
-      if (isAuthBootstrapPending()) {
+      if (isAuthBootstrapPending() && sessionState.status === 'unauthenticated') {
         return;
       }
-      setUser(null);
+      setSessionState(sessionState);
     }
 
     clearAuthBootstrapPending();
@@ -198,19 +216,25 @@ export const subscribeToResolvedAuthState = async ({
 
 export const useResolvedAuthBootstrap = ({
   e2eBootstrapUser,
-  handleSignInRedirectResult,
-  onAuthChange,
-  setUser,
+  resolveRedirectAuthSessionOutcome,
+  onAuthSessionStateChange,
+  setSessionState,
   setAuthLoading,
 }: {
   e2eBootstrapUser: AuthUser | null;
-  handleSignInRedirectResult: () => Promise<AuthUser | null>;
-  onAuthChange: (callback: (user: AuthUser | null) => void | Promise<void>) => () => void;
-  setUser: (user: AuthUser | null) => void;
+  resolveRedirectAuthSessionOutcome: () => Promise<ApplicationOutcome<AuthSessionState | null>>;
+  onAuthSessionStateChange: (
+    callback: (sessionState: AuthSessionState) => void | Promise<void>
+  ) => () => void;
+  setSessionState: (sessionState: AuthSessionState) => void;
   setAuthLoading: (value: boolean) => void;
 }): void => {
   useEffect(() => {
-    if (e2eBootstrapUser) return;
+    if (e2eBootstrapUser) {
+      setSessionState(toResolvedAuthSessionState(e2eBootstrapUser));
+      setAuthLoading(false);
+      return;
+    }
 
     let unsubscribe: (() => void) | undefined;
     const timeoutMs = getAuthBootstrapTimeoutMs();
@@ -223,9 +247,9 @@ export const useResolvedAuthBootstrap = ({
     }, timeoutMs);
 
     subscribeToResolvedAuthState({
-      handleSignInRedirectResult,
-      onAuthChange,
-      setUser,
+      resolveRedirectAuthSessionOutcome,
+      onAuthSessionStateChange,
+      setSessionState,
       setAuthLoading,
     }).then(unsub => {
       if (unsub) unsubscribe = unsub;
@@ -235,5 +259,11 @@ export const useResolvedAuthBootstrap = ({
       clearTimeout(safetyTimeout);
       if (unsubscribe) unsubscribe();
     };
-  }, [e2eBootstrapUser, handleSignInRedirectResult, onAuthChange, setAuthLoading, setUser]);
+  }, [
+    e2eBootstrapUser,
+    resolveRedirectAuthSessionOutcome,
+    onAuthSessionStateChange,
+    setAuthLoading,
+    setSessionState,
+  ]);
 };

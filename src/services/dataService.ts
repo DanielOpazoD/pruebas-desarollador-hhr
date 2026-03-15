@@ -11,6 +11,8 @@
  * - calculations/statsCalculator
  * - repositories/DailyRecordRepository
  * - utils/dateUtils
+ *
+ * Retirement is tracked in `reports/compatibility-governance.md`.
  */
 
 export {

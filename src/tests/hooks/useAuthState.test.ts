@@ -5,14 +5,18 @@ vi.unmock('@/hooks/useAuthState');
 
 import { useAuthState } from '@/hooks/useAuthState';
 import * as authService from '@/services/auth/authService';
+import * as authUseCases from '@/application/auth';
 import * as auditService from '@/services/admin/auditService';
-import { AuthUser, UserRole } from '@/types';
+import { AuthSessionState, AuthUser, UserRole } from '@/types';
 
 vi.mock('@/services/auth/authService', () => ({
-  onAuthChange: vi.fn(),
+  onAuthSessionStateChange: vi.fn(),
   signOut: vi.fn(),
   hasActiveFirebaseSession: vi.fn(),
-  handleSignInRedirectResult: vi.fn(),
+}));
+
+vi.mock('@/application/auth', () => ({
+  executeRedirectAuthResolution: vi.fn(),
 }));
 
 vi.mock('@/services/admin/auditService', () => ({
@@ -30,23 +34,28 @@ const setOnlineStatus = (online: boolean) => {
 describe('useAuthState baseline', () => {
   const AUTH_BOOTSTRAP_PENDING_KEY = 'hhr_auth_bootstrap_pending_v1';
   const RECENT_MANUAL_LOGOUT_KEY = 'hhr_recent_manual_logout_v1';
-  let authChangeCallback: ((user: AuthUser | null) => void | Promise<void>) | null = null;
+  let authSessionStateCallback: ((sessionState: AuthSessionState) => void | Promise<void>) | null =
+    null;
 
   beforeEach(() => {
     vi.resetAllMocks();
-    authChangeCallback = null;
+    authSessionStateCallback = null;
     localStorage.removeItem(AUTH_BOOTSTRAP_PENDING_KEY);
     sessionStorage.removeItem(RECENT_MANUAL_LOGOUT_KEY);
 
-    vi.mocked(authService.onAuthChange).mockImplementation(
-      (cb: (user: AuthUser | null) => void | Promise<void>) => {
-        authChangeCallback = cb;
-        void cb(null);
+    vi.mocked(authService.onAuthSessionStateChange).mockImplementation(
+      (cb: (sessionState: AuthSessionState) => void | Promise<void>) => {
+        authSessionStateCallback = cb;
+        void cb({ status: 'unauthenticated', user: null });
         return () => {};
       }
     );
 
-    vi.mocked(authService.handleSignInRedirectResult).mockResolvedValue(null);
+    vi.mocked(authUseCases.executeRedirectAuthResolution).mockResolvedValue({
+      status: 'success',
+      data: null,
+      issues: [],
+    });
     vi.mocked(authService.hasActiveFirebaseSession).mockReturnValue(false);
 
     setOnlineStatus(true);
@@ -68,7 +77,10 @@ describe('useAuthState baseline', () => {
     };
 
     await act(async () => {
-      await authChangeCallback?.(user);
+      await authSessionStateCallback?.({
+        status: 'authorized',
+        user,
+      });
     });
 
     expect(result.current.user?.uid).toBe('u123');
@@ -87,7 +99,10 @@ describe('useAuthState baseline', () => {
     };
 
     await act(async () => {
-      await authChangeCallback?.(user);
+      await authSessionStateCallback?.({
+        status: 'authorized',
+        user,
+      });
     });
 
     expect(result.current.user?.uid).toBe('specialist-1');
@@ -100,11 +115,14 @@ describe('useAuthState baseline', () => {
     await waitFor(() => expect(result.current.authLoading).toBe(false));
 
     await act(async () => {
-      await authChangeCallback?.({
-        uid: 'u1',
-        email: 't@t.com',
-        role: 'admin' as UserRole,
-        displayName: 'Admin',
+      await authSessionStateCallback?.({
+        status: 'authorized',
+        user: {
+          uid: 'u1',
+          email: 't@t.com',
+          role: 'admin' as UserRole,
+          displayName: 'Admin',
+        },
       });
     });
 
@@ -123,7 +141,7 @@ describe('useAuthState baseline', () => {
       JSON.stringify({ reason: 'manual', at: Date.now() })
     );
     vi.mocked(authService.hasActiveFirebaseSession).mockReturnValue(false);
-    vi.mocked(authService.onAuthChange).mockImplementation(() => () => {});
+    vi.mocked(authService.onAuthSessionStateChange).mockImplementation(() => () => {});
 
     const { result } = renderHook(() => useAuthState());
 
@@ -148,7 +166,10 @@ describe('useAuthState baseline', () => {
     };
 
     await act(async () => {
-      await authChangeCallback?.(user);
+      await authSessionStateCallback?.({
+        status: 'authorized',
+        user,
+      });
     });
 
     await act(async () => {
@@ -193,7 +214,7 @@ describe('useAuthState baseline', () => {
     );
 
     // Simulate Firebase not notifying auth state yet.
-    vi.mocked(authService.onAuthChange).mockImplementation(() => () => {});
+    vi.mocked(authService.onAuthSessionStateChange).mockImplementation(() => () => {});
 
     const { result } = renderHook(() => useAuthState());
 
@@ -220,8 +241,15 @@ describe('useAuthState baseline', () => {
       displayName: 'Redirect User',
     };
 
-    vi.mocked(authService.handleSignInRedirectResult).mockResolvedValueOnce(redirectUser);
-    vi.mocked(authService.onAuthChange).mockImplementation(() => () => {});
+    vi.mocked(authUseCases.executeRedirectAuthResolution).mockResolvedValueOnce({
+      status: 'success',
+      data: {
+        status: 'authorized',
+        user: redirectUser,
+      },
+      issues: [],
+    });
+    vi.mocked(authService.onAuthSessionStateChange).mockImplementation(() => () => {});
 
     const { result } = renderHook(() => useAuthState());
 
@@ -237,15 +265,19 @@ describe('useAuthState baseline', () => {
     await waitFor(() => expect(result.current.authLoading).toBe(false));
 
     await act(async () => {
-      await authChangeCallback?.({
-        uid: 'anon-signature',
-        email: null,
-        role: 'viewer' as UserRole,
-        displayName: 'Firma',
+      await authSessionStateCallback?.({
+        status: 'anonymous_signature',
+        user: {
+          uid: 'anon-signature',
+          email: null,
+          role: 'viewer' as UserRole,
+          displayName: 'Firma',
+        },
       });
     });
 
     expect(result.current.user?.uid).toBe('anon-signature');
     expect(result.current.role).toBe('viewer');
+    expect(result.current.sessionState.status).toBe('anonymous_signature');
   });
 });

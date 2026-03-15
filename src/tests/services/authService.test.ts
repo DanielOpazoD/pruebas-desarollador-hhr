@@ -325,7 +325,14 @@ describe('authService', () => {
       const result = await (
         await import('@/services/auth/authService')
       ).handleSignInRedirectResult();
-      expect(result?.role).toBe('viewer_census');
+      expect(result).toEqual(
+        expect.objectContaining({
+          status: 'shared_census',
+          user: expect.objectContaining({
+            role: 'viewer_census',
+          }),
+        })
+      );
 
       // Restore location
       Object.defineProperty(window, 'location', { configurable: true, value: originalLocation });
