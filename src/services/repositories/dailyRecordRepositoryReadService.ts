@@ -18,12 +18,14 @@ import {
 } from '@/services/repositories/contracts/dailyRecordQueries';
 import { mergeAvailableDates } from '@/services/repositories/dailyRecordSyncCompatibility';
 import { measureRepositoryOperation } from '@/services/repositories/repositoryPerformance';
+import { logger } from '@/services/utils/loggerService';
 
 const isRepositoryDebugEnabled = () =>
   import.meta.env.DEV &&
   String(import.meta.env.VITE_DEBUG_REPOSITORY || '').toLowerCase() === 'true';
 
 const remoteReadResultInFlight = new Map<string, Promise<DailyRecordReadResult | null>>();
+const dailyRecordReadLogger = logger.child('DailyRecordReadRepository');
 
 const createLocalRuntimeReadResult = (
   date: string,
@@ -75,7 +77,7 @@ const loadRemoteReadResult = async (date: string): Promise<DailyRecordReadResult
           migrationRulesApplied: remoteResult.migrationRulesApplied,
         });
       } catch (err) {
-        console.warn(`[Repository] getForDate: Remote fetch failed for ${date}:`, err);
+        dailyRecordReadLogger.warn(`Remote fetch failed for ${date}`, err);
         return null;
       }
     },
@@ -106,7 +108,7 @@ export const getForDateWithMeta = async (
       const query = createGetDailyRecordQuery(date, syncFromRemote);
       const e2eOverride = getE2EOverrideRecord(query.date);
       if (e2eOverride) {
-        console.warn(`[E2E] Using override record for ${query.date}`);
+        dailyRecordReadLogger.warn(`Using E2E override record for ${query.date}`);
         return createLocalRuntimeReadResult(query.date, e2eOverride, 'e2e');
       }
 
@@ -145,7 +147,7 @@ export const getAvailableDates = async (): Promise<string[]> => {
       const remoteDates = await getAvailableDatesFromFirestore();
       return mergeAvailableDates(localDates, remoteDates);
     } catch (err) {
-      console.warn('[Repository] Failed to fetch remote dates:', err);
+      dailyRecordReadLogger.warn('Failed to fetch remote dates', err);
     }
   }
 
@@ -174,7 +176,7 @@ export const getPreviousDayWithMeta = async (date: string): Promise<DailyRecordR
         return await getForDateWithMeta(prevDate);
       }
     } catch (err) {
-      console.warn('[Repository] getPreviousDay remote check failed:', err);
+      dailyRecordReadLogger.warn(`Remote previous-day lookup failed for ${query.date}`, err);
     }
   }
 

@@ -14,6 +14,15 @@ import {
 } from './googleDriveMultipart';
 import { ensureTransferFolderHierarchy, uploadToDriveFolder } from './googleDriveFolders';
 
+const extractGoogleDriveErrorMessage = async (response: Response): Promise<string> => {
+  try {
+    const errorData = await response.json();
+    return errorData?.error?.message || response.statusText;
+  } catch {
+    return response.statusText;
+  }
+};
+
 /**
  * Uploads a Blob to Google Drive and returns the file ID and editing link.
  *
@@ -37,17 +46,15 @@ export const uploadToDrive = async (blob: Blob, fileName: string): Promise<Drive
     );
 
     if (!response.ok) {
-      const errorData = await response.json();
-      recordOperationalErrorTelemetry('integration', 'google_drive_upload_file', errorData, {
+      const errorMessage = await extractGoogleDriveErrorMessage(response);
+      recordOperationalErrorTelemetry('integration', 'google_drive_upload_file', errorMessage, {
         code: 'google_drive_upload_failed',
         message: 'Google Drive upload failed.',
         severity: 'error',
         context: { fileName },
         userSafeMessage: 'No se pudo subir el archivo a Google Drive.',
       });
-      throw new Error(
-        `Error en subida a Google Drive: ${errorData.error?.message || response.statusText}`
-      );
+      throw new Error(`Error en subida a Google Drive: ${errorMessage}`);
     }
 
     return parseDriveUploadResult(response);

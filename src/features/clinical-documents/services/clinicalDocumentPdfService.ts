@@ -3,6 +3,9 @@ import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domai
 import { formatDateToCL } from '@/utils/clinicalUtils';
 import { generateClinicalDocumentPrintStyledPdfBlob } from '@/features/clinical-documents/services/clinicalDocumentPrintPdfService';
 import { stripClinicalDocumentHtml } from '@/features/clinical-documents/controllers/clinicalDocumentRichTextController';
+import { logger } from '@/services/utils/loggerService';
+
+const clinicalDocumentPdfLogger = logger.child('ClinicalDocumentPdfService');
 
 const normalizeFieldValue = (fieldId: string, value: string): string => {
   if (!value.trim()) return '—';
@@ -126,8 +129,8 @@ export const generateClinicalDocumentPdfBlob = async (
       return printStyled;
     }
   } catch (error) {
-    console.warn(
-      '[clinicalDocumentPdfService] print-style generation failed, falling back to structured PDF:',
+    clinicalDocumentPdfLogger.warn(
+      'Print-style generation failed, falling back to structured PDF',
       error
     );
   }

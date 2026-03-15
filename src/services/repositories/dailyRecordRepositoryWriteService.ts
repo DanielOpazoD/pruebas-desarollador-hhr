@@ -23,12 +23,15 @@ import {
   preparePatchedRecordForPersistence,
   syncPatientsToMasterInBackground,
 } from '@/services/repositories/dailyRecordWriteSupport';
+import { logger } from '@/services/utils/loggerService';
 
 interface RemoteWriteState {
   savedRemotely: boolean;
   queuedForRetry: boolean;
   autoMerged: boolean;
 }
+
+const dailyRecordWriteLogger = logger.child('DailyRecordWriteRepository');
 
 const createRemoteWriteState = (): RemoteWriteState => ({
   savedRemotely: false,
@@ -79,7 +82,7 @@ const runRemoteSaveIntegrityCheck = async (date: string, record: DailyRecord): P
     ) {
       throw err;
     }
-    console.warn('[Repository] Could not perform integrity check, proceeding:', err);
+    dailyRecordWriteLogger.warn('Could not perform integrity check, proceeding anyway', err);
   }
 };
 
@@ -114,7 +117,10 @@ export const saveDetailed = async (record: DailyRecord, expectedLastUpdated?: st
       await saveRecordToFirestore(validatedRecord, command.expectedLastUpdated);
       remoteState.savedRemotely = true;
     } catch (err) {
-      console.warn('Firestore sync failed, data saved in IndexedDB:', err);
+      dailyRecordWriteLogger.warn(
+        `Firestore sync failed for ${command.date}; data persisted in IndexedDB`,
+        err
+      );
       const nextAction = await applyRemoteRecovery(
         command.date,
         validatedRecord,
@@ -143,9 +149,7 @@ export const updatePartialDetailed = async (date: string, partialData: DailyReco
   const current = await getRecordFromIndexedDB(command.date);
 
   if (!current) {
-    console.warn(
-      `[Repository] updatePartial: No record found for ${command.date}, operation aborted.`
-    );
+    dailyRecordWriteLogger.warn(`No record found for ${command.date}; partial update aborted`);
     return createUpdatePartialDailyRecordResult({
       date: command.date,
       outcome: 'blocked',
@@ -171,7 +175,7 @@ export const updatePartialDetailed = async (date: string, partialData: DailyReco
       await updateRecordPartialToFirestore(command.date, mergedPatches, current.lastUpdated);
       remoteState.savedRemotely = true;
     } catch (err) {
-      console.warn('[Repository] Firestore partial update failed:', err);
+      dailyRecordWriteLogger.warn(`Firestore partial update failed for ${command.date}`, err);
       const nextAction = await applyRemoteRecovery(
         command.date,
         validatedRecord,

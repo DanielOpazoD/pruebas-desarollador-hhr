@@ -36,6 +36,11 @@ export const onAuthChange = (callback: (user: AuthUser | null) => void): (() => 
       return;
     }
 
+    if (firebaseUser.isAnonymous) {
+      callback(null);
+      return;
+    }
+
     callback(
       await resolveAuthSessionUser(firebaseUser, {
         isSharedCensusMode,

@@ -2,6 +2,7 @@ import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import { ProfessionalCatalogItem } from '@/types';
 import { withRetry } from '@/utils/networkUtils';
+import { logger } from '@/services/utils/loggerService';
 import {
   COLLECTIONS,
   getActiveHospitalId,
@@ -13,6 +14,8 @@ import {
   normalizeProfessionalCatalog,
   normalizeStringCatalog,
 } from '@/services/repositories/contracts/catalogContracts';
+
+const firestoreCatalogLogger = logger.child('FirestoreCatalogService');
 
 const getSettingsDocRef = (docId: string) =>
   doc(db, COLLECTIONS.HOSPITALS, getActiveHospitalId(), HOSPITAL_COLLECTIONS.SETTINGS, docId);
@@ -57,7 +60,7 @@ const subscribeStringCatalog = (
       }
     },
     error => {
-      console.error(`❌ Error subscribing to ${errorLabel}:`, error);
+      firestoreCatalogLogger.error(`Error subscribing to ${errorLabel}`, error);
       callback([]);
     }
   );
@@ -73,7 +76,7 @@ export const getNurseCatalogFromFirestore = async (): Promise<string[]> => {
       'nurses'
     );
   } catch (error) {
-    console.error('Error fetching nurse catalog from Firestore:', error);
+    firestoreCatalogLogger.error('Error fetching nurse catalog from Firestore', error);
     return [];
   }
 };
@@ -82,7 +85,7 @@ export const saveNurseCatalogToFirestore = async (nurses: string[]): Promise<voi
   try {
     await saveStringCatalog(getNurseCatalogDocRef(), 'nurses', normalizeStringCatalog(nurses));
   } catch (error) {
-    console.error('Error saving nurse catalog to Firestore:', error);
+    firestoreCatalogLogger.error('Error saving nurse catalog to Firestore', error);
     throw error;
   }
 };
@@ -101,7 +104,7 @@ export const getTensCatalogFromFirestore = async (): Promise<string[]> => {
       'tens'
     );
   } catch (error) {
-    console.error('Error fetching TENS catalog from Firestore:', error);
+    firestoreCatalogLogger.error('Error fetching TENS catalog from Firestore', error);
     return [];
   }
 };
@@ -110,7 +113,7 @@ export const saveTensCatalogToFirestore = async (tens: string[]): Promise<void> 
   try {
     await saveStringCatalog(getTensCatalogDocRef(), 'tens', normalizeStringCatalog(tens));
   } catch (error) {
-    console.error('Error saving TENS catalog to Firestore:', error);
+    firestoreCatalogLogger.error('Error saving TENS catalog to Firestore', error);
     throw error;
   }
 };
@@ -129,7 +132,7 @@ export const getProfessionalsCatalogFromFirestore = async (): Promise<
     }
     return [];
   } catch (error) {
-    console.error('Error fetching professionals catalog from Firestore:', error);
+    firestoreCatalogLogger.error('Error fetching professionals catalog from Firestore', error);
     return [];
   }
 };
@@ -146,7 +149,7 @@ export const saveProfessionalsCatalogToFirestore = async (
       })
     );
   } catch (error) {
-    console.error('Error saving professionals catalog to Firestore:', error);
+    firestoreCatalogLogger.error('Error saving professionals catalog to Firestore', error);
     throw error;
   }
 };
@@ -164,7 +167,7 @@ export const subscribeToProfessionalsCatalog = (
       }
     },
     error => {
-      console.error('❌ Error subscribing to professionals catalog:', error);
+      firestoreCatalogLogger.error('Error subscribing to professionals catalog', error);
       callback([]);
     }
   );

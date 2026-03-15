@@ -23,8 +23,10 @@ import {
   normalizePatientSearchTerm,
   sanitizePatientQueryLimit,
 } from '@/services/repositories/contracts/patientMasterContracts';
+import { logger } from '@/services/utils/loggerService';
 
 const COLLECTION_NAME = HOSPITAL_COLLECTIONS.PATIENTS;
+const patientMasterRepositoryLogger = logger.child('PatientMasterRepository');
 
 /**
  * Normalizes RUT for use as Document ID
@@ -52,7 +54,7 @@ export const getPatientByRut = async (rut: string): Promise<MasterPatient | null
       return snap.data() as MasterPatient;
     }
   } catch (err) {
-    console.error('[PatientMasterRepository] Error fetching patient:', err);
+    patientMasterRepositoryLogger.error(`Error fetching patient ${normalizedRut}`, err);
   }
   return null;
 };
@@ -66,7 +68,7 @@ export const upsertPatient = async (
 ): Promise<void> => {
   const command = createUpsertPatientCommand(patient);
   if (!command) {
-    console.warn('[PatientMasterRepository] Invalid RUT for upsert:', patient.rut);
+    patientMasterRepositoryLogger.warn(`Invalid RUT for upsert: ${patient.rut}`);
     return;
   }
 
@@ -97,7 +99,7 @@ export const upsertPatient = async (
   try {
     await setDoc(docRef, dataToSave, { merge: true });
   } catch (err) {
-    console.error('[PatientMasterRepository] Error upserting patient:', err);
+    patientMasterRepositoryLogger.error(`Error upserting patient ${command.rut}`, err);
   }
 };
 
@@ -126,7 +128,7 @@ export const bulkUpsertPatients = async (
       await batch.commit();
       successes += chunk.length;
     } catch (err) {
-      console.error('[PatientMasterRepository] Batch commit failed:', err);
+      patientMasterRepositoryLogger.error('Patient batch commit failed', err);
       errors += chunk.length;
     }
   }
@@ -144,7 +146,7 @@ export const getAllPatients = async (): Promise<MasterPatient[]> => {
     const snap = await getDocs(q);
     return snap.docs.map(d => d.data() as MasterPatient);
   } catch (err) {
-    console.error('[PatientMasterRepository] Error fetching all patients:', err);
+    patientMasterRepositoryLogger.error('Error fetching all patients', err);
     return [];
   }
 };
@@ -171,7 +173,7 @@ export const getPatientsPaginated = async (
 
     return { patients, lastDoc: last };
   } catch (err) {
-    console.error('[PatientMasterRepository] Error fetching paginated patients:', err);
+    patientMasterRepositoryLogger.error('Error fetching paginated patients', err);
     return { patients: [], lastDoc: null };
   }
 };
@@ -210,7 +212,7 @@ export const searchPatients = async (
     const snap = await getDocs(q);
     return snap.docs.map(d => d.data() as MasterPatient);
   } catch (err) {
-    console.error('[PatientMasterRepository] Error searching patients:', err);
+    patientMasterRepositoryLogger.error(`Error searching patients for "${normalizedTerm}"`, err);
     return [];
   }
 };

@@ -1,6 +1,9 @@
 import { addDoc, collection, Timestamp } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import type { WhatsAppLog } from '@/types';
+import { logger } from '@/services/utils/loggerService';
+
+const whatsappLoggingLogger = logger.child('WhatsAppLogging');
 
 export async function logWhatsAppOperation(
   log: Omit<WhatsAppLog, 'id' | 'timestamp'>
@@ -11,6 +14,6 @@ export async function logWhatsAppOperation(
       timestamp: Timestamp.now(),
     });
   } catch (_error) {
-    console.error('Error logging WhatsApp operation:', _error);
+    whatsappLoggingLogger.error('Error logging WhatsApp operation', _error);
   }
 }

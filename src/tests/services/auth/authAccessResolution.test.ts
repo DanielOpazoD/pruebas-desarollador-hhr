@@ -90,6 +90,20 @@ describe('authAccessResolution', () => {
     expect(mockFirebaseSignOut).toHaveBeenCalledTimes(1);
   });
 
+  it('signs out users with null email in the standard login flow', async () => {
+    mockCheckEmailInFirestore.mockResolvedValue({ allowed: false, role: undefined });
+
+    await expect(
+      authorizeFirebaseUser({
+        uid: 'no-email-1',
+        email: null,
+      } as never)
+    ).rejects.toThrow(/Acceso no autorizado/i);
+
+    expect(mockCheckEmailInFirestore).toHaveBeenCalledWith('');
+    expect(mockFirebaseSignOut).toHaveBeenCalledTimes(1);
+  });
+
   it('rehydrates an authorized current user without exposing an empty shell', async () => {
     mockAuth.currentUser = {
       uid: 'spec-2',
@@ -117,6 +131,21 @@ describe('authAccessResolution', () => {
     mockCheckEmailInFirestore.mockResolvedValue({ allowed: false, role: undefined });
 
     await expect(authorizeCurrentFirebaseUser()).resolves.toBeNull();
+    expect(mockFirebaseSignOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not authorize shared-census users through the standard login path', async () => {
+    mockIsSharedCensusMode.mockReturnValue(true);
+    mockCheckSharedCensusAccess.mockResolvedValue({ authorized: false, role: 'viewer' });
+
+    await expect(
+      authorizeFirebaseUser({
+        uid: 'shared-1',
+        email: 'shared@hospital.cl',
+      } as never)
+    ).rejects.toThrow(/censo compartido/i);
+
+    expect(mockCheckEmailInFirestore).not.toHaveBeenCalled();
     expect(mockFirebaseSignOut).toHaveBeenCalledTimes(1);
   });
 });

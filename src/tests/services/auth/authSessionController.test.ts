@@ -17,6 +17,8 @@ describe('authSessionController', () => {
   });
 
   it('returns viewer_census for authorized shared-census users', async () => {
+    const resolveFirebaseUserRole = vi.fn().mockResolvedValue('admin');
+
     const result = await resolveAuthSessionUser(
       {
         uid: 'user-1',
@@ -29,7 +31,7 @@ describe('authSessionController', () => {
         isSharedCensusMode: () => true,
         checkSharedCensusAccess: vi.fn().mockResolvedValue({ authorized: true }),
         signOutUnauthorizedUser: vi.fn(),
-        resolveFirebaseUserRole: vi.fn().mockResolvedValue('admin'),
+        resolveFirebaseUserRole,
       }
     );
 
@@ -39,6 +41,7 @@ describe('authSessionController', () => {
         role: 'viewer_census',
       })
     );
+    expect(resolveFirebaseUserRole).not.toHaveBeenCalled();
   });
 
   it('signs out unauthorized shared-census users', async () => {
@@ -76,6 +79,27 @@ describe('authSessionController', () => {
         checkSharedCensusAccess: vi.fn(),
         signOutUnauthorizedUser,
         resolveFirebaseUserRole: vi.fn().mockResolvedValue(null),
+      }
+    );
+
+    expect(result).toBeNull();
+    expect(signOutUnauthorizedUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('signs out when shared-census mode is active but the user email is missing', async () => {
+    const signOutUnauthorizedUser = vi.fn().mockResolvedValue(undefined);
+
+    const result = await resolveAuthSessionUser(
+      {
+        uid: 'user-4',
+        email: null,
+        isAnonymous: false,
+      } as never,
+      {
+        isSharedCensusMode: () => true,
+        checkSharedCensusAccess: vi.fn().mockResolvedValue({ authorized: false }),
+        signOutUnauthorizedUser,
+        resolveFirebaseUserRole: vi.fn(),
       }
     );
 

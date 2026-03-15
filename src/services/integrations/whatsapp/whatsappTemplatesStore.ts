@@ -1,5 +1,8 @@
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
+import { logger } from '@/services/utils/loggerService';
+
+const whatsappTemplatesLogger = logger.child('WhatsAppTemplatesStore');
 
 export interface MessageTemplate {
   id?: string;
@@ -61,7 +64,7 @@ export async function getMessageTemplates(): Promise<MessageTemplate[]> {
 
     return getDefaultTemplates();
   } catch (_error) {
-    console.error('Error getting templates:', _error);
+    whatsappTemplatesLogger.error('Error getting templates', _error);
     return getDefaultTemplates();
   }
 }
@@ -72,7 +75,7 @@ export async function saveMessageTemplates(templates: MessageTemplate[]): Promis
     await setDoc(docRef, { templates }, { merge: true });
     return true;
   } catch (_error) {
-    console.error('Error saving templates:', _error);
+    whatsappTemplatesLogger.error('Error saving templates', _error);
     return false;
   }
 }

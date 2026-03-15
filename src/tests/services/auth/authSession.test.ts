@@ -95,4 +95,20 @@ describe('authSession', () => {
     expect(mockFirebaseSignOut).toHaveBeenCalledTimes(1);
     expect(callback).toHaveBeenCalledWith(null);
   });
+
+  it('emits null for anonymous users without trying to build an app session', async () => {
+    const callback = vi.fn();
+    onAuthChange(callback);
+
+    await authStateCallback?.({
+      uid: 'anon-1',
+      email: null,
+      displayName: null,
+      photoURL: null,
+      isAnonymous: true,
+    });
+
+    expect(mockResolveFirebaseUserRole).not.toHaveBeenCalled();
+    expect(callback).toHaveBeenCalledWith(null);
+  });
 });

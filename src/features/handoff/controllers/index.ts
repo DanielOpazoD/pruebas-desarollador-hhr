@@ -57,6 +57,12 @@ export {
   resolveMedicalHandoffValidityViewModel,
 } from './medicalPatientHandoffRenderController';
 export {
+  canToggleClinicalEvents,
+  resolveHandoffStatusVariant,
+  resolveMedicalObservationEntries,
+  shouldRenderClinicalEventsPanel,
+} from './handoffRowCellsController';
+export {
   buildHandoffClinicalEventActions,
   buildHandoffMedicalActions,
   resolveEffectiveSelectedMedicalSpecialty,

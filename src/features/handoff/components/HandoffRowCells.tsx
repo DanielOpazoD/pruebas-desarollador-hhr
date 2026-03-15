@@ -10,8 +10,11 @@ import { MedicalHandoffObservationEntry } from './MedicalHandoffObservationEntry
 import { MedicalHandoffValidityEntry } from './MedicalHandoffValidityEntry';
 import {
   getDisplayMedicalHandoffEntries,
-  getPatientMedicalHandoffEntries,
   getMedicalHandoffSpecialtyOptions,
+  canToggleClinicalEvents,
+  resolveHandoffStatusVariant,
+  resolveMedicalObservationEntries,
+  shouldRenderClinicalEventsPanel,
 } from '@/features/handoff/controllers';
 import { MedicalBadge, MedicalBadgeVariant } from '@/components/ui/base/MedicalBadge';
 
@@ -102,19 +105,27 @@ export const HandoffDiagnosisCell: React.FC<HandoffDiagnosisCellProps> = ({
   onClinicalEventUpdate,
   onClinicalEventDelete,
 }) => {
-  const statusVariant: MedicalBadgeVariant =
-    patient.status === PatientStatus.GRAVE
-      ? 'red'
-      : patient.status === PatientStatus.DE_CUIDADO
-        ? 'orange'
-        : 'green';
+  const statusVariant: MedicalBadgeVariant = resolveHandoffStatusVariant(patient.status);
+  const canManageEvents =
+    Boolean(onClinicalEventAdd) && Boolean(onClinicalEventUpdate) && Boolean(onClinicalEventDelete);
+  const canToggleEvents = canToggleClinicalEvents({
+    isSubRow,
+    hasEvents,
+    canEditEvents: Boolean(onClinicalEventAdd),
+  });
+  const shouldRenderEventsPanel = shouldRenderClinicalEventsPanel({
+    showEvents,
+    canAdd: Boolean(onClinicalEventAdd),
+    canUpdate: Boolean(onClinicalEventUpdate),
+    canDelete: Boolean(onClinicalEventDelete),
+  });
 
   return (
     <td className="p-1.5 border-r border-slate-200 w-[220px] text-slate-700 align-top relative print:w-20 print:text-[10px] print:leading-tight print:p-1">
       <div className="flex flex-col gap-1">
         <div className="flex items-start justify-between gap-0">
           <div className="font-medium leading-tight flex-1 pr-6">{patient.pathology}</div>
-          {!isSubRow && (onClinicalEventAdd || hasEvents) && (
+          {canToggleEvents && (
             <button
               onClick={() => setShowEvents(!showEvents)}
               className={clsx(
@@ -141,17 +152,21 @@ export const HandoffDiagnosisCell: React.FC<HandoffDiagnosisCellProps> = ({
           </div>
         )}
 
-        {showEvents && onClinicalEventAdd && onClinicalEventUpdate && onClinicalEventDelete && (
-          <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-            <ClinicalEventsPanel
-              events={patient.clinicalEvents || []}
-              onAdd={onClinicalEventAdd}
-              onUpdate={onClinicalEventUpdate}
-              onDelete={onClinicalEventDelete}
-              readOnly={isFieldReadOnly}
-            />
-          </div>
-        )}
+        {shouldRenderEventsPanel &&
+          canManageEvents &&
+          onClinicalEventAdd &&
+          onClinicalEventUpdate &&
+          onClinicalEventDelete && (
+            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+              <ClinicalEventsPanel
+                events={patient.clinicalEvents || []}
+                onAdd={onClinicalEventAdd}
+                onUpdate={onClinicalEventUpdate}
+                onDelete={onClinicalEventDelete}
+                readOnly={isFieldReadOnly}
+              />
+            </div>
+          )}
       </div>
     </td>
   );
@@ -248,13 +263,11 @@ export const HandoffMedicalObservationsCell: React.FC<HandoffMedicalObservations
   onAddEntry,
   onDeleteEntry,
 }) => {
-  const persistedEntries = getPatientMedicalHandoffEntries(patient);
-  const entries =
-    persistedEntries.length > 0
-      ? persistedEntries
-      : !isFieldReadOnly && !onCreatePrimaryEntry
-        ? getDisplayMedicalHandoffEntries(patient, true)
-        : [];
+  const entries = resolveMedicalObservationEntries({
+    patient,
+    isFieldReadOnly,
+    hasCreatePrimaryEntryAction: Boolean(onCreatePrimaryEntry),
+  });
 
   return (
     <td className="p-1.5 w-full min-w-[280px] align-top border-r border-slate-200 print:w-auto print:min-w-0 print:text-[8px] print:p-0.5">

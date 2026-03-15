@@ -23,6 +23,7 @@ import {
   normalizeStringCatalog,
   assertCatalogSubscriptionCallback,
 } from '@/services/repositories/contracts/catalogContracts';
+import { logger } from '@/services/utils/loggerService';
 
 export interface ICatalogRepository {
   getNurses(): Promise<string[]>;
@@ -35,6 +36,8 @@ export interface ICatalogRepository {
   saveProfessionals(professionals: ProfessionalCatalogItem[]): Promise<void>;
   subscribeProfessionals(callback: (professionals: ProfessionalCatalogItem[]) => void): () => void;
 }
+
+const catalogRepositoryLogger = logger.child('CatalogRepository');
 
 // ============================================================================
 // Nurses Catalog
@@ -61,14 +64,14 @@ export const getNurses = async (): Promise<string[]> => {
       // 3. Fallback to Legacy Production
       const legacyList = await getLegacyNurseCatalog();
       if (legacyList.length > 0) {
-        console.warn('[Catalog] 🎯 Migrated nurse catalog from legacy');
+        catalogRepositoryLogger.warn('Migrated nurse catalog from legacy source');
         await saveCatalog('nurses', legacyList);
         // Also save to Beta so it persists there
         await saveNurseCatalogToFirestore(legacyList);
         return legacyList;
       }
     } catch (err) {
-      console.warn('[Catalog] Failed to fetch nurses from remote:', err);
+      catalogRepositoryLogger.warn('Failed to fetch nurses from remote', err);
     }
   }
 
@@ -122,14 +125,14 @@ export const getTens = async (): Promise<string[]> => {
       // 3. Fallback to Legacy Production
       const legacyList = await getLegacyTensCatalog();
       if (legacyList.length > 0) {
-        console.warn('[Catalog] 🎯 Migrated TENS catalog from legacy');
+        catalogRepositoryLogger.warn('Migrated TENS catalog from legacy source');
         await saveCatalog('tens', legacyList);
         // Also save to Beta
         await saveTensCatalogToFirestore(legacyList);
         return legacyList;
       }
     } catch (err) {
-      console.warn('[Catalog] Failed to fetch TENS from remote:', err);
+      catalogRepositoryLogger.warn('Failed to fetch TENS from remote', err);
     }
   }
 
@@ -181,7 +184,7 @@ export const getProfessionals = async (): Promise<ProfessionalCatalogItem[]> => 
         return remoteList;
       }
     } catch (err) {
-      console.warn('[Catalog] Failed to fetch professionals from remote:', err);
+      catalogRepositoryLogger.warn('Failed to fetch professionals from remote', err);
     }
   }
 

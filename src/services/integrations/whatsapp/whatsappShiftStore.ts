@@ -1,8 +1,10 @@
 import { collection, doc, limit, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import type { WeeklyShift } from '@/types';
+import { logger } from '@/services/utils/loggerService';
 
 const TURNO_KEYWORDS = ['turno pabellon', 'turno pabellón', 'envío turno', 'envio turno'];
+const whatsappShiftLogger = logger.child('WhatsAppShiftStore');
 
 const parseShiftDates = (messageText: string): { startDate: string; endDate: string } | null => {
   const dateMatch = messageText.match(
@@ -44,13 +46,13 @@ export async function saveManualShift(
     const lowerMessage = messageText.toLowerCase();
     const hasShiftKeyword = TURNO_KEYWORDS.some(keyword => lowerMessage.includes(keyword));
     if (!hasShiftKeyword) {
-      console.warn('⚠️ No se encontró palabra clave de turno');
+      whatsappShiftLogger.warn('No se encontró palabra clave de turno');
       return { success: false, error: 'El mensaje no parece ser un turno de pabellón' };
     }
 
     const parsedDates = parseShiftDates(messageText);
     if (!parsedDates) {
-      console.warn('⚠️ No se encontraron fechas');
+      whatsappShiftLogger.warn('No se encontraron fechas en el mensaje de turno');
       return {
         success: false,
         error:
@@ -70,7 +72,7 @@ export async function saveManualShift(
     await setDoc(doc(shiftsRef, shift.startDate), shift);
     return { success: true };
   } catch (error: unknown) {
-    console.error('Error saving manual shift:', error);
+    whatsappShiftLogger.error('Error saving manual shift', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Error al guardar el turno',

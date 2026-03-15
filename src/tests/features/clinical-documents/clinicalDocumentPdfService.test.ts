@@ -91,14 +91,12 @@ describe('clinicalDocumentPdfService', () => {
   });
 
   it('falls back to a structured pdf when the print-styled generation fails', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     generatePrintStyledPdfBlobMock.mockRejectedValueOnce(new Error('print failed'));
 
     const result = await generateClinicalDocumentPdfBlob(buildRecord());
 
     expect(result).toBeInstanceOf(Blob);
     expect(result.size).toBeGreaterThan(0);
-    expect(warnSpy).toHaveBeenCalled();
   });
 
   it('renames the epicrisis report date label and normalizes patient fields', async () => {
