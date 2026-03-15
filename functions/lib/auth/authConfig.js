@@ -1,17 +1,4 @@
-const ADMIN_EMAILS = [
-  'daniel.opazo@hospitalhangaroa.cl',
-  'd.opazo.damiani@gmail.com',
-  'd.opazo.damiani@hospitalhangaroa.cl',
-  'danielopazodamiani@gmail.com',
-];
-
-const NURSE_EMAILS = [
-  'hospitalizados@hospitalhangaroa.cl',
-  'enfermeria.hospitalizados@hospitalhangaroa.cl',
-];
-
-const DOCTOR_EMAILS = ['medico.urgencia@hospitalhangaroa.cl'];
-const GUEST_EMAILS = [];
+const BOOTSTRAP_ADMIN_EMAILS = ['daniel.opazo@hospitalhangaroa.cl', 'd.opazo.damiani@gmail.com'];
 
 const SHARED_CENSUS_ALLOWLIST_EMAILS = [
   'arenka.palma@hospitalhangaroa.cl',
@@ -43,6 +30,7 @@ const ALLOWED_ASSIGNABLE_ROLES = new Set([
   'admin',
   'nurse_hospital',
   'doctor_urgency',
+  'doctor_specialist',
   'viewer',
   'viewer_census',
   'unauthorized',
@@ -58,10 +46,7 @@ const CLINICAL_CALLABLE_ROLES = new Set([
 ]);
 
 module.exports = {
-  ADMIN_EMAILS,
-  NURSE_EMAILS,
-  DOCTOR_EMAILS,
-  GUEST_EMAILS,
+  BOOTSTRAP_ADMIN_EMAILS,
   SHARED_CENSUS_ALLOWLIST_EMAILS,
   ALLOWED_ASSIGNABLE_ROLES,
   CLINICAL_CALLABLE_ROLES,

@@ -1,12 +1,9 @@
 const {
-  ADMIN_EMAILS,
-  NURSE_EMAILS,
-  DOCTOR_EMAILS,
-  GUEST_EMAILS,
+  BOOTSTRAP_ADMIN_EMAILS,
   SHARED_CENSUS_ALLOWLIST_EMAILS,
   CLINICAL_CALLABLE_ROLES,
 } = require('./authConfig');
-const { normalizeEmail, upsertAllowedUserRole } = require('./authPolicies');
+const { normalizeEmail } = require('./authPolicies');
 
 const createAuthHelpers = admin => {
   const resolveRoleForEmail = async email => {
@@ -27,21 +24,13 @@ const createAuthHelpers = admin => {
       );
     }
 
-    if (ADMIN_EMAILS.includes(cleanEmail)) return 'admin';
-    if (NURSE_EMAILS.includes(cleanEmail)) return 'nurse_hospital';
-    if (DOCTOR_EMAILS.includes(cleanEmail)) return 'doctor_urgency';
-    if (GUEST_EMAILS.includes(cleanEmail)) return 'viewer';
+    if (BOOTSTRAP_ADMIN_EMAILS.includes(cleanEmail)) return 'admin';
 
     return 'unauthorized';
   };
 
   const hasCallableClinicalAccess = async context => {
     if (!context?.auth) return false;
-
-    const claimRole = context.auth.token?.role;
-    if (claimRole && CLINICAL_CALLABLE_ROLES.has(claimRole)) {
-      return true;
-    }
 
     const callerEmail = normalizeEmail(context.auth.token?.email);
     if (!callerEmail) return false;
@@ -83,27 +72,6 @@ const createAuthHelpers = admin => {
 
     try {
       await admin.auth().setCustomUserClaims(user.uid, { role });
-      await upsertAllowedUserRole(admin, user.uid, email, role);
-
-      if (role === 'unauthorized') {
-        try {
-          const rolesRef = admin.firestore().collection('config').doc('roles');
-          await admin.firestore().runTransaction(async transaction => {
-            const doc = await transaction.get(rolesRef);
-            if (!doc.exists) return;
-
-            const data = doc.data();
-            if (!data[email]) return;
-
-            const newData = { ...data };
-            delete newData[email];
-            transaction.set(rolesRef, newData);
-          });
-        } catch (cleanupError) {
-          console.warn(`⚠️ Could not cleanup config/roles for ${email}: ${cleanupError.message}`);
-        }
-      }
-
       return role;
     } catch (error) {
       console.error(`❌ Error assigning role to ${email}:`, error);
@@ -117,7 +85,7 @@ const createAuthHelpers = admin => {
     hasCallableClinicalAccess,
     isSharedCensusEmailAuthorized,
     assignRole,
-    adminEmails: ADMIN_EMAILS,
+    adminEmails: BOOTSTRAP_ADMIN_EMAILS,
   };
 };
 

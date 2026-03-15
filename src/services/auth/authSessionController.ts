@@ -16,7 +16,7 @@ export const resolveAuthSessionUser = async (
     isSharedCensusMode(): boolean;
     checkSharedCensusAccess(email: string | null): Promise<{ authorized: boolean }>;
     signOutUnauthorizedUser(): Promise<void>;
-    resolveFirebaseUserRole(user: User): Promise<AuthUser['role']>;
+    resolveFirebaseUserRole(user: User): Promise<AuthUser['role'] | null>;
   }
 ): Promise<AuthUser | null> => {
   if (firebaseUser.isAnonymous) {
@@ -33,6 +33,10 @@ export const resolveAuthSessionUser = async (
   }
 
   const role = await dependencies.resolveFirebaseUserRole(firebaseUser);
+  if (!role) {
+    await dependencies.signOutUnauthorizedUser();
+    return null;
+  }
 
   return toAuthUser(firebaseUser, role);
 };

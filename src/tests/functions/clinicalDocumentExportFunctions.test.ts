@@ -63,6 +63,41 @@ describe('functions clinicalDocumentExportFunctions', () => {
     });
   });
 
+  it('ignores stale token claims when export role is no longer authorized', async () => {
+    const resolveRoleForEmail = vi.fn().mockResolvedValue('unauthorized');
+    const functionsApi = createClinicalDocumentExportFunctions({
+      admin: { firestore: vi.fn() },
+      resolveRoleForEmail,
+    });
+
+    await expect(
+      functionsApi.exportClinicalDocumentPdfToDrive.run(
+        {
+          fileName: 'Epicrisis.pdf',
+          documentType: 'epicrisis',
+          patientName: 'Paciente Prueba',
+          patientRut: '12.345.678-9',
+          episodeKey: '12345678-9__2026-03-04',
+          contentBase64: Buffer.from('pdf-content').toString('base64'),
+          mimeType: 'application/pdf',
+        },
+        {
+          auth: {
+            uid: 'u1',
+            token: {
+              email: 'removed@hospitalhangaroa.cl',
+              role: 'doctor_urgency',
+            },
+          },
+        }
+      )
+    ).rejects.toMatchObject({
+      code: 'permission-denied',
+    });
+
+    expect(resolveRoleForEmail).toHaveBeenCalledWith('removed@hospitalhangaroa.cl');
+  });
+
   it('exports pdf to drive folder hierarchy for authorized doctor role', async () => {
     driveMocks.list.mockResolvedValue({ data: { files: [] } });
     driveMocks.create.mockImplementation(

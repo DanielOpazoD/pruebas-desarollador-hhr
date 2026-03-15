@@ -61,4 +61,25 @@ describe('authSessionController', () => {
     expect(result).toBeNull();
     expect(signOutUnauthorizedUser).toHaveBeenCalledTimes(1);
   });
+
+  it('signs out unauthorized standard users before building an app session', async () => {
+    const signOutUnauthorizedUser = vi.fn().mockResolvedValue(undefined);
+
+    const result = await resolveAuthSessionUser(
+      {
+        uid: 'user-3',
+        email: 'removed@hospital.cl',
+        isAnonymous: false,
+      } as never,
+      {
+        isSharedCensusMode: () => false,
+        checkSharedCensusAccess: vi.fn(),
+        signOutUnauthorizedUser,
+        resolveFirebaseUserRole: vi.fn().mockResolvedValue(null),
+      }
+    );
+
+    expect(result).toBeNull();
+    expect(signOutUnauthorizedUser).toHaveBeenCalledTimes(1);
+  });
 });

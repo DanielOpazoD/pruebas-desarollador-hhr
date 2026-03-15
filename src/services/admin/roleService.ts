@@ -44,7 +44,7 @@ export const roleService = {
   },
 
   /**
-   * Remove a role configuration (User becomes unauthorized unless in hardcoded list).
+   * Remove a role configuration. The user becomes unauthorized for normal login.
    */
   async removeRole(email: string): Promise<void> {
     try {

@@ -1,13 +1,7 @@
 import { auth } from '@/firebaseConfig';
 import { UserRole } from '@/types';
 import { normalizeEmail } from '@/services/auth/authShared';
-import {
-  getAllowedUserRoleForEmail,
-  getCloudRoleForEmail,
-  getDynamicRoleForEmail,
-  getStaticRoleForEmail,
-} from '@/services/auth/authRoleLookup';
-import { getCachedRole, saveRoleToCache } from '@/services/auth/authRoleCache';
+import { getDynamicRoleForEmail, getBootstrapRoleForEmail } from '@/services/auth/authRoleLookup';
 import {
   recordAuthOperationalError,
   emitAuthOperationalEvent,
@@ -22,12 +16,8 @@ export const checkEmailInFirestore = async (
   try {
     const cleanEmail = normalizeEmail(email);
     const { role, source } = await resolveAllowedRoleForEmail(cleanEmail, {
-      getStaticRoleForEmail,
-      getCachedRole,
-      getCloudRoleForEmail,
+      getBootstrapRoleForEmail,
       getDynamicRoleForEmail,
-      getAllowedUserRoleForEmail,
-      saveRoleToCache,
     });
 
     if (role) {
@@ -36,7 +26,7 @@ export const checkEmailInFirestore = async (
 
     emitAuthOperationalEvent('check_email_in_firestore', 'degraded', {
       code: 'auth_email_not_whitelisted',
-      message: `Email not found in whitelist: ${cleanEmail}`,
+      message: `Email not found in config/roles: ${cleanEmail}`,
       severity: 'warning',
       userSafeMessage: 'El correo no está autorizado para ingresar.',
       context: {

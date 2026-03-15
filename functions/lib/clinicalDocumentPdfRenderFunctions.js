@@ -14,11 +14,6 @@ const assertString = (value, fieldName) => {
 };
 
 const resolveCallerRole = async (context, resolveRoleForEmail) => {
-  const claimRole = context?.auth?.token?.role;
-  if (claimRole && typeof claimRole === 'string') {
-    return claimRole;
-  }
-
   const callerEmail = String(context?.auth?.token?.email || '')
     .trim()
     .toLowerCase();

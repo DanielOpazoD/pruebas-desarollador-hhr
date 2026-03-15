@@ -9,7 +9,7 @@ import { recordAuthOperationalError } from '@/services/auth/authOperationalTelem
 const SHARED_CENSUS_UNAUTHORIZED_MESSAGE =
   'Acceso no autorizado. Tu correo no tiene permisos para censo compartido.';
 const STANDARD_UNAUTHORIZED_MESSAGE =
-  'Acceso no autorizado. Su correo no está en la lista de usuarios permitidos.';
+  'Acceso no autorizado. Tu correo no tiene un rol vigente en Gestión de Roles.';
 
 const rejectUnauthorizedUser = async (message: string): Promise<never> => {
   await firebaseSignOut(auth);
@@ -51,30 +51,24 @@ export const authorizeCurrentFirebaseUser = async (): Promise<AuthUser | null> =
   }
 };
 
-export const resolveFirebaseUserRole = async (firebaseUser: User): Promise<UserRole> => {
+export const resolveFirebaseUserRole = async (firebaseUser: User): Promise<UserRole | null> => {
   try {
-    const tokenResult = await firebaseUser.getIdTokenResult();
-    let role = tokenResult.claims.role as UserRole;
-
-    if (!role || role === 'viewer' || role === 'editor') {
-      const whitelistResult = await checkEmailInFirestore(firebaseUser.email || '');
-      if (whitelistResult.allowed && whitelistResult.role) {
-        role = whitelistResult.role;
-      }
+    const whitelistResult = await checkEmailInFirestore(firebaseUser.email || '');
+    if (whitelistResult.allowed && whitelistResult.role) {
+      return whitelistResult.role;
     }
-
-    return role || 'viewer';
+    return null;
   } catch (error) {
     recordAuthOperationalError('resolve_firebase_user_role', error, {
       code: 'auth_token_role_resolution_failed',
-      message: 'Error getting ID token result.',
+      message: 'Error resolving role from config/roles.',
       severity: 'warning',
       userSafeMessage: 'No se pudo resolver el rol desde la sesión actual.',
       context: {
         email: firebaseUser.email || null,
       },
     });
-    const { role } = await checkEmailInFirestore(firebaseUser.email || '');
-    return role || 'viewer';
+    const { allowed, role } = await checkEmailInFirestore(firebaseUser.email || '');
+    return allowed ? role || null : null;
   }
 };

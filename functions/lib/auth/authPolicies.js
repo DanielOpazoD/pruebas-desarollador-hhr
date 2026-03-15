@@ -18,19 +18,7 @@ const requireAuthenticatedEmail = context => {
   return email;
 };
 
-const upsertAllowedUserRole = async (admin, uid, email, role) => {
-  await admin.firestore().collection('allowedUsers').doc(uid).set(
-    {
-      email,
-      role,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    },
-    { merge: true }
-  );
-};
-
 module.exports = {
   normalizeEmail,
   requireAuthenticatedEmail,
-  upsertAllowedUserRole,
 };

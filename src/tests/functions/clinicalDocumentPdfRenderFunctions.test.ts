@@ -57,6 +57,32 @@ describe('functions clinicalDocumentPdfRenderFunctions', () => {
     });
   });
 
+  it('ignores stale token claims when render access has been revoked', async () => {
+    const resolveRoleForEmail = vi.fn().mockResolvedValue('unauthorized');
+    const functionsApi = createClinicalDocumentPdfRenderFunctions({
+      resolveRoleForEmail,
+    });
+
+    await expect(
+      functionsApi.renderClinicalDocumentPdfFromHtml.run(
+        { html: '<html><body>Hola</body></html>' },
+        {
+          auth: {
+            uid: 'u1',
+            token: {
+              email: 'removed@hospitalhangaroa.cl',
+              role: 'doctor_urgency',
+            },
+          },
+        }
+      )
+    ).rejects.toMatchObject({
+      code: 'permission-denied',
+    });
+
+    expect(resolveRoleForEmail).toHaveBeenCalledWith('removed@hospitalhangaroa.cl');
+  });
+
   it('renders pdf for authorized doctor role', async () => {
     const renderOverride = vi.fn().mockResolvedValue(Buffer.from('fake-pdf-content'));
     const functionsApi = createClinicalDocumentPdfRenderFunctions({

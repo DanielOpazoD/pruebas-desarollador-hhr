@@ -21,65 +21,46 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.token.email != null;
     }
 
-    function hasAllowedUserRole(role) {
-      return isAuthenticated() &&
-             exists(/databases/$(database)/documents/allowedUsers/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/allowedUsers/$(request.auth.uid)).data.role == role;
+    function isBootstrapAdmin() {
+      return hasEmail() &&
+             getUserEmail() in [
+               'daniel.opazo@hospitalhangaroa.cl',
+               'd.opazo.damiani@gmail.com'
+             ];
+    }
+
+    function getConfiguredRole() {
+      return hasEmail() &&
+             exists(/databases/$(database)/documents/config/roles)
+        ? get(/databases/$(database)/documents/config/roles).data[getUserEmail()]
+        : null;
     }
     
-    // Check if user is admin via Custom Claims OR Whitelist (Dual Stack)
     function isAdmin() {
       return isAuthenticated() && (
-        request.auth.token.role == 'admin' ||
-        hasAllowedUserRole('admin') ||
-        getUserEmail() in [
-          'daniel.opazo@hospitalhangaroa.cl',
-          'd.opazo.damiani@gmail.com',
-          'd.opazo.damiani@hospitalhangaroa.cl',
-          'danielopazodamiani@gmail.com'
-        ]
+        isBootstrapAdmin() ||
+        getConfiguredRole() == 'admin'
       );
     }
     
-    // Check if user is nurse via Custom Claims OR Whitelist
     function isNurse() {
       return isAuthenticated() && (
-        request.auth.token.role == 'nurse_hospital' || 
-        request.auth.token.role == 'admin' ||
-        hasAllowedUserRole('nurse_hospital') ||
-        hasAllowedUserRole('admin') ||
-        getUserEmail() in [
-          'hospitalizados@hospitalhangaroa.cl',
-          'enfermeria.hospitalizados@hospitalhangaroa.cl'
-        ]
+        isAdmin() ||
+        getConfiguredRole() == 'nurse_hospital'
       );
     }
 
-    // Check if user is doctor via Custom Claims OR dynamic role map
     function isDoctor() {
       return isAuthenticated() && (
-        request.auth.token.role == 'doctor_urgency' ||
-        request.auth.token.role == 'admin' ||
-        hasAllowedUserRole('doctor_urgency') ||
-        hasAllowedUserRole('admin') ||
-        (
-          hasEmail() &&
-          exists(/databases/$(database)/documents/config/roles) &&
-          get(/databases/$(database)/documents/config/roles).data[getUserEmail()] == 'doctor_urgency'
-        )
+        isAdmin() ||
+        getConfiguredRole() == 'doctor_urgency'
       );
     }
 
     function isDoctorSpecialist() {
       return isAuthenticated() && (
-        request.auth.token.role == 'doctor_specialist' ||
-        hasAllowedUserRole('doctor_specialist') ||
-        hasAllowedUserRole('admin') ||
-        (
-          hasEmail() &&
-          exists(/databases/$(database)/documents/config/roles) &&
-          get(/databases/$(database)/documents/config/roles).data[getUserEmail()] == 'doctor_specialist'
-        )
+        isAdmin() ||
+        getConfiguredRole() == 'doctor_specialist'
       );
     }
     
@@ -94,13 +75,7 @@ service cloud.firestore {
 
     function isEditorRole() {
       return isAuthenticated() && (
-        request.auth.token.role == 'editor' ||
-        hasAllowedUserRole('editor') ||
-        (
-          hasEmail() &&
-          exists(/databases/$(database)/documents/config/roles) &&
-          get(/databases/$(database)/documents/config/roles).data[getUserEmail()] == 'editor'
-        )
+        getConfiguredRole() == 'editor'
       );
     }
 
@@ -189,24 +164,12 @@ service cloud.firestore {
              );
     }
 
-    // Legacy/custom-claim role gate (prevents any random authenticated user access)
-    function hasRoleClaim() {
-      return isAuthenticated() && request.auth.token.role in [
-        'admin',
-        'nurse_hospital',
-        'doctor_urgency',
-        'doctor_specialist',
-        'viewer',
-        'viewer_census',
-        'editor'
-      ];
+    function hasConfiguredRole() {
+      return getConfiguredRole() != null;
     }
 
-    // Dynamic role map (config/roles)
-    function hasConfiguredRole() {
-      return hasEmail() &&
-             exists(/databases/$(database)/documents/config/roles) &&
-             get(/databases/$(database)/documents/config/roles).data[getUserEmail()] != null;
+    function isGeneralViewer() {
+      return isAuthenticated() && getConfiguredRole() == 'viewer';
     }
 
     // Shared census allowlist by email (doc id = normalized email)
@@ -249,8 +212,10 @@ service cloud.firestore {
     function canReadClinicalData() {
       return isAdmin() ||
              isNurse() ||
-             hasRoleClaim() ||
-             hasConfiguredRole() ||
+             isDoctor() ||
+             isDoctorSpecialist() ||
+             isEditorRole() ||
+             isGeneralViewer() ||
              hasCensusAuthorizedEmail() ||
              hasCensusStaticAllowlistEmail();
     }
@@ -478,17 +443,10 @@ service cloud.firestore {
     }
     
     // ============================================
-    // ALLOWED USERS (Admin management)
+    // ALLOWED USERS (Legacy retired)
     // ============================================
     match /allowedUsers/{userId} {
-      // Whitelist Read-Lock fix: Allow users to read their own authorization doc 
-      // or search for it by email to validate their role.
-      allow read: if isAuthenticated() && (
-        request.auth.uid == userId || 
-        resource.data.email == getUserEmail() ||
-        isAdmin()
-      );
-      allow write: if isAdmin();
+      allow read, write: if false;
     }
     
     // ============================================

@@ -1,13 +1,10 @@
 import { GoogleAuthProvider, User } from 'firebase/auth';
 import { AuthUser, UserRole } from '@/types';
-import { INSTITUTIONAL_ACCOUNTS } from '@/constants/identities';
 
-export const STATIC_ROLES: Record<string, string> = {
-  [INSTITUTIONAL_ACCOUNTS.NURSING]: 'nurse_hospital',
-  [INSTITUTIONAL_ACCOUNTS.NURSING_ALT]: 'nurse_hospital',
-  'daniel.opazo@hospitalhangaroa.cl': 'admin',
-  'd.opazo.damiani@gmail.com': 'doctor_urgency',
-};
+export const BOOTSTRAP_ADMIN_EMAILS = [
+  'daniel.opazo@hospitalhangaroa.cl',
+  'd.opazo.damiani@gmail.com',
+] as const;
 
 export const ROLE_CACHE_PREFIX = 'hhr_role_cache_';
 

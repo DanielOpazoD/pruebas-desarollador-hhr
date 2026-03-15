@@ -106,6 +106,14 @@ describeRules('Firestore Security Rules', () => {
 
   beforeEach(async () => {
     if (testEnv) await testEnv.clearFirestore();
+    await setupDoc(admin(), 'config/roles', {
+      'user@example.com': 'viewer',
+      'hospitalizados@hospitalhangaroa.cl': 'nurse_hospital',
+      'doctor@example.com': 'doctor_urgency',
+      'specialist@example.com': 'doctor_specialist',
+      'specialist.dynamic@example.com': 'doctor_specialist',
+      'editor@example.com': 'editor',
+    });
   });
 
   describe('Audit Logs Collection', () => {
@@ -505,10 +513,9 @@ describeRules('Firestore Security Rules', () => {
       await assertFails(authed().doc(clinicalDocumentPath).set(clinicalDocumentPayload));
     });
 
-    it('Doctors resolved via allowedUsers fallback can create clinical documents', async () => {
-      await setupDoc(admin(), 'allowedUsers/user_doctor_allowed_only', {
-        email: 'doctor.allowed@example.com',
-        role: 'doctor_urgency',
+    it('Doctors resolved via config/roles can create clinical documents', async () => {
+      await setupDoc(admin(), 'config/roles', {
+        'doctor.allowed@example.com': 'doctor_urgency',
       });
 
       await assertSucceeds(
@@ -645,15 +652,13 @@ describeRules('Firestore Security Rules', () => {
     });
   });
 
-  describe('Allowed Users', () => {
-    it('Users can read their own authorization doc', async () => {
-      await setupDoc(admin(), 'allowedUsers/user_basic', { email: 'user@example.com' });
-      await assertSucceeds(authed().doc('allowedUsers/user_basic').get());
+  describe('Allowed Users (legacy retired)', () => {
+    it('Users cannot read legacy authorization docs', async () => {
+      await assertFails(authed().doc('allowedUsers/user_basic').get());
     });
 
-    it('Users cannot read other users authorization doc', async () => {
-      await setupDoc(admin(), 'allowedUsers/user_other', { email: 'other@example.com' });
-      await assertFails(authed().doc('allowedUsers/user_other').get());
+    it('Admins also cannot access legacy authorization docs directly', async () => {
+      await assertFails(admin().doc('allowedUsers/user_other').get());
     });
   });
 

@@ -84,4 +84,47 @@ describe('functions authFunctionsFactory', () => {
     ).resolves.toBe('admin');
     expect(assignRole).toHaveBeenCalledWith({ uid: 'u1', email: 'user@example.com' });
   });
+
+  it('does not authorize shared census from stale role claims without config access', async () => {
+    const resolveRoleForEmail = vi.fn().mockResolvedValue('unauthorized');
+    const isSharedCensusEmailAuthorized = vi.fn().mockResolvedValue({
+      authorized: false,
+      role: 'viewer',
+    });
+    const functionsApi = createAuthFunctions({
+      admin: {
+        auth: () => ({
+          getUserByEmail: vi.fn(),
+          setCustomUserClaims: vi.fn(),
+        }),
+      },
+      helpers: {
+        assignRole: vi.fn(),
+        normalizeEmail: (value: unknown) => String(value || '').toLowerCase(),
+        adminEmails: [],
+        resolveRoleForEmail,
+        isSharedCensusEmailAuthorized,
+      },
+    });
+
+    const result = await functionsApi.checkSharedCensusAccess.run(
+      {},
+      {
+        auth: {
+          uid: 'u1',
+          token: {
+            email: 'removed@example.com',
+            role: 'admin',
+          },
+        },
+      }
+    );
+
+    expect(resolveRoleForEmail).toHaveBeenCalledWith('removed@example.com');
+    expect(isSharedCensusEmailAuthorized).toHaveBeenCalledWith('removed@example.com');
+    expect(result).toEqual({
+      authorized: false,
+      role: 'viewer',
+    });
+  });
 });
