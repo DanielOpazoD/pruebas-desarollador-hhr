@@ -18,13 +18,15 @@ import { getAttributedAuthors } from '@/services/admin/attributionService';
 import { useUIState, UseUIStateReturn } from '@/hooks/useUIState';
 import { useAuth } from '@/context';
 import {
+  resolveInitialMedicalScopeFromSearch,
+  resolveInitialMedicalSpecialtyFromSearch,
+} from '@/domain/handoff/view';
+import { resolveHandoffMedicalScreenState } from '@/application/handoff';
+import {
   buildHandoffClinicalEventActions,
   buildHandoffMedicalActions,
   resolveEffectiveSelectedMedicalSpecialty,
-  resolveInitialMedicalScopeFromSearch,
-  resolveInitialMedicalSpecialtyFromSearch,
   resolveMedicalHandoffCapabilities,
-  resolveHandoffScreenState,
   type MedicalHandoffScope,
   resolveHandoffDocumentTitle,
   resolveHandoffTableHeaderClass,
@@ -39,7 +41,6 @@ interface HandoffViewProps {
   ui?: UseUIStateReturn;
   medicalScope?: MedicalHandoffScope;
 }
-
 export const HandoffView: React.FC<HandoffViewProps> = ({
   type = 'nursing',
   readOnly = false,
@@ -79,7 +80,6 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
   const [selectedMedicalSpecialty, setSelectedMedicalSpecialty] = useState<Specialty | 'all'>(
     initialMedicalSpecialtyFromUrl
   );
-
   useEffect(() => {
     logEventRef.current = logEvent;
   }, [logEvent]);
@@ -129,7 +129,7 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
     scopedMedicalHandoffSentAt,
   } = React.useMemo(
     () =>
-      resolveHandoffScreenState({
+      resolveHandoffMedicalScreenState({
         visibleBeds,
         record,
         isMedical,
@@ -145,7 +145,7 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
   );
   const { specialtyFilteredBeds, hasAnyVisiblePatients } = React.useMemo(
     () =>
-      resolveHandoffScreenState({
+      resolveHandoffMedicalScreenState({
         visibleBeds,
         record,
         isMedical,

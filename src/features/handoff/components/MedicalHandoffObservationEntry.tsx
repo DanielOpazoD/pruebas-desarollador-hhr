@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import type { MedicalHandoffEntry, PatientData } from '@/types';
 import { Plus, Trash2 } from 'lucide-react';
 import { DebouncedTextarea } from '@/components/ui/DebouncedTextarea';
-import { resolveMedicalEntryInlineMeta } from '@/features/handoff/controllers';
+import { resolveMedicalEntryInlineMeta } from '@/domain/handoff/patientView';
 
 interface MedicalHandoffObservationEntryProps {
   entry: MedicalHandoffEntry;

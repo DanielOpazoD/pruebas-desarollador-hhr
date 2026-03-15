@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Check, Info } from 'lucide-react';
 import clsx from 'clsx';
 import type { MedicalHandoffEntry } from '@/types';
-import { resolveMedicalHandoffValidityViewModel } from '@/features/handoff/controllers';
+import { resolveMedicalHandoffValidityViewModel } from '@/domain/handoff/patientView';
 
 interface HandoffInfoTooltipProps {
   label: string;

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { BedDefinition, DailyRecord, Specialty } from '@/types';
-import type { MedicalHandoffScope } from '@/features/handoff/controllers';
+import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import type { HandoffClinicalEventActions, HandoffMedicalActions } from './handoffRowContracts';
 import {
   defaultBrowserWindowRuntime,
@@ -8,10 +8,8 @@ import {
 } from '@/shared/runtime/browserWindowRuntime';
 import { MedicalHandoffHeader } from './MedicalHandoffHeader';
 import { MedicalHandoffTabs } from './MedicalHandoffTabs';
-import {
-  buildMedicalHandoffDeepLink,
-  type MedicalHandoffScope as ScopeType,
-} from '@/features/handoff/controllers';
+import { buildMedicalHandoffDeepLink } from '@/domain/handoff/view';
+import type { MedicalHandoffScope as ScopeType } from '@/types/medicalHandoff';
 
 interface HandoffMedicalContentProps {
   record: DailyRecord;

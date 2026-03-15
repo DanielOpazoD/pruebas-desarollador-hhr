@@ -9,13 +9,15 @@ import { DebouncedTextarea } from '@/components/ui/DebouncedTextarea';
 import { MedicalHandoffObservationEntry } from './MedicalHandoffObservationEntry';
 import { MedicalHandoffValidityEntry } from './MedicalHandoffValidityEntry';
 import {
-  getDisplayMedicalHandoffEntries,
-  getMedicalHandoffSpecialtyOptions,
   canToggleClinicalEvents,
   resolveHandoffStatusVariant,
-  resolveMedicalObservationEntries,
   shouldRenderClinicalEventsPanel,
 } from '@/features/handoff/controllers';
+import {
+  getDisplayMedicalHandoffEntries,
+  getMedicalHandoffSpecialtyOptions,
+} from '@/domain/handoff/patientEntries';
+import { resolveMedicalObservationEntries } from '@/domain/handoff/patientView';
 import { MedicalBadge } from '@/components/ui/base/MedicalBadge';
 import type { MedicalBadgeVariant } from '@/shared/ui/medicalBadgeContracts';
 

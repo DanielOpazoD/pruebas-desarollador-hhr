@@ -1,5 +1,8 @@
 import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
-import { createApplicationFailed } from '@/application/shared/applicationOutcome';
+import {
+  createApplicationFailed,
+  createApplicationSuccess,
+} from '@/application/shared/applicationOutcome';
 import type { DailyRecord, DailyRecordPatch } from '@/types';
 
 export const createMissingRecordOutcome = <T>(
@@ -56,6 +59,52 @@ export const createValidationOutcome = <T>(
       telemetryTags: ['handoff', operation, reason],
     }
   );
+
+export const createNoEffectOutcome = <T>(
+  data: T,
+  operation: string,
+  message: string
+): ApplicationOutcome<T> =>
+  createApplicationSuccess(data, [], {
+    reason: 'no_effect',
+    userSafeMessage: message,
+    retryable: false,
+    severity: 'info',
+    technicalContext: { operation },
+    telemetryTags: ['handoff', operation, 'no_effect'],
+  });
+
+export const createUnknownOutcome = <T>(
+  data: T,
+  operation: string,
+  fallbackMessage: string,
+  error: unknown
+): ApplicationOutcome<T> => {
+  const errorMessage = error instanceof Error ? error.message : fallbackMessage;
+
+  return createApplicationFailed(
+    data,
+    [
+      {
+        kind: 'unknown',
+        message: errorMessage,
+        userSafeMessage: fallbackMessage,
+        retryable: true,
+        severity: 'error',
+        technicalContext: { operation, errorMessage },
+        telemetryTags: ['handoff', operation, 'unexpected_failure'],
+      },
+    ],
+    {
+      reason: 'unexpected_failure',
+      userSafeMessage: fallbackMessage,
+      retryable: true,
+      severity: 'error',
+      technicalContext: { operation, errorMessage },
+      telemetryTags: ['handoff', operation, 'unexpected_failure'],
+    }
+  );
+};
 
 export const buildPatchedRecord = (record: DailyRecord, patch: DailyRecordPatch): DailyRecord => ({
   ...record,

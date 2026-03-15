@@ -1,20 +1,30 @@
 import { useCallback } from 'react';
-import type { AuditAction, AuditLogEntry, MedicalHandoffAuditActor, PatientData } from '@/types';
+import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 import {
-  buildMedicalEntryAddFields,
-  buildMedicalEntryContinuityFields,
-  buildMedicalEntryDeleteFields,
-  buildMedicalEntryNoteFields,
-  buildMedicalPrimaryEntryCreateFields,
-  buildMedicalEntrySpecialtyFields,
-  buildMedicalPrimaryNoteFields,
-} from '@/domain/handoff/patientEntryMutations';
-import { getPatientMedicalHandoffEntries } from '@/domain/handoff/patientEntries';
+  executeAddMedicalEntry,
+  executeConfirmMedicalEntryContinuity,
+  executeCreateMedicalPrimaryEntry,
+  executeDeleteMedicalEntry,
+  executeUpdateMedicalEntryNote,
+  executeUpdateMedicalEntrySpecialty,
+  executeUpdateMedicalPrimaryNote,
+} from '@/application/handoff';
+import type { AuditAction, AuditLogEntry, MedicalHandoffAuditActor, PatientData } from '@/types';
+import { logger } from '@/services/utils/loggerService';
 
 type MedicalPatientFields = Pick<
   PatientData,
   'medicalHandoffEntries' | 'medicalHandoffNote' | 'medicalHandoffAudit'
 >;
+
+const medicalHandoffHandlersLogger = logger.child('useMedicalHandoffHandlers');
+const SILENT_MEDICAL_PATIENT_OUTCOME_REASONS = new Set([
+  'missing_patient',
+  'missing_audit_actor',
+  'missing_entry',
+  'empty_entry_note',
+  'no_effect',
+]);
 
 interface UseMedicalHandoffHandlersParams {
   isMedical: boolean;
@@ -44,208 +54,282 @@ export const useMedicalHandoffHandlers = ({
   persistMedicalFields,
   logDebouncedEvent,
 }: UseMedicalHandoffHandlersParams) => {
+  const resolveMedicalPatient = useCallback(
+    (bedId: string, isNested: boolean) => {
+      const bed = record?.beds[bedId];
+      return {
+        bed,
+        patient: isNested ? bed?.clinicalCrib : bed,
+      };
+    },
+    [record]
+  );
+
+  const logUnexpectedOutcome = useCallback(
+    <T>(operation: string, outcome: ApplicationOutcome<T>) => {
+      if (outcome.reason && SILENT_MEDICAL_PATIENT_OUTCOME_REASONS.has(outcome.reason)) {
+        return;
+      }
+
+      medicalHandoffHandlersLogger.error('Unexpected medical patient handoff outcome', {
+        operation,
+        outcome,
+      });
+    },
+    []
+  );
+
   const handleMedicalPrimaryNoteChange = useCallback(
     async (bedId: string, value: string, isNested: boolean = false) => {
       if (!record || !isMedical) return;
 
-      const bed = record.beds[bedId];
-      const patient = isNested ? bed?.clinicalCrib : bed;
-      if (!patient) return;
-
-      const oldNote = isNested ? bed?.clinicalCrib?.medicalHandoffNote : bed?.medicalHandoffNote;
-      const now = new Date().toISOString();
-      const { fields } = buildMedicalPrimaryNoteFields(
-        patient,
-        value,
+      const { patient } = resolveMedicalPatient(bedId, isNested);
+      const outcome = await executeUpdateMedicalPrimaryNote({
         medicalAuditActor,
-        record.date,
-        now
-      );
-      await persistMedicalFields(bedId, fields, isNested);
+        patient,
+        persistMedicalFields: (fields: MedicalPatientFields) =>
+          persistMedicalFields(bedId, fields, isNested),
+        recordDate: record.date,
+        value,
+      });
+      if (outcome.status !== 'success' || !outcome.data) {
+        logUnexpectedOutcome('handleMedicalPrimaryNoteChange', outcome);
+        return;
+      }
 
       logDebouncedEvent(
         'MEDICAL_HANDOFF_MODIFIED',
         'patient',
         bedId,
         {
-          patientName: patient.patientName || (isNested ? 'Cuna' : 'ANONYMOUS'),
+          patientName: patient?.patientName || (isNested ? 'Cuna' : 'ANONYMOUS'),
           note: value,
-          changes: { medicalHandoffNote: { old: oldNote || '', new: value } },
+          changes: {
+            medicalHandoffNote: {
+              old: outcome.data.previousEntry?.note || '',
+              new: value,
+            },
+          },
         },
-        patient.rut,
+        patient?.rut,
         record.date,
         undefined,
         30000
       );
     },
-    [isMedical, logDebouncedEvent, medicalAuditActor, persistMedicalFields, record]
+    [
+      isMedical,
+      logDebouncedEvent,
+      logUnexpectedOutcome,
+      medicalAuditActor,
+      persistMedicalFields,
+      record,
+      resolveMedicalPatient,
+    ]
   );
 
   const handleMedicalEntryNoteChange = useCallback(
     async (bedId: string, entryId: string, value: string, isNested: boolean = false) => {
       if (!record || !isMedical) return;
 
-      const patient = isNested ? record.beds[bedId]?.clinicalCrib : record.beds[bedId];
-      if (!patient) return;
-
-      const now = new Date().toISOString();
-      const previousEntry = getPatientMedicalHandoffEntries(patient).find(
-        entry => entry.id === entryId
-      );
-      const { entry, fields } = buildMedicalEntryNoteFields(
-        patient,
+      const { patient } = resolveMedicalPatient(bedId, isNested);
+      const outcome = await executeUpdateMedicalEntryNote({
         entryId,
-        value,
         medicalAuditActor,
-        record.date,
-        now
-      );
-      await persistMedicalFields(bedId, fields, isNested);
+        patient,
+        persistMedicalFields: (fields: MedicalPatientFields) =>
+          persistMedicalFields(bedId, fields, isNested),
+        recordDate: record.date,
+        value,
+      });
+      if (outcome.status !== 'success' || !outcome.data) {
+        logUnexpectedOutcome('handleMedicalEntryNoteChange', outcome);
+        return;
+      }
 
       logDebouncedEvent(
         'MEDICAL_HANDOFF_MODIFIED',
         'patient',
         bedId,
         {
-          patientName: patient.patientName || '',
-          specialty: entry.specialty,
+          patientName: patient?.patientName || '',
+          specialty: outcome.data.entry?.specialty,
           note: value,
           changes: {
             medicalHandoffNote: {
-              old: previousEntry?.note || '',
+              old: outcome.data.previousEntry?.note || '',
               new: value,
             },
           },
         },
-        patient.rut,
+        patient?.rut,
         record.date,
         undefined,
         30000
       );
     },
-    [isMedical, logDebouncedEvent, medicalAuditActor, persistMedicalFields, record]
+    [
+      isMedical,
+      logDebouncedEvent,
+      logUnexpectedOutcome,
+      medicalAuditActor,
+      persistMedicalFields,
+      record,
+      resolveMedicalPatient,
+    ]
   );
 
   const handleMedicalEntrySpecialtyChange = useCallback(
     async (bedId: string, entryId: string, specialty: string, isNested: boolean = false) => {
       if (!record || !isMedical) return;
 
-      const patient = isNested ? record.beds[bedId]?.clinicalCrib : record.beds[bedId];
-      if (!patient) return;
-
-      const { fields } = buildMedicalEntrySpecialtyFields(patient, entryId, specialty);
-      await persistMedicalFields(bedId, fields, isNested);
+      const { patient } = resolveMedicalPatient(bedId, isNested);
+      const outcome = await executeUpdateMedicalEntrySpecialty({
+        entryId,
+        patient,
+        persistMedicalFields: (fields: MedicalPatientFields) =>
+          persistMedicalFields(bedId, fields, isNested),
+        specialty,
+      });
+      if (outcome.status !== 'success' || !outcome.data) {
+        logUnexpectedOutcome('handleMedicalEntrySpecialtyChange', outcome);
+      }
     },
-    [isMedical, persistMedicalFields, record]
+    [isMedical, logUnexpectedOutcome, persistMedicalFields, record, resolveMedicalPatient]
   );
 
   const handleMedicalEntryAdd = useCallback(
     async (bedId: string, isNested: boolean = false) => {
       if (!record || !isMedical) return;
 
-      const patient = isNested ? record.beds[bedId]?.clinicalCrib : record.beds[bedId];
-      if (!patient) return;
-
-      const fields = buildMedicalEntryAddFields(patient);
-      await persistMedicalFields(bedId, fields, isNested);
+      const { patient } = resolveMedicalPatient(bedId, isNested);
+      const outcome = await executeAddMedicalEntry({
+        patient,
+        persistMedicalFields: (fields: MedicalPatientFields) =>
+          persistMedicalFields(bedId, fields, isNested),
+      });
+      if (outcome.status !== 'success' || !outcome.data) {
+        logUnexpectedOutcome('handleMedicalEntryAdd', outcome);
+      }
     },
-    [isMedical, persistMedicalFields, record]
+    [isMedical, logUnexpectedOutcome, persistMedicalFields, record, resolveMedicalPatient]
   );
 
   const handleMedicalPrimaryEntryCreate = useCallback(
     async (bedId: string, isNested: boolean = false) => {
       if (!record || !isMedical) return;
 
-      const patient = isNested ? record.beds[bedId]?.clinicalCrib : record.beds[bedId];
-      if (!patient) return;
-
-      const fields = buildMedicalPrimaryEntryCreateFields(patient);
-      await persistMedicalFields(bedId, fields, isNested);
+      const { patient } = resolveMedicalPatient(bedId, isNested);
+      const outcome = await executeCreateMedicalPrimaryEntry({
+        patient,
+        persistMedicalFields: (fields: MedicalPatientFields) =>
+          persistMedicalFields(bedId, fields, isNested),
+      });
+      if (outcome.status !== 'success' || !outcome.data) {
+        logUnexpectedOutcome('handleMedicalPrimaryEntryCreate', outcome);
+      }
     },
-    [isMedical, persistMedicalFields, record]
+    [isMedical, logUnexpectedOutcome, persistMedicalFields, record, resolveMedicalPatient]
   );
 
   const handleMedicalEntryDelete = useCallback(
     async (bedId: string, entryId: string, isNested: boolean = false) => {
       if (!record || !isMedical) return;
 
-      const patient = isNested ? record.beds[bedId]?.clinicalCrib : record.beds[bedId];
-      if (!patient) return;
-
-      const mutation = buildMedicalEntryDeleteFields(patient, entryId);
-      if (!mutation) return;
-      const { entry, fields } = mutation;
-      await persistMedicalFields(bedId, fields, isNested);
+      const { patient } = resolveMedicalPatient(bedId, isNested);
+      const outcome = await executeDeleteMedicalEntry({
+        entryId,
+        patient,
+        persistMedicalFields: (fields: MedicalPatientFields) =>
+          persistMedicalFields(bedId, fields, isNested),
+      });
+      if (outcome.status !== 'success' || !outcome.data) {
+        logUnexpectedOutcome('handleMedicalEntryDelete', outcome);
+        return;
+      }
 
       logDebouncedEvent(
         'MEDICAL_HANDOFF_MODIFIED',
         'patient',
         bedId,
         {
-          patientName: patient.patientName || '',
-          specialty: entry.specialty,
+          patientName: patient?.patientName || '',
+          specialty: outcome.data.entry?.specialty,
           operation: 'delete_medical_handoff_entry',
           changes: {
             medicalHandoffNote: {
-              old: entry.note || '',
+              old: outcome.data.previousEntry?.note || '',
               new: '',
             },
           },
         },
-        patient.rut,
+        patient?.rut,
         record.date,
         undefined,
         10000
       );
     },
-    [isMedical, logDebouncedEvent, persistMedicalFields, record]
+    [
+      isMedical,
+      logDebouncedEvent,
+      logUnexpectedOutcome,
+      persistMedicalFields,
+      record,
+      resolveMedicalPatient,
+    ]
   );
 
   const handleMedicalContinuityConfirm = useCallback(
     (bedId: string, entryId: string, isNested: boolean = false) => {
-      if (!record || !isMedical || !medicalAuditActor) return;
+      if (!record || !isMedical) return;
 
-      const patient = isNested ? record.beds[bedId]?.clinicalCrib : record.beds[bedId];
-      if (!patient) return;
+      const { patient } = resolveMedicalPatient(bedId, isNested);
+      void (async () => {
+        const outcome = await executeConfirmMedicalEntryContinuity({
+          entryId,
+          medicalAuditActor,
+          patient,
+          persistMedicalFields: (fields: MedicalPatientFields) =>
+            persistMedicalFields(bedId, fields, isNested),
+          recordDate: record.date,
+        });
+        if (outcome.status !== 'success' || !outcome.data) {
+          logUnexpectedOutcome('handleMedicalContinuityConfirm', outcome);
+          return;
+        }
 
-      const previousEntry = getPatientMedicalHandoffEntries(patient).find(
-        entry => entry.id === entryId
-      );
-      const now = new Date().toISOString();
-      const mutation = buildMedicalEntryContinuityFields(
-        patient,
-        entryId,
-        medicalAuditActor,
-        record.date,
-        now
-      );
-      if (!mutation || !mutation.entry.note.trim()) return;
-      const { entry, fields } = mutation;
-      void persistMedicalFields(bedId, fields, isNested);
-
-      logDebouncedEvent(
-        'HANDOFF_NOVEDADES_MODIFIED',
-        'patient',
-        bedId,
-        {
-          shift: 'medical',
-          operation: 'confirm_current',
-          patientName: patient.patientName || '',
-          specialty: entry.specialty,
-          changes: {
-            medicalHandoffCurrentStatus: {
-              old: previousEntry?.currentStatus || '',
-              new: 'confirmed_current',
+        logDebouncedEvent(
+          'HANDOFF_NOVEDADES_MODIFIED',
+          'patient',
+          bedId,
+          {
+            shift: 'medical',
+            operation: 'confirm_current',
+            patientName: patient?.patientName || '',
+            specialty: outcome.data.entry?.specialty,
+            changes: {
+              medicalHandoffCurrentStatus: {
+                old: outcome.data.previousEntry?.currentStatus || '',
+                new: 'confirmed_current',
+              },
             },
           },
-        },
-        patient.rut,
-        record.date,
-        undefined,
-        10000
-      );
+          patient?.rut,
+          record.date,
+          undefined,
+          10000
+        );
+      })();
     },
-    [isMedical, logDebouncedEvent, medicalAuditActor, persistMedicalFields, record]
+    [
+      isMedical,
+      logDebouncedEvent,
+      logUnexpectedOutcome,
+      medicalAuditActor,
+      persistMedicalFields,
+      record,
+      resolveMedicalPatient,
+    ]
   );
 
   return {

@@ -369,4 +369,159 @@ describe('useHandoffLogic', () => {
     );
     expect(DEFAULT_NO_CHANGES_COMMENT).toContain('sin cambios');
   });
+
+  it('uses the clinical crib adapter for nested medical handoff changes', async () => {
+    const mockUpdateClinicalCribMultiple = vi.fn();
+    vi.mocked(useDailyRecordData).mockReturnValue({
+      record: {
+        ...mockRecord,
+        beds: {
+          ...mockRecord.beds,
+          R1: {
+            ...mockRecord.beds.R1,
+            clinicalCrib: {
+              ...mockRecord.beds.R1,
+              bedId: 'R1-crib',
+              patientName: 'RN clínico',
+              medicalHandoffNote: '',
+            },
+          },
+        },
+      } as DailyRecordDataMock['record'],
+      syncStatus: 'synced' as DailyRecordDataMock['syncStatus'],
+      lastSyncTime: null,
+      inventory: {} as DailyRecordDataMock['inventory'],
+      stabilityRules: {} as DailyRecordDataMock['stabilityRules'],
+    } as DailyRecordDataMock);
+    vi.mocked(useDailyRecordBedActions).mockReturnValue({
+      updatePatientMultiple: vi.fn(),
+      updatePatient: vi.fn(),
+      updateClinicalCrib: vi.fn(),
+      updateClinicalCribMultiple: mockUpdateClinicalCribMultiple,
+    } as unknown as BedActionsMock);
+
+    const params = {
+      type: 'medical' as const,
+      selectedShift: 'day' as const,
+      setSelectedShift: vi.fn(),
+      onSuccess: vi.fn(),
+    };
+
+    const { result } = renderHook(() => useHandoffLogic(params));
+
+    await act(async () => {
+      await result.current.handleNursingNoteChange('R1', 'Nota RN', true);
+    });
+
+    expect(mockUpdateClinicalCribMultiple).toHaveBeenCalledWith(
+      'R1',
+      expect.objectContaining({
+        medicalHandoffNote: 'Nota RN',
+      })
+    );
+  });
+
+  it('keeps no-effect primary-entry creation silent when entries already exist', async () => {
+    const mockUpdateMultiple = vi.fn();
+    vi.mocked(useDailyRecordData).mockReturnValue({
+      record: {
+        ...mockRecord,
+        beds: {
+          ...mockRecord.beds,
+          R1: {
+            ...mockRecord.beds.R1,
+            medicalHandoffEntries: [
+              {
+                id: 'primary-entry',
+                specialty: Specialty.MEDICINA,
+                note: 'Ya existe',
+              },
+            ],
+          },
+        },
+      } as DailyRecordDataMock['record'],
+      syncStatus: 'synced' as DailyRecordDataMock['syncStatus'],
+      lastSyncTime: null,
+      inventory: {} as DailyRecordDataMock['inventory'],
+      stabilityRules: {} as DailyRecordDataMock['stabilityRules'],
+    } as DailyRecordDataMock);
+    vi.mocked(useDailyRecordBedActions).mockReturnValue({
+      updatePatientMultiple: mockUpdateMultiple,
+      updatePatient: vi.fn(),
+      updateClinicalCrib: vi.fn(),
+      updateClinicalCribMultiple: vi.fn(),
+    } as unknown as BedActionsMock);
+
+    const params = {
+      type: 'medical' as const,
+      selectedShift: 'day' as const,
+      setSelectedShift: vi.fn(),
+      onSuccess: vi.fn(),
+    };
+
+    const { result } = renderHook(() => useHandoffLogic(params));
+
+    await act(async () => {
+      await result.current.handleMedicalPrimaryEntryCreate('R1');
+    });
+
+    expect(mockUpdateMultiple).not.toHaveBeenCalled();
+  });
+
+  it('keeps invalid continuity confirmation silent when the entry has no note', async () => {
+    const mockUpdateMultiple = vi.fn();
+    vi.mocked(useDailyRecordData).mockReturnValue({
+      record: {
+        ...mockRecord,
+        beds: {
+          ...mockRecord.beds,
+          R1: {
+            ...mockRecord.beds.R1,
+            medicalHandoffEntries: [
+              {
+                id: 'entry-1',
+                specialty: Specialty.MEDICINA,
+                note: '',
+              },
+            ],
+          },
+        },
+      } as DailyRecordDataMock['record'],
+      syncStatus: 'synced' as DailyRecordDataMock['syncStatus'],
+      lastSyncTime: null,
+      inventory: {} as DailyRecordDataMock['inventory'],
+      stabilityRules: {} as DailyRecordDataMock['stabilityRules'],
+    } as DailyRecordDataMock);
+    vi.mocked(useDailyRecordBedActions).mockReturnValue({
+      updatePatientMultiple: mockUpdateMultiple,
+      updatePatient: vi.fn(),
+      updateClinicalCrib: vi.fn(),
+      updateClinicalCribMultiple: vi.fn(),
+    } as unknown as BedActionsMock);
+
+    const params = {
+      type: 'medical' as const,
+      selectedShift: 'day' as const,
+      setSelectedShift: vi.fn(),
+      onSuccess: vi.fn(),
+    };
+
+    const { result } = renderHook(() => useHandoffLogic(params));
+
+    await act(async () => {
+      result.current.handleMedicalContinuityConfirm('R1', 'entry-1');
+    });
+
+    expect(mockUpdateMultiple).not.toHaveBeenCalled();
+    expect(mockLogDebouncedEvent).not.toHaveBeenCalledWith(
+      'HANDOFF_NOVEDADES_MODIFIED',
+      'patient',
+      'R1',
+      expect.anything(),
+      expect.anything(),
+      '2025-01-01',
+      undefined,
+      10000
+    );
+  });
 });

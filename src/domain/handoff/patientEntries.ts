@@ -18,6 +18,30 @@ const hasMeaningfulEntry = (entry: MedicalHandoffEntry): boolean =>
     entry.updatedBy
   );
 
+export const formatMedicalHandoffTimestamp = (value?: string): string => {
+  if (!value) return '';
+  return new Date(value).toLocaleString('es-CL', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+export const getMedicalHandoffSpecialtyOptions = (): string[] => MEDICAL_SPECIALTY_OPTIONS;
+
+export const formatMedicalHandoffActorLabel = (value?: string): string => {
+  if (!value) return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (trimmed.includes('@')) return trimmed;
+
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length <= 2) return parts.join(' ');
+  return `${parts[0]} ${parts[1]}`;
+};
+
 export const createMedicalHandoffEntry = (
   specialty: Specialty | string,
   overrides: Partial<MedicalHandoffEntry> = {}
@@ -47,6 +71,24 @@ export const getPatientMedicalHandoffEntries = (patient: PatientData): MedicalHa
       currentStatusAt: patient.medicalHandoffAudit?.currentStatusAt,
       currentStatusBy: patient.medicalHandoffAudit?.currentStatusBy,
     },
+  ];
+};
+
+export const getDisplayMedicalHandoffEntries = (
+  patient: PatientData,
+  ensureDraft: boolean
+): MedicalHandoffEntry[] => {
+  const persisted = getPatientMedicalHandoffEntries(patient);
+  if (persisted.length > 0) return persisted;
+  if (!ensureDraft) return [];
+
+  return [
+    createMedicalHandoffEntry(
+      patient.specialty || MEDICAL_SPECIALTY_OPTIONS[0] || Specialty.MEDICINA,
+      {
+        id: 'draft-primary',
+      }
+    ),
   ];
 };
 

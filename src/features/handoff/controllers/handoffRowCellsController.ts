@@ -1,9 +1,5 @@
-import {
-  getDisplayMedicalHandoffEntries,
-  getPatientMedicalHandoffEntries,
-} from '@/features/handoff/controllers';
+import { resolveMedicalObservationEntries } from '@/domain/handoff/patientView';
 import type { MedicalBadgeVariant } from '@/shared/ui/medicalBadgeContracts';
-import type { PatientData } from '@/types';
 import { PatientStatus } from '@/types';
 
 export const resolveHandoffStatusVariant = (
@@ -33,23 +29,4 @@ export const shouldRenderClinicalEventsPanel = ({
   canDelete: boolean;
 }): boolean => showEvents && canAdd && canUpdate && canDelete;
 
-export const resolveMedicalObservationEntries = ({
-  patient,
-  isFieldReadOnly,
-  hasCreatePrimaryEntryAction,
-}: {
-  patient: PatientData;
-  isFieldReadOnly: boolean;
-  hasCreatePrimaryEntryAction: boolean;
-}) => {
-  const persistedEntries = getPatientMedicalHandoffEntries(patient);
-  if (persistedEntries.length > 0) {
-    return persistedEntries;
-  }
-
-  if (!isFieldReadOnly && !hasCreatePrimaryEntryAction) {
-    return getDisplayMedicalHandoffEntries(patient, true);
-  }
-
-  return [];
-};
+export { resolveMedicalObservationEntries };

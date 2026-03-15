@@ -38,6 +38,7 @@ export {
   buildMedicalEntryDeleteFields,
   buildMedicalEntryNoteFields,
   buildMedicalEntrySpecialtyFields,
+  buildMedicalPrimaryEntryCreateFields,
   buildMedicalPrimaryNoteFields,
 } from './medicalPatientHandoffMutationController';
 export { resolveHandoffScreenState } from './handoffScreenController';
