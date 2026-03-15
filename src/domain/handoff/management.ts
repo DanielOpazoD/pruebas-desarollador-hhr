@@ -48,6 +48,34 @@ export const buildNovedadesUpdateRecord = (
   return updatedRecord;
 };
 
+export const buildUpdatedHandoffStaffRecord = (
+  currentRecord: DailyRecord,
+  shift: 'day' | 'night',
+  type: 'delivers' | 'receives' | 'tens',
+  staffList: string[]
+): DailyRecord => {
+  const updatedRecord = { ...currentRecord };
+
+  if (shift === 'day') {
+    if (type === 'delivers') {
+      updatedRecord.nursesDayShift = staffList;
+    } else if (type === 'receives') {
+      updatedRecord.nursesNightShift = staffList;
+    } else {
+      updatedRecord.tensDayShift = staffList;
+    }
+  } else if (type === 'delivers') {
+    updatedRecord.nursesNightShift = staffList;
+  } else if (type === 'receives') {
+    updatedRecord.handoffNightReceives = staffList;
+  } else {
+    updatedRecord.tensNightShift = staffList;
+  }
+
+  updatedRecord.lastUpdated = new Date().toISOString();
+  return updatedRecord;
+};
+
 export const buildMedicalSpecialtyNoteRecord = (
   record: DailyRecord,
   specialty: MedicalSpecialty,

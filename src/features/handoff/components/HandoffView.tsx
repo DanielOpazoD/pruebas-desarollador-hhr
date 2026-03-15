@@ -87,10 +87,8 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
   useEffect(() => {
     recordRef.current = record;
   }, [record]);
-
   const localUi = useUIState();
   const ui = propUi || localUi;
-
   const {
     selectedShift,
     setSelectedShift,
@@ -141,12 +139,10 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
       }),
     [visibleBeds, record, isMedical, effectiveMedicalScope, shouldShowPatient]
   );
-
   const effectiveSelectedMedicalSpecialty = React.useMemo(
     () => resolveEffectiveSelectedMedicalSpecialty(selectedMedicalSpecialty, medicalSpecialties),
     [medicalSpecialties, selectedMedicalSpecialty]
   );
-
   const { specialtyFilteredBeds, hasAnyVisiblePatients } = React.useMemo(
     () =>
       resolveHandoffScreenState({
@@ -166,7 +162,6 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
       shouldShowPatient,
     ]
   );
-
   const { userId } = useAuditContext();
   const recordDate = record?.date;
   useEffect(() => {
@@ -192,7 +187,6 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
       );
     }
   }, [recordDate, type, selectedShift, isMedical, userId]);
-
   useEffect(() => {
     const nextTitle = resolveHandoffDocumentTitle({
       isMedical,
@@ -256,7 +250,6 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
   const handleOpenCudyr = () => ui?.setCurrentModule('CUDYR');
   const Icon = isMedical ? Stethoscope : MessageSquare;
   const tableHeaderClass = resolveHandoffTableHeaderClass({ isMedical, selectedShift });
-
   if (!record) {
     return (
       <div className="p-8 text-center text-slate-500 font-sans">
@@ -264,7 +257,6 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
       </div>
     );
   }
-
   return (
     <div className="space-y-3 print:space-y-2 animate-fade-in pb-20 font-sans max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 print:max-w-none print:w-full print:px-0 print:pb-0">
       <HandoffPrintHeader

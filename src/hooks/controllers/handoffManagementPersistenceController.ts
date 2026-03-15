@@ -2,6 +2,7 @@ import type { DailyRecord, MedicalHandoffActor, MedicalSpecialty } from '@/types
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import { getAttributedAuthors } from '@/services/admin/attributionService';
 import {
+  buildUpdatedHandoffStaffRecord,
   buildMedicalNoChangesRecord,
   buildMedicalSpecialtyNoteRecord,
   normalizeMedicalHandoffActor,
@@ -172,34 +173,6 @@ export const buildMedicalNoChangesAuditEvent = (
   recordDate: record.date,
 });
 
-export const buildUpdatedHandoffStaffRecord = (
-  currentRecord: DailyRecord,
-  shift: StaffShift,
-  type: StaffType,
-  staffList: string[]
-): DailyRecord => {
-  const updatedRecord = { ...currentRecord };
-
-  if (shift === 'day') {
-    if (type === 'delivers') {
-      updatedRecord.nursesDayShift = staffList;
-    } else if (type === 'receives') {
-      updatedRecord.nursesNightShift = staffList;
-    } else {
-      updatedRecord.tensDayShift = staffList;
-    }
-  } else if (type === 'delivers') {
-    updatedRecord.nursesNightShift = staffList;
-  } else if (type === 'receives') {
-    updatedRecord.handoffNightReceives = staffList;
-  } else {
-    updatedRecord.tensNightShift = staffList;
-  }
-
-  updatedRecord.lastUpdated = new Date().toISOString();
-  return updatedRecord;
-};
-
 export const buildUpdatedHandoffStaffPersistencePayload = (
   currentRecord: DailyRecord,
   shift: StaffShift,
@@ -208,6 +181,8 @@ export const buildUpdatedHandoffStaffPersistencePayload = (
 ): { updatedRecord: DailyRecord } => ({
   updatedRecord: buildUpdatedHandoffStaffRecord(currentRecord, shift, type, staffList),
 });
+
+export { buildUpdatedHandoffStaffRecord };
 
 export const buildMedicalSignatureAuditPayload = (
   updatedRecord: DailyRecord,

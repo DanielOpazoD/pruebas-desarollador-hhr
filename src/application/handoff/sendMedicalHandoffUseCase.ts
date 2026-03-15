@@ -1,29 +1,19 @@
 import { BEDS } from '@/constants';
 import type { DailyRecord, DailyRecordPatch } from '@/types';
-import type { MedicalHandoffScope } from '@/features/handoff/controllers';
-import {
-  buildMedicalHandoffSignatureLink,
-  resolveScopedMedicalSignatureToken,
-} from '@/features/handoff/controllers';
-import { buildMedicalSentPatch } from '@/features/handoff/controllers/handoffManagementController';
+import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import {
   formatHandoffMessage,
   sendWhatsAppMessage,
 } from '@/services/integrations/whatsapp/whatsappService';
-import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 import {
   createApplicationFailed,
   createApplicationSuccess,
   type ApplicationOutcome,
 } from '@/application/shared/applicationOutcome';
-
-const generateMedicalSignatureLinkToken = (): string => {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-
-  return `sig_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
-};
+import {
+  executeEnsureMedicalHandoffSignatureLink,
+  executeMarkMedicalHandoffAsSent,
+} from './handoffDeliveryUseCases';
 
 export interface SendMedicalHandoffInput {
   record: DailyRecord;
@@ -38,38 +28,8 @@ export interface SendMedicalHandoffOutput {
   sentAt: string;
   doctorName: string;
   handoffUrl: string;
+  nextRecord: DailyRecord;
 }
-
-const ensureScopedMedicalHandoffSignatureLink = async (
-  record: DailyRecord,
-  scope: MedicalHandoffScope,
-  patchRecord: (partial: DailyRecordPatch) => Promise<void>
-): Promise<string> => {
-  const existingToken = resolveScopedMedicalSignatureToken(record, scope);
-  if (existingToken) {
-    return buildMedicalHandoffSignatureLink(
-      defaultBrowserWindowRuntime.getLocationOrigin(),
-      record.date,
-      scope,
-      existingToken
-    );
-  }
-
-  const nextToken = generateMedicalSignatureLinkToken();
-  await patchRecord({
-    medicalSignatureLinkTokenByScope: {
-      ...(record.medicalSignatureLinkTokenByScope || {}),
-      [scope]: nextToken,
-    },
-  });
-
-  return buildMedicalHandoffSignatureLink(
-    defaultBrowserWindowRuntime.getLocationOrigin(),
-    record.date,
-    scope,
-    nextToken
-  );
-};
 
 const resolveDoctorName = async (
   record: DailyRecord,
@@ -103,11 +63,34 @@ export const executeSendMedicalHandoff = async (
     const scope = input.scope || 'all';
     const doctorName = await resolveDoctorName(input.record, input.getPreviousDay);
     const { hospitalized, freeBeds } = resolveHandoffStats(input.record);
-    const handoffUrl = await ensureScopedMedicalHandoffSignatureLink(
-      input.record,
+
+    const linkOutcome = await executeEnsureMedicalHandoffSignatureLink({
+      record: input.record,
       scope,
-      input.patchRecord
-    );
+      patchRecord: input.patchRecord,
+    });
+    if (linkOutcome.status === 'failed') {
+      return createApplicationFailed(null, linkOutcome.issues, {
+        reason: linkOutcome.reason,
+        userSafeMessage: linkOutcome.userSafeMessage,
+        retryable: linkOutcome.retryable,
+        severity: linkOutcome.severity,
+        technicalContext: linkOutcome.technicalContext,
+        telemetryTags: linkOutcome.telemetryTags,
+      });
+    }
+    const handoffUrl = linkOutcome.data?.handoffUrl;
+    if (!handoffUrl) {
+      return createApplicationFailed(null, [
+        {
+          kind: 'unknown',
+          message: 'No se pudo generar el enlace de firma médica.',
+          userSafeMessage: 'No se pudo generar el enlace de firma médica.',
+          severity: 'error',
+          telemetryTags: ['handoff', 'send_medical_handoff', 'missing_signature_link'],
+        },
+      ]);
+    }
 
     const [year, month, day] = input.record.date.split('-');
     const dateStr = `${day}-${month}-${year}`;
@@ -129,15 +112,53 @@ export const executeSendMedicalHandoff = async (
 
     const result = await sendWhatsAppMessage(input.targetGroupId, message);
     if (!result.success) {
-      throw new Error(result.error);
+      const deliveryError = result.error || 'No se pudo enviar la entrega médica por WhatsApp.';
+      return createApplicationFailed(
+        null,
+        [
+          {
+            kind: 'unknown',
+            message: deliveryError,
+            userSafeMessage: deliveryError,
+            retryable: true,
+            severity: 'error',
+            technicalContext: { targetGroupId: input.targetGroupId, scope },
+            telemetryTags: ['handoff', 'send_medical_handoff', 'whatsapp_delivery_failed'],
+          },
+        ],
+        {
+          reason: 'whatsapp_delivery_failed',
+          userSafeMessage: deliveryError,
+          retryable: true,
+          severity: 'error',
+          technicalContext: { targetGroupId: input.targetGroupId, scope },
+          telemetryTags: ['handoff', 'send_medical_handoff', 'whatsapp_delivery_failed'],
+        }
+      );
     }
 
-    await input.patchRecord(buildMedicalSentPatch(input.record, doctorName, scope));
+    const sentOutcome = await executeMarkMedicalHandoffAsSent({
+      record: linkOutcome.data?.nextRecord || input.record,
+      doctorName,
+      patchRecord: input.patchRecord,
+      scope,
+    });
+    if (sentOutcome.status === 'failed' || !sentOutcome.data) {
+      return createApplicationFailed(null, sentOutcome.issues, {
+        reason: sentOutcome.reason,
+        userSafeMessage: sentOutcome.userSafeMessage,
+        retryable: sentOutcome.retryable,
+        severity: sentOutcome.severity,
+        technicalContext: sentOutcome.technicalContext,
+        telemetryTags: sentOutcome.telemetryTags,
+      });
+    }
 
     return createApplicationSuccess({
-      sentAt,
+      sentAt: sentOutcome.data.sentAt || sentAt,
       doctorName,
       handoffUrl,
+      nextRecord: sentOutcome.data.nextRecord,
     });
   } catch (error) {
     return createApplicationFailed(null, [
