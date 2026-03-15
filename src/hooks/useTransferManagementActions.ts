@@ -23,6 +23,9 @@ import {
 } from '@/hooks/controllers/transferManagementFeedbackController';
 import type { DailyRecord } from '@/types';
 import type { DailyRecordActionsContextType } from '@/hooks/useDailyRecordTypes';
+import { logger } from '@/services/utils/loggerService';
+
+const transferManagementLogger = logger.child('useTransferManagementActions');
 
 interface UseTransferManagementActionsParams {
   userEmail: string | null;
@@ -48,7 +51,7 @@ export const useTransferManagementActions = ({
         await task();
         setError(null);
       } catch (err) {
-        console.error(`Error in transfer action "${action}":`, err);
+        transferManagementLogger.error(`Transfer action "${action}" failed`, err);
         setError(getTransferActionErrorMessage(action));
       }
     },

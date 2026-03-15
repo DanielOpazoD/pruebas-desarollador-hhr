@@ -1,6 +1,10 @@
+import { logger } from '@/services/utils/loggerService';
+
 const isTestEnvironment = (): boolean =>
   typeof process !== 'undefined' &&
   (process.env.VITEST === 'true' || process.env.NODE_ENV === 'test');
+
+const legacyFirebaseLogger = logger.child('LegacyFirebase');
 
 const isLegacyDebugEnabled = (): boolean =>
   !isTestEnvironment() &&
@@ -41,12 +45,12 @@ export const isLegacyPermissionDeniedError = (error: unknown): boolean => {
 
 export const logLegacyInfo = (message: string): void => {
   if (!isLegacyDebugEnabled()) return;
-  console.warn(message);
+  legacyFirebaseLogger.warn(message);
 };
 
 export const logLegacyError = (message: string, error: unknown): void => {
   if (isLegacyPermissionDeniedError(error) && !isLegacyDebugEnabled()) {
     return;
   }
-  console.error(message, error);
+  legacyFirebaseLogger.error(message, error);
 };

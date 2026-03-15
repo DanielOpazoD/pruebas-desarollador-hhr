@@ -4,6 +4,9 @@ import {
   hasStructuralRepairs,
   parseDailyRecordWithDefaultsReport,
 } from '@/schemas/zodSchemas';
+import { logger } from '@/services/utils/loggerService';
+
+const repositoryValidationLogger = logger.child('RepositoryValidation');
 
 const logSalvageSummary = (
   date: string,
@@ -13,7 +16,7 @@ const logSalvageSummary = (
     return;
   }
 
-  console.warn(`[RepositoryValidation] Salvaged ${date}`, report);
+  repositoryValidationLogger.warn(`Salvaged ${date}`, report);
 };
 
 /**
@@ -30,8 +33,8 @@ export const validateAndSalvageRecord = (record: DailyRecord, date: string): Dai
     // 1. Attempt strict parse
     return DailyRecordSchema.parse(record);
   } catch (err) {
-    console.warn(
-      `[RepositoryValidation] Strict validation failed for ${date}, attempting salvage...`,
+    repositoryValidationLogger.warn(
+      `Strict validation failed for ${date}, attempting salvage...`,
       err
     );
 
@@ -43,10 +46,7 @@ export const validateAndSalvageRecord = (record: DailyRecord, date: string): Dai
     try {
       return DailyRecordSchema.parse(salvaged);
     } catch (finalErr) {
-      console.error(
-        `[RepositoryValidation] Salvage failed strict validation for ${date}:`,
-        finalErr
-      );
+      repositoryValidationLogger.error(`Salvage failed strict validation for ${date}`, finalErr);
       throw new Error(
         `Crítico: El registro del día ${date} está corrupto y no pudo ser recuperado automáticamente.`
       );

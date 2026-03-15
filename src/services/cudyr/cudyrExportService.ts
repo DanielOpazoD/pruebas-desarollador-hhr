@@ -10,12 +10,15 @@ import { validateExcelExport, XLSX_MIME_TYPE } from '@/services/exporters/excelV
 import { buildCudyrWorkbook } from './cudyrWorkbookBuilder';
 import { getRecordFromFirestore } from '@/services/storage/firestoreService';
 import { resolvePreferredDailyRecord } from '@/services/repositories/dailyRecordSyncCompatibility';
+import { logger } from '@/services/utils/loggerService';
+
+const cudyrExportLogger = logger.child('CudyrExport');
 
 const fetchDailyRecord = async (dateStr: string): Promise<DailyRecord | null> => {
   try {
     return await getRecordFromFirestore(dateStr);
   } catch (error) {
-    console.warn(`[CudyrExport] Failed to fetch record for ${dateStr}:`, error);
+    cudyrExportLogger.warn(`Failed to fetch record for ${dateStr}`, error);
     return null;
   }
 };
@@ -71,7 +74,7 @@ export const generateCudyrMonthlyExcel = async (
 
   const validation = validateExcelExport(buffer, fileName);
   if (!validation.valid) {
-    console.error(`❌ Validacion de Excel fallida: ${validation.error}`);
+    cudyrExportLogger.error(`Excel validation failed: ${validation.error}`);
     alert(
       `Error al generar el archivo Excel:\n${validation.error}\n\nPor favor, recarga la pagina e intenta de nuevo.`
     );
@@ -81,7 +84,9 @@ export const generateCudyrMonthlyExcel = async (
   const blob = new Blob([buffer], { type: XLSX_MIME_TYPE });
   const { saveAs } = await import('file-saver');
   saveAs(blob, fileName);
-  console.warn(`📥 Resumen mensual CUDYR descargado: ${fileName} (${buffer.byteLength} bytes)`);
+  cudyrExportLogger.warn(
+    `Monthly CUDYR summary downloaded: ${fileName} (${buffer.byteLength} bytes)`
+  );
 };
 
 export const generateCudyrMonthlyExcelBlob = async (

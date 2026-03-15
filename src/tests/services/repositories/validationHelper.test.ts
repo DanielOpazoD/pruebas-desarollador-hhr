@@ -34,7 +34,7 @@ describe('validationHelper', () => {
     expect(warnSpy).toHaveBeenCalled();
     expect(
       warnSpy.mock.calls.some(([message]) =>
-        String(message).includes('Strict validation failed for 2026-03-04')
+        String(message).includes('[RepositoryValidation] Strict validation failed for 2026-03-04')
       )
     ).toBe(true);
 

@@ -7,6 +7,9 @@ import {
   importDataJSONDetailed as importDataJSONDetailedFile,
   JsonImportResult,
 } from '@/services/exporters/exportImportJson';
+import { logger } from '@/services/utils/loggerService';
+
+const exportServiceLogger = logger.child('ExportService');
 
 export const exportDataJSON = async () => {
   const data = await getAllRecords();
@@ -31,6 +34,6 @@ export const importDataJSONDetailed = async (file: File): Promise<JsonImportResu
 };
 
 export const importDataCSV = async (_file: File): Promise<boolean> => {
-  console.warn('CSV Import not fully implemented. Use JSON.');
+  exportServiceLogger.warn('CSV import is not fully implemented. Use JSON.');
   return Promise.resolve(false);
 };

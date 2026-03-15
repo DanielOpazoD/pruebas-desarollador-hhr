@@ -12,9 +12,11 @@ import { DailyRecord, PatientData, ShiftType, DeviceDetails } from '@/types';
 import { BEDS } from '@/constants';
 import { formatDateDDMMYYYY } from '@/utils/dateUtils';
 import { resolveHandoffShiftStaff } from '@/services/staff/dailyRecordStaffing';
+import { logger } from '@/services/utils/loggerService';
 
 // Logo path
 const LOGO_PATH = '/images/logos/logo_HHR.svg';
+const pdfContentBuilderLogger = logger.child('PdfContentBuilder');
 
 export interface Schedule {
   dayStart?: string;
@@ -91,7 +93,7 @@ export const buildHandoffPdfContent = async (
     const logoData = await getBase64ImageFromURL(LOGO_PATH);
     doc.addImage(logoData, 'PNG', margin, margin, logoSize, logoSize);
   } catch (e) {
-    console.warn('Could not load logo for backup PDF', e);
+    pdfContentBuilderLogger.warn('Could not load logo for backup PDF', e);
   }
 
   doc.setFont('helvetica', 'bold');

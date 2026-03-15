@@ -37,6 +37,7 @@ import {
   recordOperationalErrorTelemetry,
   recordOperationalTelemetry,
 } from '@/services/observability/operationalTelemetryService';
+import { logger } from '@/services/utils/loggerService';
 
 // ============= Types =============
 
@@ -55,6 +56,7 @@ export interface PdfFolder {
 // ============= Constants =============
 
 const STORAGE_ROOT = 'entregas-enfermeria';
+const pdfStorageLogger = logger.child('PdfStorage');
 
 // ============= Helper Functions =============
 
@@ -105,7 +107,7 @@ export const uploadPdf = async (
   date: string,
   shiftType: 'day' | 'night'
 ): Promise<string> => {
-  // console.info(`[PdfStorage] Starting upload for ${date}...`);
+  pdfStorageLogger.debug(`Starting PDF upload for ${date}`);
   await firebaseReady;
   const storage = await getStorageInstance();
   assertStorageAvailable(storage, 'PdfStorage', 'uploadPdf');
@@ -127,7 +129,7 @@ export const uploadPdf = async (
   await uploadBytes(storageRef, pdfBlob, metadata);
   const downloadUrl = await getDownloadURL(storageRef);
 
-  // console.info(`✅ [PdfStorage] Upload complete: ${filePath}`);
+  pdfStorageLogger.debug(`PDF upload complete: ${filePath}`);
   return downloadUrl;
 };
 
@@ -147,7 +149,7 @@ export const deletePdf = async (date: string, shiftType: 'day' | 'night'): Promi
   const storageRef = ref(storage, filePath);
   try {
     await deleteObject(storageRef);
-    // console.info(`🗑️ PDF deleted: ${filePath}`);
+    pdfStorageLogger.debug(`PDF deleted: ${filePath}`);
   } catch (error: unknown) {
     if (isExpectedStorageLookupMiss(error)) {
       return;
@@ -189,7 +191,7 @@ export const pdfExistsDetailed = async (
   date: string,
   shiftType: 'day' | 'night'
 ): Promise<StorageLookupResult> => {
-  // console.debug(`[PdfStorage] 🔍 Checking existence: ${date} ${shiftType}`);
+  pdfStorageLogger.debug(`Checking PDF existence: ${date} ${shiftType}`);
 
   const TIMEOUT_MS = 4000;
   const checkPromise = measureStorageOperation(
@@ -203,7 +205,7 @@ export const pdfExistsDetailed = async (
         const storageRef = ref(storage, filePath);
 
         await getMetadata(storageRef);
-        // console.debug(`[PdfStorage] ✅ Found: ${filePath}`);
+        pdfStorageLogger.debug(`Found PDF: ${filePath}`);
         return createStorageLookupResult(true, 'available');
       } catch (error: unknown) {
         if (isExpectedStorageLookupMiss(error) || isBackupDateValidationError(error)) {

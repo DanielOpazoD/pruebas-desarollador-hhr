@@ -112,7 +112,7 @@ describe('pdfContentBuilder', () => {
     );
 
     expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Could not load logo'),
+      expect.stringContaining('[PdfContentBuilder] Could not load logo for backup PDF'),
       expect.any(Error)
     );
     consoleSpy.mockRestore();

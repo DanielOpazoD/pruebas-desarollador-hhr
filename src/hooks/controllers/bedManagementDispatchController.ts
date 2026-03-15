@@ -9,6 +9,7 @@ import { BEDS } from '@/constants';
 import { getBedTypeForRecord } from '@/utils/bedTypeUtils';
 import { BedType } from '@/types';
 import { type BedAction, bedManagementReducer } from '@/hooks/useBedManagementReducer';
+import { logger } from '@/services/utils/loggerService';
 export interface BedManagementValidationPort {
   processFieldValue: (
     field: keyof PatientData,
@@ -29,6 +30,8 @@ export interface BedManagementAuditPort {
   auditPatientModified: (bedId: string, details: Record<string, unknown>) => void;
 }
 
+const bedManagementDispatchLogger = logger.child('BedManagementDispatch');
+
 interface ExecuteBedManagementActionInput {
   currentRecord: DailyRecord | null;
   action: BedAction;
@@ -44,7 +47,7 @@ const validateAction = (
   if (action.type === 'UPDATE_PATIENT') {
     const result = validation.processFieldValue(action.field, action.value);
     if (!result.valid) {
-      console.warn(`Validation failed for ${action.field}:`, result.error);
+      bedManagementDispatchLogger.warn(`Validation failed for ${action.field}`, result.error);
       return null;
     }
 
@@ -139,7 +142,7 @@ export const executeBedManagementAction = ({
   try {
     auditActionIntent(validatedAction, currentRecord, bedAudit);
   } catch (error) {
-    console.error('Audit logging failed', error);
+    bedManagementDispatchLogger.error('Audit logging failed', error);
   }
 
   try {
@@ -148,6 +151,6 @@ export const executeBedManagementAction = ({
       void patchRecord(patch);
     }
   } catch (error) {
-    console.warn('Bed management action failed:', error);
+    bedManagementDispatchLogger.warn('Bed management action failed', error);
   }
 };

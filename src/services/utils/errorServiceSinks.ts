@@ -2,6 +2,7 @@ import { logSystemError } from '@/services/admin/auditService';
 import { dispatchOperationalTelemetryExternally } from '@/services/observability/operationalTelemetryExternalAdapter';
 import { saveErrorLog } from '@/services/storage/indexeddb/indexedDbErrorLogService';
 import type { ErrorLog } from '@/services/logging/errorLogTypes';
+import { logger } from '@/services/utils/loggerService';
 
 export type ErrorServiceSink = (errorLog: ErrorLog) => Promise<void> | void;
 
@@ -9,11 +10,13 @@ export interface ErrorServiceSinkOptions {
   allowDevConsole?: boolean;
 }
 
+const errorServiceSinksLogger = logger.child('ErrorServiceSinks');
+
 export const createDevConsoleErrorSink =
   (enabled: boolean): ErrorServiceSink =>
   errorLog => {
     if (!enabled) return;
-    console.error('[ErrorService]', errorLog);
+    errorServiceSinksLogger.error('Captured error service log', errorLog);
   };
 
 export const indexedDbErrorSink: ErrorServiceSink = async errorLog => {
@@ -60,7 +63,7 @@ export const createSafeErrorServiceSink = (
     try {
       await sink(errorLog);
     } catch (error) {
-      console.error(`[ErrorServiceSink] Failed in ${label}:`, error);
+      errorServiceSinksLogger.error(`Failed in sink ${label}`, error);
     }
   };
 };

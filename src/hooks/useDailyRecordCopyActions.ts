@@ -3,6 +3,7 @@ import type { DailyRecord } from '@/types';
 import { resolveCopyPatientRequest } from '@/hooks/controllers/dailyRecordController';
 import { hasCriticalLegacyRepairSignal } from '@/hooks/controllers/legacyRepairWarningController';
 import { buildCopyPatientNotifications } from '@/hooks/controllers/persistenceFeedbackController';
+import { logger } from '@/services/utils/loggerService';
 
 type CopyPatientToDateResultLike = {
   sourceDate: string;
@@ -31,6 +32,8 @@ interface UseDailyRecordCopyActionsOptions {
   };
   warning: (title: string, message?: string) => void;
 }
+
+const dailyRecordCopyLogger = logger.child('useDailyRecordCopyActions');
 
 export const useDailyRecordCopyActions = ({
   record,
@@ -64,7 +67,7 @@ export const useDailyRecordCopyActions = ({
         }
         await refresh();
       } catch (error) {
-        console.error('Error copying patient to date:', error);
+        dailyRecordCopyLogger.error('Failed to copy patient to date', error);
         throw error;
       }
     },

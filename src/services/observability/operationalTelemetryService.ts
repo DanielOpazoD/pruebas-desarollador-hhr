@@ -8,6 +8,7 @@ import type {
   OperationalTelemetryEvent,
   OperationalTelemetryStatus,
 } from '@/services/observability/operationalTelemetryTypes';
+import { logger } from '@/services/utils/loggerService';
 
 export interface OperationalTelemetrySummary {
   recentEventCount: number;
@@ -50,6 +51,7 @@ const OBSERVED_CATEGORY_ORDER: OperationalTelemetryCategory[] = [
 ];
 
 let memoryEvents: OperationalTelemetryEvent[] = [];
+const operationalTelemetryLogger = logger.child('OperationalTelemetry');
 
 const canUseLocalStorage = (): boolean =>
   typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
@@ -146,7 +148,7 @@ const persistEvents = (events: OperationalTelemetryEvent[]): void => {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(memoryEvents));
   } catch (error) {
-    console.warn('[OperationalTelemetry] Failed to persist events:', error);
+    operationalTelemetryLogger.warn('Failed to persist events', error);
   }
 };
 
@@ -167,7 +169,7 @@ const readPersistedEvents = (): OperationalTelemetryEvent[] => {
     memoryEvents = trimEvents(parsed.map(sanitizePersistedEvent).filter(isDefinedEvent));
     return memoryEvents;
   } catch (error) {
-    console.warn('[OperationalTelemetry] Failed to read persisted events:', error);
+    operationalTelemetryLogger.warn('Failed to read persisted events', error);
     return [];
   }
 };

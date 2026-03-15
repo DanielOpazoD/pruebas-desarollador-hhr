@@ -1,4 +1,5 @@
 import { DailyRecord } from '@/types';
+import { logger } from '@/services/utils/loggerService';
 
 interface RemoteDeleteDependencies {
   isRemoteEnabled: boolean;
@@ -6,6 +7,8 @@ interface RemoteDeleteDependencies {
   moveToTrash: (record: DailyRecord) => Promise<void>;
   deleteRemote: (date: string) => Promise<void>;
 }
+
+const dailyRecordLifecycleLogger = logger.child('DailyRecordRepositoryLifecycle');
 
 export const softDeleteDailyRecordRemote = async (
   date: string,
@@ -23,6 +26,6 @@ export const softDeleteDailyRecordRemote = async (
 
     await dependencies.deleteRemote(date);
   } catch (error) {
-    console.error('Failed to soft-delete from Firestore:', error);
+    dailyRecordLifecycleLogger.error('Failed to soft-delete from Firestore', error);
   }
 };
