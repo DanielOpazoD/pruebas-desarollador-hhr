@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { migrateFromLocalStorage, isIndexedDBAvailable } from '@/services/storage/indexedDBService';
+import { logger } from '@/services/utils/loggerService';
 
 interface MigrationState {
   isComplete: boolean;
@@ -18,6 +19,8 @@ interface MigrationState {
 interface UseStorageMigrationOptions {
   enabled?: boolean;
 }
+
+const storageMigrationLogger = logger.child('useStorageMigration');
 
 /**
  * Hook that runs storage migration on mount.
@@ -47,7 +50,7 @@ export const useStorageMigration = (options: UseStorageMigrationOptions = {}): M
 
       // Check if IndexedDB is available
       if (!isIndexedDBAvailable()) {
-        console.warn('⚠️ IndexedDB not available, using localStorage only');
+        storageMigrationLogger.warn('IndexedDB not available, using localStorage only');
         setState({
           isComplete: true,
           isMigrating: false,
@@ -68,7 +71,7 @@ export const useStorageMigration = (options: UseStorageMigrationOptions = {}): M
           error: null,
         });
       } catch (error) {
-        console.error('❌ Storage migration error:', error);
+        storageMigrationLogger.error('Storage migration failed', error);
         setState({
           isComplete: true,
           isMigrating: false,

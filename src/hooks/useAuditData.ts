@@ -27,10 +27,12 @@ import {
   AUDIT_SECTIONS,
   type AuditSectionConfig,
 } from '@/services/admin/auditViewConfig';
+import { logger } from '@/services/utils/loggerService';
 
 export { AUDIT_SECTIONS } from '@/services/admin/auditViewConfig';
 
 export type SectionConfig = AuditSectionConfig;
+const auditDataLogger = logger.child('useAuditData');
 
 export interface AuditFiltersState {
   searchTerm: string;
@@ -116,10 +118,10 @@ export function useAuditData(): UseAuditDataReturn {
       const result = await executeFetchAuditLogs({ limit: 1000 });
       setLogs(resolveAuditLogsFallback(result.data));
       if (result.status === 'failed') {
-        console.error('Failed to fetch audit logs:', result.issues[0]?.message);
+        auditDataLogger.error('Failed to fetch audit logs', result.issues[0]?.message);
       }
     } catch (error) {
-      console.error('Failed to fetch audit logs:', error);
+      auditDataLogger.error('Failed to fetch audit logs', error);
       setLogs([]);
     } finally {
       setLoading(false);

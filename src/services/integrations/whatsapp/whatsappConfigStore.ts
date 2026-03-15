@@ -1,6 +1,9 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import type { WhatsAppConfig } from '@/types';
+import { logger } from '@/services/utils/loggerService';
+
+const whatsappConfigLogger = logger.child('WhatsAppConfigStore');
 
 export const getDefaultWhatsAppConfig = (): WhatsAppConfig => ({
   enabled: true,
@@ -27,7 +30,7 @@ export async function getWhatsAppConfig(): Promise<WhatsAppConfig | null> {
 
     return getDefaultWhatsAppConfig();
   } catch (_error) {
-    console.error('Error getting WhatsApp config:', _error);
+    whatsappConfigLogger.error('Failed to get WhatsApp config', _error);
     return null;
   }
 }
@@ -38,7 +41,7 @@ export async function updateWhatsAppConfig(config: Partial<WhatsAppConfig>): Pro
     await setDoc(docRef, config, { merge: true });
     return true;
   } catch (_error) {
-    console.error('Error updating WhatsApp config:', _error);
+    whatsappConfigLogger.error('Failed to update WhatsApp config', _error);
     return false;
   }
 }

@@ -9,10 +9,12 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { ParsedCell } from '@/services/ExcelParsingService';
+import { logger } from '@/services/utils/loggerService';
 export type { ParsedCell };
 
 const loadExcelParsingService = async () =>
   import('@/services/ExcelParsingService').then(module => module.ExcelParsingService);
+const excelParserLogger = logger.child('useExcelParser');
 
 export interface UseExcelParserReturn {
   // Data
@@ -91,7 +93,7 @@ export function useExcelParser(): UseExcelParserReturn {
         setActiveSheet(sheetNames[0]);
       }
     } catch (err) {
-      console.error('[useExcelParser] Error parsing excel:', err);
+      excelParserLogger.error('Error parsing excel', err);
       setParseError('No se pudo cargar el archivo. Intenta descargarlo.');
     } finally {
       setIsParsing(false);
@@ -126,10 +128,10 @@ export function useExcelParser(): UseExcelParserReturn {
         await parseFromBlob(blob);
       } catch (err: unknown) {
         if (err instanceof Error && err.name === 'AbortError') {
-          console.warn('[useExcelParser] Fetch aborted');
+          excelParserLogger.warn('Excel fetch aborted');
           return;
         }
-        console.error('[useExcelParser] Error fetching file:', err);
+        excelParserLogger.error('Error fetching excel file', err);
         setParseError('No se pudo descargar el archivo para visualización.');
         setIsParsing(false);
       } finally {

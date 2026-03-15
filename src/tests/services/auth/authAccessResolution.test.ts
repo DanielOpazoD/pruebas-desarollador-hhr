@@ -134,6 +134,37 @@ describe('authAccessResolution', () => {
     expect(mockFirebaseSignOut).toHaveBeenCalledTimes(1);
   });
 
+  it('rehydrates a shared-census current user without consulting general login access', async () => {
+    mockAuth.currentUser = {
+      uid: 'shared-ok-1',
+      email: 'shared@hospital.cl',
+      isAnonymous: false,
+    };
+    mockIsSharedCensusMode.mockReturnValue(true);
+    mockCheckSharedCensusAccess.mockResolvedValue({ authorized: true, role: 'viewer' });
+
+    await expect(authorizeCurrentFirebaseUser()).resolves.toEqual({
+      uid: 'shared-ok-1',
+      email: 'shared@hospital.cl',
+      role: 'viewer_census',
+    });
+    expect(mockCheckEmailInFirestore).not.toHaveBeenCalled();
+  });
+
+  it('returns null when a rehydrated shared-census user is no longer authorized', async () => {
+    mockAuth.currentUser = {
+      uid: 'shared-gone-1',
+      email: 'shared-gone@hospital.cl',
+      isAnonymous: false,
+    };
+    mockIsSharedCensusMode.mockReturnValue(true);
+    mockCheckSharedCensusAccess.mockResolvedValue({ authorized: false, role: 'viewer' });
+
+    await expect(authorizeCurrentFirebaseUser()).resolves.toBeNull();
+    expect(mockCheckEmailInFirestore).not.toHaveBeenCalled();
+    expect(mockFirebaseSignOut).toHaveBeenCalledTimes(1);
+  });
+
   it('does not authorize shared-census users through the standard login path', async () => {
     mockIsSharedCensusMode.mockReturnValue(true);
     mockCheckSharedCensusAccess.mockResolvedValue({ authorized: false, role: 'viewer' });

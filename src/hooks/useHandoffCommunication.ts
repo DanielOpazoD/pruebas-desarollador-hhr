@@ -9,12 +9,15 @@ import {
   writeClipboardText,
 } from '@/shared/runtime/browserWindowRuntime';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
+import { logger } from '@/services/utils/loggerService';
 
 /**
  * useHandoffCommunication Hook
  *
  * Handles WhatsApp integrations and link sharing for handoffs.
  */
+const handoffCommunicationLogger = logger.child('useHandoffCommunication');
+
 export const useHandoffCommunication = (
   record: DailyRecord | null,
   visibleBeds: { id: string }[],
@@ -72,7 +75,7 @@ export const useHandoffCommunication = (
       onSuccess('Entrega enviada a WhatsApp correctamente');
     } catch (error: unknown) {
       const err = error as Error;
-      console.error('Error sending WhatsApp:', err);
+      handoffCommunicationLogger.error('Failed to send WhatsApp handoff', err);
       onSuccess(err.message || 'Error al enviar a WhatsApp');
     } finally {
       setWhatsappSending(false);
@@ -126,7 +129,7 @@ export const useHandoffCommunication = (
       );
     } catch (error: unknown) {
       const err = error as Error;
-      console.error('Error in manual WhatsApp:', err);
+      handoffCommunicationLogger.error('Failed to prepare manual WhatsApp handoff', err);
       onSuccess(err.message || 'Error al preparar WhatsApp');
     }
   }, [ensureMedicalHandoffSignatureLink, record, visibleBeds, onSuccess]);

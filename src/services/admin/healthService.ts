@@ -1,8 +1,10 @@
 import { db } from '../infrastructure/db';
+import { logger } from '@/services/utils/loggerService';
 
 const HEALTH_COLLECTION = 'system_health';
 const STATS_DOC = 'stats';
 const USERS_SUBCOLLECTION = 'users';
+const healthServiceLogger = logger.child('HealthService');
 
 export interface UserHealthStatus {
   uid: string;
@@ -238,7 +240,7 @@ export const reportUserHealth = async (status: UserHealthStatus): Promise<void> 
     if (isHealthPermissionError(error)) {
       return;
     }
-    console.error('[HealthService] Failed to report health:', error);
+    healthServiceLogger.error('Failed to report health', error);
   }
 };
 
@@ -265,7 +267,7 @@ export const getSystemHealthSnapshot = async (): Promise<UserHealthStatus[]> => 
     });
     return users.map(normalizeUserHealthStatus);
   } catch (error) {
-    console.error('[HealthService] Failed to fetch health snapshot:', error);
+    healthServiceLogger.error('Failed to fetch health snapshot', error);
     return [];
   }
 };

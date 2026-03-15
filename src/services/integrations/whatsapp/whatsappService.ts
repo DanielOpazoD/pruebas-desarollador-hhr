@@ -24,9 +24,11 @@ import {
   saveManualShift,
   subscribeToCurrentShift,
 } from '@/services/integrations/whatsapp/whatsappShiftStore';
+import { logger } from '@/services/utils/loggerService';
 import { z } from 'zod';
 
 export type { MessageTemplate };
+const whatsappServiceLogger = logger.child('WhatsAppService');
 
 const whatsAppHealthSchema = z.object({
   status: z.enum(['ok', 'error']),
@@ -140,7 +142,7 @@ export async function getWhatsAppGroups(): Promise<Array<{ id: string; name: str
 
     return payload.data;
   } catch (error) {
-    console.error('Error fetching groups:', error);
+    whatsappServiceLogger.error('Failed to fetch WhatsApp groups', error);
     return [];
   }
 }

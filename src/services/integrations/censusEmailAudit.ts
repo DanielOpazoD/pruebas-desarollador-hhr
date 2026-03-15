@@ -1,6 +1,9 @@
 import { doc, getFirestore, setDoc } from 'firebase/firestore';
 
 import { getExportPasswordsPath } from '@/constants/firestorePaths';
+import { logger } from '@/services/utils/loggerService';
+
+const censusEmailAuditLogger = logger.child('CensusEmailAudit');
 
 export const saveCensusEmailExportPassword = async (
   date: string,
@@ -24,6 +27,6 @@ export const saveCensusEmailExportPassword = async (
       { merge: true }
     );
   } catch (error) {
-    console.error('[CensusEmail] Failed to save password to Firestore:', error);
+    censusEmailAuditLogger.error('Failed to save password to Firestore', error);
   }
 };

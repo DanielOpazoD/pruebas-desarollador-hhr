@@ -12,8 +12,11 @@ import {
 } from '@/application/ports/dailyRecordPort';
 import { defaultPatientMasterWritePort } from '@/application/ports/patientMasterPort';
 import { defaultAuditPort } from '@/application/ports/auditPort';
+import { logger } from '@/services/utils/loggerService';
 
 export type { Conflict, AnalysisResult } from '@/application/patient-flow/patientAnalysisUseCase';
+
+const patientAnalysisLogger = logger.child('usePatientAnalysis');
 
 export const usePatientAnalysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -50,7 +53,7 @@ export const usePatientAnalysis = () => {
           setAnalysis(outcome.data);
         }
       } catch (error) {
-        console.error('Harmonization failed', error);
+        patientAnalysisLogger.error('Harmonization failed', error);
       } finally {
         if (harmonizeHistory) {
           setIsHarmonizing(false);
@@ -74,7 +77,7 @@ export const usePatientAnalysis = () => {
         },
       });
       if (outcome.status === 'failed') {
-        console.error(
+        patientAnalysisLogger.error(
           'Analysis failed',
           new Error(outcome.issues[0]?.message || 'Analysis failed')
         );
@@ -95,7 +98,7 @@ export const usePatientAnalysis = () => {
         patientMasterRepository: defaultPatientMasterWritePort,
       });
       if (outcome.status === 'failed') {
-        console.error(
+        patientAnalysisLogger.error(
           'Migration failed',
           new Error(outcome.issues[0]?.message || 'Migration failed')
         );

@@ -4,8 +4,10 @@ import {
   listRecentSyncQueueOperations,
   type SyncQueueOperationSnapshot,
 } from '@/services/storage/syncQueueService';
+import { logger } from '@/services/utils/loggerService';
 
 export const SYNC_QUEUE_POLL_INTERVAL_MS = 4000;
+const syncQueueMonitorLogger = logger.child('useSyncQueueMonitor');
 
 interface UseSyncQueueMonitorOptions {
   enabled?: boolean;
@@ -73,7 +75,7 @@ export const useSyncQueueMonitor = (
       });
       setOperations(nextOps);
     } catch (error) {
-      console.warn('[SyncQueueMonitor] Failed to refresh queue monitor:', error);
+      syncQueueMonitorLogger.warn('Failed to refresh queue monitor', error);
     }
   }, [operationLimit]);
 

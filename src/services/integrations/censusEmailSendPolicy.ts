@@ -1,4 +1,7 @@
 import { CENSUS_DEFAULT_RECIPIENTS } from '@/constants/email';
+import { logger } from '@/services/utils/loggerService';
+
+const censusEmailSendPolicyLogger = logger.child('CensusEmailSendPolicy');
 
 export const assertCensusEmailSendingAllowed = ({
   isDevelopment,
@@ -18,8 +21,8 @@ export const assertCensusEmailSendingAllowed = ({
   endpoint: string;
 }): void => {
   if (isDevelopment && !allowDevelopmentEmailSend) {
-    console.warn('[CensusEmail] Modo desarrollo con envío deshabilitado por defecto.');
-    console.warn('[CensusEmail] Datos que se enviarían:', {
+    censusEmailSendPolicyLogger.warn('Development mode email sending disabled by default');
+    censusEmailSendPolicyLogger.warn('Development mode email payload preview', {
       date,
       recipientCount: recipients?.length || CENSUS_DEFAULT_RECIPIENTS.length,
       recordCount,
@@ -29,6 +32,8 @@ export const assertCensusEmailSendingAllowed = ({
   }
 
   if (isDevelopment && allowDevelopmentEmailSend) {
-    console.warn(`[CensusEmail] Modo desarrollo habilitado. Endpoint: ${endpoint}`);
+    censusEmailSendPolicyLogger.warn(
+      `Development mode email sending enabled. Endpoint: ${endpoint}`
+    );
   }
 };

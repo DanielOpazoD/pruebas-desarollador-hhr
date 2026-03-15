@@ -7,6 +7,7 @@
 import { useCallback } from 'react';
 import { DailyRecord, PatientData, PatientFieldValue, DailyRecordPatch } from '@/types';
 import { createEmptyPatient } from '@/services/factories/patientFactory';
+import { logger } from '@/services/utils/loggerService';
 
 export interface ClinicalCribActions {
   createCrib: (bedId: string) => void;
@@ -14,6 +15,8 @@ export interface ClinicalCribActions {
   updateCribField: (bedId: string, field: keyof PatientData, value: PatientFieldValue) => void;
   updateCribMultiple: (bedId: string, updates: Partial<PatientData>) => void;
 }
+
+const clinicalCribLogger = logger.child('useClinicalCrib');
 
 export const useClinicalCrib = (
   record: DailyRecord | null,
@@ -40,7 +43,7 @@ export const useClinicalCrib = (
 
       // Validation: Cannot add crib to empty bed
       if (!parentPatient.patientName) {
-        console.warn(`Cannot add clinical crib to empty bed ${bedId}`);
+        clinicalCribLogger.warn(`Cannot add clinical crib to empty bed ${bedId}`);
         return;
       }
 
@@ -89,7 +92,7 @@ export const useClinicalCrib = (
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         if (selectedDate > today) {
-          console.warn('Cannot set admission date to future');
+          clinicalCribLogger.warn('Cannot set admission date to future');
           return;
         }
       }
@@ -119,7 +122,7 @@ export const useClinicalCrib = (
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         if (selectedDate > today) {
-          console.warn('Cannot set admission date to future');
+          clinicalCribLogger.warn('Cannot set admission date to future');
           delete updates.admissionDate;
         }
       }

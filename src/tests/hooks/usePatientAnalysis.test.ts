@@ -358,7 +358,10 @@ describe('usePatientAnalysis', () => {
       await result.current.runMigration();
     });
 
-    expect(consoleSpy).toHaveBeenCalledWith('Migration failed', expect.any(Error));
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[usePatientAnalysis] Migration failed'),
+      expect.any(Error)
+    );
     consoleSpy.mockRestore();
   });
 
@@ -371,7 +374,10 @@ describe('usePatientAnalysis', () => {
       await result.current.runAnalysis();
     });
 
-    expect(consoleSpy).toHaveBeenCalledWith('Analysis failed', expect.any(Error));
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[usePatientAnalysis] Analysis failed'),
+      expect.any(Error)
+    );
     consoleSpy.mockRestore();
   });
 

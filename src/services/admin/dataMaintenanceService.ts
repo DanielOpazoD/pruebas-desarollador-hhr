@@ -15,6 +15,7 @@ import { getTodayISO } from '@/utils/dateUtils';
 import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { resolvePreferredDailyRecord } from '@/services/repositories/dailyRecordSyncCompatibility';
 import { parseDailyRecordWithDefaultsReport } from '@/schemas/zodSchemas';
+import { logger } from '@/services/utils/loggerService';
 
 export interface MonthBackup {
   version: string;
@@ -40,6 +41,8 @@ export interface BackupImportResult {
   repaired: number;
   outcome: 'clean' | 'repaired' | 'partial' | 'blocked';
 }
+
+const dataMaintenanceLogger = logger.child('DataMaintenanceService');
 
 const monthNames = [
   'Enero',
@@ -131,7 +134,7 @@ export const exportMonthRecords = async (year: number, month: number): Promise<v
       recordCount: records.length,
     });
   } catch (error) {
-    console.error('Export failed:', error);
+    dataMaintenanceLogger.error('Monthly export failed', error);
     throw error;
   }
 };
@@ -178,7 +181,7 @@ export const exportYearToDateRecords = async (
       exportScope: 'year-to-date',
     });
   } catch (error) {
-    console.error('Year-to-date export failed:', error);
+    dataMaintenanceLogger.error('Year-to-date export failed', error);
     throw error;
   }
 };
@@ -213,7 +216,7 @@ export const importRecordsFromBackup = async (
         repaired++;
       }
     } catch (error) {
-      console.error(`Failed to import record for ${record.date}:`, error);
+      dataMaintenanceLogger.error(`Failed to import record for ${record.date}`, error);
       failed++;
     }
 

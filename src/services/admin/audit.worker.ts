@@ -1,10 +1,13 @@
 import { filterLogs, groupLogs, calculateAuditStats, WorkerFilterParams } from './auditWorkerLogic';
 import { AuditLogEntry } from '@/types/audit';
+import { logger } from '@/services/utils/loggerService';
 
 /**
  * Audit Web Worker
  * Processes audit logs in the background to avoid blocking the main thread.
  */
+
+const auditWorkerLogger = logger.child('AuditWorker');
 
 self.onmessage = (event: MessageEvent) => {
   const { type, payload } = event.data;
@@ -44,10 +47,10 @@ self.onmessage = (event: MessageEvent) => {
         break;
 
       default:
-        console.warn(`[AuditWorker] Unknown message type: ${type}`);
+        auditWorkerLogger.warn(`Unknown message type: ${type}`);
     }
   } catch (error) {
-    console.error('[AuditWorker] Error processing data:', error);
+    auditWorkerLogger.error('Error processing data', error);
     self.postMessage({
       type: 'ERROR',
       payload: {

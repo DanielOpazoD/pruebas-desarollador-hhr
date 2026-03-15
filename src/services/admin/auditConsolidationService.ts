@@ -19,10 +19,12 @@ import {
   mergeDetails,
   prepareConsolidationGroups,
 } from './auditConsolidationPolicy';
+import { logger } from '@/services/utils/loggerService';
 
 const getAuditCollectionPath = () => `hospitals/${getActiveHospitalId()}/auditLogs`;
 const DEFAULT_WINDOW_MINUTES = 5;
 const MAX_BATCH_OPERATIONS = 500;
+const auditConsolidationLogger = logger.child('AuditConsolidation');
 
 export interface ConsolidationResult {
   success: boolean;
@@ -160,7 +162,7 @@ export async function executeConsolidation(
     result.success = true;
     onProgress?.('Consolidación completada!');
   } catch (error) {
-    console.error('[AuditConsolidation] Error:', error);
+    auditConsolidationLogger.error('Consolidation failed', error);
     result.errors.push(error instanceof Error ? error.message : 'Error desconocido');
   }
 

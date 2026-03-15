@@ -14,8 +14,10 @@ import {
 } from './utils/auditUtils';
 import { generateSummary } from './utils/auditSummaryGenerator';
 import { getActiveHospitalId } from '@/constants/firestorePaths';
+import { logger } from '@/services/utils/loggerService';
 
 const COLLECTION_NAME = () => `hospitals/${getActiveHospitalId()}/auditLogs`;
+const auditCoreLogger = logger.child('AuditCore');
 
 const EXCLUDED_VIEW_AUDIT_EMAILS: string[] = [
   'daniel.opazo@hospitalhangaroa.cl',
@@ -108,7 +110,7 @@ const storeLocally = async (entry: AuditLogEntry): Promise<void> => {
   try {
     await saveAuditLog(entry);
   } catch (error) {
-    console.error('Failed to store audit log in IndexedDB:', error);
+    auditCoreLogger.error('Failed to store audit log in IndexedDB', error);
   }
 };
 
@@ -116,7 +118,7 @@ const logAuditEventToFirestore = async (entry: AuditLogEntry): Promise<void> => 
   try {
     await db.setDoc(COLLECTION_NAME(), entry.id, entry);
   } catch (error) {
-    console.error('Failed to save audit log to Firestore:', error);
+    auditCoreLogger.error('Failed to save audit log to Firestore', error);
   }
 };
 
@@ -167,7 +169,7 @@ export const getAuditLogs = async (limitCount: number = 100): Promise<AuditLogEn
       limit: limitCount,
     });
   } catch (error) {
-    console.error('Failed to fetch audit logs from Firestore:', error);
+    auditCoreLogger.error('Failed to fetch audit logs from Firestore', error);
     return await getIndexedDBAuditLogs(limitCount);
   }
 };
@@ -179,7 +181,7 @@ export const getAuditLogsForDate = async (date: string): Promise<AuditLogEntry[]
       orderBy: [{ field: 'timestamp', direction: 'desc' }],
     });
   } catch (error) {
-    console.error('Failed to fetch audit logs for date:', error);
+    auditCoreLogger.error('Failed to fetch audit logs for date', error);
     return await getIndexedDBAuditLogsForDate(date);
   }
 };

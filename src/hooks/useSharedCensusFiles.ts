@@ -13,6 +13,9 @@ import {
   executeLoadSharedCensusFiles,
   executeLogSharedCensusAccess,
 } from '@/application/backup-export/sharedCensusFilesUseCases';
+import { logger } from '@/services/utils/loggerService';
+
+const sharedCensusFilesLogger = logger.child('useSharedCensusFiles');
 
 export const useSharedCensusFiles = (
   accessUser: CensusAccessUser | null,
@@ -36,7 +39,7 @@ export const useSharedCensusFiles = (
   const safeLogAccess = useCallback(
     (params: Parameters<typeof executeLogSharedCensusAccess>[0]) => {
       void Promise.resolve(executeLogSharedCensusAccess(params)).catch(error => {
-        console.error('[SharedCensusFiles] Failed to log access:', error);
+        sharedCensusFilesLogger.error('Failed to log shared census access', error);
       });
     },
     []
@@ -106,7 +109,7 @@ export const useSharedCensusFiles = (
 
         runtime.open(file.downloadUrl, '_blank');
       } catch (err) {
-        console.error('Download error:', err);
+        sharedCensusFilesLogger.error('Failed to download shared census file', err);
         runtime.alert('Error al intentar descargar el archivo.');
       }
     },

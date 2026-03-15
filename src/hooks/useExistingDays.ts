@@ -1,52 +1,55 @@
 import { useState, useEffect } from 'react';
 import { DailyRecord, PatientData } from '@/types';
 import { fetchRecordsForMonth } from '@/services/records/recordQueryService';
+import { logger } from '@/services/utils/loggerService';
+
+const existingDaysLogger = logger.child('useExistingDays');
 
 /**
  * Hook to calculate which days in the selected month have patient data
  * Separated from useDateNavigation for cleaner dependency management
  */
 export const useExistingDays = (
-    selectedYear: number,
-    selectedMonth: number,
-    record: DailyRecord | null
+  selectedYear: number,
+  selectedMonth: number,
+  record: DailyRecord | null
 ): number[] => {
-    const [existingDays, setExistingDays] = useState<number[]>([]);
+  const [existingDays, setExistingDays] = useState<number[]>([]);
 
-    useEffect(() => {
-        let isMounted = true;
+  useEffect(() => {
+    let isMounted = true;
 
-        const fetchExistingDays = async () => {
-            try {
-                // selectedMonth is 0-indexed in JS (0=Jan), but our records use 1-indexed strings (01=Jan)
-                const records = await fetchRecordsForMonth(selectedYear, selectedMonth + 1);
+    const fetchExistingDays = async () => {
+      try {
+        // selectedMonth is 0-indexed in JS (0=Jan), but our records use 1-indexed strings (01=Jan)
+        const records = await fetchRecordsForMonth(selectedYear, selectedMonth + 1);
 
-                if (!isMounted) return;
+        if (!isMounted) return;
 
-                const days = records
-                    .filter(dayRecord => {
-                        if (!dayRecord || !dayRecord.beds) return false;
+        const days = records
+          .filter(dayRecord => {
+            if (!dayRecord || !dayRecord.beds) return false;
 
-                        // Check if day has any patients
-                        return Object.values(dayRecord.beds).some((bed) => {
-                            const patient = bed as PatientData;
-                            return patient.patientName && patient.patientName.trim() !== '';
-                        });
-                    })
-                    .map(d => parseInt(d.date.split('-')[2]));
+            // Check if day has any patients
+            return Object.values(dayRecord.beds).some(bed => {
+              const patient = bed as PatientData;
+              return patient.patientName && patient.patientName.trim() !== '';
+            });
+          })
+          .map(d => parseInt(d.date.split('-')[2]));
 
-                setExistingDays(days);
-            } catch (error) {
-                console.error('Error fetching existing days:', error);
-            }
-        };
+        setExistingDays(days);
+      } catch (error) {
+        existingDaysLogger.error('Failed to fetch existing days', error);
+      }
+    };
 
-        fetchExistingDays();
+    fetchExistingDays();
 
-        return () => {
-            isMounted = false;
-        };
-    }, [selectedYear, selectedMonth, record]); // Re-calculate when month or current record changes
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedYear, selectedMonth, record]); // Re-calculate when month or current record changes
 
-    return existingDays;
+  return existingDays;
 };
