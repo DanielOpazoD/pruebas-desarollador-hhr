@@ -2,7 +2,7 @@ import { signOut as firebaseSignOut, User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
 import { AuthUser, UserRole } from '@/types';
 import { checkSharedCensusAccess, isSharedCensusMode } from '@/services/auth/sharedCensusAuth';
-import { checkEmailInFirestore } from '@/services/auth/authPolicy';
+import { resolveGeneralLoginAccessForEmail } from '@/services/auth/authPolicy';
 import { toAuthUser } from '@/services/auth/authShared';
 import { recordAuthOperationalError } from '@/services/auth/authOperationalTelemetry';
 
@@ -26,7 +26,7 @@ export const authorizeFirebaseUser = async (user: User): Promise<AuthUser> => {
     return toAuthUser(user, 'viewer_census');
   }
 
-  const { allowed, role } = await checkEmailInFirestore(user.email || '');
+  const { allowed, role } = await resolveGeneralLoginAccessForEmail(user.email || '');
   if (!allowed) {
     return rejectUnauthorizedUser(STANDARD_UNAUTHORIZED_MESSAGE);
   }
@@ -53,9 +53,9 @@ export const authorizeCurrentFirebaseUser = async (): Promise<AuthUser | null> =
 
 export const resolveFirebaseUserRole = async (firebaseUser: User): Promise<UserRole | null> => {
   try {
-    const whitelistResult = await checkEmailInFirestore(firebaseUser.email || '');
-    if (whitelistResult.allowed && whitelistResult.role) {
-      return whitelistResult.role;
+    const loginAccess = await resolveGeneralLoginAccessForEmail(firebaseUser.email || '');
+    if (loginAccess.allowed && loginAccess.role) {
+      return loginAccess.role;
     }
     return null;
   } catch (error) {
@@ -68,7 +68,7 @@ export const resolveFirebaseUserRole = async (firebaseUser: User): Promise<UserR
         email: firebaseUser.email || null,
       },
     });
-    const { allowed, role } = await checkEmailInFirestore(firebaseUser.email || '');
+    const { allowed, role } = await resolveGeneralLoginAccessForEmail(firebaseUser.email || '');
     return allowed ? role || null : null;
   }
 };

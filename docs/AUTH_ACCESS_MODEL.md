@@ -4,6 +4,12 @@
 
 Definir la fuente de verdad y el flujo real del acceso al sistema para que auth no dependa de leer código disperso.
 
+Estado documental:
+
+- este archivo es la referencia canónica para auth/login general;
+- si otro documento o comentario contradice este modelo, este archivo prevalece;
+- documentación generada o legacy no debe usarse como fuente primaria de permisos.
+
 ## 1. Fuente de verdad
 
 Para el **login general** la fuente operativa de acceso es:
@@ -114,3 +120,9 @@ Efecto esperado:
 - [functions/lib/auth/authFunctionsFactory.js](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/functions/lib/auth/authFunctionsFactory.js)
 - [functions/lib/auth/authHelpersFactory.js](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/functions/lib/auth/authHelpersFactory.js)
 - [firestore.rules](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/firestore.rules)
+
+## 11. Runbook de incidentes
+
+Para soporte operativo rápido:
+
+- [Runbook Auth Access Incidents](./RUNBOOK_AUTH_ACCESS_INCIDENTS.md)

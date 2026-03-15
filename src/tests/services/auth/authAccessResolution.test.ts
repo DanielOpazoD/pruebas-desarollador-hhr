@@ -41,7 +41,7 @@ vi.mock('@/services/auth/sharedCensusAuth', () => ({
 }));
 
 vi.mock('@/services/auth/authPolicy', () => ({
-  checkEmailInFirestore: (email: string) => mockCheckEmailInFirestore(email),
+  resolveGeneralLoginAccessForEmail: (email: string) => mockCheckEmailInFirestore(email),
 }));
 
 vi.mock('@/services/auth/authShared', () => ({

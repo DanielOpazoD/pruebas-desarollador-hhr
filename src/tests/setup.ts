@@ -491,7 +491,7 @@ const mockAuthService = {
     return () => {};
   }),
   getCurrentUser: vi.fn(() => null),
-  isCurrentUserAllowed: vi.fn().mockResolvedValue(true),
+  isCurrentUserAuthorizedForGeneralLogin: vi.fn().mockResolvedValue(true),
   createUser: vi.fn(),
   hasActiveFirebaseSession: vi.fn().mockReturnValue(false),
 };

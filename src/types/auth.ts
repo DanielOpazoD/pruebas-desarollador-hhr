@@ -30,7 +30,7 @@ export interface AuthUser {
   displayName: string | null;
   /** URL to user's profile picture */
   photoURL?: string | null;
-  /** User's role assigned via whitelist (admin, nurse, etc.) */
+  /** User's role resolved from Gestión de Roles or bootstrap técnico */
   role?: UserRole;
   /** Optional specialty claims for scoping medical handoff tabs */
   medicalSpecialties?: MedicalSpecialty[];

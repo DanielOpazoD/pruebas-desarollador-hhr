@@ -6,7 +6,7 @@ import {
 
 import { auth } from '@/firebaseConfig';
 import { AuthUser, UserRole } from '@/types';
-import { checkEmailInFirestore } from '@/services/auth/authPolicy';
+import { resolveGeneralLoginAccessForEmail } from '@/services/auth/authPolicy';
 import { toAuthUser } from '@/services/auth/authShared';
 
 const EMAIL_SIGN_IN_ERRORS: Record<string, string> = {
@@ -37,7 +37,7 @@ export const signIn = async (email: string, password: string): Promise<AuthUser>
   try {
     const result = await signInWithEmailAndPassword(auth, email, password);
 
-    const { allowed, role } = await checkEmailInFirestore(result.user.email || '');
+    const { allowed, role } = await resolveGeneralLoginAccessForEmail(result.user.email || '');
     if (!allowed) {
       await firebaseSignOut(auth);
       throw new Error(

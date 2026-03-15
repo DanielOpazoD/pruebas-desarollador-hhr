@@ -10,7 +10,7 @@ import { resolveAllowedRoleForEmail } from '@/services/auth/authRoleResolutionCo
 
 export { clearRoleCacheForEmail } from '@/services/auth/authRoleCache';
 
-export const checkEmailInFirestore = async (
+export const resolveGeneralLoginAccessForEmail = async (
   email: string
 ): Promise<{ allowed: boolean; role?: UserRole }> => {
   try {
@@ -24,8 +24,8 @@ export const checkEmailInFirestore = async (
       return { allowed: true, role };
     }
 
-    emitAuthOperationalEvent('check_email_in_firestore', 'degraded', {
-      code: 'auth_email_not_whitelisted',
+    emitAuthOperationalEvent('resolve_general_login_access', 'degraded', {
+      code: 'auth_email_not_authorized',
       message: `Email not found in config/roles: ${cleanEmail}`,
       severity: 'warning',
       userSafeMessage: 'El correo no está autorizado para ingresar.',
@@ -36,9 +36,9 @@ export const checkEmailInFirestore = async (
     });
     return { allowed: false };
   } catch (error) {
-    recordAuthOperationalError('check_email_in_firestore', error, {
+    recordAuthOperationalError('resolve_general_login_access', error, {
       code: 'auth_role_lookup_failed',
-      message: 'Error checking allowed users in Firestore.',
+      message: 'Error resolving general login access from config/roles.',
       severity: 'error',
       userSafeMessage: 'No se pudo validar el acceso del correo.',
       context: {
@@ -49,9 +49,9 @@ export const checkEmailInFirestore = async (
   }
 };
 
-export const isCurrentUserAllowed = async (): Promise<boolean> => {
+export const isCurrentUserAuthorizedForGeneralLogin = async (): Promise<boolean> => {
   const user = auth.currentUser;
   if (!user) return false;
-  const { allowed } = await checkEmailInFirestore(user.email || '');
+  const { allowed } = await resolveGeneralLoginAccessForEmail(user.email || '');
   return allowed;
 };

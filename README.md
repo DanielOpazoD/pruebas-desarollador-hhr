@@ -5,6 +5,7 @@ Aplicación web médica para censo hospitalario, entrega de turno y gestión ope
 Modelo de acceso:
 
 - [Auth Access Model](docs/AUTH_ACCESS_MODEL.md)
+- [Runbook Auth Access Incidents](docs/RUNBOOK_AUTH_ACCESS_INCIDENTS.md)
 
 ## Quick Start
 
@@ -163,6 +164,7 @@ import { useDailyRecord } from '@/hooks/useDailyRecord';
 ### Documentos troncales
 
 - [Modelo de acceso y login](docs/AUTH_ACCESS_MODEL.md)
+- [Runbook de incidentes de acceso](docs/RUNBOOK_AUTH_ACCESS_INCIDENTS.md)
 - [Arquitectura global](docs/ARCHITECTURE.md)
 - [Runbook de sync y resiliencia](docs/RUNBOOK_SYNC_RESILIENCE.md)
 - [Checklist diario admin (1 pagina)](docs/RUNBOOK_DAILY_ADMIN_CHECKLIST.md)

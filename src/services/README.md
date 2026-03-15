@@ -48,7 +48,9 @@ Capa de datos e integración: repositorios, persistencia, exportadores, integrac
   - `authUiCopy.ts` para centralizar textos visibles de login y fallback sin mezclar copy en varios módulos
   - `authSession.ts` para suscripción de sesión activa
   - `authAccessResolution.ts` para autorización y resolución de rol
-  - `authPolicy.ts` como fachada de whitelist/roles apoyada en helpers internos de caché y lookup
+  - `authPolicy.ts` como fachada de acceso general basada en `config/roles`, caché y lookup backend
+  - el modelo canónico de login general está en [docs/AUTH_ACCESS_MODEL.md](../../docs/AUTH_ACCESS_MODEL.md)
+  - el runbook corto de soporte está en [docs/RUNBOOK_AUTH_ACCESS_INCIDENTS.md](../../docs/RUNBOOK_AUTH_ACCESS_INCIDENTS.md)
 - **Excel runtime centralizado** en `exporters/excelUtils.ts` para cargar primero el build browser-min (`exceljs/dist/exceljs.min.js`) y evitar crecimiento innecesario del bundle principal.
 
 ## Ejemplo

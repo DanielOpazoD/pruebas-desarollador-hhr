@@ -103,10 +103,11 @@ Salida esperada:
 ### Falla de login / Gestión de Roles
 
 1. revisar primero [docs/AUTH_ACCESS_MODEL.md](./AUTH_ACCESS_MODEL.md)
-2. confirmar que el correo exista en `config/roles` con un rol válido
-3. confirmar que el frontend ya use resolución por callable y no lectura directa del documento
-4. confirmar que functions y `firestore.rules` publicadas correspondan al mismo modelo
-5. si el usuario fue removido, verificar que el login termine en `signOut` y no en shell vacío
+2. usar [docs/RUNBOOK_AUTH_ACCESS_INCIDENTS.md](./RUNBOOK_AUTH_ACCESS_INCIDENTS.md) como guía operativa corta
+3. confirmar que el correo exista en `config/roles` con un rol válido
+4. confirmar que el frontend ya use resolución por callable y no lectura directa del documento
+5. confirmar que functions y `firestore.rules` publicadas correspondan al mismo modelo
+6. si el usuario fue removido, verificar que el login termine en `signOut` y no en shell vacío
 
 ### Falla `check:flow-performance-budget`
 
