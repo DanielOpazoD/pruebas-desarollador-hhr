@@ -10,7 +10,6 @@ import { TableConfigProvider } from '@/context/TableConfigContext';
 import { UISettingsProvider } from '@/context/UISettingsContext';
 import { SecurityProvider } from '@/context/SecurityContext';
 import { DailyRecordContextType } from '@/hooks/useDailyRecordTypes';
-import { ReminderCenterProvider } from '@/context/ReminderCenterContext';
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -34,9 +33,7 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children, dailyRecor
       <StaffProvider>
         <UISettingsProvider>
           <SecurityProvider>
-            <TableConfigProvider>
-              <ReminderCenterProvider>{children}</ReminderCenterProvider>
-            </TableConfigProvider>
+            <TableConfigProvider>{children}</TableConfigProvider>
           </SecurityProvider>
         </UISettingsProvider>
       </StaffProvider>

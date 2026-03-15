@@ -89,7 +89,7 @@ export const MovementSummaryCard: React.FC<{
     <BaseSummaryCard title="Movimientos" icon={<Activity size={12} className="text-medical-500" />}>
       <div className="flex flex-col gap-1 px-1">
         <div className="flex justify-between items-center text-[10px]">
-          <span className="text-slate-500 font-medium">Egresos</span>
+          <span className="text-slate-500 font-medium">Altas</span>
           <span className="font-bold text-green-600">{totalDischarges}</span>
         </div>
         <div className="flex justify-between items-center text-[10px]">
@@ -227,10 +227,10 @@ export const CombinedSummaryCard: React.FC<SummaryCardProps> = ({
             Movimientos
           </span>
         </div>
-        {/* Row 1: Egresos + Traslados */}
+        {/* Row 1: Altas + Traslados */}
         <div className="flex items-center gap-3 mt-0.5">
           <div className="flex items-center gap-1 text-[9px]">
-            <span className="text-slate-500">Egresos</span>
+            <span className="text-slate-500">Altas</span>
             <span className="font-bold text-green-600 text-[10px]">{totalDischarges}</span>
           </div>
           <div className="flex items-center gap-1 text-[9px]">

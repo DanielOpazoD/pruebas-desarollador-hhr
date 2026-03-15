@@ -10,17 +10,12 @@ import { ReminderReadService, ReminderRepository } from '@/services/reminders';
 import { getCurrentShift } from '@/services/admin/attributionService';
 import type { Reminder, ReminderShift } from '@/types';
 
-const AUTO_OPEN_PREFIX = 'hhr.reminders.auto-open';
-
 const formatLocalDate = (date: Date): string => {
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
   const day = `${date.getDate()}`.padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
-
-const buildAutoOpenKey = (userId: string, shift: ReminderShift, currentDate: string): string =>
-  `${AUTO_OPEN_PREFIX}:${userId}:${currentDate}:${shift}`;
 
 const buildUserName = (displayName?: string | null, email?: string | null): string =>
   displayName?.trim() || email?.trim() || 'Usuario del sistema';
@@ -34,6 +29,7 @@ interface ReminderCenterContextValue {
   currentDate: string;
   isOpen: boolean;
   loading: boolean;
+  isAvailable: boolean;
   openCenter: () => void;
   closeCenter: () => void;
   markReminderAsRead: (reminderId: string) => Promise<void>;
@@ -50,6 +46,7 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
   const [readReminderIds, setReadReminderIds] = React.useState<string[]>([]);
   const [isOpen, setIsOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
+  const [isAvailable, setIsAvailable] = React.useState(true);
   const [now, setNow] = React.useState(() => new Date());
 
   React.useEffect(() => {
@@ -89,20 +86,31 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
       setReadReminderIds([]);
       setReminders([]);
       setLoading(false);
+      setIsAvailable(true);
       return;
     }
 
     setLoading(true);
-    const unsubscribe = ReminderRepository.subscribe(nextReminders => {
-      setReminders(nextReminders);
-      setLoading(false);
-    });
+    setIsAvailable(true);
+    const unsubscribe = ReminderRepository.subscribe(
+      nextReminders => {
+        setReminders(nextReminders);
+        setLoading(false);
+      },
+      {
+        onError: (_error, _kind) => {
+          setLoading(false);
+          setIsAvailable(false);
+          setIsOpen(false);
+        },
+      }
+    );
 
     return unsubscribe;
   }, [isAuthenticated]);
 
   React.useEffect(() => {
-    if (!user?.uid || visibleReminders.length === 0) {
+    if (!isAvailable || !user?.uid || visibleReminders.length === 0) {
       setReadReminderIds([]);
       return;
     }
@@ -112,7 +120,12 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
       const results = await Promise.all(
         visibleReminders.map(async reminder => ({
           reminderId: reminder.id,
-          hasRead: await ReminderReadService.hasUserRead(reminder.id, user.uid),
+          hasRead: await ReminderReadService.hasUserRead(
+            reminder.id,
+            user.uid,
+            currentShift,
+            currentDate
+          ),
         }))
       );
 
@@ -123,7 +136,7 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
     return () => {
       cancelled = true;
     };
-  }, [user?.uid, visibleReminders]);
+  }, [currentDate, currentShift, isAvailable, user?.uid, visibleReminders]);
 
   const markReminderAsRead = React.useCallback(
     async (reminderId: string) => {
@@ -136,27 +149,18 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
           userId: user.uid,
           userName: buildUserName(user.displayName, user.email),
           shift: currentShift,
+          dateKey: currentDate,
         })
       );
 
       setReadReminderIds(previous => [...previous, reminderId]);
     },
-    [currentShift, readReminderIds, user?.displayName, user?.email, user?.uid]
+    [currentDate, currentShift, readReminderIds, user?.displayName, user?.email, user?.uid]
   );
 
   const markAllAsRead = React.useCallback(async () => {
     await Promise.all(unreadReminders.map(reminder => markReminderAsRead(reminder.id)));
   }, [markReminderAsRead, unreadReminders]);
-
-  React.useEffect(() => {
-    if (!user?.uid || unreadReminders.length === 0 || isOpen) return;
-
-    const autoOpenKey = buildAutoOpenKey(user.uid, currentShift, currentDate);
-    if (window.localStorage.getItem(autoOpenKey) === '1') return;
-
-    window.localStorage.setItem(autoOpenKey, '1');
-    setIsOpen(true);
-  }, [currentDate, currentShift, isOpen, unreadReminders.length, user?.uid]);
 
   const value = React.useMemo<ReminderCenterContextValue>(
     () => ({
@@ -178,6 +182,7 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
       currentDate,
       isOpen,
       loading,
+      isAvailable,
       openCenter: () => setIsOpen(true),
       closeCenter: () => setIsOpen(false),
       markReminderAsRead,
@@ -185,6 +190,7 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
     }),
     [
       currentDate,
+      isAvailable,
       currentShift,
       isOpen,
       loading,

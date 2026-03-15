@@ -7,6 +7,7 @@ import { toAuthUser } from '@/services/auth/authShared';
 import { resolveFirebaseUserRole } from '@/services/auth/authAccessResolution';
 import { resolveAuthSessionState } from '@/services/auth/authSessionController';
 import { recordAuthOperationalError } from '@/services/auth/authOperationalTelemetry';
+import { ensureUserRoleClaim } from '@/services/auth/authClaimSyncService';
 import {
   createAuthErrorSessionState,
   createUnauthenticatedAuthSessionState,
@@ -64,6 +65,9 @@ export const onAuthSessionStateChange = (
         signOutUnauthorizedUser: () => firebaseSignOut(auth),
         resolveFirebaseUserRole,
       });
+      if (sessionState.status === 'authorized' && sessionState.user.role) {
+        await ensureUserRoleClaim(firebaseUser, sessionState.user.role);
+      }
       await callback(sessionState);
     } catch (error) {
       const operationalError = recordAuthOperationalError('on_auth_session_state_change', error, {

@@ -40,9 +40,9 @@ export const CensusRegisterMainContent: React.FC<CensusRegisterMainContentProps>
     <div className="animate-fade-in">
       <React.Suspense
         fallback={
-          <div className="h-[500px] w-full bg-slate-50 rounded-xl flex flex-col items-center justify-center border border-slate-200">
-            <Loader2 className="animate-spin text-indigo-500 mb-2" size={32} />
-            <p className="text-slate-500 font-medium text-sm">Cargando entorno 3D...</p>
+          <div className="h-[500px] w-full rounded-xl border border-slate-200 bg-slate-50 flex flex-col items-center justify-center">
+            <Loader2 className="mb-2 animate-spin text-indigo-500" size={32} />
+            <p className="text-sm font-medium text-slate-500">Cargando entorno 3D...</p>
           </div>
         }
       >

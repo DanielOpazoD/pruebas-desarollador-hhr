@@ -11,6 +11,7 @@ export const ReminderAdminView: React.FC = () => {
   const {
     reminders,
     loading,
+    loadError,
     processing,
     isFormOpen,
     formReminder,
@@ -69,6 +70,12 @@ export const ReminderAdminView: React.FC = () => {
           </button>
         </div>
       </header>
+
+      {loadError && (
+        <div className="mb-5 rounded-[1.5rem] border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+          {loadError}
+        </div>
+      )}
 
       {loading ? (
         <div className="rounded-[1.75rem] border border-slate-100 bg-white p-10 text-center text-sm font-semibold text-slate-500">

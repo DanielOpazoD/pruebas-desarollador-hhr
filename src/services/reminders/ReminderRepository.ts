@@ -15,16 +15,30 @@ import {
   getRemindersCollectionRef,
   normalizeReminderRecord,
 } from './reminderShared';
+import { isReminderPermissionDeniedError } from './reminderErrorPolicy';
 
 const reminderRepositoryLogger = logger.child('ReminderRepository');
 
+const sortReminders = (items: Reminder[]): Reminder[] =>
+  [...items].sort((left, right) => {
+    if (left.priority !== right.priority) {
+      return right.priority - left.priority;
+    }
+    return right.createdAt.localeCompare(left.createdAt);
+  });
+
+export type ReminderRepositoryErrorKind = 'permission_denied' | 'unknown';
+
+export interface ReminderRepositorySubscriptionOptions {
+  onError?: (error: unknown, kind: ReminderRepositoryErrorKind) => void;
+}
+
 export const ReminderRepository = {
-  subscribe(callback: (reminders: Reminder[]) => void): () => void {
-    const remindersQuery = query(
-      getRemindersCollectionRef(),
-      orderBy('priority', 'desc'),
-      orderBy('createdAt', 'desc')
-    );
+  subscribe(
+    callback: (reminders: Reminder[]) => void,
+    options: ReminderRepositorySubscriptionOptions = {}
+  ): () => void {
+    const remindersQuery = query(getRemindersCollectionRef(), orderBy('createdAt', 'desc'));
 
     return onSnapshot(
       remindersQuery,
@@ -34,10 +48,14 @@ export const ReminderRepository = {
             normalizeReminderRecord({ id: docSnap.id, ...docSnap.data() }, docSnap.id)
           )
           .filter((item): item is Reminder => Boolean(item));
-        callback(reminders);
+        callback(sortReminders(reminders));
       },
       error => {
         reminderRepositoryLogger.error('Error subscribing reminders', error);
+        options.onError?.(
+          error,
+          isReminderPermissionDeniedError(error) ? 'permission_denied' : 'unknown'
+        );
         callback([]);
       }
     );
@@ -45,11 +63,13 @@ export const ReminderRepository = {
 
   async list(): Promise<Reminder[]> {
     const snapshot = await getDocs(
-      query(getRemindersCollectionRef(), orderBy('priority', 'desc'), orderBy('createdAt', 'desc'))
+      query(getRemindersCollectionRef(), orderBy('createdAt', 'desc'))
     );
-    return snapshot.docs
-      .map(docSnap => normalizeReminderRecord({ id: docSnap.id, ...docSnap.data() }, docSnap.id))
-      .filter((item): item is Reminder => Boolean(item));
+    return sortReminders(
+      snapshot.docs
+        .map(docSnap => normalizeReminderRecord({ id: docSnap.id, ...docSnap.data() }, docSnap.id))
+        .filter((item): item is Reminder => Boolean(item))
+    );
   },
 
   async getById(reminderId: string): Promise<Reminder | null> {

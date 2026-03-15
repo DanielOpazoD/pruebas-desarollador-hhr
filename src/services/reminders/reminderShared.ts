@@ -18,8 +18,14 @@ export const getReminderDocRef = (reminderId: string) =>
 export const getReminderReadReceiptsCollectionRef = (reminderId: string) =>
   collection(getReminderDocRef(reminderId), 'readReceipts');
 
-export const getReminderReadReceiptDocRef = (reminderId: string, userId: string) =>
-  doc(getReminderReadReceiptsCollectionRef(reminderId), userId);
+export const buildReminderReadReceiptId = (
+  userId: string,
+  shift: ReminderReadReceipt['shift'],
+  dateKey: string
+) => `${userId}__${dateKey}__${shift}`;
+
+export const getReminderReadReceiptDocRef = (reminderId: string, receiptId: string) =>
+  doc(getReminderReadReceiptsCollectionRef(reminderId), receiptId);
 
 export const normalizeReminderRecord = (record: unknown, fallbackId?: string): Reminder | null => {
   const parsed = ReminderSchema.safeParse(record);

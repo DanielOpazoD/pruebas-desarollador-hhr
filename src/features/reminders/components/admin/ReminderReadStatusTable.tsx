@@ -41,6 +41,9 @@ export const ReminderReadStatusTable: React.FC<ReminderReadStatusTableProps> = (
                   Usuario
                 </th>
                 <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
+                  Fecha turno
+                </th>
+                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
                   Turno
                 </th>
                 <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
@@ -52,6 +55,9 @@ export const ReminderReadStatusTable: React.FC<ReminderReadStatusTableProps> = (
               {receipts.map(receipt => (
                 <tr key={`${receipt.userId}-${receipt.readAt}`}>
                   <td className="px-4 py-3 font-semibold text-slate-700">{receipt.userName}</td>
+                  <td className="px-4 py-3 font-semibold text-slate-500">
+                    {receipt.dateKey ?? 'Legacy'}
+                  </td>
                   <td className="px-4 py-3 font-semibold capitalize text-slate-500">
                     {receipt.shift}
                   </td>

@@ -27,10 +27,11 @@ vi.mock('@/services/reminders', () => ({
   ReminderReadService: {
     hasUserRead: (...args: unknown[]) => hasUserReadMock(...args),
     markAsRead: (...args: unknown[]) => markAsReadMock(...args),
-    buildReceipt: vi.fn(({ userId, userName, shift }) => ({
+    buildReceipt: vi.fn(({ userId, userName, shift, dateKey }) => ({
       userId,
       userName,
       shift,
+      dateKey,
       readAt: '2026-03-15T12:00:00.000Z',
     })),
   },
@@ -76,13 +77,13 @@ describe('ReminderCenterProvider', () => {
     vi.clearAllMocks();
     window.localStorage.clear();
     hasUserReadMock.mockResolvedValue(false);
-    subscribeMock.mockImplementation(callback => {
+    subscribeMock.mockImplementation((callback: (reminders: unknown[]) => void) => {
       callback([reminder]);
       return () => undefined;
     });
   });
 
-  it('abre el centro y expone avisos no leidos', async () => {
+  it('expone avisos no leidos sin autoabrir el centro', async () => {
     render(
       <ReminderCenterProvider>
         <ReminderProbe />
@@ -93,7 +94,7 @@ describe('ReminderCenterProvider', () => {
       expect(screen.getByTestId('unread-count').textContent).toBe('1');
     });
 
-    expect(screen.getByTestId('modal-state').textContent).toBe('open');
+    expect(screen.getByTestId('modal-state').textContent).toBe('closed');
   });
 
   it('marca un aviso como leido y reduce el contador', async () => {
@@ -115,5 +116,57 @@ describe('ReminderCenterProvider', () => {
       expect(markAsReadMock).toHaveBeenCalledTimes(1);
       expect(screen.getByTestId('unread-count').textContent).toBe('0');
     });
+
+    expect(markAsReadMock).toHaveBeenCalledWith(
+      'rem-1',
+      expect.objectContaining({
+        userId: 'user-1',
+        shift: 'day',
+        dateKey: '2026-03-15',
+      })
+    );
+  });
+
+  it('vuelve a mostrar el aviso si cambia el turno o la fecha de lectura', async () => {
+    hasUserReadMock.mockImplementation(
+      async (_reminderId: string, _userId: string, shift: string, dateKey: string) =>
+        shift === 'day' && dateKey === '2026-03-15'
+    );
+
+    render(
+      <ReminderCenterProvider>
+        <ReminderProbe />
+      </ReminderCenterProvider>
+    );
+
+    await waitFor(() => {
+      expect(hasUserReadMock).toHaveBeenCalledWith('rem-1', 'user-1', 'day', '2026-03-15');
+      expect(screen.getByTestId('unread-count').textContent).toBe('0');
+    });
+  });
+
+  it('no autoabre el modal cuando la suscripcion falla por permisos', async () => {
+    subscribeMock.mockImplementation(
+      (
+        callback: (reminders: unknown[]) => void,
+        options?: { onError?: (error: unknown, kind: string) => void }
+      ) => {
+        options?.onError?.({ code: 'permission-denied' }, 'permission_denied');
+        callback([]);
+        return () => undefined;
+      }
+    );
+
+    render(
+      <ReminderCenterProvider>
+        <ReminderProbe />
+      </ReminderCenterProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('unread-count').textContent).toBe('0');
+    });
+
+    expect(screen.getByTestId('modal-state').textContent).toBe('closed');
   });
 });

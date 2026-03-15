@@ -127,4 +127,49 @@ describe('functions authFunctionsFactory', () => {
       role: 'viewer',
     });
   });
+
+  it('syncs current user role claim from config/roles for the caller', async () => {
+    const getUser = vi.fn().mockResolvedValue({ customClaims: { featureFlag: true } });
+    const setCustomUserClaims = vi.fn().mockResolvedValue(undefined);
+    const resolveRoleForEmail = vi.fn().mockResolvedValue('admin');
+    const functionsApi = createAuthFunctions({
+      admin: {
+        auth: () => ({
+          getUserByEmail: vi.fn(),
+          getUser,
+          setCustomUserClaims,
+        }),
+      },
+      helpers: {
+        assignRole: vi.fn(),
+        normalizeEmail: (value: unknown) => String(value || '').toLowerCase(),
+        adminEmails: [],
+        resolveRoleForEmail,
+        isSharedCensusEmailAuthorized: vi.fn(),
+      },
+    });
+
+    const result = await functionsApi.syncCurrentUserRoleClaim.run(
+      {},
+      {
+        auth: {
+          uid: 'u-sync',
+          token: {
+            email: 'admin@example.com',
+          },
+        },
+      }
+    );
+
+    expect(resolveRoleForEmail).toHaveBeenCalledWith('admin@example.com');
+    expect(getUser).toHaveBeenCalledWith('u-sync');
+    expect(setCustomUserClaims).toHaveBeenCalledWith('u-sync', {
+      featureFlag: true,
+      role: 'admin',
+    });
+    expect(result).toEqual({
+      role: 'admin',
+      synced: true,
+    });
+  });
 });

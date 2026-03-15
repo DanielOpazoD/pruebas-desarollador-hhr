@@ -442,6 +442,123 @@ describeRules('Firestore Security Rules', () => {
     });
   });
 
+  describe('Reminders Collection', () => {
+    const reminderPath = 'hospitals/H1/reminders/rem-1';
+    const receiptPath = `${reminderPath}/readReceipts/user_nurse__2026-01-01__day`;
+
+    beforeEach(async () => {
+      await setupDoc(admin(), reminderPath, {
+        title: 'Aviso de prueba',
+        message: 'Mensaje',
+        type: 'info',
+        targetRoles: ['nurse_hospital'],
+        targetShifts: ['day'],
+        startDate: CURRENT_RECORD_DATE,
+        endDate: CURRENT_RECORD_DATE,
+        priority: 2,
+        isActive: true,
+        createdBy: 'admin',
+        createdByName: 'Admin',
+        createdAt: new Date(NOW_MS).toISOString(),
+        updatedAt: new Date(NOW_MS).toISOString(),
+      });
+    });
+
+    it('allows clinical users with role access to read reminders', async () => {
+      await assertSucceeds(nurse().doc(reminderPath).get());
+      await assertSucceeds(doctor().doc(reminderPath).get());
+    });
+
+    it('blocks unauthorized users from reading reminders', async () => {
+      await assertFails(unauthorizedAuthed().doc(reminderPath).get());
+    });
+
+    it('allows admins to create reminders', async () => {
+      await assertSucceeds(
+        admin()
+          .doc('hospitals/H1/reminders/rem-2')
+          .set({
+            title: 'Nuevo aviso',
+            message: 'Texto',
+            type: 'warning',
+            targetRoles: ['nurse_hospital'],
+            targetShifts: ['day'],
+            startDate: CURRENT_RECORD_DATE,
+            endDate: CURRENT_RECORD_DATE,
+            priority: 3,
+            isActive: true,
+            createdBy: 'admin',
+            createdByName: 'Admin',
+            createdAt: new Date(NOW_MS).toISOString(),
+            updatedAt: new Date(NOW_MS).toISOString(),
+          })
+      );
+    });
+
+    it('blocks non-admin users from creating reminders', async () => {
+      await assertFails(
+        nurse()
+          .doc('hospitals/H1/reminders/rem-3')
+          .set({
+            title: 'Sin permiso',
+            message: 'Texto',
+            type: 'warning',
+            targetRoles: ['nurse_hospital'],
+            targetShifts: ['day'],
+            startDate: CURRENT_RECORD_DATE,
+            endDate: CURRENT_RECORD_DATE,
+            priority: 1,
+            isActive: true,
+            createdBy: 'nurse',
+            createdByName: 'Nurse',
+            createdAt: new Date(NOW_MS).toISOString(),
+            updatedAt: new Date(NOW_MS).toISOString(),
+          })
+      );
+    });
+
+    it('allows users to create their own read receipt only', async () => {
+      await assertSucceeds(
+        nurse()
+          .doc(receiptPath)
+          .set({
+            userId: 'user_nurse',
+            userName: 'Nurse',
+            readAt: new Date(NOW_MS).toISOString(),
+            shift: 'day',
+            dateKey: CURRENT_RECORD_DATE,
+          })
+      );
+    });
+
+    it('blocks users from creating read receipts for another uid', async () => {
+      await assertFails(
+        nurse()
+          .doc(`${reminderPath}/readReceipts/other-user`)
+          .set({
+            userId: 'other-user',
+            userName: 'Nurse',
+            readAt: new Date(NOW_MS).toISOString(),
+            shift: 'day',
+            dateKey: CURRENT_RECORD_DATE,
+          })
+      );
+    });
+
+    it('allows only admins to read aggregated receipts', async () => {
+      await setupDoc(admin(), receiptPath, {
+        userId: 'user_nurse',
+        userName: 'Nurse',
+        readAt: new Date(NOW_MS).toISOString(),
+        shift: 'day',
+        dateKey: CURRENT_RECORD_DATE,
+      });
+
+      await assertSucceeds(admin().doc(receiptPath).get());
+      await assertFails(nurse().doc(receiptPath).get());
+    });
+  });
+
   describe('Settings Collection', () => {
     const settingsPath = 'hospitals/H1/settings/tableConfig';
 

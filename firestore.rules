@@ -377,14 +377,14 @@ service cloud.firestore {
         allow read: if canReadClinicalData();
         allow create, update, delete: if isAdmin();
 
-        match /readReceipts/{userId} {
+        match /readReceipts/{receiptId} {
           allow read: if isAdmin();
           allow create, update: if isAuthenticated() &&
-                                request.auth.uid == userId &&
-                                request.resource.data.userId == userId &&
+                                request.resource.data.userId == request.auth.uid &&
                                 request.resource.data.userName is string &&
                                 request.resource.data.readAt is string &&
-                                request.resource.data.shift in ['day', 'night'];
+                                request.resource.data.shift in ['day', 'night'] &&
+                                request.resource.data.dateKey is string;
           allow delete: if isAdmin();
         }
       }

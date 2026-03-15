@@ -6,114 +6,158 @@ import { restoreConsole, suppressConsole } from '@/tests/utils/consoleTestUtils'
 
 // Mock roleService
 vi.mock('@/services/admin/roleService', () => ({
-    roleService: {
-        getRoles: vi.fn(),
-        setRole: vi.fn(),
-        removeRole: vi.fn(),
-    }
+  roleService: {
+    getRoles: vi.fn(),
+    setRole: vi.fn(),
+    removeRole: vi.fn(),
+    forceSyncUser: vi.fn(),
+  },
 }));
 
 // Mock window.scrollTo
 vi.stubGlobal('scrollTo', vi.fn());
 
 describe('useRoleManagement', () => {
-    let consoleSpies: Array<{ mockRestore: () => void }> = [];
+  let consoleSpies: Array<{ mockRestore: () => void }> = [];
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-        vi.mocked(roleService.getRoles).mockResolvedValue({});
-        consoleSpies = suppressConsole(['error']);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(roleService.getRoles).mockResolvedValue({});
+    vi.mocked(roleService.forceSyncUser).mockResolvedValue({ success: true });
+    consoleSpies = suppressConsole(['error']);
+  });
+
+  afterEach(() => {
+    restoreConsole(consoleSpies);
+  });
+
+  it('should initialize with loading state and load roles', async () => {
+    vi.mocked(roleService.getRoles).mockResolvedValue({ 'test@email.com': 'admin' });
+
+    const { result } = renderHook(() => useRoleManagement());
+
+    expect(result.current.loading).toBe(true);
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
     });
 
-    afterEach(() => {
-        restoreConsole(consoleSpies);
+    expect(result.current.roles).toEqual({ 'test@email.com': 'admin' });
+  });
+
+  it('should validate email format', async () => {
+    const { result } = renderHook(() => useRoleManagement());
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.isValidEmail).toBe(false);
+
+    act(() => {
+      result.current.setEmail('invalid-email');
+    });
+    expect(result.current.isValidEmail).toBe(false);
+
+    act(() => {
+      result.current.setEmail('valid@email.com');
+    });
+    expect(result.current.isValidEmail).toBe(true);
+  });
+
+  it('should reset form correctly', async () => {
+    const { result } = renderHook(() => useRoleManagement());
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => {
+      result.current.setEmail('test@email.com');
+      result.current.setSelectedRole('admin');
     });
 
-    it('should initialize with loading state and load roles', async () => {
-        vi.mocked(roleService.getRoles).mockResolvedValue({ 'test@email.com': 'admin' });
-
-        const { result } = renderHook(() => useRoleManagement());
-
-        expect(result.current.loading).toBe(true);
-
-        await waitFor(() => {
-            expect(result.current.loading).toBe(false);
-        });
-
-        expect(result.current.roles).toEqual({ 'test@email.com': 'admin' });
+    act(() => {
+      result.current.resetForm();
     });
 
-    it('should validate email format', async () => {
-        const { result } = renderHook(() => useRoleManagement());
+    expect(result.current.email).toBe('');
+    expect(result.current.selectedRole).toBe('viewer');
+  });
 
-        await waitFor(() => expect(result.current.loading).toBe(false));
+  it('should handle edit mode', async () => {
+    const { result } = renderHook(() => useRoleManagement());
 
-        expect(result.current.isValidEmail).toBe(false);
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
-        act(() => {
-            result.current.setEmail('invalid-email');
-        });
-        expect(result.current.isValidEmail).toBe(false);
-
-        act(() => {
-            result.current.setEmail('valid@email.com');
-        });
-        expect(result.current.isValidEmail).toBe(true);
+    act(() => {
+      result.current.handleEdit('user@email.com', 'editor');
     });
 
-    it('should reset form correctly', async () => {
-        const { result } = renderHook(() => useRoleManagement());
+    expect(result.current.email).toBe('user@email.com');
+    expect(result.current.selectedRole).toBe('editor');
+    expect(result.current.editingEmail).toBe('user@email.com');
+  });
 
-        await waitFor(() => expect(result.current.loading).toBe(false));
+  it('should handle delete click', async () => {
+    const { result } = renderHook(() => useRoleManagement());
 
-        act(() => {
-            result.current.setEmail('test@email.com');
-            result.current.setSelectedRole('admin');
-        });
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
-        act(() => {
-            result.current.resetForm();
-        });
-
-        expect(result.current.email).toBe('');
-        expect(result.current.selectedRole).toBe('viewer');
+    act(() => {
+      result.current.handleDeleteClick('delete@email.com');
     });
 
-    it('should handle edit mode', async () => {
-        const { result } = renderHook(() => useRoleManagement());
+    expect(result.current.deleteConfirm).toBe('delete@email.com');
+  });
 
-        await waitFor(() => expect(result.current.loading).toBe(false));
+  it('should handle role service error gracefully', async () => {
+    vi.mocked(roleService.getRoles).mockRejectedValue(new Error('Connection error'));
 
-        act(() => {
-            result.current.handleEdit('user@email.com', 'editor');
-        });
+    const { result } = renderHook(() => useRoleManagement());
 
-        expect(result.current.email).toBe('user@email.com');
-        expect(result.current.selectedRole).toBe('editor');
-        expect(result.current.editingEmail).toBe('user@email.com');
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
     });
 
-    it('should handle delete click', async () => {
-        const { result } = renderHook(() => useRoleManagement());
+    expect(result.current.message?.type).toBe('error');
+  });
 
-        await waitFor(() => expect(result.current.loading).toBe(false));
+  it('should sync custom claims after saving a role', async () => {
+    const { result } = renderHook(() => useRoleManagement());
 
-        act(() => {
-            result.current.handleDeleteClick('delete@email.com');
-        });
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
-        expect(result.current.deleteConfirm).toBe('delete@email.com');
+    act(() => {
+      result.current.setEmail('admin@hospital.cl');
+      result.current.setSelectedRole('admin');
     });
 
-    it('should handle role service error gracefully', async () => {
-        vi.mocked(roleService.getRoles).mockRejectedValue(new Error('Connection error'));
-
-        const { result } = renderHook(() => useRoleManagement());
-
-        await waitFor(() => {
-            expect(result.current.loading).toBe(false);
-        });
-
-        expect(result.current.message?.type).toBe('error');
+    await act(async () => {
+      await result.current.handleSubmit({
+        preventDefault: vi.fn(),
+      } as unknown as React.FormEvent);
     });
+
+    expect(roleService.setRole).toHaveBeenCalledWith('admin@hospital.cl', 'admin');
+    expect(roleService.forceSyncUser).toHaveBeenCalledWith('admin@hospital.cl', 'admin');
+    expect(result.current.message?.type).toBe('success');
+  });
+
+  it('should keep success message with warning when claim sync fails', async () => {
+    vi.mocked(roleService.forceSyncUser).mockRejectedValue(new Error('sync failed'));
+    const { result } = renderHook(() => useRoleManagement());
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => {
+      result.current.setEmail('doctor@hospital.cl');
+      result.current.setSelectedRole('doctor_urgency');
+    });
+
+    await act(async () => {
+      await result.current.handleSubmit({
+        preventDefault: vi.fn(),
+      } as unknown as React.FormEvent);
+    });
+
+    expect(result.current.message?.type).toBe('success');
+    expect(result.current.message?.text).toContain('no se pudo sincronizar el claim');
+  });
 });

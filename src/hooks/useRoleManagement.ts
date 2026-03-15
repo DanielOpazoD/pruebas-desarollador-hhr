@@ -44,11 +44,13 @@ export const useRoleManagement = () => {
     }
   }, [message]);
 
-  const resetForm = useCallback(() => {
+  const resetForm = useCallback((options: { preserveMessage?: boolean } = {}) => {
     setEmail('');
     setSelectedRole('viewer');
     setEditingEmail(null);
-    setMessage(null);
+    if (!options.preserveMessage) {
+      setMessage(null);
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,22 +61,35 @@ export const useRoleManagement = () => {
     setMessage(null);
 
     try {
+      let syncWarning: string | null = null;
+
       if (editingEmail && email !== editingEmail) {
         await roleService.removeRole(editingEmail);
       }
 
       await roleService.setRole(email, selectedRole);
+      try {
+        await roleService.forceSyncUser(
+          email,
+          selectedRole as Parameters<typeof roleService.forceSyncUser>[1]
+        );
+      } catch (error) {
+        roleManagementLogger.warn('Role claim sync warning', error);
+        syncWarning =
+          ' El rol fue guardado, pero no se pudo sincronizar el claim de Firebase. El usuario debe cerrar sesión y volver a entrar, o revisar despliegue/functions.';
+      }
 
       setMessage({
         type: 'success',
-        text: editingEmail
-          ? email !== editingEmail
-            ? 'Usuario renombrado y actualizado.'
-            : 'Rol actualizado correctamente.'
-          : `Acceso otorgado a ${email}.`,
+        text:
+          (editingEmail
+            ? email !== editingEmail
+              ? 'Usuario renombrado y actualizado.'
+              : 'Rol actualizado correctamente.'
+            : `Acceso otorgado a ${email}.`) + (syncWarning || ''),
       });
 
-      resetForm();
+      resetForm({ preserveMessage: true });
       await loadRoles();
     } catch (error) {
       roleManagementLogger.error('Save error', error);

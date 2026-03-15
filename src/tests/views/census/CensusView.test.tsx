@@ -13,10 +13,6 @@ vi.mock('@/features/census/hooks/useCensusMigrationBootstrap', () => ({
   useCensusMigrationBootstrap: vi.fn(),
 }));
 
-vi.mock('@/components/reminders/ReminderBanner', () => ({
-  ReminderBanner: () => <div data-testid="reminder-banner">Reminder Banner</div>,
-}));
-
 vi.mock('@/components/shared/SectionErrorBoundary', () => ({
   SectionErrorBoundary: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
@@ -115,7 +111,6 @@ describe('CensusView', () => {
 
     render(<CensusView {...defaultProps} />);
 
-    expect(screen.getByTestId('reminder-banner')).toBeInTheDocument();
     expect(await screen.findByTestId('census-staff-header')).toBeInTheDocument();
     expect(await screen.findByTestId('census-table')).toBeInTheDocument();
     expect(await screen.findByTestId('discharges-section')).toBeInTheDocument();

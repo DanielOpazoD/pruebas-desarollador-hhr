@@ -27,6 +27,7 @@ export interface ReminderReadReceipt {
   userName: string;
   readAt: string;
   shift: ReminderShift;
+  dateKey?: string;
 }
 
 export interface ReminderVisibilityContext {

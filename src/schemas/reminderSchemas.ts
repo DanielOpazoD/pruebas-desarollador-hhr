@@ -38,6 +38,7 @@ export const ReminderReadReceiptSchema = z.object({
   userName: z.string().min(1),
   readAt: z.string().min(1),
   shift: ReminderShiftSchema,
+  dateKey: z.string().regex(ISO_DATE_REGEX).optional(),
 });
 
 export const ReminderDraftSchema = z.object({

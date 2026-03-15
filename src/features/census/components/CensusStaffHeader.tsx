@@ -56,7 +56,7 @@ export const CensusStaffHeader: React.FC<CensusStaffHeaderProps> = ({
   const specialistAccess = isSpecialistCensusAccessProfile(accessProfile);
 
   return (
-    <div className="flex justify-center items-stretch gap-3 flex-wrap animate-fade-in px-4">
+    <div className="flex justify-center items-start gap-3 flex-wrap animate-fade-in px-4">
       {/* Staff Selectors */}
       {!specialistAccess && (
         <NurseSelector

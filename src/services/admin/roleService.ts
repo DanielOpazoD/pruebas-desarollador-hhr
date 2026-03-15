@@ -87,9 +87,13 @@ export const roleService = {
    * Force sync a user's role by calling the Cloud Function.
    * Useful when changing a role for a user who is already authorized.
    */
-  async forceSyncUser(email: string, role: string): Promise<unknown> {
+  async forceSyncUser(
+    email: string,
+    role: ManagedUserRole | 'unauthorized'
+  ): Promise<{ success?: boolean; message?: string }> {
     const functions = await getFunctionsInstance();
     const setUserRole = httpsCallable(functions, 'setUserRole');
-    return setUserRole({ email, role });
+    const result = await setUserRole({ email, role });
+    return (result as { data?: { success?: boolean; message?: string } }).data || {};
   },
 };

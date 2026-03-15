@@ -12,6 +12,7 @@ import {
   type Firestore,
   persistentLocalCache,
   persistentMultipleTabManager,
+  persistentSingleTabManager,
 } from 'firebase/firestore';
 import type { FirebaseStorage } from 'firebase/storage';
 import type { Functions } from 'firebase/functions';
@@ -29,6 +30,16 @@ import { mountFirebaseConfigWarning } from '@/services/auth/firebaseStartupWarni
 
 const CACHED_CONFIG_KEY = 'hhr_firebase_config';
 const FIREBASE_READY_TIMEOUT_MS = 10000;
+
+const shouldUseSingleTabFirestoreCache = () => {
+  if (typeof window === 'undefined') return false;
+
+  const hostname = window.location.hostname;
+  const isLocalhost =
+    hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0';
+
+  return import.meta.env.DEV || isLocalhost;
+};
 
 const parseEmulatorHost = (rawHost: string): { host: string; port: number } | null => {
   const [host, portRaw] = rawHost.split(':');
@@ -265,14 +276,19 @@ export const firebaseReady = (async () => {
 
       // Initialize Firestore. Note: persistentLocalCache can hang if IndexedDB is locked.
       try {
+        const useSingleTabCache = shouldUseSingleTabFirestoreCache();
         db = initializeFirestore(app, {
           ignoreUndefinedProperties: true,
           localCache: persistentLocalCache({
-            tabManager: persistentMultipleTabManager(),
+            tabManager: useSingleTabCache
+              ? persistentSingleTabManager({})
+              : persistentMultipleTabManager(),
           }),
         });
         // eslint-disable-next-line no-console
-        console.log('[FirebaseConfig] 💾 Firestore initialized (persistence requested)');
+        console.log(
+          `[FirebaseConfig] 💾 Firestore initialized (persistence requested, ${useSingleTabCache ? 'single-tab' : 'multi-tab'})`
+        );
       } catch (fsErr) {
         console.warn('[FirebaseConfig] ⚠️ Firestore persistence failed at init:', fsErr);
         db = initializeFirestore(app, {

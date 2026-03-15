@@ -24,6 +24,15 @@ describe('Security hardening static guards', () => {
     );
   });
 
+  it('keeps reminders storage writes restricted to admin claims or bootstrap admin', () => {
+    const rules = readProjectFile('storage.rules');
+    expect(rules).toContain('match /reminders/{allPaths=**}');
+    expect(rules).toContain('allow write: if canWriteReminderAssets();');
+    expect(rules).not.toMatch(
+      /match \/reminders\/\{allPaths=\*\*\}\s*\{\s*allow write:\s*if true;/m
+    );
+  });
+
   it('uses robust admin check in setUserRole callable', () => {
     const authCallablePolicy = readProjectFile('functions/lib/auth/authCallablePolicy.js');
 
