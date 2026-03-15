@@ -101,7 +101,7 @@ export const useTerminologySuggestor = ({
     }
 
     if (isModalOpen && !prevModalOpenRef.current) {
-      const fillValue = freeTextValue || query || value;
+      const fillValue = value || query || freeTextValue;
       if (fillValue && fillValue.length >= 2) {
         setQuery(fillValue);
       }
