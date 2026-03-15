@@ -8,7 +8,7 @@ import { LoginPageHeader } from '@/features/auth/components/LoginPageHeader';
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
-  accessMode?: 'default' | 'shared-census' | 'specialist-medical-handoff';
+  accessMode?: 'default' | 'shared-census';
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, accessMode = 'default' }) => {

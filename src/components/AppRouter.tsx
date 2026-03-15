@@ -32,6 +32,7 @@ import {
 } from '@/views/LazyViews';
 import { useSharedCensusMode } from '@/hooks/useSharedCensusMode';
 import type { CensusAccessProfile } from '@/features/census/types/censusAccessProfile';
+import { resolveSpecialistCensusAccessProfile } from '@/features/specialist/access/specialistAccessPolicy';
 
 export type AppModule =
   | 'CENSUS'
@@ -91,8 +92,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
   onCloseBedManagerModal,
   sharedCensus,
 }) => {
-  const censusAccessProfile: CensusAccessProfile =
-    role === 'doctor_specialist' ? 'specialist' : 'default';
+  const censusAccessProfile: CensusAccessProfile = resolveSpecialistCensusAccessProfile(role);
 
   return (
     <GlobalErrorBoundary>

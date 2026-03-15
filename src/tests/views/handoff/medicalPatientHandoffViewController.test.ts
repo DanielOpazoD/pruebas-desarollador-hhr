@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { Specialty, type BedDefinition, type DailyRecord } from '@/types';
 import {
+  buildMedicalHandoffDeepLink,
   buildMedicalSpecialistAccessLink,
   buildMedicalSpecialtyLink,
   collectMedicalSpecialties,
   filterBedsByMedicalScope,
   filterBedsBySelectedMedicalSpecialty,
   hasVisibleMedicalPatients,
+  resolveInitialMedicalScopeFromSearch,
   resolveInitialMedicalSpecialtyFromSearch,
 } from '@/features/handoff/controllers/medicalPatientHandoffViewController';
 
@@ -37,6 +39,9 @@ describe('medicalPatientHandoffViewController', () => {
       Specialty.CIRUGIA
     );
     expect(resolveInitialMedicalSpecialtyFromSearch('?module=MEDICAL_HANDOFF')).toBe('all');
+    expect(resolveInitialMedicalScopeFromSearch('?scope=upc')).toBe('upc');
+    expect(resolveInitialMedicalScopeFromSearch('?scope=no-upc')).toBe('no-upc');
+    expect(resolveInitialMedicalScopeFromSearch('?module=MEDICAL_HANDOFF')).toBe('all');
   });
 
   it('filters beds by medical scope and selected specialty', () => {
@@ -66,6 +71,17 @@ describe('medicalPatientHandoffViewController', () => {
       'https://app.hospitalhangaroa.cl/handoff?module=MEDICAL_HANDOFF&date=2026-03-03&specialty=Cirug%C3%ADa'
     );
     expect(
+      buildMedicalHandoffDeepLink(
+        'https://app.hospitalhangaroa.cl',
+        '/handoff',
+        '2026-03-03',
+        'upc',
+        Specialty.CIRUGIA
+      )
+    ).toBe(
+      'https://app.hospitalhangaroa.cl/handoff?module=MEDICAL_HANDOFF&date=2026-03-03&scope=upc&specialty=Cirug%C3%ADa'
+    );
+    expect(
       buildMedicalSpecialistAccessLink(
         'https://app.hospitalhangaroa.cl',
         '/handoff',
@@ -74,7 +90,7 @@ describe('medicalPatientHandoffViewController', () => {
         Specialty.CIRUGIA
       )
     ).toBe(
-      'https://app.hospitalhangaroa.cl/handoff?mode=specialist-medical-handoff&date=2026-03-03&scope=upc&specialty=Cirug%C3%ADa'
+      'https://app.hospitalhangaroa.cl/handoff?module=MEDICAL_HANDOFF&date=2026-03-03&scope=upc&specialty=Cirug%C3%ADa'
     );
   });
 });

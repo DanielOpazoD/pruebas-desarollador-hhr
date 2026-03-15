@@ -34,7 +34,8 @@ const MODULES_FROM_URL: readonly ModuleType[] = [
 
 const resolveInitialModule = (): ModuleType => {
   if (typeof window === 'undefined') return 'CENSUS';
-  const rawModule = new URLSearchParams(window.location.search).get('module');
+  const params = new URLSearchParams(window.location.search);
+  const rawModule = params.get('module');
   if (!rawModule) return 'CENSUS';
   return MODULES_FROM_URL.includes(rawModule as ModuleType) ? (rawModule as ModuleType) : 'CENSUS';
 };

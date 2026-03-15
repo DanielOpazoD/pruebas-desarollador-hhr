@@ -179,6 +179,16 @@ service cloud.firestore {
              );
     }
 
+    function isSpecialistClinicalDocumentDraftWrite() {
+      return isDoctorSpecialist() &&
+             request.resource.data.status == 'draft' &&
+             (
+               resource == null ||
+               resource.data == null ||
+               resource.data.status == 'draft'
+             );
+    }
+
     // Legacy/custom-claim role gate (prevents any random authenticated user access)
     function hasRoleClaim() {
       return isAuthenticated() && request.auth.token.role in [
@@ -373,8 +383,8 @@ service cloud.firestore {
       // ----------------------------------------
       match /clinicalDocuments/{documentId} {
         allow read: if canReadClinicalData();
-        allow create: if isAdmin() || isDoctor();
-        allow update: if isAdmin() || isDoctor();
+        allow create: if isAdmin() || isDoctor() || isSpecialistClinicalDocumentDraftWrite();
+        allow update: if isAdmin() || isDoctor() || isSpecialistClinicalDocumentDraftWrite();
         allow delete: if isAdmin() || isDoctor() || isNurse() || isEditorRole();
       }
 

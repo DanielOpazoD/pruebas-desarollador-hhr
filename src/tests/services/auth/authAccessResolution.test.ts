@@ -6,8 +6,6 @@ const mockFirebaseSignOut = vi.fn().mockResolvedValue(undefined);
 const mockCheckSharedCensusAccess = vi.fn();
 const mockIsSharedCensusMode = vi.fn();
 const mockCheckEmailInFirestore = vi.fn();
-const mockIsSpecialistMedicalHandoffMode = vi.fn();
-const mockCanAccessSpecialistMedicalHandoff = vi.fn();
 const mockToAuthUser = vi.fn((user: { uid: string; email: string | null }, role?: string) => ({
   uid: user.uid,
   email: user.email,
@@ -27,11 +25,6 @@ vi.mock('@/services/auth/sharedCensusAuth', () => ({
   isSharedCensusMode: () => mockIsSharedCensusMode(),
 }));
 
-vi.mock('@/services/auth/specialistMedicalHandoffAuth', () => ({
-  isSpecialistMedicalHandoffMode: () => mockIsSpecialistMedicalHandoffMode(),
-  canAccessSpecialistMedicalHandoff: (role?: string) => mockCanAccessSpecialistMedicalHandoff(role),
-}));
-
 vi.mock('@/services/auth/authPolicy', () => ({
   checkEmailInFirestore: (email: string) => mockCheckEmailInFirestore(email),
 }));
@@ -45,19 +38,15 @@ describe('authAccessResolution', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockIsSharedCensusMode.mockReturnValue(false);
-    mockIsSpecialistMedicalHandoffMode.mockReturnValue(false);
-    mockCanAccessSpecialistMedicalHandoff.mockReturnValue(false);
     mockCheckSharedCensusAccess.mockResolvedValue({ authorized: false });
     mockCheckEmailInFirestore.mockResolvedValue({ allowed: true, role: 'admin' });
   });
 
-  it('authorizes doctor_specialist users in specialist medical handoff mode', async () => {
-    mockIsSpecialistMedicalHandoffMode.mockReturnValue(true);
+  it('authorizes doctor_specialist users in the standard login flow', async () => {
     mockCheckEmailInFirestore.mockResolvedValue({
       allowed: true,
       role: 'doctor_specialist',
     });
-    mockCanAccessSpecialistMedicalHandoff.mockReturnValue(true);
 
     const result = await authorizeFirebaseUser({
       uid: 'spec-1',
@@ -72,20 +61,15 @@ describe('authAccessResolution', () => {
     expect(mockFirebaseSignOut).not.toHaveBeenCalled();
   });
 
-  it('signs out non-specialist users when they enter the specialist mode link', async () => {
-    mockIsSpecialistMedicalHandoffMode.mockReturnValue(true);
-    mockCheckEmailInFirestore.mockResolvedValue({
-      allowed: true,
-      role: 'doctor_urgency',
-    });
-    mockCanAccessSpecialistMedicalHandoff.mockReturnValue(false);
+  it('signs out unauthorized users in the standard login flow', async () => {
+    mockCheckEmailInFirestore.mockResolvedValue({ allowed: false, role: undefined });
 
     await expect(
       authorizeFirebaseUser({
         uid: 'doctor-1',
         email: 'doctor@hospital.cl',
       } as never)
-    ).rejects.toThrow(/entrega médica de especialistas/i);
+    ).rejects.toThrow(/Acceso no autorizado/i);
 
     expect(mockFirebaseSignOut).toHaveBeenCalledTimes(1);
   });

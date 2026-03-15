@@ -9,7 +9,6 @@ describe('medicalHandoffAccessController', () => {
       readOnly: false,
       recordDate: '2026-03-14',
       todayISO: '2026-03-14',
-      specialistAccess: false,
     });
 
     expect(capabilities.canCreatePrimaryObservationEntry).toBe(true);
@@ -29,13 +28,12 @@ describe('medicalHandoffAccessController', () => {
     expect(capabilities.canOpenNightCudyr).toBe(false);
   });
 
-  it('keeps delivery/signature restrictions in specialist link access mode while allowing handoff management', () => {
+  it('keeps delivery/signature restrictions for specialists while allowing handoff management', () => {
     const capabilities = resolveMedicalHandoffCapabilities({
       role: 'doctor_specialist',
       readOnly: false,
       recordDate: '2026-03-14',
       todayISO: '2026-03-14',
-      specialistAccess: true,
     });
 
     expect(capabilities.canCreatePrimaryObservationEntry).toBe(true);
@@ -56,7 +54,6 @@ describe('medicalHandoffAccessController', () => {
       readOnly: false,
       recordDate: '2026-03-13',
       todayISO: '2026-03-14',
-      specialistAccess: false,
     });
 
     expect(capabilities.canCreatePrimaryObservationEntry).toBe(false);

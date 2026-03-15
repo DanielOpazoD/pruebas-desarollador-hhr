@@ -18,6 +18,7 @@ import { getAttributedAuthors } from '@/services/admin/attributionService';
 import { useUIState, UseUIStateReturn } from '@/hooks/useUIState';
 import { useAuth } from '@/context';
 import {
+  resolveInitialMedicalScopeFromSearch,
   resolveInitialMedicalSpecialtyFromSearch,
   resolveMedicalHandoffCapabilities,
   resolveHandoffScreenState,
@@ -34,20 +35,23 @@ interface HandoffViewProps {
   readOnly?: boolean;
   ui?: UseUIStateReturn;
   medicalScope?: MedicalHandoffScope;
-  specialistAccess?: boolean;
 }
 
 export const HandoffView: React.FC<HandoffViewProps> = ({
   type = 'nursing',
   readOnly = false,
   ui: propUi,
-  medicalScope = 'all',
-  specialistAccess = false,
+  medicalScope,
 }) => {
   const initialMedicalSpecialtyFromUrl = React.useMemo(() => {
     if (typeof window === 'undefined') return 'all' as Specialty | 'all';
     return resolveInitialMedicalSpecialtyFromSearch(window.location.search);
   }, []);
+  const initialMedicalScopeFromUrl = React.useMemo(() => {
+    if (typeof window === 'undefined') return 'all' as MedicalHandoffScope;
+    return resolveInitialMedicalScopeFromSearch(window.location.search);
+  }, []);
+  const effectiveMedicalScope = medicalScope ?? initialMedicalScopeFromUrl;
   const { record } = useDailyRecordData();
   const {
     updateHandoffChecklist,
@@ -124,11 +128,11 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
         visibleBeds,
         record,
         isMedical,
-        medicalScope,
+        medicalScope: effectiveMedicalScope,
         selectedMedicalSpecialty: 'all',
         shouldShowPatient,
       }),
-    [visibleBeds, record, isMedical, medicalScope, shouldShowPatient]
+    [visibleBeds, record, isMedical, effectiveMedicalScope, shouldShowPatient]
   );
 
   const effectiveSelectedMedicalSpecialty =
@@ -142,7 +146,7 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
         visibleBeds,
         record,
         isMedical,
-        medicalScope,
+        medicalScope: effectiveMedicalScope,
         selectedMedicalSpecialty: effectiveSelectedMedicalSpecialty,
         shouldShowPatient,
       }),
@@ -150,7 +154,7 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
       visibleBeds,
       record,
       isMedical,
-      medicalScope,
+      effectiveMedicalScope,
       effectiveSelectedMedicalSpecialty,
       shouldShowPatient,
     ]
@@ -208,10 +212,9 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
       resolveMedicalHandoffCapabilities({
         role,
         readOnly,
-        specialistAccess,
         recordDate: record?.date,
       }),
-    [readOnly, record?.date, role, specialistAccess]
+    [readOnly, record?.date, role]
   );
   const medicalActions: HandoffMedicalActions = {
     onCreatePrimaryEntry: medicalCapabilities.canCreatePrimaryObservationEntry
@@ -312,7 +315,6 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
           specialtyFilteredBeds={specialtyFilteredBeds}
           readOnly={readOnly}
           role={role}
-          specialistAccess={specialistAccess}
           canCopySpecialistLink={medicalCapabilities.canCopySpecialistLink}
           scopedMedicalSignature={scopedMedicalSignature}
           scopedMedicalHandoffSentAt={scopedMedicalHandoffSentAt}

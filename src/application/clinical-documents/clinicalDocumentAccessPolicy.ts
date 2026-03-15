@@ -1,14 +1,17 @@
 import type { UserRole } from '@/types';
+import { resolveSpecialistCapabilities } from '@/features/specialist/access/specialistAccessPolicy';
 
 export const canReadClinicalDocuments = (role: UserRole | undefined): boolean =>
   role === 'admin' ||
   role === 'doctor_urgency' ||
-  role === 'doctor_specialist' ||
+  resolveSpecialistCapabilities(role).canReadClinicalDocuments ||
   role === 'nurse_hospital' ||
   role === 'editor';
 
 export const canEditClinicalDocuments = (role: UserRole | undefined): boolean =>
-  role === 'admin' || role === 'doctor_urgency';
+  role === 'admin' ||
+  role === 'doctor_urgency' ||
+  resolveSpecialistCapabilities(role).canEditClinicalDocumentDrafts;
 
 export const canArchiveClinicalDocuments = (role: UserRole | undefined): boolean =>
   role === 'admin';

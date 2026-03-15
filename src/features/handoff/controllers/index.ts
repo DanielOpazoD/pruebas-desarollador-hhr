@@ -42,12 +42,14 @@ export {
 } from './medicalPatientHandoffMutationController';
 export { resolveHandoffScreenState } from './handoffScreenController';
 export {
+  buildMedicalHandoffDeepLink,
   buildMedicalSpecialistAccessLink,
   buildMedicalSpecialtyLink,
   collectMedicalSpecialties,
   filterBedsByMedicalScope,
   filterBedsBySelectedMedicalSpecialty,
   hasVisibleMedicalPatients,
+  resolveInitialMedicalScopeFromSearch,
   resolveInitialMedicalSpecialtyFromSearch,
 } from './medicalPatientHandoffViewController';
 export { resolveMedicalHandoffCapabilities } from './medicalHandoffAccessController';

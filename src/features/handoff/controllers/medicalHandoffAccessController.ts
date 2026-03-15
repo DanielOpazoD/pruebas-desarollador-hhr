@@ -1,6 +1,9 @@
 import { ACTIONS, canDoAction } from '@/utils/permissions';
-import { getTodayISO } from '@/utils/dateUtils';
 import type { UserRole } from '@/types';
+import {
+  canEditSpecialistTodayBoundRecord,
+  hasSpecialistRestrictedMedicalAccess,
+} from '@/features/specialist/access/specialistAccessPolicy';
 
 export interface MedicalHandoffCapabilities {
   canCreatePrimaryObservationEntry: boolean;
@@ -25,20 +28,21 @@ interface ResolveMedicalHandoffCapabilitiesParams {
   readOnly: boolean;
   recordDate?: string;
   todayISO?: string;
-  specialistAccess?: boolean;
 }
 
 export const resolveMedicalHandoffCapabilities = ({
   role,
   readOnly,
   recordDate,
-  todayISO = getTodayISO(),
-  specialistAccess = false,
+  todayISO,
 }: ResolveMedicalHandoffCapabilitiesParams): MedicalHandoffCapabilities => {
-  const specialistRole = role === 'doctor_specialist';
-  const specialistRestrictedAccess = specialistAccess || specialistRole;
-  const specialistCanEditRecord = !specialistRestrictedAccess || recordDate === todayISO;
-  const canEditClinicalContent = !readOnly && specialistCanEditRecord;
+  const specialistRestrictedAccess = hasSpecialistRestrictedMedicalAccess(role);
+  const canEditClinicalContent = canEditSpecialistTodayBoundRecord({
+    role,
+    readOnly,
+    recordDate,
+    todayISO,
+  });
   const canSign =
     !specialistRestrictedAccess && !readOnly && canDoAction(role, ACTIONS.HANDOFF_MEDICAL_SIGN);
   const canRestoreSignatures = !specialistRestrictedAccess && role === 'admin';

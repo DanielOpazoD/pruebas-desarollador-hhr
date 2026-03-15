@@ -38,7 +38,7 @@ export const resolvePatientActionMenuViewState = ({
       showClinicalDocumentsAction || showExamRequestAction || showImagingRequestAction;
 
     return {
-      showDemographicsAction: false,
+      showDemographicsAction: !isBlocked,
       showMenuTrigger,
       showHistoryAction: false,
       showUtilityActions: false,

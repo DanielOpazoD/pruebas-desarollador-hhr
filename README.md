@@ -60,6 +60,26 @@ npm run preview
 | Validación            | Zod + validaciones de dominio       | Integridad de entrada y contratos            |
 | Testing               | Vitest + RTL + Playwright           | Unit, integración y e2e                      |
 
+## Perfil Especialista
+
+El rol `doctor_specialist` entra por el login habitual de Google y usa una policy transversal, sin modos de acceso alternativos.
+
+Alcance actual:
+
+- módulos visibles: `CENSUS` y `MEDICAL_HANDOFF`
+- censo: vista abreviada, sin edición de datos censales
+- documentos clínicos: lectura y edición de borradores
+- entrega médica: edición clínica restringida por día actual
+
+Restricciones clave:
+
+- no firma entrega médica
+- no envía por WhatsApp
+- no usa funciones administrativas
+- no edita entregas médicas de días previos
+
+Los accesos directos al handoff médico ya no usan un “modo especialista” separado; son deep-links normales al módulo `MEDICAL_HANDOFF`.
+
 ## Comandos Principales
 
 | Comando                                 | Objetivo                                                                                         |

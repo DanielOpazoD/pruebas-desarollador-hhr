@@ -21,6 +21,10 @@ import {
 } from '@/components/layout/app-content/appContentVisibilityController';
 import { useAppContentEventBridge } from '@/components/layout/app-content/useAppContentEventBridge';
 import { CensusEmailConfigModal } from '@/views/LazyViews';
+import {
+  resolveSpecialistCapabilities,
+  resolveSpecialistCensusAccessProfile,
+} from '@/features/specialist/access/specialistAccessPolicy';
 
 interface AppContentProps {
   ui: UseUIStateReturn;
@@ -45,7 +49,11 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
   const auth = useAuth();
   const { record, syncStatus, lastSyncTime } = dailyRecordHook;
   const { isSignatureMode, currentDateString } = dateNav;
-  const specialistCensusAccess = auth.role === 'doctor_specialist';
+  const specialistCapabilities = React.useMemo(
+    () => resolveSpecialistCapabilities(auth.role),
+    [auth.role]
+  );
+  const specialistCensusAccess = specialistCapabilities.isSpecialist;
   const { currentModule, setCurrentModule, censusLocalViewMode, setCensusLocalViewMode } = ui;
 
   // Export Manager Hook
@@ -158,7 +166,7 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
             setLocalViewMode={ui.setCensusLocalViewMode}
             onBackupPDF={exportManager.handleBackupHandoff}
             navigateDays={dateNav.navigateDays}
-            accessProfile={specialistCensusAccess ? 'specialist' : 'default'}
+            accessProfile={resolveSpecialistCensusAccessProfile(auth.role)}
           />
         )}
 

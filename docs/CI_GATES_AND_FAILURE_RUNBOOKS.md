@@ -93,6 +93,13 @@ Salida esperada:
 3. si el problema es rendimiento, revisar bundle por flujo antes de relajar el test
 4. si el cambio es intencional, actualizar el spec con el nuevo contrato explícito
 
+### Falla en perfil especialista
+
+1. validar primero que el rol `doctor_specialist` siga entrando por login normal y no por un flujo alternativo
+2. revisar que `CENSUS` y `MEDICAL_HANDOFF` sigan siendo los únicos módulos visibles
+3. si falla handoff, confirmar que la restricción de edición por día actual no se haya roto
+4. si falla clinical-documents, revisar permisos de `draft` en frontend y Firestore Rules
+
 ### Falla `check:flow-performance-budget`
 
 1. correr `npm run test:e2e:flow-performance`

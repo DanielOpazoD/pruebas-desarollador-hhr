@@ -11,12 +11,19 @@ import { useAppState } from '@/hooks/useAppState';
 describe('useAppState', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.history.replaceState({}, '', '/');
   });
 
   describe('Module Navigation', () => {
     it('should initialize with CENSUS module', () => {
       const { result } = renderHook(() => useAppState());
       expect(result.current.currentModule).toBe('CENSUS');
+    });
+
+    it('should initialize MEDICAL_HANDOFF for handoff deep-links', () => {
+      window.history.replaceState({}, '', '/?module=MEDICAL_HANDOFF&date=2026-03-14');
+      const { result } = renderHook(() => useAppState());
+      expect(result.current.currentModule).toBe('MEDICAL_HANDOFF');
     });
 
     it('should update current module', () => {

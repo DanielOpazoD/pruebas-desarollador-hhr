@@ -55,6 +55,7 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
   showCmaAction = true,
   accessProfile = 'default',
 }) => {
+  const isSpecialistAccess = accessProfile === 'specialist';
   const {
     isOpen,
     menuRef,
@@ -89,7 +90,7 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
       {binding.availability.showDemographicsAction && (
         <div className="flex items-center gap-0.5">
           <MedicalButton
-            onClick={onViewDemographics}
+            onClick={isSpecialistAccess ? undefined : onViewDemographics}
             variant="ghost"
             size="xs"
             className="!px-1.5 !py-0.5 rounded-md text-medical-500 hover:text-medical-700"

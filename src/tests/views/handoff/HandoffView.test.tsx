@@ -212,30 +212,6 @@ describe('HandoffView Component', () => {
     expect(await screen.findByText('Broncoscopía')).toBeInTheDocument();
   });
 
-  it('hides signing and sharing controls in specialist medical access mode', () => {
-    const record = createMockRecord('2024-12-11');
-    record.medicalHandoffDoctor = 'Dr. Responsable';
-    record.beds['R1'] = createMockPatient({
-      bedId: 'R1',
-      patientName: 'PACIENTE MEDICINA',
-      specialty: 'Med Interna',
-    });
-
-    render(<HandoffView type="medical" specialistAccess={true} />, {
-      contextValue: createMockDailyRecordContext(record),
-    });
-
-    expect(screen.queryByRole('button', { name: /Enviar por WhatsApp/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Links firma/i })).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: /Copiar link especialista/i })
-    ).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Firmar/i })).not.toBeInTheDocument();
-    expect(screen.queryByText(/Entregado por \(Dr\.\):/i)).not.toBeInTheDocument();
-    expect(screen.queryByText('Dr. Responsable')).not.toBeInTheDocument();
-    expect(screen.queryByDisplayValue('Dr. Responsable')).not.toBeInTheDocument();
-  });
-
   it('filters medical handoff patients by census specialty', async () => {
     const record = createMockRecord('2024-12-11');
     record.beds['R1'] = createMockPatient({

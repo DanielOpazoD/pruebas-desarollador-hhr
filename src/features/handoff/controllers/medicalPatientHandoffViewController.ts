@@ -10,6 +10,15 @@ export const resolveInitialMedicalSpecialtyFromSearch = (
   return rawSpecialty as Specialty;
 };
 
+export const resolveInitialMedicalScopeFromSearch = (
+  search: string | undefined
+): MedicalHandoffScope => {
+  if (!search) return 'all';
+  const rawScope = new URLSearchParams(search).get('scope');
+  if (rawScope === 'upc' || rawScope === 'no-upc') return rawScope;
+  return 'all';
+};
+
 export const filterBedsByMedicalScope = (
   visibleBeds: BedDefinition[],
   record: DailyRecord | null,
@@ -79,7 +88,7 @@ export const buildMedicalSpecialtyLink = (
   return `${origin}${pathname}?${params.toString()}`;
 };
 
-export const buildMedicalSpecialistAccessLink = (
+export const buildMedicalHandoffDeepLink = (
   origin: string,
   pathname: string,
   date: string,
@@ -87,7 +96,7 @@ export const buildMedicalSpecialistAccessLink = (
   specialty: Specialty | 'all'
 ): string => {
   const params = new URLSearchParams();
-  params.set('mode', 'specialist-medical-handoff');
+  params.set('module', 'MEDICAL_HANDOFF');
   params.set('date', date);
   params.set('scope', scope);
   if (specialty !== 'all') {
@@ -95,3 +104,5 @@ export const buildMedicalSpecialistAccessLink = (
   }
   return `${origin}${pathname}?${params.toString()}`;
 };
+
+export const buildMedicalSpecialistAccessLink = buildMedicalHandoffDeepLink;

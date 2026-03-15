@@ -8,6 +8,7 @@
  */
 
 import { ModuleType } from '@/constants/navigationConfig';
+import { resolveSpecialistCapabilities } from '@/features/specialist/access/specialistAccessPolicy';
 
 // ==========================================
 // 1. DEFINICIÓN DE ROLES
@@ -23,7 +24,7 @@ export const ROLES = {
   ADMIN: 'admin',
   NURSE_HOSPITAL: 'nurse_hospital', // Enfermera de turno servicio de hospitalizados
   DOCTOR_URGENCY: 'doctor_urgency', // Médico de turno en urgencias
-  DOCTOR_SPECIALIST: 'doctor_specialist', // Especialista con acceso restringido a entrega médica
+  DOCTOR_SPECIALIST: 'doctor_specialist', // Especialista con acceso limitado a censo y entrega médica
   VIEWER_CENSUS: 'viewer_census', // Otros (Solo visualización censo)
 } as const;
 
@@ -83,8 +84,8 @@ const PERMISSIONS: Record<string, RolePermissions> = {
     canEdit: ['MEDICAL_HANDOFF'],
   },
   [ROLES.DOCTOR_SPECIALIST]: {
-    modules: ['CENSUS', 'MEDICAL_HANDOFF'],
-    canEdit: ['MEDICAL_HANDOFF'],
+    modules: resolveSpecialistCapabilities(ROLES.DOCTOR_SPECIALIST).visibleModules,
+    canEdit: resolveSpecialistCapabilities(ROLES.DOCTOR_SPECIALIST).editableModules,
   },
   [ROLES.VIEWER_CENSUS]: {
     // Solo visualización censo diario.
@@ -299,6 +300,10 @@ export function canEditModule(role: UserRole | undefined, module: ModuleType): b
   return perms.canEdit.includes(module);
 }
 
+export function canEditAnyModule(role: UserRole | undefined): boolean {
+  return getPermissions(role).canEdit.length > 0;
+}
+
 /**
  * Check if user is an administrator
  *
@@ -336,6 +341,6 @@ export function getRoleDisplayName(role?: UserRole): string {
     case ROLES.VIEWER_CENSUS:
       return 'Visualizador de Censo';
     default:
-      return 'Invitado';
+      return resolveSpecialistCapabilities(role).isSpecialist ? 'Especialista' : 'Invitado';
   }
 }

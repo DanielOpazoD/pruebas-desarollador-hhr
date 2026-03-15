@@ -9,8 +9,7 @@ import {
 import { MedicalHandoffHeader } from './MedicalHandoffHeader';
 import { MedicalHandoffTabs } from './MedicalHandoffTabs';
 import {
-  buildMedicalSpecialistAccessLink,
-  buildMedicalSpecialtyLink,
+  buildMedicalHandoffDeepLink,
   type MedicalHandoffScope as ScopeType,
 } from '@/features/handoff/controllers';
 
@@ -20,7 +19,6 @@ interface HandoffMedicalContentProps {
   specialtyFilteredBeds: BedDefinition[];
   readOnly: boolean;
   role?: string;
-  specialistAccess?: boolean;
   canCopySpecialistLink: boolean;
   scopedMedicalSignature: { doctorName: string; signedAt: string } | null;
   scopedMedicalHandoffSentAt: string | null;
@@ -50,7 +48,6 @@ export const HandoffMedicalContent: React.FC<HandoffMedicalContentProps> = ({
   specialtyFilteredBeds,
   readOnly,
   role: _role,
-  specialistAccess = false,
   canCopySpecialistLink,
   scopedMedicalSignature,
   scopedMedicalHandoffSentAt,
@@ -100,21 +97,19 @@ export const HandoffMedicalContent: React.FC<HandoffMedicalContentProps> = ({
             onClick={async () => {
               const origin = defaultBrowserWindowRuntime.getLocationOrigin();
               const pathname = defaultBrowserWindowRuntime.getLocationPathname();
-              const url = specialistAccess
-                ? buildMedicalSpecialtyLink(origin, pathname, record.date, selectedMedicalSpecialty)
-                : buildMedicalSpecialistAccessLink(
-                    origin,
-                    pathname,
-                    record.date,
-                    scopedMedicalScope,
-                    selectedMedicalSpecialty
-                  );
+              const url = buildMedicalHandoffDeepLink(
+                origin,
+                pathname,
+                record.date,
+                scopedMedicalScope,
+                selectedMedicalSpecialty
+              );
               await writeClipboardText(url);
-              success('Link copiado', 'Comparte este enlace con el especialista autorizado.');
+              success('Enlace copiado', 'Comparte este acceso directo a la entrega médica.');
             }}
             className="rounded-lg bg-sky-100 px-3 py-1.5 text-xs font-bold text-sky-800 hover:bg-sky-200 transition-colors"
           >
-            Copiar link especialista
+            Copiar acceso directo
           </button>
         ) : null}
       </div>

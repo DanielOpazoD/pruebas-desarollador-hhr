@@ -7,6 +7,7 @@ import {
 } from '@/services/auth/authService';
 import { AuthUser, UserRole } from '@/types';
 export type { UserRole };
+import { canEditAnyModule } from '@/utils/permissions';
 import {
   createHandleLogout,
   getE2EBootstrapUser,
@@ -73,12 +74,7 @@ export const useAuthState = (): UseAuthStateReturn => {
   });
 
   const role: UserRole = user?.role || 'viewer';
-  const isEditor =
-    role === 'editor' ||
-    role === 'admin' ||
-    role === 'nurse_hospital' ||
-    role === 'doctor_urgency' ||
-    role === 'doctor_specialist';
+  const isEditor = canEditAnyModule(role);
   const isViewer = !isEditor;
   const canEdit = isEditor;
 

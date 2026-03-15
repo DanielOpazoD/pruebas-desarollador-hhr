@@ -33,17 +33,20 @@ describe('clinicalDocumentPermissionController', () => {
   it('allows read access for admin, doctor and nurse hospital', () => {
     expect(canReadClinicalDocuments('admin')).toBe(true);
     expect(canReadClinicalDocuments('doctor_urgency')).toBe(true);
+    expect(canReadClinicalDocuments('doctor_specialist')).toBe(true);
     expect(canReadClinicalDocuments('nurse_hospital')).toBe(true);
     expect(canReadClinicalDocuments('editor')).toBe(true);
     expect(canReadClinicalDocuments('viewer')).toBe(false);
   });
 
-  it('allows edit and sign only for admin and doctor roles', () => {
+  it('allows specialists to edit drafts but keeps signing limited to admin and urgency doctors', () => {
     expect(canEditClinicalDocuments('admin')).toBe(true);
     expect(canEditClinicalDocuments('doctor_urgency')).toBe(true);
+    expect(canEditClinicalDocuments('doctor_specialist')).toBe(true);
     expect(canEditClinicalDocuments('nurse_hospital')).toBe(false);
 
     expect(canSignClinicalDocument('doctor_urgency', record)).toBe(true);
+    expect(canSignClinicalDocument('doctor_specialist', record)).toBe(false);
     expect(canSignClinicalDocument('nurse_hospital', record)).toBe(false);
     expect(canSignClinicalDocument('doctor_urgency', { ...record, status: 'signed' })).toBe(false);
   });
@@ -70,6 +73,13 @@ describe('clinicalDocumentPermissionController', () => {
     expect(
       canUnsignClinicalDocument('doctor_urgency', signedToday, new Date('2026-03-04T20:00:00.000Z'))
     ).toBe(true);
+    expect(
+      canUnsignClinicalDocument(
+        'doctor_specialist',
+        signedToday,
+        new Date('2026-03-04T20:00:00.000Z')
+      )
+    ).toBe(false);
     expect(
       canUnsignClinicalDocument('nurse_hospital', signedToday, new Date('2026-03-04T20:00:00.000Z'))
     ).toBe(false);

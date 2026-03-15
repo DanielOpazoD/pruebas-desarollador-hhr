@@ -475,6 +475,32 @@ describeRules('Firestore Security Rules', () => {
       await assertSucceeds(doctor().doc(clinicalDocumentPath).set(clinicalDocumentPayload));
     });
 
+    it('Specialists can create and update draft clinical documents', async () => {
+      await assertSucceeds(specialist().doc(clinicalDocumentPath).set(clinicalDocumentPayload));
+      await assertSucceeds(
+        specialist()
+          .doc(clinicalDocumentPath)
+          .update({
+            title: 'Epicrisis especialista',
+            currentVersion: 2,
+            'audit.updatedAt': new Date(NOW_MS + 1).toISOString(),
+          })
+      );
+    });
+
+    it('Specialists cannot sign clinical documents through Firestore writes', async () => {
+      await setupDoc(admin(), clinicalDocumentPath, clinicalDocumentPayload);
+
+      await assertFails(
+        specialist()
+          .doc(clinicalDocumentPath)
+          .update({
+            status: 'signed',
+            'audit.signedAt': new Date(NOW_MS + 1).toISOString(),
+          })
+      );
+    });
+
     it('Regular authenticated users cannot create clinical documents', async () => {
       await assertFails(authed().doc(clinicalDocumentPath).set(clinicalDocumentPayload));
     });

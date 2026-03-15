@@ -7,7 +7,7 @@ import { resetLocalAppStorage } from '@/services/storage/indexedDBService';
 interface LoginPageCardProps {
   isAnyLoading: boolean;
   isGoogleLoading: boolean;
-  accessMode: 'default' | 'shared-census' | 'specialist-medical-handoff';
+  accessMode: 'default' | 'shared-census';
   error: string | null;
   errorCode: string | null;
   onGoogleSignIn: () => void;
@@ -46,19 +46,11 @@ export const LoginPageCard: React.FC<LoginPageCardProps> = ({
     <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-medical-400 to-medical-600"></div>
 
     <h2 className="text-xl font-bold text-slate-800 mb-2 text-center text-balance">
-      {accessMode === 'shared-census'
-        ? 'Acceso al Censo Compartido'
-        : accessMode === 'specialist-medical-handoff'
-          ? 'Acceso Especialistas'
-          : 'Acceso al Sistema'}
+      {accessMode === 'shared-census' ? 'Acceso al Censo Compartido' : 'Acceso al Sistema'}
     </h2>
     {accessMode === 'shared-census' ? (
       <p className="text-sm text-slate-500 mb-6 text-center">
         Inicia sesión con tu correo autorizado para ver el censo diario.
-      </p>
-    ) : accessMode === 'specialist-medical-handoff' ? (
-      <p className="text-sm text-slate-500 mb-6 text-center">
-        Inicia sesión con tu correo autorizado para editar la entrega de turno médica restringida.
       </p>
     ) : (
       <div className="mb-8" />

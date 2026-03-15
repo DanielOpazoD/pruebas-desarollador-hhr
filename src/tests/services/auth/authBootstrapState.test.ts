@@ -42,10 +42,10 @@ describe('authBootstrapState', () => {
     });
   });
 
-  it('stores and restores the original specialist link after redirect auth', () => {
+  it('stores and restores the original deep-link after redirect auth', () => {
     markAuthBootstrapPending(
       'redirect',
-      '/?mode=specialist-medical-handoff&date=2026-03-14&scope=upc&specialty=Cirug%C3%ADa'
+      '/?module=MEDICAL_HANDOFF&date=2026-03-14&scope=upc&specialty=Cirug%C3%ADa'
     );
 
     restoreAuthBootstrapReturnTo();
@@ -53,7 +53,7 @@ describe('authBootstrapState', () => {
     expect(replaceState).toHaveBeenCalledWith(
       null,
       '',
-      '/?mode=specialist-medical-handoff&date=2026-03-14&scope=upc&specialty=Cirug%C3%ADa'
+      '/?module=MEDICAL_HANDOFF&date=2026-03-14&scope=upc&specialty=Cirug%C3%ADa'
     );
   });
 });

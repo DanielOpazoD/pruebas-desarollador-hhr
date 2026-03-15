@@ -72,6 +72,18 @@ El budget diferencia entre:
 2. Si toca código clínico, runtime, bundle o cobertura, correr `npm run ci:merge-gate`.
 3. Si toca Firestore, reglas, emulador o UX crítica, cerrar con `npm run ci:release-gate`.
 
+## 5.1 Perfil especialista
+
+El perfil `doctor_specialist` ya no tiene un flujo de login o shell paralelo.
+
+Regresiones mínimas esperadas cuando una change toca auth, censo, documentos clínicos o handoff:
+
+- login normal con Gmail
+- acceso visible solo a `CENSUS` y `MEDICAL_HANDOFF`
+- censo abreviado sin edición de datos censales
+- documentos clínicos con edición de `draft`
+- entrega médica editable solo en día actual
+
 ## 6. Buenas prácticas
 
 1. Usar mocks compartidos de `src/tests/setup.ts` cuando exista una variante oficial.

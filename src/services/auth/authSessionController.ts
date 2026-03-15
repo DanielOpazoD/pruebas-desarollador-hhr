@@ -14,9 +14,7 @@ export const resolveAuthSessionUser = async (
   firebaseUser: User,
   dependencies: {
     isSharedCensusMode(): boolean;
-    isSpecialistMedicalHandoffMode(): boolean;
     checkSharedCensusAccess(email: string | null): Promise<{ authorized: boolean }>;
-    canAccessSpecialistMedicalHandoff(role: AuthUser['role']): boolean;
     signOutUnauthorizedUser(): Promise<void>;
     resolveFirebaseUserRole(user: User): Promise<AuthUser['role']>;
   }
@@ -35,14 +33,6 @@ export const resolveAuthSessionUser = async (
   }
 
   const role = await dependencies.resolveFirebaseUserRole(firebaseUser);
-
-  if (
-    dependencies.isSpecialistMedicalHandoffMode() &&
-    !dependencies.canAccessSpecialistMedicalHandoff(role)
-  ) {
-    await dependencies.signOutUnauthorizedUser();
-    return null;
-  }
 
   return toAuthUser(firebaseUser, role);
 };

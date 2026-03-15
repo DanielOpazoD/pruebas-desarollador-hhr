@@ -85,7 +85,7 @@ describe('patientActionMenuViewController', () => {
     });
 
     expect(view).toEqual({
-      showDemographicsAction: false,
+      showDemographicsAction: true,
       showMenuTrigger: true,
       showHistoryAction: false,
       showUtilityActions: false,
