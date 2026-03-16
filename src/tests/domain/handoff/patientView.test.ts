@@ -80,6 +80,24 @@ describe('handoff patient view domain', () => {
     expect(confirmedCurrent.isMuted).toBe(false);
   });
 
+  it('marks a carried entry as pending on the next day when it was not updated today', () => {
+    const carriedEntry = resolveMedicalHandoffValidityViewModel(
+      buildEntry({
+        updatedAt: '2026-03-03T10:00:00.000Z',
+        updatedBy: {
+          uid: 'doctor-1',
+          displayName: 'Doctor Test',
+          email: 'doctor@hospitalhangaroa.cl',
+        },
+      }),
+      '2026-03-04'
+    );
+
+    expect(carriedEntry.statusLabel).toBe('Condición actual: pendiente hoy');
+    expect(carriedEntry.isActiveToday).toBe(false);
+    expect(carriedEntry.isMuted).toBe(true);
+  });
+
   it('prefers persisted observation entries and otherwise derives draft entries', () => {
     const persistedEntry = buildEntry();
     expect(

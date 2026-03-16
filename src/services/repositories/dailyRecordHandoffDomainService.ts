@@ -1,5 +1,5 @@
 import type { DailyRecord } from '@/types/domain/dailyRecord';
-import type { MedicalHandoffEntry, PatientData } from '@/types/domain/patient';
+import type { MedicalHandoffAudit, MedicalHandoffEntry, PatientData } from '@/types/domain/patient';
 import { createDailyRecordAggregate } from '@/services/repositories/dailyRecordAggregate';
 
 export const inheritPatientHandoffNotes = (
@@ -15,14 +15,40 @@ export const inheritPatientHandoffNotes = (
   targetPatient.handoffNoteNightShift = prevNightNote;
 };
 
+const resetCarriedMedicalHandoffEntryValidity = (
+  entry: MedicalHandoffEntry
+): MedicalHandoffEntry => ({
+  ...entry,
+  updatedBy: entry.updatedBy ? { ...entry.updatedBy } : undefined,
+  currentStatus: undefined,
+  currentStatusDate: undefined,
+  currentStatusAt: undefined,
+  currentStatusBy: undefined,
+});
+
 const cloneMedicalHandoffEntries = (
   entries: MedicalHandoffEntry[] | undefined
-): MedicalHandoffEntry[] | undefined =>
-  entries?.map(entry => ({
-    ...entry,
-    updatedBy: entry.updatedBy ? { ...entry.updatedBy } : undefined,
-    currentStatusBy: entry.currentStatusBy ? { ...entry.currentStatusBy } : undefined,
-  }));
+): MedicalHandoffEntry[] | undefined => entries?.map(resetCarriedMedicalHandoffEntryValidity);
+
+const resetCarriedMedicalHandoffAuditValidity = (
+  audit: MedicalHandoffAudit | undefined
+): MedicalHandoffAudit | undefined => {
+  if (!audit) {
+    return undefined;
+  }
+
+  return {
+    ...audit,
+    lastSpecialistUpdateBy: audit.lastSpecialistUpdateBy
+      ? { ...audit.lastSpecialistUpdateBy }
+      : undefined,
+    currentStatus: undefined,
+    currentStatusDate: undefined,
+    currentStatusAt: undefined,
+    currentStatusBy: undefined,
+    currentStatusSpecialty: undefined,
+  };
+};
 
 export const inheritPatientMedicalHandoff = (
   targetPatient: PatientData,
@@ -36,9 +62,9 @@ export const inheritPatientMedicalHandoff = (
   targetPatient.medicalHandoffEntries = cloneMedicalHandoffEntries(
     sourcePatient.medicalHandoffEntries
   );
-  targetPatient.medicalHandoffAudit = sourcePatient.medicalHandoffAudit
-    ? { ...sourcePatient.medicalHandoffAudit }
-    : undefined;
+  targetPatient.medicalHandoffAudit = resetCarriedMedicalHandoffAuditValidity(
+    sourcePatient.medicalHandoffAudit
+  );
 };
 
 export const resolveInitialDayHandoff = (prevRecord: DailyRecord | null): string => {

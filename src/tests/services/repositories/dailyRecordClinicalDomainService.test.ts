@@ -41,8 +41,34 @@ describe('dailyRecordClinicalDomainService', () => {
             displayName: 'Dra. Guardia',
             email: 'doctora@hospital.cl',
           },
+          currentStatus: 'confirmed_current',
+          currentStatusDate: '2026-03-08',
+          currentStatusAt: '2026-03-08T09:20:00.000Z',
+          currentStatusBy: {
+            uid: 'doctor-2',
+            displayName: 'Dr. Confirmador',
+            email: 'confirmador@hospital.cl',
+          },
         },
       ],
+      medicalHandoffAudit: {
+        lastSpecialistUpdateAt: '2026-03-08T09:15:00.000Z',
+        lastSpecialistUpdateBy: {
+          uid: 'doctor-1',
+          displayName: 'Dra. Guardia',
+          email: 'doctora@hospital.cl',
+        },
+        lastSpecialistUpdateSpecialty: Specialty.MEDICINA,
+        currentStatus: 'confirmed_current',
+        currentStatusDate: '2026-03-08',
+        currentStatusAt: '2026-03-08T09:20:00.000Z',
+        currentStatusBy: {
+          uid: 'doctor-2',
+          displayName: 'Dr. Confirmador',
+          email: 'confirmador@hospital.cl',
+        },
+        currentStatusSpecialty: Specialty.MEDICINA,
+      },
       cudyr: {
         changeClothes: 1,
         mobilization: 0,
@@ -73,6 +99,12 @@ describe('dailyRecordClinicalDomainService', () => {
     expect(carried.handoffNoteNightShift).toBe('Nota noche madre');
     expect(carried.medicalHandoffNote).toBe('Evolucion medica madre');
     expect(carried.medicalHandoffEntries?.[0]?.note).toBe('Paciente estable');
+    expect(carried.medicalHandoffEntries?.[0]?.updatedAt).toBe('2026-03-08T09:15:00.000Z');
+    expect(carried.medicalHandoffEntries?.[0]?.currentStatus).toBeUndefined();
+    expect(carried.medicalHandoffEntries?.[0]?.currentStatusDate).toBeUndefined();
+    expect(carried.medicalHandoffAudit?.lastSpecialistUpdateAt).toBe('2026-03-08T09:15:00.000Z');
+    expect(carried.medicalHandoffAudit?.currentStatus).toBeUndefined();
+    expect(carried.medicalHandoffAudit?.currentStatusDate).toBeUndefined();
     expect(carried.medicalHandoffEntries).not.toBe(source.medicalHandoffEntries);
     expect(carried.clinicalCrib?.handoffNoteDayShift).toBe('Nota noche cuna');
     expect(carried.clinicalCrib?.handoffNoteNightShift).toBe('Nota noche cuna');

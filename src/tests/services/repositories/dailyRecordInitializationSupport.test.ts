@@ -52,8 +52,16 @@ describe('dailyRecordInitializationSupport', () => {
           id: 'medical-entry-1',
           specialty: Specialty.MEDICINA,
           note: 'Control por medicina interna',
+          updatedAt: '2026-03-08T09:15:00.000Z',
+          currentStatus: 'updated_by_specialist',
+          currentStatusDate: '2026-03-08',
         },
       ],
+      medicalHandoffAudit: {
+        lastSpecialistUpdateAt: '2026-03-08T09:15:00.000Z',
+        currentStatus: 'updated_by_specialist',
+        currentStatusDate: '2026-03-08',
+      },
       cudyr: {
         changeClothes: 1,
         mobilization: 0,
@@ -84,6 +92,12 @@ describe('dailyRecordInitializationSupport', () => {
     expect(carried.handoffNoteNightShift).toBe('Nota noche madre');
     expect(carried.medicalHandoffNote).toBe('Resumen medico madre');
     expect(carried.medicalHandoffEntries?.[0]?.note).toBe('Control por medicina interna');
+    expect(carried.medicalHandoffEntries?.[0]?.updatedAt).toBe('2026-03-08T09:15:00.000Z');
+    expect(carried.medicalHandoffEntries?.[0]?.currentStatus).toBeUndefined();
+    expect(carried.medicalHandoffEntries?.[0]?.currentStatusDate).toBeUndefined();
+    expect(carried.medicalHandoffAudit?.lastSpecialistUpdateAt).toBe('2026-03-08T09:15:00.000Z');
+    expect(carried.medicalHandoffAudit?.currentStatus).toBeUndefined();
+    expect(carried.medicalHandoffAudit?.currentStatusDate).toBeUndefined();
     expect(carried.clinicalCrib?.handoffNoteDayShift).toBe('Nota noche cuna');
     expect(carried.clinicalCrib?.handoffNoteNightShift).toBe('Nota noche cuna');
     expect(carried.clinicalCrib?.medicalHandoffNote).toBe('Resumen medico cuna');
