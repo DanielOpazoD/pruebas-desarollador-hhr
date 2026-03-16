@@ -2,9 +2,9 @@ import React, { useMemo } from 'react';
 import clsx from 'clsx';
 import { ClipboardList } from 'lucide-react';
 import { useDailyRecordData } from '@/context/DailyRecordContext';
-import { BEDS } from '@/constants';
+import { BEDS } from '@/constants/beds';
 import { getCategorization } from '@/features/cudyr/public';
-import { CudyrScore } from '@/types';
+import { CudyrScore } from '@/types/core';
 import { calculateStats } from '@/services/calculations/statsCalculator';
 import { resolveNightShiftNurses } from '@/services/staff/dailyRecordStaffing';
 

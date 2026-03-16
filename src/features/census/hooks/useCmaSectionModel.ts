@@ -1,4 +1,4 @@
-import type { CMAData, PatientData } from '@/types';
+import type { CMAData, PatientData } from '@/types/core';
 import { resolveCmaSectionState } from '@/features/census/controllers/censusCmaSectionController';
 import type { ControllerConfirmDescriptor } from '@/features/census/controllers/controllerConfirmDescriptor';
 import { useCmaSectionActions } from '@/features/census/hooks/useCmaSectionActions';

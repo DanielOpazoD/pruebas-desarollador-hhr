@@ -7,7 +7,8 @@ import type {
 } from '@/features/census/types/censusTableTypes';
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';
 import type { RowMenuAlign } from '@/features/census/components/patient-row/patientRowContracts';
-import type { BedDefinition, PatientData, UserRole } from '@/types';
+import type { BedDefinition, PatientData } from '@/types/core';
+import type { UserRole } from '@/types/auth';
 import type { PatientActionMenuIndicators } from '@/features/census/components/patient-row/patientRowContracts';
 
 export interface CensusTableHeaderProps {

@@ -1,8 +1,8 @@
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 import {
   getRecordForDate as getRecordFromIndexedDB,
   saveRecord as saveToIndexedDB,
-} from '@/services/storage/indexedDBService';
+} from '@/services/storage/indexeddb/indexedDbRecordService';
 import { subscribeToRecord } from '@/services/storage/firestoreService';
 import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { migrateLegacyData } from '@/services/repositories/dataMigration';

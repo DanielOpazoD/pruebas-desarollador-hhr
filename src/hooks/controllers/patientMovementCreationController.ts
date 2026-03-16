@@ -5,7 +5,7 @@ import {
   DischargeType,
   PatientData,
   TransferData,
-} from '@/types';
+} from '@/types/core';
 import type { DischargeAddCommandPayload, TransferCommandPayload } from '@/types/movements';
 import { ControllerError, ControllerResult, failWithCode, ok } from '@/shared/controllerResult';
 import { resolveMovementDisplayDate } from '@/hooks/controllers/censusMovementDatePresentationController';

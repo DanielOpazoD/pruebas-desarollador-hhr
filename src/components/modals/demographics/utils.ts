@@ -7,7 +7,7 @@ import {
   Origin,
   BiologicalSex,
 } from './types';
-import { PatientIdentityStatus } from '@/types';
+import { PatientIdentityStatus } from '@/types/core';
 
 export const normalizeNamePart = (value: string): string => value.trim().replace(/\s+/g, ' ');
 

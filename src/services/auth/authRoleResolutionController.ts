@@ -1,4 +1,4 @@
-import type { UserRole } from '@/types';
+import type { UserRole } from '@/types/auth';
 
 export interface AuthRoleLookupDependencies {
   getBootstrapRoleForEmail(email: string): UserRole | null;

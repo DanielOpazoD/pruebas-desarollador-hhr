@@ -1,4 +1,4 @@
-import { BedDefinition, DischargeData, DischargeType, PatientData } from '@/types';
+import { BedDefinition, DischargeData, DischargeType, PatientData } from '@/types/core';
 import type { DischargeAddCommandPayload } from '@/features/census/domain/movements/contracts';
 import {
   buildClearedBedPatient,

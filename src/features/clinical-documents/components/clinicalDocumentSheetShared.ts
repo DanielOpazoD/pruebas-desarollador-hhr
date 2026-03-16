@@ -1,4 +1,4 @@
-import type { UserRole } from '@/types';
+import type { UserRole } from '@/types/auth';
 import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domain/entities';
 import type { ClinicalDocumentIndicationSpecialtyId } from '@/features/clinical-documents/controllers/clinicalDocumentIndicationsController';
 import type { ClinicalDocumentPlanSubsectionId } from '@/features/clinical-documents/controllers/clinicalDocumentPlanSectionController';

@@ -1,7 +1,7 @@
 import { signInWithPopup } from 'firebase/auth';
 
 import { auth } from '@/firebaseConfig';
-import { AuthUser } from '@/types';
+import { AuthUser } from '@/types/auth';
 import {
   acquireGoogleLoginLock,
   getGoogleLoginLockStatus,

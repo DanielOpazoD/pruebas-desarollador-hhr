@@ -1,5 +1,5 @@
 import React from 'react';
-import { BedDefinition } from '@/types';
+import { BedDefinition } from '@/types/core';
 import { Plus } from 'lucide-react';
 import { MedicalBadge } from '@/components/ui/base/MedicalBadge';
 import type { TableColumnConfig } from '@/context/TableConfigContext';

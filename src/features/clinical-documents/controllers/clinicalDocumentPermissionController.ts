@@ -1,5 +1,5 @@
 import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domain/entities';
-import type { UserRole } from '@/types';
+import type { UserRole } from '@/types/auth';
 import {
   canArchiveClinicalDocuments,
   canDeleteClinicalDocuments,

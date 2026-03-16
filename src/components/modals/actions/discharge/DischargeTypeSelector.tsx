@@ -1,6 +1,6 @@
 import React from 'react';
 import clsx from 'clsx';
-import { DISCHARGE_TYPES, DISCHARGE_TYPE_OTHER, type DischargeType } from '@/constants';
+import { DISCHARGE_TYPES, DISCHARGE_TYPE_OTHER, type DischargeType } from '@/constants/clinical';
 
 interface DischargeTypeSelectorProps {
   selectedType: DischargeType;

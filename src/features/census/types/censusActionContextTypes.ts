@@ -1,5 +1,5 @@
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
-import type { DischargeData, PatientData, TransferData } from '@/types';
+import type { DischargeData, PatientData, TransferData } from '@/types/core';
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';
 import type {
   DischargeExecutionInput,

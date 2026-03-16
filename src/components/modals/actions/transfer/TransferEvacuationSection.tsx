@@ -6,7 +6,7 @@ import {
   EVACUATION_METHOD_OTHER,
   TRANSFER_ESCORT_OPTIONS,
   type EvacuationMethod,
-} from '@/constants';
+} from '@/constants/clinical';
 
 interface TransferEvacuationSectionProps {
   evacuationMethod: EvacuationMethod;

@@ -8,19 +8,28 @@
  */
 
 import React, { createContext, useContext, ReactNode, useMemo } from 'react';
-import { AuthUser, UserRole } from '@/types';
+import { AuthUser, UserRole } from '@/types/auth';
 export type { AuthUser, UserRole };
 import { useAuthState } from '@/hooks/useAuthState';
+import { isAuthenticatedAuthSessionState } from '@/services/auth/authSessionState';
 
 // ============================================================================
 // Types
 // ============================================================================
 
 export interface AuthContextType {
+  sessionState: ReturnType<typeof useAuthState>['sessionState'];
+  currentUser: AuthUser | null;
+  authorizedUser: AuthUser | null;
+  /** @deprecated Prefer currentUser or authorizedUser */
   user: AuthUser | null;
   role: UserRole;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isAuthorizedSession: boolean;
+  isAnonymousSignature: boolean;
+  isSharedCensus: boolean;
+  isUnauthorized: boolean;
   isEditor: boolean;
   isViewer: boolean;
   isFirebaseConnected: boolean;
@@ -51,23 +60,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value = useMemo<AuthContextType>(
     () => ({
-      user: authState.user,
+      sessionState: authState.sessionState,
+      currentUser: authState.currentUser,
+      authorizedUser: authState.authorizedUser,
+      user: authState.currentUser,
       role: authState.role,
       isLoading: authState.authLoading,
-      isAuthenticated:
-        authState.sessionState.status === 'authorized' ||
-        authState.sessionState.status === 'anonymous_signature' ||
-        authState.sessionState.status === 'shared_census',
+      isAuthenticated: isAuthenticatedAuthSessionState(authState.sessionState),
+      isAuthorizedSession: authState.sessionState.status === 'authorized',
+      isAnonymousSignature: authState.sessionState.status === 'anonymous_signature',
+      isSharedCensus: authState.sessionState.status === 'shared_census',
+      isUnauthorized: authState.sessionState.status === 'unauthorized',
       isEditor: authState.isEditor,
       isViewer: authState.isViewer,
       isFirebaseConnected: authState.isFirebaseConnected,
       signOut: authState.handleLogout,
     }),
     [
-      authState.user,
+      authState.sessionState,
+      authState.currentUser,
+      authState.authorizedUser,
       authState.role,
       authState.authLoading,
-      authState.sessionState.status,
       authState.isEditor,
       authState.isViewer,
       authState.isFirebaseConnected,

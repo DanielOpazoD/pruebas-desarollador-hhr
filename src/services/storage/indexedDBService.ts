@@ -1,8 +1,9 @@
 /**
- * IndexedDB public facade.
+ * @deprecated Compatibility facade only.
  *
- * Keeps legacy imports stable while delegating responsibilities
- * to focused internal modules.
+ * New source code should import from the focused modules under
+ * `services/storage/indexeddb/*`. This file remains as a controlled bridge and
+ * is protected by persistence boundary checks.
  */
 
 export { HangaRoaDatabase, createMockDatabase, hospitalDB } from './indexeddb/indexedDbCore';

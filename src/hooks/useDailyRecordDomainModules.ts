@@ -1,4 +1,4 @@
-import type { DailyRecord, DailyRecordPatch } from '@/types';
+import type { DailyRecord, DailyRecordPatch } from '@/types/core';
 import { useBedManagement } from '@/hooks/useBedManagement';
 import { usePatientDischarges } from '@/hooks/usePatientDischarges';
 import { usePatientTransfers } from '@/hooks/usePatientTransfers';

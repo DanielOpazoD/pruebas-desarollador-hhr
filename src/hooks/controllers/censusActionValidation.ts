@@ -7,7 +7,7 @@ import {
   DischargeStatus,
   EvacuationMethod,
   ReceivingCenter,
-} from '@/constants';
+} from '@/constants/clinical';
 import { TimeSchema } from '@/schemas/inputSchemas';
 
 export type CensusActionValidationError =

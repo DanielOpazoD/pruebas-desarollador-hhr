@@ -1,7 +1,7 @@
 import { useMemo, useCallback } from 'react';
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 import { createEmptyPatient } from '@/services/factories/patientFactory';
-import { BEDS } from '@/constants';
+import { BEDS } from '@/constants/beds';
 import { useLatestRef } from '@/hooks/useLatestRef';
 import type { DischargeTarget } from '@/types/movements';
 import { resolveAddDischargeMovement } from '@/hooks/controllers/patientMovementCreationController';

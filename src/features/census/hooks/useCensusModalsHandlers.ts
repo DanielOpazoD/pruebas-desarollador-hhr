@@ -16,7 +16,7 @@ import type {
   TransferState,
 } from '@/features/census/types/censusActionTypes';
 import type { TransferStateFieldUpdate } from '@/features/census/controllers/censusTransferStateController';
-import type { DischargeStatus } from '@/constants';
+import type { DischargeStatus } from '@/constants/clinical';
 
 interface UseCensusModalsHandlersParams {
   setActionState: Dispatch<SetStateAction<ActionState>>;

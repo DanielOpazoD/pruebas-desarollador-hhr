@@ -1,4 +1,5 @@
-import type { PatientData, PatientFieldValue } from '@/types';
+import type { PatientData } from '@/types/core';
+import type { PatientFieldValue } from '@/types/valueTypes';
 
 interface BuildPatientFieldUpdaterParams {
   bedId: string;

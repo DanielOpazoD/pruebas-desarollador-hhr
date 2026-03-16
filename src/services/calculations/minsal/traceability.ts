@@ -1,5 +1,6 @@
-import { DailyRecord } from '@/types';
-import { BEDS, EVACUATION_METHOD_AEROCARDAL } from '@/constants';
+import { DailyRecord } from '@/types/core';
+import { BEDS } from '@/constants/beds';
+import { EVACUATION_METHOD_AEROCARDAL } from '@/constants/clinical';
 import { PatientTraceability, SpecialtyTraceabilityType } from '@/types/minsalTypes';
 import { normalizeSpecialty, isFachEvacuationMethod } from './normalization';
 

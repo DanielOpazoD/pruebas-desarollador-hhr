@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Copy, Move, Calendar } from 'lucide-react';
 import clsx from 'clsx';
-import { BEDS } from '@/constants';
+import { BEDS } from '@/constants/beds';
 import { useDailyRecordData } from '@/context/DailyRecordContext';
 import { useNotification } from '@/context/UIContext';
 import { BaseModal } from '@/components/shared/BaseModal';

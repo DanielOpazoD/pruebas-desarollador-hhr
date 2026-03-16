@@ -1,6 +1,6 @@
 import React from 'react';
 
-import type { CMAData, PatientData } from '@/types';
+import type { CMAData, PatientData } from '@/types/core';
 import { executeUndoCmaController } from '@/features/census/controllers/censusCmaController';
 import type { ControllerConfirmDescriptor } from '@/features/census/controllers/controllerConfirmDescriptor';
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import type { DischargeStatus } from '@/constants';
+import type { DischargeStatus } from '@/constants/clinical';
 import { DischargeStatusRadioGroup } from '@/components/modals/actions/discharge/DischargeStatusRadioGroup';
 
 interface ClinicalCribStatusSectionProps {

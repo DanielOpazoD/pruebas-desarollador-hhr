@@ -34,7 +34,7 @@ const SHARED_CENSUS_ALLOWED_AUTH_ROLES = new Set([
  * Security is enforced by Firebase Auth + Firestore rules.
  */
 export function useSharedCensusMode(): SharedCensusModeResult {
-  const { user, role, isLoading: authLoading } = useAuth();
+  const { currentUser, role, isLoading: authLoading } = useAuth();
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
   const { isSharedCensusMode, invitationId } = resolveSharedCensusPathInfo(pathname);
 
@@ -61,7 +61,7 @@ export function useSharedCensusMode(): SharedCensusModeResult {
       };
     }
 
-    if (!user?.uid) {
+    if (!currentUser?.uid) {
       return {
         isSharedCensusMode: true,
         invitationId,
@@ -73,7 +73,7 @@ export function useSharedCensusMode(): SharedCensusModeResult {
     }
 
     // User is logged in - validate session role for shared census access.
-    const email = user.email;
+    const email = currentUser.email;
 
     if (!email) {
       return {
@@ -100,9 +100,9 @@ export function useSharedCensusMode(): SharedCensusModeResult {
     }
 
     const authorizedUser: CensusAccessUser = buildAuthorizedSharedAccessUser({
-      uid: user.uid,
+      uid: currentUser.uid,
       email,
-      displayName: user.displayName,
+      displayName: currentUser.displayName,
     });
 
     return {
@@ -113,5 +113,5 @@ export function useSharedCensusMode(): SharedCensusModeResult {
       error: null,
       needsLogin: false,
     };
-  }, [isSharedCensusMode, invitationId, authLoading, role, user]);
+  }, [isSharedCensusMode, invitationId, authLoading, role, currentUser]);
 }

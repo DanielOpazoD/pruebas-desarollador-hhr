@@ -1,5 +1,6 @@
-import { DailyRecord, Specialty } from '@/types';
-import { HOSPITAL_CAPACITY, EVACUATION_METHOD_AEROCARDAL } from '@/constants';
+import { DailyRecord, Specialty } from '@/types/core';
+import { HOSPITAL_CAPACITY } from '@/constants/beds';
+import { EVACUATION_METHOD_AEROCARDAL } from '@/constants/clinical';
 import { MinsalStatistics, SpecialtyStats, PatientTraceability } from '@/types/minsalTypes';
 import { normalizeSpecialty, isFachEvacuationMethod } from './normalization';
 import { countOccupiedBeds, countBlockedBeds, calculateDailySnapshot } from './snapshot';

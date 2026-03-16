@@ -3,7 +3,7 @@
  */
 
 import type { ChangeEvent } from 'react';
-import { PatientData, DeviceDetails, DeviceInstance } from '@/types';
+import { PatientData, DeviceDetails, DeviceInstance } from '@/types/core';
 import type { PatientDeviceCallbacks } from './patientRowContracts';
 
 /**

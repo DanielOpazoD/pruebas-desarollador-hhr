@@ -1,4 +1,9 @@
-import type { DailyRecord, DailyRecordPatch, MedicalHandoffActor, MedicalSpecialty } from '@/types';
+import type {
+  DailyRecord,
+  DailyRecordPatch,
+  MedicalHandoffActor,
+  MedicalSpecialty,
+} from '@/types/core';
 import { buildMedicalHandoffSummary, DEFAULT_NO_CHANGES_COMMENT } from '@/domain/handoff/specialty';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 

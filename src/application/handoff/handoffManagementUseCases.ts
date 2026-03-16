@@ -9,7 +9,12 @@ import {
   createApplicationSuccess,
   type ApplicationOutcome,
 } from '@/application/shared/applicationOutcome';
-import type { DailyRecord, DailyRecordPatch, MedicalHandoffActor, MedicalSpecialty } from '@/types';
+import type {
+  DailyRecord,
+  DailyRecordPatch,
+  MedicalHandoffActor,
+  MedicalSpecialty,
+} from '@/types/core';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import {
   buildMedicalNoChangesRecord,

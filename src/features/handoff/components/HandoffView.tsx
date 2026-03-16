@@ -33,7 +33,7 @@ import {
   resolveHandoffTitle,
   shouldShowNightCudyrActions,
 } from '@/features/handoff/controllers';
-import { Specialty } from '@/types';
+import { Specialty } from '@/types/core';
 
 interface HandoffViewProps {
   type?: 'nursing' | 'medical';

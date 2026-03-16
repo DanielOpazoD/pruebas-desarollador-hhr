@@ -9,7 +9,8 @@ import {
   executeUpdateMedicalEntrySpecialty,
   executeUpdateMedicalPrimaryNote,
 } from '@/application/handoff';
-import type { AuditAction, AuditLogEntry, MedicalHandoffAuditActor, PatientData } from '@/types';
+import type { AuditAction, AuditLogEntry } from '@/types/audit';
+import type { MedicalHandoffAuditActor, PatientData } from '@/types/core';
 import { logger } from '@/services/utils/loggerService';
 
 type MedicalPatientFields = Pick<

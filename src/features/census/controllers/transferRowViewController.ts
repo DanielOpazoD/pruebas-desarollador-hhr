@@ -1,4 +1,4 @@
-import type { TransferData } from '@/types';
+import type { TransferData } from '@/types/core';
 import type { TransferRowViewModel } from '@/features/census/types/censusMovementRowViewModelTypes';
 import {
   buildTransferRowActions,

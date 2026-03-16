@@ -1,4 +1,4 @@
-import type { BedDefinition, DailyRecord, Statistics } from '@/types';
+import type { BedDefinition, DailyRecord, Statistics } from '@/types/core';
 import type { CSSProperties } from 'react';
 import type { CensusAccessProfile } from '@/features/census/types/censusAccessProfile';
 

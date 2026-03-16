@@ -14,7 +14,7 @@ import {
   QueryDocumentSnapshot,
   DocumentData,
 } from 'firebase/firestore';
-import { MasterPatient } from '@/types';
+import { MasterPatient } from '@/types/core';
 import { getActiveHospitalId, HOSPITAL_COLLECTIONS } from '@/constants/firestorePaths';
 import {
   createBulkUpsertPatientsCommand,

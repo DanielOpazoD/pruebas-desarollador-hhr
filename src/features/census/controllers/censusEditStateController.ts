@@ -1,9 +1,9 @@
-import type { DischargeData, TransferData } from '@/types';
+import type { DischargeData, TransferData } from '@/types/core';
 import {
   DEFAULT_TRANSFER_ESCORT,
   normalizeEvacuationMethod,
   normalizeReceivingCenter,
-} from '@/constants';
+} from '@/constants/clinical';
 import type { DischargeState, TransferState } from '@/features/census/types/censusActionTypes';
 
 export const buildDischargeEditState = (discharge: DischargeData): DischargeState => ({

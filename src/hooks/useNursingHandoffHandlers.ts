@@ -1,5 +1,7 @@
 import { useCallback } from 'react';
-import type { AuditAction, AuditLogEntry, PatientData, PatientFieldValue } from '@/types';
+import type { AuditAction, AuditLogEntry } from '@/types/audit';
+import type { PatientData } from '@/types/core';
+import type { PatientFieldValue } from '@/types/valueTypes';
 import type { NursingShift } from './useHandoffVisibility';
 
 interface UseNursingHandoffHandlersParams {

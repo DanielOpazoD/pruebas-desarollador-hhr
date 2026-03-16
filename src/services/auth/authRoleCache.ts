@@ -1,4 +1,4 @@
-import { getSetting, saveSetting } from '@/services/storage/indexedDBService';
+import { getSetting, saveSetting } from '@/services/storage/indexeddb/indexedDbSettingsService';
 import { safeJsonParse } from '@/utils/jsonUtils';
 import { ROLE_CACHE_PREFIX, normalizeEmail } from '@/services/auth/authShared';
 import { logger } from '@/services/utils/loggerService';

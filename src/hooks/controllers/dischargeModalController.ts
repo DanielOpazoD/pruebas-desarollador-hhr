@@ -3,7 +3,7 @@ import {
   DEFAULT_DISCHARGE_TYPE,
   type DischargeStatus,
   type DischargeType,
-} from '@/constants';
+} from '@/constants/clinical';
 import { validateDischargeExecutionInput } from '@/hooks/controllers/censusActionValidation';
 import type { DischargeModalConfirmPayload, DischargeTarget } from '@/types/movements';
 import { resolveMovementEditorInitialDate } from '@/hooks/controllers/clinicalShiftCalendarController';

@@ -1,4 +1,4 @@
-import type { EvacuationMethod, ReceivingCenter } from '@/constants';
+import type { EvacuationMethod, ReceivingCenter } from '@/constants/clinical';
 
 export type DischargeTarget = 'mother' | 'baby' | 'both';
 export type MoveOrCopyActionType = 'move' | 'copy' | null;

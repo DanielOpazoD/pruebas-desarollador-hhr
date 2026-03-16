@@ -1,4 +1,4 @@
-import { PatientData, ShiftType, DeviceDetails } from '@/types';
+import { PatientData, ShiftType, DeviceDetails } from '@/types/core';
 
 import { calculateHospitalizedDays } from './handoffPdfUtils';
 

@@ -1,11 +1,7 @@
 import { useCallback } from 'react';
-import type {
-  AuditAction,
-  AuditLogEntry,
-  ClinicalEvent,
-  PatientData,
-  PatientFieldValue,
-} from '@/types';
+import type { AuditAction, AuditLogEntry } from '@/types/audit';
+import type { ClinicalEvent, PatientData } from '@/types/core';
+import type { PatientFieldValue } from '@/types/valueTypes';
 
 interface UseClinicalEventHandlersParams {
   record: { date: string; beds: Record<string, PatientData> } | null;

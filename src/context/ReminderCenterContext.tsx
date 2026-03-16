@@ -8,7 +8,7 @@ import {
 } from '@/shared/reminders/reminderVisibility';
 import { ReminderReadService, ReminderRepository } from '@/services/reminders';
 import { getCurrentShift } from '@/services/admin/attributionService';
-import type { Reminder, ReminderShift } from '@/types';
+import type { Reminder, ReminderShift } from '@/types/reminders';
 
 const formatLocalDate = (date: Date): string => {
   const year = date.getFullYear();
@@ -40,7 +40,7 @@ const ReminderCenterContext = React.createContext<ReminderCenterContextValue | u
 );
 
 export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, role, isAuthenticated } = useAuth();
+  const { currentUser, role, isAuthenticated } = useAuth();
   const [reminders, setReminders] = React.useState<Reminder[]>([]);
   const [readReminderIds, setReadReminderIds] = React.useState<string[]>([]);
   const [isOpen, setIsOpen] = React.useState(false);
@@ -109,7 +109,7 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
   }, [isAuthenticated]);
 
   React.useEffect(() => {
-    if (!isAvailable || !user?.uid || visibleReminders.length === 0) {
+    if (!isAvailable || !currentUser?.uid || visibleReminders.length === 0) {
       setReadReminderIds([]);
       return;
     }
@@ -121,7 +121,7 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
           reminderId: reminder.id,
           hasRead: await ReminderReadService.hasUserReadForShiftWindow(
             reminder.id,
-            user.uid,
+            currentUser.uid,
             currentShift,
             currentDate
           ),
@@ -135,18 +135,18 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
     return () => {
       cancelled = true;
     };
-  }, [currentDate, currentShift, isAvailable, user?.uid, visibleReminders]);
+  }, [currentDate, currentShift, currentUser?.uid, isAvailable, visibleReminders]);
 
   const markReminderAsRead = React.useCallback(
     async (reminderId: string) => {
-      if (!user?.uid) return;
+      if (!currentUser?.uid) return;
       if (readReminderIds.includes(reminderId)) return;
 
       const result = await ReminderReadService.markAsReadWithResult(
         reminderId,
         ReminderReadService.buildReceipt({
-          userId: user.uid,
-          userName: buildUserName(user.displayName, user.email),
+          userId: currentUser.uid,
+          userName: buildUserName(currentUser.displayName, currentUser.email),
           shift: currentShift,
           dateKey: currentDate,
         })
@@ -158,7 +158,14 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
 
       setReadReminderIds(previous => [...previous, reminderId]);
     },
-    [currentDate, currentShift, readReminderIds, user?.displayName, user?.email, user?.uid]
+    [
+      currentDate,
+      currentShift,
+      currentUser?.displayName,
+      currentUser?.email,
+      currentUser?.uid,
+      readReminderIds,
+    ]
   );
 
   const value = React.useMemo<ReminderCenterContextValue>(

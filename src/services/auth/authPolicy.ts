@@ -1,5 +1,5 @@
 import { auth } from '@/firebaseConfig';
-import { UserRole } from '@/types';
+import { UserRole } from '@/types/auth';
 import { normalizeEmail } from '@/services/auth/authShared';
 import { getDynamicRoleForEmail, getBootstrapRoleForEmail } from '@/services/auth/authRoleLookup';
 import {

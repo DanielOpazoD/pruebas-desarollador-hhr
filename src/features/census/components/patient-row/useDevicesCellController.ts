@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { DeviceDetails, DeviceInstance, PatientData } from '@/types';
+import { DeviceDetails, DeviceInstance, PatientData } from '@/types/core';
 import {
   buildDetailsChangeResult,
   buildModalSaveResult,

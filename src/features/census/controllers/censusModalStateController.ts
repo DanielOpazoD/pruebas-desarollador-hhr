@@ -5,7 +5,7 @@ import type {
   TransferState,
 } from '@/features/census/types/censusActionTypes';
 import { createInitialActionState } from '@/features/census/types/censusActionTypes';
-import type { DischargeStatus } from '@/constants';
+import type { DischargeStatus } from '@/constants/clinical';
 import {
   applyTransferStateUpdate,
   type TransferStateFieldUpdate,

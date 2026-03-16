@@ -1,6 +1,6 @@
 import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
-import { ProfessionalCatalogItem } from '@/types';
+import { ProfessionalCatalogItem } from '@/types/core';
 import { withRetry } from '@/utils/networkUtils';
 import { logger } from '@/services/utils/loggerService';
 import {

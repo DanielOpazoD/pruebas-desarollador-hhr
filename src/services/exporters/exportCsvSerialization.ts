@@ -1,5 +1,6 @@
-import { DailyRecord, DischargeData, PatientData, TransferData } from '@/types';
-import { BEDS, CSV_HEADERS } from '@/constants';
+import { DailyRecord, DischargeData, PatientData, TransferData } from '@/types/core';
+import { BEDS } from '@/constants/beds';
+import { CSV_HEADERS } from '@/constants/export';
 import { formatDateDDMMYYYY } from '@/utils/dateUtils';
 import { resolveExportableNursesText } from '@/services/staff/dailyRecordStaffing';
 

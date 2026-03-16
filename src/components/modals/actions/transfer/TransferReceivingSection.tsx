@@ -5,7 +5,7 @@ import {
   RECEIVING_CENTER_EXTRASYSTEM,
   RECEIVING_CENTER_OTHER,
   type ReceivingCenter,
-} from '@/constants';
+} from '@/constants/clinical';
 
 interface TransferReceivingSectionProps {
   receivingCenter: ReceivingCenter;

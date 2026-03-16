@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BedType, PatientStatus, Specialty } from '@/types';
+import { BedType, PatientStatus, Specialty } from '@/types/core';
 import {
   emptyStringToUndefined,
   nullableOptional,
@@ -115,7 +115,7 @@ const MedicalHandoffEntrySchema = z.object({
   currentStatusBy: nullableOptional(MedicalHandoffAuditActorSchema),
 });
 
-import { PatientData } from '@/types';
+import { PatientData } from '@/types/core';
 
 export const PatientDataSchema: z.ZodType<PatientData, z.ZodTypeDef, unknown> = z.lazy(() =>
   z

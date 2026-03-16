@@ -1,13 +1,7 @@
-import {
-  DailyRecord,
-  DailyRecordPatch,
-  PatientData,
-  PatientFieldValue,
-  CudyrScore,
-  BedType,
-} from '@/types';
+import { DailyRecord, DailyRecordPatch, PatientData, CudyrScore, BedType } from '@/types/core';
+import { PatientFieldValue } from '@/types/valueTypes';
 import { createEmptyPatient } from '@/services/factories/patientFactory';
-import { BEDS } from '@/constants';
+import { BEDS } from '@/constants/beds';
 import { getBedTypeForRecord } from '@/utils/bedTypeUtils';
 
 // ============================================================================

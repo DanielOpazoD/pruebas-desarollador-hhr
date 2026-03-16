@@ -1,7 +1,7 @@
 import type { User } from 'firebase/auth';
 import { httpsCallable } from 'firebase/functions';
 import { getFunctionsInstance } from '@/firebaseConfig';
-import type { UserRole } from '@/types';
+import type { UserRole } from '@/types/auth';
 import { logger } from '@/services/utils/loggerService';
 
 const authClaimSyncLogger = logger.child('AuthClaimSync');

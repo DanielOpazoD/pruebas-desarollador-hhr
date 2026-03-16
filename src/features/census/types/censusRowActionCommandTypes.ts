@@ -1,4 +1,4 @@
-import type { CMAData } from '@/types';
+import type { CMAData } from '@/types/core';
 import type {
   ActionState,
   DischargeState,

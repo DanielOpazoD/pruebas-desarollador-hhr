@@ -1,4 +1,4 @@
-import type { PatientData } from '@/types';
+import type { PatientData } from '@/types/core';
 import { LucideIcon } from 'lucide-react';
 
 export type DocumentOption = 'solicitud' | 'encuesta' | 'consentimiento';

@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import type { PatientData } from '@/types';
+import type { PatientData } from '@/types/core';
 import { useDailyRecordStability } from '@/context/DailyRecordContext';
 import type {
   DebouncedTextHandler,

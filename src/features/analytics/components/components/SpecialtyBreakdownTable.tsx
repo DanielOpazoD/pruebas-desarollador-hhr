@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { SpecialtyStats } from '@/types/minsalTypes';
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 import {
   buildSpecialtyTraceability,
   SpecialtyTraceabilityType,

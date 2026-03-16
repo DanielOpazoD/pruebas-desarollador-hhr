@@ -1,4 +1,4 @@
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/core';
 import type { SyncDailyRecordResult } from '@/services/repositories/contracts/dailyRecordResults';
 import {
   createApplicationDegraded,

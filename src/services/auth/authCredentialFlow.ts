@@ -5,7 +5,7 @@ import {
 } from 'firebase/auth';
 
 import { auth } from '@/firebaseConfig';
-import { AuthUser, UserRole } from '@/types';
+import { AuthUser, UserRole } from '@/types/auth';
 import { resolveGeneralLoginAccessForEmail } from '@/services/auth/authPolicy';
 import { toAuthUser } from '@/services/auth/authShared';
 

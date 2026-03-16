@@ -1,6 +1,6 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
-import type { WhatsAppConfig } from '@/types';
+import type { WhatsAppConfig } from '@/types/whatsapp';
 import { logger } from '@/services/utils/loggerService';
 
 const whatsappConfigLogger = logger.child('WhatsAppConfigStore');

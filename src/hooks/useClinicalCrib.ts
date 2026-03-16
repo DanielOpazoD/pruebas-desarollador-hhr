@@ -5,7 +5,8 @@
  */
 
 import { useCallback } from 'react';
-import { DailyRecord, PatientData, PatientFieldValue, DailyRecordPatch } from '@/types';
+import { DailyRecord, PatientData, DailyRecordPatch } from '@/types/core';
+import { PatientFieldValue } from '@/types/valueTypes';
 import { createEmptyPatient } from '@/services/factories/patientFactory';
 import { logger } from '@/services/utils/loggerService';
 

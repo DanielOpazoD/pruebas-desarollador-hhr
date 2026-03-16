@@ -1,5 +1,5 @@
 import { getDoc, getDocs, setDoc } from 'firebase/firestore';
-import type { ReminderReadReceipt, ReminderShift } from '@/types';
+import type { ReminderReadReceipt, ReminderShift } from '@/types/reminders';
 import { logger } from '@/services/utils/loggerService';
 import {
   buildReminderReadReceiptId,

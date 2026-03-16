@@ -1,5 +1,5 @@
 import React from 'react';
-import { Statistics, DischargeData, TransferData } from '@/types';
+import { Statistics, DischargeData, TransferData } from '@/types/core';
 import { Activity, Bed, Baby } from 'lucide-react';
 
 interface SummaryCardProps {

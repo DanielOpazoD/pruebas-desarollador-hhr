@@ -1,6 +1,6 @@
 import type { Worksheet } from 'exceljs';
-import { DailyRecord, PatientData } from '@/types';
-import { BEDS } from '@/constants';
+import { DailyRecord, PatientData } from '@/types/core';
+import { BEDS } from '@/constants/beds';
 import { getBedTypeForRecord } from '@/utils/bedTypeUtils';
 import { TITLE_STYLE, HEADER_FILL, BORDER_THIN, FREE_FILL, BLOCKED_FILL } from '../styles';
 import { mapBedType, formatAge, formatDateDDMMYYYY } from '../formatters';

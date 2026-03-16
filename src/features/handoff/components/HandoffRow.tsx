@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PatientData, ClinicalEvent } from '@/types';
+import { PatientData, ClinicalEvent } from '@/types/core';
 import { AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
 import { calculateHospitalizedDays } from '@/utils/dateUtils';

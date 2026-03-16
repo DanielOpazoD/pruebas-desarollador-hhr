@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 import { DailyRecordPatch } from './useDailyRecordTypes';
 import { useLatestRef } from '@/hooks/useLatestRef';
 

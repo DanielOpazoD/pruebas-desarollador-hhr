@@ -1,4 +1,4 @@
-import { saveRecord as saveToIndexedDB } from '@/services/storage/indexedDBService';
+import { saveRecord as saveToIndexedDB } from '@/services/storage/indexeddb/indexedDbRecordService';
 import { getLegacyRecord, getLegacyRecordsRange } from '@/services/storage/legacyFirebaseService';
 import { migrateLegacyDataWithReport } from '@/services/repositories/dataMigration';
 import { isLegacyBridgeEnabled } from '@/services/repositories/legacyCompatibilityPolicy';
@@ -14,7 +14,7 @@ import {
 import type { LegacyBridgeLoadResult } from '@/services/repositories/ports/repositoryLegacyBridgePort';
 import { measureRepositoryOperation } from '@/services/repositories/repositoryPerformance';
 import { getLegacyFirebasePathSnapshot } from '@/services/storage/legacyfirebase/legacyFirebasePathPolicy';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/core';
 
 const createLegacyBridgeResult = (
   result: Partial<LegacyBridgeLoadResult> & Pick<LegacyBridgeLoadResult, 'source' | 'record'>

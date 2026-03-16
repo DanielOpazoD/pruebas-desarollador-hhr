@@ -1,14 +1,16 @@
 import {
-  DailyRecordRepository,
   getForDate,
   getForDateWithMeta,
   getPreviousDay,
   getPreviousDayWithMeta,
   getAvailableDates,
-  initializeDayDetailed,
-} from '@/services/repositories/DailyRecordRepository';
+} from '@/services/repositories/dailyRecordRepositoryReadService';
+import { initializeDayDetailed } from '@/services/repositories/dailyRecordRepositoryInitializationService';
+import { updatePartial, save } from '@/services/repositories/dailyRecordRepositoryWriteService';
+import { syncWithFirestoreDetailed } from '@/services/repositories/dailyRecordRepositorySyncService';
+import { deleteDailyRecordAcrossStores } from '@/services/repositories/dailyRecordRepositoryFacadeSupport';
 import { getMonthRecordsFromFirestore } from '@/services/storage/firestoreService';
-import type { DailyRecord, DailyRecordPatch } from '@/types';
+import type { DailyRecord, DailyRecordPatch } from '@/types/core';
 import type { SyncDailyRecordResult } from '@/services/repositories/contracts/dailyRecordResults';
 import type { DailyRecordInitializationResult } from '@/services/repositories/dailyRecordRepositoryInitializationService';
 import type { DailyRecordReadResult } from '@/services/repositories/contracts/dailyRecordQueries';
@@ -49,12 +51,11 @@ export const defaultDailyRecordReadPort: DailyRecordReadPort = {
 };
 
 export const defaultDailyRecordWritePort: DailyRecordWritePort = {
-  updatePartial: async (date, patch) => DailyRecordRepository.updatePartial(date, patch),
-  save: async (record, expectedLastUpdated) =>
-    DailyRecordRepository.save(record, expectedLastUpdated),
-  delete: async date => DailyRecordRepository.deleteDay(date),
+  updatePartial: async (date, patch) => updatePartial(date, patch),
+  save: async (record, expectedLastUpdated) => save(record, expectedLastUpdated),
+  delete: async date => deleteDailyRecordAcrossStores(date),
 };
 
 export const defaultDailyRecordSyncPort: DailyRecordSyncPort = {
-  syncWithFirestoreDetailed: async date => DailyRecordRepository.syncWithFirestoreDetailed(date),
+  syncWithFirestoreDetailed: async date => syncWithFirestoreDetailed(date),
 };

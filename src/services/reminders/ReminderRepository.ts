@@ -8,7 +8,7 @@ import {
   setDoc,
   updateDoc,
 } from 'firebase/firestore';
-import type { Reminder } from '@/types';
+import type { Reminder } from '@/types/reminders';
 import { logger } from '@/services/utils/loggerService';
 import {
   getReminderDocRef,

@@ -1,4 +1,4 @@
-import { DailyRecord, DischargeData, PatientData, TransferData } from '@/types';
+import { DailyRecord, DischargeData, PatientData, TransferData } from '@/types/core';
 
 export interface UndoMovementDescriptor {
   id: string;

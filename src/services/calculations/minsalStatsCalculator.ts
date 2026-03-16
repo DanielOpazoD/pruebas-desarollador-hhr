@@ -2,7 +2,7 @@
  * MINSAL/DEIS statistics calculator - Facade
  */
 
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 import {
   DailyStatsSnapshot,
   SpecialtyTraceabilityType,

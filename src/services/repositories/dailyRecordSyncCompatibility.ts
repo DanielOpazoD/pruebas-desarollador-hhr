@@ -1,4 +1,4 @@
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 
 export const toRecordTimestamp = (value: string | undefined): number => {
   if (!value) return 0;

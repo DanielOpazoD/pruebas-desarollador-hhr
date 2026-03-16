@@ -1,8 +1,9 @@
 /**
- * Types Index
- * Centralized exports for all type definitions
+ * @deprecated Compatibility barrel only.
  *
- * Usage: import { PatientData, DailyRecord, ... } from './types';
+ * New source code must import from the owning module (`@/types/core`,
+ * `@/types/auth`, `@/types/reminders`, etc.). Retirement is tracked via
+ * compatibility governance and enforced by quality checks.
  */
 
 // Core domain types (enums, interfaces)

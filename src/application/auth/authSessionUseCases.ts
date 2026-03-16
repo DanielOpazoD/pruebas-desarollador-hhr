@@ -4,13 +4,13 @@ import {
   type ApplicationIssue,
   type ApplicationOutcome,
 } from '@/application/shared/applicationOutcome';
-import type { AuthSessionState } from '@/types';
+import type { AuthSessionState } from '@/types/auth';
 import {
   getCurrentAuthSessionState,
   handleSignInRedirectResult,
   signIn,
   signInWithGoogle,
-} from '@/services/auth/authService';
+} from '@/services/auth';
 import { isPopupRecoverableAuthError, resolveAuthErrorCode } from '@/services/auth/authErrorPolicy';
 import { toResolvedAuthSessionState } from '@/services/auth/authSessionState';
 

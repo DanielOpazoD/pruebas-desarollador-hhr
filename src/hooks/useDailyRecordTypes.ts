@@ -8,12 +8,12 @@ import {
   DailyRecord,
   PatientData,
   CudyrScore,
-  PatientFieldValue,
   CMAData,
   DailyRecordPatch,
   MedicalHandoffActor,
   MedicalSpecialty,
-} from '@/types';
+} from '@/types/core';
+import { PatientFieldValue } from '@/types/valueTypes';
 import type { PatientMovementActions } from '@/types/movements';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 export type { DailyRecordPatch };

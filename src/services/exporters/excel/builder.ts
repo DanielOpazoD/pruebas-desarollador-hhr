@@ -1,5 +1,5 @@
 import type { Workbook } from 'exceljs';
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 import { createWorkbook } from '../excelUtils';
 import type { CensusMasterWorkbookOptions } from './censusWorkbookContracts';
 import { applyCensusWorkbookMetadata } from './censusWorkbookMetadataController';

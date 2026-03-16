@@ -1,5 +1,5 @@
 import React from 'react';
-import type { PatientData, IeehData } from '@/types';
+import type { PatientData, IeehData } from '@/types/core';
 import type { DischargeFormData } from '@/services/pdf/ieehPdfService';
 import { useIEEHForm } from '@/features/census/hooks/useIEEHForm';
 import {

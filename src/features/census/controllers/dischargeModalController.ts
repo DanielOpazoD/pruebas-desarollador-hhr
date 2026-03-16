@@ -3,7 +3,7 @@ import {
   DEFAULT_DISCHARGE_TYPE,
   type DischargeStatus,
   type DischargeType,
-} from '@/constants';
+} from '@/constants/clinical';
 import { validateDischargeExecutionInput } from '@/features/census/validation/censusActionValidation';
 import type {
   DischargeModalConfirmPayload,

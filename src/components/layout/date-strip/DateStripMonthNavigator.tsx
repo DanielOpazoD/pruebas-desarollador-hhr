@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { MONTH_NAMES } from '@/constants';
+import { MONTH_NAMES } from '@/constants/export';
 
 interface DateStripMonthNavigatorProps {
   selectedMonth: number;

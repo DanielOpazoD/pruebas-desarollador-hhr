@@ -7,7 +7,7 @@
  * Retirement is tracked in `reports/compatibility-governance.md`.
  */
 
-export { signIn, createUser, signOut, onAuthChange, getCurrentUser } from './auth/authService';
+export { signIn, createUser, signOut } from './auth/authService';
 export type { AuthUser } from './auth/authService';
 
 export { getAppSetting, saveAppSetting } from './settingsService';

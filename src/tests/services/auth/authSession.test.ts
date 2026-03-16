@@ -29,6 +29,7 @@ vi.mock('firebase/auth', () => ({
 
 vi.mock('@/firebaseConfig', () => ({
   auth: mockAuth,
+  getFunctionsInstance: vi.fn().mockReturnValue({}),
 }));
 
 vi.mock('@/services/auth/sharedCensusAuth', () => ({
@@ -40,11 +41,25 @@ vi.mock('@/services/auth/authPolicy', () => ({
   clearRoleCacheForEmail: (email: string) => mockClearRoleCacheForEmail(email),
 }));
 
+vi.mock('@/services/auth/authClaimSyncService', () => ({
+  ensureUserRoleClaim: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('@/services/auth/authAccessResolution', () => ({
   resolveFirebaseUserRole: (user: unknown) => mockResolveFirebaseUserRole(user),
 }));
 
-import { onAuthChange, onAuthSessionStateChange } from '@/services/auth/authSession';
+import { onAuthSessionStateChange } from '@/services/auth/authSession';
+
+const createFirebaseUserMock = (overrides: Record<string, unknown>) => ({
+  uid: 'user-1',
+  email: 'user@hospital.cl',
+  displayName: 'User',
+  photoURL: null,
+  isAnonymous: false,
+  getIdTokenResult: vi.fn().mockResolvedValue({ claims: {} }),
+  ...overrides,
+});
 
 describe('authSession', () => {
   beforeEach(() => {
@@ -59,22 +74,25 @@ describe('authSession', () => {
     });
   });
 
-  it('emits the authorized app user for general-login roles during auth state rehydration', async () => {
+  it('emits the authorized session state for general-login roles during auth state rehydration', async () => {
     const callback = vi.fn();
-    onAuthChange(callback);
+    onAuthSessionStateChange(callback);
 
-    await authStateCallback?.({
-      uid: 'spec-1',
-      email: 'specialist@hospital.cl',
-      displayName: 'Specialist User',
-      photoURL: null,
-      isAnonymous: false,
-    });
+    await authStateCallback?.(
+      createFirebaseUserMock({
+        uid: 'spec-1',
+        email: 'specialist@hospital.cl',
+        displayName: 'Specialist User',
+      })
+    );
 
     expect(callback).toHaveBeenCalledWith(
       expect.objectContaining({
-        uid: 'spec-1',
-        role: 'doctor_specialist',
+        status: 'authorized',
+        user: expect.objectContaining({
+          uid: 'spec-1',
+          role: 'doctor_specialist',
+        }),
       })
     );
   });
@@ -86,13 +104,13 @@ describe('authSession', () => {
 
     onAuthSessionStateChange(callback);
 
-    await authStateCallback?.({
-      uid: 'shared-1',
-      email: 'shared@hospital.cl',
-      displayName: 'Shared User',
-      photoURL: null,
-      isAnonymous: false,
-    });
+    await authStateCallback?.(
+      createFirebaseUserMock({
+        uid: 'shared-1',
+        email: 'shared@hospital.cl',
+        displayName: 'Shared User',
+      })
+    );
 
     expect(callback).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -105,41 +123,23 @@ describe('authSession', () => {
     );
   });
 
-  it('emits null for a removed user instead of exposing an app session', async () => {
+  it('emits unauthorized session state for a removed user', async () => {
     const callback = vi.fn();
     mockResolveFirebaseUserRole.mockResolvedValue(null);
-    onAuthChange(callback);
+    onAuthSessionStateChange(callback);
 
-    await authStateCallback?.({
-      uid: 'removed-1',
-      email: 'removed@hospital.cl',
-      displayName: 'Removed User',
-      photoURL: null,
-      isAnonymous: false,
-    });
+    await authStateCallback?.(
+      createFirebaseUserMock({
+        uid: 'removed-1',
+        email: 'removed@hospital.cl',
+        displayName: 'Removed User',
+      })
+    );
 
     expect(mockFirebaseSignOut).toHaveBeenCalledTimes(1);
-    expect(callback).toHaveBeenCalledWith(null);
-  });
-
-  it('maps anonymous users to the compatibility user contract', async () => {
-    const callback = vi.fn();
-    onAuthChange(callback);
-
-    await authStateCallback?.({
-      uid: 'anon-1',
-      email: null,
-      displayName: null,
-      photoURL: null,
-      isAnonymous: true,
-    });
-
-    expect(mockResolveFirebaseUserRole).not.toHaveBeenCalled();
     expect(callback).toHaveBeenCalledWith(
       expect.objectContaining({
-        uid: 'anon-1',
-        displayName: 'Anonymous Doctor',
-        role: 'viewer',
+        status: 'unauthorized',
       })
     );
   });
@@ -148,13 +148,14 @@ describe('authSession', () => {
     const callback = vi.fn();
     onAuthSessionStateChange(callback);
 
-    await authStateCallback?.({
-      uid: 'anon-1',
-      email: null,
-      displayName: null,
-      photoURL: null,
-      isAnonymous: true,
-    });
+    await authStateCallback?.(
+      createFirebaseUserMock({
+        uid: 'anon-1',
+        email: null,
+        displayName: null,
+        isAnonymous: true,
+      })
+    );
 
     expect(mockResolveFirebaseUserRole).not.toHaveBeenCalled();
     expect(callback).toHaveBeenCalledWith(

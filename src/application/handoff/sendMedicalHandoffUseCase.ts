@@ -1,5 +1,5 @@
-import { BEDS } from '@/constants';
-import type { DailyRecord, DailyRecordPatch } from '@/types';
+import { BEDS } from '@/constants/beds';
+import type { DailyRecord, DailyRecordPatch } from '@/types/core';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import {
   formatHandoffMessage,

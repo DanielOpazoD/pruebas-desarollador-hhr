@@ -1,5 +1,5 @@
 import React from 'react';
-import { ClinicalEvent, PatientData, PatientStatus } from '@/types';
+import { ClinicalEvent, PatientData, PatientStatus } from '@/types/core';
 import { Baby, ChevronDown, Clock } from 'lucide-react';
 import clsx from 'clsx';
 import { formatDateDDMMYYYY } from '@/utils/dateUtils';

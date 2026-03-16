@@ -5,7 +5,7 @@
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
-import { DeviceDetails, DeviceInfo } from '@/types';
+import { DeviceDetails, DeviceInfo } from '@/types/core';
 import { useLatestRef } from '@/hooks/useLatestRef';
 import { usePortalPopoverRuntime } from '@/hooks/usePortalPopoverRuntime';
 import {

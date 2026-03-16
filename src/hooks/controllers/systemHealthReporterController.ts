@@ -3,7 +3,7 @@ import type { SyncQueueTelemetry } from '@/services/storage/syncQueueService';
 import type { RepositoryPerformanceSummary } from '@/services/repositories/repositoryPerformance';
 import { CURRENT_SCHEMA_VERSION } from '@/constants/version';
 import { BACKEND_RUNTIME_CONTRACT_VERSION } from '@/constants/runtimeContracts';
-import type { UserRole } from '@/types';
+import type { UserRole } from '@/types/auth';
 import type { OperationalTelemetrySummary } from '@/services/observability/operationalTelemetryService';
 
 export interface BuildUserHealthStatusOptions {

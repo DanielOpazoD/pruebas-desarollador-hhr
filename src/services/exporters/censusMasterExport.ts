@@ -7,11 +7,11 @@
  * Manual downloads are NOT encrypted because xlsx-populate doesn't work in browsers.
  */
 
-import { DailyRecord } from '@/types';
-import { MONTH_NAMES } from '@/constants';
+import { DailyRecord } from '@/types/core';
+import { MONTH_NAMES } from '@/constants/export';
 import { getMonthRecordsFromFirestore } from '../storage/firestoreService';
-import { getRecordsForMonth } from '../storage/indexedDBService';
-import { isFirestoreEnabled } from '../repositories/DailyRecordRepository';
+import { getRecordsForMonth } from '@/services/storage/indexeddb/indexedDbRecordService';
+import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { buildCensusMasterWorkbook, getCensusMasterFilename } from './censusMasterWorkbook';
 import { downloadWorkbookFile } from './excelFileDownload';
 import { logger } from '@/services/utils/loggerService';

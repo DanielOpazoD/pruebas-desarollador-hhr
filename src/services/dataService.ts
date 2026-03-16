@@ -29,9 +29,8 @@ export { formatDateDDMMYYYY, getTodayISO, formatDateForDisplay } from '@/utils/d
 export {
   getForDate as getRecordForDate,
   getPreviousDay as getPreviousDayRecord,
-  save as saveRecord,
-  initializeDay,
-  setFirestoreEnabled,
-  isFirestoreEnabled,
-  DailyRecordRepository,
-} from './repositories/DailyRecordRepository';
+} from './repositories/dailyRecordRepositoryReadService';
+export { save as saveRecord } from './repositories/dailyRecordRepositoryWriteService';
+export { initializeDay } from './repositories/dailyRecordRepositoryInitializationService';
+export { setFirestoreEnabled, isFirestoreEnabled } from './repositories/repositoryConfig';
+export { DailyRecordRepository } from './repositories/DailyRecordRepository';

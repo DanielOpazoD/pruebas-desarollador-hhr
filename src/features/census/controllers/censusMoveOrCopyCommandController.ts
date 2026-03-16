@@ -1,5 +1,5 @@
 import { CensusManager } from '@/domain/CensusManager';
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 import { failWithCode, ok } from '@/features/census/controllers/controllerResult';
 import type { ActionState } from '@/features/census/types/censusActionTypes';
 import type {

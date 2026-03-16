@@ -1,5 +1,5 @@
 import { ACTIONS, canDoAction } from '@/utils/permissions';
-import type { UserRole } from '@/types';
+import type { UserRole } from '@/types/auth';
 import {
   canEditSpecialistTodayBoundRecord,
   hasSpecialistRestrictedMedicalAccess,

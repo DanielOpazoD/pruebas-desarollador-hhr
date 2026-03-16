@@ -1,4 +1,4 @@
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 import { buildMedicalHandoffSummary } from '@/features/handoff/controllers';
 
 /**

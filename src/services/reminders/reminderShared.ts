@@ -2,7 +2,7 @@ import { collection, doc } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import { COLLECTIONS, getActiveHospitalId, HOSPITAL_COLLECTIONS } from '@/constants/firestorePaths';
 import { ReminderReadReceiptSchema, ReminderSchema } from '@/schemas/reminderSchemas';
-import type { Reminder, ReminderReadReceipt } from '@/types';
+import type { Reminder, ReminderReadReceipt } from '@/types/reminders';
 
 export const REMINDER_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
 

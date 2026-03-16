@@ -1,4 +1,4 @@
-import { UserRole } from '@/types';
+import { UserRole } from '@/types/auth';
 import { ACTIONS, canDoAction, canViewModule, isAdmin } from '@/utils/permissions';
 
 export const canAccessAuditView = (role: UserRole | undefined): boolean =>

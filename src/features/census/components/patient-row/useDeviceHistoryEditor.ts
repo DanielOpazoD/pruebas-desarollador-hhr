@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { DeviceDetails, DeviceInstance } from '@/types';
+import { DeviceDetails, DeviceInstance } from '@/types/core';
 import {
   buildDeviceHistoryTimestamp,
   buildInitialDeviceHistory,

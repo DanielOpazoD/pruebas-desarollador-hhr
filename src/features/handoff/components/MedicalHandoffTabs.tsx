@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BedDefinition, DailyRecord } from '@/types';
+import { BedDefinition, DailyRecord } from '@/types/core';
 import { HandoffPatientTable } from './HandoffPatientTable';
 import type { MedicalHandoffScope } from '@/features/handoff/controllers';
 import type { HandoffClinicalEventActions, HandoffMedicalActions } from './handoffRowContracts';

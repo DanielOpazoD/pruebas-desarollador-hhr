@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   signIn,
   signInWithGoogle,
-  onAuthChange,
   signInWithGoogleRedirect,
   handleSignInRedirectResult,
 } from '@/services/auth/authService';
@@ -236,32 +235,6 @@ describe('authService', () => {
 
       await vi.advanceTimersByTimeAsync(12000);
       await expectation;
-    });
-  });
-
-  describe('onAuthChange', () => {
-    it('should handle anonymous users for signature mode', async () => {
-      const mockCallback = vi.fn();
-
-      onAuthChange(mockCallback);
-
-      expect(firebaseAuth.onAuthStateChanged).toHaveBeenCalled();
-      const firebaseCallback = vi.mocked(firebaseAuth.onAuthStateChanged).mock.calls[0][1] as (
-        user: firebaseAuth.User | null
-      ) => Promise<void>;
-
-      await firebaseCallback({
-        uid: 'anon-123',
-        isAnonymous: true,
-      } as unknown as firebaseAuth.User);
-
-      expect(mockCallback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          uid: 'anon-123',
-          displayName: 'Anonymous Doctor',
-          role: 'viewer',
-        })
-      );
     });
   });
 

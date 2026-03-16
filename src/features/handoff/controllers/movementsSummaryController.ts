@@ -1,4 +1,4 @@
-import type { CMAData, DischargeData, ShiftType, TransferData } from '@/types';
+import type { CMAData, DischargeData, ShiftType, TransferData } from '@/types/core';
 import { isWithinDayShift } from '@/utils/dateUtils';
 
 interface ShiftMovement {

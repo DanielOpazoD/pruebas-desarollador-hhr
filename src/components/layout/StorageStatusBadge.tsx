@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AlertTriangle, ChevronDown, ChevronUp, Database, RefreshCw } from 'lucide-react';
-import { resetLocalDatabase } from '@/services/storage/indexedDBService';
+import { resetLocalDatabase } from '@/services/storage/indexeddb/indexedDbMaintenanceService';
 import {
   getStorageFallbackUiCopy,
   markStorageAutoRecoveryAttempted,

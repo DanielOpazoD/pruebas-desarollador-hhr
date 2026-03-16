@@ -2,7 +2,7 @@
  * Census Master Workbook Exporter - Facade
  */
 
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 import type { Workbook } from 'exceljs';
 import { buildCensusMasterWorkbook as buildWorkbook } from './excel/builder';
 import type {

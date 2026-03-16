@@ -1,4 +1,4 @@
-import type { DischargeData, TransferData } from '@/types';
+import type { DischargeData, IeehData, TransferData } from '@/types/core';
 
 export type DischargeTarget = 'mother' | 'baby' | 'both';
 
@@ -22,7 +22,7 @@ export type UpdateDischargeAction = (
   dischargeTypeOther?: string,
   time?: string,
   movementDate?: string,
-  ieehData?: import('@/types').IeehData
+  ieehData?: IeehData
 ) => void;
 
 export type DeleteDischargeAction = (id: string) => void;

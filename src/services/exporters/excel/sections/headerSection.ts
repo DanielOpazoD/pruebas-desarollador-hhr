@@ -1,5 +1,5 @@
 import type { Worksheet } from 'exceljs';
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 import { MAIN_TITLE_STYLE } from '../styles';
 import { resolveNightShiftNurses } from '@/services/staff/dailyRecordStaffing';
 

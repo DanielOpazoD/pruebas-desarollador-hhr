@@ -1,6 +1,6 @@
 import type { jsPDF } from 'jspdf';
 
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 
 import type { AutoTableFunction, JsPDFWithAutoTable } from './handoffPdfTypes';
 import type { HandoffPdfMovementSummaryTable } from './handoffPdfSectionTypes';

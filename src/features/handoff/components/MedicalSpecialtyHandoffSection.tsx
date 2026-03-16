@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import clsx from 'clsx';
 import { AlertTriangle, CheckCircle2, Clock3, LockKeyhole, Stethoscope } from 'lucide-react';
-import type { AuthUser, DailyRecord, MedicalHandoffActor, MedicalSpecialty } from '@/types';
+import type { AuthUser } from '@/types/auth';
+import type { DailyRecord, MedicalHandoffActor, MedicalSpecialty } from '@/types/core';
 import { DebouncedTextarea } from '@/components/ui/DebouncedTextarea';
 import {
   canConfirmMedicalSpecialtyNoChanges,

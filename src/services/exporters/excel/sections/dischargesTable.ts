@@ -1,5 +1,5 @@
 import type { Worksheet } from 'exceljs';
-import { DischargeData } from '@/types';
+import { DischargeData } from '@/types/core';
 import { TITLE_STYLE, HEADER_FILL, BORDER_THIN } from '../styles';
 import { formatAge } from '../formatters';
 

@@ -1,5 +1,5 @@
 import { triggerCensusEmail } from '@/services/integrations/censusEmailService';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/core';
 import type { CensusWorkbookSheetDescriptor } from '@/services/exporters/censusMasterWorkbook';
 
 export interface CensusEmailSendPayload {

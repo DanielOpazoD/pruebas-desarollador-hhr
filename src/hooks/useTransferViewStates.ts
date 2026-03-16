@@ -6,7 +6,7 @@ import {
   GeneratedDocument,
 } from '@/types/transferDocuments';
 import { getHospitalConfigByDestinationName } from '@/constants/hospitalConfigs';
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 import {
   prepareTransferDocumentPackage,

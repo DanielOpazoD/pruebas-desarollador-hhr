@@ -1,11 +1,11 @@
 import { ActionState, DischargeState, TransferState } from '@/domain/censusActionContracts';
-import { CMAData, DailyRecord, PatientData } from '@/types';
+import { CMAData, DailyRecord, PatientData } from '@/types/core';
 import {
   DEFAULT_DISCHARGE_STATUS,
   DEFAULT_TRANSFER_ESCORT,
   EvacuationMethod,
   ReceivingCenter,
-} from '@/constants';
+} from '@/constants/clinical';
 
 /**
  * CensusManager

@@ -1,4 +1,5 @@
-import type { ReminderShift, ReminderType, UserRole } from '@/types';
+import type { ReminderShift, ReminderType } from '@/types/reminders';
+import type { UserRole } from '@/types/auth';
 
 export const REMINDER_TYPE_LABELS: Record<ReminderType, string> = {
   info: 'Informativo',

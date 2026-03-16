@@ -1,4 +1,4 @@
-import type { CMAData } from '@/types';
+import type { CMAData } from '@/types/core';
 import type { CensusMovementTableHeader } from '@/features/census/types/censusMovementTableTypes';
 
 export const CMA_TABLE_HEADERS: readonly CensusMovementTableHeader[] = [

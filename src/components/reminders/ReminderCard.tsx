@@ -1,7 +1,7 @@
 import React from 'react';
 import { CalendarRange, CheckCircle2, Users } from 'lucide-react';
 import clsx from 'clsx';
-import type { Reminder } from '@/types';
+import type { Reminder } from '@/types/reminders';
 import { formatReminderDateRange } from '@/shared/reminders/reminderPresentation';
 import { getReminderRoleLabel } from '@/shared/reminders/reminderUiOptions';
 

@@ -6,7 +6,7 @@
  * to smaller internal modules.
  */
 
-import type { WeeklyShift } from '@/types';
+import type { WeeklyShift } from '@/types/whatsapp';
 import { fetchBotJson } from '@/services/integrations/whatsapp/whatsappBotRuntime';
 import { logWhatsAppOperation } from '@/services/integrations/whatsapp/whatsappLogging';
 import {

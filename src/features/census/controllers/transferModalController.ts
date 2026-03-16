@@ -4,7 +4,7 @@ import {
   EVACUATION_METHOD_OTHER,
   type EvacuationMethod,
   type ReceivingCenter,
-} from '@/constants';
+} from '@/constants/clinical';
 import { validateTransferExecutionInput } from '@/features/census/validation/censusActionValidation';
 import {
   resolveMovementDateTimeValidationError,

@@ -1,4 +1,4 @@
-import { BedDefinition, DailyRecord, PatientData } from '@/types';
+import { BedDefinition, DailyRecord, PatientData } from '@/types/core';
 import { ControllerResult, failWithCode, ok } from '@/features/census/controllers/controllerResult';
 
 export type MovementCreationErrorCode = 'BED_NOT_FOUND' | 'SOURCE_BED_EMPTY';

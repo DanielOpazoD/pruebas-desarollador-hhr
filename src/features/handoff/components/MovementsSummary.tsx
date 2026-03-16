@@ -12,7 +12,7 @@
 
 import React, { useMemo } from 'react';
 import { UserMinus, ArrowRightLeft, Sun } from 'lucide-react';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/core';
 import {
   filterCmaByShift,
   filterDischargesByShift,

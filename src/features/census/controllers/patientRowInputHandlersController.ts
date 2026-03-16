@@ -1,4 +1,5 @@
-import type { DeviceDetails, DeviceInstance, PatientData, PatientFieldValue } from '@/types';
+import type { DeviceDetails, DeviceInstance, PatientData } from '@/types/core';
+import type { PatientFieldValue } from '@/types/valueTypes';
 
 interface BuildPatientRowInputCommandsParams {
   updateField: (field: keyof PatientData, value: PatientFieldValue) => void;

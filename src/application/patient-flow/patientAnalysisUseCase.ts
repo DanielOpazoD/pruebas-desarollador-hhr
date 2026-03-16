@@ -1,4 +1,4 @@
-import type { DailyRecordPatch, MasterPatient } from '@/types';
+import type { DailyRecordPatch, MasterPatient } from '@/types/core';
 import { formatRut, isValidRut } from '@/utils/rutUtils';
 import {
   createApplicationFailed,

@@ -1,4 +1,4 @@
-import type { ReminderReadReceipt } from '@/types';
+import type { ReminderReadReceipt } from '@/types/reminders';
 import { REMINDER_PRIORITY_LABELS } from '@/shared/reminders/reminderUiOptions';
 
 export const formatReminderShiftLabel = (

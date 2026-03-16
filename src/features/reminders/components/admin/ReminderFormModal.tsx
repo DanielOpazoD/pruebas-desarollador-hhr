@@ -1,7 +1,7 @@
 import React from 'react';
 import { BellRing, ImagePlus } from 'lucide-react';
 import { BaseModal } from '@/components/shared/BaseModal';
-import type { Reminder } from '@/types';
+import type { Reminder } from '@/types/reminders';
 import type { ReminderDraftInput } from '@/domain/reminders';
 import {
   REMINDER_ROLE_OPTIONS,

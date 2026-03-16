@@ -1,5 +1,5 @@
 import { useCallback, useState, type Dispatch, type SetStateAction } from 'react';
-import type { DischargeData, TransferData } from '@/types';
+import type { DischargeData, TransferData } from '@/types/core';
 import {
   type ActionState,
   createInitialActionState,

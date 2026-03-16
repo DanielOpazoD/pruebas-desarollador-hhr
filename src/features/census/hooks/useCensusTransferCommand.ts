@@ -40,8 +40,8 @@ export const useCensusTransferCommand = ({
   getCurrentTime,
   notifyError,
 }: UseCensusTransferCommandParams) => {
-  const { user } = useAuth();
-  const createdByEmail = user?.email ?? 'census-auto@local';
+  const { currentUser } = useAuth();
+  const createdByEmail = currentUser?.email ?? 'census-auto@local';
 
   return useCensusModalCommand<TransferExecutionInput>(async data => {
     const transferState = transferStateRef.current;

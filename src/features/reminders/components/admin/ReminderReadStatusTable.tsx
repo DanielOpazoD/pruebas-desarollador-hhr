@@ -1,7 +1,7 @@
 import React from 'react';
 import { BellRing } from 'lucide-react';
 import { BaseModal } from '@/components/shared/BaseModal';
-import type { Reminder, ReminderReadReceipt } from '@/types';
+import type { Reminder, ReminderReadReceipt } from '@/types/reminders';
 import {
   formatReminderReceiptDate,
   formatReminderShiftLabel,

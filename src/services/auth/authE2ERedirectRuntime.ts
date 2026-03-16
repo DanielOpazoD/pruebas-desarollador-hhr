@@ -1,4 +1,4 @@
-import type { AuthUser } from '@/types';
+import type { AuthUser } from '@/types/auth';
 
 const canUseE2EStorage = (): boolean =>
   typeof window !== 'undefined' &&

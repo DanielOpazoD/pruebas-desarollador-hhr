@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
-import { PatientData, PatientFieldValue } from '@/types';
+import { PatientData } from '@/types/core';
+import { PatientFieldValue } from '@/types/valueTypes';
 import {
   buildDeliveryRoutePatch,
   resolveNextDocumentType,

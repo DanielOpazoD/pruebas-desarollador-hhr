@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
-import { SPECIALTY_OPTIONS, SPECIALTY_ABBREVIATIONS } from '@/constants';
-import type { PatientData } from '@/types';
+import { SPECIALTY_OPTIONS, SPECIALTY_ABBREVIATIONS } from '@/constants/clinical';
+import type { PatientData } from '@/types/core';
 import type { EventTextHandler } from '@/features/census/components/patient-row/inputCellTypes';
 import {
   dispatchSpecialtyChange,

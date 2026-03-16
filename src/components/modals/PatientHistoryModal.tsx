@@ -14,7 +14,7 @@ import {
   PatientHistoryResult,
   MovementType,
 } from '@/services/patient/patientHistoryService';
-import type { PatientData } from '@/types';
+import type { PatientData } from '@/types/core';
 import type { ReactNode } from 'react';
 
 interface PatientHistoryModalProps {

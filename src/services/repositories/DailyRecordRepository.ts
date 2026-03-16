@@ -1,11 +1,13 @@
 /**
- * Daily Record Repository
- * Provides a unified interface for accessing and persisting daily records.
- * Abstracts localStorage and Firestore operations.
+ * @deprecated Compatibility facade only.
+ *
+ * New source code should import from the intent-specific repository modules:
+ * read, write, sync, initialization, or repositoryConfig. This facade remains
+ * for controlled compatibility and is protected by persistence boundary checks.
  */
 
-import { DailyRecord } from '@/types';
-import { DailyRecordPatch } from '@/types';
+import { DailyRecord } from '@/types/core';
+import { DailyRecordPatch } from '@/types/core';
 import type { DailyRecordReadResult } from './contracts/dailyRecordQueries';
 // import {
 //     getActiveHospitalId

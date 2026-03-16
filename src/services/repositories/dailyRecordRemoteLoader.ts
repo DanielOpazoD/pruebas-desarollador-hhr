@@ -1,5 +1,5 @@
-import { DailyRecord } from '@/types';
-import { saveRecord as saveToIndexedDB } from '@/services/storage/indexedDBService';
+import { DailyRecord } from '@/types/core';
+import { saveRecord as saveToIndexedDB } from '@/services/storage/indexeddb/indexedDbRecordService';
 import { getRecordFromFirestore } from '@/services/storage/firestoreService';
 import { migrateLegacyDataWithReport } from '@/services/repositories/dataMigration';
 import {

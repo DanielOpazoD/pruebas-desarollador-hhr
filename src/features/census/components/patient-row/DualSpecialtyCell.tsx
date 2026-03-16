@@ -10,7 +10,7 @@
 import React from 'react';
 import clsx from 'clsx';
 import { Plus, X } from 'lucide-react';
-import { SPECIALTY_OPTIONS } from '@/constants';
+import { SPECIALTY_OPTIONS } from '@/constants/clinical';
 import { DebouncedInput } from '@/components/ui/DebouncedInput';
 import { BaseCellProps, EventTextHandler } from './inputCellTypes';
 import { useDualSpecialtyCellModel } from '@/features/census/components/patient-row/useDualSpecialtyCellModel';

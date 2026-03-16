@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Specialty, DischargeData, TransferData, CMAData } from '@/types';
+import { Specialty, DischargeData, TransferData, CMAData } from '@/types/core';
 import { nullableOptional } from './helpers';
 import { PatientDataSchema } from './patient';
 

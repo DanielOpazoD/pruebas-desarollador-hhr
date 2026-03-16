@@ -1,4 +1,5 @@
-import type { CudyrScore, DailyRecord, PatientData, PatientFieldValue } from '@/types';
+import type { CudyrScore, DailyRecord, PatientData } from '@/types/core';
+import type { PatientFieldValue } from '@/types/valueTypes';
 import type { AuditDeviceChange, AuditDeviceChangesMap } from '@/types/audit';
 
 const CRITICAL_PATIENT_FIELDS: (keyof PatientData)[] = [

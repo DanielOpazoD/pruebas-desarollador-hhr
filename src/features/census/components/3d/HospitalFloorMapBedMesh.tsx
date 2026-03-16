@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html, Text, TransformControls } from '@react-three/drei';
 import * as THREE from 'three';
-import type { BedDefinition, PatientData } from '@/types';
+import type { BedDefinition, PatientData } from '@/types/core';
 import type {
   SavedBedTransform,
   SavedLayout,

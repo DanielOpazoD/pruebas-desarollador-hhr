@@ -8,8 +8,8 @@
 import React from 'react';
 import { CheckCircle, RotateCcw, ShieldCheck } from 'lucide-react';
 import clsx from 'clsx';
-import type { DailyRecord } from '@/types';
-import type { BedDefinition } from '@/types';
+import type { DailyRecord } from '@/types/core';
+import type { BedDefinition } from '@/types/core';
 import { useConfirmDialog } from '@/context/UIContext';
 
 interface MedicalHandoffHeaderProps {

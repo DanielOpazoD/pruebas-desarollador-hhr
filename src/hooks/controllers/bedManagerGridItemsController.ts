@@ -1,4 +1,4 @@
-import type { BedDefinition, DailyRecord } from '@/types';
+import type { BedDefinition, DailyRecord } from '@/types/core';
 
 export interface BedManagerBlockedGridItem {
   id: string;

@@ -1,4 +1,4 @@
-import type { Reminder, ReminderVisibilityContext } from '@/types';
+import type { Reminder, ReminderVisibilityContext } from '@/types/reminders';
 
 const comparePriority = (left: Reminder, right: Reminder): number => {
   if (right.priority !== left.priority) return right.priority - left.priority;

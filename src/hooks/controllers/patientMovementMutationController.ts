@@ -1,4 +1,5 @@
-import { DailyRecord, DischargeType, TransferData } from '@/types';
+import { DailyRecord, DischargeType, TransferData } from '@/types/core';
+import type { IeehData } from '@/types/core';
 
 interface UpdateDischargeMovementInput {
   record: DailyRecord;
@@ -8,7 +9,7 @@ interface UpdateDischargeMovementInput {
   dischargeTypeOther?: string;
   time?: string;
   movementDate?: string;
-  ieehData?: import('@/types').IeehData;
+  ieehData?: IeehData;
 }
 
 interface DeleteMovementInput {

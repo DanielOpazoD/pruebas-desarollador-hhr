@@ -5,7 +5,8 @@
  */
 
 import { useCallback } from 'react';
-import { PatientData, PatientFieldValue } from '@/types';
+import { PatientData } from '@/types/core';
+import { PatientFieldValue } from '@/types/valueTypes';
 import { capitalizeWords } from '@/utils/stringUtils';
 import { formatRut, isValidRut, isPassportFormat } from '@/utils/rutUtils';
 

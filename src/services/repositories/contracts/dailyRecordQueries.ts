@@ -1,4 +1,4 @@
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 import {
   LegacyMigrationRule,
   MigrationCompatibilityIntensity,

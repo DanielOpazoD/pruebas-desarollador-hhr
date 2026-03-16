@@ -7,7 +7,7 @@
  */
 
 import { initializeDay } from './DailyRecordRepository';
-import { getRecordsForMonth } from '@/services/storage/indexedDBService';
+import { getRecordsForMonth } from '@/services/storage/indexeddb/indexedDbRecordService';
 import {
   buildMonthIntegrityDateRange,
   createMonthIntegrityResult,

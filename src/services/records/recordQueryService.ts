@@ -1,10 +1,10 @@
-import { DailyRecord, PatientData } from '@/types';
+import { DailyRecord, PatientData } from '@/types/core';
 import {
   getAllRecordsSorted,
   getRecordsForMonth,
   getRecordsRange,
   saveRecords as saveManyToIndexedDB,
-} from '@/services/storage/indexedDBService';
+} from '@/services/storage/indexeddb/indexedDbRecordService';
 import { getRecordsRangeFromFirestore } from '@/services/storage/firestoreService';
 
 export const fetchRecordsForMonth = async (year: number, month: number): Promise<DailyRecord[]> => {

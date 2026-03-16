@@ -1,4 +1,4 @@
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/core';
 
 import { formatSheetDate } from '@/services/exporters/excel/formatters';
 import type {

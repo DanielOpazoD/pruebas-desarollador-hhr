@@ -1,5 +1,5 @@
 import type { Worksheet } from 'exceljs';
-import { CMAData } from '@/types';
+import { CMAData } from '@/types/core';
 import { TITLE_STYLE, HEADER_FILL, BORDER_THIN } from '../styles';
 import { formatAge } from '../formatters';
 

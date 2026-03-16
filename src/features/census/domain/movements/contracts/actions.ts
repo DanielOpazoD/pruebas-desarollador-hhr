@@ -1,4 +1,4 @@
-import type { DischargeData, TransferData } from '@/types';
+import type { DischargeData, TransferData } from '@/types/core';
 import type { DischargeTarget } from './primitives';
 
 export type MovementStatus = DischargeData['status'];

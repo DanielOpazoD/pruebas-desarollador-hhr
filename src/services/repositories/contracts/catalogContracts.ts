@@ -1,4 +1,4 @@
-import { ProfessionalCatalogItem } from '@/types';
+import { ProfessionalCatalogItem } from '@/types/core';
 
 const normalizeString = (value: unknown): string => {
   if (typeof value !== 'string') return '';

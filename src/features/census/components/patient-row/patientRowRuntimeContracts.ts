@@ -8,7 +8,7 @@ import type {
 import type { PatientRowBedConfigActions } from '@/features/census/components/patient-row/usePatientRowBedConfigActions';
 import type { BuildPatientRowChangeHandlersResult } from '@/features/census/controllers/patientRowChangeHandlersController';
 import type { PatientRowUiState } from '@/features/census/components/patient-row/usePatientRowUiState';
-import type { PatientData } from '@/types';
+import type { PatientData } from '@/types/core';
 
 export interface PatientRowBedTypeToggleHandlers {
   readonly onToggleBedType: () => void;

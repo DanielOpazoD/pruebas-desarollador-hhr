@@ -8,8 +8,8 @@
 
 import type jsPDF from 'jspdf';
 // import autoTable from 'jspdf-autotable'; // Removed static import
-import { DailyRecord, PatientData, ShiftType, DeviceDetails } from '@/types';
-import { BEDS } from '@/constants';
+import { DailyRecord, PatientData, ShiftType, DeviceDetails } from '@/types/core';
+import { BEDS } from '@/constants/beds';
 import { formatDateDDMMYYYY } from '@/utils/dateUtils';
 import { resolveHandoffShiftStaff } from '@/services/staff/dailyRecordStaffing';
 import { logger } from '@/services/utils/loggerService';

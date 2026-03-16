@@ -5,7 +5,7 @@ import type {
   DischargeData,
   PatientData,
   TransferData,
-} from '@/types';
+} from '@/types/core';
 import { applyDailyRecordStaffingCompatibility } from '@/services/staff/dailyRecordStaffing';
 import { recordOperationalTelemetry } from '@/services/observability/operationalTelemetryService';
 import type { SafeParseReturnType } from 'zod';

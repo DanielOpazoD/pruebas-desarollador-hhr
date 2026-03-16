@@ -4,7 +4,7 @@ import {
   getAuditLogs as getIndexedDBAuditLogs,
   getAuditLogsForDate as getIndexedDBAuditLogsForDate,
   saveAuditLog,
-} from '../storage/indexedDBService';
+} from '@/services/storage/indexeddb/indexedDbAuditLogService';
 import {
   fetchAndCacheIpAddress,
   getCachedIpAddress,

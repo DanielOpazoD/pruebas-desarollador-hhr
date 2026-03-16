@@ -1,5 +1,5 @@
 import { CURRENT_SCHEMA_VERSION, LEGACY_SCHEMA_VERSION } from '@/constants/version';
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 import { getSchemaEvolutionLedger } from '@/services/repositories/migrationLedger';
 import { assessSchemaCompatibility } from '@/services/repositories/schemaEvolutionPolicy';
 

@@ -1,5 +1,5 @@
-import { PatientData } from '@/types';
-import { BEDS } from '@/constants';
+import { PatientData } from '@/types/core';
+import { BEDS } from '@/constants/beds';
 import { normalizeSpecialty } from './normalization';
 
 export function getPatientsBySpecialty(

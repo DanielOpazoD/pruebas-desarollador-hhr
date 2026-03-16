@@ -5,8 +5,8 @@
  * @module services/calculations/cudyrSummary
  */
 
-import { DailyRecord, PatientData, BedType } from '@/types';
-import { BEDS } from '@/constants';
+import { DailyRecord, PatientData, BedType } from '@/types/core';
+import { BEDS } from '@/constants/beds';
 import { getCategorization } from './CudyrScoreUtils';
 
 // ============================================================================

@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
-import type { PatientData, UserRole } from '@/types';
+import type { PatientData } from '@/types/core';
+import type { UserRole } from '@/types/auth';
 import type { ConfirmOptions } from '@/context/uiContracts';
 import type {
   ClinicalDocumentEpisodeContext,

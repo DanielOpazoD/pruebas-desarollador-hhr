@@ -1,6 +1,6 @@
 import Dexie, { Table } from 'dexie';
 
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 import { AuditLogEntry } from '@/types/audit';
 import { ErrorLog } from '@/services/logging/errorLogTypes';
 

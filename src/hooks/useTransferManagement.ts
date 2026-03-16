@@ -44,7 +44,7 @@ interface UseTransferManagementReturn {
 
 export const useTransferManagement = (): UseTransferManagementReturn => {
   const [actionError, setActionError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const { record } = useDailyRecordData();
   const { addTransfer } = useDailyRecordMovementActions();
   const { clearPatient } = useDailyRecordBedActions();
@@ -66,7 +66,7 @@ export const useTransferManagement = (): UseTransferManagementReturn => {
     archiveTransfer,
     deleteHistoryEntry,
   } = useTransferManagementActions({
-    userEmail: user?.email ?? null,
+    userEmail: currentUser?.email ?? null,
     record,
     addTransfer,
     clearPatient,

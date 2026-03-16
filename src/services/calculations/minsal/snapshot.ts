@@ -1,5 +1,5 @@
-import { DailyRecord, PatientData } from '@/types';
-import { BEDS, HOSPITAL_CAPACITY } from '@/constants';
+import { DailyRecord, PatientData } from '@/types/core';
+import { BEDS, HOSPITAL_CAPACITY } from '@/constants/beds';
 import { DailyStatsSnapshot } from '@/types/minsalTypes';
 
 export function countOccupiedBeds(beds: Record<string, PatientData>): number {

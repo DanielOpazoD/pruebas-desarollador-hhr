@@ -1,5 +1,5 @@
-import { DailyRecord } from '@/types';
-import { getAllRecords } from '../storage/indexedDBService';
+import { DailyRecord } from '@/types/core';
+import { getAllRecords } from '@/services/storage/indexeddb/indexedDbRecordService';
 import { downloadBlob } from '@/services/exporters/exportDownload';
 import { buildDailyRecordCsv } from '@/services/exporters/exportCsvSerialization';
 import {

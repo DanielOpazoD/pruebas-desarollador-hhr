@@ -1,8 +1,8 @@
-import { DailyRecord, DailyRecordPatch } from '@/types';
+import { DailyRecord, DailyRecordPatch } from '@/types/core';
 import {
   getRecordForDate as getRecordFromIndexedDB,
   saveRecord as saveToIndexedDB,
-} from '@/services/storage/indexedDBService';
+} from '@/services/storage/indexeddb/indexedDbRecordService';
 import {
   saveRecordToFirestore,
   updateRecordPartial as updateRecordPartialToFirestore,

@@ -33,7 +33,7 @@ import { HospitalProvider } from './context/HospitalContext';
 import { RepositoryProvider, defaultRepositories } from '@/services/RepositoryContext';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/config/queryClient';
-import { setFirestoreEnabled } from '@/services/repositories/DailyRecordRepository';
+import { setFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { resolveShiftNurseSignature } from '@/services/staff/dailyRecordStaffing';
 import { logger } from '@/services/utils/loggerService';
 
@@ -67,7 +67,7 @@ function App() {
   // Auth state
   const auth = useAuth();
   // Storage migration only matters once a real session is active.
-  useStorageMigration({ enabled: !auth.isLoading && !!auth.user });
+  useStorageMigration({ enabled: !auth.isLoading && auth.isAuthenticated });
 
   // Version check (auto-refresh on new deployments)
   useVersionCheck();
@@ -79,7 +79,7 @@ function App() {
 
   const { isSignatureMode, currentDateString } = useSignatureMode(
     dateNav.currentDateString,
-    auth.user,
+    auth.currentUser,
     auth.isLoading
   );
   const sharedCensus = useSharedCensusMode();
@@ -105,7 +105,7 @@ function App() {
   }
 
   // Auth required for main app (NOT shared census mode)
-  if (!auth.user && !isSignatureMode && !sharedCensus.isSharedCensusMode) {
+  if (!auth.isAuthenticated && !isSignatureMode && !sharedCensus.isSharedCensusMode) {
     return <LoginPage onLoginSuccess={() => {}} />;
   }
 
@@ -160,7 +160,7 @@ function AppInner({ auth, dateNav, sharedCensus }: AppInnerProps) {
     selectedYear: dateNav.selectedYear,
     selectedMonth: dateNav.selectedMonth,
     selectedDay: dateNav.selectedDay,
-    user: auth.user,
+    user: auth.currentUser,
     role: auth.role,
   });
 

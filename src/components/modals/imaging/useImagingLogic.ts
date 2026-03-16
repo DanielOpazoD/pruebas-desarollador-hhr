@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { PatientData } from '@/types';
+import type { PatientData } from '@/types/core';
 import {
   printImagingRequestForm,
   printImagingEncuestaForm,

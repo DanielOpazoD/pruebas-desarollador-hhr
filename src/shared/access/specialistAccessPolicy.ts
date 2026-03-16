@@ -1,5 +1,5 @@
 import type { ModuleType } from '@/constants/navigationConfig';
-import type { UserRole } from '@/types';
+import type { UserRole } from '@/types/auth';
 import type { CensusAccessProfile } from '@/shared/access/censusAccessProfile';
 import { resolveRoleAccess } from '@/shared/access/roleAccessMatrix';
 import { getTodayISO } from '@/utils/dateUtils';

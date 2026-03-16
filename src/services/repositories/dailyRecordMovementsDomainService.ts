@@ -1,4 +1,4 @@
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/core';
 
 export interface EmptyDailyRecordMovements {
   discharges: DailyRecord['discharges'];

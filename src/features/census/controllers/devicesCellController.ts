@@ -1,4 +1,4 @@
-import { DeviceDetails, DeviceInstance } from '@/types';
+import { DeviceDetails, DeviceInstance } from '@/types/core';
 import {
   buildDeviceHistoryTimestamp,
   resolveActiveDeviceTypesFromHistory,

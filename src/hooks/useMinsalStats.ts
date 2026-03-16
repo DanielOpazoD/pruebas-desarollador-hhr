@@ -23,7 +23,7 @@ import {
   DateRangePreset,
   MinsalStatistics,
 } from '@/types/minsalTypes';
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 
 interface UseMinsalStatsResult {
   stats: MinsalStatistics | null;

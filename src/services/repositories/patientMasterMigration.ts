@@ -1,4 +1,4 @@
-import { MasterPatient } from '@/types';
+import { MasterPatient } from '@/types/core';
 import { formatRut, isValidRut } from '@/utils/rutUtils';
 import { DailyRecordRepository } from './DailyRecordRepository';
 import { bulkUpsertPatients } from './PatientMasterRepository';

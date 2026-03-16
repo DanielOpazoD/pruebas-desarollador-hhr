@@ -1,4 +1,4 @@
-import type { PatientData } from '@/types';
+import type { PatientData } from '@/types/core';
 
 interface ResolvePatientRowDemographicsBindingParams {
   bedId: string;

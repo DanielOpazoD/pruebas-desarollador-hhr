@@ -1,5 +1,5 @@
 import type { Worksheet } from 'exceljs';
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 import { CensusStatistics } from '../../../calculations/statsCalculator';
 
 export function addSummarySection(

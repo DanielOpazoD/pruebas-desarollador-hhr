@@ -12,7 +12,7 @@ import {
   ReminderRepository,
   resolveReminderAdminErrorMessage,
 } from '@/services/reminders';
-import type { Reminder, ReminderReadReceipt } from '@/types';
+import type { Reminder, ReminderReadReceipt } from '@/types/reminders';
 
 const buildReminderId = (): string => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -33,7 +33,7 @@ type ReminderSaveResult =
   | 'permission_denied_image_upload';
 
 export const useReminderAdmin = () => {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const { success, error: notifyError } = useNotification();
   const { confirm } = useConfirmDialog();
 
@@ -102,8 +102,9 @@ export const useReminderAdmin = () => {
             imageUrl: removeImage ? undefined : formReminder?.imageUrl,
           },
           {
-            createdBy: user?.uid ?? 'system',
-            createdByName: user?.displayName?.trim() || user?.email?.trim() || 'Jefatura',
+            createdBy: currentUser?.uid ?? 'system',
+            createdByName:
+              currentUser?.displayName?.trim() || currentUser?.email?.trim() || 'Jefatura',
             createdAt: now,
             updatedAt: now,
           },
@@ -181,7 +182,14 @@ export const useReminderAdmin = () => {
         setProcessing(false);
       }
     },
-    [formReminder, notifyError, success, user?.displayName, user?.email, user?.uid]
+    [
+      currentUser?.displayName,
+      currentUser?.email,
+      currentUser?.uid,
+      formReminder,
+      notifyError,
+      success,
+    ]
   );
 
   const deleteReminder = React.useCallback(

@@ -3,7 +3,7 @@ import {
   createApplicationFailed,
   createApplicationSuccess,
 } from '@/application/shared/applicationOutcome';
-import type { DailyRecord, DailyRecordPatch } from '@/types';
+import type { DailyRecord, DailyRecordPatch } from '@/types/core';
 
 export const createMissingRecordOutcome = <T>(
   data: T,

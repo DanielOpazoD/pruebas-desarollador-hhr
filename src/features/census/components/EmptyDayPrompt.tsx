@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { MONTH_NAMES } from '@/constants';
+import { MONTH_NAMES } from '@/constants/export';
 import { Copy, Calendar, Plus, ChevronDown, ShieldCheck } from 'lucide-react';
 import clsx from 'clsx';
 import {

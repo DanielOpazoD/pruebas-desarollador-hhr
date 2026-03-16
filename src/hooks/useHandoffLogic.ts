@@ -25,7 +25,7 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import { MedicalHandoffAuditActor, PatientData } from '@/types';
+import { MedicalHandoffAuditActor, PatientData } from '@/types/core';
 import { getShiftSchedule } from '@/utils/dateUtils';
 import { useAuditContext } from '@/context/AuditContext';
 import { useDailyRecordData } from '@/context/DailyRecordContext';
@@ -65,7 +65,7 @@ export const useHandoffLogic = ({
   const { updatePatient, updatePatientMultiple, updateClinicalCrib, updateClinicalCribMultiple } =
     useDailyRecordBedActions();
   const { sendMedicalHandoff, ensureMedicalHandoffSignatureLink } = useDailyRecordHandoffActions();
-  const { user, role } = useAuth();
+  const { currentUser, role } = useAuth();
 
   const isMedical = type === 'medical';
 
@@ -104,14 +104,14 @@ export const useHandoffLogic = ({
   // ========== HANDLERS ==========
   const { logDebouncedEvent } = useAuditContext();
   const medicalAuditActor = useMemo<MedicalHandoffAuditActor | null>(() => {
-    if (!user?.uid || !user.email) return null;
+    if (!currentUser?.uid || !currentUser.email) return null;
     return {
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName || user.email,
+      uid: currentUser.uid,
+      email: currentUser.email,
+      displayName: currentUser.displayName || currentUser.email,
       role,
     };
-  }, [role, user]);
+  }, [currentUser, role]);
 
   const persistMedicalFields = useCallback(
     async (bedId: string, fields: MedicalPatientFields, isNested: boolean) => {

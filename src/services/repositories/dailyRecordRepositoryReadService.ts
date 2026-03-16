@@ -1,9 +1,9 @@
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 import {
   getRecordForDate as getRecordFromIndexedDB,
   getPreviousDayRecord as getPreviousDayFromIndexedDB,
   getAllDates as getAllDatesFromIndexedDB,
-} from '@/services/storage/indexedDBService';
+} from '@/services/storage/indexeddb/indexedDbRecordService';
 import { getAvailableDatesFromFirestore } from '@/services/storage/firestoreService';
 import { logLegacyInfo } from '@/services/storage/legacyfirebase/legacyFirebaseLogger';
 import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';

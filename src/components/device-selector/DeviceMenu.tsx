@@ -7,8 +7,8 @@
 import React, { useState } from 'react';
 import clsx from 'clsx';
 import { Plus, X, Check, Settings } from 'lucide-react';
-import { DeviceDetails } from '@/types';
-import { DEVICE_OPTIONS } from '@/constants';
+import { DeviceDetails } from '@/types/core';
+import { DEVICE_OPTIONS } from '@/constants/clinical';
 import type { DeviceMenuPosition } from '@/components/device-selector/deviceMenuPositionController';
 import { resolveCustomDeviceOptions } from '@/components/device-selector/deviceSelectorController';
 interface DeviceMenuProps {

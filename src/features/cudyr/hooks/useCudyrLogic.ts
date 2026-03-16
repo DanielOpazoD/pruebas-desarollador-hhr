@@ -4,8 +4,8 @@ import {
   useDailyRecordCudyrActions,
   useDailyRecordDayActions,
 } from '@/context/useDailyRecordScopedActions';
-import { BEDS } from '@/constants';
-import { CudyrScore } from '@/types';
+import { BEDS } from '@/constants/beds';
+import { CudyrScore } from '@/types/core';
 import { useAuditContext } from '@/context/AuditContext';
 import { useAuth } from '@/context/AuthContext';
 import { getCategorization } from '../services/CudyrScoreUtils';
@@ -41,21 +41,23 @@ export const useCudyrLogic = (readOnly: boolean) => {
   const { updateCudyr, updateClinicalCribCudyr } = useDailyRecordCudyrActions();
   const { refresh } = useDailyRecordDayActions();
   const { logEvent, userId } = useAuditContext();
-  const { user, isEditor, role } = useAuth();
+  const { currentUser, isEditor, role } = useAuth();
 
   // Permission check
   const canToggleLock = useMemo(() => {
-    if (!user) return false;
+    if (!currentUser) return false;
     if (role === 'admin' || isEditor) {
       const hospitalizedEmails = [
         'hospitalizados@hospitalhangaroa.cl',
         'enfermeria.hospitalizados@hospitalhangaroa.cl',
       ];
-      const isHospitalizedNurse = hospitalizedEmails.includes(user.email?.toLowerCase() || '');
+      const isHospitalizedNurse = hospitalizedEmails.includes(
+        currentUser.email?.toLowerCase() || ''
+      );
       return role === 'admin' || isHospitalizedNurse;
     }
     return false;
-  }, [user, role, isEditor]);
+  }, [currentUser, role, isEditor]);
 
   // Actions
   const handleToggleLock = useCallback(async () => {
@@ -68,13 +70,13 @@ export const useCudyrLogic = (readOnly: boolean) => {
       await defaultDailyRecordWritePort.updatePartial(record.date, {
         cudyrLocked: newLockedState,
         cudyrLockedAt: newLockedState ? now : undefined,
-        cudyrLockedBy: newLockedState ? user?.email || userId : undefined,
+        cudyrLockedBy: newLockedState ? currentUser?.email || userId : undefined,
       });
       refresh();
     } catch (error) {
       console.error('Error toggling CUDYR lock:', error);
     }
-  }, [record, canToggleLock, user, userId, refresh]);
+  }, [record, canToggleLock, currentUser, userId, refresh]);
 
   const handleScoreChange = useCallback(
     (bedId: string, field: keyof CudyrScore, value: number) => {

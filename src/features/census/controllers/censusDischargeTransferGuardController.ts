@@ -1,5 +1,5 @@
 import { buildDischargeWithActiveTransferConfirmDialog } from '@/features/census/controllers/censusMovementActionConfirmController';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/core';
 import type { DischargeState } from '@/features/census/types/censusActionTypes';
 import type { getLatestOpenTransferRequestByBedId } from '@/services/transfers/transferService';
 

@@ -1,9 +1,8 @@
 import { onAuthStateChanged, signOut as firebaseSignOut, User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
-import { AuthSessionState, AuthUser } from '@/types';
+import { AuthSessionState } from '@/types/auth';
 import { checkSharedCensusAccess, isSharedCensusMode } from '@/services/auth/sharedCensusAuth';
 import { clearRoleCacheForEmail } from '@/services/auth/authPolicy';
-import { toAuthUser } from '@/services/auth/authShared';
 import { resolveFirebaseUserRole } from '@/services/auth/authAccessResolution';
 import { resolveAuthSessionState } from '@/services/auth/authSessionController';
 import { recordAuthOperationalError } from '@/services/auth/authOperationalTelemetry';
@@ -13,7 +12,6 @@ import {
   createUnauthenticatedAuthSessionState,
   createUnauthorizedAuthSessionState,
   toAnonymousSignatureAuthSessionState,
-  toLegacyAuthUserFromSessionState,
 } from '@/services/auth/authSessionState';
 
 export const signOut = async (): Promise<void> => {
@@ -90,21 +88,6 @@ export const onAuthSessionStateChange = (
   });
 };
 
-/**
- * @deprecated Prefer `onAuthSessionStateChange` so consumers can distinguish
- * unauthenticated, unauthorized, anonymous signature and auth error states.
- */
-export const onAuthChange = (callback: (user: AuthUser | null) => void): (() => void) => {
-  return onAuthSessionStateChange(async sessionState => {
-    if (sessionState.status === 'unauthorized' || sessionState.status === 'auth_error') {
-      callback(null);
-      return;
-    }
-
-    callback(toLegacyAuthUserFromSessionState(sessionState));
-  });
-};
-
 export const getCurrentAuthSessionState = (): AuthSessionState => {
   const user = auth.currentUser;
   if (!user) {
@@ -123,14 +106,4 @@ export const getCurrentAuthSessionState = (): AuthSessionState => {
   return createUnauthorizedAuthSessionState('session_requires_resolution', {
     email: user.email,
   });
-};
-
-export const getCurrentUser = (): AuthUser | null => {
-  const sessionUser = toLegacyAuthUserFromSessionState(getCurrentAuthSessionState());
-  if (sessionUser) {
-    return sessionUser;
-  }
-
-  const user = auth.currentUser;
-  return user ? toAuthUser(user) : null;
 };

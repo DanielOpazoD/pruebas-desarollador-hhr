@@ -1,4 +1,4 @@
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/core';
 
 export const createRecordDateTimestamp = (date: string): number =>
   new Date(`${date}T00:00:00`).getTime();

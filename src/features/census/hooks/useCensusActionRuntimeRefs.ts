@@ -1,5 +1,5 @@
 import type { MutableRefObject } from 'react';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/core';
 import type { StabilityRules } from '@/hooks/useStabilityRules';
 import { useLatestRef } from '@/hooks/useLatestRef';
 import type {

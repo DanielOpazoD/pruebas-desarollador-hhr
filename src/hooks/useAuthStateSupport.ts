@@ -1,6 +1,6 @@
 import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 import { useEffect, useState } from 'react';
-import { AuthSessionState, AuthUser } from '@/types';
+import { AuthSessionState, AuthUser } from '@/types/auth';
 import { safeJsonParse } from '@/utils/jsonUtils';
 import { ACTIVITY_EVENTS, SESSION_TIMEOUT_MS } from '@/constants/security';
 import { defaultAuditPort } from '@/application/ports/auditPort';

@@ -1,6 +1,6 @@
 import { getRedirectResult, signInWithRedirect } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
-import { AuthSessionState } from '@/types';
+import { AuthSessionState } from '@/types/auth';
 import { googleProvider } from '@/services/auth/authShared';
 import {
   consumeE2ERedirectPendingUser,

@@ -1,4 +1,7 @@
-import { getErrorLogs, clearErrorLogs } from './storage/indexedDBService';
+import {
+  getErrorLogs,
+  clearErrorLogs,
+} from '@/services/storage/indexeddb/indexedDbErrorLogService';
 
 export const fetchErrorLogs = async (limit = 50) => getErrorLogs(limit);
 

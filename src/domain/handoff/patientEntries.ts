@@ -1,4 +1,4 @@
-import { MedicalHandoffAudit, MedicalHandoffEntry, PatientData, Specialty } from '@/types';
+import { MedicalHandoffAudit, MedicalHandoffEntry, PatientData, Specialty } from '@/types/core';
 
 const MEDICAL_SPECIALTY_OPTIONS = Object.values(Specialty).filter(Boolean) as string[];
 

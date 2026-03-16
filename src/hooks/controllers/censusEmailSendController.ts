@@ -1,5 +1,5 @@
 import { buildCensusEmailBody } from '@/constants/email';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/core';
 
 interface BuildConfirmationTextParams {
   currentDateString: string;

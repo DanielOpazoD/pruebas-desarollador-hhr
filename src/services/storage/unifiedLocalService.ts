@@ -1,12 +1,11 @@
 import {
   getAllDates,
   getAllRecords,
-  getCatalog,
   getPreviousDayRecord,
   getRecordForDate,
-  saveCatalog,
   saveRecord,
-} from '@/services/storage/indexedDBService';
+} from '@/services/storage/indexeddb/indexedDbRecordService';
+import { getCatalog, saveCatalog } from '@/services/storage/indexeddb/indexedDbCatalogService';
 import { NURSES_STORAGE_KEY, STORAGE_KEY } from '@/services/storage/localstorage/localStorageCore';
 import {
   clearAllData as clearAllLegacyLocalData,

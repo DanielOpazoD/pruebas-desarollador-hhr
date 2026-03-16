@@ -2,7 +2,7 @@
  * Utility functions for CUDYR score calculations and categorization.
  */
 
-import { CudyrScore } from '@/types';
+import { CudyrScore } from '@/types/core';
 
 // ============================================================================
 // Empty CUDYR Score Template

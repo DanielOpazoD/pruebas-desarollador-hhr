@@ -5,7 +5,7 @@ import { useIsMutating } from '@tanstack/react-query';
 import { fetchErrorLogs } from '@/services/errorLogService';
 import { reportUserHealth, UserHealthStatus } from '@/services/admin/healthService';
 import { getSyncQueueTelemetry } from '@/services/storage/syncQueueService';
-import { isDatabaseInFallbackMode } from '@/services/storage/indexedDBService';
+import { isDatabaseInFallbackMode } from '@/services/storage/indexeddb/indexedDbCore';
 import { getRepositoryPerformanceSummary } from '@/services/repositories/repositoryPerformance';
 import { getOperationalTelemetrySummary } from '@/services/observability/operationalTelemetryService';
 import {
@@ -22,13 +22,13 @@ const systemHealthReporterLogger = logger.child('SystemHealthReporter');
  * Runs in the background and only reports if a user is logged in.
  */
 export const useSystemHealthReporter = () => {
-  const { user, role, isFirebaseConnected } = useAuth();
+  const { currentUser, role, isFirebaseConnected } = useAuth();
   const { isOutdated } = useVersion();
   const mutatingCount = useIsMutating();
   const lastReportTime = useRef<number>(0);
 
   useEffect(() => {
-    if (!user || !canReportSystemHealthForRole(role)) return;
+    if (!currentUser || !canReportSystemHealthForRole(role)) return;
 
     const reportHealth = async () => {
       try {
@@ -46,9 +46,9 @@ export const useSystemHealthReporter = () => {
         const operationalTelemetry = getOperationalTelemetrySummary();
 
         const status: UserHealthStatus = buildUserHealthStatus({
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
+          uid: currentUser.uid,
+          email: currentUser.email,
+          displayName: currentUser.displayName,
           isFirebaseConnected,
           isOutdated: !!isOutdated,
           mutatingCount,
@@ -89,5 +89,5 @@ export const useSystemHealthReporter = () => {
     }, REPORT_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [user, role, isFirebaseConnected, isOutdated, mutatingCount]);
+  }, [currentUser, role, isFirebaseConnected, isOutdated, mutatingCount]);
 };

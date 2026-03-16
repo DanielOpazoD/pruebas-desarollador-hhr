@@ -1,5 +1,5 @@
 import type { SyncQueueStorePort } from '@/services/storage/sync/syncQueuePorts';
-import { hospitalDB } from '@/services/storage/indexedDBService';
+import { hospitalDB } from '@/services/storage/indexeddb/indexedDbCore';
 
 export const createDexieSyncQueueStore = (): SyncQueueStorePort => ({
   async listAll() {

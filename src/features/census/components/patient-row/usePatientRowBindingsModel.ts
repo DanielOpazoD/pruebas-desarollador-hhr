@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { PatientData } from '@/types';
+import type { PatientData } from '@/types/core';
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';
 import { usePatientRowRuntime } from './usePatientRowRuntime';
 import {

@@ -111,7 +111,7 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
               onExportCSV={fileOps.handleExportCSV}
               onImportJSON={fileOps.handleImportJSON}
               onOpenSettings={ui.settingsModal.open}
-              userEmail={auth.user?.email}
+              userEmail={auth.currentUser?.email}
               onLogout={auth.signOut}
               isFirebaseConnected={auth.isFirebaseConnected}
               isSharedMode={sharedCensus.isSharedCensusMode}

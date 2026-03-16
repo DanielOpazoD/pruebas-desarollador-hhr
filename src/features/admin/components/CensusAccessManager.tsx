@@ -23,7 +23,7 @@ import { useAuth } from '@/context/AuthContext';
 import clsx from 'clsx';
 
 export const CensusAccessManager: React.FC = () => {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const [authorizedEmails, setAuthorizedEmails] = useState<CensusAuthorizedEmail[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,7 +55,7 @@ export const CensusAccessManager: React.FC = () => {
 
   const handleAddEmail = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newEmail || !user?.uid) return;
+    if (!newEmail || !currentUser?.uid) return;
 
     setIsSubmitting(true);
     setError(null);
@@ -63,7 +63,7 @@ export const CensusAccessManager: React.FC = () => {
       const outcome = await executeAddAuthorizedCensusEmail({
         email: newEmail,
         role: newRole,
-        addedBy: user.uid,
+        addedBy: currentUser.uid,
       });
       if (outcome.status === 'failed') {
         throw new Error(outcome.issues[0]?.message || 'Error al autorizar correo.');

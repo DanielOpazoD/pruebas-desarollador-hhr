@@ -1,5 +1,5 @@
 import React from 'react';
-import type { BedDefinition, DailyRecord, Specialty } from '@/types';
+import type { BedDefinition, DailyRecord, Specialty } from '@/types/core';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import type { HandoffClinicalEventActions, HandoffMedicalActions } from './handoffRowContracts';
 import {

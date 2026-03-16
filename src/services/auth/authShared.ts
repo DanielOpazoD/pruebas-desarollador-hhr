@@ -1,5 +1,5 @@
 import { GoogleAuthProvider, User } from 'firebase/auth';
-import { AuthUser, UserRole } from '@/types';
+import { AuthUser, UserRole } from '@/types/auth';
 
 export const BOOTSTRAP_ADMIN_EMAILS = [
   'daniel.opazo@hospitalhangaroa.cl',

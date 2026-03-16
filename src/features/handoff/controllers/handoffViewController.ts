@@ -1,4 +1,4 @@
-import type { DailyRecord, ShiftType } from '@/types';
+import type { DailyRecord, ShiftType } from '@/types/core';
 import { buildMedicalHandoffSummary } from './medicalSpecialtyHandoffController';
 
 interface HandoffTitleParams {

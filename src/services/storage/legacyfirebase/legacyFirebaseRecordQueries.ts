@@ -1,7 +1,7 @@
 import { collection, getDocs, orderBy, query, where } from 'firebase/firestore';
 
 import { parseDailyRecordWithDefaults } from '@/schemas/zodSchemas';
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/core';
 
 import { getLegacyDb } from './legacyFirebaseCore';
 import {

@@ -1,6 +1,6 @@
 import { addDoc, collection, Timestamp } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
-import type { WhatsAppLog } from '@/types';
+import type { WhatsAppLog } from '@/types/whatsapp';
 import { logger } from '@/services/utils/loggerService';
 
 const whatsappLoggingLogger = logger.child('WhatsAppLogging');

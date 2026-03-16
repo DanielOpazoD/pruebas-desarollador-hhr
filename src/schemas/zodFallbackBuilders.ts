@@ -1,4 +1,4 @@
-import type { PatientData } from '@/types';
+import type { PatientData } from '@/types/core';
 import { createEmptyPatient } from '@/services/factories/patientFactory';
 
 export const buildFallbackPatientData = (data: unknown, bedId: string): PatientData => {

@@ -1,6 +1,6 @@
 import { collection, doc, limit, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
-import type { WeeklyShift } from '@/types';
+import type { WeeklyShift } from '@/types/whatsapp';
 import { logger } from '@/services/utils/loggerService';
 
 const TURNO_KEYWORDS = ['turno pabellon', 'turno pabellón', 'envío turno', 'envio turno'];

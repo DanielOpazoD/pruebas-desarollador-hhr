@@ -1,4 +1,4 @@
-import type { BedDefinition, DailyRecord, Specialty } from '@/types';
+import type { BedDefinition, DailyRecord, Specialty } from '@/types/core';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import {
   collectMedicalSpecialties,

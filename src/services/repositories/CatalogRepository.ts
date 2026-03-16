@@ -3,7 +3,7 @@ import {
   getCatalog,
   getCatalogValues,
   saveCatalogValues,
-} from '../storage/indexedDBService';
+} from '@/services/storage/indexeddb/indexedDbCatalogService';
 import {
   saveNurseCatalogToFirestore,
   saveTensCatalogToFirestore,
@@ -17,7 +17,7 @@ import {
 } from '../storage/firestoreService';
 import { getLegacyNurseCatalog, getLegacyTensCatalog } from '../storage/legacyFirebaseService';
 import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
-import { ProfessionalCatalogItem } from '@/types';
+import { ProfessionalCatalogItem } from '@/types/core';
 import {
   normalizeProfessionalCatalog,
   normalizeStringCatalog,

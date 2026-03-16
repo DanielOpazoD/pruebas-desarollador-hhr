@@ -1,5 +1,5 @@
-import { DailyRecord } from '@/types';
-import { saveRecord } from '@/services/storage/indexedDBService';
+import { DailyRecord } from '@/types/core';
+import { saveRecord } from '@/services/storage/indexeddb/indexedDbRecordService';
 import { hasStructuralRepairs, parseDailyRecordWithDefaultsReport } from '@/schemas/zodSchemas';
 import { logger } from '@/services/utils/loggerService';
 

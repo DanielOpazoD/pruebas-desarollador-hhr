@@ -5,9 +5,9 @@
  * This allows administrators to have local backups and restore data by month.
  */
 
-import { DailyRecord } from '@/types';
-import * as DailyRecordRepository from '../repositories/DailyRecordRepository';
-import * as indexedDBService from '../storage/indexedDBService';
+import { DailyRecord } from '@/types/core';
+import { saveDetailed as saveDailyRecordDetailed } from '@/services/repositories/dailyRecordRepositoryWriteService';
+import { getRecordsRange, saveRecords } from '@/services/storage/indexeddb/indexedDbRecordService';
 import * as firestoreService from '../storage/firestoreService';
 import { logAuditEvent } from './auditService';
 import { getCurrentUserEmail } from './utils/auditUtils';
@@ -83,7 +83,7 @@ const mergeRecordsByDate = (
 };
 
 const hydrateRangeRecords = async (startDate: string, endDate: string): Promise<DailyRecord[]> => {
-  const localRecords = await indexedDBService.getRecordsRange(startDate, endDate);
+  const localRecords = await getRecordsRange(startDate, endDate);
 
   if (!isFirestoreEnabled()) {
     return sortRecordsAscending(localRecords);
@@ -93,7 +93,7 @@ const hydrateRangeRecords = async (startDate: string, endDate: string): Promise<
   const mergedRecords = mergeRecordsByDate(localRecords, remoteRecords);
 
   if (mergedRecords.length > 0) {
-    await indexedDBService.saveRecords(mergedRecords);
+    await saveRecords(mergedRecords);
   }
 
   return mergedRecords;
@@ -210,7 +210,7 @@ export const importRecordsFromBackup = async (
         parsed.report.droppedTransferItems > 0 ||
         parsed.report.droppedCmaItems > 0;
 
-      await DailyRecordRepository.saveDetailed(parsed.record);
+      await saveDailyRecordDetailed(parsed.record);
       success++;
       if (hadRepairs) {
         repaired++;
