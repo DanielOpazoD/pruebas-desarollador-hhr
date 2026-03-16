@@ -8,7 +8,7 @@ import React, { Suspense } from 'react';
 import { GlobalErrorBoundary } from '@/components/shared/GlobalErrorBoundary';
 import { SectionErrorBoundary } from '@/components/shared/SectionErrorBoundary';
 import { ViewLoader } from '@/components/ui/ViewLoader';
-import { canEditModule } from '@/utils/permissions';
+import { canEditModule, isAdmin } from '@/utils/permissions';
 import { canAccessAuditView } from '@/services/admin/auditAccessPolicy';
 import { UserRole } from '@/context';
 import { UseUIStateReturn } from '@/hooks/useUIState';
@@ -119,6 +119,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
                   showBedManagerModal={showBedManagerModal}
                   onCloseBedManagerModal={onCloseBedManagerModal}
                   readOnly={!canEditModule(role, 'CENSUS')}
+                  allowAdminCopyOverride={isAdmin(role)}
                   localViewMode={ui.censusLocalViewMode}
                   accessProfile={censusAccessProfile}
                 />

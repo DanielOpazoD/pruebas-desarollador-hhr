@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { MONTH_NAMES } from '@/constants/export';
-import { Copy, Calendar, Plus, ChevronDown, ShieldCheck } from 'lucide-react';
+import { Copy, Calendar, Plus, ChevronDown, ShieldCheck, Shield } from 'lucide-react';
 import clsx from 'clsx';
 import {
   buildCopyUnlockDescription,
@@ -14,8 +14,13 @@ interface EmptyDayPromptProps {
   previousRecordAvailable: boolean;
   previousRecordDate?: string; // YYYY-MM-DD format
   availableDates?: string[]; // All dates with records
-  onCreateDay: (copyFromPrevious: boolean, specificDate?: string) => void;
+  onCreateDay: (
+    copyFromPrevious: boolean,
+    specificDate?: string,
+    options?: { forceCopyScheduleOverride?: boolean }
+  ) => void;
   readOnly?: boolean;
+  allowAdminCopyOverride?: boolean;
 }
 
 export const EmptyDayPrompt: React.FC<EmptyDayPromptProps> = ({
@@ -27,6 +32,7 @@ export const EmptyDayPrompt: React.FC<EmptyDayPromptProps> = ({
   availableDates = [],
   onCreateDay,
   readOnly = false,
+  allowAdminCopyOverride = false,
 }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isConfirmingBlank, setIsConfirmingBlank] = useState(false);
@@ -51,6 +57,8 @@ export const EmptyDayPrompt: React.FC<EmptyDayPromptProps> = ({
   }, [copyAvailability.isCopyLocked]);
 
   const isDatePickerVisible = showDatePicker && !copyAvailability.isCopyLocked;
+  const canForceCopyPrevious =
+    allowAdminCopyOverride && previousRecordAvailable && !!previousRecordDate;
 
   // Format date for display (DD de Mes)
   const formatDate = (dateStr: string) => {
@@ -79,91 +87,109 @@ export const EmptyDayPrompt: React.FC<EmptyDayPromptProps> = ({
       </p>
 
       {!readOnly ? (
-        <div className="flex flex-col sm:flex-row gap-4 flex-wrap justify-center">
+        <div className="flex flex-col sm:flex-row gap-4 flex-wrap justify-center items-start">
           {/* Copy from Previous Day Button with subtle date picker */}
           {previousRecordAvailable && previousRecordDate && (
-            <div className="relative flex items-stretch">
-              {/* Main Copy Button */}
-              <button
-                onClick={() => onCreateDay(true, previousRecordDate)}
-                disabled={copyAvailability.isCopyLocked}
-                className={clsx(
-                  'btn group !p-6 !h-auto border-2 border-slate-300 text-medical-700 bg-white shadow-sm flex-col rounded-r-none border-r-0',
-                  copyAvailability.isCopyLocked
-                    ? 'cursor-not-allowed opacity-60'
-                    : 'hover:bg-medical-50'
-                )}
-                style={{ width: '230px' }}
-                data-testid="copy-previous-btn"
-              >
-                <div className="flex items-center gap-2 text-lg font-bold">
-                  <Copy size={20} />
-                  <span>Copiar del {formatDate(previousRecordDate)}</span>
-                </div>
-                {copyAvailability.isCopyLocked ? (
-                  <span className="text-xs text-center font-semibold text-amber-700 leading-snug">
-                    {unlockDescription}
-                    <span className="block text-[11px] font-normal text-amber-600">
-                      Se habilita en {copyAvailability.countdownLabel}
-                    </span>
-                  </span>
-                ) : (
-                  <span className="text-xs font-normal text-medical-600/80">
-                    Incluye pacientes, camas y entregas de turno
-                  </span>
-                )}
-              </button>
-
-              {/* Subtle "+" expander for other dates */}
-              {availableDates.length > 1 && (
-                <>
-                  <button
-                    onClick={e => {
-                      e.stopPropagation();
-                      if (copyAvailability.isCopyLocked) {
-                        return;
-                      }
-                      setShowDatePicker(!showDatePicker);
-                    }}
-                    disabled={copyAvailability.isCopyLocked}
-                    className={clsx(
-                      'border-2 border-slate-300 text-slate-400 bg-white shadow-sm rounded-l-none px-2 transition-colors',
-                      copyAvailability.isCopyLocked
-                        ? 'cursor-not-allowed opacity-60'
-                        : 'hover:bg-slate-50 hover:text-slate-600',
-                      isDatePickerVisible && 'bg-medical-50 text-medical-600'
-                    )}
-                    title="Seleccionar otra fecha"
-                    aria-label="Seleccionar otra fecha para copiar"
-                  >
-                    <ChevronDown
-                      size={16}
-                      className={clsx('transition-transform', isDatePickerVisible && 'rotate-180')}
-                    />
-                  </button>
-
-                  {/* Date Picker Dropdown - Opens Upward */}
-                  {isDatePickerVisible && (
-                    <div className="absolute bottom-full right-0 mb-2 w-56 max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-50 animate-fade-in">
-                      <div className="p-2">
-                        <p className="text-[10px] text-slate-400 uppercase font-bold px-2 py-1">
-                          Otras fechas
-                        </p>
-                        {availableDates
-                          .filter(d => d !== previousRecordDate)
-                          .map(date => (
-                            <button
-                              key={date}
-                              onClick={() => handleSelectDate(date)}
-                              className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-medical-50 hover:text-medical-700"
-                            >
-                              {formatDate(date)}
-                            </button>
-                          ))}
-                      </div>
-                    </div>
+            <div className="flex flex-col gap-2">
+              <div className="relative flex items-stretch">
+                {/* Main Copy Button */}
+                <button
+                  onClick={() => onCreateDay(true, previousRecordDate)}
+                  disabled={copyAvailability.isCopyLocked}
+                  className={clsx(
+                    'btn group !p-6 !h-auto border-2 border-slate-300 text-medical-700 bg-white shadow-sm flex-col rounded-r-none border-r-0',
+                    copyAvailability.isCopyLocked
+                      ? 'cursor-not-allowed opacity-60'
+                      : 'hover:bg-medical-50'
                   )}
-                </>
+                  style={{ width: '230px' }}
+                  data-testid="copy-previous-btn"
+                >
+                  <div className="flex items-center gap-2 text-lg font-bold">
+                    <Copy size={20} />
+                    <span>Copiar del {formatDate(previousRecordDate)}</span>
+                  </div>
+                  {copyAvailability.isCopyLocked ? (
+                    <span className="text-xs text-center font-semibold text-amber-700 leading-snug">
+                      {unlockDescription}
+                      <span className="block text-[11px] font-normal text-amber-600">
+                        Se habilita en {copyAvailability.countdownLabel}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="text-xs font-normal text-medical-600/80">
+                      Incluye pacientes, camas y entregas de turno
+                    </span>
+                  )}
+                </button>
+
+                {/* Subtle "+" expander for other dates */}
+                {availableDates.length > 1 && (
+                  <>
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (copyAvailability.isCopyLocked) {
+                          return;
+                        }
+                        setShowDatePicker(!showDatePicker);
+                      }}
+                      disabled={copyAvailability.isCopyLocked}
+                      className={clsx(
+                        'border-2 border-slate-300 text-slate-400 bg-white shadow-sm rounded-l-none px-2 transition-colors',
+                        copyAvailability.isCopyLocked
+                          ? 'cursor-not-allowed opacity-60'
+                          : 'hover:bg-slate-50 hover:text-slate-600',
+                        isDatePickerVisible && 'bg-medical-50 text-medical-600'
+                      )}
+                      title="Seleccionar otra fecha"
+                      aria-label="Seleccionar otra fecha para copiar"
+                    >
+                      <ChevronDown
+                        size={16}
+                        className={clsx(
+                          'transition-transform',
+                          isDatePickerVisible && 'rotate-180'
+                        )}
+                      />
+                    </button>
+
+                    {/* Date Picker Dropdown - Opens Upward */}
+                    {isDatePickerVisible && (
+                      <div className="absolute bottom-full right-0 mb-2 w-56 max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-50 animate-fade-in">
+                        <div className="p-2">
+                          <p className="text-[10px] text-slate-400 uppercase font-bold px-2 py-1">
+                            Otras fechas
+                          </p>
+                          {availableDates
+                            .filter(d => d !== previousRecordDate)
+                            .map(date => (
+                              <button
+                                key={date}
+                                onClick={() => handleSelectDate(date)}
+                                className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-medical-50 hover:text-medical-700"
+                              >
+                                {formatDate(date)}
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {canForceCopyPrevious && copyAvailability.isCopyLocked && (
+                <button
+                  onClick={() =>
+                    onCreateDay(true, previousRecordDate, { forceCopyScheduleOverride: true })
+                  }
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-800 shadow-sm transition-colors hover:bg-amber-100"
+                  data-testid="admin-copy-override-btn"
+                >
+                  <Shield size={14} />
+                  <span>Crear ahora como admin</span>
+                </button>
               )}
             </div>
           )}

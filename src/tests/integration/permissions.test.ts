@@ -46,6 +46,7 @@ describe('Permissions System (RBAC)', () => {
     it('should have edit permissions for clinical modules', () => {
       expect(canEditModule(role, 'CENSUS')).toBe(true);
       expect(canEditModule(role, 'CUDYR')).toBe(true);
+      expect(canEditModule(role, 'MEDICAL_HANDOFF')).toBe(false);
     });
 
     it('should be allowed to delete records but NOT read audit logs', () => {

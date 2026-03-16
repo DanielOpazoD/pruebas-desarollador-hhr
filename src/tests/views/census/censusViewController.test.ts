@@ -29,6 +29,7 @@ describe('censusViewController', () => {
       availableDates: ['2026-03-13'],
       onCreateDay,
       readOnly: false,
+      allowAdminCopyOverride: true,
     });
 
     expect(result).toEqual({
@@ -40,6 +41,7 @@ describe('censusViewController', () => {
       availableDates: ['2026-03-13'],
       onCreateDay,
       readOnly: false,
+      allowAdminCopyOverride: true,
     });
   });
 

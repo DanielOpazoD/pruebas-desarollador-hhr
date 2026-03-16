@@ -53,7 +53,7 @@ export const DeviceMenu: React.FC<DeviceMenuProps> = ({
     <div
       ref={menuRef}
       className={clsx(
-        'fixed z-50 w-[360px] bg-white rounded-lg shadow-xl border border-slate-200 animate-scale-in text-left',
+        'fixed z-[120] isolate w-[360px] rounded-lg shadow-xl border border-slate-200 animate-scale-in text-left overflow-hidden',
         menuPosition.placement === 'top' ? 'origin-bottom' : 'origin-top'
       )}
       style={{
@@ -63,8 +63,13 @@ export const DeviceMenu: React.FC<DeviceMenuProps> = ({
         left: `${menuPosition.left}px`,
       }}
     >
+      <div
+        className="absolute inset-0 rounded-lg bg-white pointer-events-none"
+        aria-hidden="true"
+      />
+
       {/* Header */}
-      <div className="p-2.5 bg-slate-50 border-b border-slate-100 flex justify-between items-center rounded-t-lg">
+      <div className="relative z-10 p-2.5 bg-slate-50 border-b border-slate-100 flex justify-between items-center rounded-t-lg">
         <span className="text-[10px] font-bold text-slate-700 uppercase">Dispositivos</span>
         <button
           onClick={e => {
@@ -77,7 +82,7 @@ export const DeviceMenu: React.FC<DeviceMenuProps> = ({
         </button>
       </div>
 
-      <div className="p-2.5">
+      <div className="relative z-10 p-2.5 bg-white">
         {/* Active VVPs List */}
         <div className="mb-3 space-y-1.5">
           <div className="flex items-center justify-between mb-1.5">
@@ -105,7 +110,7 @@ export const DeviceMenu: React.FC<DeviceMenuProps> = ({
                 return (
                   <div
                     key={vvp}
-                    className="flex items-center gap-2 p-1.5 rounded-md bg-medical-50/50 border border-medical-100/50"
+                    className="flex items-center gap-2 p-1.5 rounded-md bg-medical-50 border border-medical-100"
                   >
                     <div className="w-5 h-5 rounded-full bg-medical-600 text-white flex items-center justify-center text-[10px] font-bold shadow-sm">
                       {idx + 1}

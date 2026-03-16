@@ -39,11 +39,11 @@ describe('permissions.ts - Security Critical Tests', () => {
       expect(canEditModule(ROLES.ADMIN, 'AUDIT')).toBe(true);
     });
 
-    it('nurse_hospital should edit CENSUS, CUDYR, NURSING_HANDOFF, MEDICAL_HANDOFF, TRANSFER_MANAGEMENT', () => {
+    it('nurse_hospital should edit CENSUS, CUDYR, NURSING_HANDOFF and TRANSFER_MANAGEMENT but not MEDICAL_HANDOFF', () => {
       expect(canEditModule(ROLES.NURSE_HOSPITAL, 'CENSUS')).toBe(true);
       expect(canEditModule(ROLES.NURSE_HOSPITAL, 'CUDYR')).toBe(true);
       expect(canEditModule(ROLES.NURSE_HOSPITAL, 'NURSING_HANDOFF')).toBe(true);
-      expect(canEditModule(ROLES.NURSE_HOSPITAL, 'MEDICAL_HANDOFF')).toBe(true);
+      expect(canEditModule(ROLES.NURSE_HOSPITAL, 'MEDICAL_HANDOFF')).toBe(false);
       expect(canEditModule(ROLES.NURSE_HOSPITAL, 'TRANSFER_MANAGEMENT')).toBe(true);
       // Should NOT edit these:
       expect(canEditModule(ROLES.NURSE_HOSPITAL, 'BACKUP_FILES')).toBe(false);

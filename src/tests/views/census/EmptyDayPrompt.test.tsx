@@ -29,6 +29,28 @@ describe('EmptyDayPrompt', () => {
     expect(screen.getByText('Se habilita en 00:30:00')).toBeInTheDocument();
   });
 
+  it('shows an admin override button while the visual countdown remains locked', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 2, 3, 7, 30, 0));
+
+    render(
+      <EmptyDayPrompt
+        selectedDay={3}
+        selectedMonth={2}
+        currentDateString="2026-03-03"
+        previousRecordAvailable={true}
+        previousRecordDate="2026-03-02"
+        availableDates={['2026-03-02']}
+        onCreateDay={() => undefined}
+        allowAdminCopyOverride={true}
+      />
+    );
+
+    expect(screen.getByTestId('copy-previous-btn')).toBeDisabled();
+    expect(screen.getByTestId('admin-copy-override-btn')).toBeInTheDocument();
+    expect(screen.getByText('Se habilita en 00:30:00')).toBeInTheDocument();
+  });
+
   it('keeps copy button enabled for days that are not today', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 2, 3, 7, 30, 0));

@@ -4,6 +4,7 @@
  */
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus } from 'lucide-react';
 import { DeviceDetails, DeviceInfo } from '@/types/domain/clinical';
 import { useLatestRef } from '@/hooks/useLatestRef';
@@ -231,21 +232,24 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
         ))}
       </div>
 
-      {showMenu && (
-        <DeviceMenu
-          devices={normalizedDevices}
-          deviceDetails={deviceDetails}
-          vvpCount={vvpCount}
-          vvpDevices={vvpDevices}
-          menuPosition={menuPosition}
-          menuRef={menuRef}
-          onClose={closeMenu}
-          onToggleDevice={toggleDevice}
-          onAddCustomDevice={addCustomDevice}
-          onRemoveDevice={removeDevice}
-          onConfigureDevice={setEditingDevice}
-        />
-      )}
+      {showMenu && typeof document !== 'undefined'
+        ? createPortal(
+            <DeviceMenu
+              devices={normalizedDevices}
+              deviceDetails={deviceDetails}
+              vvpCount={vvpCount}
+              vvpDevices={vvpDevices}
+              menuPosition={menuPosition}
+              menuRef={menuRef}
+              onClose={closeMenu}
+              onToggleDevice={toggleDevice}
+              onAddCustomDevice={addCustomDevice}
+              onRemoveDevice={removeDevice}
+              onConfigureDevice={setEditingDevice}
+            />,
+            document.body
+          )
+        : null}
 
       {(editingDevice || pendingAddition) && (
         <DeviceDateConfigModal

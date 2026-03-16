@@ -22,9 +22,9 @@ describe('chunkingPolicy', () => {
     expect(assignedChunks).not.toContain('feature-shared-census-storage');
   });
 
-  it('still preserves focused feature chunks for census runtime and patient row', () => {
+  it('keeps census patient-row modules and runtime controllers inside the same chunk', () => {
     expect(chunkForModule('/repo/src/features/census/components/patient-row/PatientRow.tsx')).toBe(
-      'feature-census-patient-row'
+      'feature-census-runtime'
     );
 
     expect(

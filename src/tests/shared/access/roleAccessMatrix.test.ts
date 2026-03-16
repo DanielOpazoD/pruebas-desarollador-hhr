@@ -47,4 +47,11 @@ describe('roleAccessMatrix', () => {
       expect.arrayContaining(['PATIENT_MASTER_INDEX', 'DATA_MAINTENANCE', 'DIAGNOSTICS'])
     );
   });
+
+  it('keeps nurse_hospital with medical handoff visibility but without edit permission', () => {
+    expect(resolveRoleAccess('nurse_hospital')).toMatchObject({
+      modules: expect.arrayContaining(['MEDICAL_HANDOFF']),
+    });
+    expect(resolveRoleAccess('nurse_hospital').canEdit).not.toContain('MEDICAL_HANDOFF');
+  });
 });

@@ -17,6 +17,7 @@ interface UseCensusViewRouteModelParams {
   showBedManagerModal: boolean;
   onCloseBedManagerModal: () => void;
   readOnly: boolean;
+  allowAdminCopyOverride: boolean;
   localViewMode: 'TABLE' | '3D';
   accessProfile: CensusAccessProfile;
 }
@@ -29,6 +30,7 @@ export const useCensusViewRouteModel = ({
   showBedManagerModal,
   onCloseBedManagerModal,
   readOnly,
+  allowAdminCopyOverride,
   localViewMode,
   accessProfile,
 }: UseCensusViewRouteModelParams) => {
@@ -54,8 +56,10 @@ export const useCensusViewRouteModel = ({
         availableDates: viewModel.availableDates,
         onCreateDay: viewModel.createDay,
         readOnly,
+        allowAdminCopyOverride,
       }),
     [
+      allowAdminCopyOverride,
       currentDateString,
       readOnly,
       selectedDay,

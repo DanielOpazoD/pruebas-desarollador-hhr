@@ -4,11 +4,8 @@ export const chunkForModule = (moduleId: string): string | undefined => {
   const has = (fragment: string): boolean => normalizedId.includes(fragment);
 
   if (!inNodeModules) {
-    if (has('/src/features/census/components/patient-row/')) {
-      return 'feature-census-patient-row';
-    }
-
     if (
+      has('/src/features/census/components/patient-row/') ||
       has('/src/features/census/controllers/') ||
       has('/src/features/census/domain/movements/') ||
       has('/src/features/census/validation/')

@@ -25,8 +25,8 @@
 
 ## Feature-oriented loading strategy
 
-- `feature-census-runtime` agrupa controladores y validaciones del censo diario.
-- `feature-census-patient-row` aísla la fila/panel de paciente, que se carga con patrones de interacción distintos.
+- `feature-census-runtime` agrupa controladores, validaciones y `patient-row` del censo diario.
+- No separar `patient-row` de `feature-census-runtime` mientras existan imports bidireccionales entre componentes de fila y controladores del censo; esa división produjo un fallo productivo de inicialización en Netlify (`Cannot access '<symbol>' before initialization`).
 - `feature-clinical-documents` y `feature-transfers` se mantienen separados porque cargan flujos documentales pesados y no deben inflar el arranque base del censo.
 - `feature-backup-storage` conserva juntos exportación y storage porque comparten un grafo estrechamente acoplado; no se debe volver a separar `shared census` de ese bloque sin demostrar un runtime boundary real.
 

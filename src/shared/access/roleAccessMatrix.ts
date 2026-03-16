@@ -70,7 +70,7 @@ const ROLE_ACCESS_MATRIX = {
     generalLoginAllowed: true,
     assignableInRoleManagement: true,
     modules: ['CENSUS', 'CUDYR', 'NURSING_HANDOFF', 'MEDICAL_HANDOFF', 'TRANSFER_MANAGEMENT'],
-    canEdit: ['CENSUS', 'CUDYR', 'NURSING_HANDOFF', 'MEDICAL_HANDOFF', 'TRANSFER_MANAGEMENT'],
+    canEdit: ['CENSUS', 'CUDYR', 'NURSING_HANDOFF', 'TRANSFER_MANAGEMENT'],
     censusAccessProfile: 'default',
     specialistRestrictedMedicalAccess: false,
     canReadClinicalDocuments: true,

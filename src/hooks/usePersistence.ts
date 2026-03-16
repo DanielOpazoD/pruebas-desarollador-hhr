@@ -43,7 +43,11 @@ export const usePersistence = ({
    * Creates a new daily record for the current date.
    */
   const createDay = useCallback(
-    async (copyFromPrevious: boolean, specificDate?: string) => {
+    async (
+      copyFromPrevious: boolean,
+      specificDate?: string,
+      options?: { forceCopyScheduleOverride?: boolean }
+    ) => {
       let prevDate: string | undefined = undefined;
       let copySourceMeta: {
         compatibilityIntensity: string;
@@ -53,7 +57,7 @@ export const usePersistence = ({
       try {
         if (copyFromPrevious) {
           const copyAvailability = resolveCreateDayCopyAvailability(currentDateString, new Date());
-          if (copyAvailability.isCopyLocked) {
+          if (copyAvailability.isCopyLocked && !options?.forceCopyScheduleOverride) {
             recordOperationalTelemetry({
               category: 'create_day',
               status: 'degraded',

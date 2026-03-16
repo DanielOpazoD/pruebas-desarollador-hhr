@@ -19,8 +19,13 @@ export interface BuildEmptyDayPromptPropsParams {
   previousRecordAvailable: boolean;
   previousRecordDate: string | undefined;
   availableDates: string[];
-  onCreateDay: (copyFromPrevious: boolean, specificDate?: string) => void | Promise<void>;
+  onCreateDay: (
+    copyFromPrevious: boolean,
+    specificDate?: string,
+    options?: { forceCopyScheduleOverride?: boolean }
+  ) => void | Promise<void>;
   readOnly: boolean;
+  allowAdminCopyOverride: boolean;
 }
 
 export interface BuildRegisterContentPropsParams {
@@ -56,6 +61,7 @@ export const buildEmptyDayPromptProps = ({
   availableDates,
   onCreateDay,
   readOnly,
+  allowAdminCopyOverride,
 }: BuildEmptyDayPromptPropsParams) => ({
   selectedDay,
   selectedMonth,
@@ -65,6 +71,7 @@ export const buildEmptyDayPromptProps = ({
   availableDates,
   onCreateDay,
   readOnly,
+  allowAdminCopyOverride,
 });
 
 export const buildRegisterContentProps = ({

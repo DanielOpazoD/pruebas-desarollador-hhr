@@ -48,7 +48,11 @@ export interface UseDailyRecordSyncResult {
   refresh: () => void;
 
   // Day Lifecycle (Consolidated)
-  createDay: (copyFromPrevious: boolean, specificDate?: string) => Promise<void>;
+  createDay: (
+    copyFromPrevious: boolean,
+    specificDate?: string,
+    options?: { forceCopyScheduleOverride?: boolean }
+  ) => Promise<void>;
   resetDay: () => Promise<void>;
 }
 
@@ -73,7 +77,11 @@ export interface DailyRecordDataContextType {
  */
 export interface DailyRecordActionsContextType extends PatientMovementActions {
   // Day Management
-  createDay: (copyFromPrevious: boolean, specificDate?: string) => void;
+  createDay: (
+    copyFromPrevious: boolean,
+    specificDate?: string,
+    options?: { forceCopyScheduleOverride?: boolean }
+  ) => void;
   resetDay: () => Promise<void>;
   refresh: () => void;
 
