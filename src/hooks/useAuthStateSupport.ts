@@ -238,25 +238,52 @@ export const useResolvedAuthBootstrap = ({
 
     let unsubscribe: (() => void) | undefined;
     const timeoutMs = getAuthBootstrapTimeoutMs();
-    const safetyTimeout = setTimeout(() => {
+    let isBootstrapResolved = false;
+    let safetyTimeout: ReturnType<typeof setTimeout> | undefined;
+    const markBootstrapResolved = () => {
+      if (isBootstrapResolved) {
+        return;
+      }
+
+      isBootstrapResolved = true;
+      if (safetyTimeout) {
+        clearTimeout(safetyTimeout);
+      }
+    };
+    const setResolvedAuthLoading = (value: boolean) => {
+      if (!value) {
+        markBootstrapResolved();
+      }
+      setAuthLoading(value);
+    };
+
+    safetyTimeout = setTimeout(() => {
+      if (isBootstrapResolved) {
+        return;
+      }
+
       authStateLogger.warn(
-        `Auth initialization timed out (${timeoutMs}ms) - forcing load completion`
+        `Auth initialization timed out (${timeoutMs}ms) - forcing load completion`,
+        {
+          isOnline: window.navigator.onLine,
+          authBootstrapPending: isAuthBootstrapPending(),
+        }
       );
       clearAuthBootstrapPending();
-      setAuthLoading(false);
+      setResolvedAuthLoading(false);
     }, timeoutMs);
 
     subscribeToResolvedAuthState({
       resolveRedirectAuthSessionOutcome,
       onAuthSessionStateChange,
       setSessionState,
-      setAuthLoading,
+      setAuthLoading: setResolvedAuthLoading,
     }).then(unsub => {
       if (unsub) unsubscribe = unsub;
     });
 
     return () => {
-      clearTimeout(safetyTimeout);
+      markBootstrapResolved();
       if (unsubscribe) unsubscribe();
     };
   }, [

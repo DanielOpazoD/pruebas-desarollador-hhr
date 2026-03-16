@@ -23,6 +23,9 @@ interface VersionInfo {
   buildDate: string;
 }
 
+const isJsonResponse = (contentType: string | null): boolean =>
+  typeof contentType === 'string' && contentType.toLowerCase().includes('application/json');
+
 /**
  * Clears all Service Worker caches.
  */
@@ -107,6 +110,13 @@ export const useVersionCheck = (): void => {
         if (!response.ok) {
           // version.json might not exist in dev mode, that's ok
           versionCheckLogger.warn('version.json not found (dev mode?)');
+          return;
+        }
+
+        const contentType = response.headers.get('content-type');
+        if (!isJsonResponse(contentType)) {
+          // Some environments rewrite unknown routes to index.html.
+          // Treat that as "version unavailable" instead of noisy parse failures.
           return;
         }
 
