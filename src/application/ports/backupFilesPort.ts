@@ -1,31 +1,32 @@
 import {
-  listBackupFiles,
-  getBackupFile,
-  deleteBackupFile,
-  saveNursingHandoffBackup,
-  checkBackupExists,
+  listBackupFilesWithResult,
+  getBackupFileWithResult,
+  deleteBackupFileWithResult,
+  saveNursingHandoffBackupWithResult,
+  checkBackupExistsWithResult,
 } from '@/services/backup/backupService';
 import type { BackupFile, BackupFilePreview, BackupFilters, BackupShiftType } from '@/types/backup';
+import type { BackupCrudResult } from '@/services/backup/backupCrudResults';
 
 export interface BackupFilesPort {
-  listFiles: (filters?: BackupFilters) => Promise<BackupFilePreview[]>;
-  getFile: (id: string) => Promise<BackupFile | null>;
-  deleteFile: (id: string) => Promise<void>;
+  listFiles: (filters?: BackupFilters) => Promise<BackupCrudResult<BackupFilePreview[]>>;
+  getFile: (id: string) => Promise<BackupCrudResult<BackupFile>>;
+  deleteFile: (id: string) => Promise<BackupCrudResult<{ deleted: true }>>;
   saveNursingHandoff: (
     date: string,
     shiftType: BackupShiftType,
     deliveryStaff: string,
     receivingStaff: string,
     content: Record<string, unknown>
-  ) => Promise<string>;
-  checkExists: (date: string, shiftType: BackupShiftType) => Promise<boolean>;
+  ) => Promise<BackupCrudResult<string>>;
+  checkExists: (date: string, shiftType: BackupShiftType) => Promise<BackupCrudResult<boolean>>;
 }
 
 export const defaultBackupFilesPort: BackupFilesPort = {
-  listFiles: async filters => listBackupFiles(filters),
-  getFile: async id => getBackupFile(id),
-  deleteFile: async id => deleteBackupFile(id),
+  listFiles: async filters => listBackupFilesWithResult(filters),
+  getFile: async id => getBackupFileWithResult(id),
+  deleteFile: async id => deleteBackupFileWithResult(id),
   saveNursingHandoff: async (date, shiftType, deliveryStaff, receivingStaff, content) =>
-    saveNursingHandoffBackup(date, shiftType, deliveryStaff, receivingStaff, content),
-  checkExists: async (date, shiftType) => checkBackupExists(date, shiftType),
+    saveNursingHandoffBackupWithResult(date, shiftType, deliveryStaff, receivingStaff, content),
+  checkExists: async (date, shiftType) => checkBackupExistsWithResult(date, shiftType),
 };

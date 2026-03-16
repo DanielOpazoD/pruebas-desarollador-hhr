@@ -10,6 +10,7 @@ import {
 import { presentBackupExportOutcome } from '@/hooks/controllers/backupExportOutcomeController';
 import { recordOperationalOutcome } from '@/services/observability/operationalTelemetryService';
 import { useBackupArchiveStatus } from '@/hooks/useBackupArchiveStatus';
+import { formatBackupShiftLabel } from '@/shared/backup/backupPresentation';
 
 interface UseExportManagerProps {
   currentDateString: string;
@@ -112,7 +113,7 @@ export const useExportManager = ({
 
       const [year, month, day] = record.date.split('-');
       const formattedDate = `${day}-${month}-${year}`;
-      const shiftLabel = selectedShift === 'day' ? 'Turno Largo' : 'Turno Noche';
+      const shiftLabel = formatBackupShiftLabel(selectedShift);
       const actionLabel = isArchived ? 'Actualizar' : 'Guardar';
 
       if (!skipConfirmation) {

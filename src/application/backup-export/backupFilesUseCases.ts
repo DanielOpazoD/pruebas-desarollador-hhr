@@ -19,8 +19,22 @@ export const executeListBackupCrudFiles = async (
   dependencies: BackupFilesUseCaseDependencies = {}
 ): Promise<ApplicationOutcome<BackupFilePreview[]>> => {
   try {
-    const files = await resolveBackupFilesPort(dependencies).listFiles(filters);
-    return createApplicationSuccess(files);
+    const result = await resolveBackupFilesPort(dependencies).listFiles(filters);
+    if (result.status === 'success') {
+      return createApplicationSuccess(result.data);
+    }
+    return createApplicationDegraded(
+      [],
+      [
+        {
+          kind: result.status === 'permission_denied' ? 'permission' : 'unknown',
+          message:
+            result.error instanceof Error
+              ? result.error.message
+              : 'No se pudieron cargar los archivos de respaldo.',
+        },
+      ]
+    );
   } catch (error) {
     return createApplicationDegraded(
       [],
@@ -42,13 +56,22 @@ export const executeGetBackupCrudFile = async (
   dependencies: BackupFilesUseCaseDependencies = {}
 ): Promise<ApplicationOutcome<BackupFile | null>> => {
   try {
-    const file = await resolveBackupFilesPort(dependencies).getFile(id);
-    if (!file) {
+    const result = await resolveBackupFilesPort(dependencies).getFile(id);
+    if (result.status === 'not_found') {
       return createApplicationFailed(null, [
         { kind: 'not_found', message: 'Archivo no encontrado.' },
       ]);
     }
-    return createApplicationSuccess(file);
+    if (result.status === 'success') {
+      return createApplicationSuccess(result.data);
+    }
+    return createApplicationFailed(null, [
+      {
+        kind: result.status === 'permission_denied' ? 'permission' : 'unknown',
+        message:
+          result.error instanceof Error ? result.error.message : 'No se pudo cargar el archivo.',
+      },
+    ]);
   } catch (error) {
     return createApplicationFailed(null, [
       {
@@ -64,8 +87,17 @@ export const executeDeleteBackupCrudFile = async (
   dependencies: BackupFilesUseCaseDependencies = {}
 ): Promise<ApplicationOutcome<{ deleted: true } | null>> => {
   try {
-    await resolveBackupFilesPort(dependencies).deleteFile(id);
-    return createApplicationSuccess({ deleted: true });
+    const result = await resolveBackupFilesPort(dependencies).deleteFile(id);
+    if (result.status === 'success') {
+      return createApplicationSuccess(result.data);
+    }
+    return createApplicationFailed(null, [
+      {
+        kind: result.status === 'permission_denied' ? 'permission' : 'unknown',
+        message:
+          result.error instanceof Error ? result.error.message : 'No se pudo eliminar el archivo.',
+      },
+    ]);
   } catch (error) {
     return createApplicationFailed(null, [
       {
@@ -89,14 +121,26 @@ export const executeSaveNursingHandoffCrudBackup = async (
   dependencies: BackupFilesUseCaseDependencies = {}
 ): Promise<ApplicationOutcome<string | null>> => {
   try {
-    const id = await resolveBackupFilesPort(dependencies).saveNursingHandoff(
+    const result = await resolveBackupFilesPort(dependencies).saveNursingHandoff(
       input.date,
       input.shiftType,
       input.deliveryStaff,
       input.receivingStaff,
       input.content
     );
-    return createApplicationSuccess(id);
+    if (result.status === 'success') {
+      return createApplicationSuccess(result.data);
+    }
+    return createApplicationFailed(null, [
+      {
+        kind:
+          result.status === 'unauthenticated' || result.status === 'permission_denied'
+            ? 'permission'
+            : 'unknown',
+        message:
+          result.error instanceof Error ? result.error.message : 'No se pudo crear el respaldo.',
+      },
+    ]);
   } catch (error) {
     return createApplicationFailed(null, [
       {
@@ -113,8 +157,19 @@ export const executeCheckBackupCrudExists = async (
   dependencies: BackupFilesUseCaseDependencies = {}
 ): Promise<ApplicationOutcome<boolean>> => {
   try {
-    const exists = await resolveBackupFilesPort(dependencies).checkExists(date, shiftType);
-    return createApplicationSuccess(exists);
+    const result = await resolveBackupFilesPort(dependencies).checkExists(date, shiftType);
+    if (result.status === 'success') {
+      return createApplicationSuccess(result.data);
+    }
+    return createApplicationDegraded(false, [
+      {
+        kind: result.status === 'permission_denied' ? 'permission' : 'unknown',
+        message:
+          result.error instanceof Error
+            ? result.error.message
+            : 'No se pudo verificar el respaldo.',
+      },
+    ]);
   } catch (error) {
     return createApplicationDegraded(false, [
       {

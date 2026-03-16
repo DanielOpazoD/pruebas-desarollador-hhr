@@ -21,8 +21,6 @@ import {
   toResolvedAuthSessionState,
 } from '@/services/auth/authSessionState';
 
-// UserRole and AuthUser are now imported from @/types
-
 /**
  * Return type for the useAuthState hook.
  * Provides user authentication state, role information, and auth actions.

@@ -5,6 +5,7 @@ import { getMonthRecordsFromFirestore } from '@/services/storage/firestore';
 import { generateDateRange, getShiftSchedule } from '@/utils/dateUtils';
 import type { BaseStoredFile } from '@/services/backup/baseStorageService';
 import type { StoredPdfFile } from '@/services/backup/pdfStorageService';
+import { formatBackupShiftLabel } from '@/shared/backup/backupPresentation';
 
 export type MonthlyBackfillType = 'handoff' | 'census' | 'cudyr';
 
@@ -109,7 +110,7 @@ const createMonthlyBackfillPlan = (
 
 const taskLabel = (task: BackfillTask): string => {
   if (task.type === 'handoff') {
-    return `${task.date} (${task.shiftType === 'day' ? 'Turno Largo' : 'Turno Noche'})`;
+    return `${task.date} (${formatBackupShiftLabel(task.shiftType)})`;
   }
   return task.date;
 };

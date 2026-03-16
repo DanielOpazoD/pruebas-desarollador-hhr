@@ -1,4 +1,4 @@
-import { DailyRecord } from './core';
+import { DailyRecord } from './domain/dailyRecord';
 
 declare global {
   interface Window {
@@ -16,7 +16,7 @@ declare global {
         email: string;
         displayName?: string | null;
         photoURL?: string | null;
-        role?: import('@/types').UserRole;
+        role?: import('@/types/auth').UserRole;
       };
       redirectMode?: 'success' | 'error' | 'timeout';
     };

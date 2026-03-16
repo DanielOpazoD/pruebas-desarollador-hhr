@@ -16,6 +16,7 @@ Capa de datos e integración: repositorios, persistencia, exportadores, integrac
 | `transfers/`                                                  | Generación documental y soporte de traslados                    |
 | `auth/`                                                       | Servicios de autenticación y políticas de acceso                |
 | `backup/`                                                     | Respaldo y restauración                                         |
+| `observability/`                                              | Telemetria operacional y adapters de dominio                    |
 | `terminology/`                                                | Normalización y búsquedas semánticas clínicas                   |
 | `utils/`                                                      | Utilidades de servicio (logging, feature flags, etc.)           |
 | `pdf/`                                                        | Generadores PDF                                                 |
@@ -37,6 +38,10 @@ Capa de datos e integración: repositorios, persistencia, exportadores, integrac
 - **Repository Pattern** (`DailyRecordRepository`, `CatalogRepository`, etc.).
 - **Service split por responsabilidad** (`read/write/sync/init` en repositorio diario).
 - **Storage abstraction** con estrategia offline-first y fallback.
+- **Domain observability**:
+  - `observability/domainObservability.ts` crea adapters pequenos por dominio
+  - `operationalTelemetryService.ts` queda como sink/base compartida
+  - los contextos nuevos deben preferir wrappers (`authOperationalTelemetry`, `reminderObservability`, etc.) antes que importar el servicio generico
 - **Auth por flujo y resolución**:
   - `authFlow.ts` como fachada pública del login
   - `authCredentialFlow.ts` para email/password y creación de usuario
