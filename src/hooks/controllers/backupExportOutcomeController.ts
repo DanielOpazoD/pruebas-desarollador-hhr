@@ -10,7 +10,7 @@ export interface BackupExportOutcomePresentation {
 }
 
 const resolveIssueMessage = (issues: ApplicationIssue[], fallback: string) =>
-  issues[0]?.message || fallback;
+  issues[0]?.userSafeMessage || issues[0]?.message || fallback;
 
 export const presentBackupExportOutcome = <T>(
   outcome: ApplicationOutcome<T>,
@@ -36,7 +36,7 @@ export const presentBackupExportOutcome = <T>(
     return {
       channel: 'warning',
       title: options.partialTitle,
-      message: outcome.issues.map(issue => issue.message).join('\n'),
+      message: outcome.issues.map(issue => issue.userSafeMessage || issue.message).join('\n'),
       state: outcome.status === 'partial' ? 'pending' : 'degraded',
       actionRequired: false,
     };

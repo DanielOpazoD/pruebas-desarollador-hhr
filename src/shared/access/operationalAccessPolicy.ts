@@ -2,6 +2,7 @@ import type { ModuleType } from '@/constants/navigationConfig';
 import type { UserRole } from '@/types/auth';
 import { canEditModule, canDoAction, isAdmin, ACTIONS } from '@/utils/permissions';
 import { canReadClinicalDocuments } from '@/application/clinical-documents/clinicalDocumentAccessPolicy';
+import { canAccessAuditView } from '@/services/admin/auditAccessPolicy';
 import {
   isSpecialistCensusAccessProfile,
   type CensusAccessProfile,
@@ -29,6 +30,39 @@ export const canVerifyPassiveBackupForRole = (
 
 export const canViewOrManageBackupFiles = (role: SupportedRole): boolean =>
   canEditModule(role, 'NURSING_HANDOFF');
+
+export const canAccessAppModuleRoute = ({
+  role,
+  module,
+  visibleModules,
+}: {
+  role: SupportedRole;
+  module: ModuleType;
+  visibleModules?: readonly ModuleType[];
+}): boolean => {
+  if (visibleModules && !visibleModules.includes(module)) {
+    return false;
+  }
+
+  switch (module) {
+    case 'AUDIT':
+      return canAccessAuditView(
+        (typeof role === 'string' ? role : undefined) as UserRole | undefined
+      );
+    case 'BACKUP_FILES':
+      return canViewOrManageBackupFiles(role);
+    case 'DATA_MAINTENANCE':
+    case 'DIAGNOSTICS':
+    case 'PATIENT_MASTER_INDEX':
+    case 'REMINDERS':
+    case 'ERRORS':
+      return canUseAdminMaintenanceActions(role);
+    case 'ROLE_MANAGEMENT':
+      return canUseAdminMaintenanceActions(role) || role === undefined;
+    default:
+      return true;
+  }
+};
 
 export const canManageGlobalCensusEmailRecipients = ({
   role,

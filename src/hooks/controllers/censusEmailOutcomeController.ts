@@ -11,7 +11,7 @@ interface CensusEmailOutcomePresentation {
 }
 
 const resolvePrimaryIssueMessage = (issues: ApplicationIssue[], fallbackMessage: string): string =>
-  issues[0]?.message || fallbackMessage;
+  issues[0]?.userSafeMessage || issues[0]?.message || fallbackMessage;
 
 export const resolveCensusEmailSendOutcomePresentation = <T>(
   result: ApplicationOutcome<T>,
@@ -37,7 +37,7 @@ export const resolveCensusEmailSendOutcomePresentation = <T>(
       nextStatus: 'success',
       error: null,
       alertTitle: options.partialTitle,
-      alertMessage: result.issues.map(issue => issue.message).join('\n'),
+      alertMessage: result.issues.map(issue => issue.userSafeMessage || issue.message).join('\n'),
       state: result.status === 'partial' ? 'pending' : 'degraded',
       actionRequired: false,
     };

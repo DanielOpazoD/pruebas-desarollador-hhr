@@ -1,4 +1,5 @@
 import { PatientData } from '@/types/domain/patient';
+import { formatCensusIsoDate } from '@/shared/census/censusPresentation';
 export interface SurveyData {
   diagnostico: string;
   peso: string;
@@ -41,7 +42,7 @@ export const mapSourceToValue = (
     case 'bed.name':
       return data.bedName;
     case 'today.date':
-      return new Date().toLocaleDateString('es-CL');
+      return formatCensusIsoDate(new Date().toISOString().split('T')[0]);
     case 'survey.diagnosis':
       return data.survey.diagnostico;
     case 'survey.weight':

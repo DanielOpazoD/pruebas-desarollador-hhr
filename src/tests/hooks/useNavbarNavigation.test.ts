@@ -10,6 +10,15 @@ vi.mock('@/context/AuthContext', () => ({
 
 vi.mock('@/shared/access/operationalAccessPolicy', () => ({
   canUseAdminMaintenanceActions: (role: string) => role === 'admin',
+  canAccessAppModuleRoute: ({
+    role,
+    module,
+    visibleModules,
+  }: {
+    role: string;
+    module: string;
+    visibleModules?: string[];
+  }) => role === 'admin' || Boolean(visibleModules?.includes(module)),
 }));
 
 vi.mock('@/constants/navigationConfig', () => ({

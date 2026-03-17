@@ -40,6 +40,12 @@ const pushRule = (appliedRules: LegacyMigrationRule[], rule: LegacyMigrationRule
   }
 };
 
+const pushRecoveredIssue = (recoveredIssues: string[], issue: string): void => {
+  if (!recoveredIssues.includes(issue)) {
+    recoveredIssues.push(issue);
+  }
+};
+
 const migrateLegacyNurses = (
   record: LegacyDailyRecordShape,
   migrated: DailyRecord,
@@ -103,14 +109,19 @@ const enforceSchemaVersionFloor = (
   }
 };
 
-const reconcileLegacyPatientIdentity = (patient: DailyRecord['beds'][string] | undefined): void => {
+const reconcileLegacyPatientIdentity = (
+  patient: DailyRecord['beds'][string] | undefined,
+  recoveredIssues: string[]
+): void => {
   if (!patient) {
     return;
   }
 
+  const patientReference = patient.bedId || patient.patientName || 'cama_sin_id';
   const normalizedIdentityValue = normalizeLegacyIdentityValue(patient.rut);
   if (normalizedIdentityValue !== patient.rut) {
     patient.rut = normalizedIdentityValue;
+    pushRecoveredIssue(recoveredIssues, `identity_value_normalized:${patientReference}`);
   }
 
   if (
@@ -122,9 +133,11 @@ const reconcileLegacyPatientIdentity = (patient: DailyRecord['beds'][string] | u
     })
   ) {
     Object.assign(patient, resolveLegacyNameParts(patient.patientName));
+    pushRecoveredIssue(recoveredIssues, `name_parts_reconciled:${patientReference}`);
   }
 
   const inferredDocumentType = inferDocumentTypeFromIdentity(patient.rut);
+  const previousDocumentType = patient.documentType;
   if (
     inferredDocumentType &&
     (!patient.documentType ||
@@ -132,22 +145,32 @@ const reconcileLegacyPatientIdentity = (patient: DailyRecord['beds'][string] | u
       (!patient.rut && patient.documentType !== inferredDocumentType))
   ) {
     patient.documentType = inferredDocumentType;
+    if (previousDocumentType !== patient.documentType) {
+      pushRecoveredIssue(recoveredIssues, `document_type_reconciled:${patientReference}`);
+    }
   }
 
+  const previousIdentityStatus = patient.identityStatus;
   if (!patient.rut) {
     patient.identityStatus = 'provisional';
   } else if (!patient.identityStatus || patient.identityStatus === 'provisional') {
     patient.identityStatus = 'official';
   }
+  if (previousIdentityStatus !== patient.identityStatus) {
+    pushRecoveredIssue(recoveredIssues, `identity_status_reconciled:${patientReference}`);
+  }
 
   if (patient.clinicalCrib) {
-    reconcileLegacyPatientIdentity(patient.clinicalCrib);
+    reconcileLegacyPatientIdentity(patient.clinicalCrib, recoveredIssues);
   }
 };
 
-const reconcileLegacyPatientIdentityAcrossBeds = (migrated: DailyRecord): void => {
+const reconcileLegacyPatientIdentityAcrossBeds = (
+  migrated: DailyRecord,
+  recoveredIssues: string[]
+): void => {
   Object.values(migrated.beds || {}).forEach(patient => {
-    reconcileLegacyPatientIdentity(patient);
+    reconcileLegacyPatientIdentity(patient, recoveredIssues);
   });
 };
 
@@ -199,6 +222,7 @@ export const migrateLegacyDataWithReport = (
 ): DailyRecordMigrationResult => {
   const normalizedRecord = record as LegacyDailyRecordShape;
   const appliedRules: LegacyMigrationRule[] = [];
+  const recoveredIssues: string[] = [];
   const schemaMigration = migrateRecordSchemaToCurrent(record, date);
   const compatibilityAssessment = assessSchemaCompatibility(record);
 
@@ -224,13 +248,14 @@ export const migrateLegacyDataWithReport = (
   migrateLegacyNurses(normalizedRecord, migrated, appliedRules);
   migrateLegacyTens(normalizedRecord, migrated, appliedRules);
   if (compatibilityAssessment.legacyBridgeCandidate) {
-    reconcileLegacyPatientIdentityAcrossBeds(migrated);
+    reconcileLegacyPatientIdentityAcrossBeds(migrated, recoveredIssues);
   }
   enforceSchemaVersionFloor(migrated, appliedRules, schemaMigration.plan.sourceVersion);
 
   return {
     record: migrated,
     appliedRules,
+    recoveredIssues,
     compatibilityIntensity: classifyCompatibilityIntensity(
       appliedRules,
       compatibilityAssessment.disposition

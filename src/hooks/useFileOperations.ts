@@ -50,12 +50,17 @@ export const useFileOperations = (
   };
 
   const handleExportJSON = () => {
-    try {
-      ExportService.exportDataJSON();
-      dispatchNotification(buildExportJsonNotification('success'));
-    } catch (_err) {
-      dispatchNotification(buildExportJsonNotification('error'));
-    }
+    void ExportService.exportDataJSONWithResult()
+      .then(outcome => {
+        if (outcome.status === 'success') {
+          dispatchNotification(buildExportJsonNotification('success'));
+          return;
+        }
+        dispatchNotification(buildExportJsonNotification('error'));
+      })
+      .catch(() => {
+        dispatchNotification(buildExportJsonNotification('error'));
+      });
   };
 
   const handleExportCSV = () => {

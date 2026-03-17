@@ -140,12 +140,20 @@ describe('Data Migration Service - Staff Fields', () => {
       schemaVersion: 0,
     });
 
-    const migrated = migrateLegacyData(record, mockDate);
+    const migrated = migrateLegacyDataWithReport(record, mockDate);
 
-    expect(migrated.beds.R1.documentType).toBe('Pasaporte');
-    expect(migrated.beds.R1.identityStatus).toBe('official');
-    expect(migrated.beds.R2.rut).toBe('');
-    expect(migrated.beds.R2.identityStatus).toBe('provisional');
+    expect(migrated.record.beds.R1.documentType).toBe('Pasaporte');
+    expect(migrated.record.beds.R1.identityStatus).toBe('official');
+    expect(migrated.record.beds.R2.rut).toBe('');
+    expect(migrated.record.beds.R2.identityStatus).toBe('provisional');
+    expect(migrated.recoveredIssues).toEqual(
+      expect.arrayContaining([
+        'document_type_reconciled:R1',
+        'identity_status_reconciled:R1',
+        'identity_value_normalized:R2',
+        'identity_status_reconciled:R2',
+      ])
+    );
   });
 
   it('should report the legacy compatibility rules that were applied', () => {

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   exportDataJSON,
+  exportDataJSONWithResult,
   exportDataCSV,
   exportDataCSVWithResult,
   importDataJSON,
@@ -99,6 +100,23 @@ describe('exportService', () => {
 
       expect(recordStorage.getAllRecords).toHaveBeenCalled();
       expect(mockElement.click).toHaveBeenCalled();
+    });
+
+    it('returns a typed success when exporting JSON succeeds', async () => {
+      const mockElement = { click: vi.fn() };
+      vi.spyOn(document, 'createElement').mockReturnValue(
+        mockElement as unknown as HTMLAnchorElement
+      );
+      vi.spyOn(document.body, 'appendChild').mockImplementation(node => node as unknown as Node);
+      vi.spyOn(document.body, 'removeChild').mockImplementation(node => node as unknown as Node);
+      vi.mocked(recordStorage.getAllRecords).mockResolvedValue({
+        '2025-01-01': mockRecord,
+      });
+
+      const result = await exportDataJSONWithResult();
+
+      expect(result.status).toBe('success');
+      expect(result.data.exported).toBe(true);
     });
   });
 

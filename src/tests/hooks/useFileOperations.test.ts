@@ -17,6 +17,11 @@ vi.mock('@/context/UIContext', () => ({
 // Mock export service
 vi.mock('@/services/exporters/exportService', () => ({
   exportDataJSON: vi.fn(),
+  exportDataJSONWithResult: vi.fn().mockResolvedValue({
+    status: 'success',
+    data: { exported: true },
+    issues: [],
+  }),
   exportDataCSV: vi.fn(),
   exportDataCSVWithResult: vi.fn().mockReturnValue({
     status: 'success',
@@ -64,7 +69,7 @@ describe('useFileOperations', () => {
       result.current.handleExportJSON();
     });
 
-    expect(ExportService.exportDataJSON).toHaveBeenCalled();
+    expect(ExportService.exportDataJSONWithResult).toHaveBeenCalled();
   });
 
   it('should export CSV', () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  canAccessAppModuleRoute,
   canOpenTransferDocuments,
   canManageGlobalCensusEmailRecipients,
   canEditMedicalHandoffForDate,
@@ -51,6 +52,20 @@ describe('operationalAccessPolicy', () => {
 
     expect(canOpenTransferDocuments('admin')).toBe(true);
     expect(canOpenTransferDocuments('doctor_specialist')).toBe(false);
+    expect(
+      canAccessAppModuleRoute({
+        role: 'admin',
+        module: 'DATA_MAINTENANCE',
+        visibleModules: ['DATA_MAINTENANCE'],
+      })
+    ).toBe(true);
+    expect(
+      canAccessAppModuleRoute({
+        role: 'nurse_hospital',
+        module: 'DATA_MAINTENANCE',
+        visibleModules: ['DATA_MAINTENANCE'],
+      })
+    ).toBe(false);
   });
 
   it('keeps medical handoff edit access bound to specialist current-day policy', () => {

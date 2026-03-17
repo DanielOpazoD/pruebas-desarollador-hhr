@@ -1,7 +1,10 @@
 import { useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { NAVIGATION_CONFIG, ModuleType } from '@/constants/navigationConfig';
-import { canUseAdminMaintenanceActions } from '@/shared/access/operationalAccessPolicy';
+import {
+  canAccessAppModuleRoute,
+  canUseAdminMaintenanceActions,
+} from '@/shared/access/operationalAccessPolicy';
 
 /**
  * Hook to filter and categorize navigation items based on user roles and permissions.
@@ -24,6 +27,16 @@ export const useNavbarNavigation = (
 
       // 3. Module visibility (from permissions.ts)
       if (item.requiredModule && !visibleModules.includes(item.requiredModule)) return false;
+      if (
+        item.module &&
+        !canAccessAppModuleRoute({
+          role,
+          module: item.module,
+          visibleModules,
+        })
+      ) {
+        return false;
+      }
 
       return true;
     });

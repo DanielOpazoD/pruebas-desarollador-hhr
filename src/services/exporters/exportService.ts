@@ -17,10 +17,20 @@ import {
 const exportServiceLogger = logger.child('ExportService');
 
 export const exportDataJSON = async () => {
+  const result = await exportDataJSONWithResult();
+  if (result.status !== 'success') {
+    return;
+  }
+};
+
+export const exportDataJSONWithResult = async (): Promise<
+  ApplicationOutcome<{ exported: boolean }>
+> => {
   const data = await getAllRecords();
   const jsonString = JSON.stringify(data, null, 2);
   const blob = new Blob([jsonString], { type: 'application/json' });
   downloadBlob(blob, `hanga_roa_respaldo_${new Date().toISOString().split('T')[0]}.json`);
+  return createApplicationSuccess({ exported: true });
 };
 
 export const exportDataCSV = (record: DailyRecord | null) => {

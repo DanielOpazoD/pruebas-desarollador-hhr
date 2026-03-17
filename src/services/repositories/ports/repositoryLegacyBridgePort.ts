@@ -12,6 +12,7 @@ export interface LegacyBridgeLoadResult {
   compatibilityTier: 'legacy_bridge' | 'none';
   compatibilityIntensity: MigrationCompatibilityIntensity;
   migrationRulesApplied: LegacyMigrationRule[];
+  recoveredIssues: string[];
   cachedLocally: boolean;
   candidatePaths?: string[];
   auditId?: string;

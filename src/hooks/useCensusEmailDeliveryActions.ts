@@ -16,6 +16,9 @@ import {
   resolveShareLinkRole,
 } from '@/hooks/controllers/censusEmailActionController';
 import { resolveCensusEmailSendOutcomePresentation } from '@/hooks/controllers/censusEmailOutcomeController';
+import { logger } from '@/services/utils/loggerService';
+
+const censusEmailDeliveryLogger = logger.child('useCensusEmailDeliveryActions');
 
 export type CensusEmailSendStatus = 'idle' | 'loading' | 'success' | 'error';
 
@@ -211,7 +214,7 @@ export const useCensusEmailDeliveryActions = ({
           await browserRuntime.writeClipboard(link);
           await alert(buildClipboardCopyMessage(link), 'Link Copiado');
         } catch (err) {
-          console.error('Clipboard error', err);
+          censusEmailDeliveryLogger.warn('Clipboard write failed for census share link', err);
           await alert('No se pudo copiar el link. Intenta manualmente: ' + link);
         }
       }

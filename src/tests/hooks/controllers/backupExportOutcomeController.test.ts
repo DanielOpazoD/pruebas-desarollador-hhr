@@ -27,7 +27,9 @@ describe('backupExportOutcomeController', () => {
 
   it('maps partial to warning notification', () => {
     const notice = presentBackupExportOutcome(
-      createApplicationPartial(null, [{ kind: 'unknown', message: 'backup warning' }]),
+      createApplicationPartial(null, [
+        { kind: 'unknown', message: 'backup warning', userSafeMessage: 'warning safe' },
+      ]),
       {
         successTitle: 'ok',
         partialTitle: 'partial',
@@ -37,14 +39,16 @@ describe('backupExportOutcomeController', () => {
     );
 
     expect(notice.channel).toBe('warning');
-    expect(notice.message).toContain('backup warning');
+    expect(notice.message).toContain('warning safe');
     expect(notice.state).toBe('pending');
     expect(notice.actionRequired).toBe(false);
   });
 
   it('maps failed to error notification', () => {
     const notice = presentBackupExportOutcome(
-      createApplicationFailed(null, [{ kind: 'unknown', message: 'broken' }]),
+      createApplicationFailed(null, [
+        { kind: 'unknown', message: 'broken', userSafeMessage: 'broken safe' },
+      ]),
       {
         successTitle: 'ok',
         partialTitle: 'partial',
@@ -56,7 +60,7 @@ describe('backupExportOutcomeController', () => {
     expect(notice).toEqual({
       channel: 'error',
       title: 'failed',
-      message: 'broken',
+      message: 'broken safe',
       state: 'blocked',
       actionRequired: true,
     });

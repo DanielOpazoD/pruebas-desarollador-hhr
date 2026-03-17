@@ -15,6 +15,7 @@ const buildResult = (overrides: Partial<LegacyBridgeLoadResult> = {}): LegacyBri
   compatibilityTier: 'legacy_bridge',
   compatibilityIntensity: 'legacy_schema_bridge',
   migrationRulesApplied: [],
+  recoveredIssues: [],
   cachedLocally: false,
   candidatePaths: ['records/2025-01-01'],
   retirementPhase: 'restrict',

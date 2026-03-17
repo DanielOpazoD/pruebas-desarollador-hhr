@@ -31,6 +31,22 @@ interface UploadPdfOptions {
   successMessage?: string;
 }
 
+const resolveClinicalDocumentExportOutcomeError = <T>(
+  outcome: ApplicationOutcome<T>,
+  fallback: string
+): string | null => {
+  if (outcome.status === 'success') {
+    return null;
+  }
+
+  return (
+    outcome.userSafeMessage ||
+    outcome.issues[0]?.userSafeMessage ||
+    outcome.issues[0]?.message ||
+    fallback
+  );
+};
+
 const loadClinicalDocumentPdfExportUseCase = async () =>
   import('@/application/clinical-documents/clinicalDocumentPdfExportUseCase').then(
     module => module.executeExportClinicalDocumentPdf
@@ -73,14 +89,17 @@ export const useClinicalDocumentWorkspaceExportActions = ({
           context: { documentId: selectedDocument.id },
           allowSuccess: true,
         });
-        if (result.status !== 'success' || !result.data) {
-          const failureMessage = result.issues[0]?.message || 'No se pudo exportar el PDF clínico.';
+        const outcomeError = resolveClinicalDocumentExportOutcomeError(
+          result,
+          'No se pudo exportar el PDF clínico.'
+        );
+        if (outcomeError || !result.data) {
           recordOperationalTelemetry({
             category: 'export',
             status: 'failed',
             operation: 'export_clinical_document_pdf',
             date: selectedDocument.sourceDailyRecordDate,
-            issues: [failureMessage],
+            issues: [outcomeError || 'No se pudo exportar el PDF clínico.'],
             context: { documentId: selectedDocument.id },
           });
           setDraft(prev =>
@@ -90,15 +109,12 @@ export const useClinicalDocumentWorkspaceExportActions = ({
                   pdf: {
                     ...prev.pdf,
                     exportStatus: 'failed',
-                    exportError: failureMessage,
+                    exportError: outcomeError || 'No se pudo exportar el PDF clínico.',
                   },
                 }
               : prev
           );
-          notify.error(
-            'Falló la exportación',
-            'El documento quedó guardado, pero el PDF no se pudo subir.'
-          );
+          notify.error('Falló la exportación', outcomeError || 'El PDF no se pudo subir.');
           return;
         }
         setDraft(prev => (prev ? { ...prev, pdf: result.data!.pdf } : prev));
@@ -132,7 +148,9 @@ export const useClinicalDocumentWorkspaceExportActions = ({
         );
         notify.error(
           'Falló la exportación',
-          'El documento quedó guardado, pero el PDF no se pudo subir.'
+          error instanceof Error
+            ? error.message
+            : 'El documento quedó guardado, pero el PDF no se pudo subir.'
         );
       } finally {
         setIsUploadingPdf(false);

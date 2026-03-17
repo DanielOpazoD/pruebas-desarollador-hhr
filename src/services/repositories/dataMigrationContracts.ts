@@ -21,6 +21,7 @@ export type MigrationCompatibilityIntensity =
 export interface DailyRecordMigrationResult {
   record: DailyRecord;
   appliedRules: LegacyMigrationRule[];
+  recoveredIssues: string[];
   compatibilityIntensity: MigrationCompatibilityIntensity;
   schemaPlan: SchemaMigrationPlan;
   compatibilityDisposition: SchemaCompatibilityDisposition;

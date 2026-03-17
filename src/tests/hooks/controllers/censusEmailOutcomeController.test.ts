@@ -25,7 +25,9 @@ describe('censusEmailOutcomeController', () => {
 
   it('maps partial outcome to success state with warning alert', () => {
     const presentation = resolveCensusEmailSendOutcomePresentation(
-      createApplicationPartial({}, [{ kind: 'unknown', message: 'backup warning' }]),
+      createApplicationPartial({}, [
+        { kind: 'unknown', message: 'backup warning', userSafeMessage: 'warning safe' },
+      ]),
       {
         fallbackErrorMessage: 'fallback',
         partialTitle: 'partial',
@@ -35,14 +37,20 @@ describe('censusEmailOutcomeController', () => {
 
     expect(presentation.nextStatus).toBe('success');
     expect(presentation.alertTitle).toBe('partial');
-    expect(presentation.alertMessage).toContain('backup warning');
+    expect(presentation.alertMessage).toContain('warning safe');
     expect(presentation.state).toBe('pending');
     expect(presentation.actionRequired).toBe(false);
   });
 
   it('maps validation failures to validation title when requested', () => {
     const presentation = resolveCensusEmailSendOutcomePresentation(
-      createApplicationFailed(null, [{ kind: 'validation', message: 'missing recipient' }]),
+      createApplicationFailed(null, [
+        {
+          kind: 'validation',
+          message: 'missing recipient',
+          userSafeMessage: 'recipient safe',
+        },
+      ]),
       {
         fallbackErrorMessage: 'fallback',
         partialTitle: 'partial',
@@ -53,7 +61,7 @@ describe('censusEmailOutcomeController', () => {
     );
 
     expect(presentation.nextStatus).toBe('error');
-    expect(presentation.error).toBe('missing recipient');
+    expect(presentation.error).toBe('recipient safe');
     expect(presentation.alertTitle).toBe('validation');
     expect(presentation.state).toBe('blocked');
     expect(presentation.actionRequired).toBe(true);

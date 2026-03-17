@@ -41,6 +41,7 @@ describe('legacyRecordBridgeService', () => {
     expect(result.auditId).toBeTruthy();
     expect(result.retirementPhase).toBe('restrict');
     expect(result.candidatePaths?.[0]).toContain('hospitals/hanga_roa/dailyRecords/2025-01-01');
+    expect(result.recoveredIssues).toEqual(expect.any(Array));
     expect(saveRecord).toHaveBeenCalled();
     expect(getLegacyBridgeUsageSummary().bridgedOperations).toBeGreaterThan(0);
   });

@@ -136,10 +136,7 @@ describe('useClinicalDocumentWorkspaceExportActions', () => {
       await result.current.handleUploadPdf();
     });
 
-    expect(notify.error).toHaveBeenCalledWith(
-      'Falló la exportación',
-      'El documento quedó guardado, pero el PDF no se pudo subir.'
-    );
+    expect(notify.error).toHaveBeenCalledWith('Falló la exportación', 'drive down');
     expect(setDraft).toHaveBeenCalledWith(expect.any(Function));
   });
 
