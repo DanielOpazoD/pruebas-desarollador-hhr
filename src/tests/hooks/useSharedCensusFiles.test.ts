@@ -109,6 +109,28 @@ describe('useSharedCensusFiles', () => {
     });
   });
 
+  it('prefers userSafeMessage when shared census listing fails', async () => {
+    const runtime = {
+      alert: vi.fn(),
+      open: vi.fn(),
+    };
+    vi.mocked(executeLoadSharedCensusFiles).mockResolvedValue({
+      status: 'failed',
+      data: [],
+      userSafeMessage: 'La carpeta compartida no está disponible en este momento.',
+      issues: [{ kind: 'unknown', message: 'Raw storage listing failure' }],
+    });
+
+    const { result } = renderHook(() => useSharedCensusFiles(accessUser, runtime));
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.loadError).toBe(
+        'La carpeta compartida no está disponible en este momento.'
+      );
+    });
+  });
+
   it('ignores stale fetch responses when a newer fetch is in flight', async () => {
     let resolveFirst!: (value: { status: 'success'; data: StoredCensusFile[]; issues: [] }) => void;
 

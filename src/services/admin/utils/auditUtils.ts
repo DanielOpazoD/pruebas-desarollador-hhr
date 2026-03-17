@@ -85,6 +85,21 @@ export const parseAuditTimestamp = (timestamp: unknown): Date => {
   return new Date(0);
 };
 
+export const formatAuditTimestamp = (timestamp: unknown, locale = 'es-CL'): string => {
+  const date = parseAuditTimestamp(timestamp);
+  if (date.getTime() === 0) return 'Fecha desconocida';
+
+  return date.toLocaleString(locale, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+};
+
 /**
  * Get user display name if available
  */

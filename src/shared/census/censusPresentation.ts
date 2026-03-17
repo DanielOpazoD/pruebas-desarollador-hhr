@@ -47,3 +47,22 @@ export const formatCensusMonthName = (isoDate: string, locale = 'es-CL'): string
   const monthName = parsed.toLocaleString(locale, { month: 'long' });
   return monthName.charAt(0).toUpperCase() + monthName.slice(1);
 };
+
+export const formatCensusDateTime = (isoTimestamp?: string | null, locale = 'es-CL'): string => {
+  if (!isoTimestamp) {
+    return 'sin registro';
+  }
+
+  const parsed = new Date(isoTimestamp);
+  if (Number.isNaN(parsed.getTime())) {
+    return isoTimestamp;
+  }
+
+  return parsed.toLocaleString(locale, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};

@@ -13,6 +13,7 @@ import {
   Database,
 } from 'lucide-react';
 import clsx from 'clsx';
+import { formatAuditTimestamp } from '@/services/admin/utils/auditUtils';
 
 export const ErrorDashboard: React.FC = () => {
   const [logs, setLogs] = useState<ErrorLog[]>([]);
@@ -113,7 +114,7 @@ export const ErrorDashboard: React.FC = () => {
                     <h3 className="font-bold text-slate-800">{log.message}</h3>
                     <div className="flex gap-4 mt-1">
                       <span className="flex items-center gap-1 text-[11px] text-slate-500">
-                        <Clock size={12} /> {new Date(log.timestamp).toLocaleString()}
+                        <Clock size={12} /> {formatAuditTimestamp(log.timestamp)}
                       </span>
                       {log.url && (
                         <span className="flex items-center gap-1 text-[11px] text-slate-500 max-w-[200px] truncate">

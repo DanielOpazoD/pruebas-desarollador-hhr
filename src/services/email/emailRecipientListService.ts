@@ -224,7 +224,12 @@ export const saveGlobalEmailRecipientList = async ({
     updatedByEmail,
   });
   if (result.status !== 'success') {
-    throw new Error(result.issues[0]?.message || 'No se pudo guardar la lista global.');
+    throw new Error(
+      result.userSafeMessage ||
+        result.issues[0]?.userSafeMessage ||
+        result.issues[0]?.message ||
+        'No se pudo guardar la lista global.'
+    );
   }
 };
 
@@ -272,7 +277,12 @@ export const saveGlobalEmailRecipientListWithResult = async ({
 export const deleteGlobalEmailRecipientList = async (listId: string): Promise<void> => {
   const result = await deleteGlobalEmailRecipientListWithResult(listId);
   if (result.status !== 'success') {
-    throw new Error(result.issues[0]?.message || 'No se pudo eliminar la lista global.');
+    throw new Error(
+      result.userSafeMessage ||
+        result.issues[0]?.userSafeMessage ||
+        result.issues[0]?.message ||
+        'No se pudo eliminar la lista global.'
+    );
   }
 };
 

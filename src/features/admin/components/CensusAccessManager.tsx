@@ -39,6 +39,18 @@ export const CensusAccessManager: React.FC = () => {
     loadEmails();
   }, []);
 
+  const resolveOutcomeMessage = (
+    outcome: {
+      userSafeMessage?: string;
+      issues?: Array<{ userSafeMessage?: string; message?: string }>;
+    },
+    fallbackMessage: string
+  ): string =>
+    outcome.userSafeMessage ||
+    outcome.issues?.[0]?.userSafeMessage ||
+    outcome.issues?.[0]?.message ||
+    fallbackMessage;
+
   const loadEmails = async () => {
     setIsLoading(true);
     setError(null);
@@ -46,7 +58,7 @@ export const CensusAccessManager: React.FC = () => {
       const outcome = await executeGetAuthorizedCensusEmails();
       setAuthorizedEmails((outcome.data ?? []).sort((a, b) => a.email.localeCompare(b.email)));
       if (outcome.status !== 'success') {
-        setError(outcome.issues[0]?.message || 'Error al cargar la lista de correos.');
+        setError(resolveOutcomeMessage(outcome, 'Error al cargar la lista de correos.'));
       }
     } finally {
       setIsLoading(false);
@@ -66,7 +78,7 @@ export const CensusAccessManager: React.FC = () => {
         addedBy: currentUser.uid,
       });
       if (outcome.status === 'failed') {
-        setError(outcome.issues[0]?.message || 'Error al autorizar correo.');
+        setError(resolveOutcomeMessage(outcome, 'Error al autorizar correo.'));
         return;
       }
       setNewEmail('');
@@ -87,7 +99,7 @@ export const CensusAccessManager: React.FC = () => {
     try {
       const outcome = await executeRemoveAuthorizedCensusEmail(email);
       if (outcome.status === 'failed') {
-        setError(outcome.issues[0]?.message || 'Error al eliminar el correo.');
+        setError(resolveOutcomeMessage(outcome, 'Error al eliminar el correo.'));
         return;
       }
       setAuthorizedEmails(prev => prev.filter(e => e.email !== email));

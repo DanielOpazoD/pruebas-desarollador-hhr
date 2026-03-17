@@ -20,7 +20,7 @@ import {
   Download,
 } from 'lucide-react';
 import { AuditAction, AuditLogEntry } from '@/types/audit';
-import { parseAuditTimestamp } from '@/services/admin/utils/auditUtils';
+import { formatAuditTimestamp, parseAuditTimestamp } from '@/services/admin/utils/auditUtils';
 
 /** Firebase Timestamp-like object */
 interface FirebaseTimestamp {
@@ -35,18 +35,7 @@ export { parseAuditTimestamp };
 
 // Format any timestamp-like value to readable format
 export const formatTimestamp = (timestamp: TimestampValue): string => {
-  const date = parseAuditTimestamp(timestamp);
-  if (date.getTime() === 0) return 'Fecha desconocida';
-
-  return date.toLocaleString('es-CL', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  });
+  return formatAuditTimestamp(timestamp);
 };
 
 // Action Icon Mapping

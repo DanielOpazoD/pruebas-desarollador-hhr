@@ -21,6 +21,12 @@ export interface ClinicalDocumentDriveUploadResult {
   folderPath: string;
 }
 
+const resolveDriveOutcomeError = <T>(result: ApplicationOutcome<T>, fallback: string): string =>
+  result.userSafeMessage ||
+  result.issues[0]?.userSafeMessage ||
+  result.issues[0]?.message ||
+  fallback;
+
 const findFolderByName = async (
   token: string,
   folderName: string,
@@ -108,9 +114,7 @@ export const uploadClinicalDocumentPdfToDrive = async (
   );
   if (result.status !== 'success' || !result.data) {
     throw new Error(
-      result.issues[0]?.userSafeMessage ||
-        result.issues[0]?.message ||
-        'No se pudo subir el documento clinico a Google Drive.'
+      resolveDriveOutcomeError(result, 'No se pudo subir el documento clinico a Google Drive.')
     );
   }
   return result.data;

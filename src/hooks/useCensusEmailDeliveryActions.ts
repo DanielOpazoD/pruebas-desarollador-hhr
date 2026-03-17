@@ -73,7 +73,12 @@ export const useCensusEmailDeliveryActions = ({
       if (result.status === 'success') {
         return result.data;
       }
-      await alert(result.issues[0]?.message || 'No se pudo generar el link de acceso.');
+      await alert(
+        result.userSafeMessage ||
+          result.issues[0]?.userSafeMessage ||
+          result.issues[0]?.message ||
+          'No se pudo generar el link de acceso.'
+      );
       return null;
     },
     [alert, browserRuntime]

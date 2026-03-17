@@ -108,6 +108,21 @@ describe('useBackupFiles', () => {
     expect(executeDeleteBackupCrudFile).toHaveBeenCalledWith('test-1');
   });
 
+  it('prefers userSafeMessage when listing files fails', async () => {
+    vi.mocked(executeListBackupCrudFiles).mockResolvedValueOnce({
+      status: 'failed',
+      data: [],
+      issues: [{ kind: 'unknown', message: 'raw message', userSafeMessage: 'safe list message' }],
+      userSafeMessage: 'safe list message',
+    });
+
+    const { result } = renderHook(() => useBackupFiles());
+
+    await waitFor(() => {
+      expect(result.current.error).toBe('safe list message');
+    });
+  });
+
   it('should check if backup exists', async () => {
     const { result } = renderHook(() => useBackupFiles());
 

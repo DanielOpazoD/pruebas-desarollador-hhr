@@ -169,6 +169,35 @@ describe('useHandoffCommunication', () => {
     });
   });
 
+  it('prefers userSafeMessage when handoff link generation fails', async () => {
+    ensureMedicalHandoffSignatureLink.mockResolvedValue({
+      status: 'failed',
+      data: null,
+      userSafeMessage: 'La firma médica no está disponible para este perfil.',
+      issues: [{ kind: 'permission', message: 'raw permission failure' }],
+    });
+
+    const { result } = renderHook(() =>
+      useHandoffCommunication(
+        createRecord(),
+        [],
+        vi.fn(),
+        ensureMedicalHandoffSignatureLink,
+        onSuccess
+      )
+    );
+
+    act(() => {
+      result.current.handleShareLink();
+    });
+
+    await waitFor(() => {
+      expect(onSuccess).toHaveBeenCalledWith(
+        'La firma médica no está disponible para este perfil.'
+      );
+    });
+  });
+
   it('opens manual WhatsApp URL through runtime adapter', async () => {
     const templates: MessageTemplate[] = [
       { name: 'handoff', type: 'handoff', content: 'handoff-template' },

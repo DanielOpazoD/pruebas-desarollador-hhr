@@ -166,6 +166,21 @@ describe('clinicalDocumentDriveService', () => {
     expect(result.issues[0]?.message).toContain('auth failed');
   });
 
+  it('throws the userSafeMessage when the legacy wrapper is used over a failed upload outcome', async () => {
+    mockRequestAccessToken.mockRejectedValueOnce(new Error('auth failed'));
+
+    await expect(
+      uploadClinicalDocumentPdfToDrive(
+        new Blob(['pdf'], { type: 'application/pdf' }),
+        'Epicrisis.pdf',
+        'epicrisis',
+        'Paciente Demo',
+        '11.111.111-1',
+        'episode-err'
+      )
+    ).rejects.toThrow('auth failed');
+  });
+
   it('returns a typed folder listing failure when Drive list fails', async () => {
     mockListDriveFolders.mockRejectedValueOnce(new Error('drive offline'));
 

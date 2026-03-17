@@ -22,4 +22,24 @@ describe('backupStorageOutcomeController', () => {
       actionRequired: false,
     });
   });
+
+  it('prefers userSafeMessage for listing failures', () => {
+    expect(
+      presentBackupLookupOutcome({
+        status: 'failed',
+        data: {
+          exists: false,
+          lookup: { exists: false, status: 'error' },
+        },
+        userSafeMessage: 'La verificación remota no está disponible por ahora.',
+        issues: [{ kind: 'unknown', message: 'raw lookup failure' }],
+      })
+    ).toEqual({
+      channel: 'error',
+      title: 'Verificación de respaldo fallida',
+      message: 'La verificación remota no está disponible por ahora.',
+      state: 'blocked',
+      actionRequired: true,
+    });
+  });
 });

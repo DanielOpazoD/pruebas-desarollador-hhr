@@ -55,11 +55,11 @@ describe('Excel Export Configuration', () => {
 
   describe('Excel Export Integration', () => {
     it('should route Firebase modules into split firebase manual chunks', () => {
-      const viteConfigSource = readSource('vite.config.ts');
-      expect(viteConfigSource).toContain("has('/node_modules/firebase/')");
-      expect(viteConfigSource).toContain("has('/node_modules/@firebase/')");
-      expect(viteConfigSource).toContain("return 'vendor-firebase-core';");
-      expect(viteConfigSource).toContain("return 'vendor-firebase-aux';");
+      const chunkingPolicySource = readSource('scripts/config/chunkingPolicy.ts');
+      expect(chunkingPolicySource).toContain("has('/node_modules/firebase/')");
+      expect(chunkingPolicySource).toContain("has('/node_modules/@firebase/')");
+      expect(chunkingPolicySource).toContain("return 'vendor-firebase-core';");
+      expect(chunkingPolicySource).toContain("return 'vendor-firebase-aux';");
     });
   });
 });

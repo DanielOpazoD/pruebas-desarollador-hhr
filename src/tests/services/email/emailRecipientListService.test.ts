@@ -13,6 +13,7 @@ import {
   subscribeToGlobalEmailRecipientList,
   subscribeToGlobalEmailRecipientLists,
   deleteGlobalEmailRecipientListWithResult,
+  deleteGlobalEmailRecipientList,
 } from '@/services/email/emailRecipientListService';
 
 vi.mock('@/services/infrastructure/db', () => ({
@@ -115,6 +116,19 @@ describe('emailRecipientListService', () => {
     expect(result.data.saved).toBe(false);
   });
 
+  it('throws userSafeMessage from the save wrapper when persistence fails', async () => {
+    vi.mocked(db.setDoc).mockRejectedValueOnce(new Error('boom'));
+
+    await expect(
+      saveGlobalEmailRecipientList({
+        listId: CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.id,
+        name: CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.name,
+        description: CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.description,
+        recipients: ['a@mail.com'],
+      })
+    ).rejects.toThrow('No se pudo guardar la lista global de destinatarios.');
+  });
+
   it('subscribes to normalized updates', () => {
     const onUpdate = vi.fn();
     let capturedCallback: ((data: unknown) => void) | undefined;
@@ -173,6 +187,14 @@ describe('emailRecipientListService', () => {
 
     expect(result.status).toBe('failed');
     expect(result.data.deleted).toBe(false);
+  });
+
+  it('throws userSafeMessage from the delete wrapper when deletion fails', async () => {
+    vi.mocked(db.deleteDoc).mockRejectedValueOnce(new Error('boom'));
+
+    await expect(deleteGlobalEmailRecipientList('lista-1')).rejects.toThrow(
+      'No se pudo eliminar la lista global de destinatarios.'
+    );
   });
 
   it('subscribes to list collection updates', () => {

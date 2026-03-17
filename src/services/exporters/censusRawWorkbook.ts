@@ -6,6 +6,7 @@ import { formatDateDDMMYYYY } from '@/utils/dateUtils';
 import { createWorkbook } from './excelUtils';
 import { getBedTypeForRecord } from '../../utils/bedTypeUtils';
 import { resolveDayShiftNurses } from '@/services/staff/dailyRecordStaffing';
+import { formatCensusDateTime } from '@/shared/census/censusPresentation';
 
 const getRawHeader = () => [
   'FECHA',
@@ -71,7 +72,7 @@ const generateRawRow = (
     p.surgicalComplication ? 'SI' : 'NO',
     p.isUPC ? 'SI' : 'NO',
     nurses.join(' & '),
-    new Date(lastUpdated).toLocaleString(),
+    formatCensusDateTime(lastUpdated),
   ];
 };
 

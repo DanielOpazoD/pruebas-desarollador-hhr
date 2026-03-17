@@ -32,7 +32,8 @@ export const presentBackupLookupOutcome = (
   outcome: ApplicationOutcome<LookupBackupArchiveStatusOutput>
 ): OutcomePresentation => {
   if (outcome.status === 'failed') {
-    const issueMessage = outcome.issues[0]?.message;
+    const issueMessage =
+      outcome.userSafeMessage || outcome.issues[0]?.userSafeMessage || outcome.issues[0]?.message;
     if (isPermissionLikeLookupFailure(issueMessage)) {
       return createPassiveVerificationPermissionNotice('el respaldo remoto');
     }
@@ -57,7 +58,10 @@ export const presentBackupListingOutcome = (
   if (outcome.status === 'failed') {
     return createErrorNotice(
       'Carga de respaldos fallida',
-      outcome.issues[0]?.message || 'No se pudo cargar la lista de respaldos.'
+      outcome.userSafeMessage ||
+        outcome.issues[0]?.userSafeMessage ||
+        outcome.issues[0]?.message ||
+        'No se pudo cargar la lista de respaldos.'
     );
   }
 

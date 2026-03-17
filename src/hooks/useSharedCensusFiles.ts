@@ -68,7 +68,12 @@ export const useSharedCensusFiles = (
 
       setFiles(outcome.data ?? []);
       if (outcome.status === 'failed') {
-        setLoadError(outcome.issues[0]?.message || 'No se pudieron cargar los archivos del censo.');
+        setLoadError(
+          outcome.userSafeMessage ||
+            outcome.issues[0]?.userSafeMessage ||
+            outcome.issues[0]?.message ||
+            'No se pudieron cargar los archivos del censo.'
+        );
         return;
       }
       setLoadError(null);

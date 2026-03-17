@@ -12,6 +12,7 @@ import {
   executeCheckBackupCrudExists,
 } from '@/application/backup-export/backupFilesUseCases';
 import { BackupFile, BackupFilePreview, BackupFilters, BackupShiftType } from '@/types/backup';
+import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 
 interface UseBackupFilesReturn {
   // State
@@ -51,55 +52,73 @@ export const useBackupFiles = (): UseBackupFilesReturn => {
   const [filters, setFiltersState] = useState<BackupFilters>({});
   const filtersRef = useRef<BackupFilters>({});
 
-  const loadFiles = useCallback(async (newFilters?: BackupFilters) => {
-    setIsLoading(true);
-    setError(null);
+  const resolveOutcomeError = useCallback(
+    <T>(outcome: ApplicationOutcome<T>, fallback: string): string =>
+      outcome.userSafeMessage ||
+      outcome.issues[0]?.userSafeMessage ||
+      outcome.issues[0]?.message ||
+      fallback,
+    []
+  );
 
-    try {
-      const appliedFilters = newFilters || filtersRef.current;
-      const outcome = await executeListBackupCrudFiles(appliedFilters);
-      setFiles(outcome.data ?? []);
+  const loadFiles = useCallback(
+    async (newFilters?: BackupFilters) => {
+      setIsLoading(true);
+      setError(null);
 
-      if (outcome.status !== 'success') {
-        setError(outcome.issues[0]?.message || 'Error al cargar los archivos de respaldo');
+      try {
+        const appliedFilters = newFilters || filtersRef.current;
+        const outcome = await executeListBackupCrudFiles(appliedFilters);
+        setFiles(outcome.data ?? []);
+
+        if (outcome.status !== 'success') {
+          setError(resolveOutcomeError(outcome, 'Error al cargar los archivos de respaldo'));
+        }
+
+        if (newFilters) {
+          filtersRef.current = newFilters;
+          setFiltersState(newFilters);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [resolveOutcomeError]
+  );
+
+  const loadFile = useCallback(
+    async (id: string) => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const outcome = await executeGetBackupCrudFile(id);
+        if (outcome.data) {
+          setSelectedFile(outcome.data);
+          return;
+        }
+
+        setError(resolveOutcomeError(outcome, 'Error al cargar el archivo'));
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [resolveOutcomeError]
+  );
+
+  const removeFile = useCallback(
+    async (id: string): Promise<boolean> => {
+      const outcome = await executeDeleteBackupCrudFile(id);
+      if (outcome.status === 'success') {
+        setFiles(prev => prev.filter(f => f.id !== id));
+        return true;
       }
 
-      if (newFilters) {
-        filtersRef.current = newFilters;
-        setFiltersState(newFilters);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const loadFile = useCallback(async (id: string) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const outcome = await executeGetBackupCrudFile(id);
-      if (outcome.data) {
-        setSelectedFile(outcome.data);
-        return;
-      }
-
-      setError(outcome.issues[0]?.message || 'Error al cargar el archivo');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const removeFile = useCallback(async (id: string): Promise<boolean> => {
-    const outcome = await executeDeleteBackupCrudFile(id);
-    if (outcome.status === 'success') {
-      setFiles(prev => prev.filter(f => f.id !== id));
-      return true;
-    }
-
-    setError(outcome.issues[0]?.message || 'Error al eliminar el archivo');
-    return false;
-  }, []);
+      setError(resolveOutcomeError(outcome, 'Error al eliminar el archivo'));
+      return false;
+    },
+    [resolveOutcomeError]
+  );
 
   const clearSelectedFile = useCallback(() => {
     setSelectedFile(null);
@@ -135,7 +154,7 @@ export const useBackupFiles = (): UseBackupFilesReturn => {
         });
 
         if (!outcome.data) {
-          setError(outcome.issues[0]?.message || 'Error al crear el respaldo');
+          setError(resolveOutcomeError(outcome, 'Error al crear el respaldo'));
           return null;
         }
 
@@ -145,7 +164,7 @@ export const useBackupFiles = (): UseBackupFilesReturn => {
         setIsSaving(false);
       }
     },
-    [loadFiles]
+    [loadFiles, resolveOutcomeError]
   );
 
   const checkExists = useCallback(

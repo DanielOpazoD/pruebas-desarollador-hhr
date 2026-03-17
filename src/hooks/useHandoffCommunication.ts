@@ -19,6 +19,15 @@ import type { ApplicationOutcome } from '@/application/shared/applicationOutcome
  */
 const handoffCommunicationLogger = logger.child('useHandoffCommunication');
 
+const resolveOutcomeMessage = <T>(
+  outcome: ApplicationOutcome<T>,
+  fallbackMessage: string
+): string =>
+  outcome.userSafeMessage ||
+  outcome.issues[0]?.userSafeMessage ||
+  outcome.issues[0]?.message ||
+  fallbackMessage;
+
 export const useHandoffCommunication = (
   record: DailyRecord | null,
   visibleBeds: { id: string }[],
@@ -40,11 +49,7 @@ export const useHandoffCommunication = (
       try {
         const result = await ensureMedicalHandoffSignatureLink(scope);
         if (result.status !== 'success' || !result.data?.handoffUrl) {
-          onSuccess(
-            result.issues[0]?.userSafeMessage ||
-              result.issues[0]?.message ||
-              'No se pudo copiar el enlace al portapapeles.'
-          );
+          onSuccess(resolveOutcomeMessage(result, 'No se pudo copiar el enlace al portapapeles.'));
           return;
         }
         await writeClipboardText(result.data.handoffUrl);
@@ -119,9 +124,7 @@ export const useHandoffCommunication = (
       const handoffLinkResult = await ensureMedicalHandoffSignatureLink('all');
       if (handoffLinkResult.status !== 'success' || !handoffLinkResult.data?.handoffUrl) {
         throw new Error(
-          handoffLinkResult.issues[0]?.userSafeMessage ||
-            handoffLinkResult.issues[0]?.message ||
-            'No se pudo preparar el enlace de firma médica.'
+          resolveOutcomeMessage(handoffLinkResult, 'No se pudo preparar el enlace de firma médica.')
         );
       }
       const handoffUrl = handoffLinkResult.data.handoffUrl;
