@@ -97,6 +97,57 @@ describe('Data Migration Service - Staff Fields', () => {
     expect(Object.keys(migrated.beds).length).toBeGreaterThan(1);
   });
 
+  it('reconciles mismatched split name fields when the source is legacy bridge data', () => {
+    const record = createBaseRecord({
+      beds: {
+        R1: {
+          ...DataFactory.createMockPatient('R1'),
+          patientName: 'Paciente Nuevo Real',
+          firstName: 'Paciente',
+          lastName: 'Antiguo',
+          secondLastName: 'Persistente',
+        },
+      },
+      schemaVersion: 0,
+    });
+
+    const migrated = migrateLegacyData(record, mockDate);
+
+    expect(migrated.beds.R1.patientName).toBe('Paciente Nuevo Real');
+    expect(migrated.beds.R1.firstName).toBe('Paciente');
+    expect(migrated.beds.R1.lastName).toBe('Nuevo');
+    expect(migrated.beds.R1.secondLastName).toBe('Real');
+  });
+
+  it('reconciles legacy identity metadata before the record reaches the runtime', () => {
+    const record = createBaseRecord({
+      beds: {
+        R1: {
+          ...DataFactory.createMockPatient('R1'),
+          patientName: 'Paciente Pasaporte',
+          rut: 'AB1234567',
+          documentType: 'RUT',
+          identityStatus: 'provisional',
+        },
+        R2: {
+          ...DataFactory.createMockPatient('R2'),
+          patientName: 'Paciente Sin Documento',
+          rut: 'null',
+          documentType: 'Pasaporte',
+          identityStatus: 'official',
+        },
+      },
+      schemaVersion: 0,
+    });
+
+    const migrated = migrateLegacyData(record, mockDate);
+
+    expect(migrated.beds.R1.documentType).toBe('Pasaporte');
+    expect(migrated.beds.R1.identityStatus).toBe('official');
+    expect(migrated.beds.R2.rut).toBe('');
+    expect(migrated.beds.R2.identityStatus).toBe('provisional');
+  });
+
   it('should report the legacy compatibility rules that were applied', () => {
     const record = createBaseRecord({
       nurseName: 'Nurse Legacy',

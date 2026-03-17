@@ -14,9 +14,12 @@ import {
   PatientHistoryResult,
   MovementType,
 } from '@/services/patient/patientHistoryService';
+import { logger } from '@/services/utils/loggerService';
 import type { PatientData } from '@/types/domain/patient';
 import type { ReactNode } from 'react';
 import { formatHandoffVerboseDate } from '@/shared/handoff/handoffPresentation';
+
+const patientHistoryLogger = logger.child('PatientHistoryModal');
 
 interface PatientHistoryModalProps {
   isOpen: boolean;
@@ -107,7 +110,7 @@ export const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({
             setError('No se encontró historial para este paciente.');
           }
         } catch (err) {
-          console.error('Error fetching patient history:', err);
+          patientHistoryLogger.warn('Error fetching patient history', err);
           setError('Error al cargar el historial.');
         } finally {
           setIsLoading(false);

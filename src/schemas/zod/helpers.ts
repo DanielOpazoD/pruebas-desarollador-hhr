@@ -46,3 +46,70 @@ export const resolveLegacyNameParts = (
     secondLastName: segments[segments.length - 1],
   };
 };
+
+export const composeNameParts = (
+  firstName: string | undefined,
+  lastName: string | undefined,
+  secondLastName: string | undefined
+): string =>
+  [firstName, lastName, secondLastName]
+    .map(part => String(part || '').trim())
+    .filter(Boolean)
+    .join(' ');
+
+export const normalizeComparableName = (value: string | undefined): string =>
+  String(value || '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+
+export const normalizeLegacyIdentityValue = (value: string | undefined): string => {
+  const normalized = String(value || '')
+    .trim()
+    .replace(/\s+/g, ' ');
+
+  if (!normalized) {
+    return '';
+  }
+
+  const lowered = normalized.toLowerCase();
+  if (lowered === 'null' || lowered === 'undefined' || lowered === 'n/a' || lowered === 'na') {
+    return '';
+  }
+
+  return normalized;
+};
+
+export const inferDocumentTypeFromIdentity = (
+  identityValue: string | undefined
+): 'RUT' | 'Pasaporte' | undefined => {
+  const normalized = normalizeLegacyIdentityValue(identityValue);
+  if (!normalized) {
+    return undefined;
+  }
+
+  return RUT_REGEX.test(normalized) ? 'RUT' : 'Pasaporte';
+};
+
+export const hasMismatchedExplicitNameParts = ({
+  patientName,
+  firstName,
+  lastName,
+  secondLastName,
+}: {
+  patientName: string | undefined;
+  firstName: string | undefined;
+  lastName: string | undefined;
+  secondLastName: string | undefined;
+}): boolean => {
+  const normalizedPatientName = normalizeComparableName(patientName);
+  if (!normalizedPatientName) {
+    return false;
+  }
+
+  const normalizedPartsName = normalizeComparableName(
+    composeNameParts(firstName, lastName, secondLastName)
+  );
+
+  return Boolean(normalizedPartsName) && normalizedPartsName !== normalizedPatientName;
+};

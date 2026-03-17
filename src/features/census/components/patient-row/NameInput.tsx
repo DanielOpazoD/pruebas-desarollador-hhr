@@ -14,18 +14,32 @@ interface NameInputProps extends BaseCellProps {
 }
 
 const normalizePart = (value: string): string => value.trim().replace(/\s+/g, ' ');
+const normalizeComparableName = (value: string): string => normalizePart(value).toLowerCase();
 
 const resolveFullName = (data: NameInputProps['data'], preferLegacyName = false): string => {
   const firstName = data.firstName || '';
   const lastName = data.lastName || '';
   const secondLastName = data.secondLastName || '';
   const hasSplitFields = Boolean(firstName.trim() || lastName.trim() || secondLastName.trim());
+  const fullNameFromParts = [firstName, lastName, secondLastName]
+    .map(normalizePart)
+    .filter(Boolean)
+    .join(' ');
+  const legacyName = normalizePart(data.patientName || '');
 
-  if (!preferLegacyName && hasSplitFields) {
-    return [firstName, lastName, secondLastName].map(normalizePart).filter(Boolean).join(' ');
+  if (
+    !preferLegacyName &&
+    hasSplitFields &&
+    normalizeComparableName(fullNameFromParts) === normalizeComparableName(legacyName)
+  ) {
+    return fullNameFromParts;
   }
 
-  return normalizePart(data.patientName || '');
+  if (!preferLegacyName && hasSplitFields && !legacyName) {
+    return fullNameFromParts;
+  }
+
+  return legacyName;
 };
 
 const isOfficialIdentity = (data: NameInputProps['data']): boolean => {

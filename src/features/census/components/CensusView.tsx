@@ -58,7 +58,7 @@ const CensusViewContent: React.FC<CensusViewProps> = ({
     accessProfile,
   });
 
-  useCensusMigrationBootstrap();
+  useCensusMigrationBootstrap(branch !== 'analytics');
 
   if (branch === 'analytics') {
     return (
@@ -71,7 +71,7 @@ const CensusViewContent: React.FC<CensusViewProps> = ({
   if (branch === 'empty') {
     return (
       <Suspense fallback={<ViewLoader />}>
-        <LazyEmptyDayPrompt {...emptyDayPromptProps} />
+        {emptyDayPromptProps ? <LazyEmptyDayPrompt {...emptyDayPromptProps} /> : null}
       </Suspense>
     );
   }

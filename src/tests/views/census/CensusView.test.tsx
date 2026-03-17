@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { CensusView } from '@/features/census/components/CensusView';
 import { useCensusViewModel } from '@/features/census/hooks/useCensusViewModel';
+import { useCensusMigrationBootstrap } from '@/features/census/hooks/useCensusMigrationBootstrap';
 import { BedType, type BedDefinition } from '@/types';
 
 vi.mock('@/features/census/hooks/useCensusViewModel', () => ({
@@ -91,6 +92,7 @@ describe('CensusView', () => {
   it('renders AnalyticsView when viewMode is ANALYTICS', () => {
     render(<CensusView {...defaultProps} viewMode="ANALYTICS" />);
     expect(screen.getByTestId('analytics-view')).toBeInTheDocument();
+    expect(vi.mocked(useCensusMigrationBootstrap)).toHaveBeenCalledWith(false);
   });
 
   it('renders EmptyDayPrompt when record is missing', async () => {
@@ -99,6 +101,7 @@ describe('CensusView', () => {
     render(<CensusView {...defaultProps} />);
 
     expect(await screen.findByTestId('empty-day-prompt')).toBeInTheDocument();
+    expect(vi.mocked(useCensusMigrationBootstrap)).toHaveBeenCalledWith(true);
   });
 
   it('renders main census sections when record is present', async () => {

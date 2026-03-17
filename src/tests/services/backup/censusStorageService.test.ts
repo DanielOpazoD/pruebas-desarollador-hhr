@@ -1,12 +1,13 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { deleteObject } from 'firebase/storage';
 
-const { refMock, getMetadataMock } = vi.hoisted(() => ({
+const { refMock, getMetadataMock, listAllMock } = vi.hoisted(() => ({
   refMock: vi.fn((_storage: unknown, path: string) => ({
     fullPath: path,
     name: path.split('/').pop(),
   })),
   getMetadataMock: vi.fn(),
+  listAllMock: vi.fn(),
 }));
 
 vi.mock('firebase/storage', () => ({
@@ -15,6 +16,7 @@ vi.mock('firebase/storage', () => ({
   getDownloadURL: vi.fn(),
   deleteObject: vi.fn(),
   getMetadata: getMetadataMock,
+  listAll: listAllMock,
 }));
 
 vi.mock('@/firebaseConfig', () => ({
@@ -42,16 +44,20 @@ describe('censusStorageService', () => {
   });
 
   it('returns true when metadata exists for expected census path', async () => {
-    getMetadataMock.mockResolvedValue({});
+    listAllMock.mockResolvedValue({
+      items: [{ name: '19-02-2026 - Censo Diario.xlsx' }],
+    });
 
     const exists = await checkCensusExists('2026-02-19');
 
     expect(exists).toBe(true);
-    expect(refMock).toHaveBeenCalledWith({}, 'censo-diario/2026/02/19-02-2026 - Censo Diario.xlsx');
+    expect(refMock).toHaveBeenCalledWith({}, 'censo-diario/2026/02');
   });
 
   it('returns false on expected lookup miss', async () => {
-    getMetadataMock.mockRejectedValue({ code: 'storage/object-not-found' });
+    listAllMock.mockResolvedValue({
+      items: [{ name: '18-02-2026 - Censo Diario.xlsx' }],
+    });
 
     const exists = await checkCensusExists('2026-02-19');
 
@@ -59,7 +65,7 @@ describe('censusStorageService', () => {
   });
 
   it('returns detailed restricted status on unauthorized lookup', async () => {
-    getMetadataMock.mockRejectedValue({ code: 'storage/unauthorized' });
+    listAllMock.mockRejectedValue({ code: 'storage/unauthorized' });
 
     const exists = await checkCensusExistsDetailed('2026-02-19');
 

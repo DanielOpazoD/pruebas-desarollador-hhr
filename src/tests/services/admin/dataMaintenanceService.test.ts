@@ -19,8 +19,10 @@ const {
 
 import {
   exportMonthRecords,
+  exportMonthRecordsWithOutcome,
   exportMonthRecordsWithResult,
   exportYearToDateRecords,
+  exportYearToDateRecordsWithOutcome,
   exportYearToDateRecordsWithResult,
   importRecordsFromBackup,
 } from '@/services/admin/dataMaintenanceService';
@@ -135,6 +137,13 @@ describe('dataMaintenanceService', () => {
       reason: 'no_records',
       userSafeMessage: 'No hay registros para exportar en el rango anual seleccionado.',
     });
+
+    await expect(exportYearToDateRecordsWithOutcome(2026)).resolves.toMatchObject({
+      status: 'failed',
+      reason: 'no_records',
+      userSafeMessage: 'No hay registros para exportar en el rango anual seleccionado.',
+      issues: [expect.objectContaining({ kind: 'not_found' })],
+    });
   });
 
   it('exports monthly records after hydrating the selected range from Firestore', async () => {
@@ -195,6 +204,13 @@ describe('dataMaintenanceService', () => {
     await expect(exportMonthRecordsWithResult(2026, 3)).resolves.toMatchObject({
       status: 'success',
       reason: 'unknown',
+    });
+
+    await expect(exportMonthRecordsWithOutcome(2026, 3)).resolves.toMatchObject({
+      status: 'success',
+      data: expect.objectContaining({
+        status: 'success',
+      }),
     });
   });
 

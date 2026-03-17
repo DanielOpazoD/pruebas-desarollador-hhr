@@ -16,6 +16,11 @@ import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { resolvePreferredDailyRecord } from '@/services/repositories/dailyRecordSyncCompatibility';
 import { parseDailyRecordWithDefaultsReport } from '@/schemas/zodSchemas';
 import { logger } from '@/services/utils/loggerService';
+import {
+  createApplicationFailed,
+  createApplicationSuccess,
+  type ApplicationOutcome,
+} from '@/application/shared/applicationOutcome';
 
 export interface MonthBackup {
   version: string;
@@ -48,6 +53,31 @@ export interface DataMaintenanceExportResult {
   userSafeMessage: string;
   recordCount: number;
 }
+
+const toDataMaintenanceOutcome = (
+  result: DataMaintenanceExportResult
+): ApplicationOutcome<DataMaintenanceExportResult | null> =>
+  result.status === 'success'
+    ? createApplicationSuccess(result, [], {
+        reason: result.reason,
+        userSafeMessage: result.userSafeMessage,
+      })
+    : createApplicationFailed(
+        null,
+        [
+          {
+            kind: result.reason === 'no_records' ? 'not_found' : 'unknown',
+            message: result.userSafeMessage,
+            userSafeMessage: result.userSafeMessage,
+            severity: 'warning',
+          },
+        ],
+        {
+          reason: result.reason,
+          userSafeMessage: result.userSafeMessage,
+          severity: 'warning',
+        }
+      );
 
 const dataMaintenanceLogger = logger.child('DataMaintenanceService');
 
@@ -235,6 +265,17 @@ export const exportMonthRecordsWithResult = async (
 export const exportYearToDateRecordsWithResult = async (
   year: number = new Date().getFullYear()
 ): Promise<DataMaintenanceExportResult> => exportYearToDateRecordsInternal(year);
+
+export const exportMonthRecordsWithOutcome = async (
+  year: number,
+  month: number
+): Promise<ApplicationOutcome<DataMaintenanceExportResult | null>> =>
+  toDataMaintenanceOutcome(await exportMonthRecordsInternal(year, month));
+
+export const exportYearToDateRecordsWithOutcome = async (
+  year: number = new Date().getFullYear()
+): Promise<ApplicationOutcome<DataMaintenanceExportResult | null>> =>
+  toDataMaintenanceOutcome(await exportYearToDateRecordsInternal(year));
 
 /**
  * Legacy throw-based compatibility wrappers.

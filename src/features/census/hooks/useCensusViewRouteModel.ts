@@ -45,34 +45,37 @@ export const useCensusViewRouteModel = ({
     [viewMode, viewModel.beds]
   );
 
-  const emptyDayPromptProps = useMemo(
-    () =>
-      buildEmptyDayPromptProps({
-        selectedDay,
-        selectedMonth,
-        currentDateString,
-        previousRecordAvailable: viewModel.previousRecordAvailable,
-        previousRecordDate: viewModel.previousRecordDate,
-        availableDates: viewModel.availableDates,
-        onCreateDay: viewModel.createDay,
-        readOnly,
-        allowAdminCopyOverride,
-      }),
-    [
-      allowAdminCopyOverride,
-      currentDateString,
-      readOnly,
+  const emptyDayPromptProps = useMemo(() => {
+    if (branch !== 'empty') {
+      return null;
+    }
+
+    return buildEmptyDayPromptProps({
       selectedDay,
       selectedMonth,
-      viewModel.availableDates,
-      viewModel.createDay,
-      viewModel.previousRecordAvailable,
-      viewModel.previousRecordDate,
-    ]
-  );
+      currentDateString,
+      previousRecordAvailable: viewModel.previousRecordAvailable,
+      previousRecordDate: viewModel.previousRecordDate,
+      availableDates: viewModel.availableDates,
+      onCreateDay: viewModel.createDay,
+      readOnly,
+      allowAdminCopyOverride,
+    });
+  }, [
+    branch,
+    allowAdminCopyOverride,
+    currentDateString,
+    readOnly,
+    selectedDay,
+    selectedMonth,
+    viewModel.availableDates,
+    viewModel.createDay,
+    viewModel.previousRecordAvailable,
+    viewModel.previousRecordDate,
+  ]);
 
   const registerContentProps = useMemo(() => {
-    if (!viewModel.beds) {
+    if (branch !== 'register' || !viewModel.beds) {
       return null;
     }
 
@@ -90,6 +93,7 @@ export const useCensusViewRouteModel = ({
     });
   }, [
     accessProfile,
+    branch,
     currentDateString,
     localViewMode,
     onCloseBedManagerModal,

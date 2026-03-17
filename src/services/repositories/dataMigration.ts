@@ -22,6 +22,12 @@ import {
   hasLegacyDayShiftNurses,
   hasLegacyPrimaryDayShiftNurse,
 } from '@/services/staff/dailyRecordStaffing';
+import {
+  hasMismatchedExplicitNameParts,
+  inferDocumentTypeFromIdentity,
+  normalizeLegacyIdentityValue,
+  resolveLegacyNameParts,
+} from '@/schemas/zod/helpers';
 
 type LegacyDailyRecordShape = DailyRecord & {
   nurseName?: string;
@@ -97,6 +103,54 @@ const enforceSchemaVersionFloor = (
   }
 };
 
+const reconcileLegacyPatientIdentity = (patient: DailyRecord['beds'][string] | undefined): void => {
+  if (!patient) {
+    return;
+  }
+
+  const normalizedIdentityValue = normalizeLegacyIdentityValue(patient.rut);
+  if (normalizedIdentityValue !== patient.rut) {
+    patient.rut = normalizedIdentityValue;
+  }
+
+  if (
+    hasMismatchedExplicitNameParts({
+      patientName: patient.patientName,
+      firstName: patient.firstName,
+      lastName: patient.lastName,
+      secondLastName: patient.secondLastName,
+    })
+  ) {
+    Object.assign(patient, resolveLegacyNameParts(patient.patientName));
+  }
+
+  const inferredDocumentType = inferDocumentTypeFromIdentity(patient.rut);
+  if (
+    inferredDocumentType &&
+    (!patient.documentType ||
+      (patient.documentType === 'RUT' && inferredDocumentType === 'Pasaporte') ||
+      (!patient.rut && patient.documentType !== inferredDocumentType))
+  ) {
+    patient.documentType = inferredDocumentType;
+  }
+
+  if (!patient.rut) {
+    patient.identityStatus = 'provisional';
+  } else if (!patient.identityStatus || patient.identityStatus === 'provisional') {
+    patient.identityStatus = 'official';
+  }
+
+  if (patient.clinicalCrib) {
+    reconcileLegacyPatientIdentity(patient.clinicalCrib);
+  }
+};
+
+const reconcileLegacyPatientIdentityAcrossBeds = (migrated: DailyRecord): void => {
+  Object.values(migrated.beds || {}).forEach(patient => {
+    reconcileLegacyPatientIdentity(patient);
+  });
+};
+
 const classifyCompatibilityIntensity = (
   appliedRules: LegacyMigrationRule[],
   compatibilityDisposition: ReturnType<typeof assessSchemaCompatibility>['disposition']
@@ -169,6 +223,9 @@ export const migrateLegacyDataWithReport = (
   // 3. Apply explicit legacy compatibility rules that are still supported.
   migrateLegacyNurses(normalizedRecord, migrated, appliedRules);
   migrateLegacyTens(normalizedRecord, migrated, appliedRules);
+  if (compatibilityAssessment.legacyBridgeCandidate) {
+    reconcileLegacyPatientIdentityAcrossBeds(migrated);
+  }
   enforceSchemaVersionFloor(migrated, appliedRules, schemaMigration.plan.sourceVersion);
 
   return {

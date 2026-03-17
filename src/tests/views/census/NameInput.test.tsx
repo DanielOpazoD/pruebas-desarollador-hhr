@@ -53,6 +53,29 @@ describe('NameInput', () => {
     expect(nameInput).toHaveAttribute('readonly');
   });
 
+  it('prefers patientName when explicit split fields are inconsistent', () => {
+    const data = DataFactory.createMockPatient('R1', {
+      patientName: 'Paciente Nuevo',
+      firstName: 'Paciente',
+      lastName: 'Antiguo',
+      secondLastName: 'Persistente',
+    });
+
+    const { container } = render(
+      <table>
+        <tbody>
+          <tr>
+            <NameInput data={data} onChange={noopChange} />
+          </tr>
+        </tbody>
+      </table>
+    );
+
+    const nameInput = container.querySelector('input[name="patientName"]') as HTMLInputElement;
+    expect(nameInput.value).toBe('Paciente Nuevo');
+    expect(nameInput).toHaveAttribute('readonly');
+  });
+
   it('allows inline edition for provisional clinical crib rows', () => {
     const handlePatientName = vi.fn();
     const onChange: DebouncedTextHandler = field =>

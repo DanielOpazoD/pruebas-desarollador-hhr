@@ -67,6 +67,10 @@ clinicalShiftCalendarController
   real sobre el módulo, para evitar `403` ruidosos desde Storage.
 - Los warnings de creación de día deben distinguir entre `bloqueado por horario`, `permitido por override`
   y `falla real de inicialización`.
+- El bootstrap de migración del censo es pasivo y no crítico: debe correr fuera del render inicial
+  de `CensusView` y nunca bloquear la primera pintura del registro o del prompt de día vacío.
+- `useCensusViewRouteModel` debe construir props solo para la rama visible (`analytics`, `empty`,
+  `register`) para mantener bajo el costo sincrónico del primer render del censo.
 
 ## Runtime boundaries
 

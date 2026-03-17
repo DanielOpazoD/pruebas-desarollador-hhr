@@ -77,6 +77,10 @@ de entrada (fecha, límites, RUT, IDs) antes de delegar en storage.
 - `dataMigration.ts` sigue siendo el punto único para adaptar shapes legacy al schema vigente, y
   expone un reporte de reglas aplicadas y una intensidad de compatibilidad para distinguir entre
   normalización liviana, promoción de staff legacy y puentes de schema histórico.
+- La reconciliación legacy de identidad también debe canonizar `patientName` vs name parts,
+  `documentType`, valores documentales inválidos (`null`, `undefined`, `N/A`) e
+  `identityStatus` antes de que el registro llegue a UI o view-models. Esa corrección pertenece a
+  `dataMigration.ts`, no a componentes del censo.
 - `schemaEvolutionPolicy.ts` y `migrationLedger.ts` definen la estrategia de evolución:
   - versión actual soportada por runtime
   - compatibilidad hacia adelante

@@ -3,7 +3,14 @@
  * Handles uploading and managing Census Excel files in Firebase Storage
  */
 
-import { ref, uploadBytes, getDownloadURL, deleteObject, getMetadata } from 'firebase/storage';
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+  getMetadata,
+  listAll,
+} from 'firebase/storage';
 import { auth, firebaseReady, getStorageInstance } from '@/firebaseConfig';
 import {
   createListYears,
@@ -61,6 +68,16 @@ const generateCensusPath = (date: string): string => {
   const formattedDate = `${day}-${month}-${year}`;
   const filename = `${formattedDate} - Censo Diario.xlsx`;
   return `${STORAGE_ROOT}/${year}/${month}/${filename}`;
+};
+
+const generateCensusMonthPath = (date: string): string => {
+  const { year, month } = parseBackupDateParts(date, 'CensusStorage');
+  return `${STORAGE_ROOT}/${year}/${month}`;
+};
+
+const generateCensusFilename = (date: string): string => {
+  const { year, month, day } = parseBackupDateParts(date, 'CensusStorage');
+  return `${day}-${month}-${year} - Censo Diario.xlsx`;
 };
 
 /**
@@ -153,10 +170,11 @@ export const checkCensusExistsDetailed = async (date: string): Promise<StorageLo
       try {
         await firebaseReady;
         const storage = await getStorageInstance();
-
-        const storageRef = ref(storage, generateCensusPath(date));
-        await getMetadata(storageRef);
-        return createStorageLookupResult(true, 'available');
+        const monthRef = ref(storage, generateCensusMonthPath(date));
+        const expectedFilename = generateCensusFilename(date);
+        const result = await listAll(monthRef);
+        const exists = result.items.some(item => item.name === expectedFilename);
+        return createStorageLookupResult(exists, exists ? 'available' : 'missing');
       } catch (error: unknown) {
         // Expected lookup misses (missing file or blocked access in current auth context).
         if (isExpectedStorageLookupMiss(error) || isBackupDateValidationError(error)) {

@@ -10,6 +10,7 @@ import {
 import { PatientIdentityStatus } from '@/types/domain/base';
 
 export const normalizeNamePart = (value: string): string => value.trim().replace(/\s+/g, ' ');
+const normalizeComparableName = (value: string): string => normalizeNamePart(value).toLowerCase();
 
 export const composeFullName = (
   firstName: string,
@@ -64,8 +65,18 @@ export const buildLocalData = (
   data: DemographicSubset,
   isClinicalCribPatient: boolean
 ): LocalDemographicsState => {
+  const explicitFullName = composeFullName(
+    data.firstName || '',
+    data.lastName || '',
+    data.secondLastName || ''
+  );
+  const hasExplicitNameParts = Boolean(explicitFullName);
+  const hasMismatchedExplicitNameParts =
+    hasExplicitNameParts &&
+    normalizeComparableName(explicitFullName) !== normalizeComparableName(data.patientName || '');
+
   const initialNameParts =
-    data.firstName || data.lastName || data.secondLastName
+    hasExplicitNameParts && !hasMismatchedExplicitNameParts
       ? {
           firstName: data.firstName || '',
           lastName: data.lastName || '',
