@@ -71,6 +71,8 @@
 - La impresión/exportación debe reportar fallos por telemetría operativa y no depender de logs sueltos.
 - Los errores de Drive recuperables deben salir con `userSafeMessage` y degradar a feedback visible,
   no romper el workspace por excepciones sin clasificar.
+- Fechas visibles del workspace, sidebar y nombres de PDF deben reutilizar presentation helpers
+  compartidos; no deben reaparecer variantes locales de fecha u origen documental en controllers.
 
 ## Test entrypoints recomendados
 

@@ -27,7 +27,7 @@ import {
   buildResetMedicalHandoffAuditEvent,
 } from '@/hooks/controllers/handoffManagementPersistenceController';
 import { presentHandoffManagementFailure } from '@/hooks/controllers/handoffManagementOutcomeController';
-import { canEditSpecialistTodayBoundRecord } from '@/shared/access/specialistAccessPolicy';
+import { canEditMedicalHandoffForDate } from '@/shared/access/operationalAccessPolicy';
 
 interface HandoffManagementPersistenceInput {
   recordRef: RefObject<DailyRecord | null>;
@@ -67,7 +67,7 @@ export const useHandoffManagementPersistence = ({
   const getCurrentRecord = useCallback(() => recordRef.current, [recordRef]);
   const canMutateCurrentMedicalRecord = useCallback(
     () =>
-      canEditSpecialistTodayBoundRecord({
+      canEditMedicalHandoffForDate({
         role,
         readOnly: false,
         recordDate: getCurrentRecord()?.date,

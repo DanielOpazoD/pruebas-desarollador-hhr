@@ -4,6 +4,7 @@ import {
   formatClinicalDocumentDateTime,
   getClinicalDocumentStatusClassName,
   getClinicalDocumentStatusLabel,
+  resolveClinicalDocumentSourceDateLabel,
 } from '@/shared/clinical-documents/clinicalDocumentPresentation';
 
 describe('clinicalDocumentPresentation', () => {
@@ -15,5 +16,10 @@ describe('clinicalDocumentPresentation', () => {
   it('centraliza labels y estilos de estado', () => {
     expect(getClinicalDocumentStatusLabel('ready_for_signature')).toBe('Lista');
     expect(getClinicalDocumentStatusClassName('signed')).toContain('emerald');
+  });
+
+  it('resolves source daily-record dates with the same shared formatter', () => {
+    expect(resolveClinicalDocumentSourceDateLabel('2026-03-15')).toBe('15-03-2026');
+    expect(resolveClinicalDocumentSourceDateLabel()).toBe('Sin fecha');
   });
 });

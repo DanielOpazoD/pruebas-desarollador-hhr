@@ -4,6 +4,11 @@ import type {
   LookupBackupArchiveStatusOutput,
 } from '@/application/backup-export/backupExportUseCases';
 import { getStorageListNotice, getStorageLookupNotice } from '@/services/backup/storageUiPolicy';
+import {
+  createErrorNotice,
+  createPassiveVerificationPermissionNotice,
+  type OperationalNotice,
+} from '@/shared/feedback/operationalNoticePolicy';
 
 interface OutcomePresentation {
   channel: 'warning' | 'info' | 'error' | null;
@@ -27,18 +32,13 @@ export const presentBackupLookupOutcome = (
   if (outcome.status === 'failed') {
     const issueMessage = outcome.issues[0]?.message;
     if (isPermissionLikeLookupFailure(issueMessage)) {
-      return {
-        channel: 'warning',
-        title: 'Respaldo no verificable',
-        message: 'No se pudo confirmar el respaldo remoto por permisos de Storage.',
-      };
+      return createPassiveVerificationPermissionNotice('el respaldo remoto');
     }
 
-    return {
-      channel: 'error',
-      title: 'Verificación de respaldo fallida',
-      message: issueMessage || 'No se pudo consultar el respaldo remoto.',
-    };
+    return createErrorNotice(
+      'Verificación de respaldo fallida',
+      issueMessage || 'No se pudo consultar el respaldo remoto.'
+    );
   }
 
   const notice = getStorageLookupNotice(outcome.data.lookup, 'respaldo');
@@ -53,11 +53,10 @@ export const presentBackupListingOutcome = (
   outcome: ApplicationOutcome<ListBackupFilesOutput>
 ): OutcomePresentation => {
   if (outcome.status === 'failed') {
-    return {
-      channel: 'error',
-      title: 'Carga de respaldos fallida',
-      message: outcome.issues[0]?.message || 'No se pudo cargar la lista de respaldos.',
-    };
+    return createErrorNotice(
+      'Carga de respaldos fallida',
+      outcome.issues[0]?.message || 'No se pudo cargar la lista de respaldos.'
+    );
   }
 
   const notice = getStorageListNotice(outcome.data.report);

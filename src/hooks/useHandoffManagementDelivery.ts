@@ -13,7 +13,7 @@ import {
   recordOperationalTelemetry,
 } from '@/services/observability/operationalTelemetryService';
 import { presentHandoffManagementFailure } from '@/hooks/controllers/handoffManagementOutcomeController';
-import { canEditSpecialistTodayBoundRecord } from '@/shared/access/specialistAccessPolicy';
+import { canEditMedicalHandoffForDate } from '@/shared/access/operationalAccessPolicy';
 import {
   createApplicationFailed,
   createApplicationSuccess,
@@ -38,7 +38,7 @@ export const useHandoffManagementDelivery = ({
   const getCurrentRecord = useCallback(() => recordRef.current, [recordRef]);
   const canMutateCurrentMedicalRecord = useCallback(
     () =>
-      canEditSpecialistTodayBoundRecord({
+      canEditMedicalHandoffForDate({
         role,
         readOnly: false,
         recordDate: getCurrentRecord()?.date,

@@ -50,4 +50,34 @@ describe('medicalHandoffTabsController', () => {
       })
     ).toEqual({ upc: upcBeds, nonUpc: [] });
   });
+
+  it('respects fixed scope and alternate print modes', () => {
+    const { upcBeds, nonUpcBeds } = splitMedicalBedsByScope(BEDS, RECORD);
+
+    expect(
+      resolveMedicalDisplayBeds({
+        visibleBeds: BEDS,
+        upcBeds,
+        nonUpcBeds,
+        activeTab: 'upc',
+        fixedScope: 'no-upc',
+      }).map(bed => bed.id)
+    ).toEqual(['R1', 'R2']);
+
+    expect(
+      resolveMedicalPrintBeds({
+        printMode: 'no-upc',
+        upcBeds,
+        nonUpcBeds,
+      })
+    ).toEqual({ upc: [], nonUpc: nonUpcBeds });
+
+    expect(
+      resolveMedicalPrintBeds({
+        printMode: 'all',
+        upcBeds,
+        nonUpcBeds,
+      })
+    ).toEqual({ upc: upcBeds, nonUpc: nonUpcBeds });
+  });
 });

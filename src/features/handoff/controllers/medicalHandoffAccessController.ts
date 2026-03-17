@@ -1,9 +1,7 @@
 import { ACTIONS, canDoAction } from '@/utils/permissions';
 import type { UserRole } from '@/types/auth';
-import {
-  canEditSpecialistTodayBoundRecord,
-  hasSpecialistRestrictedMedicalAccess,
-} from '@/shared/access/specialistAccessPolicy';
+import { hasSpecialistRestrictedMedicalAccess } from '@/shared/access/specialistAccessPolicy';
+import { canEditMedicalHandoffForDate } from '@/shared/access/operationalAccessPolicy';
 
 export interface MedicalHandoffCapabilities {
   canCreatePrimaryObservationEntry: boolean;
@@ -37,7 +35,7 @@ export const resolveMedicalHandoffCapabilities = ({
   todayISO,
 }: ResolveMedicalHandoffCapabilitiesParams): MedicalHandoffCapabilities => {
   const specialistRestrictedAccess = hasSpecialistRestrictedMedicalAccess(role);
-  const canEditClinicalContent = canEditSpecialistTodayBoundRecord({
+  const canEditClinicalContent = canEditMedicalHandoffForDate({
     role,
     readOnly,
     recordDate,

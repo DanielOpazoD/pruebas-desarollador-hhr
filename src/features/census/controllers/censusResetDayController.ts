@@ -5,6 +5,7 @@ import {
   ok,
 } from '@/features/census/controllers/controllerResult';
 import { ACTIONS, canDoAction, isAdmin } from '@/utils/permissions';
+import { canResetOrDeleteDailyRecord } from '@/shared/access/operationalAccessPolicy';
 
 export interface ResetDayPermissionResult {
   canDeleteRecord: boolean;
@@ -39,6 +40,14 @@ export const resolveResetDayPermission = ({
   role,
   isToday,
 }: ResolveResetDayPermissionParams): ResetDayPermissionResult => {
+  if (canResetOrDeleteDailyRecord({ role, isToday })) {
+    return {
+      canDeleteRecord: true,
+      denialTitle: DELETE_DENIED_TITLE,
+      denialMessage: '',
+    };
+  }
+
   if (isAdmin(role)) {
     return {
       canDeleteRecord: true,

@@ -39,6 +39,16 @@ describe('censusResetDayController', () => {
     expect(result.denialMessage).toBe('');
   });
 
+  it('blocks current-day reset for roles without delete permission', () => {
+    const result = resolveResetDayPermission({
+      role: 'viewer_census',
+      isToday: true,
+    });
+
+    expect(result.canDeleteRecord).toBe(false);
+    expect(result.denialMessage).toBe('No tienes permisos para reiniciar este registro.');
+  });
+
   it('exposes a stable confirmation descriptor for reset day action', () => {
     expect(RESET_DAY_CONFIRM_DIALOG).toMatchObject({
       title: '⚠️ Reiniciar registro del día',

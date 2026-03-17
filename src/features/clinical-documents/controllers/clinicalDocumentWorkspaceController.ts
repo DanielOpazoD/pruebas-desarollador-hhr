@@ -5,7 +5,10 @@ import type {
 import type { ConfirmOptions } from '@/context/uiContracts';
 import { getClinicalDocumentDefinition } from '@/features/clinical-documents/domain/definitions';
 import { hydrateLegacyClinicalDocument as hydrateLegacyClinicalDocumentCompat } from '@/features/clinical-documents/controllers/clinicalDocumentCompatibilityController';
-import { formatClinicalDocumentDateTime as formatClinicalDocumentDateTimePresentation } from '@/shared/clinical-documents/clinicalDocumentPresentation';
+import {
+  formatClinicalDocumentDateTime as formatClinicalDocumentDateTimePresentation,
+  resolveClinicalDocumentSourceDateLabel,
+} from '@/shared/clinical-documents/clinicalDocumentPresentation';
 
 export const serializeClinicalDocument = (record: ClinicalDocumentRecord | null): string =>
   record ? JSON.stringify(record) : '';
@@ -57,8 +60,7 @@ const formatPdfFileDate = (rawDate: string | undefined): string | null => {
 
   const dateOnlyMatch = rawDate.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (dateOnlyMatch) {
-    const [, year, month, day] = dateOnlyMatch;
-    return `${Number(day)}/${Number(month)}/${year}`;
+    return resolveClinicalDocumentSourceDateLabel(rawDate);
   }
 
   const parsed = new Date(rawDate);
@@ -73,7 +75,7 @@ const resolveClinicalDocumentPdfDate = (record: ClinicalDocumentRecord): string 
   const reportDate = record.patientFields.find(field => field.id === 'finf')?.value;
   return (
     formatPdfFileDate(reportDate) ||
-    formatPdfFileDate(record.sourceDailyRecordDate) ||
+    resolveClinicalDocumentSourceDateLabel(record.sourceDailyRecordDate) ||
     formatPdfFileDate(record.audit.updatedAt) ||
     'Sin fecha'
   );

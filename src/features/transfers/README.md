@@ -145,6 +145,8 @@ Si un hospital no tiene configuración documental:
 - Las fallas realtime deben mapearse a error operativo estructurado + telemetría, no solo a `console.error`.
 - Los generadores DOCX y templates deben reutilizar helpers compartidos de fecha; no deben volver a
   introducir variantes locales de `toLocaleDateString()` por documento o template.
+- Los estados degradados del flujo documental o de upload deben mapearse a notices explícitos
+  (`info`/`warning`/`error`) y no a mensajes armados inline dentro de modales o hooks de vista.
 
 ## Comandos de validación del módulo
 

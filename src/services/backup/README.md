@@ -31,3 +31,5 @@
   operativa real sobre ese modulo.
 - Si un lookup remoto falla por permisos de Storage, la UI debe degradar a "respaldo no verificable"
   y no tratarlo como error bloqueante del flujo clinico.
+- Cuando la lista remota llega parcial por permisos o metadata incompatible, la UI debe preferir
+  notices `info`; reservar `warning` para timeouts o degradaciones que sí requieran atención operativa.

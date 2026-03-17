@@ -25,7 +25,7 @@ import {
   resolveSpecialistCapabilities,
   resolveSpecialistCensusAccessProfile,
 } from '@/shared/access/specialistAccessPolicy';
-import { canVerifyArchiveStatusForModule } from '@/shared/access/operationalAccessPolicy';
+import { canVerifyPassiveBackupForRole } from '@/shared/access/operationalAccessPolicy';
 import { ReminderModal } from '@/components/reminders/ReminderModal';
 import { ReminderCenterProvider } from '@/context/ReminderCenterContext';
 
@@ -60,7 +60,7 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
   const { currentModule, setCurrentModule, censusLocalViewMode, setCensusLocalViewMode } = ui;
 
   const canVerifyArchiveStatus = React.useMemo(() => {
-    return canVerifyArchiveStatusForModule(auth.role, ui.currentModule);
+    return canVerifyPassiveBackupForRole(auth.role, ui.currentModule);
   }, [auth.role, ui.currentModule]);
 
   // Export Manager Hook

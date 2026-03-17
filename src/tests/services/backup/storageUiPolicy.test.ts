@@ -6,7 +6,7 @@ describe('storageUiPolicy', () => {
     expect(getStorageLookupNotice({ exists: false, status: 'restricted' }, 'censo')).toEqual({
       channel: 'info',
       title: 'Respaldo no verificable',
-      message: 'No se pudo confirmar el respaldo de censo por permisos de Storage.',
+      message: 'No se pudo confirmar censo por permisos de Storage.',
     });
   });
 
@@ -31,6 +31,22 @@ describe('storageUiPolicy', () => {
       channel: 'warning',
       title: 'Carga parcial de respaldos',
       message: 'La consulta a Storage tardó demasiado. La lista puede estar incompleta.',
+    });
+  });
+
+  it('returns list info for restricted files when the listing itself succeeded', () => {
+    expect(
+      getStorageListNotice({
+        skippedNotFound: 0,
+        skippedRestricted: 2,
+        skippedUnknown: 0,
+        skippedUnparsed: 0,
+        timedOut: false,
+      })
+    ).toEqual({
+      channel: 'info',
+      title: 'Carga parcial de respaldos',
+      message: '2 archivo(s) no pudieron leerse por restricciones de acceso.',
     });
   });
 

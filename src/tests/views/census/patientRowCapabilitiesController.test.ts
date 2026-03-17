@@ -59,4 +59,20 @@ describe('patientRowCapabilitiesController', () => {
       canOpenHistory: false,
     });
   });
+
+  it('keeps specialist access aligned with restricted census behavior', () => {
+    expect(
+      resolvePatientRowCapabilities({
+        role: 'doctor_specialist',
+        patient: { patientName: 'Paciente', rut: '1-9' },
+        isBlocked: false,
+        isEmpty: false,
+        accessProfile: 'specialist',
+      })
+    ).toMatchObject({
+      canOpenClinicalDocuments: true,
+      canShowClinicalDocumentIndicator: true,
+      canOpenHistory: false,
+    });
+  });
 });

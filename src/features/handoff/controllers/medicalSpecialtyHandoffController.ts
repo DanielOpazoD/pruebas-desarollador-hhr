@@ -5,7 +5,7 @@ import type {
   MedicalSpecialtyHandoffNote,
 } from '@/types/domain/dailyRecord';
 import { canEditModule } from '@/utils/permissions';
-import { canEditSpecialistTodayBoundRecord } from '@/shared/access/specialistAccessPolicy';
+import { canEditMedicalHandoffForDate } from '@/shared/access/operationalAccessPolicy';
 
 export const MEDICAL_SPECIALTY_ORDER: readonly MedicalSpecialty[] = [
   'cirugia',
@@ -65,7 +65,7 @@ export const resolveEditableMedicalSpecialties = (
   }
 ): MedicalSpecialty[] => {
   if (
-    !canEditSpecialistTodayBoundRecord({
+    !canEditMedicalHandoffForDate({
       role,
       readOnly: options?.readOnly ?? false,
       recordDate: options?.recordDate,

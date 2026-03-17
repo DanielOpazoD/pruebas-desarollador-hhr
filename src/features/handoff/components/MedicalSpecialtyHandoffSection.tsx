@@ -18,6 +18,7 @@ import {
 } from '@/domain/handoff/specialty';
 import {
   formatHandoffDateTime,
+  getMedicalSpecialtyContinuityHint,
   getMedicalSpecialtyStatusLabel,
 } from '@/shared/handoff/handoffPresentation';
 
@@ -250,9 +251,13 @@ export const MedicalSpecialtyHandoffSection: React.FC<MedicalSpecialtyHandoffSec
 
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
               <div className="text-xs text-slate-500">
-                {activeStatus === 'updated_by_specialist'
-                  ? 'No se puede confirmar continuidad porque esta especialidad ya fue actualizada hoy.'
-                  : 'Usa este comentario cuando la condición permanezca sin cambios respecto a la última nota del especialista.'}
+                {canConfirmToday
+                  ? activeStatus === 'pending'
+                    ? 'Usa este comentario cuando la condición permanezca sin cambios respecto a la última nota del especialista.'
+                    : getMedicalSpecialtyContinuityHint(activeStatus)
+                  : readOnly
+                    ? 'Solo lectura para este registro.'
+                    : 'Solo un usuario autorizado puede confirmar continuidad.'}
               </div>
               {canConfirmToday && (
                 <button

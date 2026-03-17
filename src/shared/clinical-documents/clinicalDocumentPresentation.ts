@@ -24,6 +24,9 @@ export const formatClinicalDocumentDate = (value?: string): string => {
   return `${day}-${month}-${year}`;
 };
 
+export const resolveClinicalDocumentSourceDateLabel = (value?: string): string =>
+  value ? formatClinicalDocumentDate(value) : 'Sin fecha';
+
 export const getClinicalDocumentStatusLabel = (status: ClinicalDocumentStatus): string => {
   switch (status) {
     case 'ready_for_signature':

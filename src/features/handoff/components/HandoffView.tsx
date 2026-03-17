@@ -36,7 +36,7 @@ import {
 } from '@/features/handoff/controllers/handoffViewController';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import { Specialty } from '@/types/domain/base';
-import { canEditSpecialistTodayBoundRecord } from '@/shared/access/specialistAccessPolicy';
+import { canEditMedicalHandoffForDate } from '@/shared/access/operationalAccessPolicy';
 interface HandoffViewProps {
   type?: 'nursing' | 'medical';
   readOnly?: boolean;
@@ -197,7 +197,7 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
   const effectiveReadOnly =
     readOnly ||
     (isMedical &&
-      !canEditSpecialistTodayBoundRecord({
+      !canEditMedicalHandoffForDate({
         role,
         readOnly,
         recordDate: record?.date,

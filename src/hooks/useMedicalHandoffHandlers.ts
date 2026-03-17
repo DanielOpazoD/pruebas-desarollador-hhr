@@ -12,7 +12,7 @@ import {
 import type { AuditAction, AuditLogEntry } from '@/types/audit';
 import type { MedicalHandoffAuditActor, PatientData } from '@/types/domain/patient';
 import { logger } from '@/services/utils/loggerService';
-import { canEditSpecialistTodayBoundRecord } from '@/shared/access/specialistAccessPolicy';
+import { canEditMedicalHandoffForDate } from '@/shared/access/operationalAccessPolicy';
 
 type MedicalPatientFields = Pick<
   PatientData,
@@ -58,7 +58,7 @@ export const useMedicalHandoffHandlers = ({
   persistMedicalFields,
   logDebouncedEvent,
 }: UseMedicalHandoffHandlersParams) => {
-  const canMutateCurrentMedicalRecord = canEditSpecialistTodayBoundRecord({
+  const canMutateCurrentMedicalRecord = canEditMedicalHandoffForDate({
     role,
     readOnly: false,
     recordDate: record?.date,

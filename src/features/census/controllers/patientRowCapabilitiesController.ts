@@ -1,7 +1,7 @@
 import type { UserRole } from '@/types/auth';
-import { canReadClinicalDocuments } from '@/application/clinical-documents/clinicalDocumentAccessPolicy';
 import type { CensusAccessProfile } from '@/features/census/types/censusAccessProfile';
 import { isSpecialistCensusAccessProfile } from '@/features/census/types/censusAccessProfile';
+import { canOpenClinicalDocumentsFromCensus } from '@/shared/access/operationalAccessPolicy';
 
 interface ResolvePatientRowCapabilitiesParams {
   role?: UserRole;
@@ -31,15 +31,19 @@ export const resolvePatientRowCapabilities = ({
 }: ResolvePatientRowCapabilitiesParams): PatientRowCapabilities => {
   const hasPatientName = Boolean(patient?.patientName?.trim());
   const hasRut = Boolean(patient?.rut?.trim());
-  const canReadClinical = canReadClinicalDocuments(role);
-  const hasClinicalContext = !isBlocked && !isEmpty && hasPatientName;
+  const canReadClinical = canOpenClinicalDocumentsFromCensus({
+    role,
+    isBlocked,
+    isEmpty,
+    hasPatientName,
+  });
   const specialistAccess = isSpecialistCensusAccessProfile(accessProfile);
 
   return {
-    canOpenClinicalDocuments: hasClinicalContext && canReadClinical,
+    canOpenClinicalDocuments: canReadClinical,
     canOpenExamRequest: hasPatientName,
     canOpenImagingRequest: hasPatientName,
     canOpenHistory: specialistAccess ? false : hasRut,
-    canShowClinicalDocumentIndicator: hasClinicalContext && canReadClinical,
+    canShowClinicalDocumentIndicator: canReadClinical,
   };
 };

@@ -109,6 +109,10 @@ de entrada (fecha, límites, RUT, IDs) antes de delegar en storage.
 - `executeInitializeDailyRecord` y los hooks de persistencia no deben usar excepciones para
   representar fallas esperadas de inicialización; esas rutas deben salir con outcomes/notices
   tipados para no mezclar errores normales con fallas inesperadas.
+- Los permisos operativos sobre reinicio/eliminación de días deben salir de policies compartidas
+  (`operationalAccessPolicy` / controllers dueños) para que UI y runtime no diverjan.
+- Los warnings de sync degradado o fallback local deben mantenerse como feedback recuperable;
+  no deben presentarse como error crítico si el registro quedó usable o guardado localmente.
 - `dailyRecordRemoteLoader.ts` ya no debe decidir por sí solo cuándo hidratar IndexedDB; esa
   decisión pertenece a la policy de consistencia y a los servicios read/sync.
 - `repositories/index.ts` debe permanecer explícito y pequeño; código nuevo debe importar

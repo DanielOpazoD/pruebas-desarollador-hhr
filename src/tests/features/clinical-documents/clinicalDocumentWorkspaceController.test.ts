@@ -77,6 +77,6 @@ describe('clinicalDocumentWorkspaceController', () => {
           : field
     );
 
-    expect(buildClinicalDocumentPdfFileName(record)).toBe('8/3/2026 - Felipe Reyes Opazo.pdf');
+    expect(buildClinicalDocumentPdfFileName(record)).toBe('08-03-2026 - Felipe Reyes Opazo.pdf');
   });
 });

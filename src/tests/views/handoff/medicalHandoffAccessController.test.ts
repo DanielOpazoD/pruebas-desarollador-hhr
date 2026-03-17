@@ -65,4 +65,40 @@ describe('medicalHandoffAccessController', () => {
     expect(capabilities.canEditClinicalEvents).toBe(false);
     expect(capabilities.canSign).toBe(false);
   });
+
+  it('enables delivery and signature controls for admins on editable current-day handoff', () => {
+    const capabilities = resolveMedicalHandoffCapabilities({
+      role: 'admin',
+      readOnly: false,
+      recordDate: '2026-03-14',
+      todayISO: '2026-03-14',
+    });
+
+    expect(capabilities.canCreatePrimaryObservationEntry).toBe(true);
+    expect(capabilities.canEditDoctorName).toBe(true);
+    expect(capabilities.canShowDeliverySection).toBe(true);
+    expect(capabilities.canSign).toBe(true);
+    expect(capabilities.canRestoreSignatures).toBe(true);
+    expect(capabilities.canSendWhatsApp).toBe(true);
+    expect(capabilities.canShareSignatureLinks).toBe(true);
+    expect(capabilities.canCopySpecialistLink).toBe(true);
+    expect(capabilities.canOpenNightCudyr).toBe(true);
+  });
+
+  it('preserves delivery visibility but disables editing controls when a non-specialist handoff is read-only', () => {
+    const capabilities = resolveMedicalHandoffCapabilities({
+      role: 'doctor_urgency',
+      readOnly: true,
+      recordDate: '2026-03-14',
+      todayISO: '2026-03-14',
+    });
+
+    expect(capabilities.canCreatePrimaryObservationEntry).toBe(false);
+    expect(capabilities.canEditDoctorName).toBe(false);
+    expect(capabilities.canShowDeliverySection).toBe(true);
+    expect(capabilities.canSign).toBe(false);
+    expect(capabilities.canSendWhatsApp).toBe(false);
+    expect(capabilities.canCopySpecialistLink).toBe(false);
+    expect(capabilities.canOpenNightCudyr).toBe(true);
+  });
 });

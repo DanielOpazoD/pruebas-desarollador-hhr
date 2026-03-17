@@ -48,4 +48,20 @@ describe('patientActionMenuController', () => {
     expect(model.binding.availability.showClinicalDocumentsAction).toBe(false);
     expect(model.utilityActions.map(action => action.action)).toEqual(['clear']);
   });
+
+  it('hides utility actions for specialist access even when the row is editable', () => {
+    const model = buildPatientActionMenuModel({
+      isBlocked: false,
+      readOnly: false,
+      accessProfile: 'specialist',
+      callbackAvailability: {
+        hasHistoryAction: false,
+        hasClinicalDocumentsAction: true,
+        hasExamRequestAction: true,
+        hasImagingRequestAction: true,
+      },
+    });
+
+    expect(model.utilityActions).toEqual([]);
+  });
 });
