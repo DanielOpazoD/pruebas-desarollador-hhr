@@ -1,9 +1,12 @@
 import type { ApplicationIssue, ApplicationOutcome } from '@/application/shared/applicationOutcome';
+import type { OperationalNotice } from '@/shared/feedback/operationalNoticePolicy';
 
 export interface BackupExportOutcomePresentation {
   channel: 'success' | 'warning' | 'error' | 'info';
   title: string;
   message?: string;
+  state?: OperationalNotice['state'];
+  actionRequired?: boolean;
 }
 
 const resolveIssueMessage = (issues: ApplicationIssue[], fallback: string) =>
@@ -24,6 +27,8 @@ export const presentBackupExportOutcome = <T>(
       channel: 'success',
       title: options.successTitle,
       message: options.successMessage,
+      state: 'ok',
+      actionRequired: false,
     };
   }
 
@@ -32,6 +37,8 @@ export const presentBackupExportOutcome = <T>(
       channel: 'warning',
       title: options.partialTitle,
       message: outcome.issues.map(issue => issue.message).join('\n'),
+      state: outcome.status === 'partial' ? 'pending' : 'degraded',
+      actionRequired: false,
     };
   }
 
@@ -39,5 +46,7 @@ export const presentBackupExportOutcome = <T>(
     channel: 'error',
     title: options.failedTitle,
     message: resolveIssueMessage(outcome.issues, options.fallbackErrorMessage),
+    state: 'blocked',
+    actionRequired: true,
   };
 };

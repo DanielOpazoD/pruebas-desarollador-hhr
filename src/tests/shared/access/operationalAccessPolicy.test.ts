@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   canOpenTransferDocuments,
+  canManageGlobalCensusEmailRecipients,
   canEditMedicalHandoffForDate,
   canForceCreateDayCopyOverride,
   canOpenClinicalDocumentsFromCensus,
@@ -34,6 +35,14 @@ describe('operationalAccessPolicy', () => {
   it('centralizes admin, export and transfer-document capabilities by intent', () => {
     expect(canUseAdminMaintenanceActions('admin')).toBe(true);
     expect(canUseAdminMaintenanceActions('nurse_hospital')).toBe(false);
+    expect(canManageGlobalCensusEmailRecipients({ role: 'admin', userId: 'u-1' })).toBe(true);
+    expect(canManageGlobalCensusEmailRecipients({ role: 'nurse_hospital', userId: 'u-1' })).toBe(
+      true
+    );
+    expect(canManageGlobalCensusEmailRecipients({ role: 'doctor_specialist', userId: 'u-1' })).toBe(
+      false
+    );
+    expect(canManageGlobalCensusEmailRecipients({ role: 'editor', userId: null })).toBe(false);
 
     expect(canTriggerCensusExports({ role: 'admin', accessProfile: 'default' })).toBe(true);
     expect(

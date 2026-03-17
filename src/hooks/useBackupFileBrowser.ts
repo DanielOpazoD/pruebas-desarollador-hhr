@@ -3,6 +3,7 @@ import { useNotification, useConfirmDialog } from '@/context/UIContext';
 import { useBackupFilesQuery } from '@/hooks/useBackupFilesQuery';
 import { useAuth } from '@/context/AuthContext';
 import { useBackupFileBrowserActions } from '@/hooks/useBackupFileBrowserActions';
+import { canUseAdminMaintenanceActions } from '@/shared/access/operationalAccessPolicy';
 import {
   buildInitialBackupBrowserPath,
   filterBackupBrowserItems,
@@ -16,7 +17,7 @@ export const useBackupFileBrowser = (initialBackupType: BackupType = 'handoff') 
   const { success, warning, info, error: notifyError } = useNotification();
   const { confirm } = useConfirmDialog();
   const { role } = useAuth();
-  const canDelete = role === 'admin';
+  const canDelete = canUseAdminMaintenanceActions(role);
   const lastReportSignatureRef = useRef('');
   const [selectedBackupType, setSelectedBackupType] = useState<BackupType>(initialBackupType);
   const [path, setPath] = useState<string[]>(() => buildInitialBackupBrowserPath());

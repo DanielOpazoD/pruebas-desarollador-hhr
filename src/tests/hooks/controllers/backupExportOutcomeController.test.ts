@@ -20,6 +20,8 @@ describe('backupExportOutcomeController', () => {
       channel: 'success',
       title: 'ok',
       message: undefined,
+      state: 'ok',
+      actionRequired: false,
     });
   });
 
@@ -36,6 +38,8 @@ describe('backupExportOutcomeController', () => {
 
     expect(notice.channel).toBe('warning');
     expect(notice.message).toContain('backup warning');
+    expect(notice.state).toBe('pending');
+    expect(notice.actionRequired).toBe(false);
   });
 
   it('maps failed to error notification', () => {
@@ -53,6 +57,8 @@ describe('backupExportOutcomeController', () => {
       channel: 'error',
       title: 'failed',
       message: 'broken',
+      state: 'blocked',
+      actionRequired: true,
     });
   });
 });

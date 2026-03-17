@@ -25,6 +25,8 @@ describe('dailyRecordSyncNotificationController', () => {
       channel: 'warning',
       title: 'Guardado local pendiente',
       message: 'Los cambios se guardaron localmente y quedarán pendientes de sincronización.',
+      state: 'retrying',
+      actionRequired: false,
     });
 
     expect(
@@ -42,6 +44,8 @@ describe('dailyRecordSyncNotificationController', () => {
       channel: 'warning',
       title: 'Conflicto resuelto automáticamente',
       message: 'Se detectó un conflicto remoto y el sistema aplicó una fusión automática.',
+      state: 'degraded',
+      actionRequired: false,
     });
   });
 
@@ -62,6 +66,8 @@ describe('dailyRecordSyncNotificationController', () => {
       channel: 'error',
       title: 'Actualización bloqueada',
       message: 'No se encontró un registro local válido para aplicar el cambio.',
+      state: 'blocked',
+      actionRequired: true,
     });
   });
 });

@@ -76,6 +76,8 @@
   no romper el workspace por excepciones sin clasificar.
 - Fechas visibles del workspace, sidebar y nombres de PDF deben reutilizar presentation helpers
   compartidos; no deben reaparecer variantes locales de fecha u origen documental en controllers.
+- La fecha visible del nombre de PDF debe salir del helper compartido del feature; no se debe
+  volver a formatear inline según origen (`finf`, `sourceDailyRecordDate`, `audit.updatedAt`).
 
 ## Test entrypoints recomendados
 

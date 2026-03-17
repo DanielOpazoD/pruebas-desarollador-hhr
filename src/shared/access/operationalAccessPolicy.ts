@@ -30,6 +30,14 @@ export const canVerifyPassiveBackupForRole = (
 export const canViewOrManageBackupFiles = (role: SupportedRole): boolean =>
   canEditModule(role, 'NURSING_HANDOFF');
 
+export const canManageGlobalCensusEmailRecipients = ({
+  role,
+  userId,
+}: {
+  role: SupportedRole;
+  userId?: string | null;
+}): boolean => Boolean(userId) && (isAdmin(role) || role === 'nurse_hospital' || role === 'editor');
+
 export const canUseAdminMaintenanceActions = (role: SupportedRole): boolean => isAdmin(role);
 
 export const canTriggerCensusExports = ({

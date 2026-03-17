@@ -1,6 +1,7 @@
 import type { BackupFolder } from '@/hooks/backupFileBrowserContracts';
 import type { BaseStoredFile, StoredPdfFile } from '@/types/backupArtifacts';
 import { MONTH_NAMES } from '@/types/backupArtifacts';
+import { canUseAdminMaintenanceActions } from '@/shared/access/operationalAccessPolicy';
 
 export type BackupBrowserType = 'handoff' | 'census' | 'cudyr';
 
@@ -38,7 +39,7 @@ export const resolveCanRunMagicBackfill = (
   role: string | undefined,
   path: string[],
   isLoading: boolean
-): boolean => role !== 'viewer' && path.length === 2 && !isLoading;
+): boolean => canUseAdminMaintenanceActions(role) && path.length === 2 && !isLoading;
 
 export const resolveBackupModuleLabel = (backupType: BackupBrowserType): string =>
   backupType === 'handoff' ? 'Entregas' : backupType === 'census' ? 'Censo' : 'CUDYR';

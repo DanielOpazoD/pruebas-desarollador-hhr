@@ -7,6 +7,7 @@ import { getClinicalDocumentDefinition } from '@/features/clinical-documents/dom
 import { hydrateLegacyClinicalDocument as hydrateLegacyClinicalDocumentCompat } from '@/features/clinical-documents/controllers/clinicalDocumentCompatibilityController';
 import {
   formatClinicalDocumentDateTime as formatClinicalDocumentDateTimePresentation,
+  formatClinicalDocumentPdfDate,
   resolveClinicalDocumentSourceDateLabel,
 } from '@/shared/clinical-documents/clinicalDocumentPresentation';
 
@@ -55,28 +56,12 @@ export const buildClinicalDocumentActor = (
   role: role || 'viewer',
 });
 
-const formatPdfFileDate = (rawDate: string | undefined): string | null => {
-  if (!rawDate) return null;
-
-  const dateOnlyMatch = rawDate.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (dateOnlyMatch) {
-    return resolveClinicalDocumentSourceDateLabel(rawDate);
-  }
-
-  const parsed = new Date(rawDate);
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-
-  return `${parsed.getDate()}/${parsed.getMonth() + 1}/${parsed.getFullYear()}`;
-};
-
 const resolveClinicalDocumentPdfDate = (record: ClinicalDocumentRecord): string => {
   const reportDate = record.patientFields.find(field => field.id === 'finf')?.value;
   return (
-    formatPdfFileDate(reportDate) ||
+    formatClinicalDocumentPdfDate(reportDate) ||
     resolveClinicalDocumentSourceDateLabel(record.sourceDailyRecordDate) ||
-    formatPdfFileDate(record.audit.updatedAt) ||
+    formatClinicalDocumentPdfDate(record.audit.updatedAt) ||
     'Sin fecha'
   );
 };

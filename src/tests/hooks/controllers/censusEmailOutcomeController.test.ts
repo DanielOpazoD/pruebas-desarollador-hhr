@@ -18,6 +18,8 @@ describe('censusEmailOutcomeController', () => {
     expect(presentation).toEqual({
       nextStatus: 'success',
       error: null,
+      state: 'ok',
+      actionRequired: false,
     });
   });
 
@@ -34,6 +36,8 @@ describe('censusEmailOutcomeController', () => {
     expect(presentation.nextStatus).toBe('success');
     expect(presentation.alertTitle).toBe('partial');
     expect(presentation.alertMessage).toContain('backup warning');
+    expect(presentation.state).toBe('pending');
+    expect(presentation.actionRequired).toBe(false);
   });
 
   it('maps validation failures to validation title when requested', () => {
@@ -51,5 +55,7 @@ describe('censusEmailOutcomeController', () => {
     expect(presentation.nextStatus).toBe('error');
     expect(presentation.error).toBe('missing recipient');
     expect(presentation.alertTitle).toBe('validation');
+    expect(presentation.state).toBe('blocked');
+    expect(presentation.actionRequired).toBe(true);
   });
 });

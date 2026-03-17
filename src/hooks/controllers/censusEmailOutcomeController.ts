@@ -1,10 +1,13 @@
 import type { ApplicationIssue, ApplicationOutcome } from '@/application/shared/applicationOutcome';
+import type { OperationalNotice } from '@/shared/feedback/operationalNoticePolicy';
 
 interface CensusEmailOutcomePresentation {
   nextStatus: 'success' | 'error';
   error: string | null;
   alertTitle?: string;
   alertMessage?: string;
+  state?: OperationalNotice['state'];
+  actionRequired?: boolean;
 }
 
 const resolvePrimaryIssueMessage = (issues: ApplicationIssue[], fallbackMessage: string): string =>
@@ -24,6 +27,8 @@ export const resolveCensusEmailSendOutcomePresentation = <T>(
     return {
       nextStatus: 'success',
       error: null,
+      state: 'ok',
+      actionRequired: false,
     };
   }
 
@@ -33,6 +38,8 @@ export const resolveCensusEmailSendOutcomePresentation = <T>(
       error: null,
       alertTitle: options.partialTitle,
       alertMessage: result.issues.map(issue => issue.message).join('\n'),
+      state: result.status === 'partial' ? 'pending' : 'degraded',
+      actionRequired: false,
     };
   }
 
@@ -45,5 +52,7 @@ export const resolveCensusEmailSendOutcomePresentation = <T>(
     error: errorMessage,
     alertTitle: useValidationTitle ? options.validationTitle : options.errorTitle,
     alertMessage: errorMessage,
+    state: 'blocked',
+    actionRequired: true,
   };
 };

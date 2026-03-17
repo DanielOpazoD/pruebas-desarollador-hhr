@@ -14,6 +14,8 @@ interface OutcomePresentation {
   channel: 'warning' | 'info' | 'error' | null;
   title?: string;
   message?: string;
+  state?: OperationalNotice['state'];
+  actionRequired?: boolean;
 }
 
 const isPermissionLikeLookupFailure = (message: string | undefined): boolean => {

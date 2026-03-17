@@ -2,10 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useConfirmDialog } from '@/context/UIContext';
 import { DailyRecord } from '@/types/domain/dailyRecord';
 import { getAppSetting, saveAppSetting } from '@/services/settingsService';
-import { isAdmin } from '@/utils/permissions';
 import { CensusAccessRole } from '@/types/censusAccess';
 import { defaultCensusEmailBrowserRuntime } from '@/hooks/controllers/censusEmailBrowserRuntimeController';
 import type { GlobalEmailRecipientList } from '@/services/email/emailRecipientListService';
+import {
+  canManageGlobalCensusEmailRecipients,
+  canUseAdminMaintenanceActions,
+} from '@/shared/access/operationalAccessPolicy';
 import {
   CENSUS_EMAIL_EXCEL_SHEET_CONFIG_KEY,
   DEFAULT_CENSUS_EMAIL_EXCEL_SHEET_CONFIG,
@@ -89,10 +92,12 @@ export const useCensusEmail = ({
   role,
 }: UseCensusEmailParams): UseCensusEmailReturn => {
   const { confirm, alert } = useConfirmDialog();
-  const isAdminUser = isAdmin(role);
+  const isAdminUser = canUseAdminMaintenanceActions(role);
   const browserRuntime = defaultCensusEmailBrowserRuntime;
-  const canManageGlobalRecipientLists =
-    !!user && (role === 'admin' || role === 'nurse_hospital' || role === 'editor');
+  const canManageGlobalRecipientLists = canManageGlobalCensusEmailRecipients({
+    role,
+    userId: user?.uid || user?.email || null,
+  });
 
   // ========== RECIPIENTS STATE ==========
   const {

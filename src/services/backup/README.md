@@ -36,3 +36,5 @@
 - Los estados visibles de respaldo deben salir del vocabulario operativo compartido
   (`ok`, `degraded`, `pending`, `retrying`, `blocked`, `not_verified`) para que banners,
   toasts y badges no diverjan entre vistas.
+- El borrado de archivos y el backfill masivo del browser de respaldos se consideran acciones
+  de mantenimiento admin; la UI no debe habilitarlos para perfiles clínicos no administrativos.

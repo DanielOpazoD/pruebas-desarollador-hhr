@@ -5,7 +5,7 @@ import { useConfirmDialog } from '@/context/UIContext';
 import { getAppSetting, saveAppSetting } from '@/services/settingsService';
 import { useCensusEmailRecipientLists } from '@/hooks/useCensusEmailRecipientLists';
 import { useCensusEmailDeliveryActions } from '@/hooks/useCensusEmailDeliveryActions';
-import { DailyRecord } from '@/types';
+import { DailyRecord } from '@/types/domain/dailyRecord';
 
 vi.mock('@/context/UIContext', () => ({
   useConfirmDialog: vi.fn(),
@@ -155,5 +155,43 @@ describe('useCensusEmail', () => {
     expect(sendEmailWithLink).toHaveBeenCalled();
     expect(generateShareLink).toHaveBeenCalled();
     expect(copyShareLink).toHaveBeenCalled();
+  });
+
+  it('uses shared capability gating for global lists and admin test mode', async () => {
+    renderHook(() =>
+      useCensusEmail({
+        ...defaultParams,
+        role: 'nurse_hospital',
+        user: { email: 'nurse@test.com', role: 'nurse_hospital' },
+      })
+    );
+
+    await waitFor(() => {
+      expect(getAppSetting).toHaveBeenCalled();
+    });
+
+    expect(useCensusEmailRecipientLists).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        canManageGlobalRecipientLists: true,
+      })
+    );
+
+    const { result } = renderHook(() =>
+      useCensusEmail({
+        ...defaultParams,
+        role: 'doctor_specialist',
+        user: { email: 'specialist@test.com', role: 'doctor_specialist' },
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.isAdminUser).toBe(false);
+    });
+
+    expect(useCensusEmailRecipientLists).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        canManageGlobalRecipientLists: false,
+      })
+    );
   });
 });

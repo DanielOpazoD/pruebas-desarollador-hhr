@@ -5,7 +5,12 @@ import type {
   UpdatePartialDailyRecordResult,
 } from '@/services/repositories/contracts/dailyRecordResults';
 import { isDailyRecordWriteBlockedResult } from '@/services/repositories/contracts/dailyRecordResults';
-import { createErrorNotice, createWarningNotice } from '@/shared/feedback/operationalNoticePolicy';
+import {
+  createBlockedNotice,
+  createDegradedNotice,
+  createRetryingNotice,
+  type OperationalNotice,
+} from '@/shared/feedback/operationalNoticePolicy';
 
 interface SaveErrorFeedback {
   title: string;
@@ -51,15 +56,22 @@ interface SyncOutcomeFeedback {
   channel: 'warning' | 'error';
   title: string;
   message: string;
+  state: OperationalNotice['state'];
+  actionRequired: boolean;
 }
 
-const createSyncWarning = (title: string, message: string): SyncOutcomeFeedback => ({
-  ...createWarningNotice(title, message),
+const createSyncRetrying = (title: string, message: string): SyncOutcomeFeedback => ({
+  ...createRetryingNotice(title, message),
   channel: 'warning',
 });
 
-const createSyncError = (title: string, message: string): SyncOutcomeFeedback => ({
-  ...createErrorNotice(title, message),
+const createSyncDegraded = (title: string, message: string): SyncOutcomeFeedback => ({
+  ...createDegradedNotice(title, message),
+  channel: 'warning',
+});
+
+const createSyncBlocked = (title: string, message: string): SyncOutcomeFeedback => ({
+  ...createBlockedNotice(title, message),
   channel: 'error',
 });
 
@@ -71,21 +83,21 @@ export const resolveSaveOutcomeFeedback = (
   }
 
   if (result.outcome === 'queued') {
-    return createSyncWarning(
+    return createSyncRetrying(
       'Guardado local pendiente',
       'Los cambios se guardaron localmente y quedarán pendientes de sincronización.'
     );
   }
 
   if (result.outcome === 'auto_merged') {
-    return createSyncWarning(
+    return createSyncDegraded(
       'Conflicto resuelto automáticamente',
       'Se detectó un conflicto remoto y el sistema aplicó una fusión automática.'
     );
   }
 
   if (result.consistencyState === 'unrecoverable') {
-    return createSyncWarning(
+    return createSyncDegraded(
       'Guardado local sin sincronización',
       result.userSafeMessage ||
         'Los cambios quedaron guardados localmente, pero la sincronización remota requiere revisión manual.'
@@ -93,7 +105,7 @@ export const resolveSaveOutcomeFeedback = (
   }
 
   if (isDailyRecordWriteBlockedResult(result)) {
-    return createSyncError(
+    return createSyncBlocked(
       result.consistencyState === 'blocked_regression'
         ? 'Protección de Datos'
         : 'Versión de Datos Antigua',
@@ -113,28 +125,28 @@ export const resolvePatchOutcomeFeedback = (
   }
 
   if (result.outcome === 'blocked') {
-    return createSyncError(
+    return createSyncBlocked(
       'Actualización bloqueada',
       'No se encontró un registro local válido para aplicar el cambio.'
     );
   }
 
   if (result.outcome === 'queued') {
-    return createSyncWarning(
+    return createSyncRetrying(
       'Cambio pendiente de sincronización',
       'La actualización quedó guardada localmente y se reintentará la sincronización.'
     );
   }
 
   if (result.outcome === 'auto_merged') {
-    return createSyncWarning(
+    return createSyncDegraded(
       'Cambio fusionado automáticamente',
       'Se resolvió un conflicto remoto sin intervención manual.'
     );
   }
 
   if (result.consistencyState === 'unrecoverable') {
-    return createSyncWarning(
+    return createSyncDegraded(
       'Cambio local sin sincronización',
       result.userSafeMessage ||
         'El cambio quedó guardado localmente, pero la sincronización remota requiere revisión manual.'
@@ -142,7 +154,7 @@ export const resolvePatchOutcomeFeedback = (
   }
 
   if (isDailyRecordWriteBlockedResult(result)) {
-    return createSyncError(
+    return createSyncBlocked(
       result.consistencyState === 'blocked_regression'
         ? 'Protección de Datos'
         : 'Versión de Datos Antigua',

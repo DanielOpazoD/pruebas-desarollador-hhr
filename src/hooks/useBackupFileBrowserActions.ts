@@ -10,6 +10,7 @@ import {
 } from '@/application/backup-export/backupExportUseCases';
 import { presentBackupExportOutcome } from '@/hooks/controllers/backupExportOutcomeController';
 import { recordOperationalOutcome } from '@/services/observability/operationalTelemetryService';
+import { canUseAdminMaintenanceActions } from '@/shared/access/operationalAccessPolicy';
 
 interface MagicBackfillProgressState {
   completed: number;
@@ -107,7 +108,7 @@ export const useBackupFileBrowserActions = ({
   }, []);
 
   const handleMagicMonthBackfill = useCallback(async () => {
-    if (role === 'viewer') {
+    if (!canUseAdminMaintenanceActions(role)) {
       notifications.warning('No tienes permisos para ejecutar respaldo masivo');
       return;
     }

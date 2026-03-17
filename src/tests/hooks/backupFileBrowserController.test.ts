@@ -33,6 +33,7 @@ describe('backupFileBrowserController', () => {
 
   it('resolves backup affordances consistently', () => {
     expect(resolveCanRunMagicBackfill('admin', ['2026', 'Marzo'], false)).toBe(true);
+    expect(resolveCanRunMagicBackfill('nurse_hospital', ['2026', 'Marzo'], false)).toBe(false);
     expect(resolveCanRunMagicBackfill('viewer', ['2026', 'Marzo'], false)).toBe(false);
     expect(resolveCanRunMagicBackfill('admin', ['2026'], false)).toBe(false);
     expect(resolveBackupModuleLabel('handoff')).toBe('Entregas');
