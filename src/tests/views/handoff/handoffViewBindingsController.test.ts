@@ -3,8 +3,10 @@ import {
   buildHandoffClinicalEventActions,
   buildHandoffMedicalActions,
   resolveEffectiveSelectedMedicalSpecialty,
+  resolveHandoffMedicalBindings,
 } from '@/features/handoff/controllers/handoffViewBindingsController';
 import type { MedicalHandoffCapabilities } from '@/features/handoff/controllers/medicalHandoffAccessController';
+import type { BedDefinition, DailyRecord } from '@/types';
 import { Specialty } from '@/types';
 
 const buildCapabilities = (
@@ -84,5 +86,43 @@ describe('handoffViewBindingsController', () => {
     expect(readOnly.onAdd).toBeUndefined();
     expect(readOnly.onUpdate).toBeUndefined();
     expect(readOnly.onDelete).toBeUndefined();
+  });
+
+  it('resolves medical bindings with effective specialty fallback and scoped beds', () => {
+    const visibleBeds: BedDefinition[] = [
+      { id: 'R1', name: '101', type: 'MEDIA', isCuna: false },
+      { id: 'R2', name: '102', type: 'MEDIA', isCuna: false },
+    ] as BedDefinition[];
+    const record = {
+      date: '2026-03-03',
+      beds: {
+        R1: { patientName: 'UPC', specialty: Specialty.MEDICINA, isUPC: true },
+        R2: { patientName: 'Sala', specialty: Specialty.CIRUGIA, isUPC: false },
+      },
+      medicalSignatureByScope: {
+        upc: { doctorName: 'Dr. UPC', signedAt: '2026-03-03T10:00:00.000Z' },
+      },
+      medicalHandoffSentAtByScope: {
+        upc: '2026-03-03T10:30:00.000Z',
+      },
+    } as unknown as DailyRecord;
+
+    const bindings = resolveHandoffMedicalBindings({
+      visibleBeds,
+      record,
+      isMedical: true,
+      medicalScope: 'upc',
+      selectedMedicalSpecialty: Specialty.CIRUGIA,
+      shouldShowPatient: () => true,
+    });
+
+    expect(bindings.scopedMedicalScope).toBe('upc');
+    expect(bindings.effectiveVisibleBeds.map(bed => bed.id)).toEqual(['R1']);
+    expect(bindings.medicalSpecialties).toEqual([Specialty.MEDICINA]);
+    expect(bindings.effectiveSelectedMedicalSpecialty).toBe('all');
+    expect(bindings.specialtyFilteredBeds.map(bed => bed.id)).toEqual(['R1']);
+    expect(bindings.scopedMedicalSignature?.doctorName).toBe('Dr. UPC');
+    expect(bindings.scopedMedicalHandoffSentAt).toBe('2026-03-03T10:30:00.000Z');
+    expect(bindings.hasAnyVisiblePatients).toBe(true);
   });
 });

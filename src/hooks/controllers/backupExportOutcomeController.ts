@@ -1,4 +1,8 @@
-import type { ApplicationIssue, ApplicationOutcome } from '@/application/shared/applicationOutcome';
+import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
+import {
+  joinApplicationIssueMessages,
+  resolvePrimaryApplicationIssueMessage,
+} from '@/application/shared/applicationOutcomeMessage';
 import type { OperationalNotice } from '@/shared/feedback/operationalNoticePolicy';
 
 export interface BackupExportOutcomePresentation {
@@ -8,9 +12,6 @@ export interface BackupExportOutcomePresentation {
   state?: OperationalNotice['state'];
   actionRequired?: boolean;
 }
-
-const resolveIssueMessage = (issues: ApplicationIssue[], fallback: string) =>
-  issues[0]?.userSafeMessage || issues[0]?.message || fallback;
 
 export const presentBackupExportOutcome = <T>(
   outcome: ApplicationOutcome<T>,
@@ -36,7 +37,7 @@ export const presentBackupExportOutcome = <T>(
     return {
       channel: 'warning',
       title: options.partialTitle,
-      message: outcome.issues.map(issue => issue.userSafeMessage || issue.message).join('\n'),
+      message: joinApplicationIssueMessages(outcome.issues),
       state: outcome.status === 'partial' ? 'pending' : 'degraded',
       actionRequired: false,
     };
@@ -45,7 +46,7 @@ export const presentBackupExportOutcome = <T>(
   return {
     channel: 'error',
     title: options.failedTitle,
-    message: resolveIssueMessage(outcome.issues, options.fallbackErrorMessage),
+    message: resolvePrimaryApplicationIssueMessage(outcome.issues, options.fallbackErrorMessage),
     state: 'blocked',
     actionRequired: true,
   };

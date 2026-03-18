@@ -2,9 +2,12 @@ import type {
   HandoffClinicalEventActions,
   HandoffMedicalActions,
 } from '@/features/handoff/components/handoffRowContracts';
+import { resolveHandoffMedicalScreenState } from '@/application/handoff';
 import type { MedicalHandoffCapabilities } from '@/features/handoff/controllers/medicalHandoffAccessController';
 import type { ClinicalEvent } from '@/types/domain/clinical';
-import type { Specialty } from '@/types/domain/base';
+import type { Specialty, BedDefinition } from '@/types/domain/base';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 
 interface BuildHandoffMedicalActionsParams {
   capabilities: MedicalHandoffCapabilities;
@@ -28,6 +31,15 @@ interface BuildHandoffClinicalEventActionsParams {
   onDelete: (bedId: string, eventId: string) => void;
 }
 
+interface ResolveHandoffMedicalBindingsParams {
+  visibleBeds: BedDefinition[];
+  record: DailyRecord | null;
+  isMedical: boolean;
+  medicalScope: MedicalHandoffScope;
+  selectedMedicalSpecialty: Specialty | 'all';
+  shouldShowPatient: (bedId: string) => boolean;
+}
+
 export const resolveEffectiveSelectedMedicalSpecialty = (
   selectedMedicalSpecialty: Specialty | 'all',
   availableMedicalSpecialties: Specialty[]
@@ -36,6 +48,48 @@ export const resolveEffectiveSelectedMedicalSpecialty = (
   !availableMedicalSpecialties.includes(selectedMedicalSpecialty)
     ? 'all'
     : selectedMedicalSpecialty;
+
+export const resolveHandoffMedicalBindings = ({
+  visibleBeds,
+  record,
+  isMedical,
+  medicalScope,
+  selectedMedicalSpecialty,
+  shouldShowPatient,
+}: ResolveHandoffMedicalBindingsParams) => {
+  const baseState = resolveHandoffMedicalScreenState({
+    visibleBeds,
+    record,
+    isMedical,
+    medicalScope,
+    selectedMedicalSpecialty: 'all',
+    shouldShowPatient,
+  });
+
+  const effectiveSelectedMedicalSpecialty = resolveEffectiveSelectedMedicalSpecialty(
+    selectedMedicalSpecialty,
+    baseState.medicalSpecialties
+  );
+
+  const specialtyState =
+    effectiveSelectedMedicalSpecialty === 'all'
+      ? baseState
+      : resolveHandoffMedicalScreenState({
+          visibleBeds,
+          record,
+          isMedical,
+          medicalScope,
+          selectedMedicalSpecialty: effectiveSelectedMedicalSpecialty,
+          shouldShowPatient,
+        });
+
+  return {
+    ...baseState,
+    effectiveSelectedMedicalSpecialty,
+    specialtyFilteredBeds: specialtyState.specialtyFilteredBeds,
+    hasAnyVisiblePatients: specialtyState.hasAnyVisiblePatients,
+  };
+};
 
 export const buildHandoffMedicalActions = ({
   capabilities,

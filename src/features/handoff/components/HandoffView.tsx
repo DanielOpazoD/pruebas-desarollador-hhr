@@ -21,11 +21,10 @@ import {
   resolveInitialMedicalScopeFromSearch,
   resolveInitialMedicalSpecialtyFromSearch,
 } from '@/domain/handoff/view';
-import { resolveHandoffMedicalScreenState } from '@/application/handoff';
 import {
   buildHandoffClinicalEventActions,
   buildHandoffMedicalActions,
-  resolveEffectiveSelectedMedicalSpecialty,
+  resolveHandoffMedicalBindings,
 } from '@/features/handoff/controllers/handoffViewBindingsController';
 import { resolveMedicalHandoffCapabilities } from '@/features/handoff/controllers/medicalHandoffAccessController';
 import {
@@ -123,30 +122,17 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
     medicalSpecialties,
     scopedMedicalSignature,
     scopedMedicalHandoffSentAt,
+    effectiveSelectedMedicalSpecialty,
+    specialtyFilteredBeds,
+    hasAnyVisiblePatients,
   } = React.useMemo(
     () =>
-      resolveHandoffMedicalScreenState({
+      resolveHandoffMedicalBindings({
         visibleBeds,
         record,
         isMedical,
         medicalScope: effectiveMedicalScope,
-        selectedMedicalSpecialty: 'all',
-        shouldShowPatient,
-      }),
-    [visibleBeds, record, isMedical, effectiveMedicalScope, shouldShowPatient]
-  );
-  const effectiveSelectedMedicalSpecialty = React.useMemo(
-    () => resolveEffectiveSelectedMedicalSpecialty(selectedMedicalSpecialty, medicalSpecialties),
-    [medicalSpecialties, selectedMedicalSpecialty]
-  );
-  const { specialtyFilteredBeds, hasAnyVisiblePatients } = React.useMemo(
-    () =>
-      resolveHandoffMedicalScreenState({
-        visibleBeds,
-        record,
-        isMedical,
-        medicalScope: effectiveMedicalScope,
-        selectedMedicalSpecialty: effectiveSelectedMedicalSpecialty,
+        selectedMedicalSpecialty,
         shouldShowPatient,
       }),
     [
@@ -154,7 +140,7 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
       record,
       isMedical,
       effectiveMedicalScope,
-      effectiveSelectedMedicalSpecialty,
+      selectedMedicalSpecialty,
       shouldShowPatient,
     ]
   );

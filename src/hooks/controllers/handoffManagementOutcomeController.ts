@@ -1,14 +1,10 @@
-import type { ApplicationIssue, ApplicationOutcome } from '@/application/shared/applicationOutcome';
+import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
+import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
 
 export interface HandoffManagementOutcomeNotice {
   message: string;
   title: string;
 }
-
-const resolveIssueMessage = (issues: ApplicationIssue[], fallbackMessage: string): string =>
-  issues.find(issue => issue.userSafeMessage)?.userSafeMessage ||
-  issues[0]?.message ||
-  fallbackMessage;
 
 export const presentHandoffManagementFailure = <T>(
   outcome: ApplicationOutcome<T>,
@@ -18,6 +14,6 @@ export const presentHandoffManagementFailure = <T>(
     reasonTitles?: Partial<Record<string, string>>;
   }
 ): HandoffManagementOutcomeNotice => ({
-  message: outcome.userSafeMessage || resolveIssueMessage(outcome.issues, options.fallbackMessage),
+  message: resolveApplicationOutcomeMessage(outcome, options.fallbackMessage),
   title: (outcome.reason && options.reasonTitles?.[outcome.reason]) || options.fallbackTitle,
 });

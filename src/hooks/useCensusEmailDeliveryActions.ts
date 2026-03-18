@@ -16,6 +16,7 @@ import {
   resolveShareLinkRole,
 } from '@/hooks/controllers/censusEmailActionController';
 import { resolveCensusEmailSendOutcomePresentation } from '@/hooks/controllers/censusEmailOutcomeController';
+import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
 import { logger } from '@/services/utils/loggerService';
 
 const censusEmailDeliveryLogger = logger.child('useCensusEmailDeliveryActions');
@@ -74,10 +75,7 @@ export const useCensusEmailDeliveryActions = ({
         return result.data;
       }
       await alert(
-        result.userSafeMessage ||
-          result.issues[0]?.userSafeMessage ||
-          result.issues[0]?.message ||
-          'No se pudo generar el link de acceso.'
+        resolveApplicationOutcomeMessage(result, 'No se pudo generar el link de acceso.')
       );
       return null;
     },

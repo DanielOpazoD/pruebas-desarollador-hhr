@@ -13,6 +13,7 @@ import {
   executeLoadSharedCensusFiles,
   executeLogSharedCensusAccess,
 } from '@/application/backup-export/sharedCensusFilesUseCases';
+import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
 import { logger } from '@/services/utils/loggerService';
 
 const sharedCensusFilesLogger = logger.child('useSharedCensusFiles');
@@ -69,10 +70,7 @@ export const useSharedCensusFiles = (
       setFiles(outcome.data ?? []);
       if (outcome.status === 'failed') {
         setLoadError(
-          outcome.userSafeMessage ||
-            outcome.issues[0]?.userSafeMessage ||
-            outcome.issues[0]?.message ||
-            'No se pudieron cargar los archivos del censo.'
+          resolveApplicationOutcomeMessage(outcome, 'No se pudieron cargar los archivos del censo.')
         );
         return;
       }

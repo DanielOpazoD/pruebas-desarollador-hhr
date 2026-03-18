@@ -3,6 +3,7 @@ import { BedDefinition } from '@/types/domain/base';
 import { DailyRecord } from '@/types/domain/dailyRecord';
 import { PatientData } from '@/types/domain/patient';
 import { ClinicalEvent } from '@/types/domain/clinical';
+import { resolveHandoffPatientRowPlan } from '@/features/handoff/controllers/handoffPatientTableController';
 import { HandoffRow } from './HandoffRow';
 import { Maximize2, Minimize2 } from 'lucide-react';
 import type { HandoffClinicalEventActions, HandoffMedicalActions } from './handoffRowContracts';
@@ -157,28 +158,25 @@ export const HandoffPatientTable: React.FC<HandoffPatientTableProps> = ({
           </thead>
           <tbody>
             {visibleBeds.map(bed => {
-              const patient = record.beds[bed.id];
+              const rowPlan = resolveHandoffPatientRowPlan(bed, record.beds[bed.id], {
+                isMedical,
+                shouldShowPatient,
+              });
 
-              if (!patient) {
-                return renderRow(bed, { isBlocked: false } as PatientData, { isNested: false });
-              }
-
-              if (isMedical && patient.isBlocked) {
+              if (!rowPlan.shouldRender) {
                 return null;
-              }
-
-              const showPatient =
-                patient.isBlocked || !patient.patientName || shouldShowPatient(bed.id);
-
-              if (!showPatient) {
-                return renderRow(bed, { isBlocked: false } as PatientData, { isNested: false });
               }
 
               return (
                 <React.Fragment key={bed.id}>
-                  {renderRow(bed, patient, { isNested: false, forcedExpand: allEventsExpanded })}
-                  {patient.clinicalCrib && patient.clinicalCrib.patientName
-                    ? renderRow(bed, patient.clinicalCrib, {
+                  {rowPlan.shouldRenderMainRow
+                    ? renderRow(bed, rowPlan.basePatient, {
+                        isNested: false,
+                        forcedExpand: allEventsExpanded,
+                      })
+                    : null}
+                  {rowPlan.shouldRenderClinicalCrib && rowPlan.basePatient.clinicalCrib
+                    ? renderRow(bed, rowPlan.basePatient.clinicalCrib, {
                         isNested: true,
                         forcedExpand: allEventsExpanded,
                       })

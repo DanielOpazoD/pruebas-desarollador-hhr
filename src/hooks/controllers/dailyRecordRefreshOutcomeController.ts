@@ -1,5 +1,6 @@
 import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 import type { SyncOutcome } from '@/application/daily-record/syncDailyRecordUseCase';
+import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
 import {
   createBlockedNotice,
   createDegradedNotice,
@@ -53,22 +54,16 @@ export const presentDailyRecordRefreshOutcome = (
 ): DailyRecordRefreshOutcomePresentation => {
   if (outcome.status === 'partial' || outcome.status === 'degraded') {
     const actionLabel = resolveSyncConflictAction(outcome);
+    const message = resolveApplicationOutcomeMessage(
+      outcome,
+      outcome.status === 'partial'
+        ? 'La sincronización quedó pendiente.'
+        : 'La sincronización continúa con limitaciones.'
+    );
     const notice =
       outcome.data.conflict?.recommendedAction === 'retry_sync'
-        ? createRetryingNotice(
-            resolveSyncConflictTitle(outcome),
-            outcome.userSafeMessage ||
-              outcome.issues[0]?.userSafeMessage ||
-              outcome.issues[0]?.message ||
-              'La sincronización quedó pendiente.'
-          )
-        : createDegradedNotice(
-            resolveSyncConflictTitle(outcome),
-            outcome.userSafeMessage ||
-              outcome.issues[0]?.userSafeMessage ||
-              outcome.issues[0]?.message ||
-              'La sincronización continúa con limitaciones.'
-          );
+        ? createRetryingNotice(resolveSyncConflictTitle(outcome), message)
+        : createDegradedNotice(resolveSyncConflictTitle(outcome), message);
     return {
       ...notice,
       channel: 'warning',
@@ -80,22 +75,14 @@ export const presentDailyRecordRefreshOutcome = (
 
   if (outcome.status === 'failed') {
     const actionLabel = resolveSyncConflictAction(outcome);
+    const message = resolveApplicationOutcomeMessage(
+      outcome,
+      'No se pudo sincronizar el registro.'
+    );
     const notice =
       outcome.data.conflict?.recommendedAction === 'retry_sync'
-        ? createRetryingNotice(
-            resolveSyncConflictTitle(outcome),
-            outcome.userSafeMessage ||
-              outcome.issues[0]?.userSafeMessage ||
-              outcome.issues[0]?.message ||
-              'No se pudo sincronizar el registro.'
-          )
-        : createBlockedNotice(
-            resolveSyncConflictTitle(outcome),
-            outcome.userSafeMessage ||
-              outcome.issues[0]?.userSafeMessage ||
-              outcome.issues[0]?.message ||
-              'No se pudo sincronizar el registro.'
-          );
+        ? createRetryingNotice(resolveSyncConflictTitle(outcome), message)
+        : createBlockedNotice(resolveSyncConflictTitle(outcome), message);
     return {
       ...notice,
       channel: notice.channel === 'info' ? 'warning' : notice.channel,

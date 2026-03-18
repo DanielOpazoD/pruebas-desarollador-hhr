@@ -70,4 +70,27 @@ describe('dailyRecordSyncNotificationController', () => {
       actionRequired: true,
     });
   });
+
+  it('prefers userSafeMessage for consistency-related save feedback', () => {
+    expect(
+      resolveSaveOutcomeFeedback(
+        createSaveDailyRecordResult({
+          date: '2026-03-03',
+          outcome: 'clean',
+          savedLocally: true,
+          savedRemotely: false,
+          queuedForRetry: false,
+          autoMerged: false,
+          consistencyState: 'unrecoverable',
+          userSafeMessage: 'mensaje visible de sync',
+        })
+      )
+    ).toEqual({
+      channel: 'warning',
+      title: 'Guardado local sin sincronización',
+      message: 'mensaje visible de sync',
+      state: 'degraded',
+      actionRequired: false,
+    });
+  });
 });

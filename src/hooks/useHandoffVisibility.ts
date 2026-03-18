@@ -2,6 +2,11 @@ import { useCallback, useMemo } from 'react';
 import { DailyRecord } from '@/types/domain/dailyRecord';
 import { BEDS } from '@/constants/beds';
 import { isAdmittedDuringShift } from '@/utils/dateUtils';
+import {
+  getVisibleHandoffBeds,
+  hasVisibleHandoffPatients,
+  shouldShowHandoffPatient,
+} from '@/hooks/controllers/handoffVisibilityController';
 
 export type NursingShift = 'day' | 'night';
 
@@ -15,9 +20,7 @@ export const useHandoffVisibility = (record: DailyRecord | null, selectedShift: 
    * Determines if a bed should be visible (ignores extra beds if they are not active)
    */
   const visibleBeds = useMemo(() => {
-    if (!record) return [];
-    const activeExtras = record.activeExtraBeds || [];
-    return BEDS.filter(bed => !bed.isExtra || activeExtras.includes(bed.id));
+    return getVisibleHandoffBeds(record, BEDS);
   }, [record]);
 
   /**
@@ -25,19 +28,7 @@ export const useHandoffVisibility = (record: DailyRecord | null, selectedShift: 
    */
   const shouldShowPatient = useCallback(
     (bedId: string): boolean => {
-      if (!record) return false;
-
-      const patient = record.beds[bedId];
-      if (!patient) return false;
-      if (patient.isBlocked) return true; // Always show blocked beds
-      if (!patient.patientName) return false;
-
-      return isAdmittedDuringShift(
-        record.date,
-        patient.admissionDate,
-        patient.admissionTime,
-        selectedShift
-      );
+      return shouldShowHandoffPatient(record, bedId, selectedShift, isAdmittedDuringShift);
     },
     [record, selectedShift]
   );
@@ -46,13 +37,7 @@ export const useHandoffVisibility = (record: DailyRecord | null, selectedShift: 
    * Checks if there are any patients to show in the current view
    */
   const hasAnyPatients = useMemo(() => {
-    if (!record) return false;
-    return visibleBeds.some(b => {
-      const patient = record.beds[b.id];
-      if (!patient?.patientName && !patient?.isBlocked) return false;
-      if (patient?.isBlocked) return true;
-      return shouldShowPatient(b.id);
-    });
+    return hasVisibleHandoffPatients(record, visibleBeds, shouldShowPatient);
   }, [visibleBeds, record, shouldShowPatient]);
 
   return {

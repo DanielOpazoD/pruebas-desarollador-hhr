@@ -7,6 +7,7 @@ import {
   buildClinicalDocumentPresenceByBed,
 } from '@/features/census/controllers/clinicalDocumentPresenceController';
 import { executeListClinicalDocumentsByEpisodeKeys } from '@/application/clinical-documents/clinicalDocumentUseCases';
+import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
 import { logger } from '@/services/utils/loggerService';
 
 const clinicalDocumentPresenceLogger = logger.child('useClinicalDocumentPresenceByBed');
@@ -36,10 +37,7 @@ export const useClinicalDocumentPresenceByBed = ({
       if (outcome.status === 'failed') {
         clinicalDocumentPresenceLogger.warn(
           'Failed to resolve clinical document presence',
-          outcome.userSafeMessage ||
-            outcome.issues[0]?.userSafeMessage ||
-            outcome.issues[0]?.message ||
-            'No se pudo resolver presencia documental.'
+          resolveApplicationOutcomeMessage(outcome, 'No se pudo resolver presencia documental.')
         );
         return [];
       }

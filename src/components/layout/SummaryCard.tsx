@@ -2,6 +2,7 @@ import React from 'react';
 import { Statistics } from '@/types/domain/base';
 import { DischargeData, TransferData } from '@/types/domain/movements';
 import { Activity, Bed, Baby } from 'lucide-react';
+import { buildMovementSummaryModel } from '@/components/layout/controllers/movementSummaryController';
 
 interface SummaryCardProps {
   stats: Statistics;
@@ -82,33 +83,31 @@ export const MovementSummaryCard: React.FC<{
   cmaCount: number;
   newAdmissions?: number;
 }> = ({ discharges, transfers, cmaCount, newAdmissions = 0 }) => {
-  const deaths = discharges.filter(d => d.status === 'Fallecido').length;
-  const totalDischarges = discharges.length; // Total egresos (altas + fallecidos)
-  const totalTransfers = transfers.length;
+  const summary = buildMovementSummaryModel(discharges, transfers, cmaCount, newAdmissions);
 
   return (
     <BaseSummaryCard title="Movimientos" icon={<Activity size={12} className="text-medical-500" />}>
       <div className="flex flex-col gap-1 px-1">
         <div className="flex justify-between items-center text-[10px]">
           <span className="text-slate-500 font-medium">Altas</span>
-          <span className="font-bold text-green-600">{totalDischarges}</span>
+          <span className="font-bold text-green-600">{summary.totalDischarges}</span>
         </div>
         <div className="flex justify-between items-center text-[10px]">
           <span className="text-slate-500 font-medium">Traslados</span>
-          <span className="font-bold text-blue-600">{totalTransfers}</span>
+          <span className="font-bold text-blue-600">{summary.totalTransfers}</span>
         </div>
         <div className="flex justify-between items-center text-[10px]">
           <span className="text-slate-500 font-medium">H. Diurna</span>
-          <span className="font-bold text-orange-600">{cmaCount}</span>
+          <span className="font-bold text-orange-600">{summary.cmaCount}</span>
         </div>
         <div className="flex justify-between items-center text-[10px]">
           <span className="text-slate-500 font-medium">Ingresos</span>
-          <span className="font-bold text-indigo-600">{newAdmissions}</span>
+          <span className="font-bold text-indigo-600">{summary.newAdmissions}</span>
         </div>
-        {deaths > 0 && (
+        {summary.totalDeaths > 0 && (
           <div className="flex justify-between items-center text-[10px] mt-0.5 pt-0.5 border-t border-red-100">
             <span className="text-red-500 font-bold">Fallecidos</span>
-            <span className="font-bold text-red-600">{deaths}</span>
+            <span className="font-bold text-red-600">{summary.totalDeaths}</span>
           </div>
         )}
       </div>
@@ -148,9 +147,7 @@ export const CombinedSummaryCard: React.FC<SummaryCardProps> = ({
   newAdmissions = 0,
 }) => {
   const capacidadServicio = stats.serviceCapacity - stats.blockedBeds;
-  const deaths = discharges.filter(d => d.status === 'Fallecido').length;
-  const totalDischarges = discharges.length;
-  const totalTransfers = transfers.length;
+  const movementSummary = buildMovementSummaryModel(discharges, transfers, cmaCount, newAdmissions);
 
   return (
     <div className="card px-2 py-1.5 flex flex-row gap-0 hover:border-slate-300 transition-colors animate-fade-in">
@@ -232,30 +229,40 @@ export const CombinedSummaryCard: React.FC<SummaryCardProps> = ({
         <div className="flex items-center gap-3 mt-0.5">
           <div className="flex items-center gap-1 text-[9px]">
             <span className="text-slate-500">Altas</span>
-            <span className="font-bold text-green-600 text-[10px]">{totalDischarges}</span>
+            <span className="font-bold text-green-600 text-[10px]">
+              {movementSummary.totalDischarges}
+            </span>
           </div>
           <div className="flex items-center gap-1 text-[9px]">
             <span className="text-slate-500">Traslados</span>
-            <span className="font-bold text-blue-600 text-[10px]">{totalTransfers}</span>
+            <span className="font-bold text-blue-600 text-[10px]">
+              {movementSummary.totalTransfers}
+            </span>
           </div>
         </div>
         {/* Row 2: H.Diurna + Ingresos */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 text-[9px]">
             <span className="text-slate-500">H.Diurna</span>
-            <span className="font-bold text-orange-600 text-[10px]">{cmaCount}</span>
+            <span className="font-bold text-orange-600 text-[10px]">
+              {movementSummary.cmaCount}
+            </span>
           </div>
           <div className="flex items-center gap-1 text-[9px]">
             <span className="text-slate-500">Ingresos</span>
-            <span className="font-bold text-indigo-600 text-[10px]">{newAdmissions}</span>
+            <span className="font-bold text-indigo-600 text-[10px]">
+              {movementSummary.newAdmissions}
+            </span>
           </div>
         </div>
         {/* Row 3: Fallecidos */}
-        {deaths > 0 && (
+        {movementSummary.totalDeaths > 0 && (
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 text-[9px]">
               <span className="text-red-500 font-bold">Fall.</span>
-              <span className="font-bold text-red-600 text-[10px]">{deaths}</span>
+              <span className="font-bold text-red-600 text-[10px]">
+                {movementSummary.totalDeaths}
+              </span>
             </div>
           </div>
         )}

@@ -1,4 +1,5 @@
 import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
+import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
 import type {
   ListBackupFilesOutput,
   LookupBackupArchiveStatusOutput,
@@ -32,8 +33,10 @@ export const presentBackupLookupOutcome = (
   outcome: ApplicationOutcome<LookupBackupArchiveStatusOutput>
 ): OutcomePresentation => {
   if (outcome.status === 'failed') {
-    const issueMessage =
-      outcome.userSafeMessage || outcome.issues[0]?.userSafeMessage || outcome.issues[0]?.message;
+    const issueMessage = resolveApplicationOutcomeMessage(
+      outcome,
+      'No se pudo consultar el respaldo remoto.'
+    );
     if (isPermissionLikeLookupFailure(issueMessage)) {
       return createPassiveVerificationPermissionNotice('el respaldo remoto');
     }
@@ -58,10 +61,7 @@ export const presentBackupListingOutcome = (
   if (outcome.status === 'failed') {
     return createErrorNotice(
       'Carga de respaldos fallida',
-      outcome.userSafeMessage ||
-        outcome.issues[0]?.userSafeMessage ||
-        outcome.issues[0]?.message ||
-        'No se pudo cargar la lista de respaldos.'
+      resolveApplicationOutcomeMessage(outcome, 'No se pudo cargar la lista de respaldos.')
     );
   }
 

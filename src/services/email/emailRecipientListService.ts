@@ -5,6 +5,7 @@ import {
   createApplicationSuccess,
   type ApplicationOutcome,
 } from '@/application/shared/applicationOutcome';
+import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EMAIL_RECIPIENT_LISTS_COLLECTION = 'emailRecipientLists';
@@ -225,10 +226,7 @@ export const saveGlobalEmailRecipientList = async ({
   });
   if (result.status !== 'success') {
     throw new Error(
-      result.userSafeMessage ||
-        result.issues[0]?.userSafeMessage ||
-        result.issues[0]?.message ||
-        'No se pudo guardar la lista global.'
+      resolveApplicationOutcomeMessage(result, 'No se pudo guardar la lista global.')
     );
   }
 };
@@ -278,10 +276,7 @@ export const deleteGlobalEmailRecipientList = async (listId: string): Promise<vo
   const result = await deleteGlobalEmailRecipientListWithResult(listId);
   if (result.status !== 'success') {
     throw new Error(
-      result.userSafeMessage ||
-        result.issues[0]?.userSafeMessage ||
-        result.issues[0]?.message ||
-        'No se pudo eliminar la lista global.'
+      resolveApplicationOutcomeMessage(result, 'No se pudo eliminar la lista global.')
     );
   }
 };

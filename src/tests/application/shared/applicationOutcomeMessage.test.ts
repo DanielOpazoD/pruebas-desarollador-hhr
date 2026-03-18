@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  joinApplicationIssueMessages,
   resolveApplicationOutcomeMessage,
   resolveFailedApplicationOutcomeMessage,
+  resolvePrimaryApplicationIssueMessage,
 } from '@/application/shared/applicationOutcomeMessage';
 
 describe('applicationOutcomeMessage', () => {
@@ -51,5 +53,23 @@ describe('applicationOutcomeMessage', () => {
         'Fallback'
       )
     ).toBe('Error visible');
+  });
+
+  it('resolves the primary issue message using user-safe copy first', () => {
+    expect(
+      resolvePrimaryApplicationIssueMessage(
+        [{ userSafeMessage: 'Visible', message: 'Technical' }],
+        'Fallback'
+      )
+    ).toBe('Visible');
+  });
+
+  it('joins issue messages preserving user-safe text when available', () => {
+    expect(
+      joinApplicationIssueMessages([
+        { userSafeMessage: 'Visible', message: 'Technical' },
+        { message: 'Second raw' },
+      ])
+    ).toBe('Visible\nSecond raw');
   });
 });

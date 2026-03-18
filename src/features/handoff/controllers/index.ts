@@ -33,6 +33,7 @@ export {
   buildHandoffClinicalEventActions,
   buildHandoffMedicalActions,
   resolveEffectiveSelectedMedicalSpecialty,
+  resolveHandoffMedicalBindings,
 } from './handoffViewBindingsController';
 export {
   buildMedicalHandoffSignatureLink,

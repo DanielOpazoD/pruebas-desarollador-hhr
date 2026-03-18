@@ -1,5 +1,6 @@
 import { ConcurrencyError } from '@/services/storage/firestore';
 import { DataRegressionError, VersionMismatchError } from '@/utils/integrityGuard';
+import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
 import type {
   SaveDailyRecordResult,
   UpdatePartialDailyRecordResult,
@@ -75,6 +76,11 @@ const createSyncBlocked = (title: string, message: string): SyncOutcomeFeedback 
   channel: 'error',
 });
 
+const resolveSyncConsistencyMessage = (
+  result: { userSafeMessage?: string },
+  fallbackMessage: string
+): string => resolveApplicationOutcomeMessage(result, fallbackMessage);
+
 export const resolveSaveOutcomeFeedback = (
   result: SaveDailyRecordResult | null | undefined
 ): SyncOutcomeFeedback | null => {
@@ -99,8 +105,10 @@ export const resolveSaveOutcomeFeedback = (
   if (result.consistencyState === 'unrecoverable') {
     return createSyncDegraded(
       'Guardado local sin sincronización',
-      result.userSafeMessage ||
+      resolveSyncConsistencyMessage(
+        result,
         'Los cambios quedaron guardados localmente, pero la sincronización remota requiere revisión manual.'
+      )
     );
   }
 
@@ -109,8 +117,10 @@ export const resolveSaveOutcomeFeedback = (
       result.consistencyState === 'blocked_regression'
         ? 'Protección de Datos'
         : 'Versión de Datos Antigua',
-      result.userSafeMessage ||
+      resolveSyncConsistencyMessage(
+        result,
         'La operación quedó bloqueada por una validación de consistencia remota.'
+      )
     );
   }
 
@@ -148,8 +158,10 @@ export const resolvePatchOutcomeFeedback = (
   if (result.consistencyState === 'unrecoverable') {
     return createSyncDegraded(
       'Cambio local sin sincronización',
-      result.userSafeMessage ||
+      resolveSyncConsistencyMessage(
+        result,
         'El cambio quedó guardado localmente, pero la sincronización remota requiere revisión manual.'
+      )
     );
   }
 
@@ -158,8 +170,10 @@ export const resolvePatchOutcomeFeedback = (
       result.consistencyState === 'blocked_regression'
         ? 'Protección de Datos'
         : 'Versión de Datos Antigua',
-      result.userSafeMessage ||
+      resolveSyncConsistencyMessage(
+        result,
         'La actualización quedó bloqueada por una validación de consistencia remota.'
+      )
     );
   }
 

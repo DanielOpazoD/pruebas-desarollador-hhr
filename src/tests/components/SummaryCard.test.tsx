@@ -60,9 +60,9 @@ describe('SummaryCard Components', () => {
         />
       );
 
-      expect(screen.getByText('Egresos')).toBeInTheDocument();
+      expect(screen.getByText('Altas')).toBeInTheDocument();
       // Using getAllByText and checking values specifically
-      const egresos = screen.getByText('Egresos').nextElementSibling;
+      const egresos = screen.getByText('Altas').nextElementSibling;
       expect(egresos?.textContent).toBe('1');
 
       expect(screen.getByText('Traslados')).toBeInTheDocument();
@@ -82,7 +82,7 @@ describe('SummaryCard Components', () => {
       const fallecidos = screen.getByText('Fallecidos').nextElementSibling;
       expect(fallecidos?.textContent).toBe('1');
 
-      const egresos = screen.getByText('Egresos').nextElementSibling;
+      const egresos = screen.getByText('Altas').nextElementSibling;
       expect(egresos?.textContent).toBe('2'); // Total Egresos
     });
   });
