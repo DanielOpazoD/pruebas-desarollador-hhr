@@ -15,6 +15,11 @@ interface MedicalEntryMutationResult {
   fields: Pick<PatientData, 'medicalHandoffEntries' | 'medicalHandoffNote' | 'medicalHandoffAudit'>;
 }
 
+const resolveOriginalNoteBy = (
+  entry: MedicalHandoffEntry,
+  actor: MedicalHandoffAuditActor | null
+): MedicalHandoffAuditActor | undefined => actor || entry.updatedBy || entry.originalNoteBy;
+
 const upsertEntry = (
   entries: MedicalHandoffEntry[],
   nextEntry: MedicalHandoffEntry,
@@ -53,6 +58,8 @@ export const buildMedicalPrimaryNoteFields = (
   const nextEntry: MedicalHandoffEntry = {
     ...entry,
     note: value,
+    originalNoteAt: now,
+    originalNoteBy: resolveOriginalNoteBy(entry, actor),
     updatedAt: now,
     updatedBy: actor || entry.updatedBy,
     currentStatus: 'updated_by_specialist',
@@ -84,6 +91,8 @@ export const buildMedicalEntryNoteFields = (
         : createMedicalHandoffEntry(entry.specialty || patient.specialty).id,
     specialty: entry.specialty || patient.specialty || '',
     note: value,
+    originalNoteAt: now,
+    originalNoteBy: resolveOriginalNoteBy(entry, actor),
     updatedAt: now,
     updatedBy: actor || entry.updatedBy,
     currentStatus: 'updated_by_specialist',
@@ -173,6 +182,33 @@ export const buildMedicalEntryContinuityFields = (
     currentStatusDate: reportDate,
     currentStatusAt: now,
     currentStatusBy: actor,
+  };
+  const nextEntries = upsertEntry(entries, nextEntry, entryIndex);
+  return { entry: nextEntry, fields: buildMedicalHandoffFieldsFromEntries(patient, nextEntries) };
+};
+
+export const buildMedicalEntryRefreshFields = (
+  patient: PatientData,
+  entryId: string,
+  actor: MedicalHandoffAuditActor | null,
+  reportDate: string,
+  now: string
+): MedicalEntryMutationResult | null => {
+  const entries = getPatientMedicalHandoffEntries(patient);
+  const entryIndex = entries.findIndex(entry => entry.id === entryId);
+  if (entryIndex < 0) return null;
+
+  const currentEntry = entries[entryIndex];
+  const nextEntry: MedicalHandoffEntry = {
+    ...currentEntry,
+    originalNoteAt: currentEntry.originalNoteAt || currentEntry.updatedAt,
+    originalNoteBy: currentEntry.originalNoteBy || currentEntry.updatedBy,
+    updatedAt: now,
+    updatedBy: actor || currentEntry.updatedBy,
+    currentStatus: 'updated_by_specialist',
+    currentStatusDate: reportDate,
+    currentStatusAt: now,
+    currentStatusBy: actor || currentEntry.currentStatusBy,
   };
   const nextEntries = upsertEntry(entries, nextEntry, entryIndex);
   return { entry: nextEntry, fields: buildMedicalHandoffFieldsFromEntries(patient, nextEntries) };

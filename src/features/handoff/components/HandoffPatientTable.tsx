@@ -55,8 +55,8 @@ export const HandoffPatientTable: React.FC<HandoffPatientTableProps> = ({
     onEntryDelete: medicalActions?.onEntryDelete
       ? (entryId: string) => medicalActions.onEntryDelete?.(bedId, entryId, isNested)
       : undefined,
-    onContinuityConfirm: medicalActions?.onContinuityConfirm
-      ? (entryId: string) => medicalActions.onContinuityConfirm?.(bedId, entryId, isNested)
+    onRefreshAsCurrent: medicalActions?.onRefreshAsCurrent
+      ? (entryId: string) => medicalActions.onRefreshAsCurrent?.(bedId, entryId, isNested)
       : undefined,
   });
 
@@ -142,7 +142,7 @@ export const HandoffPatientTable: React.FC<HandoffPatientTableProps> = ({
                 </th>
               )}
               {isMedical && (
-                <th className="p-2 border-r border-slate-200 print:w-[35%] print:min-w-0 print:text-[10px] print:p-1">
+                <th className="p-2 print:w-[49%] print:min-w-0 print:text-[10px] print:p-1">
                   Observaciones
                 </th>
               )}
@@ -150,9 +150,6 @@ export const HandoffPatientTable: React.FC<HandoffPatientTableProps> = ({
                 <th className="p-2 print:w-[35%] print:min-w-0 print:text-[10px] print:p-1">
                   Observaciones
                 </th>
-              )}
-              {isMedical && (
-                <th className="p-2 w-40 print:w-[14%] print:text-[10px] print:p-1">Vigencia</th>
               )}
             </tr>
           </thead>
@@ -188,7 +185,7 @@ export const HandoffPatientTable: React.FC<HandoffPatientTableProps> = ({
             {!hasAnyPatients && (
               <tr>
                 <td
-                  colSpan={isMedical ? 5 : 5}
+                  colSpan={isMedical ? 4 : 5}
                   className="p-8 text-center text-slate-400 italic text-sm"
                 >
                   No hay pacientes registrados en este turno.

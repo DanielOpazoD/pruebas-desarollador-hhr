@@ -8,16 +8,12 @@ import { ClinicalEventsPanel } from './ClinicalEventsPanel';
 import { calculateDeviceDays } from '@/components/device-selector/DeviceDateConfigModal';
 import { DebouncedTextarea } from '@/components/ui/DebouncedTextarea';
 import { MedicalHandoffObservationEntry } from './MedicalHandoffObservationEntry';
-import { MedicalHandoffValidityEntry } from './MedicalHandoffValidityEntry';
 import {
   canToggleClinicalEvents,
   resolveHandoffStatusVariant,
   shouldRenderClinicalEventsPanel,
 } from '@/features/handoff/controllers/handoffRowCellsController';
-import {
-  getDisplayMedicalHandoffEntries,
-  getMedicalHandoffSpecialtyOptions,
-} from '@/domain/handoff/patientEntries';
+import { getMedicalHandoffSpecialtyOptions } from '@/domain/handoff/patientEntries';
 import { resolveMedicalObservationEntries } from '@/domain/handoff/patientView';
 import { MedicalBadge } from '@/components/ui/base/MedicalBadge';
 import type { MedicalBadgeVariant } from '@/shared/ui/medicalBadgeContracts';
@@ -248,24 +244,28 @@ export const HandoffObservationsCell: React.FC<HandoffObservationsCellProps> = (
 
 interface HandoffMedicalObservationsCellProps {
   patient: PatientData;
+  reportDate: string;
   isFieldReadOnly: boolean;
   onCreatePrimaryEntry?: () => void;
   onEntryNoteChange: (entryId: string, value: string) => void;
   onEntrySpecialtyChange?: (entryId: string, specialty: string) => void;
   onAddEntry?: () => void;
   onDeleteEntry?: (entryId: string) => void;
+  onRefreshAsCurrent?: (entryId: string) => void;
 }
 
 const specialtyOptions = getMedicalHandoffSpecialtyOptions();
 
 export const HandoffMedicalObservationsCell: React.FC<HandoffMedicalObservationsCellProps> = ({
   patient,
+  reportDate,
   isFieldReadOnly,
   onCreatePrimaryEntry,
   onEntryNoteChange,
   onEntrySpecialtyChange,
   onAddEntry,
   onDeleteEntry,
+  onRefreshAsCurrent,
 }) => {
   const entries = resolveMedicalObservationEntries({
     patient,
@@ -274,7 +274,7 @@ export const HandoffMedicalObservationsCell: React.FC<HandoffMedicalObservations
   });
 
   return (
-    <td className="p-1.5 w-full min-w-[280px] align-top border-r border-slate-200 print:w-auto print:min-w-0 print:text-[8px] print:p-0.5">
+    <td className="p-1.5 w-full min-w-[280px] align-top print:w-auto print:min-w-0 print:text-[8px] print:p-0.5">
       <div className="space-y-2">
         {entries.length === 0 ? (
           onCreatePrimaryEntry && !isFieldReadOnly ? (
@@ -297,6 +297,7 @@ export const HandoffMedicalObservationsCell: React.FC<HandoffMedicalObservations
                 key={entry.id}
                 entry={entry}
                 patient={patient}
+                reportDate={reportDate}
                 index={index}
                 entriesCount={entries.length}
                 isFieldReadOnly={isFieldReadOnly}
@@ -306,50 +307,11 @@ export const HandoffMedicalObservationsCell: React.FC<HandoffMedicalObservations
                 onEntrySpecialtyChange={onEntrySpecialtyChange}
                 onAddEntry={onAddEntry}
                 onDeleteEntry={onDeleteEntry}
+                onRefreshAsCurrent={onRefreshAsCurrent}
               />
             );
           })
         )}
-      </div>
-    </td>
-  );
-};
-
-interface HandoffMedicalValidityCellProps {
-  patient: PatientData;
-  reportDate: string;
-  onQuickAction?: (entryId: string) => void;
-  readOnly?: boolean;
-}
-
-export const HandoffMedicalValidityCell: React.FC<HandoffMedicalValidityCellProps> = ({
-  patient,
-  reportDate,
-  onQuickAction,
-  readOnly = false,
-}) => {
-  const entries = getDisplayMedicalHandoffEntries(patient, !readOnly);
-
-  if (entries.length === 0) {
-    return (
-      <td className="p-1.5 w-40 align-top print:w-auto print:text-[8px] print:p-1">
-        <div className="text-[11px] italic text-slate-400 print:text-[7px]">Sin registro</div>
-      </td>
-    );
-  }
-
-  return (
-    <td className="p-1.5 w-40 align-top print:w-auto print:text-[8px] print:p-1">
-      <div className="space-y-2 text-[9px] leading-tight text-slate-700 print:text-[7px]">
-        {entries.map(entry => (
-          <MedicalHandoffValidityEntry
-            key={entry.id}
-            entry={entry}
-            reportDate={reportDate}
-            readOnly={readOnly}
-            onQuickAction={onQuickAction}
-          />
-        ))}
       </div>
     </td>
   );

@@ -5,6 +5,7 @@ import {
   buildMedicalEntryContinuityFields,
   buildMedicalEntryDeleteFields,
   buildMedicalEntryNoteFields,
+  buildMedicalEntryRefreshFields,
   buildMedicalEntrySpecialtyFields,
   buildMedicalPrimaryNoteFields,
 } from '@/domain/handoff/patientEntryMutations';
@@ -66,6 +67,13 @@ describe('medical patient handoff mutations domain', () => {
           id: 'entry-1',
           specialty: Specialty.CIRUGIA,
           note: 'Nota previa',
+          originalNoteAt: '2026-03-01T09:00:00.000Z',
+          originalNoteBy: {
+            uid: 'doctor-base',
+            email: 'base@hospitalhangaroa.cl',
+            displayName: 'Dr. Base',
+            role: 'doctor_urgency',
+          },
         },
       ],
     });
@@ -81,7 +89,45 @@ describe('medical patient handoff mutations domain', () => {
 
     expect(result.fields.medicalHandoffEntries?.[0]?.specialty).toBe(Specialty.CIRUGIA);
     expect(result.fields.medicalHandoffEntries?.[0]?.note).toBe('Nota actualizada');
+    expect(result.fields.medicalHandoffEntries?.[0]?.originalNoteAt).toBe(NOW);
+    expect(result.fields.medicalHandoffEntries?.[0]?.originalNoteBy?.displayName).toBe(
+      ACTOR.displayName
+    );
     expect(result.fields.medicalHandoffAudit?.currentStatus).toBe('updated_by_specialist');
+  });
+
+  it('refreshes a note as current without altering its original note metadata', () => {
+    const patient = createPatient({
+      medicalHandoffEntries: [
+        {
+          id: 'entry-1',
+          specialty: Specialty.MEDICINA,
+          note: 'Paciente estable',
+          originalNoteAt: '2026-03-01T09:00:00.000Z',
+          originalNoteBy: {
+            uid: 'doctor-base',
+            email: 'base@hospitalhangaroa.cl',
+            displayName: 'Dr. Base',
+            role: 'doctor_urgency',
+          },
+          updatedAt: '2026-03-01T09:00:00.000Z',
+          updatedBy: {
+            uid: 'doctor-base',
+            email: 'base@hospitalhangaroa.cl',
+            displayName: 'Dr. Base',
+            role: 'doctor_urgency',
+          },
+        },
+      ],
+    });
+
+    const result = buildMedicalEntryRefreshFields(patient, 'entry-1', ACTOR, REPORT_DATE, NOW);
+
+    expect(result?.entry.originalNoteAt).toBe('2026-03-01T09:00:00.000Z');
+    expect(result?.entry.originalNoteBy?.displayName).toBe('Dr. Base');
+    expect(result?.entry.updatedAt).toBe(NOW);
+    expect(result?.entry.updatedBy?.displayName).toBe(ACTOR.displayName);
+    expect(result?.entry.currentStatus).toBe('updated_by_specialist');
   });
 
   it('adds a second specialty entry when a patient only had the default note', () => {

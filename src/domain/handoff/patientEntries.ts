@@ -65,6 +65,12 @@ export const getPatientMedicalHandoffEntries = (patient: PatientData): MedicalHa
         patient.specialty ||
         Specialty.EMPTY,
       note: patient.medicalHandoffNote || '',
+      originalNoteAt:
+        patient.medicalHandoffAudit?.originalNoteAt ||
+        patient.medicalHandoffAudit?.lastSpecialistUpdateAt,
+      originalNoteBy:
+        patient.medicalHandoffAudit?.originalNoteBy ||
+        patient.medicalHandoffAudit?.lastSpecialistUpdateBy,
       updatedAt: patient.medicalHandoffAudit?.lastSpecialistUpdateAt,
       updatedBy: patient.medicalHandoffAudit?.lastSpecialistUpdateBy,
       currentStatus: patient.medicalHandoffAudit?.currentStatus,
@@ -122,6 +128,8 @@ const buildLegacyAuditFromEntry = (
     lastSpecialistUpdateAt: entry.updatedAt,
     lastSpecialistUpdateBy: entry.updatedBy,
     lastSpecialistUpdateSpecialty: entry.specialty,
+    originalNoteAt: entry.originalNoteAt || entry.updatedAt,
+    originalNoteBy: entry.originalNoteBy || entry.updatedBy,
     currentStatus: entry.currentStatus,
     currentStatusDate: entry.currentStatusDate,
     currentStatusAt: entry.currentStatusAt,

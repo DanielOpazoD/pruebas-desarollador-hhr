@@ -358,21 +358,21 @@ describe('useHandoffLogic', () => {
 
     const { result: result2 } = renderHook(() => useHandoffLogic(params));
     await act(async () => {
-      result2.current.handleMedicalContinuityConfirm('R1', 'legacy-primary');
+      result2.current.handleMedicalRefreshAsCurrent('R1', 'legacy-primary');
     });
 
     expect(mockUpdateMultiple).toHaveBeenLastCalledWith(
       'R1',
       expect.objectContaining({
         medicalHandoffAudit: expect.objectContaining({
-          currentStatus: 'confirmed_current',
+          currentStatus: 'updated_by_specialist',
           currentStatusDate: '2025-01-01',
           currentStatusSpecialty: Specialty.MEDICINA,
         }),
         medicalHandoffEntries: expect.arrayContaining([
           expect.objectContaining({
             id: 'legacy-primary',
-            currentStatus: 'confirmed_current',
+            currentStatus: 'updated_by_specialist',
           }),
         ]),
       })
@@ -521,7 +521,7 @@ describe('useHandoffLogic', () => {
     expect(mockUpdateMultiple).not.toHaveBeenCalled();
   });
 
-  it('keeps invalid continuity confirmation silent when the entry has no note', async () => {
+  it('keeps invalid refresh-as-current silent when the entry has no note', async () => {
     const mockUpdateMultiple = vi.fn();
     vi.mocked(useDailyRecordData).mockReturnValue({
       record: {
@@ -562,12 +562,12 @@ describe('useHandoffLogic', () => {
     const { result } = renderHook(() => useHandoffLogic(params));
 
     await act(async () => {
-      result.current.handleMedicalContinuityConfirm('R1', 'entry-1');
+      result.current.handleMedicalRefreshAsCurrent('R1', 'entry-1');
     });
 
     expect(mockUpdateMultiple).not.toHaveBeenCalled();
     expect(mockLogDebouncedEvent).not.toHaveBeenCalledWith(
-      'HANDOFF_NOVEDADES_MODIFIED',
+      'MEDICAL_HANDOFF_MODIFIED',
       'patient',
       'R1',
       expect.anything(),

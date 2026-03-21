@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { MedicalHandoffEntry, PatientData } from '@/types';
 import { PatientStatus, Specialty } from '@/types';
 import {
-  resolveMedicalEntryInlineMeta,
+  resolveMedicalEntryMetadataViewModel,
   resolveMedicalHandoffValidityViewModel,
   resolveMedicalObservationEntries,
 } from '@/domain/handoff/patientView';
@@ -31,8 +31,14 @@ const buildPatient = (overrides: Partial<PatientData> = {}): PatientData =>
   }) as PatientData;
 
 describe('handoff patient view domain', () => {
-  it('builds compact inline metadata for a medical entry', () => {
+  it('builds simple metadata when the note author and current note event are the same', () => {
     const entry = buildEntry({
+      originalNoteAt: '2026-03-03T20:33:00.000Z',
+      originalNoteBy: {
+        uid: 'doctor-1',
+        displayName: 'Daniel Opazo Damiani',
+        email: 'doctor@hospitalhangaroa.cl',
+      },
       updatedAt: '2026-03-03T20:33:00.000Z',
       updatedBy: {
         uid: 'doctor-1',
@@ -40,12 +46,47 @@ describe('handoff patient view domain', () => {
         email: 'doctor@hospitalhangaroa.cl',
       },
     });
+    const metadata = resolveMedicalEntryMetadataViewModel(entry, '2026-03-03');
 
-    expect(resolveMedicalEntryInlineMeta(entry)).toContain('Daniel Opazo');
-    expect(resolveMedicalEntryInlineMeta(entry)).toContain('03-03-2026');
+    expect(metadata.primaryLabel).toContain('Daniel Opazo');
+    expect(metadata.primaryLabel).toContain('03-03-2026');
+    expect(metadata.showInfoButton).toBe(false);
   });
 
-  it('resolves validity state for updated and confirmed entries', () => {
+  it('builds dual metadata when another user marks the note as current', () => {
+    const entry = buildEntry({
+      originalNoteAt: '2026-03-02T20:33:00.000Z',
+      originalNoteBy: {
+        uid: 'doctor-1',
+        displayName: 'Daniel Opazo Damiani',
+        email: 'doctor@hospitalhangaroa.cl',
+      },
+      updatedAt: '2026-03-03T10:00:00.000Z',
+      updatedBy: {
+        uid: 'admin-1',
+        displayName: 'Admin Test',
+        email: 'admin@hospitalhangaroa.cl',
+      },
+      currentStatus: 'updated_by_specialist',
+      currentStatusDate: '2026-03-03',
+      currentStatusAt: '2026-03-03T10:00:00.000Z',
+      currentStatusBy: {
+        uid: 'admin-1',
+        displayName: 'Admin Test',
+        email: 'admin@hospitalhangaroa.cl',
+      },
+    });
+    const metadata = resolveMedicalEntryMetadataViewModel(entry, '2026-03-03');
+
+    expect(metadata.primaryLabel).toContain('Nota base: Daniel Opazo');
+    expect(metadata.showInfoButton).toBe(true);
+    expect(metadata.detailLines).toEqual([
+      expect.stringContaining('Nota original: Daniel Opazo'),
+      expect.stringContaining('Marcada como actual por: Admin Test'),
+    ]);
+  });
+
+  it('resolves inline note status using only same-day specialist updates', () => {
     const updatedToday = resolveMedicalHandoffValidityViewModel(
       buildEntry({
         updatedAt: '2026-03-03T10:00:00.000Z',
@@ -58,7 +99,7 @@ describe('handoff patient view domain', () => {
       '2026-03-03'
     );
 
-    expect(updatedToday.statusLabel).toBe('Condición actual: actualizada hoy');
+    expect(updatedToday.statusLabel).toBe('Nota actual: actualizada hoy');
     expect(updatedToday.isActiveToday).toBe(true);
 
     const confirmedCurrent = resolveMedicalHandoffValidityViewModel(
@@ -75,9 +116,9 @@ describe('handoff patient view domain', () => {
       '2026-03-03'
     );
 
-    expect(confirmedCurrent.statusLabel).toBe('Condición actual: vigente, sin cambios');
-    expect(confirmedCurrent.tooltipLabel).toContain('Admin Test');
-    expect(confirmedCurrent.isMuted).toBe(false);
+    expect(confirmedCurrent.statusLabel).toBe('Nota actual: pendiente hoy');
+    expect(confirmedCurrent.isActiveToday).toBe(false);
+    expect(confirmedCurrent.isMuted).toBe(true);
   });
 
   it('marks a carried entry as pending on the next day when it was not updated today', () => {
@@ -93,7 +134,7 @@ describe('handoff patient view domain', () => {
       '2026-03-04'
     );
 
-    expect(carriedEntry.statusLabel).toBe('Condición actual: pendiente hoy');
+    expect(carriedEntry.statusLabel).toBe('Nota actual: pendiente hoy');
     expect(carriedEntry.isActiveToday).toBe(false);
     expect(carriedEntry.isMuted).toBe(true);
   });

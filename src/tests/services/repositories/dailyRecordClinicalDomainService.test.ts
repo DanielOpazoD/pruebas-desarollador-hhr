@@ -35,6 +35,12 @@ describe('dailyRecordClinicalDomainService', () => {
           id: 'entry-1',
           specialty: Specialty.MEDICINA,
           note: 'Paciente estable',
+          originalNoteAt: '2026-03-07T07:00:00.000Z',
+          originalNoteBy: {
+            uid: 'doctor-legacy',
+            displayName: 'Dr. Base',
+            email: 'base@hospital.cl',
+          },
           updatedAt: '2026-03-08T09:15:00.000Z',
           updatedBy: {
             uid: 'doctor-1',
@@ -52,6 +58,12 @@ describe('dailyRecordClinicalDomainService', () => {
         },
       ],
       medicalHandoffAudit: {
+        originalNoteAt: '2026-03-07T07:00:00.000Z',
+        originalNoteBy: {
+          uid: 'doctor-legacy',
+          displayName: 'Dr. Base',
+          email: 'base@hospital.cl',
+        },
         lastSpecialistUpdateAt: '2026-03-08T09:15:00.000Z',
         lastSpecialistUpdateBy: {
           uid: 'doctor-1',
@@ -99,9 +111,13 @@ describe('dailyRecordClinicalDomainService', () => {
     expect(carried.handoffNoteNightShift).toBe('Nota noche madre');
     expect(carried.medicalHandoffNote).toBe('Evolucion medica madre');
     expect(carried.medicalHandoffEntries?.[0]?.note).toBe('Paciente estable');
+    expect(carried.medicalHandoffEntries?.[0]?.originalNoteAt).toBe('2026-03-07T07:00:00.000Z');
+    expect(carried.medicalHandoffEntries?.[0]?.originalNoteBy?.displayName).toBe('Dr. Base');
     expect(carried.medicalHandoffEntries?.[0]?.updatedAt).toBe('2026-03-08T09:15:00.000Z');
     expect(carried.medicalHandoffEntries?.[0]?.currentStatus).toBeUndefined();
     expect(carried.medicalHandoffEntries?.[0]?.currentStatusDate).toBeUndefined();
+    expect(carried.medicalHandoffAudit?.originalNoteAt).toBe('2026-03-07T07:00:00.000Z');
+    expect(carried.medicalHandoffAudit?.originalNoteBy?.displayName).toBe('Dr. Base');
     expect(carried.medicalHandoffAudit?.lastSpecialistUpdateAt).toBe('2026-03-08T09:15:00.000Z');
     expect(carried.medicalHandoffAudit?.currentStatus).toBeUndefined();
     expect(carried.medicalHandoffAudit?.currentStatusDate).toBeUndefined();

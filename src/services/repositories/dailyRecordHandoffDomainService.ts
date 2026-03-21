@@ -19,6 +19,7 @@ const resetCarriedMedicalHandoffEntryValidity = (
   entry: MedicalHandoffEntry
 ): MedicalHandoffEntry => ({
   ...entry,
+  originalNoteBy: entry.originalNoteBy ? { ...entry.originalNoteBy } : undefined,
   updatedBy: entry.updatedBy ? { ...entry.updatedBy } : undefined,
   currentStatus: undefined,
   currentStatusDate: undefined,
@@ -39,6 +40,7 @@ const resetCarriedMedicalHandoffAuditValidity = (
 
   return {
     ...audit,
+    originalNoteBy: audit.originalNoteBy ? { ...audit.originalNoteBy } : undefined,
     lastSpecialistUpdateBy: audit.lastSpecialistUpdateBy
       ? { ...audit.lastSpecialistUpdateBy }
       : undefined,

@@ -2,9 +2,9 @@ import { useCallback } from 'react';
 import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 import {
   executeAddMedicalEntry,
-  executeConfirmMedicalEntryContinuity,
   executeCreateMedicalPrimaryEntry,
   executeDeleteMedicalEntry,
+  executeRefreshMedicalEntryAsCurrent,
   executeUpdateMedicalEntryNote,
   executeUpdateMedicalEntrySpecialty,
   executeUpdateMedicalPrimaryNote,
@@ -313,13 +313,18 @@ export const useMedicalHandoffHandlers = ({
     ]
   );
 
-  const handleMedicalContinuityConfirm = useCallback(
+  const handleMedicalRefreshAsCurrent = useCallback(
     (bedId: string, entryId: string, isNested: boolean = false) => {
       if (!record || !isMedical || !canMutateCurrentMedicalRecord) return;
 
       const { patient } = resolveMedicalPatient(bedId, isNested);
+      const previousEntry =
+        patient?.medicalHandoffEntries?.find(currentEntry => currentEntry.id === entryId) || null;
+      if (!previousEntry?.note.trim()) {
+        return;
+      }
       void (async () => {
-        const outcome = await executeConfirmMedicalEntryContinuity({
+        const outcome = await executeRefreshMedicalEntryAsCurrent({
           entryId,
           medicalAuditActor,
           patient,
@@ -328,23 +333,22 @@ export const useMedicalHandoffHandlers = ({
           recordDate: record.date,
         });
         if (outcome.status !== 'success' || !outcome.data) {
-          logUnexpectedOutcome('handleMedicalContinuityConfirm', outcome);
+          logUnexpectedOutcome('handleMedicalRefreshAsCurrent', outcome);
           return;
         }
 
         logDebouncedEvent(
-          'HANDOFF_NOVEDADES_MODIFIED',
+          'MEDICAL_HANDOFF_MODIFIED',
           'patient',
           bedId,
           {
-            shift: 'medical',
-            operation: 'confirm_current',
             patientName: patient?.patientName || '',
             specialty: outcome.data.entry?.specialty,
+            operation: 'refresh_medical_entry_as_current',
             changes: {
-              medicalHandoffCurrentStatus: {
-                old: outcome.data.previousEntry?.currentStatus || '',
-                new: 'confirmed_current',
+              medicalHandoffNoteTimestamp: {
+                old: outcome.data.previousEntry?.updatedAt || '',
+                new: outcome.data.entry?.updatedAt || '',
               },
             },
           },
@@ -374,6 +378,6 @@ export const useMedicalHandoffHandlers = ({
     handleMedicalEntrySpecialtyChange,
     handleMedicalEntryAdd,
     handleMedicalEntryDelete,
-    handleMedicalContinuityConfirm,
+    handleMedicalRefreshAsCurrent,
   };
 };

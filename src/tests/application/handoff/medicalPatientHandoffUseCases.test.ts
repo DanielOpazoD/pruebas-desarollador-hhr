@@ -5,6 +5,7 @@ import {
   executeConfirmMedicalEntryContinuity,
   executeCreateMedicalPrimaryEntry,
   executeDeleteMedicalEntry,
+  executeRefreshMedicalEntryAsCurrent,
   executeUpdateMedicalEntryNote,
   executeUpdateMedicalEntrySpecialty,
   executeUpdateMedicalPrimaryNote,
@@ -103,6 +104,8 @@ describe('medicalPatientHandoffUseCases', () => {
     expect(noteOutcome.status).toBe('success');
     expect(noteOutcome.data?.previousEntry?.note).toBe('Nota previa');
     expect(noteOutcome.data?.entry?.note).toBe('Nota actualizada');
+    expect(noteOutcome.data?.entry?.originalNoteAt).toBe(NOW);
+    expect(noteOutcome.data?.entry?.originalNoteBy?.displayName).toBe(ACTOR.displayName);
     expect(specialtyOutcome.status).toBe('success');
     expect(specialtyOutcome.data?.entry?.specialty).toBe(Specialty.PEDIATRIA);
   });
@@ -193,6 +196,49 @@ describe('medicalPatientHandoffUseCases', () => {
     expect(emptyNoteOutcome.reason).toBe('empty_entry_note');
     expect(successOutcome.status).toBe('success');
     expect(successOutcome.data?.entry?.currentStatus).toBe('confirmed_current');
+  });
+
+  it('refreshes a note as current while preserving the original note metadata', async () => {
+    const persistMedicalFields = vi.fn().mockResolvedValue(undefined);
+    const patient = createPatient({
+      medicalHandoffEntries: [
+        {
+          id: 'entry-1',
+          specialty: Specialty.MEDICINA,
+          note: 'Paciente estable',
+          originalNoteAt: '2026-03-01T09:00:00.000Z',
+          originalNoteBy: {
+            uid: 'doctor-base',
+            email: 'base@hospital.cl',
+            displayName: 'Dr. Base',
+            role: 'doctor_urgency',
+          },
+          updatedAt: '2026-03-01T09:00:00.000Z',
+          updatedBy: {
+            uid: 'doctor-base',
+            email: 'base@hospital.cl',
+            displayName: 'Dr. Base',
+            role: 'doctor_urgency',
+          },
+        },
+      ],
+    });
+
+    const outcome = await executeRefreshMedicalEntryAsCurrent({
+      entryId: 'entry-1',
+      medicalAuditActor: ACTOR,
+      now: NOW,
+      patient,
+      persistMedicalFields,
+      recordDate: REPORT_DATE,
+    });
+
+    expect(outcome.status).toBe('success');
+    expect(outcome.data?.entry?.originalNoteAt).toBe('2026-03-01T09:00:00.000Z');
+    expect(outcome.data?.entry?.originalNoteBy?.displayName).toBe('Dr. Base');
+    expect(outcome.data?.entry?.updatedAt).toBe(NOW);
+    expect(outcome.data?.entry?.updatedBy?.displayName).toBe(ACTOR.displayName);
+    expect(outcome.data?.entry?.currentStatus).toBe('updated_by_specialist');
   });
 
   it('returns missing_patient when no patient is available', async () => {

@@ -21,6 +21,7 @@ export {
   executeConfirmMedicalEntryContinuity,
   executeCreateMedicalPrimaryEntry,
   executeDeleteMedicalEntry,
+  executeRefreshMedicalEntryAsCurrent,
   executeUpdateMedicalEntryNote,
   executeUpdateMedicalEntrySpecialty,
   executeUpdateMedicalPrimaryNote,

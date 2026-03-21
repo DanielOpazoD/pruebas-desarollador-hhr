@@ -21,7 +21,7 @@ interface BuildHandoffMedicalActionsParams {
   ) => void;
   onEntryAdd: (bedId: string, isNested: boolean) => void;
   onEntryDelete: (bedId: string, entryId: string, isNested: boolean) => void;
-  onContinuityConfirm: (bedId: string, entryId: string, isNested: boolean) => void;
+  onRefreshAsCurrent: (bedId: string, entryId: string, isNested: boolean) => void;
 }
 
 interface BuildHandoffClinicalEventActionsParams {
@@ -98,7 +98,7 @@ export const buildHandoffMedicalActions = ({
   onEntrySpecialtyChange,
   onEntryAdd,
   onEntryDelete,
-  onContinuityConfirm,
+  onRefreshAsCurrent,
 }: BuildHandoffMedicalActionsParams): HandoffMedicalActions => ({
   onCreatePrimaryEntry: capabilities.canCreatePrimaryObservationEntry
     ? onCreatePrimaryEntry
@@ -109,9 +109,7 @@ export const buildHandoffMedicalActions = ({
     : undefined,
   onEntryAdd: capabilities.canAddObservationEntries ? onEntryAdd : undefined,
   onEntryDelete: capabilities.canDeleteObservationEntries ? onEntryDelete : undefined,
-  onContinuityConfirm: capabilities.canConfirmObservationContinuity
-    ? onContinuityConfirm
-    : undefined,
+  onRefreshAsCurrent: capabilities.canEditObservationEntries ? onRefreshAsCurrent : undefined,
 });
 
 export const buildHandoffClinicalEventActions = ({

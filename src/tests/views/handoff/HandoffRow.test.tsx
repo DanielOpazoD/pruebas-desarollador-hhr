@@ -133,8 +133,8 @@ describe('HandoffRow', () => {
     expect(screen.getByText('Test Event')).toBeInTheDocument();
   });
 
-  it('offers a quick action for unchanged medical patient handoff', () => {
-    const onMedicalContinuityConfirm = vi.fn();
+  it('offers an inline action to refresh a medical note as current', () => {
+    const onMedicalRefreshAsCurrent = vi.fn();
     render(
       <table>
         <tbody>
@@ -143,18 +143,28 @@ describe('HandoffRow', () => {
             noteField="medicalHandoffNote"
             onNoteChange={vi.fn()}
             medicalActions={{
-              onContinuityConfirm: onMedicalContinuityConfirm,
+              onRefreshAsCurrent: onMedicalRefreshAsCurrent,
               onEntrySpecialtyChange: vi.fn(),
             }}
-            patient={{ ...mockPatient, medicalHandoffNote: 'Última evolución' }}
+            patient={{
+              ...mockPatient,
+              medicalHandoffNote: 'Última evolución',
+              medicalHandoffEntries: [
+                {
+                  id: 'entry-1',
+                  specialty: Specialty.MEDICINA,
+                  note: 'Última evolución',
+                },
+              ],
+            }}
             isMedical={true}
           />
         </tbody>
       </table>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Vigente/i }));
-    expect(onMedicalContinuityConfirm).toHaveBeenCalledWith('legacy-primary');
+    fireEvent.click(screen.getByRole('button', { name: /Actualizar como nota actual/i }));
+    expect(onMedicalRefreshAsCurrent).toHaveBeenCalledWith('entry-1');
   });
 
   it('allows deleting a specialty handoff entry', () => {
@@ -190,7 +200,7 @@ describe('HandoffRow', () => {
     expect(onMedicalEntryDelete).toHaveBeenCalledWith('entry-1');
   });
 
-  it('shows specialty selector, professional metadata and inline validity for each note', () => {
+  it('shows specialty selector, professional metadata and inline current-note status for each note', () => {
     render(
       <table>
         <tbody>
@@ -201,6 +211,7 @@ describe('HandoffRow', () => {
             medicalActions={{
               onEntryNoteChange: vi.fn(),
               onEntrySpecialtyChange: vi.fn(),
+              onRefreshAsCurrent: vi.fn(),
             }}
             patient={{
               ...mockPatient,
@@ -211,16 +222,23 @@ describe('HandoffRow', () => {
                   id: 'entry-1',
                   specialty: Specialty.MEDICINA,
                   note: 'Última evolución',
-                  updatedAt: '2025-01-01T08:00:00.000Z',
-                  updatedBy: {
+                  originalNoteAt: '2024-12-27T08:00:00.000Z',
+                  originalNoteBy: {
                     uid: 'doctor-1',
                     displayName: 'Dr. Test',
                     email: 'doctor@hospitalhangaroa.cl',
                     role: 'doctor_urgency',
                   },
-                  currentStatus: 'confirmed_current',
+                  updatedAt: '2024-12-28T08:00:00.000Z',
+                  updatedBy: {
+                    uid: 'admin-1',
+                    displayName: 'Admin Test',
+                    email: 'admin@hospitalhangaroa.cl',
+                    role: 'admin',
+                  },
+                  currentStatus: 'updated_by_specialist',
                   currentStatusDate: '2024-12-28',
-                  currentStatusAt: '2025-01-01T09:00:00.000Z',
+                  currentStatusAt: '2024-12-28T08:00:00.000Z',
                   currentStatusBy: {
                     uid: 'admin-1',
                     displayName: 'Admin Test',
@@ -237,12 +255,71 @@ describe('HandoffRow', () => {
     );
 
     expect(screen.getByRole('combobox', { name: /Especialidad 1/i })).toHaveValue('Med Interna');
-    expect(screen.getAllByText(/Dr\. Test/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Condición actual: vigente, sin cambios/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/Admin Test/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Nota actual: actualizada hoy/i)).not.toBeInTheDocument();
+    expect(screen.getAllByText(/Nota base: Dr\. Test/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole('button', { name: /Actualizar como nota actual/i })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Ver detalle de nota actual/i })).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: /Agregar otra especialidad/i })
     ).not.toBeInTheDocument();
+  });
+
+  it('shows detail tooltip only when a different user marked the note as current', () => {
+    render(
+      <table>
+        <tbody>
+          <HandoffRow
+            {...defaultProps}
+            noteField="medicalHandoffNote"
+            onNoteChange={vi.fn()}
+            medicalActions={{
+              onEntryNoteChange: vi.fn(),
+              onEntrySpecialtyChange: vi.fn(),
+              onRefreshAsCurrent: vi.fn(),
+            }}
+            patient={{
+              ...mockPatient,
+              specialty: Specialty.MEDICINA,
+              medicalHandoffEntries: [
+                {
+                  id: 'entry-1',
+                  specialty: Specialty.MEDICINA,
+                  note: 'Última evolución',
+                  originalNoteAt: '2024-12-27T08:00:00.000Z',
+                  originalNoteBy: {
+                    uid: 'doctor-1',
+                    displayName: 'Dr. Base',
+                    email: 'doctor@hospitalhangaroa.cl',
+                  },
+                  updatedAt: '2024-12-28T08:00:00.000Z',
+                  updatedBy: {
+                    uid: 'admin-1',
+                    displayName: 'Admin Test',
+                    email: 'admin@hospitalhangaroa.cl',
+                  },
+                  currentStatus: 'updated_by_specialist',
+                  currentStatusDate: '2024-12-28',
+                  currentStatusAt: '2024-12-28T08:00:00.000Z',
+                  currentStatusBy: {
+                    uid: 'admin-1',
+                    displayName: 'Admin Test',
+                    email: 'admin@hospitalhangaroa.cl',
+                  },
+                },
+              ],
+            }}
+            isMedical={true}
+          />
+        </tbody>
+      </table>
+    );
+
+    fireEvent.mouseEnter(screen.getByRole('button', { name: /Ver detalle de nota actual/i }));
+
+    expect(screen.getByText(/Nota original: Dr\. Base/i)).toBeInTheDocument();
+    expect(screen.getByText(/Marcada como actual por: Admin Test/i)).toBeInTheDocument();
   });
 
   it('shows a create button for specialist-style medical access when there is no handoff entry yet', () => {

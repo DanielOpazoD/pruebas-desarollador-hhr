@@ -11,7 +11,7 @@ export interface HandoffMedicalActions {
   ) => void;
   onEntryAdd?: (bedId: string, isNested: boolean) => void;
   onEntryDelete?: (bedId: string, entryId: string, isNested: boolean) => void;
-  onContinuityConfirm?: (bedId: string, entryId: string, isNested: boolean) => void;
+  onRefreshAsCurrent?: (bedId: string, entryId: string, isNested: boolean) => void;
 }
 
 export interface HandoffClinicalEventActions {

@@ -103,7 +103,7 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
     handleMedicalEntryDelete,
     handleMedicalEntryNoteChange,
     handleMedicalEntrySpecialtyChange,
-    handleMedicalContinuityConfirm,
+    handleMedicalRefreshAsCurrent,
     handleShareLink,
     handleSendWhatsAppManual,
     formatPrintDate,
@@ -206,15 +206,15 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
         onEntrySpecialtyChange: handleMedicalEntrySpecialtyChange,
         onEntryAdd: handleMedicalEntryAdd,
         onEntryDelete: handleMedicalEntryDelete,
-        onContinuityConfirm: handleMedicalContinuityConfirm,
+        onRefreshAsCurrent: handleMedicalRefreshAsCurrent,
       }),
     [
-      handleMedicalContinuityConfirm,
       handleMedicalEntryAdd,
       handleMedicalEntryDelete,
       handleMedicalEntryNoteChange,
       handleMedicalEntrySpecialtyChange,
       handleMedicalPrimaryEntryCreate,
+      handleMedicalRefreshAsCurrent,
       medicalCapabilities,
     ]
   );

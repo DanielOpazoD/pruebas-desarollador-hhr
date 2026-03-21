@@ -12,7 +12,6 @@ import {
   HandoffDevicesCell,
   HandoffMedicalObservationsCell,
   HandoffObservationsCell,
-  HandoffMedicalValidityCell,
 } from './HandoffRowCells';
 
 // ============================================================================
@@ -25,7 +24,7 @@ interface HandoffRowMedicalActions {
   onEntrySpecialtyChange?: (entryId: string, specialty: string) => void;
   onEntryAdd?: () => void;
   onEntryDelete?: (entryId: string) => void;
-  onContinuityConfirm?: (entryId: string) => void;
+  onRefreshAsCurrent?: (entryId: string) => void;
 }
 
 interface HandoffRowClinicalEventActions {
@@ -80,7 +79,7 @@ export const HandoffRow: React.FC<HandoffRowProps> = ({
           {bedName}
         </td>
         <td
-          colSpan={isMedical ? 4 : 4}
+          colSpan={isMedical ? 3 : 4}
           className="p-2 text-slate-600 align-middle print:p-1 print:whitespace-nowrap"
         >
           <span className="inline-flex items-center gap-1.5 print:gap-1">
@@ -129,6 +128,7 @@ export const HandoffRow: React.FC<HandoffRowProps> = ({
       {isMedical ? (
         <HandoffMedicalObservationsCell
           patient={patient}
+          reportDate={reportDate}
           isFieldReadOnly={isFieldReadOnly}
           onCreatePrimaryEntry={medicalActions?.onCreatePrimaryEntry}
           onEntryNoteChange={
@@ -140,21 +140,13 @@ export const HandoffRow: React.FC<HandoffRowProps> = ({
           onEntrySpecialtyChange={medicalActions?.onEntrySpecialtyChange}
           onAddEntry={medicalActions?.onEntryAdd}
           onDeleteEntry={medicalActions?.onEntryDelete}
+          onRefreshAsCurrent={medicalActions?.onRefreshAsCurrent}
         />
       ) : (
         <HandoffObservationsCell
           noteValue={noteValue}
           onNoteChange={onNoteChange}
           isFieldReadOnly={isFieldReadOnly}
-        />
-      )}
-
-      {isMedical && (
-        <HandoffMedicalValidityCell
-          patient={patient}
-          reportDate={reportDate}
-          onQuickAction={medicalActions?.onContinuityConfirm}
-          readOnly={isFieldReadOnly}
         />
       )}
     </tr>

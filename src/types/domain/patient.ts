@@ -18,6 +18,8 @@ export interface MedicalHandoffAudit {
   lastSpecialistUpdateAt?: string;
   lastSpecialistUpdateBy?: MedicalHandoffAuditActor;
   lastSpecialistUpdateSpecialty?: Specialty | string;
+  originalNoteAt?: string;
+  originalNoteBy?: MedicalHandoffAuditActor;
   currentStatus?: 'updated_by_specialist' | 'confirmed_current';
   currentStatusDate?: string;
   currentStatusAt?: string;
@@ -29,6 +31,8 @@ export interface MedicalHandoffEntry {
   id: string;
   specialty: Specialty | string;
   note: string;
+  originalNoteAt?: string;
+  originalNoteBy?: MedicalHandoffAuditActor;
   updatedAt?: string;
   updatedBy?: MedicalHandoffAuditActor;
   currentStatus?: 'updated_by_specialist' | 'confirmed_current';

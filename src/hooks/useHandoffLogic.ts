@@ -191,7 +191,7 @@ export const useHandoffLogic = ({
     handleMedicalEntryDelete: medicalHandlers.handleMedicalEntryDelete,
     handleMedicalEntryNoteChange: medicalHandlers.handleMedicalEntryNoteChange,
     handleMedicalEntrySpecialtyChange: medicalHandlers.handleMedicalEntrySpecialtyChange,
-    handleMedicalContinuityConfirm: medicalHandlers.handleMedicalContinuityConfirm,
+    handleMedicalRefreshAsCurrent: medicalHandlers.handleMedicalRefreshAsCurrent,
     handleShareLink: comms.handleShareLink,
     handleSendWhatsApp: comms.handleSendWhatsApp,
     handleSendWhatsAppManual: comms.handleSendWhatsAppManual,

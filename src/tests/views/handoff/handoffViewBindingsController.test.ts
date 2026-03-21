@@ -55,7 +55,7 @@ describe('handoffViewBindingsController', () => {
       onEntrySpecialtyChange: vi.fn(),
       onEntryAdd: vi.fn(),
       onEntryDelete: vi.fn(),
-      onContinuityConfirm: vi.fn(),
+      onRefreshAsCurrent: vi.fn(),
     });
 
     expect(actions.onCreatePrimaryEntry).toBeTypeOf('function');
@@ -63,7 +63,7 @@ describe('handoffViewBindingsController', () => {
     expect(actions.onEntrySpecialtyChange).toBeTypeOf('function');
     expect(actions.onEntryAdd).toBeUndefined();
     expect(actions.onEntryDelete).toBeUndefined();
-    expect(actions.onContinuityConfirm).toBeTypeOf('function');
+    expect(actions.onRefreshAsCurrent).toBeTypeOf('function');
   });
 
   it('gates clinical event actions through edit capability', () => {

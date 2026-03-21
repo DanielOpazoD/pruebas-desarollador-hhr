@@ -5,6 +5,7 @@ import {
   buildMedicalEntryContinuityFields,
   buildMedicalEntryDeleteFields,
   buildMedicalEntryNoteFields,
+  buildMedicalEntryRefreshFields,
   buildMedicalEntrySpecialtyFields,
   buildMedicalPrimaryEntryCreateFields,
   buildMedicalPrimaryNoteFields,
@@ -66,6 +67,11 @@ interface DeleteMedicalEntryInput extends MedicalPatientMutationInput {
 }
 
 interface ConfirmMedicalEntryContinuityInput extends MedicalPatientTimedMutationInput {
+  entryId: string;
+  medicalAuditActor: MedicalHandoffAuditActor | null;
+}
+
+interface RefreshMedicalEntryAsCurrentInput extends MedicalPatientTimedMutationInput {
   entryId: string;
   medicalAuditActor: MedicalHandoffAuditActor | null;
 }
@@ -294,6 +300,57 @@ export const executeConfirmMedicalEntryContinuity = async (
   }
 
   return persistMedicalMutation('confirm_medical_entry_continuity', input.persistMedicalFields, {
+    entry: mutation.entry,
+    fields: mutation.fields,
+    previousEntry,
+  });
+};
+
+export const executeRefreshMedicalEntryAsCurrent = async (
+  input: RefreshMedicalEntryAsCurrentInput
+): Promise<ApplicationOutcome<MedicalPatientHandoffMutationOutput | null>> => {
+  if (!input.patient) {
+    return createMissingPatientOutcome(null, 'refresh_medical_entry_as_current');
+  }
+
+  const previousEntry =
+    getPatientMedicalHandoffEntries(input.patient).find(entry => entry.id === input.entryId) ||
+    null;
+  if (!previousEntry) {
+    return createValidationOutcome(
+      null,
+      'refresh_medical_entry_as_current',
+      'missing_entry',
+      'No existe la entrada médica solicitada.'
+    );
+  }
+
+  if (!previousEntry.note.trim()) {
+    return createValidationOutcome(
+      null,
+      'refresh_medical_entry_as_current',
+      'empty_entry_note',
+      'La entrada médica no tiene contenido para marcarla como actual.'
+    );
+  }
+
+  const mutation = buildMedicalEntryRefreshFields(
+    input.patient,
+    input.entryId,
+    input.medicalAuditActor,
+    input.recordDate,
+    resolveNow(input.now)
+  );
+  if (!mutation) {
+    return createValidationOutcome(
+      null,
+      'refresh_medical_entry_as_current',
+      'missing_entry',
+      'No existe la entrada médica solicitada.'
+    );
+  }
+
+  return persistMedicalMutation('refresh_medical_entry_as_current', input.persistMedicalFields, {
     entry: mutation.entry,
     fields: mutation.fields,
     previousEntry,
