@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Cloud, RefreshCw, Check, AlertTriangle } from 'lucide-react';
+import { Cloud, RefreshCw, AlertTriangle } from 'lucide-react';
 import clsx from 'clsx';
 import { useDailyRecordStatus } from '@/context/DailyRecordContext';
 

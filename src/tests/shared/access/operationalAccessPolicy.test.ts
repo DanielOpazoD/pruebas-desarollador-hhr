@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   canAccessAppModuleRoute,
+  canEditAnyAppModule,
   canOpenTransferDocuments,
   canManageGlobalCensusEmailRecipients,
   canEditMedicalHandoffForDate,
@@ -14,6 +15,9 @@ import {
   canVerifyArchiveStatusForModule,
   canViewOrManageBackupFiles,
   canViewPatientHistoryFromRestrictedProfiles,
+  getDefaultAppModuleForRole,
+  getVisibleAppModules,
+  sanitizeAppModuleForRole,
 } from '@/shared/access/operationalAccessPolicy';
 
 describe('operationalAccessPolicy', () => {
@@ -36,6 +40,8 @@ describe('operationalAccessPolicy', () => {
   it('centralizes admin, export and transfer-document capabilities by intent', () => {
     expect(canUseAdminMaintenanceActions('admin')).toBe(true);
     expect(canUseAdminMaintenanceActions('nurse_hospital')).toBe(false);
+    expect(canEditAnyAppModule('admin')).toBe(true);
+    expect(canEditAnyAppModule('viewer_census')).toBe(false);
     expect(canManageGlobalCensusEmailRecipients({ role: 'admin', userId: 'u-1' })).toBe(true);
     expect(canManageGlobalCensusEmailRecipients({ role: 'nurse_hospital', userId: 'u-1' })).toBe(
       true
@@ -66,6 +72,13 @@ describe('operationalAccessPolicy', () => {
         visibleModules: ['DATA_MAINTENANCE'],
       })
     ).toBe(false);
+  });
+
+  it('exposes a canonical facade for visible modules and module sanitization', () => {
+    expect(getVisibleAppModules('doctor_specialist')).toEqual(['CENSUS', 'MEDICAL_HANDOFF']);
+    expect(getDefaultAppModuleForRole('doctor_specialist')).toBe('CENSUS');
+    expect(sanitizeAppModuleForRole('doctor_specialist', 'AUDIT')).toBe('CENSUS');
+    expect(sanitizeAppModuleForRole('admin', 'AUDIT')).toBe('AUDIT');
   });
 
   it('keeps medical handoff edit access bound to specialist current-day policy', () => {

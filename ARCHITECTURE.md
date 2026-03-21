@@ -244,6 +244,8 @@ sequenceDiagram
 
 - `src/application/*` coordina side-effects críticos y devuelve `ApplicationOutcome`.
 - `src/application/ports/*` es el único lugar donde los use-cases pueden atarse por defecto a servicios concretos.
+- `RepositoryProvider` es obligatorio; los consumers no deben depender de fallbacks implícitos.
+- `services/infrastructure/*` recibe dependencias por factory/constructor cuando actúa como provider reutilizable.
 - `src/hooks/*`, `src/components/*` y `src/features/*` no deben importar directo:
   - `auditService`
   - `DailyRecordRepository`

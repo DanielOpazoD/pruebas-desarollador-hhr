@@ -3,14 +3,7 @@
  * Handles uploading and managing Census Excel files in Firebase Storage
  */
 
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-  getMetadata,
-  listAll,
-} from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject, listAll } from 'firebase/storage';
 import { auth, firebaseReady, getStorageInstance } from '@/firebaseConfig';
 import {
   createListYears,

@@ -61,11 +61,9 @@ const emitConsole = (level: LogLevel, formattedMessage: string, data?: unknown):
       console.info(formattedMessage, payload);
       break;
     case 'warn':
-      // eslint-disable-next-line no-console
       console.warn(formattedMessage, payload);
       break;
     case 'error':
-      // eslint-disable-next-line no-console
       console.error(formattedMessage, payload);
       break;
   }

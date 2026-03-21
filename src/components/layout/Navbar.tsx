@@ -7,12 +7,12 @@ import React, { useRef } from 'react';
 import { WifiOff } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '@/context/AuthContext';
-import { getVisibleModules } from '@/utils/permissions';
 import { NavbarMenu } from './NavbarMenu';
 import { NavbarTabs } from './NavbarTabs';
 import { UserMenu } from './UserMenu';
 import { SyncStatusIndicator } from './SyncStatusIndicator';
 import { ReminderBadge } from '@/components/reminders/ReminderBadge';
+import { getVisibleAppModules } from '@/shared/access/operationalAccessPolicy';
 
 import { ModuleType } from '@/constants/navigationConfig';
 type ViewMode = 'REGISTER' | 'ANALYTICS';
@@ -45,7 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   isSharedMode = false,
 }) => {
   const { role } = useAuth();
-  const visibleModules = getVisibleModules(role);
+  const visibleModules = getVisibleAppModules(role);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 

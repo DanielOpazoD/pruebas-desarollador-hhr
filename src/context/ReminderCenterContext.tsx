@@ -9,6 +9,7 @@ import {
 import { ReminderReadService, ReminderRepository } from '@/services/reminders';
 import { getCurrentShift } from '@/services/admin/attributionService';
 import type { Reminder, ReminderShift } from '@/types/reminders';
+import { recordOperationalTelemetry } from '@/services/observability/operationalTelemetryService';
 
 const formatLocalDate = (date: Date): string => {
   const year = date.getFullYear();
@@ -47,6 +48,11 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
   const [loading, setLoading] = React.useState(true);
   const [isAvailable, setIsAvailable] = React.useState(true);
   const [now, setNow] = React.useState(() => new Date());
+  const readReminderIdsRef = React.useRef<string[]>([]);
+
+  React.useEffect(() => {
+    readReminderIdsRef.current = readReminderIds;
+  }, [readReminderIds]);
 
   React.useEffect(() => {
     const timeoutId = window.setInterval(() => setNow(new Date()), 60000);
@@ -95,12 +101,29 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
       nextReminders => {
         setReminders(nextReminders);
         setLoading(false);
+        recordOperationalTelemetry(
+          {
+            category: 'reminders',
+            operation: 'center_subscription_ready',
+            status: 'success',
+            context: {
+              count: nextReminders.length,
+            },
+          },
+          { allowSuccess: true }
+        );
       },
       {
         onError: (_error, _kind) => {
           setLoading(false);
           setIsAvailable(false);
           setIsOpen(false);
+          recordOperationalTelemetry({
+            category: 'reminders',
+            operation: 'center_subscription_ready',
+            status: 'degraded',
+            issues: ['El centro de avisos quedo temporalmente no disponible.'],
+          });
         },
       }
     );
@@ -140,7 +163,7 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
   const markReminderAsRead = React.useCallback(
     async (reminderId: string) => {
       if (!currentUser?.uid) return;
-      if (readReminderIds.includes(reminderId)) return;
+      if (readReminderIdsRef.current.includes(reminderId)) return;
 
       const result = await ReminderReadService.markAsReadWithResult(
         reminderId,
@@ -156,16 +179,11 @@ export const ReminderCenterProvider: React.FC<{ children: React.ReactNode }> = (
         return;
       }
 
-      setReadReminderIds(previous => [...previous, reminderId]);
+      setReadReminderIds(previous =>
+        previous.includes(reminderId) ? previous : [...previous, reminderId]
+      );
     },
-    [
-      currentDate,
-      currentShift,
-      currentUser?.displayName,
-      currentUser?.email,
-      currentUser?.uid,
-      readReminderIds,
-    ]
+    [currentDate, currentShift, currentUser]
   );
 
   const value = React.useMemo<ReminderCenterContextValue>(

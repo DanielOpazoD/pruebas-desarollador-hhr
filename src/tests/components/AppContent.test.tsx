@@ -144,6 +144,7 @@ describe('AppContent', () => {
   };
 
   const mockAuth = {
+    currentUser: { email: 'test@test.com' },
     user: { email: 'test@test.com' },
     role: 'admin',
     signOut: vi.fn(),

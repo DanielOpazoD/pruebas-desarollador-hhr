@@ -19,6 +19,11 @@ const getCurrentDateKey = (): string => {
 
 vi.mock('@/context/AuthContext', () => ({
   useAuth: () => ({
+    currentUser: {
+      uid: 'user-1',
+      email: 'nurse@hospitalhangaroa.cl',
+      displayName: 'Enfermera Test',
+    },
     user: {
       uid: 'user-1',
       email: 'nurse@hospitalhangaroa.cl',

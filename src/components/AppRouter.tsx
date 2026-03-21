@@ -8,8 +8,6 @@ import React, { Suspense } from 'react';
 import { GlobalErrorBoundary } from '@/components/shared/GlobalErrorBoundary';
 import { SectionErrorBoundary } from '@/components/shared/SectionErrorBoundary';
 import { ViewLoader } from '@/components/ui/ViewLoader';
-import { canEditModule } from '@/utils/permissions';
-import { getVisibleModules } from '@/utils/permissions';
 import { UserRole } from '@/context';
 import { UseUIStateReturn } from '@/hooks/useUIState';
 
@@ -36,9 +34,9 @@ import type { CensusAccessProfile } from '@/shared/access/censusAccessProfile';
 import { resolveSpecialistCensusAccessProfile } from '@/shared/access/specialistAccessPolicy';
 import {
   canAccessAppModuleRoute,
+  canEditAppModule,
   canForceCreateDayCopyOverride,
-  canUseAdminMaintenanceActions,
-  canViewOrManageBackupFiles,
+  getVisibleAppModules,
 } from '@/shared/access/operationalAccessPolicy';
 
 export type AppModule =
@@ -101,7 +99,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
   sharedCensus,
 }) => {
   const censusAccessProfile: CensusAccessProfile = resolveSpecialistCensusAccessProfile(role);
-  const visibleModules = getVisibleModules(role);
+  const visibleModules = getVisibleAppModules(role);
 
   return (
     <GlobalErrorBoundary>
@@ -125,7 +123,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
                   currentDateString={currentDateString}
                   showBedManagerModal={showBedManagerModal}
                   onCloseBedManagerModal={onCloseBedManagerModal}
-                  readOnly={!canEditModule(role, 'CENSUS')}
+                  readOnly={!canEditAppModule(role, 'CENSUS')}
                   allowAdminCopyOverride={canForceCreateDayCopyOverride(role)}
                   localViewMode={ui.censusLocalViewMode}
                   accessProfile={censusAccessProfile}
@@ -134,7 +132,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
             )}
             {currentModule === 'CUDYR' && (
               <SectionErrorBoundary sectionName="CUDYR">
-                <CudyrView readOnly={!canEditModule(role, 'CUDYR')} />
+                <CudyrView readOnly={!canEditAppModule(role, 'CUDYR')} />
               </SectionErrorBoundary>
             )}
             {currentModule === 'NURSING_HANDOFF' && (
@@ -142,7 +140,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
                 <HandoffView
                   ui={ui}
                   type="nursing"
-                  readOnly={!canEditModule(role, 'NURSING_HANDOFF')}
+                  readOnly={!canEditAppModule(role, 'NURSING_HANDOFF')}
                 />
               </SectionErrorBoundary>
             )}
@@ -151,7 +149,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
                 <HandoffView
                   ui={ui}
                   type="medical"
-                  readOnly={!canEditModule(role, 'MEDICAL_HANDOFF')}
+                  readOnly={!canEditAppModule(role, 'MEDICAL_HANDOFF')}
                 />
               </SectionErrorBoundary>
             )}

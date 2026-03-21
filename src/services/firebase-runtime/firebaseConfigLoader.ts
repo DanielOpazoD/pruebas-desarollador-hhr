@@ -1,8 +1,10 @@
 import type { FirebaseOptions } from 'firebase/app';
 import { safeJsonParse } from '@/utils/jsonUtils';
 import { readDevFirebaseApiKey } from '@/services/firebase-runtime/firebaseEnvironmentPolicy';
+import { logger } from '@/services/utils/loggerService';
 
 const CACHED_CONFIG_KEY = 'hhr_firebase_config';
+const firebaseConfigLoaderLogger = logger.child('FirebaseConfigLoader');
 
 const saveCachedConfig = (config: FirebaseOptions) => {
   try {
@@ -45,7 +47,7 @@ const buildDevConfig = (): FirebaseOptions => {
   const encodedKey = import.meta.env.VITE_FIREBASE_API_KEY_B64 || '';
   const plainKey = import.meta.env.VITE_FIREBASE_API_KEY || '';
 
-  console.log('[FirebaseConfig] 🔍 Checking Environment Variables:', {
+  firebaseConfigLoaderLogger.info('Checking environment variables', {
     hasApiKey: !!plainKey,
     hasB64Key: !!encodedKey,
     projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,

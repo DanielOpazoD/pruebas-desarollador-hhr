@@ -20,8 +20,10 @@ import {
   resolveFunctionsInstance,
   resolveStorageInstance,
 } from '@/services/firebase-runtime/firebaseLazyServices';
+import { logger } from '@/services/utils/loggerService';
 
 const FIREBASE_READY_TIMEOUT_MS = 10000;
+const firebaseConfigLogger = logger.child('FirebaseConfig');
 
 export let app!: FirebaseApp;
 export let auth!: Auth;
@@ -43,8 +45,10 @@ export const getFunctionsInstance = async (): Promise<Functions> =>
 const loadValidatedFirebaseConfig = async (): Promise<FirebaseOptions> => {
   try {
     const config = await loadFirebaseConfig();
-    console.log('[FirebaseConfig] 📁 Config loaded:', config.projectId);
-    console.log('[FirebaseConfig] 🪣 Storage Bucket:', config.storageBucket || 'not set');
+    firebaseConfigLogger.info('Config loaded', {
+      projectId: config.projectId,
+      storageBucket: config.storageBucket || 'not_set',
+    });
     validateFirebaseRuntimeConfig(config);
     warnOnFirebaseAuthConfig(config);
     return config;
@@ -60,7 +64,7 @@ const loadValidatedFirebaseConfig = async (): Promise<FirebaseOptions> => {
 };
 
 export const firebaseReady = (async () => {
-  console.log('[FirebaseConfig] 🚀 Starting Firebase Ready sequence...');
+  firebaseConfigLogger.info('Starting Firebase ready sequence');
 
   const timeout = new Promise((_, reject) =>
     setTimeout(

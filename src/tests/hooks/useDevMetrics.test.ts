@@ -21,7 +21,8 @@ describe('useDevMetrics', () => {
   });
 
   it('should fetch and update metrics from artifact files', async () => {
-    const mockResults = `\n> vitest run --reporter=json\n{\"numTotalTests\":100,\"numPassedTests\":90,\"numFailedTests\":10}`;
+    const mockResults =
+      '\n> vitest run --reporter=json\n{"numTotalTests":100,"numPassedTests":90,"numFailedTests":10}';
     const mockCoverage = JSON.stringify({
       total: {
         statements: { pct: 50 },

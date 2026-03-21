@@ -14,7 +14,6 @@ import { useAuth } from '@/context/AuthContext';
 import { UseUIStateReturn } from '@/hooks/useUIState';
 import { useCensusContext } from '@/context/CensusContext';
 import { useExportManager } from '@/hooks/useExportManager';
-import { canEditModule, getVisibleModules } from '@/utils/permissions';
 import {
   shouldRenderBookmarkBar,
   shouldRenderDateStrip,
@@ -28,9 +27,11 @@ import {
 import {
   canTriggerCensusExports,
   canVerifyPassiveBackupForRole,
+  sanitizeAppModuleForRole,
 } from '@/shared/access/operationalAccessPolicy';
 import { ReminderModal } from '@/components/reminders/ReminderModal';
 import { ReminderCenterProvider } from '@/context/ReminderCenterContext';
+import { recordOperationalTelemetry } from '@/services/observability/operationalTelemetryService';
 
 interface AppContentProps {
   ui: UseUIStateReturn;
@@ -73,6 +74,7 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
     [auth.role, censusAccessProfile]
   );
   const { currentModule, setCurrentModule, censusLocalViewMode, setCensusLocalViewMode } = ui;
+  const appShellTelemetryRecordedRef = React.useRef(false);
 
   const canVerifyArchiveStatus = React.useMemo(() => {
     return canVerifyPassiveBackupForRole(auth.role, ui.currentModule);
@@ -96,9 +98,9 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
   });
 
   React.useEffect(() => {
-    const visibleModules = getVisibleModules(auth.role);
-    if (!visibleModules.includes(currentModule)) {
-      setCurrentModule(visibleModules[0] || 'CENSUS');
+    const sanitizedModule = sanitizeAppModuleForRole(auth.role, currentModule);
+    if (sanitizedModule !== currentModule) {
+      setCurrentModule(sanitizedModule);
     }
   }, [auth.role, currentModule, setCurrentModule]);
 
@@ -107,6 +109,30 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
       setCensusLocalViewMode('TABLE');
     }
   }, [censusLocalViewMode, setCensusLocalViewMode, specialistCensusAccess]);
+
+  React.useEffect(() => {
+    if (
+      appShellTelemetryRecordedRef.current ||
+      isSignatureMode ||
+      sharedCensus.isSharedCensusMode
+    ) {
+      return;
+    }
+
+    recordOperationalTelemetry(
+      {
+        category: 'daily_record',
+        operation: 'app_shell_ready',
+        status: 'success',
+        context: {
+          module: currentModule,
+          role: auth.role || 'viewer',
+        },
+      },
+      { allowSuccess: true }
+    );
+    appShellTelemetryRecordedRef.current = true;
+  }, [auth.role, currentModule, isSignatureMode, sharedCensus.isSharedCensusMode]);
 
   const handleExportExcel = React.useCallback(async () => {
     const generateCensusMasterExcel = await loadCensusMasterExcelExporter();

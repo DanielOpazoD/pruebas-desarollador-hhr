@@ -1,6 +1,12 @@
 import type { ModuleType } from '@/constants/navigationConfig';
 import type { UserRole } from '@/types/auth';
-import { canEditModule, canDoAction, isAdmin, ACTIONS } from '@/utils/permissions';
+import {
+  ACTIONS,
+  canDoAction,
+  canEditModule,
+  getVisibleModules,
+  isAdmin,
+} from '@/utils/permissions';
 import { canReadClinicalDocuments } from '@/application/clinical-documents/clinicalDocumentAccessPolicy';
 import { canAccessAuditView } from '@/services/admin/auditAccessPolicy';
 import {
@@ -11,6 +17,23 @@ import { canEditSpecialistTodayBoundRecord } from '@/shared/access/specialistAcc
 
 type SupportedRole = UserRole | string | undefined;
 
+export const getVisibleAppModules = (role: SupportedRole): ModuleType[] =>
+  getVisibleModules((typeof role === 'string' ? role : undefined) as UserRole | undefined);
+
+export const getDefaultAppModuleForRole = (role: SupportedRole): ModuleType =>
+  getVisibleAppModules(role)[0] || 'CENSUS';
+
+export const sanitizeAppModuleForRole = (role: SupportedRole, module: ModuleType): ModuleType => {
+  const visibleModules = getVisibleAppModules(role);
+  return visibleModules.includes(module) ? module : getDefaultAppModuleForRole(role);
+};
+
+export const canEditAppModule = (role: SupportedRole, module: ModuleType): boolean =>
+  canEditModule((typeof role === 'string' ? role : undefined) as UserRole | undefined, module);
+
+export const canEditAnyAppModule = (role: SupportedRole): boolean =>
+  getVisibleAppModules(role).some(module => canEditAppModule(role, module));
+
 export const canForceCreateDayCopyOverride = (role: SupportedRole): boolean => isAdmin(role);
 
 export const canVerifyPassiveBackupForRole = (
@@ -18,18 +41,18 @@ export const canVerifyPassiveBackupForRole = (
   moduleType: ModuleType | string
 ): boolean => {
   if (moduleType === 'CENSUS') {
-    return canEditModule(role, 'CENSUS');
+    return canEditAppModule(role, 'CENSUS');
   }
 
   if (moduleType === 'NURSING_HANDOFF') {
-    return canEditModule(role, 'NURSING_HANDOFF');
+    return canEditAppModule(role, 'NURSING_HANDOFF');
   }
 
   return false;
 };
 
 export const canViewOrManageBackupFiles = (role: SupportedRole): boolean =>
-  canEditModule(role, 'NURSING_HANDOFF');
+  canEditAppModule(role, 'NURSING_HANDOFF');
 
 export const canAccessAppModuleRoute = ({
   role,
@@ -40,7 +63,8 @@ export const canAccessAppModuleRoute = ({
   module: ModuleType;
   visibleModules?: readonly ModuleType[];
 }): boolean => {
-  if (visibleModules && !visibleModules.includes(module)) {
+  const resolvedVisibleModules = visibleModules || getVisibleAppModules(role);
+  if (!resolvedVisibleModules.includes(module)) {
     return false;
   }
 
@@ -80,10 +104,10 @@ export const canTriggerCensusExports = ({
 }: {
   role: SupportedRole;
   accessProfile?: CensusAccessProfile;
-}): boolean => canEditModule(role, 'CENSUS') && !isSpecialistCensusAccessProfile(accessProfile);
+}): boolean => canEditAppModule(role, 'CENSUS') && !isSpecialistCensusAccessProfile(accessProfile);
 
 export const canOpenTransferDocuments = (role: SupportedRole): boolean =>
-  canEditModule(role, 'TRANSFER_MANAGEMENT');
+  canEditAppModule(role, 'TRANSFER_MANAGEMENT');
 
 export const canViewPatientHistoryFromRestrictedProfiles = ({
   accessProfile = 'default',

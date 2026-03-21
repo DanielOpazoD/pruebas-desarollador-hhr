@@ -19,7 +19,6 @@ import {
   OBSERVED_CATEGORY_ORDER,
   OPERATIONAL_TELEMETRY_DEFAULT_WINDOW_MS,
   OPERATIONAL_TELEMETRY_STORAGE_KEY,
-  sanitizeOperationalTelemetryContext,
   sanitizePersistedOperationalTelemetryEvent,
   trimOperationalTelemetryEvents,
 } from '@/services/observability/operationalTelemetrySupport';

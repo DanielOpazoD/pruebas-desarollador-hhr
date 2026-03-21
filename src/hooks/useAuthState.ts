@@ -3,7 +3,7 @@ import { onAuthSessionStateChange, signOut, hasActiveFirebaseSession } from '@/s
 import { executeRedirectAuthResolution } from '@/application/auth';
 import { AuthSessionState, AuthUser, UserRole } from '@/types/auth';
 export type { AuthSessionState, UserRole };
-import { canEditAnyModule } from '@/utils/permissions';
+import { canEditAnyAppModule } from '@/shared/access/operationalAccessPolicy';
 import {
   createHandleLogout,
   getE2EBootstrapUser,
@@ -101,7 +101,7 @@ export const useAuthState = (): UseAuthStateReturn => {
   });
 
   const role: UserRole = currentUser?.role || 'viewer';
-  const isEditor = canEditAnyModule(role);
+  const isEditor = canEditAnyAppModule(role);
   const isViewer = !isEditor;
   const canEdit = isEditor;
 

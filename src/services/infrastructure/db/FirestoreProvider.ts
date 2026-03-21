@@ -1,117 +1,195 @@
 import {
-    collection,
-    doc,
-    getDoc,
-    getDocs,
-    setDoc,
-    updateDoc,
-    deleteDoc,
-    onSnapshot,
-    query,
-    where,
-    orderBy,
-    limit,
-    writeBatch,
-    QueryConstraint as FirebaseQueryConstraint,
-    startAfter,
-    WithFieldValue,
-    UpdateData,
-    DocumentReference
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  startAfter,
+  setDoc,
+  updateDoc,
+  where,
+  writeBatch,
+  type DocumentReference,
+  type Firestore,
+  type QueryConstraint as FirebaseQueryConstraint,
+  type UpdateData,
+  type WithFieldValue,
 } from 'firebase/firestore';
-import { db as firebaseDb } from '@/firebaseConfig';
-import {
-    IDatabaseProvider,
-    QueryOptions,
-    IDatabaseBatch
-} from './types';
+import { IDatabaseBatch, IDatabaseProvider, QueryOptions } from './types';
+
+export interface FirestoreProviderApi {
+  collection: typeof collection;
+  deleteDoc: typeof deleteDoc;
+  doc: typeof doc;
+  getDoc: typeof getDoc;
+  getDocs: typeof getDocs;
+  limit: typeof limit;
+  onSnapshot: typeof onSnapshot;
+  orderBy: typeof orderBy;
+  query: typeof query;
+  setDoc: typeof setDoc;
+  startAfter: typeof startAfter;
+  updateDoc: typeof updateDoc;
+  where: typeof where;
+  writeBatch: typeof writeBatch;
+}
+
+const defaultFirestoreProviderApi: FirestoreProviderApi = {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  setDoc,
+  startAfter,
+  updateDoc,
+  where,
+  writeBatch,
+};
+
+interface FirestoreProviderOptions {
+  firestore: Firestore;
+  api?: FirestoreProviderApi;
+}
 
 export class FirestoreProvider implements IDatabaseProvider {
-    constructor() {
-        // We no longer capture db here to avoid initialization race conditions
+  private readonly firestore: Firestore;
+  private readonly api: FirestoreProviderApi;
+
+  constructor({ firestore, api = defaultFirestoreProviderApi }: FirestoreProviderOptions) {
+    this.firestore = firestore;
+    this.api = api;
+  }
+
+  async getDoc<T>(collectionName: string, id: string): Promise<T | null> {
+    const docRef = this.api.doc(this.firestore, collectionName, id);
+    const snapshot = await this.api.getDoc(docRef);
+    return snapshot.exists() ? (snapshot.data() as T) : null;
+  }
+
+  async getDocs<T>(collectionName: string, options?: QueryOptions): Promise<T[]> {
+    const constraints = this.buildConstraints(options);
+    const collectionRef = this.api.collection(this.firestore, collectionName);
+    const snapshot = await this.api.getDocs(this.api.query(collectionRef, ...constraints));
+    return snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }) as T);
+  }
+
+  async setDoc<T>(
+    collectionName: string,
+    id: string,
+    data: T,
+    options?: { merge?: boolean }
+  ): Promise<void> {
+    const docRef = this.api.doc(
+      this.firestore,
+      collectionName,
+      id
+    ) as unknown as DocumentReference<T>;
+
+    if (options?.merge) {
+      await this.api.setDoc(docRef, data as WithFieldValue<T>, { merge: true });
+      return;
     }
 
-    async getDoc<T>(collectionName: string, id: string): Promise<T | null> {
-        const docRef = doc(firebaseDb, collectionName, id);
-        const docSnap = await getDoc(docRef);
-        return docSnap.exists() ? (docSnap.data() as T) : null;
-    }
+    await this.api.setDoc(docRef, data as WithFieldValue<T>);
+  }
 
-    async getDocs<T>(collectionName: string, options?: QueryOptions): Promise<T[]> {
-        const constraints = this.buildConstraints(options);
-        const q = query(collection(firebaseDb, collectionName), ...constraints);
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
-    }
+  async updateDoc(
+    collectionName: string,
+    id: string,
+    data: Record<string, unknown>
+  ): Promise<void> {
+    const docRef = this.api.doc(this.firestore, collectionName, id);
+    await this.api.updateDoc(docRef, data as UpdateData<Record<string, unknown>>);
+  }
 
-    async setDoc<T>(collectionName: string, id: string, data: T, options?: { merge?: boolean }): Promise<void> {
-        // Safe cast through unknown to bridge generic T with Firestore's internal types
-        const docRef = doc(firebaseDb, collectionName, id) as unknown as DocumentReference<T>;
+  async deleteDoc(collectionName: string, id: string): Promise<void> {
+    const docRef = this.api.doc(this.firestore, collectionName, id);
+    await this.api.deleteDoc(docRef);
+  }
+
+  subscribeDoc<T>(
+    collectionName: string,
+    id: string,
+    callback: (data: T | null) => void
+  ): () => void {
+    const docRef = this.api.doc(this.firestore, collectionName, id);
+    return this.api.onSnapshot(docRef, snapshot => {
+      callback(snapshot.exists() ? (snapshot.data() as T) : null);
+    });
+  }
+
+  subscribeQuery<T>(
+    collectionName: string,
+    options: QueryOptions,
+    callback: (data: T[]) => void
+  ): () => void {
+    const constraints = this.buildConstraints(options);
+    const collectionRef = this.api.collection(this.firestore, collectionName);
+    return this.api.onSnapshot(this.api.query(collectionRef, ...constraints), snapshot => {
+      callback(snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }) as T));
+    });
+  }
+
+  async runBatch(operations: (batch: IDatabaseBatch) => void): Promise<void> {
+    const batch = this.api.writeBatch(this.firestore);
+    const dbBatch: IDatabaseBatch = {
+      set: (collectionName, id, data, options) => {
+        const docRef = this.api.doc(this.firestore, collectionName, id) as DocumentReference<
+          Record<string, unknown>
+        >;
         if (options?.merge) {
-            await setDoc(docRef, data as WithFieldValue<T>, { merge: true });
-        } else {
-            await setDoc(docRef, data as WithFieldValue<T>);
+          batch.set(docRef, data as WithFieldValue<Record<string, unknown>>, { merge: true });
+          return;
         }
+        batch.set(docRef, data as WithFieldValue<Record<string, unknown>>);
+      },
+      update: (collectionName, id, data) =>
+        batch.update(
+          this.api.doc(this.firestore, collectionName, id) as DocumentReference<
+            Record<string, unknown>
+          >,
+          data as UpdateData<Record<string, unknown>>
+        ),
+      delete: (collectionName, id) =>
+        batch.delete(this.api.doc(this.firestore, collectionName, id)),
+    };
+
+    operations(dbBatch);
+    await batch.commit();
+  }
+
+  private buildConstraints(options?: QueryOptions): FirebaseQueryConstraint[] {
+    const constraints: FirebaseQueryConstraint[] = [];
+
+    if (options?.where) {
+      options.where.forEach(item => {
+        constraints.push(this.api.where(item.field, item.operator, item.value));
+      });
     }
 
-    async updateDoc(collectionName: string, id: string, data: Record<string, unknown>): Promise<void> {
-        const docRef = doc(firebaseDb, collectionName, id);
-        await updateDoc(docRef, data as UpdateData<Record<string, unknown>>);
+    if (options?.orderBy) {
+      options.orderBy.forEach(item => {
+        constraints.push(this.api.orderBy(item.field, item.direction));
+      });
     }
 
-    async deleteDoc(collectionName: string, id: string): Promise<void> {
-        const docRef = doc(firebaseDb, collectionName, id);
-        await deleteDoc(docRef);
+    if (options?.limit) {
+      constraints.push(this.api.limit(options.limit));
     }
 
-    subscribeDoc<T>(collectionName: string, id: string, callback: (data: T | null) => void): () => void {
-        const docRef = doc(firebaseDb, collectionName, id);
-        return onSnapshot(docRef, (docSnap) => {
-            callback(docSnap.exists() ? (docSnap.data() as T) : null);
-        });
+    if (options?.startAfter) {
+      constraints.push(this.api.startAfter(options.startAfter));
     }
 
-    subscribeQuery<T>(collectionName: string, options: QueryOptions, callback: (data: T[]) => void): () => void {
-        const constraints = this.buildConstraints(options);
-        const q = query(collection(firebaseDb, collectionName), ...constraints);
-        return onSnapshot(q, (snapshot) => {
-            callback(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T)));
-        });
-    }
-
-    async runBatch(operations: (batch: IDatabaseBatch) => void): Promise<void> {
-        const batch = writeBatch(firebaseDb);
-        const dbBatch: IDatabaseBatch = {
-            set: (col, id, data) => batch.set(doc(firebaseDb, col, id), data as WithFieldValue<unknown>),
-            update: (col, id, data) => batch.update(doc(firebaseDb, col, id), data as UpdateData<Record<string, unknown>>),
-            delete: (col, id) => batch.delete(doc(firebaseDb, col, id))
-        };
-        operations(dbBatch);
-        await batch.commit();
-    }
-
-    private buildConstraints(options?: QueryOptions): FirebaseQueryConstraint[] {
-        const constraints: FirebaseQueryConstraint[] = [];
-
-        if (options?.where) {
-            options.where.forEach(w => {
-                constraints.push(where(w.field, w.operator, w.value));
-            });
-        }
-
-        if (options?.orderBy) {
-            options.orderBy.forEach(o => {
-                constraints.push(orderBy(o.field, o.direction));
-            });
-        }
-
-        if (options?.limit) {
-            constraints.push(limit(options.limit));
-        }
-
-        if (options?.startAfter) {
-            constraints.push(startAfter(options.startAfter));
-        }
-
-        return constraints;
-    }
+    return constraints;
+  }
 }

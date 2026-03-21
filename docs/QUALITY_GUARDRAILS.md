@@ -22,6 +22,8 @@ Evitar que la deuda estructural vuelva a crecer después de las fases de estabil
 3. Un hotspot permitido no puede crecer por sobre su límite sin actualizar explícitamente la allowlist.
 4. Los hooks grandes usan `scripts/hook-hotspots-limits.json` con la misma disciplina de backlog.
 5. La regla por defecto es extraer controllers/helpers puros antes de mover JSX o cambiar contratos públicos.
+6. `npm run lint` es tolerancia cero; no se aceptan warnings nuevos en `src/`.
+7. Los providers de infraestructura obligatorios deben fallar rápido si falta wiring.
 
 ## Cómo agregar un guardrail nuevo
 
@@ -53,6 +55,8 @@ Evitar que la deuda estructural vuelva a crecer después de las fases de estabil
 - `ci:release-gate` agrega emuladores, reglas y E2E críticos.
 - Los budgets por flujo se leen desde `reports/e2e/flow-performance-budget.json` y su resumen en `reports/e2e/flow-performance-budget-summary.json` / `.md`.
 - El estado operativo por flujo distingue `ok`, `near-limit`, `target-miss` y `blocking`.
+- La definición de terminado vive en [docs/ENGINEERING_DEFINITION_OF_DONE.md](./ENGINEERING_DEFINITION_OF_DONE.md).
+- La deuda priorizada vive en [docs/TECHNICAL_DEBT_REGISTER.md](./TECHNICAL_DEBT_REGISTER.md).
 
 ## Cuándo abrir una excepción
 

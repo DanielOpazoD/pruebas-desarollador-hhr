@@ -8,6 +8,8 @@ import { checkAIAvailability } from '@/services/terminology/cie10AISearch';
 import { getCachedAIResults, cacheAIResults } from '@/services/terminology/aiResultsCache';
 import { logger } from '@/services/utils/loggerService';
 
+const terminologySuggestorLogger = logger.child('TerminologySuggestor');
+
 export interface UseTerminologySuggestorProps {
   value: string;
   onChange: (value: string, concept?: TerminologyConcept) => void;
@@ -21,7 +23,6 @@ export const useTerminologySuggestor = ({
   cie10Code,
   freeTextValue,
 }: UseTerminologySuggestorProps) => {
-  const terminologySuggestorLogger = logger.child('TerminologySuggestor');
   const [query, setQuery] = useState(value);
   const [suggestions, setSuggestions] = useState<TerminologyConcept[]>([]);
   const [isLoading, setIsLoading] = useState(false);

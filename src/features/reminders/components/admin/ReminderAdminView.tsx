@@ -83,7 +83,7 @@ export const ReminderAdminView: React.FC = () => {
         </div>
       ) : reminders.length === 0 ? (
         <div className="rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-sm font-semibold text-slate-500">
-          No hay avisos creados. Usa "Nuevo aviso" para publicar el primero.
+          No hay avisos creados. Usa &quot;Nuevo aviso&quot; para publicar el primero.
         </div>
       ) : (
         <div className="space-y-4">

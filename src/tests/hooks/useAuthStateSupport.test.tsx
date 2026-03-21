@@ -11,6 +11,8 @@ const mockRestoreAuthBootstrapReturnTo = vi.fn();
 const mockClearRecentManualLogout = vi.fn();
 const mockHasRecentManualLogout = vi.fn();
 const mockLogUserLogin = vi.fn();
+const mockRecordOperationalOutcome = vi.fn();
+const mockRecordOperationalTelemetry = vi.fn();
 
 vi.mock('@/services/utils/loggerService', () => ({
   logger: {
@@ -37,6 +39,11 @@ vi.mock('@/application/ports/auditPort', () => ({
     logUserLogin: (...args: unknown[]) => mockLogUserLogin(...args),
     logUserLogout: vi.fn(),
   },
+}));
+
+vi.mock('@/services/observability/operationalTelemetryService', () => ({
+  recordOperationalOutcome: (...args: unknown[]) => mockRecordOperationalOutcome(...args),
+  recordOperationalTelemetry: (...args: unknown[]) => mockRecordOperationalTelemetry(...args),
 }));
 
 describe('useResolvedAuthBootstrap', () => {
@@ -106,6 +113,54 @@ describe('useResolvedAuthBootstrap', () => {
     expect(mockWarn).not.toHaveBeenCalledWith(
       expect.stringContaining('Auth initialization timed out'),
       expect.anything()
+    );
+    expect(mockRecordOperationalOutcome).toHaveBeenCalledWith(
+      'auth',
+      'redirect_resolution',
+      expect.objectContaining({ status: 'success' }),
+      expect.objectContaining({ allowSuccess: true })
+    );
+  });
+
+  it('forces auth loading completion on bootstrap timeout', async () => {
+    const onAuthSessionStateChange = vi.fn(() => () => {});
+    const resolveRedirectAuthSessionOutcome = vi
+      .fn()
+      .mockResolvedValue({ status: 'success', data: null, issues: [] });
+
+    const { result } = renderHook(() => {
+      const [sessionState, setSessionState] = useState<AuthSessionState>({
+        status: 'unauthenticated',
+        user: null,
+      });
+      const [authLoading, setAuthLoading] = useState(true);
+
+      useResolvedAuthBootstrap({
+        e2eBootstrapUser: null,
+        resolveRedirectAuthSessionOutcome,
+        onAuthSessionStateChange,
+        setSessionState,
+        setAuthLoading,
+      });
+
+      return { sessionState, authLoading };
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(16000);
+    });
+
+    expect(result.current.authLoading).toBe(false);
+    expect(mockWarn).toHaveBeenCalledWith(
+      expect.stringContaining('Auth initialization timed out'),
+      expect.anything()
+    );
+    expect(mockRecordOperationalTelemetry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        category: 'auth',
+        operation: 'bootstrap_timeout',
+        status: 'degraded',
+      })
     );
   });
 });

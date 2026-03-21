@@ -19,12 +19,9 @@ import {
   where,
   limit,
   Timestamp,
-  QueryDocumentSnapshot,
-  DocumentSnapshot,
-  DocumentData,
 } from 'firebase/firestore';
 import { db, auth } from '@/firebaseConfig';
-import { BackupFile, BackupFilePreview, BackupFilters, BackupFileType } from '@/types/backup';
+import { BackupFile, BackupFilePreview, BackupFilters } from '@/types/backup';
 import { COLLECTIONS, getActiveHospitalId } from '@/constants/firestorePaths';
 import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 import {

@@ -98,7 +98,7 @@ Los accesos directos al handoff médico ya no usan un “modo especialista” se
 | `npm run test:coverage`                 | Cobertura de tests                                                                               |
 | `npm run test:e2e`                      | End-to-end (Playwright)                                                                          |
 | `npm run test:e2e:critical`             | E2E crítico emulador (Chromium por defecto; multi-browser por `E2E_CRITICAL_BROWSERS`)           |
-| `npm run lint`                          | Lint global                                                                                      |
+| `npm run lint`                          | Lint global con tolerancia cero a warnings                                                       |
 | `npm run check:quality`                 | Checks de arquitectura, tamaño de módulo y boundaries runtime                                    |
 | `npm run ci:inner-loop`                 | Gate corto para desarrollo diario (`typecheck`, lint estricto, quality y riesgo unitario)        |
 | `npm run ci:merge-gate`                 | Gate blocking previo a merge (`quality`, unitarios completos, cobertura crítica, build, bundle)  |
@@ -172,6 +172,11 @@ import { useDailyRecord } from '@/hooks/useDailyRecord';
 - [Guardrails de calidad](docs/QUALITY_GUARDRAILS.md)
 - [Gates de CI y runbooks de falla](docs/CI_GATES_AND_FAILURE_RUNBOOKS.md)
 - [Checklist de cambio seguro](docs/SAFE_CHANGE_CHECKLIST.md)
+- [Definition of Done técnico](docs/ENGINEERING_DEFINITION_OF_DONE.md)
+- [Registro de deuda técnica](docs/TECHNICAL_DEBT_REGISTER.md)
+- [ADR Repository Provider obligatorio](docs/ADR_REPOSITORY_PROVIDER_REQUIRED.md)
+- [ADR fachada de access policy](docs/ADR_ACCESS_POLICY_FACADE.md)
+- [ADR boundary de application](docs/ADR_APPLICATION_BOUNDARY_ENFORCEMENT.md)
 - [Mapa de código fuente](src/README.md)
 
 ### Documentación existente relevante

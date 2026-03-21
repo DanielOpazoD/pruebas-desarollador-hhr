@@ -20,6 +20,10 @@ import {
   toResolvedAuthSessionState,
 } from '@/services/auth/authSessionState';
 import { logger } from '@/services/utils/loggerService';
+import {
+  recordOperationalOutcome,
+  recordOperationalTelemetry,
+} from '@/services/observability/operationalTelemetryService';
 
 const authStateLogger = logger.child('useAuthState');
 
@@ -159,6 +163,9 @@ export const subscribeToResolvedAuthState = async ({
 }): Promise<() => void> => {
   try {
     const redirectOutcome = await resolveRedirectAuthSessionOutcome();
+    recordOperationalOutcome('auth', 'redirect_resolution', redirectOutcome, {
+      allowSuccess: true,
+    });
     const redirectSessionState = redirectOutcome.data;
     if (redirectSessionState) {
       restoreAuthBootstrapReturnTo();
@@ -181,6 +188,22 @@ export const subscribeToResolvedAuthState = async ({
   }
 
   return onAuthSessionStateChange(async sessionState => {
+    recordOperationalTelemetry(
+      {
+        category: 'auth',
+        operation: 'session_state_change',
+        status: sessionState.status === 'auth_error' ? 'failed' : 'success',
+        context: {
+          sessionStatus: sessionState.status,
+        },
+        issues:
+          sessionState.status === 'auth_error' && sessionState.error.userSafeMessage
+            ? [sessionState.error.userSafeMessage]
+            : undefined,
+      },
+      { allowSuccess: true }
+    );
+
     if (isAuthenticatedAuthSessionState(sessionState)) {
       if (isAuthBootstrapPending()) {
         restoreAuthBootstrapReturnTo();
@@ -239,25 +262,7 @@ export const useResolvedAuthBootstrap = ({
     let unsubscribe: (() => void) | undefined;
     const timeoutMs = getAuthBootstrapTimeoutMs();
     let isBootstrapResolved = false;
-    let safetyTimeout: ReturnType<typeof setTimeout> | undefined;
-    const markBootstrapResolved = () => {
-      if (isBootstrapResolved) {
-        return;
-      }
-
-      isBootstrapResolved = true;
-      if (safetyTimeout) {
-        clearTimeout(safetyTimeout);
-      }
-    };
-    const setResolvedAuthLoading = (value: boolean) => {
-      if (!value) {
-        markBootstrapResolved();
-      }
-      setAuthLoading(value);
-    };
-
-    safetyTimeout = setTimeout(() => {
+    const safetyTimeout: ReturnType<typeof setTimeout> = setTimeout(() => {
       if (isBootstrapResolved) {
         return;
       }
@@ -269,9 +274,35 @@ export const useResolvedAuthBootstrap = ({
           authBootstrapPending: isAuthBootstrapPending(),
         }
       );
+      recordOperationalTelemetry({
+        category: 'auth',
+        operation: 'bootstrap_timeout',
+        status: 'degraded',
+        context: {
+          timeoutMs,
+          isOnline: window.navigator.onLine,
+          authBootstrapPending: isAuthBootstrapPending(),
+        },
+        issues: ['La inicializacion de autenticacion excedio el tiempo esperado.'],
+      });
       clearAuthBootstrapPending();
       setResolvedAuthLoading(false);
     }, timeoutMs);
+
+    const markBootstrapResolved = () => {
+      if (isBootstrapResolved) {
+        return;
+      }
+
+      isBootstrapResolved = true;
+      clearTimeout(safetyTimeout);
+    };
+    const setResolvedAuthLoading = (value: boolean) => {
+      if (!value) {
+        markBootstrapResolved();
+      }
+      setAuthLoading(value);
+    };
 
     subscribeToResolvedAuthState({
       resolveRedirectAuthSessionOutcome,

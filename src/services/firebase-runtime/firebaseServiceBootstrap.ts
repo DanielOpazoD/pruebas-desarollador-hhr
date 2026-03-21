@@ -18,6 +18,7 @@ import {
   parseEmulatorHost,
   shouldUseSingleTabFirestoreCache,
 } from '@/services/firebase-runtime/firebaseEnvironmentPolicy';
+import { logger } from '@/services/utils/loggerService';
 
 export interface FirebaseBootstrapResult {
   app: FirebaseApp;
@@ -25,8 +26,10 @@ export interface FirebaseBootstrapResult {
   db: Firestore;
 }
 
+const firebaseBootstrapLogger = logger.child('FirebaseBootstrap');
+
 export const initializeFirebaseServices = (config: FirebaseOptions): FirebaseBootstrapResult => {
-  console.log('[FirebaseConfig] 🔌 Initializing services...');
+  firebaseBootstrapLogger.info('Initializing services');
   const app = initializeApp(config);
   const auth = getAuth(app);
 
@@ -41,9 +44,10 @@ export const initializeFirebaseServices = (config: FirebaseOptions): FirebaseBoo
           : persistentMultipleTabManager(),
       }),
     });
-    console.log(
-      `[FirebaseConfig] 💾 Firestore initialized (persistence requested, ${useSingleTabCache ? 'single-tab' : 'multi-tab'})`
-    );
+    firebaseBootstrapLogger.info('Firestore initialized', {
+      cacheMode: useSingleTabCache ? 'single-tab' : 'multi-tab',
+      persistenceRequested: true,
+    });
   } catch (fsErr) {
     console.warn('[FirebaseConfig] ⚠️ Firestore persistence failed at init:', fsErr);
     db = initializeFirestore(app, {
@@ -55,7 +59,7 @@ export const initializeFirebaseServices = (config: FirebaseOptions): FirebaseBoo
     console.warn('[FirebaseConfig] ⚠️ Auth persistence failed:', err);
   });
 
-  console.log('[FirebaseConfig] 🔥 Firebase services ready');
+  firebaseBootstrapLogger.info('Firebase services ready');
   return { app, auth, db };
 };
 
