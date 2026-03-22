@@ -7,7 +7,8 @@ import { getCurrentAuthSessionState } from '@/services/auth/authSession';
 import { logger } from '@/services/utils/loggerService';
 
 type BackgroundMode = 'auto' | 'day' | 'night';
-const POPUP_RECOVERY_GRACE_MS = 1200;
+const POPUP_RECOVERY_GRACE_MS = 4000;
+const POPUP_RECOVERY_POLL_MS = 200;
 const loginPageLogger = logger.child('LoginPage');
 
 const waitForRecoverablePopupResolution = async (): Promise<boolean> => {
@@ -16,8 +17,16 @@ const waitForRecoverablePopupResolution = async (): Promise<boolean> => {
     return true;
   }
 
-  await new Promise(resolve => setTimeout(resolve, POPUP_RECOVERY_GRACE_MS));
-  return hasResolvedSession() || isAuthBootstrapPending();
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < POPUP_RECOVERY_GRACE_MS) {
+    await new Promise(resolve => setTimeout(resolve, POPUP_RECOVERY_POLL_MS));
+    if (hasResolvedSession() || isAuthBootstrapPending()) {
+      return true;
+    }
+  }
+
+  return false;
 };
 
 export interface LoginPageControllerState {
@@ -26,6 +35,7 @@ export interface LoginPageControllerState {
   isGoogleLoading: boolean;
   isAnyLoading: boolean;
   isDayGradient: boolean;
+  canRetryGoogleSignIn: boolean;
   handleGoogleSignIn: () => Promise<void>;
   toggleBackgroundMode: () => void;
 }
@@ -111,6 +121,7 @@ export const useLoginPageController = (onLoginSuccess: () => void): LoginPageCon
     isGoogleLoading,
     isAnyLoading: isGoogleLoading,
     isDayGradient,
+    canRetryGoogleSignIn: errorCode === 'auth/role-validation-unavailable' && !isGoogleLoading,
     handleGoogleSignIn,
     toggleBackgroundMode,
   };

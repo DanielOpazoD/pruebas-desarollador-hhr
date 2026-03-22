@@ -18,6 +18,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, accessMode
     isGoogleLoading,
     isAnyLoading,
     isDayGradient,
+    canRetryGoogleSignIn,
     handleGoogleSignIn,
     toggleBackgroundMode,
   } = useLoginPageController(onLoginSuccess);
@@ -51,6 +52,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, accessMode
           accessMode={accessMode}
           error={error}
           errorCode={errorCode}
+          canRetryGoogleSignIn={canRetryGoogleSignIn}
           onGoogleSignIn={handleGoogleSignIn}
         />
         <LoginPageFooter isDayGradient={isDayGradient} />

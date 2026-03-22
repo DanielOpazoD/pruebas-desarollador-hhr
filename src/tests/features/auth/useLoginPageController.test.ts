@@ -98,7 +98,7 @@ describe('useLoginPageController', () => {
 
     await act(async () => {
       const promise = result.current.handleGoogleSignIn();
-      await vi.advanceTimersByTimeAsync(1200);
+      await vi.advanceTimersByTimeAsync(4000);
       await promise;
     });
 
@@ -135,6 +135,43 @@ describe('useLoginPageController', () => {
     expect(result.current.errorCode).toBe('auth/google-signin-failed');
     expect(result.current.error).toBe('google auth down');
     expect(result.current.isGoogleLoading).toBe(false);
+    expect(result.current.canRetryGoogleSignIn).toBe(false);
+  });
+
+  it('enables explicit retry when Google auth resolves with temporary access validation failure', async () => {
+    mockExecuteGoogleSignIn.mockResolvedValueOnce(
+      createApplicationFailed<AuthSessionState>(
+        {
+          status: 'auth_error',
+          user: null,
+          error: {
+            code: 'auth/role-validation-unavailable',
+            message:
+              'No se pudo validar tu acceso en este momento. Intenta nuevamente en unos segundos.',
+          },
+        },
+        [
+          {
+            kind: 'unknown',
+            code: 'auth/role-validation-unavailable',
+            message:
+              'No se pudo validar tu acceso en este momento. Intenta nuevamente en unos segundos.',
+          },
+        ]
+      )
+    );
+    mockResolveAuthErrorCode.mockReturnValueOnce('auth/role-validation-unavailable');
+
+    const { result } = renderHook(() => useLoginPageController(vi.fn()));
+
+    await act(async () => {
+      const promise = result.current.handleGoogleSignIn();
+      await vi.runAllTimersAsync();
+      await promise;
+    });
+
+    expect(result.current.errorCode).toBe('auth/role-validation-unavailable');
+    expect(result.current.canRetryGoogleSignIn).toBe(true);
   });
 
   it('suppresses recoverable popup warnings when auth session resolves during the grace window', async () => {
@@ -169,7 +206,7 @@ describe('useLoginPageController', () => {
 
     await act(async () => {
       const promise = result.current.handleGoogleSignIn();
-      await vi.advanceTimersByTimeAsync(1200);
+      await vi.advanceTimersByTimeAsync(4000);
       await promise;
     });
 

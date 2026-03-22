@@ -19,8 +19,6 @@ import {
 } from '@/services/auth/authOperationalTelemetry';
 import { defaultAuthRuntime } from '@/services/firebase-runtime/authRuntime';
 
-const GOOGLE_POPUP_TIMEOUT_MS = 12000;
-
 const waitForE2EPopupDelay = async (): Promise<void> => {
   const { consumeE2EPopupDelayMs } = await import('@/services/auth/authE2EPopupRuntime');
   const e2ePopupDelayMs = consumeE2EPopupDelayMs();
@@ -39,41 +37,6 @@ const resolveE2EPopupUser = async (): Promise<AuthUser | null> => {
 
   return consumeE2EPopupMockUser();
 };
-
-const signInWithPopupOrTimeout = async (): Promise<AuthUser> =>
-  new Promise<AuthUser>((resolve, reject) => {
-    let settled = false;
-
-    const finish = (resolver: () => void) => {
-      if (settled) {
-        return;
-      }
-
-      settled = true;
-      clearTimeout(timeoutId);
-      resolver();
-    };
-
-    const timeoutId = setTimeout(() => {
-      finish(() =>
-        reject(
-          createAuthError(
-            'auth/popup-timeout',
-            'La ventana de Google tardó demasiado en responder. Prueba la otra forma de ingreso.'
-          )
-        )
-      );
-    }, GOOGLE_POPUP_TIMEOUT_MS);
-
-    signInWithPopup(defaultAuthRuntime.auth, googleProvider)
-      .then(result => authorizeFirebaseUser(result.user))
-      .then(user => {
-        finish(() => resolve(user));
-      })
-      .catch(error => {
-        finish(() => reject(error));
-      });
-  });
 
 const withGoogleLoginLock = async <T>(runner: () => Promise<T>): Promise<T> => {
   if (!acquireGoogleLoginLock()) {
@@ -110,7 +73,8 @@ export const signInWithGoogle = async (): Promise<AuthUser> =>
         return e2ePopupUser;
       }
 
-      return await signInWithPopupOrTimeout();
+      const result = await signInWithPopup(defaultAuthRuntime.auth, googleProvider);
+      return await authorizeFirebaseUser(result.user);
     } catch (error: unknown) {
       const authError = error as { message?: string };
       if (authError.message?.includes('no autorizado')) {

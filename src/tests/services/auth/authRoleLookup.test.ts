@@ -11,7 +11,11 @@ vi.mock('firebase/functions', () => ({
   httpsCallable: (...args: unknown[]) => httpsCallableMock(...args),
 }));
 
-import { getBootstrapRoleForEmail, getDynamicRoleForEmail } from '@/services/auth/authRoleLookup';
+import {
+  AUTH_ROLE_LOOKUP_UNAVAILABLE_CODE,
+  getBootstrapRoleForEmail,
+  getDynamicRoleForEmail,
+} from '@/services/auth/authRoleLookup';
 
 describe('authRoleLookup', () => {
   beforeEach(() => {
@@ -42,5 +46,14 @@ describe('authRoleLookup', () => {
     httpsCallableMock.mockReturnValue(checkUserRoleCall);
 
     await expect(getDynamicRoleForEmail('removed@hospital.cl')).resolves.toBeNull();
+  });
+
+  it('throws an explicit unavailable error when the callable cannot be reached', async () => {
+    const checkUserRoleCall = vi.fn().mockRejectedValue(new Error('network down'));
+    httpsCallableMock.mockReturnValue(checkUserRoleCall);
+
+    await expect(getDynamicRoleForEmail('specialist@hospital.cl')).rejects.toMatchObject({
+      code: AUTH_ROLE_LOOKUP_UNAVAILABLE_CODE,
+    });
   });
 });

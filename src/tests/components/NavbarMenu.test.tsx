@@ -37,7 +37,7 @@ describe('NavbarMenu', () => {
     render(<NavbarMenu {...defaultProps} />);
 
     expect(screen.getByText('Hospital Hanga Roa')).toBeInTheDocument();
-    expect(screen.getByText('MODO PRUEBA')).toBeInTheDocument();
+    expect(screen.getByText('MODO PRUEBA BETA')).toBeInTheDocument();
   });
 
   it('opens menu when brand button is clicked', () => {

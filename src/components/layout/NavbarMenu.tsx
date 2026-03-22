@@ -88,7 +88,7 @@ export const NavbarMenu: React.FC<NavbarMenuProps> = ({
             Hospital Hanga Roa
           </h1>
           <p className="text-[10px] font-bold text-red-300 uppercase tracking-[0.2em]">
-            {disabled ? 'Censo Compartido' : 'MODO PRUEBA'}
+            {disabled ? 'Censo Compartido' : 'MODO PRUEBA BETA'}
           </p>
         </div>
         {!disabled && (

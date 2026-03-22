@@ -4,6 +4,8 @@ import {
   connectAuthEmulator,
   setPersistence,
   browserLocalPersistence,
+  browserSessionPersistence,
+  inMemoryPersistence,
   type Auth,
 } from 'firebase/auth';
 import {
@@ -28,7 +30,33 @@ export interface FirebaseBootstrapResult {
 
 const firebaseBootstrapLogger = logger.child('FirebaseBootstrap');
 
-export const initializeFirebaseServices = (config: FirebaseOptions): FirebaseBootstrapResult => {
+const configureAuthPersistence = async (
+  auth: Auth
+): Promise<'local' | 'session' | 'memory' | 'unconfigured'> => {
+  const persistenceCandidates = [
+    { mode: 'local' as const, persistence: browserLocalPersistence },
+    { mode: 'session' as const, persistence: browserSessionPersistence },
+    { mode: 'memory' as const, persistence: inMemoryPersistence },
+  ];
+
+  for (const candidate of persistenceCandidates) {
+    try {
+      await setPersistence(auth, candidate.persistence);
+      firebaseBootstrapLogger.info('Auth persistence configured', {
+        persistenceMode: candidate.mode,
+      });
+      return candidate.mode;
+    } catch (error) {
+      console.warn(`[FirebaseConfig] ⚠️ Auth persistence (${candidate.mode}) failed:`, error);
+    }
+  }
+
+  return 'unconfigured';
+};
+
+export const initializeFirebaseServices = async (
+  config: FirebaseOptions
+): Promise<FirebaseBootstrapResult> => {
   firebaseBootstrapLogger.info('Initializing services');
   const app = initializeApp(config);
   const auth = getAuth(app);
@@ -55,9 +83,7 @@ export const initializeFirebaseServices = (config: FirebaseOptions): FirebaseBoo
     });
   }
 
-  setPersistence(auth, browserLocalPersistence).catch(err => {
-    console.warn('[FirebaseConfig] ⚠️ Auth persistence failed:', err);
-  });
+  await configureAuthPersistence(auth);
 
   firebaseBootstrapLogger.info('Firebase services ready');
   return { app, auth, db };

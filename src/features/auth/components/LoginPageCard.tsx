@@ -10,7 +10,8 @@ interface LoginPageCardProps {
   accessMode: 'default' | 'shared-census';
   error: string | null;
   errorCode: string | null;
-  onGoogleSignIn: () => void;
+  canRetryGoogleSignIn?: boolean;
+  onGoogleSignIn: () => void | Promise<void>;
 }
 
 const GoogleIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -40,6 +41,7 @@ export const LoginPageCard: React.FC<LoginPageCardProps> = ({
   accessMode,
   error,
   errorCode,
+  canRetryGoogleSignIn = false,
   onGoogleSignIn,
 }) => (
   <div className="bg-white/85 backdrop-blur-md border border-white/40 rounded-3xl shadow-[0_24px_60px_-30px_rgba(15,23,42,0.45)] p-10 relative overflow-hidden animate-login-reveal animate-login-reveal-delay-2">
@@ -64,7 +66,10 @@ export const LoginPageCard: React.FC<LoginPageCardProps> = ({
       className="w-full bg-white hover:bg-slate-50 disabled:bg-slate-100 border-2 border-slate-200 text-slate-700 font-bold py-4 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center gap-3 shadow-sm hover:shadow-lg hover:border-medical-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
     >
       {isGoogleLoading ? (
-        <Loader2 className="w-6 h-6 animate-spin text-medical-600" />
+        <>
+          <Loader2 className="w-6 h-6 animate-spin text-medical-600" />
+          Conectando con Google...
+        </>
       ) : (
         <>
           <GoogleIcon className="w-6 h-6" />
@@ -72,6 +77,18 @@ export const LoginPageCard: React.FC<LoginPageCardProps> = ({
         </>
       )}
     </button>
+
+    {isGoogleLoading && (
+      <div
+        data-testid="login-google-pending"
+        className="mt-4 rounded-2xl border border-medical-100 bg-medical-50/80 px-4 py-3 text-center"
+      >
+        <p className="text-sm font-semibold text-medical-800">{AUTH_UI_COPY.popupPendingTitle}</p>
+        <p className="mt-1 text-xs text-medical-700 text-balance">
+          {AUTH_UI_COPY.popupPendingHint}
+        </p>
+      </div>
+    )}
 
     {error && (
       <div className="mt-6 animate-fade-in">
@@ -83,8 +100,24 @@ export const LoginPageCard: React.FC<LoginPageCardProps> = ({
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
         </div>
+        {canRetryGoogleSignIn && (
+          <div className="mt-3 rounded-2xl border border-amber-100 bg-amber-50/80 px-4 py-3 text-center">
+            <p className="text-xs text-amber-800 text-balance">
+              {AUTH_UI_COPY.roleValidationRetryHint}
+            </p>
+            <button
+              type="button"
+              onClick={() => void onGoogleSignIn()}
+              className="mt-3 inline-flex items-center justify-center rounded-xl bg-amber-500 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-amber-600"
+              data-testid="login-retry-button"
+            >
+              {AUTH_UI_COPY.roleValidationRetryAction}
+            </button>
+          </div>
+        )}
         <div className="mt-2 text-center">
           <button
+            type="button"
             onClick={async () => {
               if (confirm(AUTH_UI_COPY.resetStorageConfirm)) {
                 await resetLocalAppStorage();

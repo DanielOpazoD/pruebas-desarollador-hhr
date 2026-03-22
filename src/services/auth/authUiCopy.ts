@@ -2,6 +2,9 @@ export const AUTH_UI_COPY = {
   alternateAccessButton: 'Ingreso Google',
   alternateAccessHint:
     'Si el navegador bloquea la ventana de Google, revisa ventanas emergentes e inténtalo otra vez desde el mismo botón.',
+  popupPendingTitle: 'Esperando confirmación de Google...',
+  popupPendingHint:
+    'Selecciona o confirma tu cuenta en la ventana emergente para completar el ingreso.',
   blockedPopupManual:
     'No se pudo abrir la ventana de Google. Revisa si el navegador bloqueó ventanas emergentes e inténtalo nuevamente.',
   blockedPopupStayOnPage:
@@ -9,6 +12,8 @@ export const AUTH_UI_COPY = {
   redirectUnavailable: 'El flujo alternativo de Google está desactivado en este entorno.',
   redirectGenericError:
     'No fue posible completar el ingreso con Google. Intenta nuevamente desde el botón principal.',
+  roleValidationRetryAction: 'Reintentar ingreso',
+  roleValidationRetryHint: 'Vuelve a intentar el acceso para revalidar tu sesión.',
   resetStorageConfirm:
     'Esto cerrará la sesión actual y reiniciará el guardado local de esta app para corregir problemas de carga. ¿Continuar?',
   resetStorageAction: '¿Problemas de carga? Reiniciar guardado local',

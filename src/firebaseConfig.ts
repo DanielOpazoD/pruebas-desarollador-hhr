@@ -76,7 +76,7 @@ export const firebaseReady = (async () => {
   try {
     const bootstrapPromise = (async () => {
       const config = await loadValidatedFirebaseConfig();
-      const services = initializeFirebaseServices(config);
+      const services = await initializeFirebaseServices(config);
       app = services.app;
       auth = services.auth;
       db = services.db;

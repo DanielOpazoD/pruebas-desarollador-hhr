@@ -186,6 +186,35 @@ describe('authSession', () => {
     );
   });
 
+  it('emits an auth_error session instead of signing out when role validation is temporarily unavailable', async () => {
+    const callback = vi.fn();
+    mockResolveFirebaseUserRole.mockRejectedValue(
+      Object.assign(new Error('lookup unavailable'), {
+        code: 'auth/role-validation-unavailable',
+      })
+    );
+
+    onAuthSessionStateChange(callback);
+    await flushObserverRegistration();
+
+    await authStateCallback?.(
+      createFirebaseUserMock({
+        uid: 'user-temporary-error',
+        email: 'user@hospital.cl',
+      })
+    );
+
+    expect(mockFirebaseSignOut).not.toHaveBeenCalled();
+    expect(callback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'auth_error',
+        error: expect.objectContaining({
+          code: 'auth_session_state_resolution_failed',
+        }),
+      })
+    );
+  });
+
   it('emits anonymous signature session state explicitly', async () => {
     const callback = vi.fn();
     onAuthSessionStateChange(callback);

@@ -71,6 +71,8 @@ const GOOGLE_AUTH_ERROR_MESSAGES: Record<string, string> = {
     'No se pudo completar el ingreso por un problema de conexión o por una restricción del navegador.',
   'auth/popup-coop-blocked':
     'El navegador bloqueó el cierre seguro de la ventana de Google. Prueba la otra forma de ingreso.',
+  'auth/role-validation-unavailable':
+    'No se pudo validar tu acceso en este momento. Intenta nuevamente en unos segundos.',
   'auth/unauthorized-domain':
     'Este sitio todavía no está autorizado para usar el ingreso con Google. Pide que revisen la configuración de Firebase Auth.',
   'auth/invalid-api-key':

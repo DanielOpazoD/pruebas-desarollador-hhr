@@ -10,9 +10,15 @@ import { defaultAuthRuntime } from '@/services/firebase-runtime/authRuntime';
 
 export { clearRoleCacheForEmail } from '@/services/auth/authRoleCache';
 
+export interface GeneralLoginAccessResolution {
+  allowed: boolean;
+  role?: UserRole;
+  resolution: 'authorized' | 'unauthorized' | 'unavailable';
+}
+
 export const resolveGeneralLoginAccessForEmail = async (
   email: string
-): Promise<{ allowed: boolean; role?: UserRole }> => {
+): Promise<GeneralLoginAccessResolution> => {
   try {
     const cleanEmail = normalizeEmail(email);
     const { role, source } = await resolveAllowedRoleForEmail(cleanEmail, {
@@ -21,7 +27,7 @@ export const resolveGeneralLoginAccessForEmail = async (
     });
 
     if (role) {
-      return { allowed: true, role };
+      return { allowed: true, role, resolution: 'authorized' };
     }
 
     emitAuthOperationalEvent('resolve_general_login_access', 'degraded', {
@@ -34,18 +40,18 @@ export const resolveGeneralLoginAccessForEmail = async (
         source,
       },
     });
-    return { allowed: false };
+    return { allowed: false, resolution: 'unauthorized' };
   } catch (error) {
     recordAuthOperationalError('resolve_general_login_access', error, {
       code: 'auth_role_lookup_failed',
       message: 'Error resolving general login access from config/roles.',
-      severity: 'error',
-      userSafeMessage: 'No se pudo validar el acceso del correo.',
+      severity: 'warning',
+      userSafeMessage: 'No se pudo validar el acceso del correo en este momento.',
       context: {
         email: normalizeEmail(email),
       },
     });
-    return { allowed: false };
+    return { allowed: false, resolution: 'unavailable' };
   }
 };
 

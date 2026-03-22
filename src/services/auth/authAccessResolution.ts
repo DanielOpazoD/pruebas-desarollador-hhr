@@ -2,14 +2,17 @@ import { signOut as firebaseSignOut, User } from 'firebase/auth';
 import { AuthUser, UserRole } from '@/types/auth';
 import { checkSharedCensusAccess, isSharedCensusMode } from '@/services/auth/sharedCensusAuth';
 import { resolveGeneralLoginAccessForEmail } from '@/services/auth/authPolicy';
-import { toAuthUser } from '@/services/auth/authShared';
+import { createAuthError, toAuthUser } from '@/services/auth/authShared';
 import { recordAuthOperationalError } from '@/services/auth/authOperationalTelemetry';
 import { defaultAuthRuntime } from '@/services/firebase-runtime/authRuntime';
+import { resolveUserRoleClaim } from '@/services/auth/authClaimSyncService';
 
 const SHARED_CENSUS_UNAUTHORIZED_MESSAGE =
   'Acceso no autorizado. Tu correo no tiene permisos para censo compartido.';
 const STANDARD_UNAUTHORIZED_MESSAGE =
   'Acceso no autorizado. Tu correo no tiene un rol vigente en Gestión de Roles.';
+const ROLE_VALIDATION_UNAVAILABLE_MESSAGE =
+  'No se pudo validar tu acceso en este momento. Intenta nuevamente en unos segundos.';
 
 const rejectUnauthorizedUser = async (message: string): Promise<never> => {
   await defaultAuthRuntime.ready;
@@ -27,12 +30,24 @@ export const authorizeFirebaseUser = async (user: User): Promise<AuthUser> => {
     return toAuthUser(user, 'viewer_census');
   }
 
-  const { allowed, role } = await resolveGeneralLoginAccessForEmail(user.email || '');
+  const { allowed, role, resolution } = await resolveGeneralLoginAccessForEmail(user.email || '');
+  if (allowed && role) {
+    return toAuthUser(user, role);
+  }
+
+  if (resolution === 'unavailable') {
+    const tokenRole = await resolveUserRoleClaim(user);
+    if (tokenRole) {
+      return toAuthUser(user, tokenRole);
+    }
+
+    throw createAuthError('auth/role-validation-unavailable', ROLE_VALIDATION_UNAVAILABLE_MESSAGE);
+  }
+
   if (!allowed) {
     return rejectUnauthorizedUser(STANDARD_UNAUTHORIZED_MESSAGE);
   }
-
-  return toAuthUser(user, role);
+  throw createAuthError('auth/role-validation-unavailable', ROLE_VALIDATION_UNAVAILABLE_MESSAGE);
 };
 
 export const authorizeCurrentFirebaseUser = async (): Promise<AuthUser | null> => {
@@ -59,6 +74,19 @@ export const resolveFirebaseUserRole = async (firebaseUser: User): Promise<UserR
     if (loginAccess.allowed && loginAccess.role) {
       return loginAccess.role;
     }
+
+    if (loginAccess.resolution === 'unavailable') {
+      const tokenRole = await resolveUserRoleClaim(firebaseUser);
+      if (tokenRole) {
+        return tokenRole;
+      }
+
+      throw createAuthError(
+        'auth/role-validation-unavailable',
+        ROLE_VALIDATION_UNAVAILABLE_MESSAGE
+      );
+    }
+
     return null;
   } catch (error) {
     recordAuthOperationalError('resolve_firebase_user_role', error, {
@@ -70,7 +98,6 @@ export const resolveFirebaseUserRole = async (firebaseUser: User): Promise<UserR
         email: firebaseUser.email || null,
       },
     });
-    const { allowed, role } = await resolveGeneralLoginAccessForEmail(firebaseUser.email || '');
-    return allowed ? role || null : null;
+    throw error;
   }
 };

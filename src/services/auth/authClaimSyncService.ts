@@ -3,12 +3,18 @@ import { httpsCallable } from 'firebase/functions';
 import type { UserRole } from '@/types/auth';
 import { logger } from '@/services/utils/loggerService';
 import { defaultFunctionsRuntime } from '@/services/firebase-runtime/functionsRuntime';
+import { isGeneralLoginRole } from '@/shared/access/roleAccessMatrix';
 
 const authClaimSyncLogger = logger.child('AuthClaimSync');
 
 const resolveTokenRole = async (firebaseUser: User): Promise<string | null> => {
   const token = await firebaseUser.getIdTokenResult();
   return typeof token.claims.role === 'string' ? token.claims.role : null;
+};
+
+export const resolveUserRoleClaim = async (firebaseUser: User): Promise<UserRole | null> => {
+  const tokenRole = (await resolveTokenRole(firebaseUser)) ?? undefined;
+  return isGeneralLoginRole(tokenRole) ? tokenRole : null;
 };
 
 export const syncCurrentUserRoleClaim = async (): Promise<{ role: UserRole | null }> => {
@@ -27,7 +33,7 @@ export const ensureUserRoleClaim = async (
   firebaseUser: User,
   resolvedRole: UserRole
 ): Promise<void> => {
-  const tokenRole = await resolveTokenRole(firebaseUser);
+  const tokenRole = await resolveUserRoleClaim(firebaseUser);
   if (tokenRole === resolvedRole) {
     return;
   }
