@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "id": "cold_boot",
+      "label": "Cold boot auth bootstrap",
+      "file": "src/tests/hooks/useAuthStateSupport.test.tsx"
+    },
+    {
+      "id": "login",
+      "label": "Google login resilience",
+      "file": "src/tests/integration/flicker-free-login.test.tsx"
+    },
+    {
+      "id": "offline_to_online",
+      "label": "Offline to online sync recovery",
+      "file": "src/tests/integration/sync-resilience.test.ts"
+    },
+    {
+      "id": "sync_conflict",
+      "label": "Sync conflict and retry policy",
+      "file": "src/tests/services/storage/syncQueueService.test.ts"
+    },
+    {
+      "id": "export",
+      "label": "Core export flow",
+      "file": "src/tests/services/exporters/exportService.test.ts"
+    },
+    {
+      "id": "clinical_documents",
+      "label": "Clinical documents workspace bootstrap",
+      "file": "src/tests/features/clinical-documents/useClinicalDocumentWorkspaceBootstrap.test.ts"
+    }
+  ]
+}
