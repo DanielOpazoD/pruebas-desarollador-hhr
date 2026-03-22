@@ -28,6 +28,7 @@ vi.mock('firebase/firestore', () => ({
 import * as firestore from 'firebase/firestore';
 import {
   bulkUpsertPatients,
+  createPatientMasterRepository,
   getPatientByRut,
   getPatientsPaginated,
   searchPatients,
@@ -35,6 +36,9 @@ import {
 } from '@/services/repositories/PatientMasterRepository';
 
 describe('PatientMasterRepository', () => {
+  const runtime = { getDb: () => ({}) as never };
+  const injectedRepository = createPatientMasterRepository(runtime);
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -92,5 +96,17 @@ describe('PatientMasterRepository', () => {
     const result = await searchPatients('  a ');
     expect(result).toEqual([]);
     expect(vi.mocked(firestore.getDocs)).not.toHaveBeenCalled();
+  });
+
+  it('supports injected Firestore runtime for isolated repository composition', async () => {
+    vi.mocked(firestore.setDoc).mockResolvedValue(undefined as never);
+
+    await injectedRepository.upsertPatient({ rut: '12345678-5', fullName: 'Paciente Runtime' });
+
+    expect(vi.mocked(firestore.doc)).toHaveBeenCalledWith(
+      expect.anything(),
+      'hospitals/hanga_roa/patients',
+      '12.345.678-5'
+    );
   });
 });

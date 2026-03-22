@@ -23,8 +23,11 @@ vi.mock('@/constants/firestorePaths', () => ({
 }));
 
 import { PrintTemplateRepository } from '@/services/repositories/PrintTemplateRepository';
+import { createPrintTemplateRepository } from '@/services/repositories/PrintTemplateRepository';
 
 describe('PrintTemplateRepository', () => {
+  const injectedRepository = createPrintTemplateRepository({ getDb: () => ({}) as never });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -71,5 +74,29 @@ describe('PrintTemplateRepository', () => {
 
     expect(callback).toHaveBeenCalledWith(null);
     expect(result).toBe(unsubscribe);
+  });
+
+  it('supports injected runtime for template persistence', async () => {
+    setDocMock.mockResolvedValue(undefined);
+
+    await injectedRepository.saveTemplate({
+      id: 'handoff-injected',
+      name: 'Injected',
+      sections: [],
+      page: {
+        format: 'a4',
+        orientation: 'portrait',
+        marginsMm: { top: 10, right: 10, bottom: 10, left: 10 },
+      },
+      table: { fontSize: 10, lineHeight: 1.2, zebra: false, borders: true },
+    } as never);
+
+    expect(docMock).toHaveBeenCalledWith(
+      expect.anything(),
+      'hospitals',
+      'hospital-test',
+      'printTemplates',
+      'handoff-injected'
+    );
   });
 });

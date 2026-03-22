@@ -21,40 +21,32 @@ import { mergeAvailableDates } from '@/services/repositories/dailyRecordSyncComp
 import { measureRepositoryOperation } from '@/services/repositories/repositoryPerformance';
 import { logger } from '@/services/utils/loggerService';
 import { resolveDailyRecordReadConsistency } from '@/services/repositories/dailyRecordConsistencyPolicy';
+import { resolveDailyRecordPersistenceGoldenPath } from '@/services/repositories/dailyRecordPersistenceGoldenPath';
 
 const isRepositoryDebugEnabled = () =>
   import.meta.env.DEV &&
   String(import.meta.env.VITE_DEBUG_REPOSITORY || '').toLowerCase() === 'true';
 
-const remoteReadResultInFlight = new Map<string, Promise<DailyRecordReadResult | null>>();
 const dailyRecordReadLogger = logger.child('DailyRecordReadRepository');
 
-const createLocalRuntimeReadResult = (
+interface LocalRuntimeReadCandidate {
+  record: DailyRecord;
+  compatibilityIntensity: DailyRecordReadResult['compatibilityIntensity'];
+  migrationRulesApplied: DailyRecordReadResult['migrationRulesApplied'];
+  repairApplied: boolean;
+}
+
+const createLocalRuntimeReadCandidate = (
   date: string,
-  record: DailyRecord,
-  source: 'e2e' | 'indexeddb'
-): DailyRecordReadResult => {
+  record: DailyRecord
+): LocalRuntimeReadCandidate => {
   const migrated = migrateLegacyDataWithReport(record, date);
-  const consistency = resolveDailyRecordReadConsistency({
-    localRecord: migrated.record,
-    remoteRecord: null,
-    selectedRecord: migrated.record,
-    remoteAvailability: 'not_requested',
-    repairApplied: migrated.compatibilityIntensity !== 'none' || migrated.appliedRules.length > 0,
-  });
-  return createDailyRecordReadResult(date, migrated.record, source, {
-    compatibilityTier: 'local_runtime',
+  return {
+    record: migrated.record,
     compatibilityIntensity: migrated.compatibilityIntensity,
     migrationRulesApplied: migrated.appliedRules,
-    consistencyState: consistency.consistencyState,
-    sourceOfTruth: consistency.sourceOfTruth,
-    retryability: consistency.retryability,
-    recoveryAction: consistency.recoveryAction,
-    conflictSummary: consistency.conflictSummary,
-    observabilityTags: consistency.observabilityTags,
-    userSafeMessage: consistency.userSafeMessage,
-    repairApplied: consistency.repairApplied,
-  });
+    repairApplied: migrated.compatibilityIntensity !== 'none' || migrated.appliedRules.length > 0,
+  };
 };
 
 const getE2EOverrideRecord = (date: string): DailyRecord | null => {
@@ -71,63 +63,44 @@ const logRemoteFetchAttempt = (date: string): void => {
   logLegacyInfo(`[Repository] Checking remote + legacy fallback for ${date}...`);
 };
 
-const loadRemoteReadResult = async (date: string): Promise<DailyRecordReadResult | null> => {
-  const existingRequest = remoteReadResultInFlight.get(date);
-  if (existingRequest) {
-    return existingRequest;
-  }
-
-  const request = measureRepositoryOperation(
-    'dailyRecord.getForDate.remote',
-    async () => {
-      try {
-        logRemoteFetchAttempt(date);
-
-        const localRecord = await getRecordFromIndexedDB(date);
-        const remoteResult = await loadRemoteRecordWithFallback(date);
-        if (!remoteResult.record) {
-          return null;
-        }
-
-        const consistency = resolveDailyRecordReadConsistency({
-          localRecord,
-          remoteRecord: remoteResult.record,
-          selectedRecord: remoteResult.record,
-          remoteAvailability: 'resolved',
-          repairApplied:
-            remoteResult.compatibilityIntensity !== 'none' ||
-            remoteResult.migrationRulesApplied.length > 0,
-        });
-
-        if (consistency.shouldHydrateLocal) {
-          await saveToIndexedDB(remoteResult.record);
-        }
-
-        return createDailyRecordReadResult(date, remoteResult.record, remoteResult.source, {
-          compatibilityTier: remoteResult.compatibilityTier,
-          compatibilityIntensity: remoteResult.compatibilityIntensity,
-          migrationRulesApplied: remoteResult.migrationRulesApplied,
-          consistencyState: consistency.consistencyState,
-          sourceOfTruth: consistency.sourceOfTruth,
-          retryability: consistency.retryability,
-          recoveryAction: consistency.recoveryAction,
-          conflictSummary: consistency.conflictSummary,
-          observabilityTags: consistency.observabilityTags,
-          userSafeMessage: consistency.userSafeMessage,
-          repairApplied: consistency.repairApplied,
-        });
-      } catch (err) {
-        dailyRecordReadLogger.warn(`Remote fetch failed for ${date}`, err);
-        return null;
-      }
-    },
-    { thresholdMs: 250, context: date }
-  ).finally(() => {
-    remoteReadResultInFlight.delete(date);
+const createLocalRuntimeReadResult = (
+  date: string,
+  candidate: LocalRuntimeReadCandidate,
+  source: 'e2e' | 'indexeddb',
+  options: Partial<
+    Pick<
+      DailyRecordReadResult,
+      | 'consistencyState'
+      | 'sourceOfTruth'
+      | 'retryability'
+      | 'recoveryAction'
+      | 'conflictSummary'
+      | 'observabilityTags'
+      | 'userSafeMessage'
+      | 'repairApplied'
+    >
+  > = {}
+): DailyRecordReadResult => {
+  const consistency = resolveDailyRecordReadConsistency({
+    localRecord: candidate.record,
+    remoteRecord: null,
+    selectedRecord: candidate.record,
+    remoteAvailability: 'not_requested',
+    repairApplied: candidate.repairApplied,
   });
-
-  remoteReadResultInFlight.set(date, request);
-  return request;
+  return createDailyRecordReadResult(date, candidate.record, source, {
+    compatibilityTier: 'local_runtime',
+    compatibilityIntensity: candidate.compatibilityIntensity,
+    migrationRulesApplied: candidate.migrationRulesApplied,
+    consistencyState: options.consistencyState || consistency.consistencyState,
+    sourceOfTruth: options.sourceOfTruth || consistency.sourceOfTruth,
+    retryability: options.retryability || consistency.retryability,
+    recoveryAction: options.recoveryAction || consistency.recoveryAction,
+    conflictSummary: options.conflictSummary || consistency.conflictSummary,
+    observabilityTags: options.observabilityTags || consistency.observabilityTags,
+    userSafeMessage: options.userSafeMessage,
+    repairApplied: options.repairApplied ?? consistency.repairApplied,
+  });
 };
 
 export const getForDate = async (
@@ -149,49 +122,123 @@ export const getForDateWithMeta = async (
       const e2eOverride = getE2EOverrideRecord(query.date);
       if (e2eOverride) {
         dailyRecordReadLogger.warn(`Using E2E override record for ${query.date}`);
-        return createLocalRuntimeReadResult(query.date, e2eOverride, 'e2e');
+        return createLocalRuntimeReadResult(
+          query.date,
+          createLocalRuntimeReadCandidate(query.date, e2eOverride),
+          'e2e'
+        );
       }
 
       const localRecord = await getRecordFromIndexedDB(query.date);
+      const localCandidate = localRecord
+        ? createLocalRuntimeReadCandidate(query.date, localRecord)
+        : null;
       if (query.syncFromRemote && isFirestoreEnabled()) {
-        const remoteReadResult = await loadRemoteReadResult(query.date);
-        if (remoteReadResult) {
-          return remoteReadResult;
+        try {
+          const remoteReadResult = await measureRepositoryOperation(
+            'dailyRecord.getForDate.remote',
+            async () => {
+              logRemoteFetchAttempt(query.date);
+              return loadRemoteRecordWithFallback(query.date);
+            },
+            { thresholdMs: 250, context: date }
+          );
+          const goldenPath = resolveDailyRecordPersistenceGoldenPath({
+            localRecord: localCandidate?.record || null,
+            remoteRecord: remoteReadResult.record,
+            remoteAvailability: remoteReadResult.record ? 'resolved' : 'missing',
+            localRepairApplied: localCandidate?.repairApplied || false,
+            remoteRepairApplied:
+              remoteReadResult.compatibilityIntensity !== 'none' ||
+              remoteReadResult.migrationRulesApplied.length > 0,
+          });
+
+          if (goldenPath.shouldHydrateLocal && remoteReadResult.record) {
+            await saveToIndexedDB(remoteReadResult.record);
+          }
+
+          if (goldenPath.selectedStore === 'remote' && remoteReadResult.record) {
+            return createDailyRecordReadResult(
+              query.date,
+              remoteReadResult.record,
+              remoteReadResult.source,
+              {
+                compatibilityTier: remoteReadResult.compatibilityTier,
+                compatibilityIntensity: remoteReadResult.compatibilityIntensity,
+                migrationRulesApplied: remoteReadResult.migrationRulesApplied,
+                consistencyState: goldenPath.consistencyState,
+                sourceOfTruth: goldenPath.sourceOfTruth,
+                retryability: goldenPath.retryability,
+                recoveryAction: goldenPath.recoveryAction,
+                conflictSummary: goldenPath.conflictSummary,
+                observabilityTags: goldenPath.observabilityTags,
+                userSafeMessage: goldenPath.userSafeMessage,
+                repairApplied: goldenPath.repairApplied,
+              }
+            );
+          }
+
+          if (goldenPath.selectedStore === 'local' && localCandidate) {
+            return createLocalRuntimeReadResult(query.date, localCandidate, 'indexeddb', {
+              consistencyState: goldenPath.consistencyState,
+              sourceOfTruth: goldenPath.sourceOfTruth,
+              retryability: goldenPath.retryability,
+              recoveryAction: goldenPath.recoveryAction,
+              conflictSummary: goldenPath.conflictSummary,
+              observabilityTags: goldenPath.observabilityTags,
+              userSafeMessage: goldenPath.userSafeMessage,
+              repairApplied: goldenPath.repairApplied,
+            });
+          }
+
+          return createDailyRecordReadResult(query.date, null, 'not_found', {
+            consistencyState: goldenPath.consistencyState,
+            sourceOfTruth: goldenPath.sourceOfTruth,
+            retryability: goldenPath.retryability,
+            recoveryAction: goldenPath.recoveryAction,
+            conflictSummary: goldenPath.conflictSummary,
+            observabilityTags: goldenPath.observabilityTags,
+            userSafeMessage: goldenPath.userSafeMessage,
+            repairApplied: goldenPath.repairApplied,
+          });
+        } catch (err) {
+          dailyRecordReadLogger.warn(`Remote fetch failed for ${query.date}`, err);
         }
 
-        if (localRecord) {
-          const localResult = createLocalRuntimeReadResult(query.date, localRecord, 'indexeddb');
-          const consistency = resolveDailyRecordReadConsistency({
-            localRecord,
-            remoteRecord: null,
-            selectedRecord: localRecord,
-            remoteAvailability: 'missing',
-            repairApplied: localResult.repairApplied,
+        const fallbackGoldenPath = resolveDailyRecordPersistenceGoldenPath({
+          localRecord: localCandidate?.record || null,
+          remoteRecord: null,
+          remoteAvailability: 'unavailable',
+          localRepairApplied: localCandidate?.repairApplied || false,
+        });
+
+        if (localCandidate) {
+          return createLocalRuntimeReadResult(query.date, localCandidate, 'indexeddb', {
+            consistencyState: fallbackGoldenPath.consistencyState,
+            sourceOfTruth: fallbackGoldenPath.sourceOfTruth,
+            retryability: fallbackGoldenPath.retryability,
+            recoveryAction: fallbackGoldenPath.recoveryAction,
+            conflictSummary: fallbackGoldenPath.conflictSummary,
+            observabilityTags: fallbackGoldenPath.observabilityTags,
+            userSafeMessage: fallbackGoldenPath.userSafeMessage,
+            repairApplied: fallbackGoldenPath.repairApplied,
           });
-          return {
-            ...localResult,
-            consistencyState: consistency.consistencyState,
-            sourceOfTruth: consistency.sourceOfTruth,
-            retryability: consistency.retryability,
-            recoveryAction: consistency.recoveryAction,
-            conflictSummary: consistency.conflictSummary,
-            observabilityTags: consistency.observabilityTags,
-            userSafeMessage: consistency.userSafeMessage,
-          };
         }
 
         return createDailyRecordReadResult(query.date, null, 'not_found', {
-          ...resolveDailyRecordReadConsistency({
-            localRecord: null,
-            remoteRecord: null,
-            selectedRecord: null,
-            remoteAvailability: 'missing',
-          }),
+          consistencyState: fallbackGoldenPath.consistencyState,
+          sourceOfTruth: fallbackGoldenPath.sourceOfTruth,
+          retryability: fallbackGoldenPath.retryability,
+          recoveryAction: fallbackGoldenPath.recoveryAction,
+          conflictSummary: fallbackGoldenPath.conflictSummary,
+          observabilityTags: fallbackGoldenPath.observabilityTags,
+          userSafeMessage: fallbackGoldenPath.userSafeMessage,
+          repairApplied: fallbackGoldenPath.repairApplied,
         });
       }
 
-      if (localRecord) {
-        return createLocalRuntimeReadResult(query.date, localRecord, 'indexeddb');
+      if (localCandidate) {
+        return createLocalRuntimeReadResult(query.date, localCandidate, 'indexeddb');
       }
 
       return createDailyRecordReadResult(query.date, null, 'not_found', {
@@ -257,7 +304,11 @@ export const getPreviousDayWithMeta = async (date: string): Promise<DailyRecordR
 
   const localRecord = await getPreviousDayFromIndexedDB(query.date);
   if (localRecord) {
-    return createLocalRuntimeReadResult(localRecord.date, localRecord, 'indexeddb');
+    return createLocalRuntimeReadResult(
+      localRecord.date,
+      createLocalRuntimeReadCandidate(localRecord.date, localRecord),
+      'indexeddb'
+    );
   }
 
   if (isFirestoreEnabled()) {

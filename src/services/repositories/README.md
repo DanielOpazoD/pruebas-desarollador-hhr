@@ -41,6 +41,10 @@ Todo acceso a `DailyRecord` debe pasar por este paquete (evitar acceso directo d
 Los métodos públicos de `DailyRecordRepository` y `PatientMasterRepository` validan/sanean contratos
 de entrada (fecha, límites, RUT, IDs) antes de delegar en storage.
 
+Los repositorios que todavía requieren primitives Firestore deben exponer una factory inyectable y
+dejar el runtime por defecto solo como composición. El repositorio no debe depender de
+`defaultFirestoreRuntime` como singleton interno.
+
 ## Compatibilidad Histórica de Sync
 
 - `dailyRecordRepositoryInitializationService.ts` conserva bootstrap compatible con:
@@ -49,6 +53,10 @@ de entrada (fecha, límites, RUT, IDs) antes de delegar en storage.
   - creación en blanco o desde copia local cuando no existe remoto actual
 - `dailyRecordRemoteLoader.ts` quedó restringido al remoto vigente (`Firestore -> cache local`).
   La compatibilidad histórica dejó de formar parte del camino caliente.
+- `dailyRecordPersistenceGoldenPath.ts` define ahora la precedencia canónica del hot path:
+  - `read` y `sync` resuelven la misma selección `local vs remote`
+  - la hidratación de IndexedDB ocurre solo si la policy selecciona remoto
+  - un remoto más viejo ya no puede sobrescribir una copia local más reciente
 - `legacyRecordBridgeService.ts` es la única vía soportada para importar datos legacy; la
   app puede invocarlo explícitamente sin reintroducir fallback histórico en lectura o sync normal.
 - `legacyBridgeAudit.ts` mantiene un ledger liviano de uso del bridge (`single`/`range`,
@@ -121,7 +129,7 @@ de entrada (fecha, límites, RUT, IDs) antes de delegar en storage.
   (`degraded`, `retrying`, `blocked`, `read_only`, `not_verified`) para que el mismo outcome
   tenga la misma severidad y copy dentro y fuera de `daily-record`.
 - `dailyRecordRemoteLoader.ts` ya no debe decidir por sí solo cuándo hidratar IndexedDB; esa
-  decisión pertenece a la policy de consistencia y a los servicios read/sync.
+  decisión pertenece al golden path de persistencia y a la policy de consistencia compartida.
 - `repositories/index.ts` debe permanecer explícito y pequeño; código nuevo debe importar
   desde el módulo concreto del repositorio en vez de expandir el barrel.
 - Los servicios `dailyRecord*DomainService.ts` son internos al paquete `repositories`;

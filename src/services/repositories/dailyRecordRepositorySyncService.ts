@@ -7,11 +7,11 @@ import { subscribeToRecord } from '@/services/storage/firestore';
 import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { migrateLegacyData } from '@/services/repositories/dataMigration';
 import { loadRemoteRecordWithFallback } from '@/services/repositories/dailyRecordRemoteLoader';
-import { resolvePreferredDailyRecord } from '@/services/repositories/dailyRecordSyncCompatibility';
 import { measureRepositoryOperation } from '@/services/repositories/repositoryPerformance';
 import { createSyncDailyRecordResult } from '@/services/repositories/contracts/dailyRecordResults';
 import { logger } from '@/services/utils/loggerService';
 import { resolveDailyRecordSyncConsistency } from '@/services/repositories/dailyRecordConsistencyPolicy';
+import { resolveDailyRecordPersistenceGoldenPath } from '@/services/repositories/dailyRecordPersistenceGoldenPath';
 
 const dailyRecordSyncLogger = logger.child('DailyRecordRepositorySyncService');
 
@@ -20,16 +20,20 @@ const resolveIncomingRemoteRecord = async (
   remoteRecord: DailyRecord | null
 ): Promise<DailyRecord | null> => {
   const localRecord = await getRecordFromIndexedDB(date);
-  const preferredRecord = resolvePreferredDailyRecord(localRecord, remoteRecord);
-  if (!preferredRecord) {
+  const goldenPath = resolveDailyRecordPersistenceGoldenPath({
+    localRecord,
+    remoteRecord,
+    remoteAvailability: remoteRecord ? 'resolved' : 'missing',
+  });
+  if (!goldenPath.selectedRecord) {
     return null;
   }
 
-  if (preferredRecord === remoteRecord) {
+  if (goldenPath.shouldHydrateLocal && remoteRecord) {
     await saveToIndexedDB(remoteRecord);
   }
 
-  return preferredRecord;
+  return goldenPath.selectedRecord;
 };
 
 export const subscribe = (
@@ -56,7 +60,15 @@ export const syncWithFirestoreDetailed = async (date: string) => {
       const localRecord = await getRecordFromIndexedDB(date);
       try {
         const remoteResult = await loadRemoteRecordWithFallback(date);
-        const record = await resolveIncomingRemoteRecord(date, remoteResult.record);
+        const goldenPath = resolveDailyRecordPersistenceGoldenPath({
+          localRecord,
+          remoteRecord: remoteResult.record,
+          remoteAvailability: remoteResult.record ? 'resolved' : 'missing',
+        });
+        if (goldenPath.shouldHydrateLocal && remoteResult.record) {
+          await saveToIndexedDB(remoteResult.record);
+        }
+        const record = goldenPath.selectedRecord;
         const consistency = resolveDailyRecordSyncConsistency({
           localRecord,
           remoteRecord: remoteResult.record,
