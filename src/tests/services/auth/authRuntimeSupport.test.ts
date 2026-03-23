@@ -1,0 +1,183 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { mockGetSetting, mockSaveSetting, mockLoggerWarn } = vi.hoisted(() => ({
+  mockGetSetting: vi.fn(),
+  mockSaveSetting: vi.fn(),
+  mockLoggerWarn: vi.fn(),
+}));
+
+vi.mock('@/services/storage/indexeddb/indexedDbSettingsService', () => ({
+  getSetting: (...args: unknown[]) => mockGetSetting(...args),
+  saveSetting: (...args: unknown[]) => mockSaveSetting(...args),
+}));
+
+vi.mock('@/services/utils/loggerService', () => ({
+  logger: {
+    child: () => ({
+      warn: (...args: unknown[]) => mockLoggerWarn(...args),
+    }),
+  },
+}));
+
+import {
+  clearRecentManualLogout,
+  hasRecentManualLogout,
+  markRecentManualLogout,
+} from '@/services/auth/authLogoutState';
+import {
+  AUTH_BOOTSTRAP_TIMEOUTS_MS,
+  resolveAuthBootstrapBudget,
+} from '@/services/auth/authBootstrapBudgets';
+import { mountFirebaseConfigWarning } from '@/services/auth/firebaseStartupWarningRenderer';
+import {
+  clearRoleCacheForEmail,
+  getCachedRole,
+  saveRoleToCache,
+} from '@/services/auth/authRoleCache';
+import { ROLE_CACHE_PREFIX, normalizeEmail } from '@/services/auth/authShared';
+
+describe('authRuntimeSupport', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useRealTimers();
+    window.sessionStorage.clear();
+    window.localStorage.clear();
+    document.body.innerHTML = '<div id="root"></div>';
+    mockGetSetting.mockResolvedValue(null);
+    mockSaveSetting.mockResolvedValue(undefined);
+  });
+
+  it('tracks recent manual logout state and expires stale entries', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-03-22T20:00:00.000Z'));
+
+    markRecentManualLogout();
+    expect(hasRecentManualLogout()).toBe(true);
+
+    vi.setSystemTime(new Date('2026-03-22T20:03:00.000Z'));
+    expect(hasRecentManualLogout()).toBe(false);
+
+    markRecentManualLogout();
+    clearRecentManualLogout();
+    expect(hasRecentManualLogout()).toBe(false);
+  });
+
+  it('mounts the Firebase startup warning in the root element with highlighted env vars', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    mountFirebaseConfigWarning('firebase warning', {
+      title: 'Config pendiente',
+      summary: 'Hay variables faltantes.',
+      steps: [
+        'Configura VITE_FIREBASE_API_KEY y VITE_FIREBASE_PROJECT_ID.',
+        'Revisa VITE_FIREBASE_AUTH_DOMAIN.',
+      ],
+      footnote: 'Sin esto la app no inicia.',
+    });
+
+    expect(warnSpy).toHaveBeenCalledWith('firebase warning');
+    expect(document.getElementById('root')?.innerHTML).toContain(
+      '<code>VITE_FIREBASE_API_KEY</code>'
+    );
+    expect(document.getElementById('root')?.innerHTML).toContain(
+      '<code>VITE_FIREBASE_PROJECT_ID</code>'
+    );
+
+    warnSpy.mockRestore();
+  });
+
+  it('resolves bootstrap budgets with the intended precedence', () => {
+    expect(
+      resolveAuthBootstrapBudget({
+        hasRecentManualLogout: true,
+        isOnline: false,
+        hasPendingRedirect: true,
+      })
+    ).toEqual({
+      profile: 'recent_manual_logout',
+      timeoutMs: AUTH_BOOTSTRAP_TIMEOUTS_MS.recentManualLogout,
+    });
+
+    expect(
+      resolveAuthBootstrapBudget({
+        hasRecentManualLogout: false,
+        isOnline: false,
+        hasPendingRedirect: true,
+      })
+    ).toEqual({
+      profile: 'offline',
+      timeoutMs: AUTH_BOOTSTRAP_TIMEOUTS_MS.offline,
+    });
+
+    expect(
+      resolveAuthBootstrapBudget({
+        hasRecentManualLogout: false,
+        isOnline: true,
+        hasPendingRedirect: true,
+      })
+    ).toEqual({
+      profile: 'redirect_pending',
+      timeoutMs: AUTH_BOOTSTRAP_TIMEOUTS_MS.redirectPending,
+    });
+
+    expect(
+      resolveAuthBootstrapBudget({
+        hasRecentManualLogout: false,
+        isOnline: true,
+        hasPendingRedirect: false,
+      })
+    ).toEqual({
+      profile: 'default',
+      timeoutMs: AUTH_BOOTSTRAP_TIMEOUTS_MS.default,
+    });
+  });
+
+  it('reads, writes and clears cached roles across IndexedDB and legacy localStorage', async () => {
+    const email = 'Doctor@Hospital.cl';
+    const cacheKey = `${ROLE_CACHE_PREFIX}${normalizeEmail(email)}`;
+
+    await saveRoleToCache(email, 'doctor');
+    expect(mockSaveSetting).toHaveBeenCalledWith(
+      cacheKey,
+      expect.objectContaining({
+        role: 'doctor',
+        timestamp: expect.any(Number),
+      })
+    );
+
+    mockGetSetting.mockResolvedValueOnce({
+      role: 'doctor',
+      timestamp: Date.now(),
+    });
+    await expect(getCachedRole(email)).resolves.toBe('doctor');
+
+    mockGetSetting.mockResolvedValueOnce(null);
+    window.localStorage.setItem(
+      cacheKey,
+      JSON.stringify({
+        role: 'viewer',
+        timestamp: Date.now(),
+      })
+    );
+    await expect(getCachedRole(email)).resolves.toBe('viewer');
+
+    mockGetSetting.mockResolvedValueOnce({
+      role: 'stale',
+      timestamp: Date.now() - 8 * 24 * 60 * 60 * 1000,
+    });
+    await expect(getCachedRole(email)).resolves.toBeNull();
+
+    await clearRoleCacheForEmail(email);
+    expect(mockSaveSetting).toHaveBeenLastCalledWith(cacheKey, null);
+  });
+
+  it('degrades role cache failures without throwing', async () => {
+    mockSaveSetting.mockRejectedValueOnce(new Error('write failed'));
+    await expect(saveRoleToCache('user@hospital.cl', 'doctor')).resolves.toBeUndefined();
+
+    mockGetSetting.mockRejectedValueOnce(new Error('read failed'));
+    await expect(getCachedRole('user@hospital.cl')).resolves.toBeNull();
+
+    expect(mockLoggerWarn).toHaveBeenCalledTimes(2);
+  });
+});

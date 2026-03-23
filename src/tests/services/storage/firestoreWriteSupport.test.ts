@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConcurrencyError } from '@/services/storage/firestore/firestoreWriteSupport';
 
 vi.mock('firebase/firestore', async () => {
@@ -13,18 +13,59 @@ vi.mock('firebase/firestore', async () => {
 
   return {
     ...actual,
-    collection: vi.fn(),
-    doc: vi.fn(),
+    collection: vi.fn((...args: unknown[]) => ({ kind: 'collection', args })),
+    doc: vi.fn((...args: unknown[]) => ({ kind: 'doc', args })),
     getDoc: vi.fn(),
     setDoc: vi.fn(),
     Timestamp: MockTimestamp,
   };
 });
 
-import { getDoc } from 'firebase/firestore';
-import { assertFirestoreConcurrency } from '@/services/storage/firestore/firestoreWriteSupport';
+const { mockCreateOperationalError, mockRecordOperationalErrorTelemetry } = vi.hoisted(() => ({
+  mockCreateOperationalError: vi.fn((payload: unknown) => payload),
+  mockRecordOperationalErrorTelemetry: vi.fn(),
+}));
+
+vi.mock('@/constants/firestorePaths', () => ({
+  COLLECTIONS: { HOSPITALS: 'hospitals' },
+  HOSPITAL_COLLECTIONS: { DELETED_RECORDS: 'deletedRecords' },
+  getActiveHospitalId: vi.fn(() => 'hospital-1'),
+}));
+
+vi.mock('@/services/firebase-runtime/firestoreRuntime', () => ({
+  defaultFirestoreRuntime: { db: { runtime: 'db' } },
+}));
+
+vi.mock('@/services/observability/operationalError', () => ({
+  createOperationalError: (payload: unknown) => mockCreateOperationalError(payload),
+}));
+
+vi.mock('@/services/observability/operationalTelemetryService', () => ({
+  recordOperationalErrorTelemetry: (
+    source: unknown,
+    action: unknown,
+    error: unknown,
+    fallback: unknown
+  ) => mockRecordOperationalErrorTelemetry(source, action, error, fallback),
+}));
+
+vi.mock('@/services/storage/firestore/firestoreShared', () => ({
+  getRecordDocRef: vi.fn((date: string) => ({ kind: 'recordDocRef', date })),
+}));
+
+import { collection, doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import {
+  asFirestoreUpdatePayload,
+  assertFirestoreConcurrency,
+  createDeletedRecordRef,
+  saveHistorySnapshot,
+} from '@/services/storage/firestore/firestoreWriteSupport';
 
 describe('firestoreWriteSupport', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('throws concurrency error when remote version is newer than expected base', async () => {
     vi.mocked(getDoc).mockResolvedValueOnce({
       exists: () => true,
@@ -41,9 +82,95 @@ describe('firestoreWriteSupport', () => {
     ).rejects.toBeInstanceOf(ConcurrencyError);
   });
 
+  it('allows operation when the remote document is missing or older', async () => {
+    vi.mocked(getDoc)
+      .mockResolvedValueOnce({
+        exists: () => false,
+      } as never)
+      .mockResolvedValueOnce({
+        exists: () => true,
+        data: () => ({ lastUpdated: Timestamp.now() }),
+      } as never);
+
+    await expect(
+      assertFirestoreConcurrency(
+        {} as never,
+        '2026-02-20T10:00:00.000Z',
+        'conflict message',
+        'save'
+      )
+    ).resolves.toBeUndefined();
+
+    await expect(
+      assertFirestoreConcurrency(
+        {} as never,
+        '2026-02-20T10:00:00.000Z',
+        'conflict message',
+        'save'
+      )
+    ).resolves.toBeUndefined();
+  });
+
   it('allows operation when expected base is missing', async () => {
     await expect(
       assertFirestoreConcurrency({} as never, undefined, 'conflict message', 'save')
     ).resolves.toBeUndefined();
+  });
+
+  it('records telemetry when concurrency verification fails for non-conflict reasons', async () => {
+    vi.mocked(getDoc).mockRejectedValueOnce(new Error('offline'));
+
+    await expect(
+      assertFirestoreConcurrency(
+        {} as never,
+        '2026-02-20T10:00:00.000Z',
+        'conflict message',
+        'save'
+      )
+    ).resolves.toBeUndefined();
+
+    expect(mockCreateOperationalError).not.toHaveBeenCalled();
+    expect(mockRecordOperationalErrorTelemetry).toHaveBeenCalledWith(
+      'firestore',
+      'verify_record_concurrency',
+      expect.any(Error),
+      expect.objectContaining({
+        code: 'firestore_concurrency_verification_failed',
+      })
+    );
+  });
+
+  it('saves a history snapshot when the source record exists', async () => {
+    vi.mocked(getDoc).mockResolvedValueOnce({
+      exists: () => true,
+      data: () => ({ census: 'snapshot' }),
+    } as never);
+
+    await saveHistorySnapshot('2026-03-22');
+
+    expect(collection).toHaveBeenCalledWith(
+      { kind: 'recordDocRef', date: '2026-03-22' },
+      'history'
+    );
+    expect(doc).toHaveBeenCalled();
+    expect(setDoc).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'doc' }),
+      expect.objectContaining({
+        census: 'snapshot',
+        snapshotTimestamp: expect.any(Timestamp),
+      })
+    );
+  });
+
+  it('skips missing history sources and exposes helper payload builders', async () => {
+    vi.mocked(getDoc).mockResolvedValueOnce({
+      exists: () => false,
+    } as never);
+
+    await saveHistorySnapshot('2026-03-23');
+    expect(setDoc).not.toHaveBeenCalled();
+
+    expect(createDeletedRecordRef('2026-03-23')).toEqual(expect.objectContaining({ kind: 'doc' }));
+    expect(asFirestoreUpdatePayload({ status: 'ok' })).toEqual({ status: 'ok' });
   });
 });

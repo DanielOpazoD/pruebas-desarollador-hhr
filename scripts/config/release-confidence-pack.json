@@ -1,40 +1,67 @@
 {
   "version": 1,
+  "profiles": {
+    "blocking": [
+      "runtime_smoke",
+      "rules_ci",
+      "emulator_sync_ci",
+      "critical_coverage",
+      "flow_performance",
+      "e2e_critical_ci"
+    ],
+    "full": [
+      "unit_critical",
+      "runtime_smoke",
+      "rules_ci",
+      "emulator_sync_ci",
+      "critical_coverage",
+      "flow_performance",
+      "e2e_critical_ci"
+    ]
+  },
   "steps": [
     {
       "id": "unit_critical",
       "label": "Critical unit risk pack",
-      "command": "npm run test:unit:critical"
+      "command": "npm run test:unit:critical",
+      "tier": "extended",
+      "overlapsWith": ["runtime_smoke", "e2e_critical_ci"]
     },
     {
       "id": "runtime_smoke",
       "label": "Critical runtime smoke pack",
-      "command": "npm run test:smoke:critical-runtime"
+      "command": "npm run test:smoke:critical-runtime",
+      "tier": "blocking"
     },
     {
       "id": "rules_ci",
       "label": "Firestore rules CI pack",
-      "command": "npm run test:rules:ci"
+      "command": "npm run test:rules:ci",
+      "tier": "blocking"
     },
     {
       "id": "emulator_sync_ci",
       "label": "Firestore sync emulator CI pack",
-      "command": "npm run test:emulator:sync:ci"
+      "command": "npm run test:emulator:sync:ci",
+      "tier": "blocking"
     },
     {
       "id": "critical_coverage",
       "label": "Critical coverage gate",
-      "command": "npm run check:critical-coverage"
+      "command": "npm run check:critical-coverage",
+      "tier": "blocking"
     },
     {
       "id": "flow_performance",
       "label": "Flow performance budgets",
-      "command": "npm run check:flow-performance-budget"
+      "command": "npm run check:flow-performance-budget",
+      "tier": "blocking"
     },
     {
       "id": "e2e_critical_ci",
       "label": "Critical E2E emulator pack",
-      "command": "npm run test:e2e:critical:ci"
+      "command": "npm run test:e2e:critical:ci",
+      "tier": "blocking"
     }
   ]
 }

@@ -6,6 +6,9 @@ import { spawnSync } from 'node:child_process';
 
 const workspaceRoot = process.cwd();
 const configPath = path.join(workspaceRoot, 'scripts/config/release-confidence-pack.json');
+const requestedProfile = process.argv.includes('--profile')
+  ? process.argv[process.argv.indexOf('--profile') + 1]
+  : 'blocking';
 
 if (!fs.existsSync(configPath)) {
   console.error('[release-confidence-pack] Missing scripts/config/release-confidence-pack.json');
@@ -14,18 +17,29 @@ if (!fs.existsSync(configPath)) {
 
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 const steps = Array.isArray(config.steps) ? config.steps : [];
+const stepsById = new Map(steps.map(step => [step.id, step]));
+const profileStepIds = Array.isArray(config.profiles?.[requestedProfile])
+  ? config.profiles[requestedProfile]
+  : null;
 
-if (steps.length === 0) {
+if (!profileStepIds) {
+  console.error(`[release-confidence-pack] Unknown profile: ${requestedProfile}`);
+  process.exit(1);
+}
+
+const selectedSteps = profileStepIds.map(stepId => stepsById.get(stepId)).filter(Boolean);
+
+if (selectedSteps.length === 0) {
   console.error('[release-confidence-pack] No steps configured');
   process.exit(1);
 }
 
-console.log('[release-confidence-pack] Running steps:');
-for (const step of steps) {
+console.log(`[release-confidence-pack] Running profile: ${requestedProfile}`);
+for (const step of selectedSteps) {
   console.log(`- ${step.id}: ${step.label} -> ${step.command}`);
 }
 
-for (const step of steps) {
+for (const step of selectedSteps) {
   const command = String(step.command || '').trim();
   if (!command) {
     console.error(`[release-confidence-pack] Step ${step.id} is missing a command`);

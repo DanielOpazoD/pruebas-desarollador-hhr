@@ -54,11 +54,10 @@ Incluye:
 
 ### `test:release-confidence`
 
-Pack versionado para release confidence, definido en `scripts/config/release-confidence-pack.json`.
+Pack versionado compacto para release confidence, definido en `scripts/config/release-confidence-pack.json`.
 
 Debe seguir cubriendo:
 
-- `test:unit:critical`
 - `test:smoke:critical-runtime`
 - `test:rules:ci`
 - `test:emulator:sync:ci`
@@ -66,10 +65,13 @@ Debe seguir cubriendo:
 - `check:flow-performance-budget`
 - `test:e2e:critical:ci`
 
+El script extendido `test:release-confidence:full` agrega `test:unit:critical` cuando se quiere una corrida más profunda o diagnóstica.
+
 Salida esperada:
 
-- merge-gate verde;
-- reglas, emulador sync/ui y E2E críticos verdes en la misma corrida.
+- ruta blocking compacta y repetible para release;
+- reglas, emulador sync y E2E críticos verdes en la misma corrida;
+- sin duplicar en la ruta por defecto checks que ya quedan cubiertos por smoke/E2E críticos.
 
 ## Qué hacer cuando falla
 
