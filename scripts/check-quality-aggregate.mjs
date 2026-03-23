@@ -19,6 +19,7 @@ const QUALITY_STEPS = [
   'check:root-domain-barrels',
   'check:persistence-hub-boundaries',
   'check:legacy-localstorage-imports',
+  'check:legacy-bridge-boundary',
   'check:schema-governance',
   'check:runtime-contracts',
   'check:docs-drift',

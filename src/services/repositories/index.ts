@@ -5,9 +5,3 @@ export { ClinicalDocumentRepository } from './ClinicalDocumentRepository';
 export { ClinicalDocumentTemplateRepository } from './ClinicalDocumentTemplateRepository';
 export { PatientMasterRepository } from './PatientMasterRepository';
 export { migrateFromDailyRecords } from './patientMasterMigration';
-export {
-  bridgeLegacyRecordsRange,
-  getLegacyBridgeGovernanceSummary,
-  getLegacyBridgeUsageSummary,
-  listRecentLegacyBridgeOperations,
-} from './legacyRecordBridgeService';

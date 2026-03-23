@@ -17,15 +17,20 @@ export interface LegacyBridgeGovernanceSummary {
   mode: LegacyCompatibilityMode;
   hotPathEnabled: boolean;
   allowedEntrypoints: string[];
+  allowedImporters: string[];
   retirementPhase: LegacyBridgeRetirementPhase;
   retirementGates: LegacyBridgeRetirementGate[];
 }
 
-export const LEGACY_BRIDGE_POLICY_VERSION = '2026-03-v1';
+export const LEGACY_BRIDGE_POLICY_VERSION = '2026-03-v2';
 
 export const LEGACY_BRIDGE_ALLOWED_ENTRYPOINTS = [
   'DailyRecordRepository.bridgeLegacyRecord',
-  'bridgeLegacyRecordsRange',
+  'legacyRecordBridgeService.bridgeLegacyRecordsRange',
+] as const;
+
+export const LEGACY_BRIDGE_ALLOWED_IMPORTERS = [
+  'src/services/repositories/dailyRecordRepositoryReadService.ts',
 ] as const;
 
 export const LEGACY_BRIDGE_RETIREMENT_GATES: readonly LegacyBridgeRetirementGate[] = [
@@ -67,6 +72,7 @@ export const buildLegacyBridgeGovernanceSummary = (): LegacyBridgeGovernanceSumm
   mode: getLegacyCompatibilityMode(),
   hotPathEnabled: shouldUseLegacyCompatibilityInHotPath(),
   allowedEntrypoints: [...LEGACY_BRIDGE_ALLOWED_ENTRYPOINTS],
+  allowedImporters: [...LEGACY_BRIDGE_ALLOWED_IMPORTERS],
   retirementPhase: resolveLegacyBridgeRetirementPhase(),
   retirementGates: [...LEGACY_BRIDGE_RETIREMENT_GATES],
 });

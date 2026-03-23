@@ -1,14 +1,18 @@
 # Legacy Bridge Governance Snapshot
 
-- Generated: 2026-03-03T01:22:30.270Z
-- Policy version: 2026-03-v1
+- Generated: 2026-03-23T00:02:43.190Z
+- Policy version: 2026-03-v2
 - Allowed modes: explicit_bridge, disabled
 - Hot path policy: disabled
 
 ## Allowed Entrypoints
 
 - `DailyRecordRepository.bridgeLegacyRecord`
-- `bridgeLegacyRecordsRange`
+- `legacyRecordBridgeService.bridgeLegacyRecordsRange`
+
+## Allowed Importers
+
+- `src/services/repositories/dailyRecordRepositoryReadService.ts`
 
 ## Retirement Gates
 

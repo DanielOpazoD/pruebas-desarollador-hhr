@@ -59,6 +59,8 @@ dejar el runtime por defecto solo como composición. El repositorio no debe depe
   - un remoto más viejo ya no puede sobrescribir una copia local más reciente
 - `legacyRecordBridgeService.ts` es la única vía soportada para importar datos legacy; la
   app puede invocarlo explícitamente sin reintroducir fallback histórico en lectura o sync normal.
+- El bridge legacy ya no sale por el barrel general de `repositories`; cualquier uso nuevo debe
+  importar el módulo explícito o pasar por `DailyRecordRepository.bridgeLegacyRecord`.
 - `legacyBridgeAudit.ts` mantiene un ledger liviano de uso del bridge (`single`/`range`,
   `legacy_bridge`/`not_found`/`disabled`) para que el uso restante sea observable.
 - `legacyBridgeGovernance.ts` define las reglas de retiro progresivo del bridge y las
@@ -136,6 +138,8 @@ dejar el runtime por defecto solo como composición. El repositorio no debe depe
   nuevos consumidores deben preferir la fachada del repositorio o los soportes existentes,
   no importarlos desde UI o features.
 - Los bridges legacy se invocan solo de forma explícita desde `legacyRecordBridgeService.ts`.
+- `scripts/check-legacy-bridge-boundary.mjs` bloquea imports nuevos fuera de los importers
+  permitidos por gobernanza para que el bridge no vuelva al hot path por conveniencia.
 - Si cambia la política de retiro o el modo de compatibilidad, deben actualizarse en conjunto:
   - `legacyCompatibilityPolicy.ts`
   - `legacyBridgeGovernance.ts`

@@ -30,7 +30,6 @@ import {
   getPreviousDay as getPreviousDayFromReadService,
   getPreviousDayWithMeta as getPreviousDayWithMetaFromReadService,
 } from './dailyRecordRepositoryReadService';
-export { bridgeLegacyRecordsRange } from './legacyRecordBridgeService';
 import {
   save as saveFromWriteService,
   saveDetailed as saveDetailedFromWriteService,

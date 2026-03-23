@@ -24,6 +24,9 @@ const policyVersionMatch = governanceContent.match(
 const entrypointsMatch = governanceContent.match(
   /LEGACY_BRIDGE_ALLOWED_ENTRYPOINTS\s*=\s*\[([\s\S]*?)\]\s*as const/
 );
+const importersMatch = governanceContent.match(
+  /LEGACY_BRIDGE_ALLOWED_IMPORTERS\s*=\s*\[([\s\S]*?)\]\s*as const/
+);
 const gateMatches = [
   ...governanceContent.matchAll(
     /id:\s*'([^']+)',[\s\S]*?label:\s*'([^']+)',[\s\S]*?rationale:\s*'([^']+)'/g
@@ -39,6 +42,9 @@ const allowedModes = Array.from(
 );
 const allowedEntrypoints = entrypointsMatch
   ? [...entrypointsMatch[1].matchAll(/'([^']+)'/g)].map(match => match[1])
+  : [];
+const allowedImporters = importersMatch
+  ? [...importersMatch[1].matchAll(/'([^']+)'/g)].map(match => match[1])
   : [];
 const retirementGates = gateMatches.map(match => ({
   id: match[1],
@@ -60,6 +66,7 @@ const report = {
   allowedModes,
   hotPathPolicy: 'disabled',
   allowedEntrypoints,
+  allowedImporters,
   retirementPhaseRules: {
     observe: 'Use only while hot path isolation or governance prerequisites are incomplete.',
     restrict: 'Default stage once bridge is explicit-only and auditable.',
@@ -88,6 +95,10 @@ const markdown = `# Legacy Bridge Governance Snapshot
 ## Allowed Entrypoints
 
 ${report.allowedEntrypoints.map(entrypoint => `- \`${entrypoint}\``).join('\n')}
+
+## Allowed Importers
+
+${report.allowedImporters.map(importer => `- \`${importer}\``).join('\n')}
 
 ## Retirement Gates
 

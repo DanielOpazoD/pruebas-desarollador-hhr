@@ -16,6 +16,12 @@ describe('legacyBridgeGovernance', () => {
 
     expect(resolveLegacyBridgeRetirementPhase()).toBe('restrict');
     expect(summary.allowedEntrypoints).toContain('DailyRecordRepository.bridgeLegacyRecord');
+    expect(summary.allowedEntrypoints).toContain(
+      'legacyRecordBridgeService.bridgeLegacyRecordsRange'
+    );
+    expect(summary.allowedImporters).toContain(
+      'src/services/repositories/dailyRecordRepositoryReadService.ts'
+    );
     expect(summary.hotPathEnabled).toBe(false);
   });
 

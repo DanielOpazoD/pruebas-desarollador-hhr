@@ -52,6 +52,7 @@
     "check:root-domain-barrels": "node scripts/check-root-domain-barrels.mjs",
     "check:persistence-hub-boundaries": "node scripts/check-persistence-hub-boundaries.mjs",
     "check:legacy-localstorage-imports": "node scripts/check-localstorage-legacy-imports.mjs",
+    "check:legacy-bridge-boundary": "node scripts/check-legacy-bridge-boundary.mjs",
     "check:schema-governance": "node scripts/check-schema-governance.mjs",
     "check:docs-drift": "node scripts/check-docs-drift.mjs",
     "check:operational-runbooks": "node scripts/check-operational-runbooks.mjs",
