@@ -33,3 +33,13 @@ Contratos TypeScript de dominio, entidades, payloads y value objects.
 - Evitar `any`; expresar contratos explícitos.
 - Importar desde el owner real del contrato, no desde `core.ts`.
 - `core.ts` existe solo como bridge temporal y no debe recibir imports productivos nuevos.
+
+## Notas de dominio recientes
+
+- `domain/patient.ts` persiste metadatos clínicos adicionales para pacientes
+  `Ginecobstetricia`:
+  - `ginecobstetriciaType`: distingue `Obstétrica` vs `Ginecológica` sin alterar la especialidad principal.
+  - `deliveryRoute`: registra `Vaginal` o `Cesárea`.
+  - `deliveryCesareanLabor`: detalla `Sin TdP` o `Con TdP` cuando aplica; es opcional y no reemplaza `deliveryRoute`.
+- Estos campos son datos clínicos persistidos, no etiquetas visuales. Las abreviaturas de UI como
+  `GyO` o `TMT` no cambian el valor canónico almacenado.

@@ -61,6 +61,13 @@ clinicalShiftCalendarController
 - El cálculo de `nuevo ingreso` debe salir del dominio temporal compartido, no de helpers locales de tabla.
 - Los indicadores clínicos de fila deben depender del sujeto correcto: paciente/episodio cuando corresponda, no cama por arrastre.
 - Los modales visibles deben derivar de capabilities/runtime de fila, no solo de estado UI.
+- En pacientes con especialidad `Ginecobstetricia`, la UI del censo puede capturar un
+  `ginecobstetriciaType` adicional (`Obstétrica` o `Ginecológica`) sin modificar la especialidad
+  principal usada en el registro.
+- El ícono de vía del parto solo debe aparecer para registros `Ginecobstetricia` marcados como
+  `Obstétrica`.
+- `deliveryRoute` y `deliveryCesareanLabor` son persistencia clínica del censo, no señalización visual;
+  si el caso deja de ser obstétrico, esos campos deben limpiarse.
 - La creación manual de un día con copia desde el anterior sigue respetando el horario clínico salvo
   cuando el actor es `admin` y usa el override explícito; ese bypass no debe reutilizarse para otros roles.
 - La verificación pasiva de respaldos remotos no debe ejecutarse para roles sin capacidad operativa
@@ -77,6 +84,8 @@ clinicalShiftCalendarController
 - `controllers/` no debe importar React ni hooks.
 - `components/` no debe recalcular reglas clínicas ya resueltas por controllers.
 - Las acciones del censo deben salir de los command/runtime controllers, no de callbacks ad hoc embebidos.
+- La tabla web puede abreviar visualmente especialidades concretas como `GyO` o `TMT`, pero esas
+  etiquetas no deben filtrarse a persistencia, analytics ni contratos de dominio.
 - El formateo de fechas compactas de `census` debe reutilizar presentation helpers compartidos;
   no deben reaparecer `toLocaleDateString()` o `toLocaleString()` inline en controllers de UI.
 
