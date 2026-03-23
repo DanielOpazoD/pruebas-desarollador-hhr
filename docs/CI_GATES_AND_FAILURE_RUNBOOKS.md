@@ -68,6 +68,7 @@ Debe seguir cubriendo:
 El script extendido `test:release-confidence:full` agrega `test:unit:critical` cuando se quiere una corrida más profunda o diagnóstica.
 La trazabilidad obligatoria por área crítica vive en `scripts/config/release-confidence-matrix.json` y se valida con `npm run check:release-confidence-matrix`.
 El ownership técnico por subsistema crítico vive en `scripts/config/technical-ownership-map.json` y se valida con `npm run check:technical-ownership-map`.
+El scorecard ejecutivo consolidado vive en `reports/release-readiness-scorecard.md` y se regenera con `npm run report:release-readiness-scorecard`.
 
 Salida esperada:
 
@@ -96,6 +97,18 @@ Salida esperada:
    - al menos un `runbook`
 4. si agregaste un subsistema crítico nuevo o cambió el runbook operativo, actualizar el mapa en la misma change
 5. no aceptar deuda crítica sin owner operativo explícito
+
+### Falla `check:release-readiness-scorecard`
+
+1. correr `npm run report:release-readiness-scorecard`
+2. revisar `reports/release-readiness-scorecard.md`
+3. confirmar que no falten reportes fuente ni haya indicadores degradados en:
+   - calidad estructural
+   - system confidence
+   - readiness operativa
+   - release confidence
+   - ownership
+4. si el scorecard se degrada por un reporte base, corregir ese reporte o su fuente; no maquillar el scorecard
 
 ## Qué hacer cuando falla
 

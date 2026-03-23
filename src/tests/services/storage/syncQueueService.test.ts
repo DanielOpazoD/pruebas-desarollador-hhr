@@ -102,7 +102,7 @@ describe('storage/sync public entrypoint', () => {
       .where('status')
       .equals('PENDING')
       .modify(task => {
-        task.timestamp = Date.now() - 901_000;
+        task.timestamp = FIXED_NOW - 901_000;
       });
 
     const telemetry = await getSyncQueueTelemetry();

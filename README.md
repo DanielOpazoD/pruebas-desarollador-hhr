@@ -87,33 +87,34 @@ Los accesos directos al handoff médico ya no usan un “modo especialista” se
 
 ## Comandos Principales
 
-| Comando                                 | Objetivo                                                                                         |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `npm run dev`                           | Levantar app en modo desarrollo                                                                  |
-| `npm run build`                         | Build de producción                                                                              |
-| `npm run preview`                       | Preview local del build                                                                          |
-| `npm run typecheck`                     | Verificación TypeScript                                                                          |
-| `npm run test`                          | Suite Vitest completa                                                                            |
-| `npm run test:watch`                    | Vitest en watch mode                                                                             |
-| `npm run test:coverage`                 | Cobertura de tests                                                                               |
-| `npm run test:e2e`                      | End-to-end (Playwright)                                                                          |
-| `npm run test:e2e:critical`             | E2E crítico emulador (Chromium por defecto; multi-browser por `E2E_CRITICAL_BROWSERS`)           |
-| `npm run lint`                          | Lint global con tolerancia cero a warnings                                                       |
-| `npm run check:quality`                 | Checks de arquitectura, tamaño de módulo y boundaries runtime                                    |
-| `npm run check:test-failure-catalog`    | Valida el catálogo versionado de fallos conocidos y cuarentenas                                  |
-| `npm run ci:inner-loop`                 | Gate corto para desarrollo diario (`typecheck`, lint estricto, quality y riesgo unitario)        |
-| `npm run ci:merge-gate`                 | Gate blocking previo a merge (`quality`, unitarios completos, cobertura crítica, build, bundle)  |
-| `npm run ci:release-gate`               | Gate final de release (`merge-gate` + Firestore rules/emulador/E2E crítico)                      |
-| `npm run test:rules`                    | Tests de reglas Firestore                                                                        |
-| `npm run test:risk:admin-health`        | Riesgo operativo de health dashboard y contratos                                                 |
-| `npm run report:quality-metrics`        | Snapshot de métricas de calidad para artefactos CI                                               |
-| `npm run report:operational-health`     | Snapshot operativo de budgets, sync y runbooks                                                   |
-| `npm run report:system-confidence`      | Scorecard mínimo de confianza del sistema con 5 indicadores                                      |
-| `npm run report:runtime-contracts`      | Snapshot de contratos runtime y evolución de esquema                                             |
-| `npm run report:critical-coverage`      | Reporte gated de cobertura crítica por zona                                                      |
-| `npm run check:critical-coverage`       | Gate de cobertura crítica instrumentada por zona                                                 |
-| `npm run test:e2e:flow-performance`     | Medición E2E de performance por flujo (`login`, `auth`, `censo`, `clinical-documents`, `backup`) |
-| `npm run check:flow-performance-budget` | Gate y reporte de budgets operativos por flujo                                                   |
+| Comando                                      | Objetivo                                                                                         |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `npm run dev`                                | Levantar app en modo desarrollo                                                                  |
+| `npm run build`                              | Build de producción                                                                              |
+| `npm run preview`                            | Preview local del build                                                                          |
+| `npm run typecheck`                          | Verificación TypeScript                                                                          |
+| `npm run test`                               | Suite Vitest completa                                                                            |
+| `npm run test:watch`                         | Vitest en watch mode                                                                             |
+| `npm run test:coverage`                      | Cobertura de tests                                                                               |
+| `npm run test:e2e`                           | End-to-end (Playwright)                                                                          |
+| `npm run test:e2e:critical`                  | E2E crítico emulador (Chromium por defecto; multi-browser por `E2E_CRITICAL_BROWSERS`)           |
+| `npm run lint`                               | Lint global con tolerancia cero a warnings                                                       |
+| `npm run check:quality`                      | Checks de arquitectura, tamaño de módulo y boundaries runtime                                    |
+| `npm run check:test-failure-catalog`         | Valida el catálogo versionado de fallos conocidos y cuarentenas                                  |
+| `npm run ci:inner-loop`                      | Gate corto para desarrollo diario (`typecheck`, lint estricto, quality y riesgo unitario)        |
+| `npm run ci:merge-gate`                      | Gate blocking previo a merge (`quality`, unitarios completos, cobertura crítica, build, bundle)  |
+| `npm run ci:release-gate`                    | Gate final de release (`merge-gate` + Firestore rules/emulador/E2E crítico)                      |
+| `npm run test:rules`                         | Tests de reglas Firestore                                                                        |
+| `npm run test:risk:admin-health`             | Riesgo operativo de health dashboard y contratos                                                 |
+| `npm run report:quality-metrics`             | Snapshot de métricas de calidad para artefactos CI                                               |
+| `npm run report:operational-health`          | Snapshot operativo de budgets, sync y runbooks                                                   |
+| `npm run report:system-confidence`           | Scorecard mínimo de confianza del sistema con 5 indicadores                                      |
+| `npm run report:release-readiness-scorecard` | Scorecard ejecutivo unificado para calidad, operación y readiness de release                     |
+| `npm run report:runtime-contracts`           | Snapshot de contratos runtime y evolución de esquema                                             |
+| `npm run report:critical-coverage`           | Reporte gated de cobertura crítica por zona                                                      |
+| `npm run check:critical-coverage`            | Gate de cobertura crítica instrumentada por zona                                                 |
+| `npm run test:e2e:flow-performance`          | Medición E2E de performance por flujo (`login`, `auth`, `censo`, `clinical-documents`, `backup`) |
+| `npm run check:flow-performance-budget`      | Gate y reporte de budgets operativos por flujo                                                   |
 
 ## Estructura del Proyecto
 
@@ -173,6 +174,7 @@ import { useDailyRecord } from '@/hooks/useDailyRecord';
 - [Runbook técnico de soporte](docs/RUNBOOK_SUPPORT_OPERATIONS.md)
 - [Guardrails de calidad](docs/QUALITY_GUARDRAILS.md)
 - [Gates de CI y runbooks de falla](docs/CI_GATES_AND_FAILURE_RUNBOOKS.md)
+- [Scorecard de release readiness](reports/release-readiness-scorecard.md)
 - [Checklist de cambio seguro](docs/SAFE_CHANGE_CHECKLIST.md)
 - [Definition of Done técnico](docs/ENGINEERING_DEFINITION_OF_DONE.md)
 - [Registro de deuda técnica](docs/TECHNICAL_DEBT_REGISTER.md)

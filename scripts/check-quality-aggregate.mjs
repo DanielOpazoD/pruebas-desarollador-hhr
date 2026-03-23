@@ -41,6 +41,7 @@ const QUALITY_STEPS = [
   'check:test-failure-catalog',
   'check:flaky-quarantine',
   'check:release-confidence-matrix',
+  'check:release-readiness-scorecard',
   'check:technical-ownership-map',
   'check:critical-any',
   'check:source-any',
