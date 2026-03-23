@@ -6,6 +6,14 @@ import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils
 import type { DailyRecord } from '@/types';
 import { DataFactory } from '@/tests/factories/DataFactory';
 
+vi.mock('@/utils/dateUtils', async () => {
+  const actual = await vi.importActual('@/utils/dateUtils');
+  return {
+    ...actual,
+    getTodayISO: () => '2025-12-27',
+  };
+});
+
 // Mock Repository
 vi.mock('@/services/repositories/DailyRecordRepository', () => {
   const mockImpl = {
@@ -106,6 +114,18 @@ describe('useDailyRecordSyncQuery', () => {
     await waitFor(() => expect(result.current.record).not.toBeNull());
 
     result.current.refresh();
+
+    await waitFor(() => {
+      expect(DailyRecordRepository.syncWithFirestoreDetailed).toHaveBeenCalledWith(mockDate);
+    });
+  });
+
+  it('forces a recovery sync once when today loads as empty', async () => {
+    vi.mocked(DailyRecordRepository.getForDate).mockResolvedValue(null);
+
+    renderHook(() => useDailyRecordSyncQuery(mockDate), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => {
       expect(DailyRecordRepository.syncWithFirestoreDetailed).toHaveBeenCalledWith(mockDate);

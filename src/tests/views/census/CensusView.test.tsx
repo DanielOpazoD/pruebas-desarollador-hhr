@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, act } from '@testing-library/react';
 import React from 'react';
 import { CensusView } from '@/features/census/components/CensusView';
 import { useCensusViewModel } from '@/features/census/hooks/useCensusViewModel';
@@ -13,6 +13,18 @@ vi.mock('@/features/census/hooks/useCensusViewModel', () => ({
 vi.mock('@/features/census/hooks/useCensusMigrationBootstrap', () => ({
   useCensusMigrationBootstrap: vi.fn(),
 }));
+
+vi.mock('@/components/ui/ViewLoader', () => ({
+  ViewLoader: () => <div data-testid="view-loader">View Loader</div>,
+}));
+
+vi.mock('@/utils/dateUtils', async () => {
+  const actual = await vi.importActual('@/utils/dateUtils');
+  return {
+    ...actual,
+    getTodayISO: () => '2025-01-01',
+  };
+});
 
 vi.mock('@/components/shared/SectionErrorBoundary', () => ({
   SectionErrorBoundary: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -86,7 +98,12 @@ describe('CensusView', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useRealTimers();
     vi.mocked(useCensusViewModel).mockReturnValue(buildViewModel());
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('renders AnalyticsView when viewMode is ANALYTICS', () => {
@@ -96,12 +113,28 @@ describe('CensusView', () => {
   });
 
   it('renders EmptyDayPrompt when record is missing', async () => {
-    vi.mocked(useCensusViewModel).mockReturnValue(buildViewModel({ beds: null }));
+    vi.mocked(useCensusViewModel).mockReturnValue(
+      buildViewModel({ beds: null, availableDates: ['2024-12-31'] })
+    );
 
     render(<CensusView {...defaultProps} />);
 
+    expect(screen.getByTestId('view-loader')).toBeInTheDocument();
+    expect(screen.queryByTestId('empty-day-prompt')).not.toBeInTheDocument();
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 1300));
+    });
     expect(await screen.findByTestId('empty-day-prompt')).toBeInTheDocument();
     expect(vi.mocked(useCensusMigrationBootstrap)).toHaveBeenCalledWith(true);
+  });
+
+  it('shows the empty prompt immediately for dates that are not today', async () => {
+    vi.mocked(useCensusViewModel).mockReturnValue(buildViewModel({ beds: null }));
+
+    render(<CensusView {...defaultProps} currentDateString="2025-01-02" />);
+
+    expect(await screen.findByTestId('empty-day-prompt')).toBeInTheDocument();
+    expect(screen.queryByTestId('view-loader')).not.toBeInTheDocument();
   });
 
   it('renders main census sections when record is present', async () => {

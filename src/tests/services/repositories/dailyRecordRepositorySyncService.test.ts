@@ -6,7 +6,7 @@ vi.mock('@/services/storage/indexeddb/indexedDbRecordService', () => ({
   saveRecord: vi.fn(),
 }));
 
-vi.mock('@/services/storage/firestoreService', () => ({
+vi.mock('@/services/storage/firestore', () => ({
   subscribeToRecord: vi.fn(),
 }));
 
@@ -19,11 +19,15 @@ vi.mock('@/services/repositories/dailyRecordRemoteLoader', () => ({
 }));
 
 import { loadRemoteRecordWithFallback } from '@/services/repositories/dailyRecordRemoteLoader';
-import { syncWithFirestoreDetailed } from '@/services/repositories/dailyRecordRepositorySyncService';
+import {
+  subscribe,
+  syncWithFirestoreDetailed,
+} from '@/services/repositories/dailyRecordRepositorySyncService';
 import {
   getRecordForDate as getRecordFromIndexedDB,
   saveRecord as saveToIndexedDB,
 } from '@/services/storage/indexeddb/indexedDbRecordService';
+import { subscribeToRecord } from '@/services/storage/firestore';
 
 describe('dailyRecordRepositorySyncService', () => {
   beforeEach(() => {
@@ -80,5 +84,27 @@ describe('dailyRecordRepositorySyncService', () => {
       sourceOfTruth: 'local',
     });
     expect(saveToIndexedDB).not.toHaveBeenCalled();
+  });
+
+  it('keeps the local record during subscription when Firestore emits a missing document', async () => {
+    const localRecord = {
+      date: '2026-03-03',
+      beds: { R1: { patientName: 'Paciente Local' } },
+      lastUpdated: '2026-03-03T12:00:00.000Z',
+    } as unknown as DailyRecord;
+    vi.mocked(getRecordFromIndexedDB).mockResolvedValueOnce(localRecord);
+
+    vi.mocked(subscribeToRecord).mockImplementationOnce((_date, callback) => {
+      void callback(null, false);
+      return vi.fn();
+    });
+
+    const callback = vi.fn();
+    subscribe('2026-03-03', callback);
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(callback).toHaveBeenCalledWith(localRecord, false);
   });
 });

@@ -15,15 +15,16 @@ import { resolveDailyRecordPersistenceGoldenPath } from '@/services/repositories
 
 const dailyRecordSyncLogger = logger.child('DailyRecordRepositorySyncService');
 
-const resolveIncomingRemoteRecord = async (
+const resolveIncomingSubscriptionRecord = async (
   date: string,
-  remoteRecord: DailyRecord | null
+  remoteRecord: DailyRecord | null,
+  remoteAvailability: 'resolved' | 'missing'
 ): Promise<DailyRecord | null> => {
   const localRecord = await getRecordFromIndexedDB(date);
   const goldenPath = resolveDailyRecordPersistenceGoldenPath({
     localRecord,
     remoteRecord,
-    remoteAvailability: remoteRecord ? 'resolved' : 'missing',
+    remoteAvailability,
   });
   if (!goldenPath.selectedRecord) {
     return null;
@@ -42,8 +43,12 @@ export const subscribe = (
 ): (() => void) => {
   return subscribeToRecord(date, async (record, hasPendingWrites) => {
     const migrated = record ? migrateLegacyData(record, date) : null;
-    if (migrated && !hasPendingWrites) {
-      const resolvedRecord = await resolveIncomingRemoteRecord(date, migrated);
+    if (!hasPendingWrites) {
+      const resolvedRecord = await resolveIncomingSubscriptionRecord(
+        date,
+        migrated,
+        migrated ? 'resolved' : 'missing'
+      );
       callback(resolvedRecord, hasPendingWrites);
       return;
     }

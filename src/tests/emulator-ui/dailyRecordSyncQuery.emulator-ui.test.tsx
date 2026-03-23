@@ -261,4 +261,41 @@ describeUiEmulator('UI sync flow with Firestore emulator', () => {
     const local = await getRecordForDate(date);
     expect(local?.beds?.R1?.pathology).toBe('Diag UI Patch');
   });
+
+  it('keeps the current day record visible when Firestore emits a missing document after it was loaded', async () => {
+    const date = TODAY_ISO;
+    const seed = buildRecord(date, 'Paciente Persistente', 'Diag Persistente');
+
+    await testEnv.withSecurityRulesDisabled(async context => {
+      await context.firestore().doc(`hospitals/hanga_roa/dailyRecords/${date}`).set(seed);
+    });
+
+    const { wrapper } = createQueryClientTestWrapper();
+    let safeResult: { current: unknown } | null = null;
+    let safeUnmount: (() => void) | null = null;
+    await act(async () => {
+      const hook = renderHook(() => useDailyRecordSyncQuery(date, false, true), { wrapper });
+      safeResult = hook.result;
+      safeUnmount = hook.unmount;
+    });
+    if (!safeResult || !safeUnmount) {
+      throw new Error('Failed to initialize missing-document recovery harness');
+    }
+    const resultRef = safeResult as { current: { record: DailyRecord | null } };
+    unmounts.push(safeUnmount);
+
+    await waitFor(() => {
+      expect(resultRef.current.record?.beds?.R1?.patientName).toBe('Paciente Persistente');
+    });
+
+    await act(async () => {
+      await testEnv.withSecurityRulesDisabled(async context => {
+        await context.firestore().doc(`hospitals/hanga_roa/dailyRecords/${date}`).delete();
+      });
+    });
+
+    await waitFor(() => {
+      expect(resultRef.current.record?.beds?.R1?.patientName).toBe('Paciente Persistente');
+    });
+  });
 });

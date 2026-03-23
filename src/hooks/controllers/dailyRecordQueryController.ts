@@ -4,6 +4,7 @@ import type { DailyRecord } from '@/types/domain/dailyRecord';
 import type { DailyRecordPatch } from '@/hooks/useDailyRecordTypes';
 import { applyPatches } from '@/utils/patchUtils';
 import { createGetDailyRecordQuery } from '@/services/repositories/contracts/dailyRecordQueries';
+import { dailyRecordObservability } from '@/services/repositories/dailyRecordOperationalTelemetry';
 
 interface DailyRecordReader {
   getForDate: (date: string) => Promise<DailyRecord | null>;
@@ -37,9 +38,77 @@ export const createDailyRecordSubscription = (
   }
 
   return dailyRecord.subscribe(date, (record, hasPendingWrites) => {
-    if (!hasPendingWrites) {
-      queryClient.setQueryData(getDailyRecordQueryKey(date), record);
+    if (hasPendingWrites) {
+      return;
     }
+
+    const applyResolvedRecord = (resolvedRecord: DailyRecord | null) => {
+      queryClient.setQueryData(getDailyRecordQueryKey(date), resolvedRecord);
+    };
+
+    if (record) {
+      applyResolvedRecord(record);
+      return;
+    }
+
+    const previousRecord = queryClient.getQueryData<DailyRecord | null>(
+      getDailyRecordQueryKey(date)
+    );
+    if (!previousRecord) {
+      applyResolvedRecord(null);
+      return;
+    }
+
+    void dailyRecord
+      .getForDate(date)
+      .then(reconciledRecord => {
+        if (reconciledRecord) {
+          dailyRecordObservability.recordEvent('recovered_null_realtime_record', 'degraded', {
+            date,
+            runtimeState: 'recoverable',
+            issues: [
+              'Se evitó un vaciado transitorio del registro después de una suscripción realtime nula.',
+            ],
+            context: {
+              previousLastUpdated: previousRecord.lastUpdated,
+              recoveredLastUpdated: reconciledRecord.lastUpdated,
+            },
+          });
+          applyResolvedRecord(reconciledRecord);
+          return;
+        }
+
+        dailyRecordObservability.recordEvent('confirmed_null_realtime_record', 'degraded', {
+          date,
+          runtimeState: 'retryable',
+          issues: [
+            'La suscripción realtime emitió null y el repositorio confirmó ausencia del registro.',
+          ],
+          context: {
+            previousLastUpdated: previousRecord.lastUpdated,
+          },
+        });
+        applyResolvedRecord(null);
+      })
+      .catch(error => {
+        dailyRecordObservability.recordError(
+          'reconcile_null_realtime_record',
+          error,
+          {
+            code: 'daily_record_realtime_null_reconciliation_failed',
+            message: 'No fue posible reconciliar un registro nulo emitido por realtime.',
+            severity: 'warning',
+            userSafeMessage: 'Se mantuvo la copia local mientras se revalida el registro del día.',
+          },
+          {
+            date,
+            context: {
+              previousLastUpdated: previousRecord.lastUpdated,
+            },
+          }
+        );
+        applyResolvedRecord(previousRecord);
+      });
   });
 };
 

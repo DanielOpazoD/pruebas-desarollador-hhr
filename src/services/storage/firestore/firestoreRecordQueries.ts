@@ -108,7 +108,6 @@ export const subscribeToRecord = (
     },
     error => {
       firestoreQueryLogger.error(`Subscription failed for record ${date}`, error);
-      callback(null, false);
     }
   );
 };

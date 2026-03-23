@@ -12,6 +12,13 @@ import {
   shouldUseDailyRecordRealtimeSync,
 } from '@/hooks/controllers/dailyRecordQueryController';
 
+vi.mock('@/services/repositories/dailyRecordOperationalTelemetry', () => ({
+  dailyRecordObservability: {
+    recordEvent: vi.fn(),
+    recordError: vi.fn(),
+  },
+}));
+
 describe('dailyRecordQueryController', () => {
   it('builds query functions and cache keys consistently', async () => {
     const record = DataFactory.createMockDailyRecord('2025-01-08');
@@ -49,6 +56,33 @@ describe('dailyRecordQueryController', () => {
 
     expect(unsubscribe).toBeTypeOf('function');
     expect(queryClient.getQueryData(getDailyRecordQueryKey('2025-01-08'))).toEqual(record);
+  });
+
+  it('reconciles null realtime payloads against the repository before clearing cache', async () => {
+    const queryClient = new QueryClient();
+    const previousRecord = DataFactory.createMockDailyRecord('2025-01-08');
+    const recoveredRecord = {
+      ...previousRecord,
+      lastUpdated: '2025-01-08T10:10:00.000Z',
+    };
+    queryClient.setQueryData(getDailyRecordQueryKey('2025-01-08'), previousRecord);
+
+    const subscribe = vi.fn((_date, callback) => {
+      void callback(null, false);
+      return vi.fn();
+    });
+
+    const unsubscribe = createDailyRecordSubscription(
+      { getForDate: vi.fn().mockResolvedValue(recoveredRecord), subscribe },
+      '2025-01-08',
+      queryClient
+    );
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(unsubscribe).toBeTypeOf('function');
+    expect(queryClient.getQueryData(getDailyRecordQueryKey('2025-01-08'))).toEqual(recoveredRecord);
   });
 
   it('manages query cache helpers and realtime gating', async () => {

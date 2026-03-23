@@ -115,7 +115,7 @@ describe('firestoreRecordQueries', () => {
     await expect(getMonthRecordsFromFirestore(2026, 1)).resolves.toHaveLength(1);
   });
 
-  it('subscribes to records with metadata and error fallback', async () => {
+  it('subscribes to records with metadata and keeps cache untouched on subscription errors', async () => {
     const callback = vi.fn();
 
     vi.mocked(onSnapshot).mockImplementationOnce((...args: unknown[]) => {
@@ -139,7 +139,7 @@ describe('firestoreRecordQueries', () => {
     });
 
     subscribeToRecord('2026-03-15', callback);
-    expect(callback).toHaveBeenCalledWith(null, false);
+    expect(callback).toHaveBeenCalledTimes(1);
   });
 
   it('checks availability via hospital root doc', async () => {

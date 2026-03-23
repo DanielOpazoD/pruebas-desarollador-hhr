@@ -1,10 +1,11 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { ViewLoader } from '@/components/ui/ViewLoader';
 import { SectionErrorBoundary } from '@/components/shared/SectionErrorBoundary';
 import { AnalyticsView } from '@/features/analytics/public';
 import { useCensusMigrationBootstrap } from '@/features/census/hooks/useCensusMigrationBootstrap';
 import { useCensusViewRouteModel } from '@/features/census/hooks/useCensusViewRouteModel';
 import type { CensusAccessProfile } from '@/features/census/types/censusAccessProfile';
+import { getTodayISO } from '@/utils/dateUtils';
 
 const LazyCensusRegisterContent = lazy(() =>
   import('./CensusRegisterContent').then(module => ({
@@ -57,8 +58,22 @@ const CensusViewContent: React.FC<CensusViewProps> = ({
     localViewMode,
     accessProfile,
   });
+  const [resolvedTodayEmptyDate, setResolvedTodayEmptyDate] = useState('');
+  const shouldDeferTodayEmptyState = branch === 'empty' && currentDateString === getTodayISO();
 
   useCensusMigrationBootstrap(branch !== 'analytics');
+
+  useEffect(() => {
+    if (!shouldDeferTodayEmptyState) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setResolvedTodayEmptyDate(currentDateString);
+    }, 1200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [shouldDeferTodayEmptyState, currentDateString]);
 
   if (branch === 'analytics') {
     return (
@@ -69,6 +84,10 @@ const CensusViewContent: React.FC<CensusViewProps> = ({
   }
 
   if (branch === 'empty') {
+    if (shouldDeferTodayEmptyState && resolvedTodayEmptyDate !== currentDateString) {
+      return <ViewLoader />;
+    }
+
     return (
       <Suspense fallback={<ViewLoader />}>
         {emptyDayPromptProps ? <LazyEmptyDayPrompt {...emptyDayPromptProps} /> : null}

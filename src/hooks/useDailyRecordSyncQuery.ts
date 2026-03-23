@@ -33,6 +33,7 @@ import { executeSyncDailyRecord } from '@/application/daily-record/syncDailyReco
 import { presentDailyRecordRefreshOutcome } from '@/hooks/controllers/dailyRecordRefreshOutcomeController';
 import { logger } from '@/services/utils/loggerService';
 import { dailyRecordObservability } from '@/services/repositories/dailyRecordOperationalTelemetry';
+import { getTodayISO } from '@/utils/dateUtils';
 
 const dailyRecordSyncLogger = logger.child('DailyRecordSync');
 
@@ -65,6 +66,7 @@ export const useDailyRecordSyncQuery = (
   const initMutation = useInitializeDailyRecordMutation();
   const deleteMutation = useDeleteDailyRecordMutation();
   const pendingRefetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const todayNullRecoveryAttemptedRef = useRef<string | null>(null);
 
   const clearPendingRefetchTimeout = useCallback(() => {
     if (pendingRefetchTimeoutRef.current !== null) {
@@ -74,6 +76,38 @@ export const useDailyRecordSyncQuery = (
   }, []);
 
   useEffect(() => clearPendingRefetchTimeout, [clearPendingRefetchTimeout]);
+
+  useEffect(() => {
+    if (record) {
+      if (todayNullRecoveryAttemptedRef.current === currentDateString) {
+        todayNullRecoveryAttemptedRef.current = null;
+      }
+      return;
+    }
+
+    if (currentDateString !== getTodayISO()) {
+      return;
+    }
+
+    if (todayNullRecoveryAttemptedRef.current === currentDateString) {
+      return;
+    }
+
+    todayNullRecoveryAttemptedRef.current = currentDateString;
+
+    void executeSyncDailyRecord({
+      date: currentDateString,
+      repository: dailyRecord,
+    }).then(outcome => {
+      dailyRecordObservability.recordOutcome('recover_today_empty_daily_record', outcome, {
+        date: currentDateString,
+        context: {
+          source: 'useDailyRecordSyncQuery',
+        },
+      });
+      refetch();
+    });
+  }, [currentDateString, dailyRecord, record, refetch]);
 
   // 3. Status Mapping
   const syncStatus = useMemo(
