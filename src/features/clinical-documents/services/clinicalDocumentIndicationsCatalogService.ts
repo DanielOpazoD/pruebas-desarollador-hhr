@@ -12,8 +12,9 @@ import {
   type ClinicalDocumentIndicationsCatalog,
   type RawClinicalDocumentIndicationsCatalog,
 } from '@/features/clinical-documents/controllers/clinicalDocumentIndicationsCatalogController';
-import { defaultFirestoreRuntime } from '@/services/firebase-runtime/firestoreRuntime';
 import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
+import { defaultFirestoreServiceRuntime } from '@/services/storage/firestore/firestoreServiceRuntime';
+import type { FirestoreServiceRuntimePort } from '@/services/storage/firestore/ports/firestoreServiceRuntimePort';
 
 export type {
   ClinicalDocumentIndicationCatalogItem,
@@ -26,68 +27,87 @@ export {
   normalizeClinicalDocumentIndicationsCatalog,
 } from '@/features/clinical-documents/controllers/clinicalDocumentIndicationsCatalogController';
 
-const SETTINGS_DOC_PATH = (hospitalId?: string) =>
-  doc(
-    defaultFirestoreRuntime.db,
-    getSettingsDocPath(SETTINGS_DOCS.CLINICAL_DOCUMENT_INDICATIONS, hospitalId)
-  );
+const SETTINGS_DOC_PATH = (runtime: FirestoreServiceRuntimePort, hospitalId?: string) =>
+  doc(runtime.getDb(), getSettingsDocPath(SETTINGS_DOCS.CLINICAL_DOCUMENT_INDICATIONS, hospitalId));
 
-export const loadClinicalDocumentIndicationsCatalog = async (
-  hospitalId?: string
-): Promise<ClinicalDocumentIndicationsCatalog> => {
-  const snapshot = await getDoc(SETTINGS_DOC_PATH(hospitalId));
-  if (!snapshot.exists()) {
-    return getDefaultClinicalDocumentIndicationsCatalog();
-  }
+const createClinicalDocumentIndicationsCatalogService = (
+  runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
+) => ({
+  async load(hospitalId?: string): Promise<ClinicalDocumentIndicationsCatalog> {
+    const snapshot = await getDoc(SETTINGS_DOC_PATH(runtime, hospitalId));
+    if (!snapshot.exists()) {
+      return getDefaultClinicalDocumentIndicationsCatalog();
+    }
 
-  return normalizeClinicalDocumentIndicationsCatalog(
-    snapshot.data() as RawClinicalDocumentIndicationsCatalog
-  );
-};
-
-export const ensureClinicalDocumentIndicationsCatalog = async (
-  hospitalId?: string
-): Promise<ClinicalDocumentIndicationsCatalog> => {
-  const snapshot = await getDoc(SETTINGS_DOC_PATH(hospitalId));
-  if (snapshot.exists()) {
     return normalizeClinicalDocumentIndicationsCatalog(
       snapshot.data() as RawClinicalDocumentIndicationsCatalog
     );
-  }
+  },
+  async ensure(hospitalId?: string): Promise<ClinicalDocumentIndicationsCatalog> {
+    const snapshot = await getDoc(SETTINGS_DOC_PATH(runtime, hospitalId));
+    if (snapshot.exists()) {
+      return normalizeClinicalDocumentIndicationsCatalog(
+        snapshot.data() as RawClinicalDocumentIndicationsCatalog
+      );
+    }
 
-  const seededCatalog = getDefaultClinicalDocumentIndicationsCatalog();
-  await setDoc(SETTINGS_DOC_PATH(hospitalId), seededCatalog);
-  return seededCatalog;
-};
+    const seededCatalog = getDefaultClinicalDocumentIndicationsCatalog();
+    await setDoc(SETTINGS_DOC_PATH(runtime, hospitalId), seededCatalog);
+    return seededCatalog;
+  },
+  subscribe(
+    callback: (catalog: ClinicalDocumentIndicationsCatalog) => void,
+    hospitalId?: string
+  ): () => void {
+    return onSnapshot(
+      SETTINGS_DOC_PATH(runtime, hospitalId),
+      snapshot => {
+        if (!snapshot.exists()) {
+          callback(getDefaultClinicalDocumentIndicationsCatalog());
+          return;
+        }
+
+        callback(
+          normalizeClinicalDocumentIndicationsCatalog(
+            snapshot.data() as RawClinicalDocumentIndicationsCatalog
+          )
+        );
+      },
+      error => {
+        recordOperationalErrorTelemetry(
+          'clinical_document',
+          'subscribe_indications_catalog',
+          error,
+          {
+            code: 'clinical_document_indications_subscription_failed',
+            message: 'No se pudo sincronizar el catálogo de indicaciones predeterminadas.',
+            severity: 'warning',
+            userSafeMessage: 'No se pudo sincronizar el catálogo de indicaciones predeterminadas.',
+          }
+        );
+        callback(getDefaultClinicalDocumentIndicationsCatalog());
+      }
+    );
+  },
+});
+
+const defaultClinicalDocumentIndicationsCatalogService =
+  createClinicalDocumentIndicationsCatalogService();
+
+export const loadClinicalDocumentIndicationsCatalog = async (
+  hospitalId?: string
+): Promise<ClinicalDocumentIndicationsCatalog> =>
+  defaultClinicalDocumentIndicationsCatalogService.load(hospitalId);
+
+export const ensureClinicalDocumentIndicationsCatalog = async (
+  hospitalId?: string
+): Promise<ClinicalDocumentIndicationsCatalog> =>
+  defaultClinicalDocumentIndicationsCatalogService.ensure(hospitalId);
 
 export const subscribeToClinicalDocumentIndicationsCatalog = (
   callback: (catalog: ClinicalDocumentIndicationsCatalog) => void,
   hospitalId?: string
-): (() => void) =>
-  onSnapshot(
-    SETTINGS_DOC_PATH(hospitalId),
-    snapshot => {
-      if (!snapshot.exists()) {
-        callback(getDefaultClinicalDocumentIndicationsCatalog());
-        return;
-      }
-
-      callback(
-        normalizeClinicalDocumentIndicationsCatalog(
-          snapshot.data() as RawClinicalDocumentIndicationsCatalog
-        )
-      );
-    },
-    error => {
-      recordOperationalErrorTelemetry('clinical_document', 'subscribe_indications_catalog', error, {
-        code: 'clinical_document_indications_subscription_failed',
-        message: 'No se pudo sincronizar el catálogo de indicaciones predeterminadas.',
-        severity: 'warning',
-        userSafeMessage: 'No se pudo sincronizar el catálogo de indicaciones predeterminadas.',
-      });
-      callback(getDefaultClinicalDocumentIndicationsCatalog());
-    }
-  );
+): (() => void) => defaultClinicalDocumentIndicationsCatalogService.subscribe(callback, hospitalId);
 
 export const addClinicalDocumentIndicationCatalogItem = async ({
   hospitalId,
@@ -103,7 +123,7 @@ export const addClinicalDocumentIndicationCatalogItem = async ({
     return loadClinicalDocumentIndicationsCatalog(hospitalId);
   }
 
-  const currentCatalog = await ensureClinicalDocumentIndicationsCatalog(hospitalId);
+  const currentCatalog = await defaultClinicalDocumentIndicationsCatalogService.ensure(hospitalId);
   const specialty = currentCatalog.specialties[specialtyId];
   const nextTextKey = normalizeClinicalDocumentIndicationTextKey(trimmedText);
   const alreadyExists = specialty.items.some(
@@ -137,7 +157,7 @@ export const addClinicalDocumentIndicationCatalogItem = async ({
     },
   };
 
-  await setDoc(SETTINGS_DOC_PATH(hospitalId), nextCatalog);
+  await setDoc(SETTINGS_DOC_PATH(defaultFirestoreServiceRuntime, hospitalId), nextCatalog);
   return nextCatalog;
 };
 
@@ -157,7 +177,7 @@ export const updateClinicalDocumentIndicationCatalogItem = async ({
     return loadClinicalDocumentIndicationsCatalog(hospitalId);
   }
 
-  const currentCatalog = await ensureClinicalDocumentIndicationsCatalog(hospitalId);
+  const currentCatalog = await defaultClinicalDocumentIndicationsCatalogService.ensure(hospitalId);
   const specialty = currentCatalog.specialties[specialtyId];
   const duplicateTextKey = normalizeClinicalDocumentIndicationTextKey(trimmedText);
   const hasDuplicate = specialty.items.some(
@@ -184,7 +204,7 @@ export const updateClinicalDocumentIndicationCatalogItem = async ({
     },
   };
 
-  await setDoc(SETTINGS_DOC_PATH(hospitalId), nextCatalog);
+  await setDoc(SETTINGS_DOC_PATH(defaultFirestoreServiceRuntime, hospitalId), nextCatalog);
   return nextCatalog;
 };
 
@@ -197,7 +217,7 @@ export const deleteClinicalDocumentIndicationCatalogItem = async ({
   specialtyId: ClinicalDocumentIndicationSpecialtyId;
   itemId: string;
 }): Promise<ClinicalDocumentIndicationsCatalog> => {
-  const currentCatalog = await ensureClinicalDocumentIndicationsCatalog(hospitalId);
+  const currentCatalog = await defaultClinicalDocumentIndicationsCatalogService.ensure(hospitalId);
   const specialty = currentCatalog.specialties[specialtyId];
   const nextCatalog: ClinicalDocumentIndicationsCatalog = {
     ...currentCatalog,
@@ -211,7 +231,7 @@ export const deleteClinicalDocumentIndicationCatalogItem = async ({
     },
   };
 
-  await setDoc(SETTINGS_DOC_PATH(hospitalId), nextCatalog);
+  await setDoc(SETTINGS_DOC_PATH(defaultFirestoreServiceRuntime, hospitalId), nextCatalog);
   return nextCatalog;
 };
 
@@ -228,6 +248,6 @@ export const replaceClinicalDocumentIndicationsCatalog = async ({
     updatedAt: new Date().toISOString(),
   };
 
-  await setDoc(SETTINGS_DOC_PATH(hospitalId), persistedCatalog);
+  await setDoc(SETTINGS_DOC_PATH(defaultFirestoreServiceRuntime, hospitalId), persistedCatalog);
   return persistedCatalog;
 };

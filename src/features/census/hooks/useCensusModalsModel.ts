@@ -1,9 +1,6 @@
 import { useStaffContext } from '@/context/StaffContext';
 import { useDailyRecordData } from '@/context/DailyRecordContext';
-import {
-  useCensusActionCommands,
-  useCensusActionState,
-} from '@/features/census/context/censusActionContexts';
+import { useCensusActions } from '@/features/census/context/censusActionContexts';
 import { useCensusActionModalProps } from '@/features/census/hooks/useCensusActionModalProps';
 import { useCensusModalBindings } from '@/features/census/hooks/useCensusModalBindings';
 import { useCensusModalsHandlers } from '@/features/census/hooks/useCensusModalsHandlers';
@@ -18,8 +15,10 @@ export const useCensusModalsModel = () => {
     setDischargeState,
     transferState,
     setTransferState,
-  } = useCensusActionState();
-  const { executeMoveOrCopy, executeDischarge, executeTransfer } = useCensusActionCommands();
+    executeMoveOrCopy,
+    executeDischarge,
+    executeTransfer,
+  } = useCensusActions();
 
   const modalBindings = useCensusModalBindings({ actionState, dischargeState, transferState });
   const modalHandlers = useCensusModalsHandlers({

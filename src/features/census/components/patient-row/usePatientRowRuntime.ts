@@ -1,16 +1,16 @@
 import type { BedDefinition } from '@/types/domain/base';
 import type { PatientData } from '@/types/domain/patient';
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';
-import { derivePatientRowState } from '@/features/census/controllers/patientRowStateController';
-import { usePatientRowDependencies } from '@/features/census/components/patient-row/usePatientRowDependencies';
-import type { PatientRowRuntime } from '@/features/census/components/patient-row/patientRowRuntimeContracts';
-import { usePatientRowEditingRuntime } from '@/features/census/components/patient-row/usePatientRowEditingRuntime';
-import { usePatientRowInteractionRuntime } from '@/features/census/components/patient-row/usePatientRowInteractionRuntime';
-import { buildPatientRowRuntime } from '@/features/census/controllers/patientRowRuntimeController';
+import { derivePatientRowState } from '../../controllers/patientRowStateController';
+import { usePatientRowDependencies } from './usePatientRowDependencies';
+import type { PatientRowRuntime } from './patientRowRuntimeContracts';
+import { usePatientRowEditingRuntime } from './usePatientRowEditingRuntime';
+import { usePatientRowInteractionRuntime } from './usePatientRowInteractionRuntime';
+import { buildPatientRowRuntime } from '../../controllers/patientRowRuntimeController';
 import {
   buildPatientRowEditingRuntimeParams,
   buildPatientRowInteractionRuntimeParams,
-} from '@/features/census/controllers/patientRowRuntimeModelController';
+} from '../../controllers/patientRowRuntimeModelController';
 
 interface UsePatientRowRuntimeParams {
   bed: BedDefinition;

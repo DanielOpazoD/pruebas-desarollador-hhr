@@ -92,6 +92,10 @@ Cambios en esta capa requieren:
 ## Contrato y límites
 
 - `storage/firestore` no debe reabsorber helpers de rango, concurrencia o snapshots.
+- `storage/firestore/firestoreServiceRuntime.ts` es el adaptador canónico hacia Firestore runtime;
+  nuevos servicios de storage/transfers no deben depender directo de `defaultFirestoreRuntime`.
+- `npm run check:firestore-runtime-boundary` protege `clinical-documents`, `storage` y `transfers`
+  para que nuevos servicios entren por ese adaptador y no por singletons globales.
 - `storage/sync` es el único punto de acceso soportado para telemetría, stats
   y operaciones recientes; la UI no debe leer Dexie directo para esta información.
 - `sync/publicSyncQueue.ts` es la implementación canónica del outbox; `syncQueueService.ts`

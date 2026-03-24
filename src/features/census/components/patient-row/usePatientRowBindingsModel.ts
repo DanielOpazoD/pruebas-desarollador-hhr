@@ -5,7 +5,7 @@ import { usePatientRowRuntime } from './usePatientRowRuntime';
 import {
   buildPatientRowBindings,
   type PatientRowBindingsInput,
-} from '@/features/census/controllers/patientRowBindingsController';
+} from '../../controllers/patientRowBindingsController';
 
 interface UsePatientRowBindingsModelParams extends PatientRowBindingsInput {
   onAction: (action: PatientRowAction, bedId: string, patient: PatientData) => void;

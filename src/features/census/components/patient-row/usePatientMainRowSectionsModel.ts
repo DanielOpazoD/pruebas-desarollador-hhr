@@ -1,0 +1,53 @@
+import { useMemo } from 'react';
+import { buildPatientActionSectionBinding } from '../../controllers/patientRowActionSectionBindingsController';
+import { buildPatientMainRowSections } from '../../controllers/patientMainRowSectionsController';
+import type { PatientMainRowViewProps } from './patientRowViewContracts';
+
+export const usePatientMainRowSectionsModel = (props: PatientMainRowViewProps) => {
+  const actionSectionBinding = useMemo(
+    () =>
+      buildPatientActionSectionBinding({
+        isBlocked: props.isBlocked,
+        readOnly: props.readOnly,
+        actionMenuAlign: props.actionMenuAlign,
+        data: props.data,
+        currentDateString: props.currentDateString,
+        indicators: props.indicators,
+        mainRowViewState: props.mainRowViewState,
+        accessProfile: props.accessProfile,
+        onAction: props.onAction,
+        onOpenDemographics: props.onOpenDemographics,
+        onOpenClinicalDocuments: props.onOpenClinicalDocuments,
+        onOpenExamRequest: props.onOpenExamRequest,
+        onOpenImagingRequest: props.onOpenImagingRequest,
+        onOpenHistory: props.onOpenHistory,
+      }),
+    [
+      props.accessProfile,
+      props.actionMenuAlign,
+      props.currentDateString,
+      props.data,
+      props.indicators,
+      props.isBlocked,
+      props.mainRowViewState,
+      props.onAction,
+      props.onOpenClinicalDocuments,
+      props.onOpenDemographics,
+      props.onOpenExamRequest,
+      props.onOpenHistory,
+      props.onOpenImagingRequest,
+      props.readOnly,
+    ]
+  );
+
+  return useMemo(
+    () =>
+      buildPatientMainRowSections(
+        {
+          ...props,
+        },
+        actionSectionBinding
+      ),
+    [actionSectionBinding, props]
+  );
+};

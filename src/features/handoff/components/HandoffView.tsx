@@ -1,8 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useDailyRecordData } from '@/context/DailyRecordContext';
-import { useDailyRecordHandoffActions } from '@/context/useDailyRecordScopedActions';
-import { useStaffContext } from '@/context/StaffContext';
-import { MessageSquare, Stethoscope } from 'lucide-react';
+import React from 'react';
 import { HandoffHeader } from './HandoffHeader';
 import { HandoffChecklistSection } from './HandoffChecklistSection';
 import { HandoffCudyrPrint } from './HandoffCudyrPrint';
@@ -10,32 +6,10 @@ import { HandoffNightCudyrActionButton } from './HandoffNightCudyrActionButton';
 import { HandoffPrintHeader } from './HandoffPrintHeader';
 import { HandoffMedicalContent } from './HandoffMedicalContent';
 import { HandoffNursingContent } from './HandoffNursingContent';
-import type { HandoffClinicalEventActions, HandoffMedicalActions } from './handoffRowContracts';
-import { useNotification } from '@/context/UIContext';
-import { useHandoffLogic } from '@/hooks';
-import { useAuditContext } from '@/context/AuditContext';
-import { getAttributedAuthors } from '@/services/admin/attributionService';
 import { useUIState, UseUIStateReturn } from '@/hooks/useUIState';
-import { useAuth } from '@/context';
-import {
-  resolveInitialMedicalScopeFromSearch,
-  resolveInitialMedicalSpecialtyFromSearch,
-} from '@/domain/handoff/view';
-import {
-  buildHandoffClinicalEventActions,
-  buildHandoffMedicalActions,
-  resolveHandoffMedicalBindings,
-} from '@/features/handoff/controllers/handoffViewBindingsController';
-import { resolveMedicalHandoffCapabilities } from '@/features/handoff/controllers/medicalHandoffAccessController';
-import {
-  resolveHandoffDocumentTitle,
-  resolveHandoffTableHeaderClass,
-  resolveHandoffTitle,
-  shouldShowNightCudyrActions,
-} from '@/features/handoff/controllers/handoffViewController';
+import { shouldShowNightCudyrActions } from '@/features/handoff/controllers/handoffViewController';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
-import { Specialty } from '@/types/domain/base';
-import { canEditMedicalHandoffForDate } from '@/shared/access/operationalAccessPolicy';
+import { useHandoffViewScreenModel } from '@/features/handoff/hooks/useHandoffViewScreenModel';
 interface HandoffViewProps {
   type?: 'nursing' | 'medical';
   readOnly?: boolean;
@@ -48,194 +22,52 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
   ui: propUi,
   medicalScope,
 }) => {
-  const initialMedicalSpecialtyFromUrl = React.useMemo(
-    () =>
-      typeof window === 'undefined'
-        ? ('all' as Specialty | 'all')
-        : resolveInitialMedicalSpecialtyFromSearch(window.location.search),
-    []
-  );
-  const initialMedicalScopeFromUrl = React.useMemo(
-    () =>
-      typeof window === 'undefined'
-        ? ('all' as MedicalHandoffScope)
-        : resolveInitialMedicalScopeFromSearch(window.location.search),
-    []
-  );
-  const effectiveMedicalScope = medicalScope ?? initialMedicalScopeFromUrl;
-  const { record } = useDailyRecordData();
+  const localUi = useUIState();
+  const screenModel = useHandoffViewScreenModel({
+    type,
+    readOnly,
+    ui: propUi || localUi,
+    medicalScope,
+  });
   const {
+    ui,
+    record,
+    isMedical,
+    role,
+    title,
+    readOnly: effectiveReadOnly,
+    nursesList,
+    success,
+    schedule,
+    noteField,
+    deliversList,
+    receivesList,
+    tensList,
+    hasAnyPatients,
+    visibleBeds,
+    selectedShift,
+    setSelectedShift,
+    selectedMedicalSpecialty,
+    setSelectedMedicalSpecialty,
+    medicalBindings,
+    medicalCapabilities,
+    medicalActions,
+    clinicalEventActions,
+    formatPrintDate,
+    shouldShowPatient,
+    handleNursingNoteChange,
+    handleShareLink,
+    handleSendWhatsAppManual,
     updateHandoffChecklist,
     updateHandoffNovedades,
     updateHandoffStaff,
     updateMedicalHandoffDoctor,
     markMedicalHandoffAsSent,
     resetMedicalHandoffState,
-  } = useDailyRecordHandoffActions();
-  const { nursesList } = useStaffContext();
-  const { success } = useNotification();
-  const { logEvent } = useAuditContext();
-  const { role } = useAuth();
-  const logEventRef = useRef(logEvent);
-  const recordRef = useRef(record);
-  const [selectedMedicalSpecialty, setSelectedMedicalSpecialty] = useState<Specialty | 'all'>(
-    initialMedicalSpecialtyFromUrl
-  );
-  useEffect(() => void (logEventRef.current = logEvent), [logEvent]);
-  useEffect(() => void (recordRef.current = record), [record]);
-  const localUi = useUIState();
-  const ui = propUi || localUi;
-  const {
-    selectedShift,
-    setSelectedShift,
-    isMedical,
-    visibleBeds,
-    hasAnyPatients,
-    schedule,
-    noteField,
-    deliversList,
-    receivesList,
-    tensList,
-    shouldShowPatient,
-    handleNursingNoteChange,
-    handleMedicalPrimaryEntryCreate,
-    handleMedicalEntryAdd,
-    handleMedicalEntryDelete,
-    handleMedicalEntryNoteChange,
-    handleMedicalEntrySpecialtyChange,
-    handleMedicalRefreshAsCurrent,
-    handleShareLink,
-    handleSendWhatsAppManual,
-    formatPrintDate,
-    handleClinicalEventAdd,
-    handleClinicalEventUpdate,
-    handleClinicalEventDelete,
-  } = useHandoffLogic({
-    type,
-    selectedShift: ui.selectedShift,
-    setSelectedShift: ui.setSelectedShift,
-    onSuccess: success,
-  });
-  const {
-    scopedMedicalScope,
-    effectiveVisibleBeds,
-    medicalSpecialties,
-    scopedMedicalSignature,
-    scopedMedicalHandoffSentAt,
-    effectiveSelectedMedicalSpecialty,
-    specialtyFilteredBeds,
-    hasAnyVisiblePatients,
-  } = React.useMemo(
-    () =>
-      resolveHandoffMedicalBindings({
-        visibleBeds,
-        record,
-        isMedical,
-        medicalScope: effectiveMedicalScope,
-        selectedMedicalSpecialty,
-        shouldShowPatient,
-      }),
-    [
-      visibleBeds,
-      record,
-      isMedical,
-      effectiveMedicalScope,
-      selectedMedicalSpecialty,
-      shouldShowPatient,
-    ]
-  );
-  const { userId } = useAuditContext();
-  const recordDate = record?.date;
-  useEffect(() => {
-    if (recordDate) {
-      const currentRecord = recordRef.current;
-      if (!currentRecord) return;
-      const authors = getAttributedAuthors(
-        userId,
-        currentRecord,
-        isMedical ? undefined : (selectedShift as 'day' | 'night')
-      );
-      logEventRef.current(
-        isMedical ? 'VIEW_MEDICAL_HANDOFF' : 'VIEW_NURSING_HANDOFF',
-        'dailyRecord',
-        recordDate,
-        {
-          view: isMedical ? 'medical_handoff' : 'nursing_handoff',
-          shift: selectedShift,
-        },
-        undefined,
-        recordDate,
-        authors
-      );
-    }
-  }, [recordDate, type, selectedShift, isMedical, userId]);
-  useEffect(() => {
-    const nextTitle = resolveHandoffDocumentTitle({
-      isMedical,
-      selectedShift,
-      recordDate: record?.date,
-    });
-    if (!nextTitle) return;
-    document.title = nextTitle;
-    return () => void (document.title = 'Hospital Hanga Roa');
-  }, [record?.date, selectedShift, isMedical]);
-  const title = resolveHandoffTitle({ isMedical, selectedShift });
-  const effectiveReadOnly =
-    readOnly ||
-    (isMedical &&
-      !canEditMedicalHandoffForDate({
-        role,
-        readOnly,
-        recordDate: record?.date,
-      }));
-  const medicalCapabilities = React.useMemo(
-    () =>
-      resolveMedicalHandoffCapabilities({
-        role,
-        readOnly: effectiveReadOnly,
-        recordDate: record?.date,
-      }),
-    [effectiveReadOnly, record?.date, role]
-  );
-  const medicalActions: HandoffMedicalActions = React.useMemo(
-    () =>
-      buildHandoffMedicalActions({
-        capabilities: medicalCapabilities,
-        onCreatePrimaryEntry: handleMedicalPrimaryEntryCreate,
-        onEntryNoteChange: handleMedicalEntryNoteChange,
-        onEntrySpecialtyChange: handleMedicalEntrySpecialtyChange,
-        onEntryAdd: handleMedicalEntryAdd,
-        onEntryDelete: handleMedicalEntryDelete,
-        onRefreshAsCurrent: handleMedicalRefreshAsCurrent,
-      }),
-    [
-      handleMedicalEntryAdd,
-      handleMedicalEntryDelete,
-      handleMedicalEntryNoteChange,
-      handleMedicalEntrySpecialtyChange,
-      handleMedicalPrimaryEntryCreate,
-      handleMedicalRefreshAsCurrent,
-      medicalCapabilities,
-    ]
-  );
-  const clinicalEventActions: HandoffClinicalEventActions = React.useMemo(
-    () =>
-      buildHandoffClinicalEventActions({
-        canEditClinicalEvents: medicalCapabilities.canEditClinicalEvents,
-        onAdd: handleClinicalEventAdd,
-        onUpdate: handleClinicalEventUpdate,
-        onDelete: handleClinicalEventDelete,
-      }),
-    [
-      handleClinicalEventAdd,
-      handleClinicalEventDelete,
-      handleClinicalEventUpdate,
-      medicalCapabilities.canEditClinicalEvents,
-    ]
-  );
-  const handleOpenCudyr = () => ui?.setCurrentModule('CUDYR');
-  const Icon = isMedical ? Stethoscope : MessageSquare;
-  const tableHeaderClass = resolveHandoffTableHeaderClass({ isMedical, selectedShift });
+    tableHeaderClass,
+    Icon,
+  } = screenModel;
+  const handleOpenCudyr = () => ui.setCurrentModule('CUDYR');
   if (!record) {
     return (
       <div className="p-8 text-center text-slate-500 font-sans">
@@ -262,8 +94,8 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
         setSelectedShift={setSelectedShift}
         readOnly={effectiveReadOnly}
         showMedicalShareActions={medicalCapabilities.canShareSignatureLinks}
-        medicalSignature={scopedMedicalSignature}
-        medicalHandoffSentAt={scopedMedicalHandoffSentAt}
+        medicalSignature={medicalBindings.scopedMedicalSignature}
+        medicalHandoffSentAt={medicalBindings.scopedMedicalHandoffSentAt}
         onSendWhatsApp={handleSendWhatsAppManual}
         onShareLink={handleShareLink}
         extraAction={
@@ -287,13 +119,13 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
       {isMedical ? (
         <HandoffMedicalContent
           record={record}
-          effectiveVisibleBeds={effectiveVisibleBeds}
-          specialtyFilteredBeds={specialtyFilteredBeds}
+          effectiveVisibleBeds={medicalBindings.effectiveVisibleBeds}
+          specialtyFilteredBeds={medicalBindings.specialtyFilteredBeds}
           readOnly={effectiveReadOnly}
           role={role}
           canCopySpecialistLink={medicalCapabilities.canCopySpecialistLink}
-          scopedMedicalSignature={scopedMedicalSignature}
-          scopedMedicalHandoffSentAt={scopedMedicalHandoffSentAt}
+          scopedMedicalSignature={medicalBindings.scopedMedicalSignature}
+          scopedMedicalHandoffSentAt={medicalBindings.scopedMedicalHandoffSentAt}
           showDeliverySection={medicalCapabilities.canShowDeliverySection}
           canEditDoctorName={medicalCapabilities.canEditDoctorName}
           canSignMedicalHandoff={medicalCapabilities.canSign}
@@ -306,9 +138,9 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
           resetMedicalHandoffState={
             medicalCapabilities.canRestoreSignatures ? resetMedicalHandoffState : undefined
           }
-          selectedMedicalSpecialty={effectiveSelectedMedicalSpecialty}
+          selectedMedicalSpecialty={selectedMedicalSpecialty}
           setSelectedMedicalSpecialty={setSelectedMedicalSpecialty}
-          medicalSpecialties={medicalSpecialties}
+          medicalSpecialties={medicalBindings.medicalSpecialties}
           success={success}
           noteField={noteField}
           onNoteChange={handleNursingNoteChange}
@@ -316,8 +148,8 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
           clinicalEventActions={clinicalEventActions}
           tableHeaderClass={tableHeaderClass}
           shouldShowPatient={shouldShowPatient}
-          scopedMedicalScope={scopedMedicalScope}
-          hasAnyVisiblePatients={hasAnyVisiblePatients}
+          scopedMedicalScope={medicalBindings.scopedMedicalScope}
+          hasAnyVisiblePatients={medicalBindings.hasAnyVisiblePatients}
         />
       ) : (
         <HandoffNursingContent

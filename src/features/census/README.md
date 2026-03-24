@@ -37,19 +37,23 @@ clinicalShiftCalendarController
 
 ## Archivos clave
 
-| Archivo                                                  | Motivo                                                  |
-| -------------------------------------------------------- | ------------------------------------------------------- |
-| `controllers/clinicalShiftCalendarController.ts`         | Fuente única de invariantes de fecha/turno              |
-| `controllers/censusActionExecutionController.ts`         | Resolución de comandos tipados                          |
-| `controllers/censusActionRuntimeController.ts`           | Ejecución runtime desacoplada de provider               |
-| `controllers/patientMovementCommandRuntimeController.ts` | Bridge command -> action runtime                        |
-| `controllers/bedManagerModalController.ts`               | Transiciones y validación del flujo de bloqueo de camas |
-| `controllers/bedManagerGridItemsController.ts`           | Mapeo puro de `DailyRecord` a props de grillas de camas |
-| `controllers/censusMovementActionIconController.ts`      | Resolución de iconografía para acciones de movimientos  |
-| `hooks/useDischargeModalForm.ts`                         | Form flow de altas                                      |
-| `hooks/useTransferModalForm.ts`                          | Form flow de traslados                                  |
-| `hooks/useBedManagerModalModel.ts`                       | Orquestación UI vs dominio del modal de camas           |
-| `hooks/useCensusMovementActionsCellModel.ts`             | View-model para celda de acciones de movimientos        |
+| Archivo                                                  | Motivo                                                          |
+| -------------------------------------------------------- | --------------------------------------------------------------- |
+| `controllers/clinicalShiftCalendarController.ts`         | Fuente única de invariantes de fecha/turno                      |
+| `controllers/censusActionExecutionController.ts`         | Resolución de comandos tipados                                  |
+| `controllers/censusActionRuntimeController.ts`           | Ejecución runtime desacoplada de provider                       |
+| `controllers/patientMovementCommandRuntimeController.ts` | Bridge command -> action runtime                                |
+| `controllers/bedManagerModalController.ts`               | Transiciones y validación del flujo de bloqueo de camas         |
+| `controllers/bedManagerGridItemsController.ts`           | Mapeo puro de `DailyRecord` a props de grillas de camas         |
+| `controllers/censusMovementActionIconController.ts`      | Resolución de iconografía para acciones de movimientos          |
+| `hooks/useDischargeModalForm.ts`                         | Form flow de altas                                              |
+| `hooks/useTransferModalForm.ts`                          | Form flow de traslados                                          |
+| `hooks/useBedManagerModalModel.ts`                       | Orquestación UI vs dominio del modal de camas                   |
+| `hooks/useCensusMovementActionsCellModel.ts`             | View-model para celda de acciones de movimientos                |
+| `hooks/useCensusViewScreenModel.ts`                      | Fachada de pantalla para ramas `analytics/empty/register`       |
+| `hooks/useCensusTableRuntime.ts`                         | Runtime unificado de tabla (dependencias + resize + activación) |
+| `hooks/useDischargesSectionModel.ts`                     | Fachada de wiring para altas                                    |
+| `hooks/useTransfersSectionModel.ts`                      | Fachada de wiring para traslados                                |
 
 ## Calidad
 
@@ -78,6 +82,9 @@ clinicalShiftCalendarController
   de `CensusView` y nunca bloquear la primera pintura del registro o del prompt de día vacío.
 - `useCensusViewRouteModel` debe construir props solo para la rama visible (`analytics`, `empty`,
   `register`) para mantener bajo el costo sincrónico del primer render del censo.
+- Los componentes grandes (`CensusView`, `DischargesSection`, `TransfersSection`) deben preferir
+  facades locales de feature (`use*ScreenModel`, `use*SectionModel`, `use*Runtime`) en vez de
+  recomponer dependencias de contexto y acciones manualmente en cada render.
 
 ## Runtime boundaries
 

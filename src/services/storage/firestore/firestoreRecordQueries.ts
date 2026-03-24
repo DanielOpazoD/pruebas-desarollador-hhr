@@ -1,12 +1,12 @@
 import { doc, getDoc, getDocs, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { DailyRecord } from '@/types/domain/dailyRecord';
 import { COLLECTIONS, getActiveHospitalId } from '@/constants/firestorePaths';
-import { defaultFirestoreRuntime } from '@/services/firebase-runtime/firestoreRuntime';
 import {
   docToRecord,
   getRecordDocRef,
   getRecordsCollection,
 } from '@/services/storage/firestore/firestoreShared';
+import { defaultFirestoreServiceRuntime } from '@/services/storage/firestore/firestoreServiceRuntime';
 import {
   buildFirestoreMonthDateRange,
   mapFirestoreRecords,
@@ -114,7 +114,11 @@ export const subscribeToRecord = (
 
 export const isFirestoreAvailable = async (): Promise<boolean> => {
   try {
-    const docRef = doc(defaultFirestoreRuntime.db, COLLECTIONS.HOSPITALS, getActiveHospitalId());
+    const docRef = doc(
+      defaultFirestoreServiceRuntime.getDb(),
+      COLLECTIONS.HOSPITALS,
+      getActiveHospitalId()
+    );
     await getDoc(docRef);
     return true;
   } catch (_error) {

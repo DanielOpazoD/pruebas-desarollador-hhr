@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getDoc, setDoc } from 'firebase/firestore';
+import { getDoc, onSnapshot, setDoc } from 'firebase/firestore';
 
 import {
   addClinicalDocumentIndicationCatalogItem,
+  ensureClinicalDocumentIndicationsCatalog,
   deleteClinicalDocumentIndicationCatalogItem,
   getDefaultClinicalDocumentIndicationsCatalog,
   normalizeClinicalDocumentIndicationsCatalog,
+  subscribeToClinicalDocumentIndicationsCatalog,
   updateClinicalDocumentIndicationCatalogItem,
 } from '@/features/clinical-documents/services/clinicalDocumentIndicationsCatalogService';
 
@@ -163,5 +165,46 @@ describe('clinicalDocumentIndicationsCatalogService', () => {
     expect(deleted.specialties.tmt.items.some(item => item.id === 'tmt-reposo-relativo')).toBe(
       false
     );
+  });
+
+  it('seeds the default catalog when ensure finds no remote document', async () => {
+    vi.mocked(getDoc).mockResolvedValue({
+      exists: () => false,
+      data: () => undefined,
+    } as unknown as FirestoreDocResult);
+
+    const catalog = await ensureClinicalDocumentIndicationsCatalog('hhr');
+
+    expect(setDoc).toHaveBeenCalled();
+    expect(catalog.specialties.tmt.items.length).toBeGreaterThan(0);
+  });
+
+  it('falls back to default catalog when subscription receives empty or error states', () => {
+    const callback = vi.fn();
+
+    vi.mocked(onSnapshot).mockImplementationOnce((...args: unknown[]) => {
+      const onNext = args[1] as (snapshot: unknown) => void;
+      onNext({
+        exists: () => false,
+        data: () => undefined,
+      });
+      return vi.fn();
+    });
+
+    subscribeToClinicalDocumentIndicationsCatalog(callback, 'hhr');
+    expect(callback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        specialties: expect.any(Object),
+      })
+    );
+
+    vi.mocked(onSnapshot).mockImplementationOnce((...args: unknown[]) => {
+      const onError = args[2] as (error: unknown) => void;
+      onError(new Error('subscription failed'));
+      return vi.fn();
+    });
+
+    subscribeToClinicalDocumentIndicationsCatalog(callback, 'hhr');
+    expect(callback).toHaveBeenCalledTimes(2);
   });
 });

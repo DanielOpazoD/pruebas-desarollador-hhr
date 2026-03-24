@@ -6,7 +6,7 @@ import { TransfersSection } from '@/features/census/components/TransfersSection'
 import { DataFactory } from '@/tests/factories/DataFactory';
 import { useDailyRecordData, useDailyRecordMovements } from '@/context/DailyRecordContext';
 import { useDailyRecordMovementActions } from '@/context/useDailyRecordScopedActions';
-import { useCensusActionCommands } from '@/features/census/components/CensusActionsContext';
+import { useCensusActionCommands } from '@/features/census/context/censusActionContexts';
 
 vi.mock('@/context/DailyRecordContext', () => ({
   useDailyRecordData: vi.fn(),
@@ -17,7 +17,7 @@ vi.mock('@/context/useDailyRecordScopedActions', () => ({
   useDailyRecordMovementActions: vi.fn(),
 }));
 
-vi.mock('@/features/census/components/CensusActionsContext', () => ({
+vi.mock('@/features/census/context/censusActionContexts', () => ({
   useCensusActionCommands: vi.fn(),
 }));
 

@@ -7,6 +7,7 @@ Entrega de turno de enfermeria y medicos, con flujos de gestion, delivery y hand
 ## Estructura
 
 - `components/`: shell visual y vistas de handoff.
+- `hooks/`: screen models/runtime hooks para aislar wiring grande de las vistas.
 - `controllers/`: bridges deprecated y algunos adapters de compatibilidad.
 - `application/handoff`: use cases y read models del contexto.
 - `domain/handoff`: reglas puras de entries, management y vistas.
@@ -22,6 +23,8 @@ Entrega de turno de enfermeria y medicos, con flujos de gestion, delivery y hand
 
 - El mirroring legacy de ciertos campos medicos debe preservarse mientras existan consumers antiguos.
 - Los read models de pantalla deben alimentar la UI; no reinyectar decisiones de negocio en `.tsx`.
+- `HandoffView.tsx` debe mantenerse presentacional; la coordinacion de contexts, auth, audit y
+  bindings de pantalla debe salir por hooks locales del feature como `useHandoffViewScreenModel`.
 - Los flows de firma, continuidad y patient entries deben seguir auditando con payload compatible.
 - Los bridges deprecated quedan permitidos solo para compatibilidad de tests o adapters inventariados.
 - Cuando una entrega medica se copia al dia siguiente, el contenido se hereda pero la vigencia diaria no:

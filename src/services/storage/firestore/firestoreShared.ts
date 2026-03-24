@@ -1,20 +1,25 @@
 import { collection, doc, type DocumentReference, Timestamp } from 'firebase/firestore';
 import { DailyRecord } from '@/types/domain/dailyRecord';
 import { COLLECTIONS, getActiveHospitalId, HOSPITAL_COLLECTIONS } from '@/constants/firestorePaths';
-import { defaultFirestoreRuntime } from '@/services/firebase-runtime/firestoreRuntime';
 import { migrateLegacyData } from '@/services/repositories/dataMigration';
 import { normalizeUnknownDailyRecordStaffing } from '@/services/staff/dailyRecordStaffing';
+import { defaultFirestoreServiceRuntime } from '@/services/storage/firestore/firestoreServiceRuntime';
+import type { FirestoreServiceRuntimePort } from '@/services/storage/firestore/ports/firestoreServiceRuntimePort';
 
-export const getRecordsCollection = () =>
+export const getRecordsCollection = (
+  runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
+) =>
   collection(
-    defaultFirestoreRuntime.db,
+    runtime.getDb(),
     COLLECTIONS.HOSPITALS,
     getActiveHospitalId(),
     HOSPITAL_COLLECTIONS.DAILY_RECORDS
   );
 
-export const getRecordDocRef = (date: string): DocumentReference =>
-  doc(getRecordsCollection(), date);
+export const getRecordDocRef = (
+  date: string,
+  runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
+): DocumentReference => doc(getRecordsCollection(runtime), date);
 
 export const sanitizeForFirestore = (obj: unknown): unknown => {
   if (obj === undefined) {

@@ -4,17 +4,20 @@ import {
   getTransferHistoryCollection,
   getTransfersCollection,
 } from '@/services/transfers/transferFirestoreCollections';
-import { defaultFirestoreRuntime } from '@/services/firebase-runtime/firestoreRuntime';
 import {
   pickLatestOpenTransferFromSnapshot,
   querySnapshotToTransfers,
   transferDocToEntity,
 } from '@/services/transfers/transferSerializationController';
+import { defaultFirestoreServiceRuntime } from '@/services/storage/firestore/firestoreServiceRuntime';
+import type { FirestoreServiceRuntimePort } from '@/services/storage/firestore/ports/firestoreServiceRuntimePort';
 
-export const getActiveTransfersQuery = async (): Promise<TransferRequest[]> => {
-  await defaultFirestoreRuntime.ready;
+export const getActiveTransfersQuery = async (
+  runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
+): Promise<TransferRequest[]> => {
+  await runtime.ready;
   const q = query(
-    getTransfersCollection(),
+    getTransfersCollection(runtime),
     where('status', '!=', 'TRANSFERRED'),
     orderBy('status'),
     orderBy('requestDate', 'desc')
@@ -24,16 +27,19 @@ export const getActiveTransfersQuery = async (): Promise<TransferRequest[]> => {
   return querySnapshotToTransfers(querySnapshot);
 };
 
-export const getTransferByIdQuery = async (id: string): Promise<TransferRequest | null> => {
-  await defaultFirestoreRuntime.ready;
-  const activeDocRef = doc(getTransfersCollection(), id);
+export const getTransferByIdQuery = async (
+  id: string,
+  runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
+): Promise<TransferRequest | null> => {
+  await runtime.ready;
+  const activeDocRef = doc(getTransfersCollection(runtime), id);
   const activeSnapshot = await getDoc(activeDocRef);
 
   if (activeSnapshot.exists()) {
     return transferDocToEntity(activeSnapshot.data() as Record<string, unknown>, id);
   }
 
-  const historyDocRef = doc(getTransferHistoryCollection(), id);
+  const historyDocRef = doc(getTransferHistoryCollection(runtime), id);
   const historySnapshot = await getDoc(historyDocRef);
 
   if (historySnapshot.exists()) {
@@ -44,24 +50,29 @@ export const getTransferByIdQuery = async (id: string): Promise<TransferRequest 
 };
 
 export const getLatestOpenTransferRequestByBedIdQuery = async (
-  bedId: string
+  bedId: string,
+  runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
 ): Promise<TransferRequest | null> => {
-  await defaultFirestoreRuntime.ready;
-  const q = query(getTransfersCollection(), where('bedId', '==', bedId));
+  await runtime.ready;
+  const q = query(getTransfersCollection(runtime), where('bedId', '==', bedId));
   const querySnapshot = await getDocs(q);
   return pickLatestOpenTransferFromSnapshot(querySnapshot);
 };
 
 export const getLatestOpenTransferRequestByPatientRutQuery = async (
-  patientRut: string
+  patientRut: string,
+  runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
 ): Promise<TransferRequest | null> => {
   const normalizedRut = patientRut.trim();
   if (!normalizedRut) {
     return null;
   }
 
-  await defaultFirestoreRuntime.ready;
-  const q = query(getTransfersCollection(), where('patientSnapshot.rut', '==', normalizedRut));
+  await runtime.ready;
+  const q = query(
+    getTransfersCollection(runtime),
+    where('patientSnapshot.rut', '==', normalizedRut)
+  );
   const querySnapshot = await getDocs(q);
   return pickLatestOpenTransferFromSnapshot(querySnapshot);
 };

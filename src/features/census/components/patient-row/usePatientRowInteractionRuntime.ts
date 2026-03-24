@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 
-import { usePatientRowUiState } from '@/features/census/components/patient-row/usePatientRowUiState';
-import { usePatientRowBedConfigActions } from '@/features/census/components/patient-row/usePatientRowBedConfigActions';
-import { buildPatientRowInteractionRuntime } from '@/features/census/controllers/patientRowRuntimeController';
+import { usePatientRowUiState } from './usePatientRowUiState';
+import { usePatientRowBedConfigActions } from './usePatientRowBedConfigActions';
+import { buildPatientRowInteractionRuntime } from '../../controllers/patientRowRuntimeController';
 import type { ControllerConfirmDescriptor } from '@/shared/contracts/controllers/confirmDescriptor';
 import type { PatientData } from '@/types/domain/patient';
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';

@@ -40,6 +40,7 @@ const QUALITY_STEPS = [
   'check:hotspot-growth',
   'check:census-runtime-boundary',
   'check:runtime-adapter-boundary',
+  'check:firestore-runtime-boundary',
   'check:test-governance',
   'check:test-failure-catalog',
   'check:flaky-quarantine',

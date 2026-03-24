@@ -5,10 +5,10 @@ import {
   DISCHARGE_UNDO_CONFIRM_DIALOG,
 } from '@/features/census/controllers/censusMovementActionConfirmController';
 import { useMovementSectionModel } from '@/features/census/hooks/useMovementSectionModel';
-import { useMovementSectionActions } from '@/features/census/hooks/useMovementSectionActions';
+import { useMovementSectionRuntime } from '@/features/census/hooks/useMovementSectionRuntime';
 
-vi.mock('@/features/census/hooks/useMovementSectionActions', () => ({
-  useMovementSectionActions: vi.fn(),
+vi.mock('@/features/census/hooks/useMovementSectionRuntime', () => ({
+  useMovementSectionRuntime: vi.fn(),
 }));
 
 const asHookValue = <T>(value: Partial<T>): T => value as T;
@@ -19,8 +19,11 @@ describe('useMovementSectionModel', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useMovementSectionActions).mockReturnValue(
-      asHookValue<ReturnType<typeof useMovementSectionActions>>({
+    vi.mocked(useMovementSectionRuntime).mockReturnValue(
+      asHookValue<ReturnType<typeof useMovementSectionRuntime>>({
+        isRenderable: false,
+        isEmpty: true,
+        items: [],
         handleUndo,
         handleDelete,
       })
@@ -50,7 +53,8 @@ describe('useMovementSectionModel', () => {
       handleUndo,
       handleDelete,
     });
-    expect(useMovementSectionActions).toHaveBeenCalledWith({
+    expect(useMovementSectionRuntime).toHaveBeenCalledWith({
+      items: null,
       undoDialog: DISCHARGE_UNDO_CONFIRM_DIALOG,
       undoErrorTitle: 'undo error',
       onUndo,
@@ -61,6 +65,26 @@ describe('useMovementSectionModel', () => {
   });
 
   it('returns empty section state for an empty array and populated state for data', () => {
+    vi.mocked(useMovementSectionRuntime)
+      .mockReturnValueOnce(
+        asHookValue<ReturnType<typeof useMovementSectionRuntime>>({
+          isRenderable: true,
+          isEmpty: true,
+          items: [],
+          handleUndo,
+          handleDelete,
+        })
+      )
+      .mockReturnValueOnce(
+        asHookValue<ReturnType<typeof useMovementSectionRuntime>>({
+          isRenderable: true,
+          isEmpty: false,
+          items: [{ id: 'x-1' }],
+          handleUndo,
+          handleDelete,
+        })
+      );
+
     const { result, rerender } = renderHook(
       ({ items }) =>
         useMovementSectionModel({

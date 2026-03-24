@@ -75,4 +75,49 @@ describe('authRuntimeSnapshot', () => {
     expect(snapshot.runtimeState).toBe('retryable');
     expect(snapshot.issues).toContain('Temporary failure');
   });
+
+  it('classifies non-retryable auth errors as blocked', () => {
+    const snapshot = buildAuthRuntimeSnapshot({
+      sessionState: {
+        status: 'auth_error',
+        user: null,
+        error: {
+          message: 'Blocked failure',
+          retryable: false,
+        },
+      },
+      authLoading: false,
+      isFirebaseConnected: true,
+      isOnline: true,
+    });
+
+    expect(snapshot.runtimeState).toBe('blocked');
+    expect(snapshot.issues).toContain('Blocked failure');
+  });
+
+  it('classifies loading without pending bootstrap as degraded', () => {
+    const snapshot = buildAuthRuntimeSnapshot({
+      sessionState: { status: 'authenticating', user: null },
+      authLoading: true,
+      isFirebaseConnected: true,
+      isOnline: true,
+    });
+
+    expect(snapshot.bootstrapPending).toBe(false);
+    expect(snapshot.runtimeState).toBe('degraded');
+  });
+
+  it('marks authorized offline sessions without Firebase as degraded and reports connectivity issue', () => {
+    const snapshot = buildAuthRuntimeSnapshot({
+      sessionState: { status: 'authorized', user: { uid: 'user-1' } as never },
+      authLoading: false,
+      isFirebaseConnected: false,
+      isOnline: false,
+    });
+
+    expect(snapshot.runtimeState).toBe('degraded');
+    expect(snapshot.issues).toContain(
+      'Firebase no esta conectado mientras el cliente permanece sin red.'
+    );
+  });
 });

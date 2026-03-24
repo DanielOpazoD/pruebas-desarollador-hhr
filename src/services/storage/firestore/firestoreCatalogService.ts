@@ -8,8 +8,9 @@ import {
   HOSPITAL_COLLECTIONS,
   SETTINGS_DOCS,
 } from '@/constants/firestorePaths';
-import { defaultFirestoreRuntime } from '@/services/firebase-runtime/firestoreRuntime';
 import { readStringCatalogFromSnapshot } from '@/services/storage/firestore/firestoreShared';
+import { defaultFirestoreServiceRuntime } from '@/services/storage/firestore/firestoreServiceRuntime';
+import type { FirestoreServiceRuntimePort } from '@/services/storage/firestore/ports/firestoreServiceRuntimePort';
 import {
   normalizeProfessionalCatalog,
   normalizeStringCatalog,
@@ -17,9 +18,12 @@ import {
 
 const firestoreCatalogLogger = logger.child('FirestoreCatalogService');
 
-const getSettingsDocRef = (docId: string) =>
+const getSettingsDocRef = (
+  docId: string,
+  runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
+) =>
   doc(
-    defaultFirestoreRuntime.db,
+    runtime.getDb(),
     COLLECTIONS.HOSPITALS,
     getActiveHospitalId(),
     HOSPITAL_COLLECTIONS.SETTINGS,
@@ -33,10 +37,11 @@ const getProfessionalsCatalogDocRef = () => getSettingsDocRef('professionals_cat
 const saveStringCatalog = async (
   docRef: ReturnType<typeof getSettingsDocRef>,
   key: 'nurses' | 'tens',
-  values: string[]
+  values: string[],
+  runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
 ): Promise<void> => {
   const normalizedValues = normalizeStringCatalog(values);
-  await defaultFirestoreRuntime.ready;
+  await runtime.ready;
   await withRetry(() =>
     setDoc(docRef, {
       list: normalizedValues,
@@ -50,12 +55,13 @@ const subscribeStringCatalog = (
   docRef: ReturnType<typeof getSettingsDocRef>,
   legacyField: 'nurses' | 'tens',
   callback: (values: string[]) => void,
-  errorLabel: string
+  errorLabel: string,
+  runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
 ): (() => void) => {
   let active = true;
   let unsubscribeSnapshot = () => {};
 
-  void defaultFirestoreRuntime.ready
+  void runtime.ready
     .then(() => {
       if (!active) {
         return;
@@ -94,7 +100,7 @@ const subscribeStringCatalog = (
 
 export const getNurseCatalogFromFirestore = async (): Promise<string[]> => {
   try {
-    await defaultFirestoreRuntime.ready;
+    await defaultFirestoreServiceRuntime.ready;
     const docSnap = await getDoc(getNurseCatalogDocRef());
     return readStringCatalogFromSnapshot(
       docSnap as unknown as {
@@ -111,7 +117,12 @@ export const getNurseCatalogFromFirestore = async (): Promise<string[]> => {
 
 export const saveNurseCatalogToFirestore = async (nurses: string[]): Promise<void> => {
   try {
-    await saveStringCatalog(getNurseCatalogDocRef(), 'nurses', normalizeStringCatalog(nurses));
+    await saveStringCatalog(
+      getNurseCatalogDocRef(),
+      'nurses',
+      normalizeStringCatalog(nurses),
+      defaultFirestoreServiceRuntime
+    );
   } catch (error) {
     firestoreCatalogLogger.error('Error saving nurse catalog to Firestore', error);
     throw error;
@@ -119,11 +130,17 @@ export const saveNurseCatalogToFirestore = async (nurses: string[]): Promise<voi
 };
 
 export const subscribeToNurseCatalog = (callback: (nurses: string[]) => void): (() => void) =>
-  subscribeStringCatalog(getNurseCatalogDocRef(), 'nurses', callback, 'nurse catalog');
+  subscribeStringCatalog(
+    getNurseCatalogDocRef(),
+    'nurses',
+    callback,
+    'nurse catalog',
+    defaultFirestoreServiceRuntime
+  );
 
 export const getTensCatalogFromFirestore = async (): Promise<string[]> => {
   try {
-    await defaultFirestoreRuntime.ready;
+    await defaultFirestoreServiceRuntime.ready;
     const docSnap = await getDoc(getTensCatalogDocRef());
     return readStringCatalogFromSnapshot(
       docSnap as unknown as {
@@ -140,7 +157,12 @@ export const getTensCatalogFromFirestore = async (): Promise<string[]> => {
 
 export const saveTensCatalogToFirestore = async (tens: string[]): Promise<void> => {
   try {
-    await saveStringCatalog(getTensCatalogDocRef(), 'tens', normalizeStringCatalog(tens));
+    await saveStringCatalog(
+      getTensCatalogDocRef(),
+      'tens',
+      normalizeStringCatalog(tens),
+      defaultFirestoreServiceRuntime
+    );
   } catch (error) {
     firestoreCatalogLogger.error('Error saving TENS catalog to Firestore', error);
     throw error;
@@ -148,13 +170,19 @@ export const saveTensCatalogToFirestore = async (tens: string[]): Promise<void> 
 };
 
 export const subscribeToTensCatalog = (callback: (tens: string[]) => void): (() => void) =>
-  subscribeStringCatalog(getTensCatalogDocRef(), 'tens', callback, 'TENS catalog');
+  subscribeStringCatalog(
+    getTensCatalogDocRef(),
+    'tens',
+    callback,
+    'TENS catalog',
+    defaultFirestoreServiceRuntime
+  );
 
 export const getProfessionalsCatalogFromFirestore = async (): Promise<
   ProfessionalCatalogItem[]
 > => {
   try {
-    await defaultFirestoreRuntime.ready;
+    await defaultFirestoreServiceRuntime.ready;
     const docSnap = await getDoc(getProfessionalsCatalogDocRef());
     if (docSnap.exists()) {
       const data = docSnap.data();
@@ -172,7 +200,7 @@ export const saveProfessionalsCatalogToFirestore = async (
 ): Promise<void> => {
   try {
     const normalized = normalizeProfessionalCatalog(professionals);
-    await defaultFirestoreRuntime.ready;
+    await defaultFirestoreServiceRuntime.ready;
     await withRetry(() =>
       setDoc(getProfessionalsCatalogDocRef(), {
         list: normalized,
@@ -191,7 +219,7 @@ export const subscribeToProfessionalsCatalog = (
   let active = true;
   let unsubscribeSnapshot = () => {};
 
-  void defaultFirestoreRuntime.ready
+  void defaultFirestoreServiceRuntime.ready
     .then(() => {
       if (!active) {
         return;

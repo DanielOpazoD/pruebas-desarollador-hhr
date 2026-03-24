@@ -84,6 +84,8 @@
   compartidos; no deben reaparecer variantes locales de fecha u origen documental en controllers.
 - La fecha visible del nombre de PDF debe salir del helper compartido del feature; no se debe
   volver a formatear inline según origen (`finf`, `sourceDailyRecordDate`, `audit.updatedAt`).
+- Los servicios del feature que lean/escriban settings remotos deben consumir puertos/runtime adapters
+  inyectables; `defaultFirestoreRuntime` no debe reaparecer como dependencia directa del feature.
 - `scripts/check-clinical-documents-feature-boundary.mjs` bloquea imports profundos nuevos desde
   fuera de la feature para que `application` y `shared` dependan solo de entrypoints públicos.
 

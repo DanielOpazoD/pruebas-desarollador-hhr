@@ -8,10 +8,11 @@ import {
   type DocumentReference,
 } from 'firebase/firestore';
 import { COLLECTIONS, getActiveHospitalId, HOSPITAL_COLLECTIONS } from '@/constants/firestorePaths';
-import { defaultFirestoreRuntime } from '@/services/firebase-runtime/firestoreRuntime';
 import { createOperationalError } from '@/services/observability/operationalError';
 import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 import { getRecordDocRef } from '@/services/storage/firestore/firestoreShared';
+import { defaultFirestoreServiceRuntime } from '@/services/storage/firestore/firestoreServiceRuntime';
+import type { FirestoreServiceRuntimePort } from '@/services/storage/firestore/ports/firestoreServiceRuntimePort';
 
 export class ConcurrencyError extends Error {
   constructor(message: string) {
@@ -116,9 +117,12 @@ export const saveHistorySnapshot = async (date: string): Promise<void> => {
   }
 };
 
-export const createDeletedRecordRef = (date: string): DocumentReference =>
+export const createDeletedRecordRef = (
+  date: string,
+  runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
+): DocumentReference =>
   doc(
-    defaultFirestoreRuntime.db,
+    runtime.getDb(),
     COLLECTIONS.HOSPITALS,
     getActiveHospitalId(),
     HOSPITAL_COLLECTIONS.DELETED_RECORDS,

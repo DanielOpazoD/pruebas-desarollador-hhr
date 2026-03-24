@@ -1,4 +1,4 @@
-import { usePatientRowHandlersModel } from '@/features/census/components/patient-row/usePatientRowHandlersModel';
+import { usePatientRowHandlersModel } from './usePatientRowHandlersModel';
 import type { PatientData } from '@/types/domain/patient';
 import type { PatientFieldValue } from '@/types/valueTypes';
 

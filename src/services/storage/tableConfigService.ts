@@ -5,7 +5,8 @@
 
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { SETTINGS_DOCS, getSettingsDocPath } from '@/constants/firestorePaths';
-import { defaultFirestoreRuntime } from '@/services/firebase-runtime/firestoreRuntime';
+import { defaultFirestoreServiceRuntime } from '@/services/storage/firestore/firestoreServiceRuntime';
+import type { FirestoreServiceRuntimePort } from '@/services/storage/firestore/ports/firestoreServiceRuntimePort';
 import { safeJsonParse } from '@/utils/jsonUtils';
 import { logger } from '@/services/utils/loggerService';
 
@@ -80,8 +81,8 @@ export const getDefaultConfig = (): TableConfig => ({
 // Firebase Operations
 // ============================================================================
 
-const getDocRef = () =>
-  doc(defaultFirestoreRuntime.db, getSettingsDocPath(SETTINGS_DOCS.TABLE_CONFIG));
+const getDocRef = (runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime) =>
+  doc(runtime.getDb(), getSettingsDocPath(SETTINGS_DOCS.TABLE_CONFIG));
 
 /**
  * Load table configuration from Firestore
@@ -89,8 +90,8 @@ const getDocRef = () =>
 export const loadTableConfig = async (): Promise<TableConfig> => {
   if (!firestoreEnabled) return getDefaultConfig();
   try {
-    await defaultFirestoreRuntime.ready;
-    const docSnap = await getDoc(getDocRef());
+    await defaultFirestoreServiceRuntime.ready;
+    const docSnap = await getDoc(getDocRef(defaultFirestoreServiceRuntime));
     if (docSnap.exists()) {
       const data = docSnap.data() as TableConfig;
       // Merge with defaults to handle missing columns
@@ -117,8 +118,8 @@ export const loadTableConfig = async (): Promise<TableConfig> => {
 export const saveTableConfig = async (config: TableConfig): Promise<void> => {
   if (!firestoreEnabled) return;
   try {
-    await defaultFirestoreRuntime.ready;
-    await setDoc(getDocRef(), {
+    await defaultFirestoreServiceRuntime.ready;
+    await setDoc(getDocRef(defaultFirestoreServiceRuntime), {
       ...config,
       lastUpdated: new Date().toISOString(),
     });
@@ -139,14 +140,14 @@ export const subscribeToTableConfig = (callback: (config: TableConfig) => void):
   let active = true;
   let unsubscribeSnapshot = () => {};
 
-  void defaultFirestoreRuntime.ready
+  void defaultFirestoreServiceRuntime.ready
     .then(() => {
       if (!active) {
         return;
       }
 
       unsubscribeSnapshot = onSnapshot(
-        getDocRef(),
+        getDocRef(defaultFirestoreServiceRuntime),
         docSnap => {
           if (docSnap.exists()) {
             const data = docSnap.data() as TableConfig;

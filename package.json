@@ -75,6 +75,7 @@
     "check:hotspot-growth": "node scripts/check-hotspot-growth.mjs",
     "check:census-runtime-boundary": "node scripts/check-census-runtime-boundary.mjs",
     "check:runtime-adapter-boundary": "node scripts/check-runtime-adapter-boundary.mjs",
+    "check:firestore-runtime-boundary": "node scripts/check-firestore-runtime-boundary.mjs",
     "check:test-governance": "node scripts/check-test-governance.mjs",
     "check:critical-smoke-pack": "node scripts/check-critical-smoke-pack.mjs",
     "check:release-confidence-pack": "node scripts/check-release-confidence-pack.mjs",

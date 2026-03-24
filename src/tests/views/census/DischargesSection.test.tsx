@@ -2,13 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 import { DischargesSection } from '@/features/census/components/DischargesSection';
-import { useCensusActionCommands } from '@/features/census/components/CensusActionsContext';
+import { useCensusActionCommands } from '@/features/census/context/censusActionContexts';
 import { useDailyRecordData, useDailyRecordMovements } from '@/context/DailyRecordContext';
 import { useDailyRecordMovementActions } from '@/context/useDailyRecordScopedActions';
 import { useConfirmDialog, useNotification } from '@/context/UIContext';
 import { DataFactory } from '../../factories/DataFactory';
 
-vi.mock('@/features/census/components/CensusActionsContext', () => ({
+vi.mock('@/features/census/context/censusActionContexts', () => ({
   useCensusActionCommands: vi.fn(),
 }));
 

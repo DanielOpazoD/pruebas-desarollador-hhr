@@ -10,8 +10,9 @@ import {
   createInitialTransferSubscriptionState,
   mergeSubscribedTransfers,
 } from '@/services/transfers/transferSubscriptionController';
-import { defaultFirestoreRuntime } from '@/services/firebase-runtime/firestoreRuntime';
 import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
+import { defaultFirestoreServiceRuntime } from '@/services/storage/firestore/firestoreServiceRuntime';
+import type { FirestoreServiceRuntimePort } from '@/services/storage/firestore/ports/firestoreServiceRuntimePort';
 
 interface SubscribeToTransfersOptions {
   onError?: (message: string, error: unknown) => void;
@@ -19,7 +20,8 @@ interface SubscribeToTransfersOptions {
 
 export const subscribeToTransfersRealtime = (
   callback: (transfers: TransferRequest[]) => void,
-  options: SubscribeToTransfersOptions = {}
+  options: SubscribeToTransfersOptions = {},
+  runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
 ): (() => void) => {
   const state = createInitialTransferSubscriptionState();
   let active = true;
@@ -50,14 +52,17 @@ export const subscribeToTransfersRealtime = (
     emitMergedTransfers();
   };
 
-  void defaultFirestoreRuntime.ready
+  void runtime.ready
     .then(() => {
       if (!active) {
         return;
       }
 
-      const activeQuery = query(getTransfersCollection(), orderBy('requestDate', 'desc'));
-      const historyQuery = query(getTransferHistoryCollection(), orderBy('requestDate', 'desc'));
+      const activeQuery = query(getTransfersCollection(runtime), orderBy('requestDate', 'desc'));
+      const historyQuery = query(
+        getTransferHistoryCollection(runtime),
+        orderBy('requestDate', 'desc')
+      );
 
       unsubscribeActive = onSnapshot(
         activeQuery,
