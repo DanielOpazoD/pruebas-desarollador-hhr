@@ -9,6 +9,8 @@ const whereMock = vi.fn();
 const getFirebaseServerMock = vi.fn();
 const mapMasterPatientToFhirMock = vi.fn();
 const mapEncounterToFhirMock = vi.fn();
+const authorizeFhirRequestMock = vi.fn();
+const extractBearerTokenMock = vi.fn();
 
 vi.mock('firebase/firestore', () => ({
   doc: (...args: unknown[]) => docMock(...args),
@@ -26,6 +28,11 @@ vi.mock('../../../netlify/functions/lib/firebase-server', () => ({
 vi.mock('../../../src/services/utils/fhirMappers', () => ({
   mapMasterPatientToFhir: (...args: unknown[]) => mapMasterPatientToFhirMock(...args),
   mapEncounterToFhir: (...args: unknown[]) => mapEncounterToFhirMock(...args),
+}));
+
+vi.mock('../../../netlify/functions/lib/fhir-auth', () => ({
+  authorizeFhirRequest: (...args: unknown[]) => authorizeFhirRequestMock(...args),
+  extractBearerToken: (...args: unknown[]) => extractBearerTokenMock(...args),
 }));
 
 import { handler } from '../../../netlify/functions/fhir-api';
@@ -57,6 +64,12 @@ describe('fhir-api netlify function', () => {
       resourceType: 'Encounter',
       id: 'encounter-1',
     }));
+    extractBearerTokenMock.mockReturnValue('token-123');
+    authorizeFhirRequestMock.mockResolvedValue({
+      email: 'clinician@hospital.cl',
+      role: 'doctor_urgency',
+      token: { sub: 'uid-1' },
+    });
   });
 
   it('answers trusted preflight requests with reflected CORS headers', async () => {
@@ -89,16 +102,64 @@ describe('fhir-api netlify function', () => {
   it('returns a capability statement for metadata requests', async () => {
     const response = await handler({
       httpMethod: 'GET',
+      headers: {
+        origin: 'https://app.example.com',
+        authorization: 'Bearer token-123',
+      },
+      body: null,
+      path: '/.netlify/functions/fhir-api/metadata',
+    });
+    const headers = response.headers as Record<string, string>;
+
+    expect(response.statusCode).toBe(200);
+    expect(headers['Content-Type']).toBe('application/fhir+json');
+    expect(JSON.parse(response.body)).toEqual(
+      expect.objectContaining({
+        resourceType: 'CapabilityStatement',
+      })
+    );
+  });
+
+  it('returns 401 when the request has no bearer token', async () => {
+    extractBearerTokenMock.mockImplementation(() => {
+      throw new Error('Missing Authorization bearer token.');
+    });
+
+    const response = await handler({
+      httpMethod: 'GET',
       headers: { origin: 'https://app.example.com' },
       body: null,
       path: '/.netlify/functions/fhir-api/metadata',
     });
 
-    expect(response.statusCode).toBe(200);
-    expect(response.headers['Content-Type']).toBe('application/fhir+json');
+    expect(response.statusCode).toBe(401);
     expect(JSON.parse(response.body)).toEqual(
       expect.objectContaining({
-        resourceType: 'CapabilityStatement',
+        resourceType: 'OperationOutcome',
+        issue: [expect.objectContaining({ code: 'login' })],
+      })
+    );
+    expect(authorizeFhirRequestMock).not.toHaveBeenCalled();
+  });
+
+  it('returns 403 when the authenticated user role cannot access FHIR', async () => {
+    authorizeFhirRequestMock.mockRejectedValue(new Error("FHIR access denied for role 'viewer'."));
+
+    const response = await handler({
+      httpMethod: 'GET',
+      headers: {
+        origin: 'https://app.example.com',
+        authorization: 'Bearer token-123',
+      },
+      body: null,
+      path: '/.netlify/functions/fhir-api/metadata',
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(JSON.parse(response.body)).toEqual(
+      expect.objectContaining({
+        resourceType: 'OperationOutcome',
+        issue: [expect.objectContaining({ code: 'forbidden' })],
       })
     );
   });
@@ -111,7 +172,10 @@ describe('fhir-api netlify function', () => {
 
     const response = await handler({
       httpMethod: 'GET',
-      headers: { origin: 'https://app.example.com' },
+      headers: {
+        origin: 'https://app.example.com',
+        authorization: 'Bearer token-123',
+      },
       body: null,
       path: '/.netlify/functions/fhir-api/Patient/12345678-9',
     });
@@ -131,7 +195,10 @@ describe('fhir-api netlify function', () => {
   it('returns operation outcome payloads for missing patient ids', async () => {
     const response = await handler({
       httpMethod: 'GET',
-      headers: { origin: 'https://app.example.com' },
+      headers: {
+        origin: 'https://app.example.com',
+        authorization: 'Bearer token-123',
+      },
       body: null,
       path: '/.netlify/functions/fhir-api/Patient',
     });

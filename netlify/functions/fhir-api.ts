@@ -9,6 +9,7 @@ import {
   isOriginAllowed,
   type NetlifyEventLike,
 } from './lib/http';
+import { authorizeFhirRequest, extractBearerToken } from './lib/fhir-auth';
 
 const hospitalId = 'hanga_roa'; // Could be dynamic via headers in future
 
@@ -56,6 +57,34 @@ export const handler = async (event: NetlifyEventLike) => {
 
   try {
     const { db } = getFirebaseServer();
+    const authorizationHeader =
+      typeof event.headers?.authorization === 'string'
+        ? event.headers.authorization
+        : typeof event.headers?.Authorization === 'string'
+          ? event.headers.Authorization
+          : undefined;
+
+    try {
+      extractBearerToken(authorizationHeader);
+    } catch (error) {
+      return buildOperationOutcomeResponse(
+        401,
+        'login',
+        error instanceof Error ? error.message : 'Authentication required.',
+        requestOrigin
+      );
+    }
+
+    try {
+      await authorizeFhirRequest(db, authorizationHeader);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'FHIR authorization failed.';
+      const statusCode =
+        message.includes('FHIR access denied') || message.includes('no email claim') ? 403 : 401;
+      const code = statusCode === 403 ? 'forbidden' : 'login';
+
+      return buildOperationOutcomeResponse(statusCode, code, message, requestOrigin);
+    }
 
     if (resourceType === 'Patient') {
       return await handlePatientRead(db, resourceId, requestOrigin);
