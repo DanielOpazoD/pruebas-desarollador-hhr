@@ -176,6 +176,7 @@ import { useDailyRecord } from '@/hooks/useDailyRecord';
 - [Guardrails de calidad](docs/QUALITY_GUARDRAILS.md)
 - [Gates de CI y runbooks de falla](docs/CI_GATES_AND_FAILURE_RUNBOOKS.md)
 - [Scorecard de release readiness](reports/release-readiness-scorecard.md)
+- [Gobernanza de guardrails](reports/guardrail-governance.md)
 - [Política de cambio sostenible](reports/sustainable-change-policy.md)
 - [Checklist de cambio seguro](docs/SAFE_CHANGE_CHECKLIST.md)
 - [Definition of Done técnico](docs/ENGINEERING_DEFINITION_OF_DONE.md)

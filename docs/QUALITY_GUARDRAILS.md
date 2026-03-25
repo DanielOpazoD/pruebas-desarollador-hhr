@@ -31,9 +31,14 @@ Evitar que la deuda estructural vuelva a crecer después de las fases de estabil
 2. Si el guardrail es informativo, agregarlo primero como report-only.
 3. Si luego se vuelve blocking, dejar baseline/allowlist documentada.
 4. Enlazar el guardrail nuevo desde `package.json`, CI y esta guía.
+5. Actualizar `scripts/config/guardrail-governance.json` para decidir si nace como blocking o report-only.
 
 ## Entry points de calidad
 
+- La fuente de verdad de tiers blocking, release confidence y report-only guards vive en `scripts/config/guardrail-governance.json`.
+- Se valida con `npm run check:guardrail-governance` y se reporta con `npm run report:guardrail-governance`.
+- La composición exacta de `check:quality` también sale de ese mismo archivo; `check-quality-aggregate.mjs` ya no mantiene una lista paralela.
+- `check:quality` no debe bloquear por scorecards ejecutivos derivados si las fuentes primarias del riesgo ya están protegidas; `release-readiness-scorecard` queda como artefacto report-only.
 - `npm run ci:inner-loop`
 - `npm run ci:merge-gate`
 - `npm run ci:release-gate`
@@ -45,6 +50,7 @@ Evitar que la deuda estructural vuelva a crecer después de las fases de estabil
 - `npm run report:operational-health`
 - `npm run report:system-confidence`
 - `npm run report:release-readiness-scorecard`
+- `npm run report:guardrail-governance`
 - `npm run report:runtime-contracts`
 - `npm run report:critical-coverage`
 - `npm run check:flow-performance-budget`
@@ -56,6 +62,7 @@ Evitar que la deuda estructural vuelva a crecer después de las fases de estabil
 - `ci:inner-loop` es la ruta local rápida.
 - `ci:merge-gate` es la ruta blocking previa a merge.
 - `ci:release-gate` agrega emuladores, reglas y E2E críticos.
+- `test:release-confidence` es el pack blocking compacto; no debe crecer sin justificar el riesgo nuevo en `guardrail-governance.json`.
 - Los budgets por flujo se leen desde `reports/e2e/flow-performance-budget.json` y su resumen en `reports/e2e/flow-performance-budget-summary.json` / `.md`.
 - El estado operativo por flujo distingue `ok`, `near-limit`, `target-miss` y `blocking`.
 - El ownership técnico crítico vive en `scripts/config/technical-ownership-map.json` y se valida con `npm run check:technical-ownership-map`.

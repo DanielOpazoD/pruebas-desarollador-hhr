@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "blockingTiers": [
+    {
+      "id": "inner_loop",
+      "label": "Inner Loop",
+      "script": "ci:inner-loop",
+      "level": "inner-loop",
+      "requiredScripts": ["typecheck", "lint", "check:quality", "test:unit:critical"],
+      "purpose": "Feedback local rapido sobre tipado, lint, boundaries y riesgos unitarios criticos."
+    },
+    {
+      "id": "merge_gate",
+      "label": "Merge Gate",
+      "script": "ci:merge-gate",
+      "level": "merge-gate",
+      "requiredScripts": [
+        "typecheck",
+        "lint",
+        "lint:strict:core",
+        "check:quality",
+        "test:ci:unit",
+        "check:critical-coverage",
+        "build",
+        "check:bundle-budget"
+      ],
+      "purpose": "Proteccion blocking previa a merge para codigo clinico, auth, storage y bundle."
+    },
+    {
+      "id": "release_gate",
+      "label": "Release Gate",
+      "script": "ci:release-gate",
+      "level": "release-gate",
+      "requiredScripts": ["ci:merge-gate", "test:firestore:release:ci"],
+      "purpose": "Validacion final con emuladores, reglas Firestore y E2E criticos."
+    }
+  ],
+  "releaseConfidence": {
+    "script": "test:release-confidence",
+    "requiredScripts": [
+      "test:smoke:critical-runtime",
+      "test:rules:ci",
+      "test:emulator:sync:ci",
+      "check:critical-coverage",
+      "check:flow-performance-budget",
+      "test:e2e:critical:ci"
+    ],
+    "purpose": "Pack blocking compacto para release confidence sin duplicar toda la suite unitaria."
+  },
+  "reportOnly": [
+    {
+      "id": "quality_metrics",
+      "script": "report:quality-metrics",
+      "artifact": "reports/quality-metrics.md"
+    },
+    {
+      "id": "operational_health",
+      "script": "report:operational-health",
+      "artifact": "reports/operational-health.md"
+    },
+    {
+      "id": "system_confidence",
+      "script": "report:system-confidence",
+      "artifact": "reports/system-confidence.md"
+    },
+    {
+      "id": "release_readiness",
+      "script": "report:release-readiness-scorecard",
+      "artifact": "reports/release-readiness-scorecard.md"
+    },
+    {
+      "id": "runtime_contracts",
+      "script": "report:runtime-contracts",
+      "artifact": "reports/runtime-contracts.md"
+    },
+    {
+      "id": "guardrail_governance",
+      "script": "report:guardrail-governance",
+      "artifact": "reports/guardrail-governance.md"
+    }
+  ],
+  "qualityAggregate": {
+    "script": "check:quality",
+    "checks": [
+      { "id": "check:architecture", "group": "boundaries" },
+      { "id": "check:application-port-boundary", "group": "boundaries" },
+      { "id": "check:legacy-staff-boundary", "group": "boundaries" },
+      { "id": "check:core-test-boundary", "group": "boundaries" },
+      { "id": "check:core-trivial-tests", "group": "tests" },
+      { "id": "check:core-console-usage", "group": "hygiene" },
+      { "id": "check:auth-feature-boundary", "group": "boundaries" },
+      { "id": "check:census-feature-boundary", "group": "boundaries" },
+      { "id": "check:clinical-documents-feature-boundary", "group": "boundaries" },
+      { "id": "check:handoff-feature-boundary", "group": "boundaries" },
+      { "id": "check:transfers-feature-boundary", "group": "boundaries" },
+      { "id": "check:lazy-views-feature-entrypoints", "group": "boundaries" },
+      { "id": "check:feature-dependencies", "group": "boundaries" },
+      { "id": "check:shared-layer-boundary", "group": "boundaries" },
+      { "id": "check:barrel-boundaries", "group": "boundaries" },
+      { "id": "check:handoff-context-boundaries", "group": "boundaries" },
+      { "id": "check:storage-context-boundaries", "group": "boundaries" },
+      { "id": "check:core-type-facade-boundaries", "group": "boundaries" },
+      { "id": "check:root-domain-barrels", "group": "boundaries" },
+      { "id": "check:persistence-hub-boundaries", "group": "boundaries" },
+      { "id": "check:legacy-localstorage-imports", "group": "boundaries" },
+      { "id": "check:legacy-bridge-boundary", "group": "boundaries" },
+      { "id": "check:schema-governance", "group": "governance" },
+      { "id": "check:runtime-contracts", "group": "governance" },
+      { "id": "check:docs-drift", "group": "governance" },
+      { "id": "check:operational-runbooks", "group": "governance" },
+      { "id": "check:folder-dependencies", "group": "boundaries" },
+      { "id": "check:module-dependencies", "group": "boundaries" },
+      { "id": "check:module-size", "group": "size" },
+      { "id": "check:handoff-module-size", "group": "size" },
+      { "id": "check:census-module-size", "group": "size" },
+      { "id": "check:transfers-module-size", "group": "size" },
+      { "id": "check:hook-hotspots", "group": "size" },
+      { "id": "check:hotspot-growth", "group": "size" },
+      { "id": "check:census-runtime-boundary", "group": "boundaries" },
+      { "id": "check:runtime-adapter-boundary", "group": "boundaries" },
+      { "id": "check:firestore-runtime-boundary", "group": "boundaries" },
+      { "id": "check:test-governance", "group": "tests" },
+      { "id": "check:test-failure-catalog", "group": "tests" },
+      { "id": "check:flaky-quarantine", "group": "tests" },
+      { "id": "check:release-confidence-matrix", "group": "governance" },
+      { "id": "check:guardrail-governance", "group": "governance" },
+      { "id": "check:sustainable-change-policy", "group": "governance" },
+      { "id": "check:technical-ownership-map", "group": "governance" },
+      { "id": "check:critical-any", "group": "type-safety" },
+      { "id": "check:source-any", "group": "type-safety" },
+      { "id": "check:repo-hygiene", "group": "hygiene" },
+      { "id": "check:security", "group": "security" }
+    ]
+  },
+  "guardrailPolicy": {
+    "creationRule": "Todo guardrail nuevo nace como report-only salvo que proteja un riesgo ya materializado.",
+    "promotionRule": "Un guardrail se vuelve blocking solo si existe owner, baseline y runbook de falla.",
+    "retirementRule": "Un guardrail puede retirarse solo si otro gate cubre explicitamente el mismo riesgo."
+  }
+}

@@ -1,58 +1,26 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const ROOT = process.cwd();
-const QUALITY_STEPS = [
-  'check:architecture',
-  'check:application-port-boundary',
-  'check:legacy-staff-boundary',
-  'check:core-test-boundary',
-  'check:core-trivial-tests',
-  'check:core-console-usage',
-  'check:auth-feature-boundary',
-  'check:census-feature-boundary',
-  'check:clinical-documents-feature-boundary',
-  'check:handoff-feature-boundary',
-  'check:transfers-feature-boundary',
-  'check:lazy-views-feature-entrypoints',
-  'check:feature-dependencies',
-  'check:shared-layer-boundary',
-  'check:barrel-boundaries',
-  'check:handoff-context-boundaries',
-  'check:storage-context-boundaries',
-  'check:core-type-facade-boundaries',
-  'check:root-domain-barrels',
-  'check:persistence-hub-boundaries',
-  'check:legacy-localstorage-imports',
-  'check:legacy-bridge-boundary',
-  'check:schema-governance',
-  'check:runtime-contracts',
-  'check:docs-drift',
-  'check:operational-runbooks',
-  'check:folder-dependencies',
-  'check:module-dependencies',
-  'check:module-size',
-  'check:handoff-module-size',
-  'check:census-module-size',
-  'check:transfers-module-size',
-  'check:hook-hotspots',
-  'check:hotspot-growth',
-  'check:census-runtime-boundary',
-  'check:runtime-adapter-boundary',
-  'check:firestore-runtime-boundary',
-  'check:test-governance',
-  'check:test-failure-catalog',
-  'check:flaky-quarantine',
-  'check:release-confidence-matrix',
-  'check:release-readiness-scorecard',
-  'check:sustainable-change-policy',
-  'check:technical-ownership-map',
-  'check:critical-any',
-  'check:source-any',
-  'check:repo-hygiene',
-  'check:security',
-];
+const GOVERNANCE_CONFIG_PATH = path.join(ROOT, 'scripts/config/guardrail-governance.json');
+
+if (!fs.existsSync(GOVERNANCE_CONFIG_PATH)) {
+  console.error('[quality] Missing scripts/config/guardrail-governance.json');
+  process.exit(1);
+}
+
+const governanceConfig = JSON.parse(fs.readFileSync(GOVERNANCE_CONFIG_PATH, 'utf8'));
+const QUALITY_STEPS = Array.isArray(governanceConfig.qualityAggregate?.checks)
+  ? governanceConfig.qualityAggregate.checks.map(entry => entry?.id).filter(Boolean)
+  : [];
+
+if (QUALITY_STEPS.length === 0) {
+  console.error('[quality] qualityAggregate.checks is empty in guardrail-governance.json');
+  process.exit(1);
+}
 
 const failures = [];
 

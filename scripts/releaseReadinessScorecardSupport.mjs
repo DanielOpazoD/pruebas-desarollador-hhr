@@ -26,6 +26,7 @@ export const buildReleaseReadinessScorecard = root => {
     operationalHealth: 'reports/operational-health.json',
     releaseConfidenceMatrix: 'reports/release-confidence-matrix.json',
     technicalOwnershipMap: 'reports/technical-ownership-map.json',
+    guardrailGovernance: 'reports/guardrail-governance.json',
   };
 
   const sources = Object.fromEntries(
@@ -106,6 +107,21 @@ export const buildReleaseReadinessScorecard = root => {
         ownershipOk,
         `areas=${technicalOwnershipMap.areaCount ?? 'n/a'}`,
         `areas=${technicalOwnershipMap.areaCount ?? 'n/a'}`
+      ),
+    });
+  }
+
+  const guardrailGovernance = sources.guardrailGovernance;
+  if (guardrailGovernance) {
+    const guardrailOk =
+      Number(guardrailGovernance.blockingTierCount || 0) >= 3 &&
+      Number(guardrailGovernance.reportOnlyCount || 0) >= 1;
+    indicators.push({
+      name: 'guardrail_governance',
+      ...statusFrom(
+        guardrailOk,
+        `blockingTiers=${guardrailGovernance.blockingTierCount ?? 'n/a'}, reportOnly=${guardrailGovernance.reportOnlyCount ?? 'n/a'}`,
+        `blockingTiers=${guardrailGovernance.blockingTierCount ?? 'n/a'}, reportOnly=${guardrailGovernance.reportOnlyCount ?? 'n/a'}`
       ),
     });
   }

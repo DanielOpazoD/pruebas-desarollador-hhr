@@ -15,7 +15,6 @@ Incluye:
 - `npm run typecheck`
 - `npm run lint -- --max-warnings 0`
 - `npm run check:quality`
-- `npm run check:test-failure-catalog`
 - `npm run test:unit:critical`
 
 Salida esperada:
@@ -31,7 +30,6 @@ Incluye:
 - `npm run typecheck`
 - `npm run lint -- --max-warnings 0`
 - `npm run check:quality`
-- `npm run check:test-failure-catalog`
 - `npm run test:ci:unit`
 - `npm run check:critical-coverage`
 - `npm run build`
@@ -70,6 +68,9 @@ La trazabilidad obligatoria por área crítica vive en `scripts/config/release-c
 El ownership técnico por subsistema crítico vive en `scripts/config/technical-ownership-map.json` y se valida con `npm run check:technical-ownership-map`.
 El scorecard ejecutivo consolidado vive en `reports/release-readiness-scorecard.md` y se regenera con `npm run report:release-readiness-scorecard`.
 La política formal de upgrades, excepciones y tipos de cambio vive en `scripts/config/sustainable-change-policy.json` y se valida con `npm run check:sustainable-change-policy`.
+La clasificación compacta de guardrails blocking vs report-only vive en `scripts/config/guardrail-governance.json` y se valida con `npm run check:guardrail-governance`.
+El reporte de release readiness ya regenera también `guardrail-governance`; no debe depender de un artefacto previo manual.
+`release-readiness-scorecard` sigue siendo ejecutivo y obligatorio para release, pero ya no duplica bloqueo dentro de `check:quality` si las fuentes primarias siguen verdes.
 
 Salida esperada:
 
@@ -121,6 +122,17 @@ Salida esperada:
    - los campos obligatorios para excepciones
    - la relación con `Definition of Done`
 4. si agregaste un tipo de cambio nuevo o una excepción nueva, actualizar esta policy en la misma change
+
+### Falla `check:guardrail-governance`
+
+1. correr `npm run report:guardrail-governance`
+2. revisar `reports/guardrail-governance.md`
+3. confirmar que:
+   - `ci:inner-loop`, `ci:merge-gate` y `ci:release-gate` sigan declarando exactamente los scripts protegidos
+   - `test:release-confidence` siga cubriendo el pack blocking compacto
+   - los reportes report-only sigan apuntando a artefactos reales
+4. si agregaste un guardrail nuevo, decidir en la misma change si nace como blocking o report-only
+5. no duplicar un mismo riesgo en varios gates sin justificación explícita
 
 ## Qué hacer cuando falla
 
