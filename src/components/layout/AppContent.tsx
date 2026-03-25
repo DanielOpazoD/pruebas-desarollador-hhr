@@ -50,7 +50,6 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
     censusEmail,
     fileOps,
     nurseSignature,
-    sharedCensus,
   } = useCensusContext();
 
   const auth = useAuth();
@@ -111,11 +110,7 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
   }, [censusLocalViewMode, setCensusLocalViewMode, specialistCensusAccess]);
 
   React.useEffect(() => {
-    if (
-      appShellTelemetryRecordedRef.current ||
-      isSignatureMode ||
-      sharedCensus.isSharedCensusMode
-    ) {
+    if (appShellTelemetryRecordedRef.current || isSignatureMode) {
       return;
     }
 
@@ -132,7 +127,7 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
       { allowSuccess: true }
     );
     appShellTelemetryRecordedRef.current = true;
-  }, [auth.role, currentModule, isSignatureMode, sharedCensus.isSharedCensusMode]);
+  }, [auth.role, currentModule, isSignatureMode]);
 
   const handleExportExcel = React.useCallback(async () => {
     const generateCensusMasterExcel = await loadCensusMasterExcelExporter();
@@ -161,7 +156,6 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
               userEmail={auth.currentUser?.email}
               onLogout={auth.signOut}
               isFirebaseConnected={auth.isFirebaseConnected}
-              isSharedMode={sharedCensus.isSharedCensusMode}
             />
           )}
 
@@ -170,7 +164,6 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
             currentModule: ui.currentModule,
             censusViewMode: ui.censusViewMode,
             isSignatureMode,
-            isSharedCensusMode: sharedCensus.isSharedCensusMode,
           }) && (
             <DateStrip
               selectedYear={dateNav.selectedYear}
@@ -198,11 +191,6 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
                       await exportManager.handleBackupExcel();
                       await censusEmail.sendEmail();
                     }
-                  : undefined
-              }
-              onCopyShareLink={
-                ui.currentModule === 'CENSUS' && canUseCensusExports
-                  ? () => censusEmail.copyShareLink('viewer')
                   : undefined
               }
               onBackupExcel={
@@ -233,7 +221,6 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
             currentModule: ui.currentModule,
             censusViewMode: ui.censusViewMode,
             isSignatureMode,
-            isSharedCensusMode: sharedCensus.isSharedCensusMode,
             showBookmarksBar: ui.showBookmarksBar,
             role: auth.role,
           }) && <BookmarkBar />}
@@ -251,7 +238,6 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
               isSignatureMode={isSignatureMode}
               showBedManagerModal={ui.bedManagerModal.isOpen}
               onCloseBedManagerModal={ui.bedManagerModal.close}
-              sharedCensus={sharedCensus}
             />
           </main>
 
@@ -295,19 +281,13 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
             </React.Suspense>
           )}
 
-          {!sharedCensus.isSharedCensusMode && (
-            <TestAgent
-              isRunning={ui.isTestAgentRunning}
-              onComplete={() => ui.setIsTestAgentRunning(false)}
-              currentRecord={record}
-            />
-          )}
+          <TestAgent
+            isRunning={ui.isTestAgentRunning}
+            onComplete={() => ui.setIsTestAgentRunning(false)}
+            currentRecord={record}
+          />
 
-          {!sharedCensus.isSharedCensusMode && (
-            <>
-              <SyncWatcher />
-            </>
-          )}
+          <SyncWatcher />
 
           <PinLockScreen />
           <StorageStatusBadge />

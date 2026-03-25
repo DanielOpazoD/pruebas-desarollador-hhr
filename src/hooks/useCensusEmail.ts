@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useConfirmDialog } from '@/context/UIContext';
 import { DailyRecord } from '@/types/domain/dailyRecord';
 import { getAppSetting, saveAppSetting } from '@/services/settingsService';
-import { CensusAccessRole } from '@/types/censusAccess';
 import { defaultCensusEmailBrowserRuntime } from '@/hooks/controllers/censusEmailBrowserRuntimeController';
 import type { GlobalEmailRecipientList } from '@/services/email/emailRecipientListService';
 import {
@@ -61,9 +60,6 @@ export interface UseCensusEmailReturn {
   // Actions
   resetStatus: () => void;
   sendEmail: () => Promise<void>;
-  sendEmailWithLink: (role?: CensusAccessRole) => Promise<void>;
-  generateShareLink: (role?: CensusAccessRole) => Promise<string | null>;
-  copyShareLink: (role?: CensusAccessRole) => Promise<void>;
 
   // Test mode
   testModeEnabled: boolean;
@@ -176,29 +172,27 @@ export const useCensusEmail = ({
   }, [excelSheetConfig]);
 
   // ========== HANDLERS ==========
-  const { sendEmail, sendEmailWithLink, generateShareLink, copyShareLink } =
-    useCensusEmailDeliveryActions({
-      record,
-      currentDateString,
-      nurseSignature,
-      selectedYear,
-      selectedMonth,
-      selectedDay,
-      user,
-      role,
-      recipients,
-      message,
-      status,
-      testModeEnabled,
-      testRecipient,
-      isAdminUser,
-      excelSheetConfig,
-      setStatus,
-      setError,
-      confirm,
-      alert,
-      browserRuntime,
-    });
+  const { sendEmail } = useCensusEmailDeliveryActions({
+    record,
+    currentDateString,
+    nurseSignature,
+    selectedYear,
+    selectedMonth,
+    selectedDay,
+    user,
+    role,
+    recipients,
+    message,
+    status,
+    testModeEnabled,
+    testRecipient,
+    isAdminUser,
+    excelSheetConfig,
+    setStatus,
+    setError,
+    confirm,
+    alert,
+  });
 
   return {
     showEmailConfig,
@@ -221,9 +215,6 @@ export const useCensusEmail = ({
     error,
     resetStatus,
     sendEmail,
-    sendEmailWithLink,
-    generateShareLink,
-    copyShareLink,
     testModeEnabled,
     setTestModeEnabled,
     testRecipient,

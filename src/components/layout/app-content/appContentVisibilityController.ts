@@ -6,7 +6,6 @@ interface ResolveDateStripVisibilityParams {
   currentModule: ModuleType;
   censusViewMode: CensusViewMode;
   isSignatureMode: boolean;
-  isSharedCensusMode: boolean;
 }
 
 const DATE_STRIP_MODULES: ReadonlySet<ModuleType> = new Set([
@@ -20,9 +19,8 @@ export const shouldRenderDateStrip = ({
   currentModule,
   censusViewMode,
   isSignatureMode,
-  isSharedCensusMode,
 }: ResolveDateStripVisibilityParams): boolean => {
-  if (isSignatureMode || isSharedCensusMode) {
+  if (isSignatureMode) {
     return false;
   }
 
@@ -41,7 +39,6 @@ interface ResolveBookmarkBarVisibilityParams {
   currentModule: ModuleType;
   censusViewMode: CensusViewMode;
   isSignatureMode: boolean;
-  isSharedCensusMode: boolean;
   showBookmarksBar: boolean;
   role?: string | null;
 }
@@ -52,11 +49,10 @@ export const shouldRenderBookmarkBar = ({
   currentModule,
   censusViewMode,
   isSignatureMode,
-  isSharedCensusMode,
   showBookmarksBar,
   role,
 }: ResolveBookmarkBarVisibilityParams): boolean => {
-  if (isSignatureMode || isSharedCensusMode || !showBookmarksBar) {
+  if (isSignatureMode || !showBookmarksBar) {
     return false;
   }
 

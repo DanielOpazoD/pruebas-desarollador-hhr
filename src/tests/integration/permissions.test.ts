@@ -85,8 +85,8 @@ describe('Permissions System (RBAC)', () => {
     });
   });
 
-  describe('Viewer Census Role', () => {
-    const role = ROLES.VIEWER_CENSUS;
+  describe('Viewer Role', () => {
+    const role = ROLES.VIEWER;
 
     it('should only see CENSUS module', () => {
       expect(canViewModule(role, 'CENSUS')).toBe(true);

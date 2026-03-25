@@ -1,6 +1,5 @@
 import { onAuthStateChanged, signOut as firebaseSignOut, User } from 'firebase/auth';
 import { AuthSessionState } from '@/types/auth';
-import { checkSharedCensusAccess, isSharedCensusMode } from '@/services/auth/sharedCensusAuth';
 import { clearRoleCacheForEmail } from '@/services/auth/authPolicy';
 import { resolveFirebaseUserRole } from '@/services/auth/authAccessResolution';
 import { resolveAuthSessionState } from '@/services/auth/authSessionController';
@@ -70,8 +69,6 @@ export const onAuthSessionStateChange = (
 
           try {
             const sessionState = await resolveAuthSessionState(firebaseUser, {
-              isSharedCensusMode,
-              checkSharedCensusAccess,
               signOutUnauthorizedUser: () => firebaseSignOut(defaultAuthRuntime.auth),
               resolveFirebaseUserRole,
             });

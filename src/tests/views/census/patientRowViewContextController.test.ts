@@ -51,7 +51,7 @@ describe('patientRowViewContextController', () => {
     });
 
     const context = buildPatientRowModalViewContext({
-      role: 'viewer_census',
+      role: 'viewer',
       data: DataFactory.createMockPatient('R1'),
       runtime,
     });

@@ -11,12 +11,6 @@ export const CensusView = lazy(() =>
   }))
 );
 
-export const SharedCensusView = lazy(() =>
-  import(/* webpackChunkName: "shared-census" */ '@/features/census').then(module => ({
-    default: module.SharedCensusView,
-  }))
-);
-
 export const CensusEmailConfigModal = lazy(() =>
   import('@/features/census').then(module => ({
     default: module.CensusEmailConfigModal,

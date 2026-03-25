@@ -1,25 +1,13 @@
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import type { ConfirmOptions } from '@/context/uiContracts';
-import type { CensusAccessRole } from '@/types/censusAccess';
 import type { DailyRecord } from '@/types/domain/dailyRecord';
-import type { CensusEmailBrowserRuntime } from '@/hooks/controllers/censusEmailBrowserRuntimeController';
 import { type CensusEmailExcelSheetConfig } from '@/hooks/controllers/censusExcelSheetController';
 import {
   buildSendCensusConfirmationMessage,
-  executeGenerateCensusShareLink,
   executeSendCensusEmail,
-  executeSendCensusEmailWithLink,
 } from '@/application/census-email/sendCensusEmailUseCases';
-import {
-  buildClipboardCopyMessage,
-  canRunCensusEmailAction,
-  resolveShareLinkRole,
-} from '@/hooks/controllers/censusEmailActionController';
+import { canRunCensusEmailAction } from '@/hooks/controllers/censusEmailActionController';
 import { resolveCensusEmailSendOutcomePresentation } from '@/hooks/controllers/censusEmailOutcomeController';
-import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
-import { logger } from '@/services/utils/loggerService';
-
-const censusEmailDeliveryLogger = logger.child('useCensusEmailDeliveryActions');
 
 export type CensusEmailSendStatus = 'idle' | 'loading' | 'success' | 'error';
 
@@ -43,7 +31,6 @@ interface UseCensusEmailDeliveryActionsParams {
   setError: Dispatch<SetStateAction<string | null>>;
   confirm: (options: ConfirmOptions) => Promise<boolean>;
   alert: (message: string, title?: string) => Promise<void>;
-  browserRuntime: CensusEmailBrowserRuntime;
 }
 
 export const useCensusEmailDeliveryActions = ({
@@ -66,22 +53,7 @@ export const useCensusEmailDeliveryActions = ({
   setError,
   confirm,
   alert,
-  browserRuntime,
 }: UseCensusEmailDeliveryActionsParams) => {
-  const generateShareLink = useCallback(
-    async (_accessRole: CensusAccessRole = 'viewer'): Promise<string | null> => {
-      const result = await executeGenerateCensusShareLink(browserRuntime);
-      if (result.status === 'success') {
-        return result.data;
-      }
-      await alert(
-        resolveApplicationOutcomeMessage(result, 'No se pudo generar el link de acceso.')
-      );
-      return null;
-    },
-    [alert, browserRuntime]
-  );
-
   const sendEmail = useCallback(async () => {
     if (!canRunCensusEmailAction(status)) return;
     const confirmed = await confirm({
@@ -154,81 +126,7 @@ export const useCensusEmailDeliveryActions = ({
     user,
   ]);
 
-  const sendEmailWithLink = useCallback(
-    async (accessRole: CensusAccessRole = 'viewer') => {
-      if (!canRunCensusEmailAction(status)) return;
-      const confirmed = await confirm({
-        title: 'Enviar Link de Acceso',
-        message:
-          '¿Estás seguro de enviar un link de acceso seguro a los destinatarios configurados?\n\nEsto permitirá a los usuarios visualizar el censo sin necesidad de archivos Excel.',
-        confirmText: 'Aceptar',
-        cancelText: 'Cancelar',
-        variant: 'info',
-      });
-      if (!confirmed) return;
-
-      setStatus('loading');
-      setError(null);
-
-      const result = await executeSendCensusEmailWithLink({
-        record,
-        currentDateString,
-        nurseSignature,
-        user,
-        role,
-        recipients,
-        message,
-        accessRole: resolveShareLinkRole(accessRole),
-        browserRuntime,
-      });
-      const presentation = resolveCensusEmailSendOutcomePresentation(result, {
-        fallbackErrorMessage: 'Error al enviar link.',
-        partialTitle: 'Link enviado con advertencias',
-        errorTitle: 'Error al enviar link',
-      });
-      setError(presentation.error);
-      setStatus(presentation.nextStatus);
-      if (presentation.alertMessage) {
-        await alert(presentation.alertMessage, presentation.alertTitle);
-      }
-    },
-    [
-      alert,
-      browserRuntime,
-      confirm,
-      currentDateString,
-      message,
-      nurseSignature,
-      recipients,
-      record,
-      role,
-      setError,
-      setStatus,
-      status,
-      user,
-    ]
-  );
-
-  const copyShareLink = useCallback(
-    async (accessRole: CensusAccessRole = 'viewer') => {
-      const link = await generateShareLink(resolveShareLinkRole(accessRole));
-      if (link) {
-        try {
-          await browserRuntime.writeClipboard(link);
-          await alert(buildClipboardCopyMessage(link), 'Link Copiado');
-        } catch (err) {
-          censusEmailDeliveryLogger.warn('Clipboard write failed for census share link', err);
-          await alert('No se pudo copiar el link. Intenta manualmente: ' + link);
-        }
-      }
-    },
-    [alert, browserRuntime, generateShareLink]
-  );
-
   return {
     sendEmail,
-    sendEmailWithLink,
-    generateShareLink,
-    copyShareLink,
   };
 };

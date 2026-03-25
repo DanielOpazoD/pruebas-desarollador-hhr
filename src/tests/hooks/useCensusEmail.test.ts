@@ -28,9 +28,6 @@ describe('useCensusEmail', () => {
   const mockConfirm = vi.fn();
   const mockAlert = vi.fn();
   const sendEmail = vi.fn();
-  const sendEmailWithLink = vi.fn();
-  const generateShareLink = vi.fn();
-  const copyShareLink = vi.fn();
 
   const defaultParams = {
     record: {
@@ -79,9 +76,6 @@ describe('useCensusEmail', () => {
 
     vi.mocked(useCensusEmailDeliveryActions).mockReturnValue({
       sendEmail,
-      sendEmailWithLink,
-      generateShareLink,
-      copyShareLink,
     });
   });
 
@@ -141,20 +135,14 @@ describe('useCensusEmail', () => {
     });
   });
 
-  it('delegates send and share actions to the delivery hook boundary', async () => {
+  it('delegates email send actions to the delivery hook boundary', async () => {
     const { result } = renderHook(() => useCensusEmail(defaultParams));
 
     await act(async () => {
       await result.current.sendEmail();
-      await result.current.sendEmailWithLink();
-      await result.current.generateShareLink();
-      await result.current.copyShareLink();
     });
 
     expect(sendEmail).toHaveBeenCalled();
-    expect(sendEmailWithLink).toHaveBeenCalled();
-    expect(generateShareLink).toHaveBeenCalled();
-    expect(copyShareLink).toHaveBeenCalled();
   });
 
   it('uses shared capability gating for global lists and admin test mode', async () => {

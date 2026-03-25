@@ -47,12 +47,6 @@ const checks = [
     file: 'functions/index.js',
     failIfMatches: /require\(['"]\.\/llave-beta\.json['"]\)/m,
   },
-  {
-    id: 'legacy-public-token-secret',
-    description: 'frontend must not embed TOKEN_SECRET-based public census tokens',
-    file: 'src/utils/publicCensusToken.ts',
-    failIfMatches: /TOKEN_SECRET|simpleHash\(/m,
-  },
 ];
 
 const failures = [];

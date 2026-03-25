@@ -8,16 +8,14 @@ import {
 
 const {
   mockFirebaseSignOut,
-  mockCheckSharedCensusAccess,
-  mockIsSharedCensusMode,
-  mockCheckEmailInFirestore,
+  mockResolveGeneralLoginAccessForEmail,
+  mockResolveUserRoleClaim,
   mockAuth,
   mockToAuthUser,
 } = vi.hoisted(() => ({
   mockFirebaseSignOut: vi.fn().mockResolvedValue(undefined),
-  mockCheckSharedCensusAccess: vi.fn(),
-  mockIsSharedCensusMode: vi.fn(),
-  mockCheckEmailInFirestore: vi.fn(),
+  mockResolveGeneralLoginAccessForEmail: vi.fn(),
+  mockResolveUserRoleClaim: vi.fn(),
   mockAuth: {
     currentUser: null as null | { uid: string; email: string | null; isAnonymous?: boolean },
   },
@@ -34,15 +32,12 @@ vi.mock('firebase/auth', () => ({
 
 vi.mock('@/firebaseConfig', () => ({
   auth: mockAuth,
-}));
-
-vi.mock('@/services/auth/sharedCensusAuth', () => ({
-  checkSharedCensusAccess: (email?: string | null) => mockCheckSharedCensusAccess(email),
-  isSharedCensusMode: () => mockIsSharedCensusMode(),
+  firebaseReady: Promise.resolve(),
 }));
 
 vi.mock('@/services/auth/authPolicy', () => ({
-  resolveGeneralLoginAccessForEmail: (email: string) => mockCheckEmailInFirestore(email),
+  resolveGeneralLoginAccessForEmail: (email: string) =>
+    mockResolveGeneralLoginAccessForEmail(email),
 }));
 
 vi.mock('@/services/auth/authShared', () => ({
@@ -51,21 +46,24 @@ vi.mock('@/services/auth/authShared', () => ({
   createAuthError: (code: string, message: string) => Object.assign(new Error(message), { code }),
 }));
 
+vi.mock('@/services/auth/authClaimSyncService', () => ({
+  resolveUserRoleClaim: (user: unknown) => mockResolveUserRoleClaim(user),
+}));
+
 describe('authAccessResolution', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAuth.currentUser = null;
-    mockIsSharedCensusMode.mockReturnValue(false);
-    mockCheckSharedCensusAccess.mockResolvedValue({ authorized: false });
-    mockCheckEmailInFirestore.mockResolvedValue({
+    mockResolveGeneralLoginAccessForEmail.mockResolvedValue({
       allowed: true,
       role: 'admin',
       resolution: 'authorized',
     });
+    mockResolveUserRoleClaim.mockResolvedValue(null);
   });
 
   it('authorizes doctor_specialist users in the standard login flow', async () => {
-    mockCheckEmailInFirestore.mockResolvedValue({
+    mockResolveGeneralLoginAccessForEmail.mockResolvedValue({
       allowed: true,
       role: 'doctor_specialist',
       resolution: 'authorized',
@@ -85,7 +83,7 @@ describe('authAccessResolution', () => {
   });
 
   it('signs out unauthorized users in the standard login flow', async () => {
-    mockCheckEmailInFirestore.mockResolvedValue({
+    mockResolveGeneralLoginAccessForEmail.mockResolvedValue({
       allowed: false,
       role: undefined,
       resolution: 'unauthorized',
@@ -102,7 +100,7 @@ describe('authAccessResolution', () => {
   });
 
   it('signs out users with null email in the standard login flow', async () => {
-    mockCheckEmailInFirestore.mockResolvedValue({
+    mockResolveGeneralLoginAccessForEmail.mockResolvedValue({
       allowed: false,
       role: undefined,
       resolution: 'unauthorized',
@@ -115,7 +113,7 @@ describe('authAccessResolution', () => {
       } as never)
     ).rejects.toThrow(/Acceso no autorizado/i);
 
-    expect(mockCheckEmailInFirestore).toHaveBeenCalledWith('');
+    expect(mockResolveGeneralLoginAccessForEmail).toHaveBeenCalledWith('');
     expect(mockFirebaseSignOut).toHaveBeenCalledTimes(1);
   });
 
@@ -125,7 +123,7 @@ describe('authAccessResolution', () => {
       email: 'specialist@hospital.cl',
       isAnonymous: false,
     };
-    mockCheckEmailInFirestore.mockResolvedValue({
+    mockResolveGeneralLoginAccessForEmail.mockResolvedValue({
       allowed: true,
       role: 'doctor_specialist',
       resolution: 'authorized',
@@ -144,7 +142,7 @@ describe('authAccessResolution', () => {
       email: 'removed@hospital.cl',
       isAnonymous: false,
     };
-    mockCheckEmailInFirestore.mockResolvedValue({
+    mockResolveGeneralLoginAccessForEmail.mockResolvedValue({
       allowed: false,
       role: undefined,
       resolution: 'unauthorized',
@@ -154,65 +152,17 @@ describe('authAccessResolution', () => {
     expect(mockFirebaseSignOut).toHaveBeenCalledTimes(1);
   });
 
-  it('rehydrates a shared-census current user without consulting general login access', async () => {
-    mockAuth.currentUser = {
-      uid: 'shared-ok-1',
-      email: 'shared@hospital.cl',
-      isAnonymous: false,
-    };
-    mockIsSharedCensusMode.mockReturnValue(true);
-    mockCheckSharedCensusAccess.mockResolvedValue({ authorized: true, role: 'viewer' });
-
-    await expect(authorizeCurrentFirebaseUser()).resolves.toEqual({
-      uid: 'shared-ok-1',
-      email: 'shared@hospital.cl',
-      role: 'viewer_census',
-    });
-    expect(mockCheckEmailInFirestore).not.toHaveBeenCalled();
-  });
-
-  it('returns null when a rehydrated shared-census user is no longer authorized', async () => {
-    mockAuth.currentUser = {
-      uid: 'shared-gone-1',
-      email: 'shared-gone@hospital.cl',
-      isAnonymous: false,
-    };
-    mockIsSharedCensusMode.mockReturnValue(true);
-    mockCheckSharedCensusAccess.mockResolvedValue({ authorized: false, role: 'viewer' });
-
-    await expect(authorizeCurrentFirebaseUser()).resolves.toBeNull();
-    expect(mockCheckEmailInFirestore).not.toHaveBeenCalled();
-    expect(mockFirebaseSignOut).toHaveBeenCalledTimes(1);
-  });
-
-  it('does not authorize shared-census users through the standard login path', async () => {
-    mockIsSharedCensusMode.mockReturnValue(true);
-    mockCheckSharedCensusAccess.mockResolvedValue({ authorized: false, role: 'viewer' });
-
-    await expect(
-      authorizeFirebaseUser({
-        uid: 'shared-1',
-        email: 'shared@hospital.cl',
-      } as never)
-    ).rejects.toThrow(/censo compartido/i);
-
-    expect(mockCheckEmailInFirestore).not.toHaveBeenCalled();
-    expect(mockFirebaseSignOut).toHaveBeenCalledTimes(1);
-  });
-
   it('reuses the current token role when config lookup is temporarily unavailable', async () => {
-    mockCheckEmailInFirestore.mockResolvedValue({
+    mockResolveGeneralLoginAccessForEmail.mockResolvedValue({
       allowed: false,
       role: undefined,
       resolution: 'unavailable',
     });
+    mockResolveUserRoleClaim.mockResolvedValue('doctor_specialist');
 
     const user = {
       uid: 'fallback-1',
       email: 'fallback@hospital.cl',
-      getIdTokenResult: vi.fn().mockResolvedValue({
-        claims: { role: 'doctor_specialist' },
-      }),
     } as never;
 
     await expect(authorizeFirebaseUser(user)).resolves.toEqual({
@@ -224,7 +174,7 @@ describe('authAccessResolution', () => {
   });
 
   it('does not sign out when role validation is unavailable and no claim fallback exists', async () => {
-    mockCheckEmailInFirestore.mockResolvedValue({
+    mockResolveGeneralLoginAccessForEmail.mockResolvedValue({
       allowed: false,
       role: undefined,
       resolution: 'unavailable',
@@ -234,7 +184,6 @@ describe('authAccessResolution', () => {
       authorizeFirebaseUser({
         uid: 'fallback-2',
         email: 'fallback@hospital.cl',
-        getIdTokenResult: vi.fn().mockResolvedValue({ claims: {} }),
       } as never)
     ).rejects.toMatchObject({
       code: 'auth/role-validation-unavailable',
@@ -244,19 +193,17 @@ describe('authAccessResolution', () => {
   });
 
   it('rehydrates the role from token claims when backend validation is temporarily unavailable', async () => {
-    mockCheckEmailInFirestore.mockResolvedValue({
+    mockResolveGeneralLoginAccessForEmail.mockResolvedValue({
       allowed: false,
       role: undefined,
       resolution: 'unavailable',
     });
+    mockResolveUserRoleClaim.mockResolvedValue('doctor_specialist');
 
     await expect(
       resolveFirebaseUserRole({
         uid: 'fallback-3',
         email: 'fallback@hospital.cl',
-        getIdTokenResult: vi.fn().mockResolvedValue({
-          claims: { role: 'doctor_specialist' },
-        }),
       } as never)
     ).resolves.toBe('doctor_specialist');
   });

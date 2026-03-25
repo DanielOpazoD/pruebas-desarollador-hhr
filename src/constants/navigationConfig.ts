@@ -92,7 +92,6 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
     censusMode: 'ANALYTICS',
     isUtility: true,
     adminOnly: true,
-    excludeFromRoles: ['viewer_census'],
   },
   {
     id: 'backup-files',

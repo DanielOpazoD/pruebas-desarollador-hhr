@@ -5,11 +5,22 @@ import { isGeneralLoginRole } from '@/shared/access/roleAccessMatrix';
 import { defaultFunctionsRuntime } from '@/services/firebase-runtime/functionsRuntime';
 import { createAuthError } from '@/services/auth/authShared';
 
-type CheckUserRoleResponse = {
-  role?: string;
+type CheckUserRoleCallableData = {
+  role?: string | null;
 };
 
 export const AUTH_ROLE_LOOKUP_UNAVAILABLE_CODE = 'auth/role-lookup-unavailable';
+
+export const resolveCallableRole = (
+  response: CheckUserRoleCallableData | null | undefined
+): UserRole | null => {
+  const role = response?.role ?? undefined;
+  if (!isGeneralLoginRole(role)) {
+    return null;
+  }
+
+  return role;
+};
 
 export const getBootstrapRoleForEmail = (email: string): UserRole | null => {
   const cleanEmail = normalizeEmail(email);
@@ -31,16 +42,12 @@ export const getDynamicRoleForEmail = async (email: string): Promise<UserRole | 
     if (!cleanEmail) return null;
 
     const functions = await defaultFunctionsRuntime.getFunctions();
-    const checkUserRole = httpsCallable<Record<string, never>, CheckUserRoleResponse>(
+    const checkUserRole = httpsCallable<Record<string, never>, CheckUserRoleCallableData>(
       functions,
       'checkUserRole'
     );
     const response = await checkUserRole({});
-    const role = response.data?.role;
-    if (!isGeneralLoginRole(role)) {
-      return null;
-    }
-    return role;
+    return resolveCallableRole(response.data);
   } catch (error) {
     throw createAuthError(
       AUTH_ROLE_LOOKUP_UNAVAILABLE_CODE,

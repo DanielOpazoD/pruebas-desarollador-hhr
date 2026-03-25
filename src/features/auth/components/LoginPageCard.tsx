@@ -7,7 +7,6 @@ import { resetLocalAppStorage } from '@/services/storage/core';
 interface LoginPageCardProps {
   isAnyLoading: boolean;
   isGoogleLoading: boolean;
-  accessMode: 'default' | 'shared-census';
   error: string | null;
   errorCode: string | null;
   canRetryGoogleSignIn?: boolean;
@@ -38,7 +37,6 @@ const GoogleIcon: React.FC<{ className?: string }> = ({ className }) => (
 export const LoginPageCard: React.FC<LoginPageCardProps> = ({
   isAnyLoading,
   isGoogleLoading,
-  accessMode,
   error,
   errorCode,
   canRetryGoogleSignIn = false,
@@ -48,15 +46,9 @@ export const LoginPageCard: React.FC<LoginPageCardProps> = ({
     <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-medical-400 to-medical-600"></div>
 
     <h2 className="text-xl font-bold text-slate-800 mb-2 text-center text-balance">
-      {accessMode === 'shared-census' ? 'Acceso al Censo Compartido' : 'Acceso al Sistema'}
+      Acceso al Sistema
     </h2>
-    {accessMode === 'shared-census' ? (
-      <p className="text-sm text-slate-500 mb-6 text-center">
-        Inicia sesión con tu correo autorizado para ver el censo diario.
-      </p>
-    ) : (
-      <div className="mb-8" />
-    )}
+    <div className="mb-8" />
 
     <button
       type="button"

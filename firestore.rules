@@ -32,15 +32,21 @@ service cloud.firestore {
 	    function getConfiguredRole() {
 	      return hasEmail() &&
 	             exists(/databases/$(database)/documents/config/roles)
-	        ? get(/databases/$(database)/documents/config/roles).data[getUserEmail()]
+	        ? normalizeRole(get(/databases/$(database)/documents/config/roles).data[getUserEmail()])
 	        : null;
+	    }
+
+	    function normalizeRole(role) {
+	      return role == 'viewer_census'
+	        ? 'viewer'
+	        : role;
 	    }
 
 	    function getClaimRole() {
 	      return isAuthenticated() &&
 	             request.auth.token.keys().hasAny(['role']) &&
 	             request.auth.token.role != null
-	        ? request.auth.token.role
+	        ? normalizeRole(request.auth.token.role)
 	        : null;
 	    }
 
@@ -195,42 +201,6 @@ service cloud.firestore {
 	      return isAuthenticated() && getEffectiveRole() == 'viewer';
 	    }
 
-    // Shared census allowlist by email (doc id = normalized email)
-    function hasCensusAuthorizedEmail() {
-      return hasEmail() &&
-             exists(/databases/$(database)/documents/census-authorized-emails/$(getUserEmail()));
-    }
-
-    // Shared census static allowlist fallback (for migrations without Firestore docs yet)
-    function hasCensusStaticAllowlistEmail() {
-      return hasEmail() &&
-             getUserEmail() in [
-               'arenka.palma@hospitalhangaroa.cl',
-               'natalia.arzola@hospitalhangaroa.cl',
-               'vaitiare.hereveri@hospitalhangaroa.cl',
-               'kaany.pakomio@hospitalhangaroa.cl',
-               'claudia.salgado@hospitalhangaroa.cl',
-               'bianca.atam@hospitalhangaroa.cl',
-               'ana.pont@hospitalhangaroa.cl',
-               'katherin.pont@hospitalhangaroa.cl',
-               'eyleen.cisternas@hospitalhangaroa.cl',
-               'marco.ramirez@hospitalhangaroa.cl',
-               'josemiguel.villavicencio@hospitalhangaroa.cl',
-               'carla.curinao@hospitalhangaroa.cl',
-               'epidemiologia@hospitalhangaroa.cl',
-               'archivosome@hospitalhangaroa.cl',
-               'antonio.espinoza@hospitalhangaroa.cl',
-               'juan.pakomio@hospitalhangaroa.cl',
-               'ivan.pulgar@hospitalhangaroa.cl',
-               'daniel.opazo@hospitalhangaroa.cl',
-               'andrea.saldana@saludoriente.cl',
-               'patricio.medina@saludoriente.cl',
-               'gestion.camas@saludoriente.cl',
-               'd.opazo.damiani@gmail.com',
-               'd.opazo.damiani@hospitalhangaroa.cl'
-             ];
-    }
-
     // Consolidated read access for clinical data
     function canReadClinicalData() {
       return isAdmin() ||
@@ -238,19 +208,7 @@ service cloud.firestore {
              isDoctor() ||
              isDoctorSpecialist() ||
              isEditorRole() ||
-             isGeneralViewer() ||
-             hasCensusAuthorizedEmail() ||
-             hasCensusStaticAllowlistEmail();
-    }
-
-    // Shared census access logs must represent current caller only.
-    function isValidCensusAccessLogCreate() {
-      return isAuthenticated() &&
-             hasEmail() &&
-             request.resource.data.keys().hasOnly(['userId', 'email', 'action', 'filePath', 'fileName', 'timestamp', 'userAgent']) &&
-             request.resource.data.userId == request.auth.uid &&
-             request.resource.data.email == getUserEmail() &&
-             request.resource.data.action in ['list_files', 'download_file', 'view_file'];
+             isGeneralViewer();
     }
 
     // System health payload guard:
@@ -533,48 +491,6 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
-    // ============================================
-    // CENSUS ACCESS (Shared census links)
-    // ============================================
-    match /census-access-invitations/{invitationId} {
-      allow read: if canEdit() || (
-        isAuthenticated() &&
-        (
-          resource.data.email == null ||
-          (hasEmail() && resource.data.email == getUserEmail())
-        )
-      );
-      allow create: if canEdit();
-      allow update: if canEdit() || (
-        isAuthenticated() &&
-        resource.data.status == 'pending' &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'usedBy', 'usedAt']) &&
-        request.resource.data.status == 'used' &&
-        request.resource.data.usedBy == request.auth.uid &&
-        (
-          resource.data.email == null ||
-          (hasEmail() && resource.data.email == getUserEmail())
-        )
-      );
-      allow delete: if isAdmin();
-    }
-    
-    match /census-access-users/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || canEdit());
-      allow create, update: if canEdit();
-      allow delete: if isAdmin();
-    }
-    
-    match /census-access-logs/{logId} {
-      allow read: if canEdit();
-      allow create: if isValidCensusAccessLogCreate();
-    }
-    
-    match /census-authorized-emails/{email} {
-      allow read: if canEdit();
-      allow write: if canEdit();
-    }
-
     // ============================================
     // SYSTEM HEALTH
     // ============================================

@@ -20,34 +20,6 @@ describe('authSessionController', () => {
     });
   });
 
-  it('returns viewer_census for authorized shared-census users', async () => {
-    const resolveFirebaseUserRole = vi.fn().mockResolvedValue('admin');
-
-    const result = await resolveAuthSessionUser(
-      {
-        uid: 'user-1',
-        email: 'shared@hospital.cl',
-        isAnonymous: false,
-        displayName: 'Shared User',
-        photoURL: null,
-      } as never,
-      {
-        isSharedCensusMode: () => true,
-        checkSharedCensusAccess: vi.fn().mockResolvedValue({ authorized: true }),
-        signOutUnauthorizedUser: vi.fn(),
-        resolveFirebaseUserRole,
-      }
-    );
-
-    expect(result).toEqual(
-      expect.objectContaining({
-        uid: 'user-1',
-        role: 'viewer_census',
-      })
-    );
-    expect(resolveFirebaseUserRole).not.toHaveBeenCalled();
-  });
-
   it('returns explicit session state for anonymous signature users', async () => {
     const result = await resolveAuthSessionState(
       {
@@ -56,8 +28,6 @@ describe('authSessionController', () => {
         isAnonymous: true,
       } as never,
       {
-        isSharedCensusMode: () => false,
-        checkSharedCensusAccess: vi.fn(),
         signOutUnauthorizedUser: vi.fn(),
         resolveFirebaseUserRole: vi.fn(),
       }
@@ -74,25 +44,29 @@ describe('authSessionController', () => {
     );
   });
 
-  it('signs out unauthorized shared-census users', async () => {
-    const signOutUnauthorizedUser = vi.fn().mockResolvedValue(undefined);
+  it('returns resolved user for authorized standard users', async () => {
+    const resolveFirebaseUserRole = vi.fn().mockResolvedValue('admin');
 
     const result = await resolveAuthSessionUser(
       {
-        uid: 'user-2',
-        email: 'blocked@hospital.cl',
+        uid: 'user-1',
+        email: 'admin@hospital.cl',
         isAnonymous: false,
+        displayName: 'Admin User',
       } as never,
       {
-        isSharedCensusMode: () => true,
-        checkSharedCensusAccess: vi.fn().mockResolvedValue({ authorized: false }),
-        signOutUnauthorizedUser,
-        resolveFirebaseUserRole: vi.fn(),
+        signOutUnauthorizedUser: vi.fn(),
+        resolveFirebaseUserRole,
       }
     );
 
-    expect(result).toBeNull();
-    expect(signOutUnauthorizedUser).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(
+      expect.objectContaining({
+        uid: 'user-1',
+        role: 'admin',
+      })
+    );
+    expect(resolveFirebaseUserRole).toHaveBeenCalledTimes(1);
   });
 
   it('signs out unauthorized standard users before building an app session', async () => {
@@ -105,8 +79,6 @@ describe('authSessionController', () => {
         isAnonymous: false,
       } as never,
       {
-        isSharedCensusMode: () => false,
-        checkSharedCensusAccess: vi.fn(),
         signOutUnauthorizedUser,
         resolveFirebaseUserRole: vi.fn().mockResolvedValue(null),
       }
@@ -126,8 +98,6 @@ describe('authSessionController', () => {
         isAnonymous: false,
       } as never,
       {
-        isSharedCensusMode: () => false,
-        checkSharedCensusAccess: vi.fn(),
         signOutUnauthorizedUser,
         resolveFirebaseUserRole: vi.fn().mockResolvedValue(null),
       }
@@ -140,27 +110,6 @@ describe('authSessionController', () => {
         reason: 'role_not_resolved',
       })
     );
-    expect(signOutUnauthorizedUser).toHaveBeenCalledTimes(1);
-  });
-
-  it('signs out when shared-census mode is active but the user email is missing', async () => {
-    const signOutUnauthorizedUser = vi.fn().mockResolvedValue(undefined);
-
-    const result = await resolveAuthSessionUser(
-      {
-        uid: 'user-4',
-        email: null,
-        isAnonymous: false,
-      } as never,
-      {
-        isSharedCensusMode: () => true,
-        checkSharedCensusAccess: vi.fn().mockResolvedValue({ authorized: false }),
-        signOutUnauthorizedUser,
-        resolveFirebaseUserRole: vi.fn(),
-      }
-    );
-
-    expect(result).toBeNull();
     expect(signOutUnauthorizedUser).toHaveBeenCalledTimes(1);
   });
 });

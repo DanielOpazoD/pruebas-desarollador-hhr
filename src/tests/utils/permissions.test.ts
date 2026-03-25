@@ -16,7 +16,7 @@ describe('permissions.ts - Security Critical Tests', () => {
     it('should return false for non-admin roles', () => {
       expect(isAdmin(ROLES.NURSE_HOSPITAL)).toBe(false);
       expect(isAdmin(ROLES.DOCTOR_URGENCY)).toBe(false);
-      expect(isAdmin(ROLES.VIEWER_CENSUS)).toBe(false);
+      expect(isAdmin(ROLES.VIEWER)).toBe(false);
     });
 
     it('should return false for undefined role', () => {
@@ -63,8 +63,8 @@ describe('permissions.ts - Security Critical Tests', () => {
       expect(canEditModule(ROLES.DOCTOR_SPECIALIST, 'AUDIT')).toBe(false);
     });
 
-    it('viewer_census should NOT edit anything', () => {
-      expect(canEditModule(ROLES.VIEWER_CENSUS, 'CENSUS')).toBe(false);
+    it('viewer should NOT edit anything', () => {
+      expect(canEditModule(ROLES.VIEWER, 'CENSUS')).toBe(false);
     });
 
     it('undefined role should NOT edit anything', () => {
@@ -110,8 +110,8 @@ describe('permissions.ts - Security Critical Tests', () => {
       expect(modules).not.toContain('AUDIT');
     });
 
-    it('viewer_census should only see CENSUS', () => {
-      const modules = getVisibleModules(ROLES.VIEWER_CENSUS);
+    it('viewer should only see CENSUS', () => {
+      const modules = getVisibleModules(ROLES.VIEWER);
       expect(modules).toEqual(['CENSUS']);
     });
 
@@ -129,11 +129,11 @@ describe('permissions.ts - Security Critical Tests', () => {
   describe('canViewModule', () => {
     it('should return true if module is in visible list', () => {
       expect(canViewModule(ROLES.NURSE_HOSPITAL, 'CENSUS')).toBe(true);
-      expect(canViewModule(ROLES.VIEWER_CENSUS, 'CENSUS')).toBe(true);
+      expect(canViewModule(ROLES.VIEWER, 'CENSUS')).toBe(true);
     });
 
     it('should return false if module is NOT in visible list', () => {
-      expect(canViewModule(ROLES.VIEWER_CENSUS, 'AUDIT')).toBe(false);
+      expect(canViewModule(ROLES.VIEWER, 'AUDIT')).toBe(false);
       expect(canViewModule(ROLES.DOCTOR_URGENCY, 'CUDYR')).toBe(false);
     });
   });

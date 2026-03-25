@@ -13,7 +13,6 @@ export interface CensusEmailSendPayload {
   recipients?: string[];
   nursesSignature?: string;
   body?: string;
-  shareLink?: string;
   userEmail?: string | null;
   userRole?: string | null;
   sheetDescriptors?: CensusWorkbookSheetDescriptor[];
@@ -21,10 +20,8 @@ export interface CensusEmailSendPayload {
 
 export interface CensusEmailDeliveryPort {
   sendEmail: (payload: CensusEmailSendPayload) => Promise<void>;
-  sendLink: (payload: CensusEmailSendPayload) => Promise<void>;
   uploadBackup: (blob: Blob, date: string) => Promise<void>;
   sendEmailWithResult: (payload: CensusEmailSendPayload) => Promise<ApplicationOutcome<void>>;
-  sendLinkWithResult: (payload: CensusEmailSendPayload) => Promise<ApplicationOutcome<void>>;
   uploadBackupWithResult: (blob: Blob, date: string) => Promise<ApplicationOutcome<void>>;
 }
 
@@ -44,12 +41,6 @@ export const defaultCensusEmailDeliveryPort: CensusEmailDeliveryPort = {
       throw new Error(result.issues[0]?.message || 'No se pudo enviar el correo de censo.');
     }
   },
-  sendLink: async payload => {
-    const result = await defaultCensusEmailDeliveryPort.sendLinkWithResult(payload);
-    if (result.status !== 'success') {
-      throw new Error(result.issues[0]?.message || 'No se pudo enviar el link de censo.');
-    }
-  },
   uploadBackup: async (blob, date) => {
     const result = await defaultCensusEmailDeliveryPort.uploadBackupWithResult(blob, date);
     if (result.status !== 'success') {
@@ -60,13 +51,6 @@ export const defaultCensusEmailDeliveryPort: CensusEmailDeliveryPort = {
     const result = await triggerCensusEmail(payload);
     if (!result.success) {
       return toCensusEmailFailure('No se pudo enviar el correo de censo.', result.message);
-    }
-    return createApplicationSuccess(undefined);
-  },
-  sendLinkWithResult: async payload => {
-    const result = await triggerCensusEmail(payload);
-    if (!result.success) {
-      return toCensusEmailFailure('No se pudo enviar el link de censo.', result.message);
     }
     return createApplicationSuccess(undefined);
   },

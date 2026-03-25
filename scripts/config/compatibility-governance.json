@@ -11,6 +11,15 @@
       "target": "2026-Q2"
     },
     {
+      "path": "functions/lib/auth/authHelpersFactory.js",
+      "owner": "auth",
+      "kind": "legacy_bridge",
+      "reason": "Normalizar roles legacy mientras se completa la migración operacional de claims y configuración.",
+      "remainingConsumers": "callables/auth helpers que aún pueden resolver viewer_census desde config/roles legado",
+      "retirementCriteria": "Fuente real de roles sin viewer_census y bridge eliminado sin consumidores legacy.",
+      "target": "2026-Q2"
+    },
+    {
       "path": "src/services/auth/index.ts",
       "owner": "auth",
       "kind": "compatibility_barrel",

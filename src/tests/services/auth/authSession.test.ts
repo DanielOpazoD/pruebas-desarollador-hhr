@@ -4,16 +4,12 @@ const {
   mockOnAuthStateChanged,
   mockFirebaseSignOut,
   mockResolveFirebaseUserRole,
-  mockCheckSharedCensusAccess,
-  mockIsSharedCensusMode,
   mockClearRoleCacheForEmail,
   mockAuth,
 } = vi.hoisted(() => ({
   mockOnAuthStateChanged: vi.fn(),
   mockFirebaseSignOut: vi.fn().mockResolvedValue(undefined),
   mockResolveFirebaseUserRole: vi.fn(),
-  mockCheckSharedCensusAccess: vi.fn(),
-  mockIsSharedCensusMode: vi.fn(),
   mockClearRoleCacheForEmail: vi.fn().mockResolvedValue(undefined),
   mockAuth: { currentUser: null as null | { email: string | null } },
 }));
@@ -29,12 +25,8 @@ vi.mock('firebase/auth', () => ({
 
 vi.mock('@/firebaseConfig', () => ({
   auth: mockAuth,
+  firebaseReady: Promise.resolve(),
   getFunctionsInstance: vi.fn().mockReturnValue({}),
-}));
-
-vi.mock('@/services/auth/sharedCensusAuth', () => ({
-  checkSharedCensusAccess: (email: string | null) => mockCheckSharedCensusAccess(email),
-  isSharedCensusMode: () => mockIsSharedCensusMode(),
 }));
 
 vi.mock('@/services/auth/authPolicy', () => ({
@@ -70,8 +62,6 @@ describe('authSession', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAuth.currentUser = null;
-    mockIsSharedCensusMode.mockReturnValue(false);
-    mockCheckSharedCensusAccess.mockResolvedValue({ authorized: false });
     mockResolveFirebaseUserRole.mockResolvedValue('doctor_specialist');
     mockOnAuthStateChanged.mockImplementation((_auth, callback) => {
       authStateCallback = callback as (firebaseUser: unknown) => Promise<void> | void;
@@ -135,33 +125,6 @@ describe('authSession', () => {
     );
 
     releaseClaimSync?.();
-  });
-
-  it('emits explicit shared-census session state during auth state rehydration', async () => {
-    const callback = vi.fn();
-    mockIsSharedCensusMode.mockReturnValue(true);
-    mockCheckSharedCensusAccess.mockResolvedValue({ authorized: true });
-
-    onAuthSessionStateChange(callback);
-    await flushObserverRegistration();
-
-    await authStateCallback?.(
-      createFirebaseUserMock({
-        uid: 'shared-1',
-        email: 'shared@hospital.cl',
-        displayName: 'Shared User',
-      })
-    );
-
-    expect(callback).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: 'shared_census',
-        user: expect.objectContaining({
-          uid: 'shared-1',
-          role: 'viewer_census',
-        }),
-      })
-    );
   });
 
   it('emits unauthorized session state for a removed user', async () => {

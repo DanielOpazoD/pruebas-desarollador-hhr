@@ -8,6 +8,11 @@ import {
   toResolvedAuthSessionState,
 } from '@/services/auth/authSessionState';
 
+export interface AuthSessionResolverDependencies {
+  signOutUnauthorizedUser(): Promise<void>;
+  resolveFirebaseUserRole(user: User): Promise<AuthUser['role'] | null>;
+}
+
 export const toAnonymousAuthUser = (firebaseUser: User): AuthUser => ({
   uid: firebaseUser.uid,
   email: null,
@@ -17,26 +22,10 @@ export const toAnonymousAuthUser = (firebaseUser: User): AuthUser => ({
 
 export const resolveAuthSessionState = async (
   firebaseUser: User,
-  dependencies: {
-    isSharedCensusMode(): boolean;
-    checkSharedCensusAccess(email: string | null): Promise<{ authorized: boolean }>;
-    signOutUnauthorizedUser(): Promise<void>;
-    resolveFirebaseUserRole(user: User): Promise<AuthUser['role'] | null>;
-  }
+  dependencies: AuthSessionResolverDependencies
 ): Promise<AuthSessionState> => {
   if (firebaseUser.isAnonymous) {
     return toAnonymousSignatureAuthSessionState(toAnonymousAuthUser(firebaseUser));
-  }
-
-  if (dependencies.isSharedCensusMode()) {
-    const sharedAccess = await dependencies.checkSharedCensusAccess(firebaseUser.email);
-    if (!sharedAccess.authorized) {
-      await dependencies.signOutUnauthorizedUser();
-      return createUnauthorizedAuthSessionState('shared_census_access_denied', {
-        email: firebaseUser.email,
-      });
-    }
-    return toResolvedAuthSessionState(toAuthUser(firebaseUser, 'viewer_census'));
   }
 
   const role = await dependencies.resolveFirebaseUserRole(firebaseUser);
@@ -52,12 +41,7 @@ export const resolveAuthSessionState = async (
 
 export const resolveAuthSessionUser = async (
   firebaseUser: User,
-  dependencies: {
-    isSharedCensusMode(): boolean;
-    checkSharedCensusAccess(email: string | null): Promise<{ authorized: boolean }>;
-    signOutUnauthorizedUser(): Promise<void>;
-    resolveFirebaseUserRole(user: User): Promise<AuthUser['role'] | null>;
-  }
+  dependencies: AuthSessionResolverDependencies
 ): Promise<AuthUser | null> => {
   const sessionState = await resolveAuthSessionState(firebaseUser, dependencies);
   return sessionState.user;

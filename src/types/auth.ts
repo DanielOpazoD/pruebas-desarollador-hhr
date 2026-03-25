@@ -15,8 +15,7 @@ export type UserRole =
   | 'admin'
   | 'nurse_hospital'
   | 'doctor_urgency'
-  | 'doctor_specialist'
-  | 'viewer_census';
+  | 'doctor_specialist';
 
 /**
  * User information structure used within the application's authentication state.
@@ -41,7 +40,6 @@ export type AuthSessionStatus =
   | 'authenticating'
   | 'authorized'
   | 'anonymous_signature'
-  | 'shared_census'
   | 'unauthorized'
   | 'auth_error';
 
@@ -65,7 +63,7 @@ export type AuthSessionState =
       technicalContext?: Record<string, unknown>;
     }
   | {
-      status: 'authorized' | 'anonymous_signature' | 'shared_census';
+      status: 'authorized' | 'anonymous_signature';
       user: AuthUser;
     }
   | {

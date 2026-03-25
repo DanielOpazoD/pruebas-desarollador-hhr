@@ -1,7 +1,7 @@
 /**
  * useExcelParser Hook
  *
- * Extracted from SharedCensusView.tsx to handle Excel file parsing with ExcelJS.
+ * Shared Excel parsing helper built on top of ExcelJS.
  * Supports multiple sheets, merged cells (colSpan/rowSpan), and rich text values.
  *
  * This hook is reusable for any Excel viewing functionality in the application.

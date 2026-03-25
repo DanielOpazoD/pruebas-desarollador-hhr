@@ -32,10 +32,11 @@ describe('whatsapp-proxy', () => {
       body: null,
       path: '/.netlify/functions/whatsapp-proxy/messages',
     });
+    const headers = response.headers as Record<string, string>;
 
     expect(response.statusCode).toBe(200);
-    expect(response.headers['Access-Control-Allow-Origin']).toBe('https://app.example.com');
-    expect(response.headers.Vary).toBe('Origin');
+    expect(headers['Access-Control-Allow-Origin']).toBe('https://app.example.com');
+    expect(headers.Vary).toBe('Origin');
   });
 
   it('rejects requests from untrusted origins', async () => {
@@ -69,6 +70,7 @@ describe('whatsapp-proxy', () => {
       path: '/.netlify/functions/whatsapp-proxy/messages',
       rawQuery: 'channel=handoff',
     });
+    const headers = response.headers as Record<string, string>;
 
     expect(fetchMock).toHaveBeenCalledWith('https://bot.example.com/messages?channel=handoff', {
       method: 'POST',
@@ -79,7 +81,7 @@ describe('whatsapp-proxy', () => {
       body: '{"message":"hola"}',
     });
     expect(response.statusCode).toBe(202);
-    expect(response.headers['Access-Control-Allow-Origin']).toBe('https://app.example.com');
-    expect(response.headers['Content-Type']).toBe('application/json');
+    expect(headers['Access-Control-Allow-Origin']).toBe('https://app.example.com');
+    expect(headers['Content-Type']).toBe('application/json');
   });
 });

@@ -112,6 +112,28 @@ export default tseslint.config(
     },
   },
   {
+    extends: [js.configs.recommended],
+    files: ['functions/**/*.js', 'netlify/functions/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      globals: {
+        ...globals.node,
+        ...globals.es2021,
+      },
+      sourceType: 'module',
+    },
+    rules: {
+      'no-console': 'off',
+      'no-unused-vars': 'off',
+    },
+  },
+  {
+    files: ['netlify/functions/**/*.{ts,js}', 'functions/**/*.js'],
+    rules: {
+      'boundaries/element-types': 'off',
+    },
+  },
+  {
     files: ['**/*.stories.{ts,tsx}', '**/*.test.{ts,tsx}'],
     rules: {
       'no-console': 'off',

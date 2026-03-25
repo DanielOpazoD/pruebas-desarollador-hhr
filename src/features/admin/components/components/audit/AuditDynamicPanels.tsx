@@ -3,7 +3,6 @@ import { AuditSection, AuditLogEntry } from '@/types/audit';
 import { ExportKeysPanel } from './ExportKeysPanel';
 import { AuditTimeline } from './AuditTimeline';
 import { ConsolidationManager } from './ConsolidationManager';
-import { CensusAccessManager } from '@/features/admin/components/CensusAccessManager';
 
 interface AuditDynamicPanelsProps {
   activeSection: AuditSection;
@@ -30,10 +29,6 @@ export const AuditDynamicPanels: React.FC<AuditDynamicPanelsProps> = ({
         <ConsolidationManager />
       </div>
     );
-  }
-
-  if (activeSection === 'ACCESS_CONTROL' && canSeeSensitivePanels) {
-    return <CensusAccessManager />;
   }
 
   return null;

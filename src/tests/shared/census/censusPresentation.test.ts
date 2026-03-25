@@ -19,7 +19,7 @@ describe('censusPresentation', () => {
     expect(formatCensusIsoDate('invalid-date')).toBe('invalid-date');
   });
 
-  it('formats shared census timestamps for exports and secondary views', () => {
+  it('formats census timestamps for exports and secondary views', () => {
     expect(formatCensusDateTime('2026-03-17T10:30:00.000Z')).toContain('17-03-2026');
     expect(formatCensusDateTime(undefined)).toBe('sin registro');
     expect(formatCensusDateTime('not-a-date')).toBe('not-a-date');

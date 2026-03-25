@@ -25,7 +25,7 @@ export const ROLES = {
   NURSE_HOSPITAL: 'nurse_hospital', // Enfermera de turno servicio de hospitalizados
   DOCTOR_URGENCY: 'doctor_urgency', // Médico de turno en urgencias
   DOCTOR_SPECIALIST: 'doctor_specialist', // Especialista con acceso limitado a censo y entrega médica
-  VIEWER_CENSUS: 'viewer_census', // Otros (Solo visualización censo)
+  VIEWER: 'viewer', // Invitado interno (solo lectura)
 } as const;
 
 export type UserRole = (typeof ROLES)[keyof typeof ROLES] | string;
@@ -62,9 +62,9 @@ const PERMISSIONS: Record<string, RolePermissions> = {
     modules: resolveRoleAccess(ROLES.DOCTOR_SPECIALIST).modules,
     canEdit: resolveRoleAccess(ROLES.DOCTOR_SPECIALIST).canEdit,
   },
-  [ROLES.VIEWER_CENSUS]: {
-    modules: resolveRoleAccess(ROLES.VIEWER_CENSUS).modules,
-    canEdit: resolveRoleAccess(ROLES.VIEWER_CENSUS).canEdit,
+  [ROLES.VIEWER]: {
+    modules: resolveRoleAccess(ROLES.VIEWER).modules,
+    canEdit: resolveRoleAccess(ROLES.VIEWER).canEdit,
   },
 };
 
@@ -161,7 +161,7 @@ const ACTION_PERMISSIONS: Record<string, ActionPermission[]> = {
     ACTIONS.EXPORT_PDF,
   ],
   [ROLES.DOCTOR_SPECIALIST]: [ACTIONS.PATIENT_READ],
-  [ROLES.VIEWER_CENSUS]: [
+  [ROLES.VIEWER]: [
     // Viewer can only read
     ACTIONS.PATIENT_READ,
   ],
@@ -312,7 +312,7 @@ export function getRoleDisplayName(role?: UserRole): string {
       return 'Médico de Urgencia';
     case ROLES.DOCTOR_SPECIALIST:
       return 'Especialista';
-    case ROLES.VIEWER_CENSUS:
+    case ROLES.VIEWER:
       return 'Visualizador de Censo';
     default:
       return resolveRoleAccess(role).specialistRestrictedMedicalAccess

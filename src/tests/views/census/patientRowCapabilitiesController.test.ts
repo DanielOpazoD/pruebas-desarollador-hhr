@@ -20,7 +20,7 @@ describe('patientRowCapabilitiesController', () => {
 
     expect(
       resolvePatientRowCapabilities({
-        role: 'viewer_census',
+        role: 'viewer',
         patient: { patientName: 'Paciente', rut: '1-9' },
         isBlocked: false,
         isEmpty: false,

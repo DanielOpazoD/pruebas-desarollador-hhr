@@ -16,12 +16,7 @@ export const AUDIT_CLINICAL_SECTIONS: AuditSection[] = [
   'HANDOFF_MEDICAL',
 ];
 
-export const AUDIT_SYSTEM_SECTIONS: AuditSection[] = [
-  'SESSIONS',
-  'EXPORT_KEYS',
-  'MAINTENANCE',
-  'ACCESS_CONTROL',
-];
+export const AUDIT_SYSTEM_SECTIONS: AuditSection[] = ['SESSIONS', 'EXPORT_KEYS', 'MAINTENANCE'];
 
 export const AUDIT_SECTIONS: Record<AuditSection, AuditSectionConfig> = {
   ALL: { label: 'Todos', color: 'bg-slate-100 text-slate-600' },
@@ -73,5 +68,4 @@ export const AUDIT_SECTIONS: Record<AuditSection, AuditSectionConfig> = {
   },
   MAINTENANCE: { label: '🛠️ Mantenimiento', color: 'bg-slate-200 text-slate-800', actions: [] },
   EXPORT_KEYS: { label: 'Claves Excel', color: 'bg-rose-100 text-rose-700', actions: [] },
-  ACCESS_CONTROL: { label: '🔐 Acceso Externo', color: 'bg-blue-200 text-blue-800', actions: [] },
 };

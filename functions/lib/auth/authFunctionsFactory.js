@@ -1,5 +1,4 @@
 const functions = require('firebase-functions/v1');
-const { CLINICAL_CALLABLE_ROLES } = require('./authConfig');
 const {
   assertAssignableRole,
   assertRoleMutationAccess,
@@ -75,19 +74,6 @@ const createAuthFunctions = ({ admin, helpers }) => ({
       console.error(`❌ Discovery Error for ${email}:`, error);
       throw new functions.https.HttpsError('internal', 'Error retrieving account permissions.');
     }
-  }),
-  checkSharedCensusAccess: functions.https.onCall(async (_data, context) => {
-    const email = requireAuthenticatedEmail(context);
-    const roleFromConfig = await helpers.resolveRoleForEmail(email);
-    if (CLINICAL_CALLABLE_ROLES.has(roleFromConfig)) {
-      return { authorized: true, role: 'downloader' };
-    }
-
-    const authorization = await helpers.isSharedCensusEmailAuthorized(email);
-    return {
-      authorized: authorization.authorized,
-      role: authorization.role,
-    };
   }),
 });
 

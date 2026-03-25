@@ -13,59 +13,84 @@ import {
 } from '../../src/services/exporters/excelValidation';
 import type { DailyRecord } from '../../src/types';
 import type { CensusWorkbookSheetDescriptor } from '../../src/services/exporters/censusMasterWorkbook';
+import {
+  buildCorsHeaders,
+  buildJsonResponse,
+  buildTextResponse,
+  getHeader,
+  getRequestOrigin,
+  isOriginAllowed,
+  parseJsonBody,
+  type NetlifyEventLike,
+} from './lib/http';
 
-const ALLOWED_ROLES = ['nurse_hospital', 'admin'];
+const ALLOWED_ROLES = new Set(['nurse_hospital', 'admin']);
 
-interface NetlifyEvent {
-  httpMethod: string;
-  headers: Record<string, string | undefined>;
-  body: string | null;
-  [key: string]: unknown;
-}
+export const handler = async (event: NetlifyEventLike) => {
+  const requestOrigin = getRequestOrigin(event);
+  const corsHeaders = buildCorsHeaders(requestOrigin, {
+    allowedHeaders: 'Content-Type, Authorization, Accept, X-User-Role',
+    allowedMethods: 'POST,OPTIONS',
+  });
 
-export const handler = async (event: NetlifyEvent) => {
+  if (!isOriginAllowed(requestOrigin)) {
+    return buildJsonResponse(403, { error: 'Origin not allowed' }, { requestOrigin });
+  }
+
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: '',
+    };
+  }
+
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: 'Método no permitido',
-    };
+    return buildTextResponse(405, 'Método no permitido', { requestOrigin });
   }
 
-  const requesterRole = (event.headers['x-user-role'] || event.headers['X-User-Role']) as
-    | string
-    | undefined;
-  if (!requesterRole || !ALLOWED_ROLES.includes(requesterRole)) {
-    return {
-      statusCode: 403,
-      body: 'No autorizado para enviar correos de censo.',
-    };
+  const requesterRole = getHeader(event.headers, 'x-user-role');
+  if (!requesterRole || !ALLOWED_ROLES.has(requesterRole)) {
+    return buildTextResponse(403, 'No autorizado para enviar correos de censo.', { requestOrigin });
   }
 
-  if (!event.body) {
-    return {
-      statusCode: 400,
-      body: 'Solicitud inválida: falta el cuerpo.',
-    };
+  const parsedBody = parseJsonBody<{
+    date: string;
+    records: DailyRecord[];
+    recipients?: string[];
+    nursesSignature?: string;
+    body?: string;
+    shareLink?: string;
+    sheetDescriptors?: CensusWorkbookSheetDescriptor[];
+  }>(event.body);
+
+  if (!parsedBody.ok) {
+    return buildTextResponse(400, parsedBody.error, { requestOrigin });
   }
 
   try {
-    const payload = JSON.parse(event.body);
-    const { date, records, recipients, nursesSignature, body, shareLink, sheetDescriptors } =
-      payload as {
-        date: string;
-        records: DailyRecord[];
-        recipients?: string[];
-        nursesSignature?: string;
-        body?: string;
-        shareLink?: string;
-        sheetDescriptors?: CensusWorkbookSheetDescriptor[];
-      };
+    const {
+      date,
+      records,
+      recipients,
+      nursesSignature,
+      body: emailBody,
+      shareLink,
+      sheetDescriptors,
+    } = parsedBody.value;
+
+    if (typeof shareLink === 'string' && shareLink.trim().length > 0) {
+      return buildTextResponse(
+        400,
+        'Solicitud inválida: el acceso por link al censo fue eliminado.',
+        { requestOrigin }
+      );
+    }
 
     if (!date || !Array.isArray(records) || records.length === 0) {
-      return {
-        statusCode: 400,
-        body: 'Solicitud inválida: falta la fecha o los datos del censo.',
-      };
+      return buildTextResponse(400, 'Solicitud inválida: falta la fecha o los datos del censo.', {
+        requestOrigin,
+      });
     }
 
     const monthRecords = records
@@ -73,10 +98,9 @@ export const handler = async (event: NetlifyEvent) => {
       .sort((a, b) => a.date.localeCompare(b.date));
 
     if (monthRecords.length === 0) {
-      return {
-        statusCode: 400,
-        body: 'No hay registros disponibles para generar el Excel maestro.',
-      };
+      return buildTextResponse(400, 'No hay registros disponibles para generar el Excel maestro.', {
+        requestOrigin,
+      });
     }
 
     const attachmentBufferRaw = await buildCensusMasterBuffer(monthRecords, {
@@ -88,43 +112,30 @@ export const handler = async (event: NetlifyEvent) => {
     const bufferValidation = validateExcelBuffer(attachmentBufferRaw);
     if (!bufferValidation.valid) {
       console.error('[CensusEmail] Buffer validation failed:', bufferValidation.error);
-      return {
-        statusCode: 500,
-        body: `Error: El archivo Excel generado es inválido. ${bufferValidation.error} No se enviará el correo.`,
-      };
+      return buildTextResponse(
+        500,
+        `Error: El archivo Excel generado es inválido. ${bufferValidation.error} No se enviará el correo.`,
+        { requestOrigin }
+      );
     }
 
     // Validate filename
     const filenameValidation = validateExcelFilename(attachmentName);
     if (!filenameValidation.valid) {
       console.error('[CensusEmail] Filename validation failed:', filenameValidation.error);
-      return {
-        statusCode: 500,
-        body: `Error: El nombre del archivo es inválido. ${filenameValidation.error}`,
-      };
+      return buildTextResponse(
+        500,
+        `Error: El nombre del archivo es inválido. ${filenameValidation.error}`,
+        { requestOrigin }
+      );
     }
 
-    const password = shareLink ? '' : generateCensusPassword(date);
+    const password = generateCensusPassword(date);
 
-    // Ensure the PIN or Link is included in the email body
-    let finalBody = body || '';
+    // Ensure the PIN is included in the email body
+    let finalBody = emailBody || '';
 
-    if (shareLink) {
-      const linkText = `Link de Acceso Seguro: ${shareLink}`;
-      const instructions = `Este link le permitirá visualizar el censo de este mes y el anterior directamente en la plataforma.`;
-      const shareBlock = `${linkText}\n${instructions}`;
-
-      if (finalBody.includes('Saludos cordiales,')) {
-        finalBody = finalBody.replace('Saludos cordiales,', `${shareBlock}\n\nSaludos cordiales,`);
-      } else if (finalBody.includes('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')) {
-        finalBody = finalBody.replace(
-          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-          `${shareBlock}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
-        );
-      } else {
-        finalBody = finalBody ? `${finalBody}\n\n${shareBlock}` : shareBlock;
-      }
-    } else if (password && !finalBody.includes(password)) {
+    if (password && !finalBody.includes(password)) {
       const pinLine = `Clave Excel: ${password}`;
       // ... (keep existing logic for PIN insertion)
       if (finalBody.includes('Saludos cordiales,')) {
@@ -139,33 +150,20 @@ export const handler = async (event: NetlifyEvent) => {
       }
     }
 
-    let attachmentBuffer = null;
-    if (!shareLink) {
-      attachmentBuffer = await XlsxPopulate.fromDataAsync(attachmentBufferRaw)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .then((workbook: any) => workbook.outputAsync({ password }));
-
-      // Validate encrypted buffer
-      if (!attachmentBuffer || attachmentBuffer.length < MIN_EXCEL_SIZE) {
-        console.error(
-          '[CensusEmail] Encrypted buffer validation failed: buffer is too small or empty'
-        );
-        return {
-          statusCode: 500,
-          body: 'Error: El archivo Excel encriptado es inválido o está vacío. No se enviará el correo.',
-        };
-      }
-    }
+    const attachmentBuffer = await XlsxPopulate.fromDataAsync(attachmentBufferRaw)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .then((workbook: any) => workbook.outputAsync({ password }));
 
     // Validate encrypted buffer
     if (!attachmentBuffer || attachmentBuffer.length < MIN_EXCEL_SIZE) {
       console.error(
         '[CensusEmail] Encrypted buffer validation failed: buffer is too small or empty'
       );
-      return {
-        statusCode: 500,
-        body: 'Error: El archivo Excel encriptado es inválido o está vacío. No se enviará el correo.',
-      };
+      return buildTextResponse(
+        500,
+        'Error: El archivo Excel encriptado es inválido o está vacío. No se enviará el correo.',
+        { requestOrigin }
+      );
     }
 
     const resolvedRecipients: string[] =
@@ -174,8 +172,8 @@ export const handler = async (event: NetlifyEvent) => {
     const gmailResponse = await sendCensusEmail({
       date,
       recipients: resolvedRecipients,
-      attachmentBuffer: attachmentBuffer || undefined,
-      attachmentName: shareLink ? undefined : attachmentName,
+      attachmentBuffer,
+      attachmentName,
       nursesSignature,
       body: finalBody,
       encryptionPin: password || undefined,
@@ -184,23 +182,21 @@ export const handler = async (event: NetlifyEvent) => {
     // eslint-disable-next-line no-console
     console.log('Gmail send response', gmailResponse);
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
+    return buildJsonResponse(
+      200,
+      {
         success: true,
         message: 'Correo enviado correctamente.',
         gmailId: gmailResponse.id,
         censusDate: date,
         exportPassword: password,
-      }),
-    };
+      },
+      { requestOrigin }
+    );
   } catch (error: unknown) {
     console.error('Error enviando correo de censo', error);
     const message =
       error instanceof Error ? error.message : 'Error desconocido enviando el correo.';
-    return {
-      statusCode: 500,
-      body: message,
-    };
+    return buildTextResponse(500, message, { requestOrigin });
   }
 };

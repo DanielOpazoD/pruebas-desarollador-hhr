@@ -1,0 +1,113 @@
+# `src/features/census`
+
+## Propósito
+
+Módulo central del producto: censo diario, acciones sobre camas/pacientes, movimientos (alta/traslado/move-copy), UI de tablas y reglas de turno/fecha.
+
+## Subcapas internas
+
+| Path           | Rol                                                      |
+| -------------- | -------------------------------------------------------- |
+| `components/`  | UI del censo (tabla, filas, modales, secciones)          |
+| `hooks/`       | Orquestación de estado y acciones de la feature          |
+| `controllers/` | Lógica pura (validación, mapping, ejecución de comandos) |
+| `domain/`      | Contratos de movimientos y reglas propias                |
+| `context/`     | Contextos internos de acciones de censo                  |
+| `types/`       | Tipos internos del módulo                                |
+| `validation/`  | Validaciones específicas de acciones de censo            |
+
+## Flujos críticos
+
+### Acción de movimiento
+
+```text
+UI modal -> use*ModalForm -> controller validation
+-> resolve*Command -> execute*RuntimeCommand
+-> actions DailyRecord -> persistencia
+```
+
+### Reglas de fecha/turno
+
+```text
+clinicalShiftCalendarController
+  -> bounds (recordDate / nextDay / nightEnd)
+  -> validation (movementDate + movementTime)
+  -> presentation (dateLabel + timeLabel)
+```
+
+## Archivos clave
+
+| Archivo                                                  | Motivo                                                          |
+| -------------------------------------------------------- | --------------------------------------------------------------- |
+| `controllers/clinicalShiftCalendarController.ts`         | Fuente única de invariantes de fecha/turno                      |
+| `controllers/censusActionExecutionController.ts`         | Resolución de comandos tipados                                  |
+| `controllers/censusActionRuntimeController.ts`           | Ejecución runtime desacoplada de provider                       |
+| `controllers/patientMovementCommandRuntimeController.ts` | Bridge command -> action runtime                                |
+| `controllers/bedManagerModalController.ts`               | Transiciones y validación del flujo de bloqueo de camas         |
+| `controllers/bedManagerGridItemsController.ts`           | Mapeo puro de `DailyRecord` a props de grillas de camas         |
+| `controllers/censusMovementActionIconController.ts`      | Resolución de iconografía para acciones de movimientos          |
+| `hooks/useDischargeModalForm.ts`                         | Form flow de altas                                              |
+| `hooks/useTransferModalForm.ts`                          | Form flow de traslados                                          |
+| `hooks/useBedManagerModalModel.ts`                       | Orquestación UI vs dominio del modal de camas                   |
+| `hooks/useCensusMovementActionsCellModel.ts`             | View-model para celda de acciones de movimientos                |
+| `hooks/useCensusViewScreenModel.ts`                      | Fachada de pantalla para ramas `analytics/empty/register`       |
+| `hooks/useCensusTableRuntime.ts`                         | Runtime unificado de tabla (dependencias + resize + activación) |
+| `hooks/useDischargesSectionModel.ts`                     | Fachada de wiring para altas                                    |
+| `hooks/useTransfersSectionModel.ts`                      | Fachada de wiring para traslados                                |
+
+## Calidad
+
+- Cobertura alta en `src/tests/views/census/**`.
+- Checks de arquitectura y boundaries runtime en CI local (`check:quality`).
+
+## Invariantes
+
+- El cálculo de `nuevo ingreso` debe salir del dominio temporal compartido, no de helpers locales de tabla.
+- Los indicadores clínicos de fila deben depender del sujeto correcto: paciente/episodio cuando corresponda, no cama por arrastre.
+- Los modales visibles deben derivar de capabilities/runtime de fila, no solo de estado UI.
+- En pacientes con especialidad `Ginecobstetricia`, la UI del censo puede capturar un
+  `ginecobstetriciaType` adicional (`Obstétrica` o `Ginecológica`) sin modificar la especialidad
+  principal usada en el registro.
+- El ícono de vía del parto solo debe aparecer para registros `Ginecobstetricia` marcados como
+  `Obstétrica`.
+- `deliveryRoute` y `deliveryCesareanLabor` son persistencia clínica del censo, no señalización visual;
+  si el caso deja de ser obstétrico, esos campos deben limpiarse.
+- La creación manual de un día con copia desde el anterior sigue respetando el horario clínico salvo
+  cuando el actor es `admin` y usa el override explícito; ese bypass no debe reutilizarse para otros roles.
+- La verificación pasiva de respaldos remotos no debe ejecutarse para roles sin capacidad operativa
+  real sobre el módulo, para evitar `403` ruidosos desde Storage.
+- Los warnings de creación de día deben distinguir entre `bloqueado por horario`, `permitido por override`
+  y `falla real de inicialización`.
+- El bootstrap de migración del censo es pasivo y no crítico: debe correr fuera del render inicial
+  de `CensusView` y nunca bloquear la primera pintura del registro o del prompt de día vacío.
+- `useCensusViewRouteModel` debe construir props solo para la rama visible (`analytics`, `empty`,
+  `register`) para mantener bajo el costo sincrónico del primer render del censo.
+- Los componentes grandes (`CensusView`, `DischargesSection`, `TransfersSection`) deben preferir
+  facades locales de feature (`use*ScreenModel`, `use*SectionModel`, `use*Runtime`) en vez de
+  recomponer dependencias de contexto y acciones manualmente en cada render.
+
+## Runtime boundaries
+
+- `controllers/` no debe importar React ni hooks.
+- `components/` no debe recalcular reglas clínicas ya resueltas por controllers.
+- Las acciones del censo deben salir de los command/runtime controllers, no de callbacks ad hoc embebidos.
+- La tabla web puede abreviar visualmente especialidades concretas como `GyO` o `TMT`, pero esas
+  etiquetas no deben filtrarse a persistencia, analytics ni contratos de dominio.
+- El formateo de fechas compactas de `census` debe reutilizar presentation helpers compartidos;
+  no deben reaparecer `toLocaleDateString()` o `toLocaleString()` inline en controllers de UI.
+
+## Test entrypoints recomendados
+
+- `npx vitest run src/tests/views/census`
+- `npm run test:ci:unit`
+
+## Comandos de validación del módulo
+
+- `npm run typecheck`
+- `npm run check:quality`
+- `npm run test:ci:unit -- src/tests/views/census`
+
+## Safe change links
+
+- [docs/QUALITY_GUARDRAILS.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/QUALITY_GUARDRAILS.md)
+- [docs/SAFE_CHANGE_CHECKLIST.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/SAFE_CHANGE_CHECKLIST.md)

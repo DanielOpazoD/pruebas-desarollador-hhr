@@ -28,7 +28,7 @@
 - `feature-census-runtime` agrupa controladores, validaciones y `patient-row` del censo diario.
 - No separar `patient-row` de `feature-census-runtime` mientras existan imports bidireccionales entre componentes de fila y controladores del censo; esa división produjo un fallo productivo de inicialización en Netlify (`Cannot access '<symbol>' before initialization`).
 - `feature-clinical-documents` y `feature-transfers` se mantienen separados porque cargan flujos documentales pesados y no deben inflar el arranque base del censo.
-- `feature-backup-storage` conserva juntos exportación y storage porque comparten un grafo estrechamente acoplado; no se debe volver a separar `shared census` de ese bloque sin demostrar un runtime boundary real.
+- `feature-backup-storage` conserva juntos exportación y storage porque comparten un grafo estrechamente acoplado; no se debe refragmentar ese bloque sin demostrar un runtime boundary real.
 
 ## Vendor strategy
 
@@ -41,4 +41,4 @@
 
 - Run `npm run build` after any `manualChunks` change.
 - Run the focused test `vitest run src/tests/build/chunkingPolicy.test.ts`.
-- If a new chunk is introduced for backup/shared census, inspect the built assets and confirm there is no two-way chunk import.
+- If a new chunk is introduced around backup/export flows, inspect the built assets and confirm there is no two-way chunk import.

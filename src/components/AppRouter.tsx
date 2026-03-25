@@ -23,13 +23,11 @@ import {
   SystemDiagnosticsView,
   TransferManagementView,
   BackupFilesView,
-  SharedCensusView,
   PatientMasterView,
   DataMaintenanceView,
   RoleManagementView,
   ReminderAdminView,
 } from '@/views/LazyViews';
-import { useSharedCensusMode } from '@/hooks/useSharedCensusMode';
 import type { CensusAccessProfile } from '@/shared/access/censusAccessProfile';
 import { resolveSpecialistCensusAccessProfile } from '@/shared/access/specialistAccessPolicy';
 import {
@@ -77,8 +75,6 @@ interface AppRouterProps {
   showBedManagerModal: boolean;
   /** Callback to close bed manager modal */
   onCloseBedManagerModal: () => void;
-  /** Shared census mode state */
-  sharedCensus: ReturnType<typeof useSharedCensusMode>;
 }
 
 /**
@@ -96,7 +92,6 @@ export const AppRouter: React.FC<AppRouterProps> = ({
   isSignatureMode,
   showBedManagerModal,
   onCloseBedManagerModal,
-  sharedCensus,
 }) => {
   const censusAccessProfile: CensusAccessProfile = resolveSpecialistCensusAccessProfile(role);
   const visibleModules = getVisibleAppModules(role);
@@ -107,10 +102,6 @@ export const AppRouter: React.FC<AppRouterProps> = ({
         {isSignatureMode ? (
           <SectionErrorBoundary sectionName="Firma Médica">
             <MedicalSignatureView />
-          </SectionErrorBoundary>
-        ) : sharedCensus.isSharedCensusMode ? (
-          <SectionErrorBoundary sectionName="Censo Compartido">
-            <SharedCensusView accessUser={sharedCensus.accessUser} error={sharedCensus.error} />
           </SectionErrorBoundary>
         ) : (
           <>

@@ -1,43 +1,127 @@
-# Guía de Testing - Hospital Hanga Roa
+# `src/` - Mapa del Código Fuente
 
-Este documento describe la estrategia de pruebas para asegurar la calidad y estabilidad del sistema de censo hospitalario.
+Este documento es la puerta de entrada para navegar el código rápidamente. El objetivo es que un desarrollador (humano o IA) entienda:
 
-## 1. Estructura de Tests
+1. dónde vive cada responsabilidad,
+2. cómo se conectan las capas,
+3. en qué README profundizar según el tipo de cambio.
 
-El proyecto utiliza **Vitest** como motor de pruebas y se divide en tres niveles:
+## Orden recomendado de lectura
 
-### Unitarios (`tests/unit/`)
-Prueban funciones aisladas sin dependencias externas (ej. `statsCalculator.test.ts`).
+1. [`/README.md`](../README.md)
+2. [`/docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)
+3. Este archivo (`src/README.md`)
+4. README del directorio que vas a modificar (tabla de abajo)
 
-### Hooks (`tests/hooks/`)
-Validan la lógica de estado y efectos de React usando `@testing-library/react-hooks` (ej. `usePatientTransfers.test.ts`).
+## Árbol principal de `src/`
 
-### Integración (`tests/integration/`)
-Validan flujos completos de negocio y la interacción entre múltiples servicios, hooks y estados.
-- `census-export.test.ts`: Flujo de Excel Maestro.
-- `handoff-signature.test.ts`: Firma médica y entrega.
-- `audit-flow.test.ts`: Trazabilidad de acciones (MINSAL).
-- `offline-persistence.test.ts`: Resiliencia ante fallos de red.
-- `daily-record-sync.test.ts`: Sincronización Local ↔ Firestore.
-- `permissions.test.ts`: Matriz de seguridad RBAC.
+```text
+src/
+├── App.tsx
+├── index.tsx
+├── index.css
+├── firebaseConfig.ts
+├── service-worker.ts
+├── adapters/
+├── assets/
+├── components/
+├── config/
+├── constants/
+├── context/
+├── core/
+├── docs/
+├── domain/
+├── features/
+├── hooks/
+├── infrastructure/
+├── schemas/
+├── services/
+├── shared/
+├── styles/
+├── tests/
+├── types/
+├── utils/
+└── views/
+```
 
-### E2E (`e2e/`)
-Pruebas de caja negra con **Playwright** que validan la experiencia de usuario en navegadores reales.
-- `report-flow.spec.ts`: Flujo completo de entrega y exportación.
-- `medical-signature.spec.ts`: Firma anónima de médicos.
-- `patient-operations.spec.ts`: Operaciones críticas de pacientes.
+## Archivo raíz -> propósito
 
-## 2. Ejecución de Tests
+| Archivo                                  | Propósito                                                                              |
+| ---------------------------------------- | -------------------------------------------------------------------------------------- |
+| `src/index.tsx`                          | Bootstrap React, `QueryClientProvider`, `GlobalErrorBoundary`, gate de `firebaseReady` |
+| `src/App.tsx`                            | Orquestación principal de auth, date nav, record sync, providers y routing             |
+| `src/index.css`                          | Estilos globales y variables CSS base                                                  |
+| `src/firebaseConfig.ts`                  | Inicialización/configuración de Firebase                                               |
+| `src/service-worker.ts`                  | Lógica PWA/offline                                                                     |
+| `src/env.d.ts` / `src/vitest.shims.d.ts` | Tipados de entorno/soporte testing                                                     |
 
-| Comando | Descripción |
-| :--- | :--- |
-| `npm test` | Ejecuta todos los tests en modo interactivo. |
-| `npm run ci` | Ejecuta Lint -> Test -> Build (usar antes de push). |
-| `npm run test:ui` | Abre la interfaz visual de Vitest. |
-| `npm run coverage` | Genera reporte de cobertura de código. |
+## Mapa por directorio (con documentación asociada)
 
-## 3. Mejores Prácticas
+| Directorio           | Qué contiene                                     | README                                                   |
+| -------------------- | ------------------------------------------------ | -------------------------------------------------------- |
+| `src/adapters`       | Adaptadores de integración (actualmente liviano) | [src/adapters/README.md](adapters/README.md)             |
+| `src/assets`         | Recursos estáticos internos                      | [src/assets/README.md](assets/README.md)                 |
+| `src/components`     | UI compartida, layout, modales, componentes base | [src/components/README.md](components/README.md)         |
+| `src/config`         | Configuración transversal (query client, etc.)   | [src/config/README.md](config/README.md)                 |
+| `src/constants`      | Catálogos y constantes de negocio/UI             | [src/constants/README.md](constants/README.md)           |
+| `src/context`        | Estado global por providers y hooks de acceso    | [src/context/README.md](context/README.md)               |
+| `src/core`           | Primitivas base de UI/servicios                  | [src/core/README.md](core/README.md)                     |
+| `src/docs`           | Guías técnicas internas de código                | [src/docs/README.md](docs/README.md)                     |
+| `src/domain`         | Dominio transversal (independiente de React)     | [src/domain/README.md](domain/README.md)                 |
+| `src/features`       | Módulos por feature (census/admin/transfers/...) | [src/features/README.md](features/README.md)             |
+| `src/hooks`          | Hooks de aplicación y controllers de hooks       | [src/hooks/README.md](hooks/README.md)                   |
+| `src/infrastructure` | Capa infra (en evolución)                        | [src/infrastructure/README.md](infrastructure/README.md) |
+| `src/schemas`        | Validación y contratos de entrada                | [src/schemas/README.md](schemas/README.md)               |
+| `src/services`       | Repositorios, storage, integraciones externas    | [src/services/README.md](services/README.md)             |
+| `src/shared`         | Contratos/runtime adapter reutilizable           | [src/shared/README.md](shared/README.md)                 |
+| `src/styles`         | CSS específico por contexto (p.ej. impresión)    | [src/styles/README.md](styles/README.md)                 |
+| `src/tests`          | Pruebas unitarias/integración por capas/features | [src/tests/README.md](tests/README.md)                   |
+| `src/types`          | Tipos TypeScript globales de dominio/DTO         | [src/types/README.md](types/README.md)                   |
+| `src/utils`          | Utilidades puras compartidas                     | [src/utils/README.md](utils/README.md)                   |
+| `src/views`          | Vistas lazy y composición de módulos             | [src/views/README.md](views/README.md)                   |
 
-1. **Mocks de Firebase**: Siempre usar los mocks definidos en `tests/setup.ts` para evitar llamadas reales a la red.
-2. **Datos de Prueba**: Usar las funciones `createMockRecord` definidas en los tests de integración para mantener consistencia.
-3. **Regresión**: Si se modifica un flujo crítico (Censo, Firma, Excel), es obligatorio ejecutar la suite de integración correspondiente.
+### Profundización recomendada (alta complejidad)
+
+| Módulo                  | Documento                                                              |
+| ----------------------- | ---------------------------------------------------------------------- |
+| `features/census`       | [src/features/census/README.md](features/census/README.md)             |
+| `hooks/controllers`     | [src/hooks/controllers/README.md](hooks/controllers/README.md)         |
+| `components/modals`     | [src/components/modals/README.md](components/modals/README.md)         |
+| `services/repositories` | [src/services/repositories/README.md](services/repositories/README.md) |
+| `services/storage`      | [src/services/storage/README.md](services/storage/README.md)           |
+
+## Flujo de navegación técnico (rápido)
+
+```text
+UI event
+  -> component/view
+  -> feature hook
+  -> controller/domain validation
+  -> context action
+  -> service/repository
+  -> storage (IndexedDB/Firestore)
+  -> query cache update + subscription
+  -> re-render UI
+```
+
+## Inventario y trazabilidad
+
+Para obtener inventario completo del árbol en cualquier momento:
+
+```bash
+find src -type f | sort
+```
+
+Para ubicar rápidamente responsabilidades por feature:
+
+```bash
+find src/features -maxdepth 3 -type d | sort
+```
+
+## Reglas de mantenimiento
+
+- Si agregas un archivo en un directorio principal, actualiza su `README.md`.
+- Si mueves responsabilidades entre capas, actualiza también `docs/ARCHITECTURE.md`.
+- Si cambias contratos (`types`, `schemas`, `domain/contracts`), documenta el impacto en el README del módulo.
+- Los contratos de controller reutilizados entre features deben vivir en `src/shared/contracts/`, no dentro de una feature.
+- Las imports desde `src/App.tsx`, `src/views/*` y cualquier consumidor externo a una feature deben pasar por el `index.ts` o `public.ts` del módulo correspondiente.

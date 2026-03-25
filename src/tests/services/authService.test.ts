@@ -12,7 +12,6 @@ import { QuerySnapshot } from 'firebase/firestore';
 vi.unmock('../../services/auth/authService');
 vi.unmock('@/services/auth/authService');
 
-const mockCheckSharedCensusAccessCallable = vi.fn();
 const mockCheckUserRoleCallable = vi.fn();
 
 // Mock setup for authService tests
@@ -37,9 +36,6 @@ vi.mock('firebase/auth', () => {
 
 vi.mock('firebase/functions', () => ({
   httpsCallable: vi.fn((_functions: unknown, callableName: string) => {
-    if (callableName === 'checkSharedCensusAccess') {
-      return mockCheckSharedCensusAccessCallable;
-    }
     if (callableName === 'checkUserRole') {
       return mockCheckUserRoleCallable;
     }
@@ -70,9 +66,6 @@ describe('authService', () => {
     vi.clearAllMocks();
     localStorage.removeItem(AUTH_BOOTSTRAP_PENDING_KEY);
     localStorage.removeItem(GOOGLE_LOGIN_LOCK_KEY);
-    mockCheckSharedCensusAccessCallable.mockResolvedValue({
-      data: { authorized: true, role: 'viewer' },
-    });
     mockCheckUserRoleCallable.mockResolvedValue({
       data: { role: 'unauthorized' },
     });
@@ -184,24 +177,6 @@ describe('authService', () => {
       expect(result.role).toBe('doctor_specialist');
     });
 
-    it('should reject shared-census login when callable denies access', async () => {
-      setLocation('/censo-compartido');
-      mockCheckSharedCensusAccessCallable.mockResolvedValue({
-        data: { authorized: false, role: 'viewer' },
-      });
-
-      vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue({
-        user: {
-          uid: 'google-denied',
-          email: 'denied@external.com',
-          displayName: 'Denied User',
-        },
-      } as unknown as firebaseAuth.UserCredential);
-
-      await expect(signInWithGoogle()).rejects.toThrow('Acceso no autorizado');
-      expect(firebaseAuth.signOut).toHaveBeenCalled();
-    });
-
     it('should fail with multi-tab guidance when another tab lock is active', async () => {
       localStorage.setItem(
         GOOGLE_LOGIN_LOCK_KEY,
@@ -289,31 +264,25 @@ describe('authService', () => {
       expect(result).toBeNull();
     });
 
-    it('should return user for shared census mode', async () => {
-      // Mock window.location.pathname
-      setLocation('/censo-compartido/test');
-      mockCheckSharedCensusAccessCallable.mockResolvedValue({
-        data: { authorized: true, role: 'viewer' },
-      });
-
+    it('should return authorized session state when redirect succeeds', async () => {
       vi.mocked(firebaseAuth.getRedirectResult).mockResolvedValue({
-        user: { uid: 'shared-123', email: 'guest@test.com', displayName: 'Guest' },
+        user: { uid: 'redirect-123', email: 'admin@test.com', displayName: 'Admin' },
       } as unknown as firebaseAuth.UserCredential);
+      mockCheckUserRoleCallable.mockResolvedValue({
+        data: { role: 'admin' },
+      });
 
       const result = await (
         await import('@/services/auth/authService')
       ).handleSignInRedirectResult();
       expect(result).toEqual(
         expect.objectContaining({
-          status: 'shared_census',
+          status: 'authorized',
           user: expect.objectContaining({
-            role: 'viewer_census',
+            role: 'admin',
           }),
         })
       );
-
-      // Restore location
-      Object.defineProperty(window, 'location', { configurable: true, value: originalLocation });
     });
 
     it('should clear pending bootstrap marker when redirect finishes without result', async () => {

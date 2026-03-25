@@ -1,14 +1,11 @@
 import { signOut as firebaseSignOut, User } from 'firebase/auth';
 import { AuthUser, UserRole } from '@/types/auth';
-import { checkSharedCensusAccess, isSharedCensusMode } from '@/services/auth/sharedCensusAuth';
 import { resolveGeneralLoginAccessForEmail } from '@/services/auth/authPolicy';
 import { createAuthError, toAuthUser } from '@/services/auth/authShared';
 import { recordAuthOperationalError } from '@/services/auth/authOperationalTelemetry';
 import { defaultAuthRuntime } from '@/services/firebase-runtime/authRuntime';
 import { resolveUserRoleClaim } from '@/services/auth/authClaimSyncService';
 
-const SHARED_CENSUS_UNAUTHORIZED_MESSAGE =
-  'Acceso no autorizado. Tu correo no tiene permisos para censo compartido.';
 const STANDARD_UNAUTHORIZED_MESSAGE =
   'Acceso no autorizado. Tu correo no tiene un rol vigente en Gestión de Roles.';
 const ROLE_VALIDATION_UNAVAILABLE_MESSAGE =
@@ -21,15 +18,6 @@ const rejectUnauthorizedUser = async (message: string): Promise<never> => {
 };
 
 export const authorizeFirebaseUser = async (user: User): Promise<AuthUser> => {
-  if (isSharedCensusMode()) {
-    const sharedAccess = await checkSharedCensusAccess(user.email);
-    if (!sharedAccess.authorized) {
-      return rejectUnauthorizedUser(SHARED_CENSUS_UNAUTHORIZED_MESSAGE);
-    }
-
-    return toAuthUser(user, 'viewer_census');
-  }
-
   const { allowed, role, resolution } = await resolveGeneralLoginAccessForEmail(user.email || '');
   if (allowed && role) {
     return toAuthUser(user, role);

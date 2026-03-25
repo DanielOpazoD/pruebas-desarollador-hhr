@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["netlify/functions/**/*.ts", "src/types/**/*.d.ts"],
+  "exclude": ["node_modules", "dist"]
+}

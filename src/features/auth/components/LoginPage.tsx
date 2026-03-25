@@ -8,10 +8,9 @@ import { useLoginPageController } from './useLoginPageController';
 
 export interface LoginPageProps {
   onLoginSuccess: () => void;
-  accessMode?: 'default' | 'shared-census';
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, accessMode = 'default' }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const {
     error,
     errorCode,
@@ -49,7 +48,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, accessMode
         <LoginPageCard
           isAnyLoading={isAnyLoading}
           isGoogleLoading={isGoogleLoading}
-          accessMode={accessMode}
           error={error}
           errorCode={errorCode}
           canRetryGoogleSignIn={canRetryGoogleSignIn}

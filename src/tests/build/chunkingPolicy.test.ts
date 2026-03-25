@@ -2,11 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { chunkForModule } from '../../../scripts/config/chunkingPolicy';
 
 describe('chunkingPolicy', () => {
-  it('keeps shared census storage modules inside feature-backup-storage', () => {
-    expect(chunkForModule('/repo/src/application/backup-export/sharedCensusFilesUseCases.ts')).toBe(
-      'feature-backup-storage'
-    );
-
+  it('keeps backup storage modules inside feature-backup-storage', () => {
     expect(chunkForModule('/repo/src/services/backup/censusStorageService.ts')).toBe(
       'feature-backup-storage'
     );
@@ -14,7 +10,6 @@ describe('chunkingPolicy', () => {
 
   it('does not recreate the removed shared-census-storage chunk', () => {
     const assignedChunks = [
-      chunkForModule('/repo/src/application/backup-export/sharedCensusFilesUseCases.ts'),
       chunkForModule('/repo/src/services/backup/censusStorageService.ts'),
       chunkForModule('/repo/src/services/backup/baseStorageService.ts'),
     ];

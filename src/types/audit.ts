@@ -146,8 +146,7 @@ export type AuditSection =
   | 'HANDOFF_NURSE'
   | 'HANDOFF_MEDICAL'
   | 'EXPORT_KEYS'
-  | 'MAINTENANCE'
-  | 'ACCESS_CONTROL';
+  | 'MAINTENANCE';
 
 export interface AuditStats {
   todayCount: number;

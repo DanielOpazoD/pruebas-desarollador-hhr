@@ -15,6 +15,7 @@ import {
   AUTH_ROLE_LOOKUP_UNAVAILABLE_CODE,
   getBootstrapRoleForEmail,
   getDynamicRoleForEmail,
+  resolveCallableRole,
 } from '@/services/auth/authRoleLookup';
 
 describe('authRoleLookup', () => {
@@ -46,6 +47,12 @@ describe('authRoleLookup', () => {
     httpsCallableMock.mockReturnValue(checkUserRoleCall);
 
     await expect(getDynamicRoleForEmail('removed@hospital.cl')).resolves.toBeNull();
+  });
+
+  it('normalizes malformed callable payloads to null without leaking ambiguity', () => {
+    expect(resolveCallableRole(undefined)).toBeNull();
+    expect(resolveCallableRole({ role: null })).toBeNull();
+    expect(resolveCallableRole({ role: 'viewer' })).toBe('viewer');
   });
 
   it('throws an explicit unavailable error when the callable cannot be reached', async () => {

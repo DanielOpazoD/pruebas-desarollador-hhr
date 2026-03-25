@@ -139,21 +139,6 @@ export default defineConfig(({ mode }) => {
     build: {
       modulePreload: {
         polyfill: false,
-        resolveDependencies: (_filename, deps, context) => {
-          if (
-            context.hostType === 'js' &&
-            context.hostId.includes('/src/features/census/components/SharedCensusView.tsx')
-          ) {
-            return deps.filter(
-              dep =>
-                !dep.includes('vendor-excel-zip') &&
-                !dep.includes('ExcelParsingService-') &&
-                !dep.includes('excelUtils-')
-            );
-          }
-
-          return deps;
-        },
       },
       rollupOptions: {
         output: {

@@ -66,15 +66,6 @@
       "reason": "Resuelto ajustando el test al logger estructurado actual del dispatch controller."
     },
     {
-      "file": "src/tests/hooks/useSharedCensusMode.test.ts",
-      "command": "npm run test:ci:unit",
-      "classification": "bug_real",
-      "status": "fixed",
-      "owner": "auth",
-      "sla": "2026-04-30",
-      "reason": "Resuelto ajustando el test al contrato actual de AuthContext y al acceso compartido vigente."
-    },
-    {
       "file": "src/tests/services/firestoreService.test.ts",
       "command": "npm run test:ci:unit",
       "classification": "deterministic",

@@ -155,7 +155,7 @@ describe('patientRowBindingsController', () => {
       readOnly: false,
       actionMenuAlign: 'top',
       diagnosisMode: 'free',
-      role: 'viewer_census',
+      role: 'viewer',
       indicators: {
         hasClinicalDocument: false,
         isNewAdmission: false,
@@ -174,7 +174,7 @@ describe('patientRowBindingsController', () => {
       data,
       currentDateString: '2026-02-15',
       isSubRow: false,
-      role: 'viewer_census',
+      role: 'viewer',
       runtime,
     });
 

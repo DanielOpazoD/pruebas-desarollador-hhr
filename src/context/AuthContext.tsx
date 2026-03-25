@@ -3,7 +3,7 @@
  * Manages authentication state and user roles across the application.
  * Uses useAuthState hook internally as the single source of truth.
  *
- * Supports Firebase auth, shared census and signature-mode access.
+ * Supports Firebase auth and signature-mode access.
  * Roles: 'viewer' (read-only) | 'editor' (full access) | 'admin' (full access + admin features)
  */
 
@@ -29,7 +29,6 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isAuthorizedSession: boolean;
   isAnonymousSignature: boolean;
-  isSharedCensus: boolean;
   isUnauthorized: boolean;
   isEditor: boolean;
   isViewer: boolean;
@@ -71,7 +70,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       isAuthenticated: isAuthenticatedAuthSessionState(authState.sessionState),
       isAuthorizedSession: authState.sessionState.status === 'authorized',
       isAnonymousSignature: authState.sessionState.status === 'anonymous_signature',
-      isSharedCensus: authState.sessionState.status === 'shared_census',
       isUnauthorized: authState.sessionState.status === 'unauthorized',
       isEditor: authState.isEditor,
       isViewer: authState.isViewer,

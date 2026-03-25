@@ -1,47 +1,16 @@
+import {
+  buildCorsHeaders,
+  buildJsonResponse,
+  getHeader,
+  getRequestOrigin,
+  isOriginAllowed,
+  type NetlifyEventLike,
+} from './lib/http';
+
 const PROXY_ROUTE_PREFIX = '/.netlify/functions/whatsapp-proxy';
-const CORS_ALLOWED_HEADERS = 'Content-Type, Authorization';
-const CORS_ALLOWED_METHODS = 'GET,POST,OPTIONS';
 
 const resolveBotBaseUrl = (): string =>
   (process.env.WHATSAPP_BOT_URL || process.env.WHATSAPP_BOT_SERVER || '').replace(/\/$/, '');
-
-const normalizeUrlOrigin = (value: string | undefined): string | null => {
-  if (!value) return null;
-
-  try {
-    return new URL(value).origin;
-  } catch {
-    return null;
-  }
-};
-
-const resolveAllowedOrigins = (): string[] =>
-  [
-    process.env.URL,
-    process.env.DEPLOY_PRIME_URL,
-    process.env.DEPLOY_URL,
-    process.env.SITE_URL,
-    process.env.APP_URL,
-  ]
-    .map(normalizeUrlOrigin)
-    .filter((origin): origin is string => Boolean(origin));
-
-const buildCorsHeaders = (requestOrigin?: string): Record<string, string> => {
-  const headers: Record<string, string> = {
-    'Access-Control-Allow-Headers': CORS_ALLOWED_HEADERS,
-    'Access-Control-Allow-Methods': CORS_ALLOWED_METHODS,
-    Vary: 'Origin',
-  };
-
-  if (requestOrigin && resolveAllowedOrigins().includes(requestOrigin)) {
-    headers['Access-Control-Allow-Origin'] = requestOrigin;
-  }
-
-  return headers;
-};
-
-const isOriginAllowed = (requestOrigin?: string): boolean =>
-  !requestOrigin || resolveAllowedOrigins().includes(requestOrigin);
 
 const getPathSuffix = (path: string | undefined) => {
   if (!path) return '/';
@@ -49,29 +18,15 @@ const getPathSuffix = (path: string | undefined) => {
   return suffix.startsWith('/') ? suffix : `/${suffix}`;
 };
 
-interface NetlifyEvent {
-  httpMethod: string;
-  headers: Record<string, string | undefined>;
-  body: string | null;
-  path: string;
-  rawQuery?: string;
-  isBase64Encoded?: boolean;
-  [key: string]: unknown;
-}
-
-const getRequestOrigin = (event: NetlifyEvent): string | undefined =>
-  event.headers?.origin || event.headers?.Origin;
-
-export const handler = async (event: NetlifyEvent) => {
+export const handler = async (event: NetlifyEventLike) => {
   const requestOrigin = getRequestOrigin(event);
-  const corsHeaders = buildCorsHeaders(requestOrigin);
+  const corsHeaders = buildCorsHeaders(requestOrigin, {
+    allowedHeaders: 'Content-Type, Authorization',
+    allowedMethods: 'GET,POST,OPTIONS',
+  });
 
   if (!isOriginAllowed(requestOrigin)) {
-    return {
-      statusCode: 403,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: 'Origin not allowed' }),
-    };
+    return buildJsonResponse(403, { error: 'Origin not allowed' }, { requestOrigin });
   }
 
   if (event.httpMethod === 'OPTIONS') {
@@ -84,11 +39,11 @@ export const handler = async (event: NetlifyEvent) => {
 
   const botBaseUrl = resolveBotBaseUrl();
   if (!botBaseUrl) {
-    return {
-      statusCode: 500,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: 'Missing WHATSAPP_BOT_URL environment variable' }),
-    };
+    return buildJsonResponse(
+      500,
+      { error: 'Missing WHATSAPP_BOT_URL environment variable' },
+      { requestOrigin }
+    );
   }
 
   const targetPath = getPathSuffix(event.path);
@@ -97,12 +52,12 @@ export const handler = async (event: NetlifyEvent) => {
 
   try {
     const headers: Record<string, string> = {};
-    const contentType = event.headers?.['content-type'] || event.headers?.['Content-Type'];
+    const contentType = getHeader(event.headers, 'content-type');
     if (contentType) {
       headers['Content-Type'] = contentType;
     }
 
-    const authorization = event.headers?.authorization || event.headers?.Authorization;
+    const authorization = getHeader(event.headers, 'authorization');
     if (authorization) {
       headers.Authorization = authorization;
     }
@@ -130,13 +85,13 @@ export const handler = async (event: NetlifyEvent) => {
     };
   } catch (error: unknown) {
     console.error('WhatsApp proxy error', error);
-    return {
-      statusCode: 502,
-      headers: corsHeaders,
-      body: JSON.stringify({
+    return buildJsonResponse(
+      502,
+      {
         error: 'Failed to reach WhatsApp bot server',
         details: error instanceof Error ? error.message : String(error),
-      }),
-    };
+      },
+      { requestOrigin }
+    );
   }
 };

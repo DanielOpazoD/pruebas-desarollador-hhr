@@ -41,7 +41,7 @@ describe('censusResetDayController', () => {
 
   it('blocks current-day reset for roles without delete permission', () => {
     const result = resolveResetDayPermission({
-      role: 'viewer_census',
+      role: 'viewer',
       isToday: true,
     });
 

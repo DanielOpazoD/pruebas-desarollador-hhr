@@ -13,6 +13,7 @@ const indexedDbRecoveryBudgetsContent = read(
   'src/services/storage/indexeddb/indexedDbRecoveryBudgets.ts'
 );
 const authConfigContent = read('functions/lib/auth/authConfig.js');
+const authHelpersContent = read('functions/lib/auth/authHelpersFactory.js');
 const operationalRuntimeStateContent = read(
   'src/services/observability/operationalRuntimeState.ts'
 );
@@ -66,6 +67,16 @@ const extractSetStrings = (content, name) => {
 
   return [...match[1].matchAll(/'([^']+)'/g)].map(item => item[1]);
 };
+
+const extractRoleNormalizationBridges = content =>
+  [
+    ...content.matchAll(
+      /role\s*===\s*'([^']+)'\s*\?\s*'([^']+)'\s*:\s*role/g
+    ),
+  ].map(match => ({
+    from: match[1],
+    to: match[2],
+  }));
 
 const extractConstTupleStrings = (content, name) => {
   const match = content.match(new RegExp(`const\\s+${name}\\s*=\\s*\\[([\\s\\S]*?)\\]`, 'm'));
@@ -198,7 +209,7 @@ const authAccess = {
   bootstrapAdminEmails: extractConstArrayStrings(authConfigContent, 'BOOTSTRAP_ADMIN_EMAILS'),
   generalLoginRoles: extractSetStrings(authConfigContent, 'GENERAL_LOGIN_ROLES'),
   managedAssignableRoles: extractSetStrings(authConfigContent, 'MANAGED_ASSIGNABLE_ROLES'),
-  callableClinicalRoles: extractSetStrings(authConfigContent, 'CLINICAL_CALLABLE_ROLES'),
+  roleNormalizationBridges: extractRoleNormalizationBridges(authHelpersContent),
   canonicalModelDoc: 'docs/AUTH_ACCESS_MODEL.md',
   authIncidentRunbook: 'docs/RUNBOOK_AUTH_ACCESS_INCIDENTS.md',
 };
@@ -383,9 +394,11 @@ ${Object.entries(summary.conflictContexts)
     ? summary.authAccess.managedAssignableRoles.join(', ')
     : 'unknown'
 }
-- Roles con callable clínico: ${
-  summary.authAccess.callableClinicalRoles.length > 0
-    ? summary.authAccess.callableClinicalRoles.join(', ')
+- Puentes de rol legacy: ${
+  summary.authAccess.roleNormalizationBridges.length > 0
+    ? summary.authAccess.roleNormalizationBridges
+        .map(bridge => `${bridge.from} -> ${bridge.to}`)
+        .join(', ')
     : 'unknown'
 }
 - Modelo canónico: \`${summary.authAccess.canonicalModelDoc}\`

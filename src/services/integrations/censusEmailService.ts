@@ -17,7 +17,6 @@ interface TriggerEmailParams {
   recipients?: string[];
   nursesSignature?: string;
   body?: string;
-  shareLink?: string;
   userEmail?: string | null;
   userRole?: string | null;
   sheetDescriptors?: CensusWorkbookSheetDescriptor[];
@@ -52,7 +51,6 @@ export const triggerCensusEmail = async (params: TriggerEmailParams): Promise<Em
     recipients,
     nursesSignature,
     body,
-    shareLink,
     userEmail,
     userRole,
     sheetDescriptors,
@@ -80,7 +78,6 @@ export const triggerCensusEmail = async (params: TriggerEmailParams): Promise<Em
       recipients: finalRecipients,
       nursesSignature,
       body,
-      shareLink,
       sheetDescriptors,
     }),
   });

@@ -13,7 +13,6 @@ import {
   useExistingDaysQuery,
   useCensusEmail,
   useSignatureMode,
-  useSharedCensusMode,
   useAppState,
   useVersionCheck,
 } from '@/hooks';
@@ -82,7 +81,6 @@ function App() {
     auth.currentUser,
     auth.isLoading
   );
-  const sharedCensus = useSharedCensusMode();
 
   if (isSignatureMode) {
     return (
@@ -96,7 +94,7 @@ function App() {
   }
 
   // Loading state
-  if (auth.isLoading || (sharedCensus.isSharedCensusMode && sharedCensus.isLoading)) {
+  if (auth.isLoading) {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center">
         <div className="animate-pulse text-medical-600 text-xl font-bold">Cargando...</div>
@@ -104,25 +102,14 @@ function App() {
     );
   }
 
-  // Auth required for main app (NOT shared census mode)
-  if (!auth.isAuthenticated && !isSignatureMode && !sharedCensus.isSharedCensusMode) {
+  if (!auth.isAuthenticated && !isSignatureMode) {
     return <LoginPage onLoginSuccess={() => {}} />;
-  }
-
-  // If in shared census mode and user needs to login, show login page
-  // This is a SEPARATE login flow from the main app
-  if (sharedCensus.isSharedCensusMode && sharedCensus.needsLogin) {
-    return <LoginPage onLoginSuccess={() => {}} accessMode="shared-census" />;
   }
 
   return (
     <VersionProvider>
       <VersionMismatchOverlay />
-      <AppInner
-        auth={auth}
-        dateNav={{ ...dateNav, isSignatureMode, currentDateString }}
-        sharedCensus={sharedCensus}
-      />
+      <AppInner auth={auth} dateNav={{ ...dateNav, isSignatureMode, currentDateString }} />
     </VersionProvider>
   );
 }
@@ -133,10 +120,9 @@ function App() {
 interface AppInnerProps {
   auth: AuthContextType;
   dateNav: UseDateNavigationReturn & { isSignatureMode: boolean; currentDateString: string };
-  sharedCensus: ReturnType<typeof useSharedCensusMode>;
 }
 
-function AppInner({ auth, dateNav, sharedCensus }: AppInnerProps) {
+function AppInner({ auth, dateNav }: AppInnerProps) {
   // Report health status in background
   useSystemHealthReporter();
 
@@ -177,7 +163,6 @@ function AppInner({ auth, dateNav, sharedCensus }: AppInnerProps) {
     fileOps,
     censusEmail,
     nurseSignature,
-    sharedCensus,
   };
 
   return (

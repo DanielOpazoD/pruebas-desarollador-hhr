@@ -27,13 +27,6 @@ export const createAuthErrorSessionState = (error: AuthSessionError): AuthSessio
 });
 
 export const toResolvedAuthSessionState = (user: AuthUser): AuthSessionState => {
-  if (user.role === 'viewer_census') {
-    return {
-      status: 'shared_census',
-      user,
-    };
-  }
-
   return {
     status: 'authorized',
     user,
@@ -50,13 +43,8 @@ export const getAuthSessionStateUser = (sessionState: AuthSessionState): AuthUse
 
 export const isAuthenticatedAuthSessionState = (
   sessionState: AuthSessionState
-): sessionState is Extract<
-  AuthSessionState,
-  { status: 'authorized' | 'anonymous_signature' | 'shared_census' }
-> =>
-  sessionState.status === 'authorized' ||
-  sessionState.status === 'anonymous_signature' ||
-  sessionState.status === 'shared_census';
+): sessionState is Extract<AuthSessionState, { status: 'authorized' | 'anonymous_signature' }> =>
+  sessionState.status === 'authorized' || sessionState.status === 'anonymous_signature';
 
 export const toLegacyAuthUserFromSessionState = (sessionState: AuthSessionState): AuthUser | null =>
   getAuthSessionStateUser(sessionState);

@@ -1,9 +1,5 @@
-import type { CensusAccessRole } from '@/types/censusAccess';
 import type { DailyRecord } from '@/types/domain/dailyRecord';
-import type { CensusEmailBrowserRuntime } from '@/hooks/controllers/censusEmailBrowserRuntimeController';
 import { formatDateDDMMYYYY as formatDate } from '@/utils/dateUtils';
-import { buildSharedCensusLink } from '@/hooks/controllers/censusEmailBrowserRuntimeController';
-import { CENSUS_DEFAULT_RECIPIENTS } from '@/constants/email';
 import { resolveSendingRecipients } from '@/hooks/controllers/censusEmailRecipientsController';
 import {
   buildCensusWorkbookPlan,
@@ -30,7 +26,7 @@ import {
   type CensusEmailDeliveryPort,
 } from '@/application/ports/censusEmailPort';
 
-interface SharedCensusEmailInput {
+interface BaseCensusEmailInput {
   currentDateString: string;
   nurseSignature: string;
   record: DailyRecord | null;
@@ -40,7 +36,7 @@ interface SharedCensusEmailInput {
   user: { uid?: string; email?: string | null; role?: string } | null;
 }
 
-export interface SendCensusEmailInput extends SharedCensusEmailInput {
+export interface SendCensusEmailInput extends BaseCensusEmailInput {
   selectedYear: number;
   selectedMonth: number;
   selectedDay: number;
@@ -55,42 +51,10 @@ export interface SendCensusEmailOutput {
   backupUploaded: boolean;
 }
 
-export interface SendCensusEmailWithLinkInput extends SharedCensusEmailInput {
-  browserRuntime: CensusEmailBrowserRuntime;
-  accessRole?: CensusAccessRole;
-}
-
-export interface SendCensusEmailWithLinkOutput {
-  recipients: string[];
-  shareLink: string;
-}
-
 export interface CensusEmailUseCaseDependencies {
   dailyRecordReadPort?: Pick<DailyRecordReadPort, 'initializeDay' | 'getMonthRecords'>;
   censusEmailDeliveryPort?: CensusEmailDeliveryPort;
 }
-
-export const executeGenerateCensusShareLink = async (
-  browserRuntime: CensusEmailBrowserRuntime
-): Promise<ApplicationOutcome<string | null>> => {
-  try {
-    const origin = browserRuntime.getOrigin();
-    if (!origin) {
-      return createApplicationFailed(null, [
-        { kind: 'validation', message: 'No se pudo resolver el origen de la aplicación.' },
-      ]);
-    }
-
-    return createApplicationSuccess(buildSharedCensusLink(origin));
-  } catch (error) {
-    return createApplicationFailed(null, [
-      {
-        kind: 'unknown',
-        message: error instanceof Error ? error.message : 'No se pudo generar el link de acceso.',
-      },
-    ]);
-  }
-};
 
 export const buildSendCensusConfirmationMessage = (
   input: Pick<
@@ -247,63 +211,6 @@ export const executeSendCensusEmail = async (
       {
         kind: 'unknown',
         message: error instanceof Error ? error.message : 'No se pudo enviar el correo.',
-      },
-    ]);
-  }
-};
-
-export const executeSendCensusEmailWithLink = async (
-  input: SendCensusEmailWithLinkInput,
-  dependencies: CensusEmailUseCaseDependencies = {}
-): Promise<ApplicationOutcome<SendCensusEmailWithLinkOutput | null>> => {
-  const censusEmailDeliveryPort =
-    dependencies.censusEmailDeliveryPort || defaultCensusEmailDeliveryPort;
-  if (!input.record) {
-    return createApplicationFailed(null, [
-      { kind: 'validation', message: 'No hay datos del censo para enviar.' },
-    ]);
-  }
-
-  const shareLinkResult = await executeGenerateCensusShareLink(input.browserRuntime);
-  if (shareLinkResult.status === 'failed' || !shareLinkResult.data) {
-    return createApplicationFailed(null, shareLinkResult.issues);
-  }
-
-  try {
-    const recipientsResult = resolveSendingRecipients({
-      recipients: input.recipients,
-      shouldUseTestMode: false,
-      testRecipient: '',
-    });
-    const resolvedRecipients = recipientsResult.ok
-      ? recipientsResult.recipients
-      : CENSUS_DEFAULT_RECIPIENTS;
-
-    const sendResult = await censusEmailDeliveryPort.sendLinkWithResult({
-      date: input.currentDateString,
-      records: [input.record],
-      recipients: resolvedRecipients,
-      nursesSignature: input.nurseSignature || undefined,
-      body: input.message,
-      shareLink: shareLinkResult.data,
-      userEmail: input.user?.email,
-      userRole: input.user?.role || input.role,
-    });
-    if (sendResult.status !== 'success') {
-      return createApplicationFailed(null, sendResult.issues, {
-        userSafeMessage: sendResult.userSafeMessage,
-      });
-    }
-
-    return createApplicationSuccess({
-      recipients: resolvedRecipients,
-      shareLink: shareLinkResult.data,
-    });
-  } catch (error) {
-    return createApplicationFailed(null, [
-      {
-        kind: 'unknown',
-        message: error instanceof Error ? error.message : 'Error al enviar link.',
       },
     ]);
   }

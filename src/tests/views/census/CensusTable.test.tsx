@@ -67,7 +67,7 @@ vi.mock('@/features/census/hooks/useClinicalDocumentPresenceByBed', () => ({
 
 vi.mock('@/context/AuthContext', () => ({
   useAuth: vi.fn(() => ({
-    role: 'viewer_census',
+    role: 'viewer',
   })),
 }));
 
@@ -169,7 +169,7 @@ describe('CensusTable', () => {
     vi.mocked(useAuth).mockReturnValue(
       asContextReturn<ReturnType<typeof useAuth>>({
         user: null,
-        role: 'viewer_census',
+        role: 'viewer',
         isLoading: false,
         isAuthenticated: false,
         isEditor: false,

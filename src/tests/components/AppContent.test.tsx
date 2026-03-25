@@ -124,7 +124,6 @@ describe('AppContent', () => {
       showEmailConfig: false,
       setShowEmailConfig: vi.fn(),
       sendEmail: vi.fn(),
-      copyShareLink: vi.fn(),
       status: 'idle',
       error: null,
       recipients: [],
@@ -140,7 +139,6 @@ describe('AppContent', () => {
     },
     fileOps: { handleExportCSV: vi.fn(), handleImportJSON: vi.fn() },
     nurseSignature: {},
-    sharedCensus: { isSharedCensusMode: false },
   };
 
   const mockAuth = {
@@ -185,20 +183,6 @@ describe('AppContent', () => {
     render(<AppContent ui={mockUI} />);
 
     expect(screen.queryByTestId('navbar')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('datestrip')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('bookmark-bar')).not.toBeInTheDocument();
-  });
-
-  it('hides DateStrip and BookmarkBar in shared census mode', () => {
-    const sharedContext = {
-      ...mockCensusContext,
-      sharedCensus: { isSharedCensusMode: true },
-    };
-    vi.mocked(useCensusContext).mockReturnValue(sharedContext as unknown as CensusContextValue);
-
-    render(<AppContent ui={mockUI} />);
-
-    expect(screen.getByTestId('navbar')).toBeInTheDocument();
     expect(screen.queryByTestId('datestrip')).not.toBeInTheDocument();
     expect(screen.queryByTestId('bookmark-bar')).not.toBeInTheDocument();
   });
@@ -351,15 +335,9 @@ describe('AppContent', () => {
     expect(screen.getByTestId('test-agent')).toBeInTheDocument();
   });
 
-  it('excludes SyncWatcher in shared mode', () => {
-    const sharedContext = {
-      ...mockCensusContext,
-      sharedCensus: { isSharedCensusMode: true },
-    };
-    vi.mocked(useCensusContext).mockReturnValue(sharedContext as unknown as CensusContextValue);
-
+  it('keeps SyncWatcher mounted in the main application shell', () => {
     render(<AppContent ui={mockUI} />);
 
-    expect(screen.queryByTestId('sync-watcher')).not.toBeInTheDocument();
+    expect(screen.getByTestId('sync-watcher')).toBeInTheDocument();
   });
 });

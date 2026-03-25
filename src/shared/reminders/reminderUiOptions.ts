@@ -30,7 +30,6 @@ export const REMINDER_ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = 
   { value: 'doctor_urgency', label: 'Médico Urgencia' },
   { value: 'doctor_specialist', label: 'Médico Especialista' },
   { value: 'viewer', label: 'Invitado lectura general' },
-  { value: 'viewer_census', label: 'Censo compartido' },
   { value: 'editor', label: 'Editor legado' },
 ];
 

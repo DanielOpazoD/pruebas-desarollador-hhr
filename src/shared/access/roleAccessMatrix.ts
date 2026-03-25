@@ -118,20 +118,6 @@ const ROLE_ACCESS_MATRIX = {
     canReadClinicalDocuments: false,
     canEditClinicalDocumentDrafts: false,
   },
-  viewer_census: {
-    role: 'viewer_census',
-    label: 'Censo Compartido',
-    badgeLabel: 'CENSO COMPARTIDO',
-    badgeClassName: 'bg-slate-400 text-white border-slate-500',
-    generalLoginAllowed: false,
-    assignableInRoleManagement: false,
-    modules: ['CENSUS'],
-    canEdit: [],
-    censusAccessProfile: 'default',
-    specialistRestrictedMedicalAccess: false,
-    canReadClinicalDocuments: false,
-    canEditClinicalDocumentDrafts: false,
-  },
   editor: {
     role: 'editor',
     label: 'Editor legado',
@@ -153,7 +139,7 @@ export type ManagedUserRole = Extract<
   'admin' | 'nurse_hospital' | 'doctor_urgency' | 'doctor_specialist' | 'viewer'
 >;
 
-export const DEFAULT_ROLE_ACCESS = ROLE_ACCESS_MATRIX.viewer_census;
+export const DEFAULT_ROLE_ACCESS = ROLE_ACCESS_MATRIX.viewer;
 export const GENERAL_LOGIN_ROLES = Object.values(ROLE_ACCESS_MATRIX)
   .filter(definition => definition.generalLoginAllowed)
   .map(definition => definition.role) as UserRole[];
@@ -162,7 +148,7 @@ export const MANAGED_ROLE_OPTIONS = Object.values(ROLE_ACCESS_MATRIX).filter(
 );
 
 export const resolveRoleAccess = (role?: UserRole | string): RoleAccessDefinition =>
-  ROLE_ACCESS_MATRIX[(role as UserRole) ?? 'viewer_census'] ?? DEFAULT_ROLE_ACCESS;
+  ROLE_ACCESS_MATRIX[(role as UserRole) ?? 'viewer'] ?? DEFAULT_ROLE_ACCESS;
 
 export const isGeneralLoginRole = (role?: UserRole | string): role is UserRole =>
   GENERAL_LOGIN_ROLES.some(loginRole => loginRole === role);

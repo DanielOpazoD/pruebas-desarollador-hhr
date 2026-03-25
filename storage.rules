@@ -21,19 +21,26 @@ service firebase.storage {
       ];
     }
 
+    function normalizedRole() {
+      return !isAuthenticated() || request.auth.token.role == null
+        ? null
+        : request.auth.token.role == 'viewer_census'
+          ? 'viewer'
+          : request.auth.token.role;
+    }
+
     function hasClinicalReadRole() {
-      return isAuthenticated() && request.auth.token.role in [
+      return isAuthenticated() && normalizedRole() in [
         'admin',
         'nurse_hospital',
         'doctor_urgency',
         'viewer',
-        'viewer_census',
         'editor'
       ];
     }
 
     function hasClinicalWriteRole() {
-      return isAuthenticated() && request.auth.token.role in [
+      return isAuthenticated() && normalizedRole() in [
         'admin',
         'nurse_hospital',
         'editor'
@@ -44,36 +51,8 @@ service firebase.storage {
       return hasClinicalWriteRole() || isBootstrapAdmin();
     }
 
-    function hasSharedCensusStaticAllowlistEmail() {
-      return hasEmail() && userEmail() in [
-        'arenka.palma@hospitalhangaroa.cl',
-        'natalia.arzola@hospitalhangaroa.cl',
-        'vaitiare.hereveri@hospitalhangaroa.cl',
-        'kaany.pakomio@hospitalhangaroa.cl',
-        'claudia.salgado@hospitalhangaroa.cl',
-        'bianca.atam@hospitalhangaroa.cl',
-        'ana.pont@hospitalhangaroa.cl',
-        'katherin.pont@hospitalhangaroa.cl',
-        'eyleen.cisternas@hospitalhangaroa.cl',
-        'marco.ramirez@hospitalhangaroa.cl',
-        'josemiguel.villavicencio@hospitalhangaroa.cl',
-        'carla.curinao@hospitalhangaroa.cl',
-        'epidemiologia@hospitalhangaroa.cl',
-        'archivosome@hospitalhangaroa.cl',
-        'antonio.espinoza@hospitalhangaroa.cl',
-        'juan.pakomio@hospitalhangaroa.cl',
-        'ivan.pulgar@hospitalhangaroa.cl',
-        'daniel.opazo@hospitalhangaroa.cl',
-        'andrea.saldana@saludoriente.cl',
-        'patricio.medina@saludoriente.cl',
-        'gestion.camas@saludoriente.cl',
-        'd.opazo.damiani@gmail.com',
-        'd.opazo.damiani@hospitalhangaroa.cl'
-      ];
-    }
-
     function canReadClinicalStorage() {
-      return hasClinicalReadRole() || hasSharedCensusStaticAllowlistEmail();
+      return hasClinicalReadRole();
     }
 
     // Entrega de enfermería backups: editable only by clinical editors.
@@ -82,7 +61,7 @@ service firebase.storage {
       allow write: if hasClinicalWriteRole();
     }
     
-    // Shared census files: read allowed for authorized clinical/shared users only.
+    // Daily census exports: readable by authenticated clinical users.
     match /censo-diario/{allPaths=**} {
       allow read: if canReadClinicalStorage();
       allow write: if hasClinicalWriteRole();

@@ -14,7 +14,6 @@ describe('LoginPageCard', () => {
       <LoginPageCard
         isAnyLoading
         isGoogleLoading
-        accessMode="default"
         error={null}
         errorCode={null}
         canRetryGoogleSignIn={false}
@@ -36,7 +35,6 @@ describe('LoginPageCard', () => {
       <LoginPageCard
         isAnyLoading={false}
         isGoogleLoading={false}
-        accessMode="default"
         error="No se pudo validar tu acceso en este momento. Intenta nuevamente en unos segundos."
         errorCode="auth/role-validation-unavailable"
         canRetryGoogleSignIn

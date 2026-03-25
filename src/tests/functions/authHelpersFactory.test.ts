@@ -4,12 +4,8 @@ import { describe, expect, it, vi } from 'vitest';
 const require = createRequire(import.meta.url);
 const { createAuthHelpers } = require('../../../functions/lib/auth/authHelpersFactory.js');
 
-const createAdminStub = (options: {
-  dynamicRoles?: Record<string, string>;
-  censusDoc?: { exists: boolean; data?: () => Record<string, unknown> };
-}) => {
+const createAdminStub = (options: { dynamicRoles?: Record<string, string> }) => {
   const dynamicRoles = options.dynamicRoles ?? null;
-  const censusDoc = options.censusDoc ?? { exists: false, data: () => ({}) };
 
   return {
     firestore: () => ({
@@ -21,9 +17,6 @@ const createAdminStub = (options: {
                 exists: !!dynamicRoles,
                 data: () => dynamicRoles ?? {},
               };
-            }
-            if (name === 'census-authorized-emails') {
-              return censusDoc;
             }
             return { exists: false, data: () => ({}) };
           },
@@ -44,23 +37,7 @@ describe('functions authHelpersFactory', () => {
       })
     );
 
-    await expect(helpers.resolveRoleForEmail('custom@example.com')).resolves.toBe('viewer_census');
-  });
-
-  it('authorizes shared census emails from dynamic store with downloader role', async () => {
-    const helpers = createAuthHelpers(
-      createAdminStub({
-        censusDoc: {
-          exists: true,
-          data: () => ({ role: 'downloader' }),
-        },
-      })
-    );
-
-    await expect(helpers.isSharedCensusEmailAuthorized('reader@example.com')).resolves.toEqual({
-      authorized: true,
-      role: 'downloader',
-    });
+    await expect(helpers.resolveRoleForEmail('custom@example.com')).resolves.toBe('viewer');
   });
 
   it('treats doctor_specialist as valid general login access in callable helpers', async () => {
@@ -81,7 +58,7 @@ describe('functions authHelpersFactory', () => {
     ).resolves.toBe(true);
   });
 
-  it('does not treat viewer_census as general login access in callable helpers', async () => {
+  it('normalizes viewer_census to viewer for callable helpers', async () => {
     const helpers = createAuthHelpers(
       createAdminStub({
         dynamicRoles: { 'shared@example.com': 'viewer_census' },
@@ -96,6 +73,6 @@ describe('functions authHelpersFactory', () => {
           },
         },
       })
-    ).resolves.toBe(false);
+    ).resolves.toBe(true);
   });
 });

@@ -13,8 +13,8 @@ describe('roleAccessMatrix', () => {
     expect(GENERAL_LOGIN_ROLES).toContain('doctor_specialist');
   });
 
-  it('keeps shared census viewer outside the general login roles', () => {
-    expect(isGeneralLoginRole('viewer_census')).toBe(false);
+  it('keeps viewer as a general login role', () => {
+    expect(isGeneralLoginRole('viewer')).toBe(true);
   });
 
   it('exposes only managed roles in role management options', () => {
@@ -26,7 +26,7 @@ describe('roleAccessMatrix', () => {
       'viewer',
     ]);
     expect(isManagedUserRole('doctor_specialist')).toBe(true);
-    expect(isManagedUserRole('viewer_census')).toBe(false);
+    expect(isManagedUserRole('viewer')).toBe(true);
   });
 
   it('resolves specialist role with restricted census and medical capabilities', () => {

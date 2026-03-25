@@ -9,7 +9,7 @@ describe('auditAccessPolicy', () => {
   it('allows audit view only for roles with explicit audit permission', () => {
     expect(canAccessAuditView('admin')).toBe(true);
     expect(canAccessAuditView('nurse_hospital')).toBe(false);
-    expect(canAccessAuditView('viewer_census')).toBe(false);
+    expect(canAccessAuditView('viewer')).toBe(false);
     expect(canAccessAuditView(undefined)).toBe(false);
   });
 
@@ -22,6 +22,6 @@ describe('auditAccessPolicy', () => {
   it('keeps export permissions aligned with role actions', () => {
     expect(canExportAuditData('admin')).toBe(true);
     expect(canExportAuditData('nurse_hospital')).toBe(true);
-    expect(canExportAuditData('viewer_census')).toBe(false);
+    expect(canExportAuditData('viewer')).toBe(false);
   });
 });

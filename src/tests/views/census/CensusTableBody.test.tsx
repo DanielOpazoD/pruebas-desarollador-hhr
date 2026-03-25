@@ -66,7 +66,7 @@ describe('CensusTableBody', () => {
           columns={columns}
           visibleColumnCount={9}
           bedTypes={{}}
-          role="viewer_census"
+          role="viewer"
           clinicalDocumentPresenceByBedId={{}}
           onAction={vi.fn()}
           onActivateEmptyBed={vi.fn()}
@@ -78,7 +78,7 @@ describe('CensusTableBody', () => {
     expect(patientRowSpy.mock.calls[0][0].actionMenuAlign).toBe('top');
     expect(patientRowSpy.mock.calls[2][0].actionMenuAlign).toBe('bottom');
     expect(patientRowSpy.mock.calls[5][0].actionMenuAlign).toBe('bottom');
-    expect(patientRowSpy.mock.calls[0][0].role).toBe('viewer_census');
+    expect(patientRowSpy.mock.calls[0][0].role).toBe('viewer');
     expect(patientRowSpy.mock.calls[0][0].accessProfile).toBeUndefined();
     expect(patientRowSpy.mock.calls[0][0].indicators).toEqual({
       hasClinicalDocument: false,
@@ -232,7 +232,7 @@ describe('CensusTableBody', () => {
           columns={columns}
           visibleColumnCount={9}
           bedTypes={{}}
-          role="viewer_census"
+          role="viewer"
           clinicalDocumentPresenceByBedId={{}}
           onAction={vi.fn()}
           onActivateEmptyBed={onActivateEmptyBed}

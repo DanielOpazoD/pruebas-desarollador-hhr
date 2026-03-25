@@ -29,7 +29,6 @@ interface NavbarProps {
   userEmail?: string | null;
   onLogout?: () => void;
   isFirebaseConnected?: boolean;
-  isSharedMode?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -42,7 +41,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   userEmail,
   onLogout,
   isFirebaseConnected,
-  isSharedMode = false,
 }) => {
   const { role } = useAuth();
   const visibleModules = getVisibleAppModules(role);
@@ -104,39 +102,29 @@ export const Navbar: React.FC<NavbarProps> = ({
           censusViewMode={censusViewMode}
           onOpenSettings={onOpenSettings}
           visibleModules={visibleModules}
-          disabled={isSharedMode}
+        />
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          accept=".json,.csv"
+          onChange={onImportJSON}
         />
 
-        {!isSharedMode && (
-          <>
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              accept=".json,.csv"
-              onChange={onImportJSON}
-            />
-
-            {/* Main Navigation Tabs */}
-            <NavbarTabs
-              currentModule={currentModule}
-              onModuleChange={handleModuleChange}
-              visibleModules={visibleModules}
-              censusViewMode={censusViewMode}
-              setCensusViewMode={setCensusViewMode}
-            />
-          </>
-        )}
+        {/* Main Navigation Tabs */}
+        <NavbarTabs
+          currentModule={currentModule}
+          onModuleChange={handleModuleChange}
+          visibleModules={visibleModules}
+          censusViewMode={censusViewMode}
+          setCensusViewMode={setCensusViewMode}
+        />
 
         {/* Status Indicators & User Menu */}
         <div className="flex items-center gap-4 py-2 ml-auto">
           <div className="flex items-center gap-3">
-            {!isSharedMode && (
-              <>
-                <SyncStatusIndicator />
-                <ReminderBadge />
-              </>
-            )}
+            <SyncStatusIndicator />
+            <ReminderBadge />
 
             {!isFirebaseConnected && (
               <WifiOff size={14} className="text-red-200/80" aria-hidden="true" />

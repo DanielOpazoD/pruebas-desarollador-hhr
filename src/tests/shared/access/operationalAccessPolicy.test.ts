@@ -41,7 +41,7 @@ describe('operationalAccessPolicy', () => {
     expect(canUseAdminMaintenanceActions('admin')).toBe(true);
     expect(canUseAdminMaintenanceActions('nurse_hospital')).toBe(false);
     expect(canEditAnyAppModule('admin')).toBe(true);
-    expect(canEditAnyAppModule('viewer_census')).toBe(false);
+    expect(canEditAnyAppModule('viewer')).toBe(false);
     expect(canManageGlobalCensusEmailRecipients({ role: 'admin', userId: 'u-1' })).toBe(true);
     expect(canManageGlobalCensusEmailRecipients({ role: 'nurse_hospital', userId: 'u-1' })).toBe(
       true

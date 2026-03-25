@@ -11,7 +11,6 @@ export const ReminderUserRoleSchema = z.enum([
   'nurse_hospital',
   'doctor_urgency',
   'doctor_specialist',
-  'viewer_census',
 ]);
 
 export const ReminderSchema = z.object({

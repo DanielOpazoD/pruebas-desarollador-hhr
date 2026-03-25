@@ -30,7 +30,7 @@ Resolver autenticacion, bootstrap de sesion, claims, roles y degradacion operati
 
 ## Permisos e invariantes
 
-- `anonymous_signature` y `shared_census` son estados soportados, no hacks implícitos.
+- `anonymous_signature` es un estado soportado, no un hack implícito.
 - Si un recurso depende de custom claim, la sesion debe intentar refresh/sync antes de asumir fallo definitivo.
 - No reintroducir decisiones de auth repartidas entre hooks, context y componentes.
 - El login por Google puede devolver errores recuperables de popup durante cambios de sesion

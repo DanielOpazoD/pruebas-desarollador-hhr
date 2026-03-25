@@ -7,7 +7,6 @@ export interface CensusEmailRequestPayloadInput {
   recipients: string[];
   nursesSignature?: string;
   body?: string;
-  shareLink?: string;
   sheetDescriptors?: CensusWorkbookSheetDescriptor[];
 }
 
@@ -18,6 +17,5 @@ export const buildCensusEmailRequestBody = (input: CensusEmailRequestPayloadInpu
     recipients: input.recipients,
     nursesSignature: input.nursesSignature,
     body: input.body,
-    shareLink: input.shareLink,
     sheetDescriptors: input.sheetDescriptors,
   });

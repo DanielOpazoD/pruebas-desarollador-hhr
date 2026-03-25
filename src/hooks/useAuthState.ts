@@ -34,7 +34,7 @@ export interface UseAuthStateReturn {
   sessionState: AuthSessionState;
   /** Current actor user derived from session state */
   currentUser: AuthUser | null;
-  /** Current fully authorized user; excludes anonymous/shared access */
+  /** Current fully authorized user; excludes anonymous access */
   authorizedUser: AuthUser | null;
   /** @deprecated Prefer currentUser or authorizedUser */
   user: AuthUser | null;

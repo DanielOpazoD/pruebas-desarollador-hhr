@@ -39,7 +39,6 @@ vi.mock('@/hooks/controllers/censusEmailRecipientsBootstrapController', () => ({
 
 describe('censusRecipientListUseCases', () => {
   const browserRuntime: CensusEmailBrowserRuntime = {
-    getOrigin: () => 'https://hhr.test',
     getLegacyRecipients: () => null,
     clearLegacyRecipients: vi.fn(),
     writeClipboard: vi.fn().mockResolvedValue(undefined),

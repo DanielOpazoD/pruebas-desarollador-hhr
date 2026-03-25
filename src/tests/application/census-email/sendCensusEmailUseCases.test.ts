@@ -1,43 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   buildSendCensusConfirmationMessage,
-  executeGenerateCensusShareLink,
   executeSendCensusEmail,
-  executeSendCensusEmailWithLink,
 } from '@/application/census-email/sendCensusEmailUseCases';
 import type { DailyRecord } from '@/types';
-import type { CensusEmailBrowserRuntime } from '@/hooks/controllers/censusEmailBrowserRuntimeController';
 
-vi.mock('@/services/storage/firestoreService', () => ({
-  getMonthRecordsFromFirestore: vi.fn().mockResolvedValue([]),
-}));
-
-vi.mock('@/services/repositories/DailyRecordRepository', () => ({
-  initializeDay: vi.fn().mockResolvedValue({}),
-}));
-
-vi.mock('@/services/integrations/censusEmailService', () => ({
-  triggerCensusEmail: vi.fn().mockResolvedValue({ success: true }),
-}));
-
-vi.mock('@/services/backup/censusStorageService', () => ({
-  uploadCensus: vi.fn().mockResolvedValue(undefined),
-}));
+const buildCensusMasterWorkbookMock = vi.fn().mockResolvedValue({
+  xlsx: { writeBuffer: vi.fn().mockResolvedValue(Buffer.from([])) },
+});
 
 vi.mock('@/services/exporters/censusMasterWorkbook', () => ({
-  buildCensusMasterWorkbook: vi.fn().mockResolvedValue({
-    xlsx: { writeBuffer: vi.fn().mockResolvedValue(Buffer.from([])) },
-  }),
+  buildCensusMasterWorkbook: (...args: unknown[]) => buildCensusMasterWorkbookMock(...args),
 }));
 
 describe('sendCensusEmailUseCases', () => {
-  const browserRuntime: CensusEmailBrowserRuntime = {
-    getOrigin: () => 'https://hhr.test',
-    getLegacyRecipients: () => null,
-    clearLegacyRecipients: vi.fn(),
-    writeClipboard: vi.fn().mockResolvedValue(undefined),
-  };
-
   const record: DailyRecord = {
     date: '2026-03-06',
     beds: {},
@@ -90,26 +66,57 @@ describe('sendCensusEmailUseCases', () => {
     expect(result.status).toBe('failed');
   });
 
-  it('returns success when share link is generated', async () => {
-    const result = await executeGenerateCensusShareLink(browserRuntime);
-
-    expect(result.status).toBe('success');
-    expect(result.data).toContain('/censo-compartido');
-  });
-
-  it('sends an email with link successfully', async () => {
-    const result = await executeSendCensusEmailWithLink({
-      record,
-      currentDateString: '2026-03-06',
-      nurseSignature: 'Nurse',
-      user: { email: 'admin@test.com', role: 'admin' },
-      role: 'admin',
-      recipients: ['a@test.com'],
-      message: 'test',
-      browserRuntime,
+  it('sends the census email as an Excel-only delivery', async () => {
+    const initializeDay = vi.fn().mockResolvedValue(undefined);
+    const getMonthRecords = vi.fn().mockResolvedValue([]);
+    const sendEmailWithResult = vi.fn().mockResolvedValue({
+      status: 'success',
+      issues: [],
+    });
+    const uploadBackupWithResult = vi.fn().mockResolvedValue({
+      status: 'success',
+      issues: [],
     });
 
+    const result = await executeSendCensusEmail(
+      {
+        record,
+        currentDateString: '2026-03-06',
+        nurseSignature: 'Nurse',
+        selectedYear: 2026,
+        selectedMonth: 2,
+        selectedDay: 6,
+        user: { email: 'admin@test.com', role: 'admin' },
+        role: 'admin',
+        recipients: ['a@test.com'],
+        message: 'test',
+        testModeEnabled: false,
+        testRecipient: '',
+        isAdminUser: true,
+        excelSheetConfig: {
+          includeEndOfDay2359Sheet: true,
+          includeCurrentTimeSheet: false,
+        },
+      },
+      {
+        dailyRecordReadPort: {
+          initializeDay,
+          getMonthRecords,
+        },
+        censusEmailDeliveryPort: {
+          sendEmailWithResult,
+          uploadBackupWithResult,
+        } as never,
+      }
+    );
+
     expect(result.status).toBe('success');
-    expect(result.data?.shareLink).toContain('/censo-compartido');
+    expect(sendEmailWithResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipients: ['a@test.com'],
+        body: 'test',
+      })
+    );
+    expect(uploadBackupWithResult).toHaveBeenCalledTimes(1);
   });
 });

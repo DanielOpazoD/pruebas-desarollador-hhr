@@ -10,7 +10,6 @@ export * from './TransfersSection';
 export * from './CMASection';
 export * from './CensusModals';
 export * from './CensusStaffHeader';
-export * from './SharedCensusView';
 export * from './CensusRegisterContent';
 export * from './CensusRegisterMainContent';
 export * from './CensusMovementSection';
