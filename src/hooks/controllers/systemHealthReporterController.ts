@@ -60,6 +60,13 @@ export const buildUserHealthStatus = (options: BuildUserHealthStatusOptions): Us
   operationalCreateDayObservedCount: options.operationalTelemetry.createDayObservedCount,
   operationalHandoffObservedCount: options.operationalTelemetry.handoffObservedCount,
   operationalExportBackupObservedCount: options.operationalTelemetry.exportOrBackupObservedCount,
+  operationalDailyRecordRecoveredRealtimeNullCount:
+    options.operationalTelemetry.dailyRecordRecoveredRealtimeNullCount,
+  operationalDailyRecordConfirmedRealtimeNullCount:
+    options.operationalTelemetry.dailyRecordConfirmedRealtimeNullCount,
+  operationalSyncReadUnavailableCount: options.operationalTelemetry.syncReadUnavailableCount,
+  operationalIndexedDbFallbackModeCount: options.operationalTelemetry.indexedDbFallbackModeCount,
+  operationalAuthBootstrapTimeoutCount: options.operationalTelemetry.authBootstrapTimeoutCount,
   operationalTopObservedCategory: options.operationalTelemetry.topObservedCategory,
   operationalTopObservedOperation: options.operationalTelemetry.topObservedOperation,
   latestOperationalOperation: options.operationalTelemetry.latestObservedOperation,

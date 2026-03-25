@@ -113,6 +113,7 @@ describe('CensusView', () => {
   });
 
   it('renders EmptyDayPrompt when record is missing', async () => {
+    vi.useFakeTimers();
     vi.mocked(useCensusViewModel).mockReturnValue(
       buildViewModel({ beds: null, availableDates: ['2024-12-31'] })
     );
@@ -122,8 +123,12 @@ describe('CensusView', () => {
     expect(screen.getByTestId('view-loader')).toBeInTheDocument();
     expect(screen.queryByTestId('empty-day-prompt')).not.toBeInTheDocument();
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 1300));
+      await Promise.resolve();
     });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1300);
+    });
+    vi.useRealTimers();
     expect(await screen.findByTestId('empty-day-prompt')).toBeInTheDocument();
     expect(vi.mocked(useCensusMigrationBootstrap)).toHaveBeenCalledWith(true);
   });

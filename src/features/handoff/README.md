@@ -4,6 +4,11 @@
 
 Entrega de turno de enfermeria y medicos, con flujos de gestion, delivery y handoff medico por paciente.
 
+## Decision Guide
+
+- Superficies runtime y puntos de cambio seguros: [docs/ADR_HANDOFF_RUNTIME_SURFACES.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/ADR_HANDOFF_RUNTIME_SURFACES.md)
+- Checklist transversal de cambio seguro: [docs/SAFE_CHANGE_CHECKLIST.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/SAFE_CHANGE_CHECKLIST.md)
+
 ## Estructura
 
 - `components/`: shell visual y vistas de handoff.

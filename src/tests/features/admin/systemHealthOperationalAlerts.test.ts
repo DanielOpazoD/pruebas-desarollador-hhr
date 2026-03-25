@@ -40,6 +40,11 @@ const baseStatus = (): UserHealthStatus => ({
   operationalCreateDayObservedCount: 0,
   operationalHandoffObservedCount: 0,
   operationalExportBackupObservedCount: 0,
+  operationalDailyRecordRecoveredRealtimeNullCount: 0,
+  operationalDailyRecordConfirmedRealtimeNullCount: 0,
+  operationalSyncReadUnavailableCount: 0,
+  operationalIndexedDbFallbackModeCount: 0,
+  operationalAuthBootstrapTimeoutCount: 0,
   operationalTopObservedCategory: undefined,
   operationalTopObservedOperation: undefined,
   latestOperationalOperation: undefined,
@@ -67,6 +72,16 @@ describe('systemHealthOperationalAlerts', () => {
 
     const alerts = buildOperationalAlerts([status], FIXED_NOW_MS);
     expect(alerts.some(alert => alert.key === 'offline-users')).toBe(true);
+  });
+
+  it('returns runtime incident alerts for sync unreadable and recovered daily-record nulls', () => {
+    const status = baseStatus();
+    status.operationalSyncReadUnavailableCount = 1;
+    status.operationalDailyRecordRecoveredRealtimeNullCount = 1;
+
+    const alerts = buildOperationalAlerts([status], FIXED_NOW_MS);
+    expect(alerts.some(alert => alert.key === 'sync-runtime-unavailable')).toBe(true);
+    expect(alerts.some(alert => alert.key === 'daily-record-null-recovered')).toBe(true);
   });
 
   it('tracks open and resolved events in snapshot history', () => {

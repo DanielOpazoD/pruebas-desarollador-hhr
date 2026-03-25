@@ -64,6 +64,18 @@ export const buildOperationalAlerts = (
       (status.oldestPendingAgeMs || 0) >=
       DEFAULT_SYSTEM_HEALTH_THRESHOLDS.criticalOldestPendingAgeMs
   );
+  const recoveredNullRealtimeUsers = statuses.filter(
+    status => (status.operationalDailyRecordRecoveredRealtimeNullCount || 0) > 0
+  );
+  const syncReadUnavailableUsers = statuses.filter(
+    status => (status.operationalSyncReadUnavailableCount || 0) > 0
+  );
+  const indexedDbFallbackUsers = statuses.filter(
+    status => (status.operationalIndexedDbFallbackModeCount || 0) > 0
+  );
+  const authBootstrapTimeoutUsers = statuses.filter(
+    status => (status.operationalAuthBootstrapTimeoutCount || 0) > 0
+  );
   const prolongedOfflineUsers = statuses.filter(status => {
     if (status.isOnline) return false;
     const ageMs = nowMs - new Date(status.lastSeen).getTime();
@@ -125,6 +137,63 @@ export const buildOperationalAlerts = (
       slaMinutes: SYSTEM_HEALTH_ALERT_SLA_MINUTES.staleQueue,
       affectedUsers: uniqueEmails(staleQueueUsers),
       affectedCount: staleQueueUsers.length,
+    });
+  }
+
+  if (syncReadUnavailableUsers.length > 0) {
+    alerts.push({
+      key: 'sync-runtime-unavailable',
+      title: 'Lectura de cola no disponible',
+      description: 'Hay clientes donde la telemetría de sync quedó ilegible o bloqueada.',
+      severity: 'critical',
+      recommendedAction:
+        'Validar IndexedDB/cola local en el equipo afectado y revisar conectividad antes de continuar usando el censo.',
+      slaMinutes: SYSTEM_HEALTH_ALERT_SLA_MINUTES.failedSync,
+      affectedUsers: uniqueEmails(syncReadUnavailableUsers),
+      affectedCount: syncReadUnavailableUsers.length,
+    });
+  }
+
+  if (indexedDbFallbackUsers.length > 0) {
+    alerts.push({
+      key: 'indexeddb-fallback',
+      title: 'Fallback local activado',
+      description: 'Clientes degradaron a modo fallback por problemas en IndexedDB.',
+      severity: 'warning',
+      recommendedAction:
+        'Solicitar recarga controlada del navegador y revisar si IndexedDB puede reabrirse sin perder cambios pendientes.',
+      slaMinutes: SYSTEM_HEALTH_ALERT_SLA_MINUTES.warningUsers,
+      affectedUsers: uniqueEmails(indexedDbFallbackUsers),
+      affectedCount: indexedDbFallbackUsers.length,
+    });
+  }
+
+  if (authBootstrapTimeoutUsers.length > 0) {
+    alerts.push({
+      key: 'auth-bootstrap-timeout',
+      title: 'Bootstrap auth prolongado',
+      description: 'Se observaron timeouts de inicio de sesión que degradan el arranque.',
+      severity: 'warning',
+      recommendedAction:
+        'Revisar conectividad/auth bootstrap del usuario y confirmar si el inicio de sesión termina recuperándose o requiere reintento.',
+      slaMinutes: SYSTEM_HEALTH_ALERT_SLA_MINUTES.warningUsers,
+      affectedUsers: uniqueEmails(authBootstrapTimeoutUsers),
+      affectedCount: authBootstrapTimeoutUsers.length,
+    });
+  }
+
+  if (recoveredNullRealtimeUsers.length > 0) {
+    alerts.push({
+      key: 'daily-record-null-recovered',
+      title: 'Registro diario recuperado desde null realtime',
+      description:
+        'Se detectaron vaciados transitorios del registro diario que el cliente logró reparar.',
+      severity: 'warning',
+      recommendedAction:
+        'Monitorear si el usuario vuelve a ver el día actual vacío y revisar suscripción realtime/local cache si el patrón se repite.',
+      slaMinutes: SYSTEM_HEALTH_ALERT_SLA_MINUTES.warningUsers,
+      affectedUsers: uniqueEmails(recoveredNullRealtimeUsers),
+      affectedCount: recoveredNullRealtimeUsers.length,
     });
   }
 

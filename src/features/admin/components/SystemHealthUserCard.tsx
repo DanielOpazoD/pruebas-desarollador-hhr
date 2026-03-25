@@ -126,6 +126,21 @@ export const SystemHealthUserCard = ({ user }: { user: UserHealthStatus }) => {
             <span>Docs {user.operationalClinicalDocumentObservedCount}</span>
             <span>Día {user.operationalCreateDayObservedCount}</span>
             <span>Handoff {user.operationalHandoffObservedCount}</span>
+            {(user.operationalDailyRecordRecoveredRealtimeNullCount || 0) > 0 ? (
+              <span>Null recup. {user.operationalDailyRecordRecoveredRealtimeNullCount}</span>
+            ) : null}
+            {(user.operationalDailyRecordConfirmedRealtimeNullCount || 0) > 0 ? (
+              <span>Null conf. {user.operationalDailyRecordConfirmedRealtimeNullCount}</span>
+            ) : null}
+            {(user.operationalSyncReadUnavailableCount || 0) > 0 ? (
+              <span>Sync unreadable {user.operationalSyncReadUnavailableCount}</span>
+            ) : null}
+            {(user.operationalIndexedDbFallbackModeCount || 0) > 0 ? (
+              <span>Fallback IDX {user.operationalIndexedDbFallbackModeCount}</span>
+            ) : null}
+            {(user.operationalAuthBootstrapTimeoutCount || 0) > 0 ? (
+              <span>Auth timeout {user.operationalAuthBootstrapTimeoutCount}</span>
+            ) : null}
             {user.operationalTopObservedCategory ? (
               <span>Tipo {user.operationalTopObservedCategory}</span>
             ) : null}

@@ -9,13 +9,25 @@ import {
 } from '@/services/storage/syncQueueService';
 import { DailyRecord } from '@/types';
 
-vi.mock('@/services/infrastructure/db', () => ({
-  db: {
+vi.mock('firebase/firestore', async importOriginal => {
+  const actual = await importOriginal<typeof import('firebase/firestore')>();
+  return {
+    ...actual,
     setDoc: vi.fn().mockResolvedValue(undefined),
-  },
-}));
+  };
+});
 
-import { db } from '@/services/infrastructure/db';
+vi.mock('@/services/storage/firestore/firestoreShared', async importOriginal => {
+  const actual =
+    await importOriginal<typeof import('@/services/storage/firestore/firestoreShared')>();
+  return {
+    ...actual,
+    getRecordDocRef: vi.fn(() => ({ id: 'sync-load-doc-ref' })),
+    sanitizeForFirestore: vi.fn(value => value),
+  };
+});
+
+import { setDoc } from 'firebase/firestore';
 
 const toInt = (raw: string | undefined, fallback: number): number => {
   const parsed = Number(raw);
@@ -61,14 +73,14 @@ describe('syncQueueService load baseline', () => {
     expect(telemetry.failed).toBe(0);
     expect(telemetry.conflict).toBe(0);
     expect(telemetry.batchSize).toBeGreaterThan(0);
-    expect(vi.mocked(db.setDoc)).toHaveBeenCalledTimes(total);
+    expect(vi.mocked(setDoc)).toHaveBeenCalledTimes(total);
     expect(elapsedMs).toBeLessThan(MAX_FLUSH_MS);
   });
 
   it('supports retry burst and eventual drain after nextAttemptAt is reached', async () => {
     const total = RETRY_VOLUME;
     let callCount = 0;
-    vi.mocked(db.setDoc).mockImplementation(async () => {
+    vi.mocked(setDoc).mockImplementation(async () => {
       callCount += 1;
       if (callCount <= 10) {
         throw new Error('Network temporary failure');

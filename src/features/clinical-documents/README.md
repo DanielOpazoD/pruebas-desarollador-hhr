@@ -9,6 +9,11 @@
 - `services/`: impresión, exportación PDF y sincronización con infraestructura.
 - `contracts/`: validación runtime de documentos y templates.
 
+## Decision Guide
+
+- Contrato del workspace y extensibilidad: [docs/ADR_CLINICAL_DOCUMENT_WORKSPACE_CONTRACT.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/ADR_CLINICAL_DOCUMENT_WORKSPACE_CONTRACT.md)
+- Nota de arquitectura del feature: [ARCHITECTURE.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/features/clinical-documents/ARCHITECTURE.md)
+
 ## Flujo principal
 
 1. `useClinicalDocumentWorkspaceBootstrap` carga templates y subscribe documentos por episodio.
@@ -98,3 +103,4 @@
 
 - [docs/QUALITY_GUARDRAILS.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/QUALITY_GUARDRAILS.md)
 - [docs/SAFE_CHANGE_CHECKLIST.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/SAFE_CHANGE_CHECKLIST.md)
+- [docs/ADR_CLINICAL_DOCUMENT_WORKSPACE_CONTRACT.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/ADR_CLINICAL_DOCUMENT_WORKSPACE_CONTRACT.md)

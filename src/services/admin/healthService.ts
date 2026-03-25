@@ -38,6 +38,11 @@ export interface UserHealthStatus {
   operationalCreateDayObservedCount: number;
   operationalHandoffObservedCount: number;
   operationalExportBackupObservedCount: number;
+  operationalDailyRecordRecoveredRealtimeNullCount?: number;
+  operationalDailyRecordConfirmedRealtimeNullCount?: number;
+  operationalSyncReadUnavailableCount?: number;
+  operationalIndexedDbFallbackModeCount?: number;
+  operationalAuthBootstrapTimeoutCount?: number;
   operationalTopObservedCategory?: string;
   operationalTopObservedOperation?: string;
   latestOperationalOperation?: string;
@@ -77,6 +82,11 @@ export interface SystemHealthSummary {
   totalOperationalCreateDayObservedCount: number;
   totalOperationalHandoffObservedCount: number;
   totalOperationalExportBackupObservedCount: number;
+  totalOperationalDailyRecordRecoveredRealtimeNullCount: number;
+  totalOperationalDailyRecordConfirmedRealtimeNullCount: number;
+  totalOperationalSyncReadUnavailableCount: number;
+  totalOperationalIndexedDbFallbackModeCount: number;
+  totalOperationalAuthBootstrapTimeoutCount: number;
   topOperationalCategory?: string;
   topOperationalOperation?: string;
   topOperationalRuntimeState?: OperationalRuntimeState;
@@ -133,6 +143,15 @@ export const normalizeUserHealthStatus = (raw: Partial<UserHealthStatus>): UserH
   operationalCreateDayObservedCount: toNumber(raw.operationalCreateDayObservedCount),
   operationalHandoffObservedCount: toNumber(raw.operationalHandoffObservedCount),
   operationalExportBackupObservedCount: toNumber(raw.operationalExportBackupObservedCount),
+  operationalDailyRecordRecoveredRealtimeNullCount: toNumber(
+    raw.operationalDailyRecordRecoveredRealtimeNullCount
+  ),
+  operationalDailyRecordConfirmedRealtimeNullCount: toNumber(
+    raw.operationalDailyRecordConfirmedRealtimeNullCount
+  ),
+  operationalSyncReadUnavailableCount: toNumber(raw.operationalSyncReadUnavailableCount),
+  operationalIndexedDbFallbackModeCount: toNumber(raw.operationalIndexedDbFallbackModeCount),
+  operationalAuthBootstrapTimeoutCount: toNumber(raw.operationalAuthBootstrapTimeoutCount),
   operationalTopObservedCategory:
     typeof raw.operationalTopObservedCategory === 'string'
       ? raw.operationalTopObservedCategory
@@ -270,6 +289,26 @@ export const buildSystemHealthSummary = (statuses: UserHealthStatus[]): SystemHe
     ),
     totalOperationalExportBackupObservedCount: statuses.reduce(
       (sum, status) => sum + status.operationalExportBackupObservedCount,
+      0
+    ),
+    totalOperationalDailyRecordRecoveredRealtimeNullCount: statuses.reduce(
+      (sum, status) => sum + (status.operationalDailyRecordRecoveredRealtimeNullCount || 0),
+      0
+    ),
+    totalOperationalDailyRecordConfirmedRealtimeNullCount: statuses.reduce(
+      (sum, status) => sum + (status.operationalDailyRecordConfirmedRealtimeNullCount || 0),
+      0
+    ),
+    totalOperationalSyncReadUnavailableCount: statuses.reduce(
+      (sum, status) => sum + (status.operationalSyncReadUnavailableCount || 0),
+      0
+    ),
+    totalOperationalIndexedDbFallbackModeCount: statuses.reduce(
+      (sum, status) => sum + (status.operationalIndexedDbFallbackModeCount || 0),
+      0
+    ),
+    totalOperationalAuthBootstrapTimeoutCount: statuses.reduce(
+      (sum, status) => sum + (status.operationalAuthBootstrapTimeoutCount || 0),
       0
     ),
     topOperationalCategory,

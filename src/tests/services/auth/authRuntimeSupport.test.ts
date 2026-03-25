@@ -37,6 +37,8 @@ import {
 import { ROLE_CACHE_PREFIX, normalizeEmail } from '@/services/auth/authShared';
 
 describe('authRuntimeSupport', () => {
+  const fixedCacheTimestamp = Date.parse('2026-03-22T20:00:00.000Z');
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useRealTimers();
@@ -147,7 +149,7 @@ describe('authRuntimeSupport', () => {
 
     mockGetSetting.mockResolvedValueOnce({
       role: 'doctor',
-      timestamp: Date.now(),
+      timestamp: fixedCacheTimestamp,
     });
     await expect(getCachedRole(email)).resolves.toBe('doctor');
 
@@ -156,14 +158,14 @@ describe('authRuntimeSupport', () => {
       cacheKey,
       JSON.stringify({
         role: 'viewer',
-        timestamp: Date.now(),
+        timestamp: fixedCacheTimestamp,
       })
     );
     await expect(getCachedRole(email)).resolves.toBe('viewer');
 
     mockGetSetting.mockResolvedValueOnce({
       role: 'stale',
-      timestamp: Date.now() - 8 * 24 * 60 * 60 * 1000,
+      timestamp: fixedCacheTimestamp - 8 * 24 * 60 * 60 * 1000,
     });
     await expect(getCachedRole(email)).resolves.toBeNull();
 

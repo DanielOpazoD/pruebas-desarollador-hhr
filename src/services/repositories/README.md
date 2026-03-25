@@ -34,6 +34,11 @@ await DailyRecordRepository.updatePartial(date, patch);
 const unsubscribe = DailyRecordRepository.subscribe(date, callback);
 ```
 
+## Decision Guide
+
+- Runtime path y precedence de `daily-record`: [docs/ADR_DAILY_RECORD_RUNTIME_PATH.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/ADR_DAILY_RECORD_RUNTIME_PATH.md)
+- Outcome policy de sync: [docs/ADR_SYNC_OUTCOME_POLICY.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/ADR_SYNC_OUTCOME_POLICY.md)
+
 ## Regla
 
 Todo acceso a `DailyRecord` debe pasar por este paquete (evitar acceso directo desde UI a storage).
@@ -159,5 +164,7 @@ dejar el runtime por defecto solo como composición. El repositorio no debe depe
   - `reports/runtime-contracts.md`
 - Si una operación crítica cambia de costo esperado, debe actualizarse la medición en
   `repositoryPerformance.ts` y regenerarse `reports/operational-health.md`.
+- Si cambia el contrato visible de lectura/suscripción del día actual, debe revisarse también
+  `docs/ADR_DAILY_RECORD_RUNTIME_PATH.md`.
 - Si cambia la clasificación o remediación de conflictos por contexto, debe actualizarse también
   `docs/RUNBOOK_OPERATIONAL_BUDGETS.md`.

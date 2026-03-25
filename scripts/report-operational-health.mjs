@@ -405,6 +405,14 @@ ${Object.entries(summary.conflictContexts)
     : 'unknown'
 }
 
+## Incident Signals To Watch
+
+- Realtime null recuperado: \`recovered_null_realtime_record\`
+- Realtime null confirmado: \`confirmed_null_realtime_record\`
+- Telemetría sync no disponible: \`sync_queue_telemetry_unavailable\`, \`sync_queue_stats_unavailable\`, \`sync_queue_recent_operations_unavailable\`, \`sync_queue_domain_metrics_unavailable\`
+- Fallback IndexedDB: \`indexeddb_fallback_mode\`
+- Timeout bootstrap auth: \`bootstrap_timeout\`
+
 ## Flow Performance Budgets
 
 - Status: ${summary.flowPerformance?.status ?? 'unknown'}

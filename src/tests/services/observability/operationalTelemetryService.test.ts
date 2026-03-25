@@ -105,6 +105,10 @@ describe('operationalTelemetryService', () => {
     expect(summary.handoffObservedCount).toBe(0);
     expect(summary.backupObservedCount).toBe(1);
     expect(summary.exportOrBackupObservedCount).toBe(1);
+    expect(summary.dailyRecordRecoveredRealtimeNullCount).toBe(0);
+    expect(summary.syncReadUnavailableCount).toBe(0);
+    expect(summary.indexedDbFallbackModeCount).toBe(0);
+    expect(summary.authBootstrapTimeoutCount).toBe(0);
     expect(summary.latestRuntimeState).toBe('unauthorized');
     expect(summary.latestIssueAt).toBeDefined();
   });
@@ -209,5 +213,45 @@ describe('operationalTelemetryService', () => {
     );
     expect(event?.status).toBe('degraded');
     expect(event?.runtimeState).toBe('retryable');
+  });
+
+  it('counts incident-level operations used by support/admin dashboards', () => {
+    recordOperationalTelemetry({
+      category: 'daily_record',
+      status: 'degraded',
+      runtimeState: 'recoverable',
+      operation: 'recovered_null_realtime_record',
+    });
+    recordOperationalTelemetry({
+      category: 'daily_record',
+      status: 'degraded',
+      runtimeState: 'retryable',
+      operation: 'confirmed_null_realtime_record',
+    });
+    recordOperationalTelemetry({
+      category: 'sync',
+      status: 'failed',
+      runtimeState: 'blocked',
+      operation: 'sync_queue_telemetry_unavailable',
+    });
+    recordOperationalTelemetry({
+      category: 'indexeddb',
+      status: 'degraded',
+      runtimeState: 'recoverable',
+      operation: 'indexeddb_fallback_mode',
+    });
+    recordOperationalTelemetry({
+      category: 'auth',
+      status: 'degraded',
+      runtimeState: 'recoverable',
+      operation: 'bootstrap_timeout',
+    });
+
+    const summary = buildOperationalTelemetrySummary(getOperationalTelemetryEvents());
+    expect(summary.dailyRecordRecoveredRealtimeNullCount).toBe(1);
+    expect(summary.dailyRecordConfirmedRealtimeNullCount).toBe(1);
+    expect(summary.syncReadUnavailableCount).toBe(1);
+    expect(summary.indexedDbFallbackModeCount).toBe(1);
+    expect(summary.authBootstrapTimeoutCount).toBe(1);
   });
 });

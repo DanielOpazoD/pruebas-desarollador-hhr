@@ -2,11 +2,23 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DailyRecord, PatientData, PatientStatus, Specialty } from '@/types';
 
-vi.mock('@/services/infrastructure/db', () => ({
-  db: {
+vi.mock('firebase/firestore', async importOriginal => {
+  const actual = await importOriginal<typeof import('firebase/firestore')>();
+  return {
+    ...actual,
     setDoc: vi.fn().mockResolvedValue(undefined),
-  },
-}));
+  };
+});
+
+vi.mock('@/services/storage/firestore/firestoreShared', async importOriginal => {
+  const actual =
+    await importOriginal<typeof import('@/services/storage/firestore/firestoreShared')>();
+  return {
+    ...actual,
+    getRecordDocRef: vi.fn(() => ({ id: 'sync-test-doc-ref' })),
+    sanitizeForFirestore: vi.fn(value => value),
+  };
+});
 
 vi.mock('@/services/storage/firestore', () => ({
   getRecordFromFirestore: vi.fn(),
@@ -18,7 +30,7 @@ vi.mock('@/services/repositories/ports/repositoryAuditPort', () => ({
   logRepositoryConflictAutoMerged: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { db } from '@/services/infrastructure/db';
+import { setDoc } from 'firebase/firestore';
 import {
   hospitalDB,
   clearAllRecords,
@@ -85,19 +97,19 @@ describe('Sync resilience integration', () => {
 
     let telemetry = await getSyncQueueTelemetry();
     expect(telemetry.pending).toBe(1);
-    expect(vi.mocked(db.setDoc)).not.toHaveBeenCalled();
+    expect(vi.mocked(setDoc)).not.toHaveBeenCalled();
 
     Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
     await processSyncQueue();
 
     telemetry = await getSyncQueueTelemetry();
-    expect(vi.mocked(db.setDoc)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(setDoc)).toHaveBeenCalledTimes(1);
     expect(telemetry.pending).toBe(0);
     expect(telemetry.failed).toBe(0);
   });
 
   it('marks permission-denied as FAILED without retry loop', async () => {
-    vi.mocked(db.setDoc).mockRejectedValue({
+    vi.mocked(setDoc).mockRejectedValue({
       code: 'permission-denied',
       message: 'Missing or insufficient permissions',
     });
@@ -110,7 +122,7 @@ describe('Sync resilience integration', () => {
     expect(tasks).toHaveLength(1);
     expect(tasks[0].status).toBe('FAILED');
     expect(tasks[0].retryCount).toBe(0);
-    expect(vi.mocked(db.setDoc)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(setDoc)).toHaveBeenCalledTimes(1);
   });
 
   it('auto-merges on concurrency conflict and preserves clinical local fields', async () => {

@@ -183,6 +183,10 @@ import { useDailyRecord } from '@/hooks/useDailyRecord';
 - [ADR Repository Provider obligatorio](docs/ADR_REPOSITORY_PROVIDER_REQUIRED.md)
 - [ADR fachada de access policy](docs/ADR_ACCESS_POLICY_FACADE.md)
 - [ADR boundary de application](docs/ADR_APPLICATION_BOUNDARY_ENFORCEMENT.md)
+- [ADR daily-record runtime path](docs/ADR_DAILY_RECORD_RUNTIME_PATH.md)
+- [ADR auth runtime recovery](docs/ADR_AUTH_RUNTIME_RECOVERY.md)
+- [ADR clinical-documents workspace contract](docs/ADR_CLINICAL_DOCUMENT_WORKSPACE_CONTRACT.md)
+- [ADR handoff runtime surfaces](docs/ADR_HANDOFF_RUNTIME_SURFACES.md)
 - [Mapa de código fuente](src/README.md)
 
 ### Documentación existente relevante

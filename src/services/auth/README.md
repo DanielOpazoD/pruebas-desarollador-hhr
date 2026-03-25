@@ -14,6 +14,12 @@ Resolver autenticacion, bootstrap de sesion, claims, roles y degradacion operati
 - `authService.ts` e `index.ts`: superficies legacy/compatibilidad controladas.
 - `clientOperationalRuntimeSnapshot.ts` compone auth con persistencia local y sync desde observability.
 
+## Decision Guide
+
+- Runtime y recovery de auth: [docs/ADR_AUTH_RUNTIME_RECOVERY.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/ADR_AUTH_RUNTIME_RECOVERY.md)
+- Modelo de acceso del producto: [docs/AUTH_ACCESS_MODEL.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/AUTH_ACCESS_MODEL.md)
+- Runbook de incidentes de acceso: [docs/RUNBOOK_AUTH_ACCESS_INCIDENTS.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/RUNBOOK_AUTH_ACCESS_INCIDENTS.md)
+
 ## Contratos principales
 
 - La UI debe consumir estado de sesion, no inferir auth por `user/null`.

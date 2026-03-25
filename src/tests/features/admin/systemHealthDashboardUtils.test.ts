@@ -37,6 +37,11 @@ const baseStatus = (overrides: Partial<UserHealthStatus> = {}): UserHealthStatus
   operationalCreateDayObservedCount: 0,
   operationalHandoffObservedCount: 0,
   operationalExportBackupObservedCount: 0,
+  operationalDailyRecordRecoveredRealtimeNullCount: 0,
+  operationalDailyRecordConfirmedRealtimeNullCount: 0,
+  operationalSyncReadUnavailableCount: 0,
+  operationalIndexedDbFallbackModeCount: 0,
+  operationalAuthBootstrapTimeoutCount: 0,
   latestOperationalRuntimeState: undefined,
   appVersion: 'v1',
   platform: 'MacIntel',
@@ -94,6 +99,11 @@ describe('systemHealthDashboardUtils', () => {
       totalOperationalCreateDayObservedCount: 0,
       totalOperationalHandoffObservedCount: 1,
       totalOperationalExportBackupObservedCount: 1,
+      totalOperationalDailyRecordRecoveredRealtimeNullCount: 1,
+      totalOperationalDailyRecordConfirmedRealtimeNullCount: 0,
+      totalOperationalSyncReadUnavailableCount: 1,
+      totalOperationalIndexedDbFallbackModeCount: 1,
+      totalOperationalAuthBootstrapTimeoutCount: 1,
       topOperationalCategory: 'sync',
       topOperationalOperation: 'retry_queue',
       topOperationalRuntimeState: 'recoverable',
@@ -101,10 +111,11 @@ describe('systemHealthDashboardUtils', () => {
       latestOperationalIssueAt: undefined,
     });
 
-    expect(cards).toHaveLength(10);
+    expect(cards).toHaveLength(11);
     expect(cards[0].title).toBe('Usuarios');
     expect(cards[3].detail).toContain('1 usuarios');
     expect(cards[6].detail).toContain('Bloqueadas: 1');
-    expect(cards[8].detail).toContain('Estado dominante: recoverable');
+    expect(cards[8].detail).toContain('Sync unreadable 1');
+    expect(cards[9].detail).toContain('Estado dominante: recoverable');
   });
 });

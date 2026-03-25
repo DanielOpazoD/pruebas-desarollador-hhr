@@ -84,6 +84,17 @@ export const buildSystemHealthMetricCards = (
     detail: `Docs ${summary.totalOperationalClinicalDocumentObservedCount} · Día ${summary.totalOperationalCreateDayObservedCount} · Handoff ${summary.totalOperationalHandoffObservedCount}`,
   },
   {
+    title: 'Incidentes runtime',
+    value: `Null ${summary.totalOperationalDailyRecordRecoveredRealtimeNullCount}/${summary.totalOperationalDailyRecordConfirmedRealtimeNullCount}`,
+    accentClassName:
+      summary.totalOperationalSyncReadUnavailableCount > 0 ||
+      summary.totalOperationalIndexedDbFallbackModeCount > 0 ||
+      summary.totalOperationalAuthBootstrapTimeoutCount > 0
+        ? 'text-amber-600'
+        : 'text-slate-900',
+    detail: `Sync unreadable ${summary.totalOperationalSyncReadUnavailableCount} · IndexedDB fallback ${summary.totalOperationalIndexedDbFallbackModeCount} · Auth timeout ${summary.totalOperationalAuthBootstrapTimeoutCount}`,
+  },
+  {
     title: 'Operación dominante',
     value: summary.topOperationalOperation || 'Sin patrón dominante',
     accentClassName: 'text-slate-900',

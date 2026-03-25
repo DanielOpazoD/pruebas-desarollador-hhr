@@ -65,6 +65,11 @@ describe('systemHealthReporterController', () => {
         exportObservedCount: 1,
         backupObservedCount: 1,
         exportOrBackupObservedCount: 2,
+        dailyRecordRecoveredRealtimeNullCount: 1,
+        dailyRecordConfirmedRealtimeNullCount: 0,
+        syncReadUnavailableCount: 1,
+        indexedDbFallbackModeCount: 1,
+        authBootstrapTimeoutCount: 1,
         topObservedCategory: 'backup',
         topObservedOperation: 'backup_handoff_pdf',
         latestObservedOperation: 'backup_handoff_pdf',
@@ -91,6 +96,10 @@ describe('systemHealthReporterController', () => {
     expect(status.operationalCreateDayObservedCount).toBe(1);
     expect(status.operationalHandoffObservedCount).toBe(1);
     expect(status.operationalExportBackupObservedCount).toBe(2);
+    expect(status.operationalDailyRecordRecoveredRealtimeNullCount).toBe(1);
+    expect(status.operationalSyncReadUnavailableCount).toBe(1);
+    expect(status.operationalIndexedDbFallbackModeCount).toBe(1);
+    expect(status.operationalAuthBootstrapTimeoutCount).toBe(1);
     expect(status.operationalTopObservedCategory).toBe('backup');
     expect(status.operationalTopObservedOperation).toBe('backup_handoff_pdf');
     expect(status.latestOperationalOperation).toBe('backup_handoff_pdf');

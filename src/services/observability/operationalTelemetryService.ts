@@ -47,6 +47,11 @@ export interface OperationalTelemetrySummary {
   exportObservedCount: number;
   backupObservedCount: number;
   exportOrBackupObservedCount: number;
+  dailyRecordRecoveredRealtimeNullCount: number;
+  dailyRecordConfirmedRealtimeNullCount: number;
+  syncReadUnavailableCount: number;
+  indexedDbFallbackModeCount: number;
+  authBootstrapTimeoutCount: number;
   topObservedCategory?: OperationalTelemetryCategory;
   topObservedOperation?: string;
   latestObservedOperation?: string;
@@ -177,6 +182,8 @@ export const buildOperationalTelemetrySummary = (
   const latestRuntimeState = [...observedEvents]
     .reverse()
     .find(event => event.runtimeState)?.runtimeState;
+  const countOperation = (operation: string): number =>
+    recentEvents.filter(event => event.operation === operation).length;
 
   return {
     recentEventCount: recentEvents.length,
@@ -209,6 +216,15 @@ export const buildOperationalTelemetrySummary = (
         (event.category === 'export' || event.category === 'backup') &&
         isObservedOperationalTelemetryStatus(event.status)
     ).length,
+    dailyRecordRecoveredRealtimeNullCount: countOperation('recovered_null_realtime_record'),
+    dailyRecordConfirmedRealtimeNullCount: countOperation('confirmed_null_realtime_record'),
+    syncReadUnavailableCount:
+      countOperation('sync_queue_telemetry_unavailable') +
+      countOperation('sync_queue_stats_unavailable') +
+      countOperation('sync_queue_recent_operations_unavailable') +
+      countOperation('sync_queue_domain_metrics_unavailable'),
+    indexedDbFallbackModeCount: countOperation('indexeddb_fallback_mode'),
+    authBootstrapTimeoutCount: countOperation('bootstrap_timeout'),
     topObservedCategory,
     topObservedOperation,
     latestObservedOperation,

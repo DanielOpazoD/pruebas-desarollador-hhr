@@ -55,6 +55,11 @@ describe('healthService', () => {
     operationalCreateDayObservedCount: 0,
     operationalHandoffObservedCount: 0,
     operationalExportBackupObservedCount: 0,
+    operationalDailyRecordRecoveredRealtimeNullCount: 0,
+    operationalDailyRecordConfirmedRealtimeNullCount: 0,
+    operationalSyncReadUnavailableCount: 0,
+    operationalIndexedDbFallbackModeCount: 0,
+    operationalAuthBootstrapTimeoutCount: 0,
     operationalTopObservedCategory: undefined,
     operationalTopObservedOperation: undefined,
     latestOperationalOperation: undefined,
@@ -222,6 +227,11 @@ describe('healthService', () => {
           operationalCreateDayObservedCount: 1,
           operationalHandoffObservedCount: 2,
           operationalExportBackupObservedCount: 3,
+          operationalDailyRecordRecoveredRealtimeNullCount: 1,
+          operationalDailyRecordConfirmedRealtimeNullCount: 1,
+          operationalSyncReadUnavailableCount: 1,
+          operationalIndexedDbFallbackModeCount: 1,
+          operationalAuthBootstrapTimeoutCount: 1,
           operationalTopObservedCategory: 'backup',
           operationalTopObservedOperation: 'backup_handoff_pdf',
           latestOperationalOperation: 'backup_handoff_pdf',
@@ -253,6 +263,11 @@ describe('healthService', () => {
       expect(summary.totalOperationalCreateDayObservedCount).toBe(1);
       expect(summary.totalOperationalHandoffObservedCount).toBe(2);
       expect(summary.totalOperationalExportBackupObservedCount).toBe(3);
+      expect(summary.totalOperationalDailyRecordRecoveredRealtimeNullCount).toBe(1);
+      expect(summary.totalOperationalDailyRecordConfirmedRealtimeNullCount).toBe(1);
+      expect(summary.totalOperationalSyncReadUnavailableCount).toBe(1);
+      expect(summary.totalOperationalIndexedDbFallbackModeCount).toBe(1);
+      expect(summary.totalOperationalAuthBootstrapTimeoutCount).toBe(1);
       expect(summary.topOperationalCategory).toBe('backup');
       expect(summary.topOperationalOperation).toBe('backup_handoff_pdf');
       expect(summary.topOperationalRuntimeState).toBe('recoverable');

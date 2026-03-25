@@ -3,11 +3,23 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { hospitalDB } from '@/services/storage/indexedDBService';
 import { logError } from '@/services/utils/errorService';
 
-vi.mock('@/services/infrastructure/db', () => ({
-  db: {
+vi.mock('firebase/firestore', async importOriginal => {
+  const actual = await importOriginal<typeof import('firebase/firestore')>();
+  return {
+    ...actual,
     setDoc: vi.fn().mockResolvedValue(undefined),
-  },
-}));
+  };
+});
+
+vi.mock('@/services/storage/firestore/firestoreShared', async importOriginal => {
+  const actual =
+    await importOriginal<typeof import('@/services/storage/firestore/firestoreShared')>();
+  return {
+    ...actual,
+    getRecordDocRef: vi.fn(() => ({ id: 'sync-test-doc-ref' })),
+    sanitizeForFirestore: vi.fn(value => value),
+  };
+});
 
 vi.mock('@/services/utils/errorService', async importOriginal => {
   const actual = await importOriginal<typeof import('@/services/utils/errorService')>();
@@ -17,7 +29,7 @@ vi.mock('@/services/utils/errorService', async importOriginal => {
   };
 });
 
-import { db } from '@/services/infrastructure/db';
+import { setDoc } from 'firebase/firestore';
 import {
   getSyncQueueDomainMetrics,
   queueSyncTask,
@@ -59,7 +71,7 @@ describe('storage/sync public entrypoint', () => {
   });
 
   it('backs off and retries when sync fails', async () => {
-    vi.mocked(db.setDoc).mockRejectedValueOnce(new Error('Network down'));
+    vi.mocked(setDoc).mockRejectedValueOnce(new Error('Network down'));
 
     await queueSyncTask('UPDATE_DAILY_RECORD', makeRecord('2025-01-02', 'v1'), {
       contexts: ['clinical'],
@@ -83,7 +95,7 @@ describe('storage/sync public entrypoint', () => {
   });
 
   it('reports telemetry including retrying and oldest pending age', async () => {
-    vi.mocked(db.setDoc).mockRejectedValueOnce(new Error('Network down'));
+    vi.mocked(setDoc).mockRejectedValueOnce(new Error('Network down'));
     await queueSyncTask('UPDATE_DAILY_RECORD', makeRecord('2025-01-06', 'v1'));
     await processSyncQueue();
 
@@ -111,7 +123,7 @@ describe('storage/sync public entrypoint', () => {
   });
 
   it('marks task as failed without retry for non-retryable errors', async () => {
-    vi.mocked(db.setDoc).mockRejectedValueOnce({
+    vi.mocked(setDoc).mockRejectedValueOnce({
       code: 'permission-denied',
       message: 'Missing or insufficient permissions',
     });
@@ -130,7 +142,7 @@ describe('storage/sync public entrypoint', () => {
   it('marks task as conflict when remote concurrency conflict occurs', async () => {
     const conflictError = new Error('Concurrency conflict');
     conflictError.name = 'ConcurrencyError';
-    vi.mocked(db.setDoc).mockRejectedValueOnce(conflictError);
+    vi.mocked(setDoc).mockRejectedValueOnce(conflictError);
 
     await queueSyncTask('UPDATE_DAILY_RECORD', makeRecord('2025-01-05', 'v1'), {
       contexts: ['handoff'],
@@ -156,14 +168,14 @@ describe('storage/sync public entrypoint', () => {
 
     await processSyncQueue();
 
-    expect(vi.mocked(db.setDoc)).not.toHaveBeenCalled();
+    expect(vi.mocked(setDoc)).not.toHaveBeenCalled();
     const tasks = await hospitalDB.syncQueue.toArray();
     expect(tasks).toHaveLength(1);
     expect(tasks[0].status).toBe('PENDING');
   });
 
   it('marks task as failed after exhausting max retries', async () => {
-    vi.mocked(db.setDoc).mockRejectedValue(new Error('Network down'));
+    vi.mocked(setDoc).mockRejectedValue(new Error('Network down'));
 
     await queueSyncTask('UPDATE_DAILY_RECORD', makeRecord('2025-01-08', 'v1'), {
       contexts: ['clinical'],
@@ -211,7 +223,7 @@ describe('storage/sync public entrypoint', () => {
   });
 
   it('applies a lower retry budget to metadata-only tasks', async () => {
-    vi.mocked(db.setDoc).mockRejectedValue(new Error('Network down'));
+    vi.mocked(setDoc).mockRejectedValue(new Error('Network down'));
 
     await queueSyncTask('UPDATE_DAILY_RECORD', makeRecord('2025-01-10', 'v1'), {
       contexts: ['metadata'],
