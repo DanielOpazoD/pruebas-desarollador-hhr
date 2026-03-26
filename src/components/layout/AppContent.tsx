@@ -275,8 +275,6 @@ export const AppContent: React.FC<AppContentProps> = ({ ui }) => {
                 onTestModeChange={censusEmail.setTestModeEnabled}
                 testRecipient={censusEmail.testRecipient}
                 onTestRecipientChange={censusEmail.setTestRecipient}
-                excelSheetConfig={censusEmail.excelSheetConfig}
-                onExcelSheetConfigChange={censusEmail.setExcelSheetConfig}
               />
             </React.Suspense>
           )}

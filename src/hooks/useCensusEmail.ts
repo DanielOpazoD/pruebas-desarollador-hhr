@@ -1,19 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useConfirmDialog } from '@/context/UIContext';
 import { DailyRecord } from '@/types/domain/dailyRecord';
-import { getAppSetting, saveAppSetting } from '@/services/settingsService';
 import { defaultCensusEmailBrowserRuntime } from '@/hooks/controllers/censusEmailBrowserRuntimeController';
 import type { GlobalEmailRecipientList } from '@/services/email/emailRecipientListService';
 import {
   canManageGlobalCensusEmailRecipients,
   canUseAdminMaintenanceActions,
 } from '@/shared/access/operationalAccessPolicy';
-import {
-  CENSUS_EMAIL_EXCEL_SHEET_CONFIG_KEY,
-  DEFAULT_CENSUS_EMAIL_EXCEL_SHEET_CONFIG,
-  normalizeCensusEmailExcelSheetConfig,
-  type CensusEmailExcelSheetConfig,
-} from '@/hooks/controllers/censusExcelSheetController';
 import { useCensusEmailDeliveryActions } from '@/hooks/useCensusEmailDeliveryActions';
 import { useCensusEmailRecipientLists } from '@/hooks/useCensusEmailRecipientLists';
 import { useCensusEmailMessageState } from '@/hooks/useCensusEmailMessageState';
@@ -67,10 +60,6 @@ export interface UseCensusEmailReturn {
   testRecipient: string;
   setTestRecipient: (value: string) => void;
   isAdminUser: boolean;
-
-  // Excel options for current day sheets
-  excelSheetConfig: CensusEmailExcelSheetConfig;
-  setExcelSheetConfig: (value: CensusEmailExcelSheetConfig) => void;
 }
 
 /**
@@ -125,12 +114,8 @@ export const useCensusEmail = ({
   // ========== TEST MODE (ADMIN) ==========
   const [testModeEnabledState, setTestModeEnabledState] = useState(false);
   const [testRecipientState, setTestRecipientState] = useState('');
-  const [excelSheetConfigState, setExcelSheetConfigState] = useState<CensusEmailExcelSheetConfig>(
-    DEFAULT_CENSUS_EMAIL_EXCEL_SHEET_CONFIG
-  );
   const testModeEnabled = isAdminUser ? testModeEnabledState : false;
   const testRecipient = isAdminUser ? testRecipientState : '';
-  const excelSheetConfig = excelSheetConfigState;
   const setTestModeEnabled = useCallback(
     (value: boolean) => {
       if (isAdminUser) {
@@ -147,29 +132,11 @@ export const useCensusEmail = ({
     },
     [isAdminUser]
   );
-  const setExcelSheetConfig = useCallback((value: CensusEmailExcelSheetConfig) => {
-    setExcelSheetConfigState(normalizeCensusEmailExcelSheetConfig(value));
-  }, []);
 
   // ========== UI STATE ==========
   const [showEmailConfig, setShowEmailConfig] = useState(false);
   const { status, error, setStatus, setError, resetStatus } =
     useCensusEmailSendState(currentDateString);
-
-  useEffect(() => {
-    const loadExcelSheetConfig = async () => {
-      const storedConfig = await getAppSetting<unknown>(
-        CENSUS_EMAIL_EXCEL_SHEET_CONFIG_KEY,
-        DEFAULT_CENSUS_EMAIL_EXCEL_SHEET_CONFIG
-      );
-      setExcelSheetConfigState(normalizeCensusEmailExcelSheetConfig(storedConfig));
-    };
-    loadExcelSheetConfig();
-  }, []);
-
-  useEffect(() => {
-    saveAppSetting(CENSUS_EMAIL_EXCEL_SHEET_CONFIG_KEY, excelSheetConfig);
-  }, [excelSheetConfig]);
 
   // ========== HANDLERS ==========
   const { sendEmail } = useCensusEmailDeliveryActions({
@@ -187,7 +154,6 @@ export const useCensusEmail = ({
     testModeEnabled,
     testRecipient,
     isAdminUser,
-    excelSheetConfig,
     setStatus,
     setError,
     confirm,
@@ -220,7 +186,5 @@ export const useCensusEmail = ({
     testRecipient,
     setTestRecipient,
     isAdminUser,
-    excelSheetConfig,
-    setExcelSheetConfig,
   };
 };

@@ -1,7 +1,6 @@
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import type { ConfirmOptions } from '@/context/uiContracts';
 import type { DailyRecord } from '@/types/domain/dailyRecord';
-import { type CensusEmailExcelSheetConfig } from '@/hooks/controllers/censusExcelSheetController';
 import {
   buildSendCensusConfirmationMessage,
   executeSendCensusEmail,
@@ -26,7 +25,6 @@ interface UseCensusEmailDeliveryActionsParams {
   testModeEnabled: boolean;
   testRecipient: string;
   isAdminUser: boolean;
-  excelSheetConfig: CensusEmailExcelSheetConfig;
   setStatus: Dispatch<SetStateAction<CensusEmailSendStatus>>;
   setError: Dispatch<SetStateAction<string | null>>;
   confirm: (options: ConfirmOptions) => Promise<boolean>;
@@ -48,7 +46,6 @@ export const useCensusEmailDeliveryActions = ({
   testModeEnabled,
   testRecipient,
   isAdminUser,
-  excelSheetConfig,
   setStatus,
   setError,
   confirm,
@@ -88,7 +85,6 @@ export const useCensusEmailDeliveryActions = ({
       testModeEnabled,
       testRecipient,
       isAdminUser,
-      excelSheetConfig,
     });
 
     const presentation = resolveCensusEmailSendOutcomePresentation(result, {
@@ -108,7 +104,6 @@ export const useCensusEmailDeliveryActions = ({
     alert,
     confirm,
     currentDateString,
-    excelSheetConfig,
     isAdminUser,
     message,
     nurseSignature,

@@ -57,10 +57,6 @@ describe('sendCensusEmailUseCases', () => {
       testModeEnabled: false,
       testRecipient: '',
       isAdminUser: true,
-      excelSheetConfig: {
-        includeEndOfDay2359Sheet: true,
-        includeCurrentTimeSheet: false,
-      },
     });
 
     expect(result.status).toBe('failed');
@@ -93,10 +89,6 @@ describe('sendCensusEmailUseCases', () => {
         testModeEnabled: false,
         testRecipient: '',
         isAdminUser: true,
-        excelSheetConfig: {
-          includeEndOfDay2359Sheet: true,
-          includeCurrentTimeSheet: false,
-        },
       },
       {
         dailyRecordReadPort: {

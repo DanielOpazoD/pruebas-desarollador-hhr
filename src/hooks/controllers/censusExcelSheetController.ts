@@ -1,22 +1,9 @@
 import type { DailyRecord } from '@/types/domain/dailyRecord';
 import type { CensusWorkbookSheetDescriptor } from '@/services/exporters/censusMasterWorkbook';
 
-export const CENSUS_EMAIL_EXCEL_SHEET_CONFIG_KEY = 'censusEmailExcelSheetConfig';
-
-export interface CensusEmailExcelSheetConfig {
-  includeEndOfDay2359Sheet: boolean;
-  includeCurrentTimeSheet: boolean;
-}
-
-export const DEFAULT_CENSUS_EMAIL_EXCEL_SHEET_CONFIG: CensusEmailExcelSheetConfig = {
-  includeEndOfDay2359Sheet: true,
-  includeCurrentTimeSheet: false,
-};
-
 interface BuildCensusSheetDescriptorsParams {
   monthRecords: DailyRecord[];
   currentDateString: string;
-  config: CensusEmailExcelSheetConfig;
   now?: Date;
 }
 
@@ -65,29 +52,6 @@ const reserveUniqueName = (desiredName: string, usedNames: Set<string>): string 
   const fallback = sanitizeSheetName(`Hoja-${Date.now()}`);
   usedNames.add(fallback);
   return fallback;
-};
-
-export const normalizeCensusEmailExcelSheetConfig = (
-  rawConfig: unknown
-): CensusEmailExcelSheetConfig => {
-  if (!rawConfig || typeof rawConfig !== 'object') {
-    return DEFAULT_CENSUS_EMAIL_EXCEL_SHEET_CONFIG;
-  }
-
-  const candidate = rawConfig as Partial<CensusEmailExcelSheetConfig>;
-  const includeEndOfDay2359Sheet =
-    typeof candidate.includeEndOfDay2359Sheet === 'boolean'
-      ? candidate.includeEndOfDay2359Sheet
-      : DEFAULT_CENSUS_EMAIL_EXCEL_SHEET_CONFIG.includeEndOfDay2359Sheet;
-  const includeCurrentTimeSheet =
-    typeof candidate.includeCurrentTimeSheet === 'boolean'
-      ? candidate.includeCurrentTimeSheet
-      : DEFAULT_CENSUS_EMAIL_EXCEL_SHEET_CONFIG.includeCurrentTimeSheet;
-
-  return {
-    includeEndOfDay2359Sheet,
-    includeCurrentTimeSheet,
-  };
 };
 
 const deepCloneRecord = (record: DailyRecord): DailyRecord =>
@@ -153,11 +117,6 @@ const isMovementIncludedInCutoff = (
     return true;
   }
   return movementDateTime.getTime() <= cutoff.getTime();
-};
-
-const buildCutoffDate = (isoDate: string): Date => {
-  const cutoff = new Date(`${isoDate}T23:59:59`);
-  return Number.isNaN(cutoff.getTime()) ? new Date() : cutoff;
 };
 
 const buildRecordSnapshotAtCutoff = (record: DailyRecord, cutoff: Date): DailyRecord => {
@@ -242,7 +201,6 @@ const buildRecordSnapshotAtCutoff = (record: DailyRecord, cutoff: Date): DailyRe
 export const buildCensusWorkbookPlan = ({
   monthRecords,
   currentDateString,
-  config,
   now = new Date(),
 }: BuildCensusSheetDescriptorsParams): CensusWorkbookBuildPlan => {
   const usedNames = new Set<string>();
@@ -264,36 +222,14 @@ export const buildCensusWorkbookPlan = ({
       return;
     }
 
-    if (config.includeEndOfDay2359Sheet) {
-      const cutoffRecord = buildRecordSnapshotAtCutoff(record, buildCutoffDate(record.date));
-      const recordLookupIndex = recordsForWorkbook.push(cutoffRecord) - 1;
-      sheetDescriptors.push({
-        recordLookupIndex,
-        recordDate: record.date,
-        sheetName: reserveUniqueName(`${sheetDate} 23-59`, usedNames),
-        snapshotLabel: '23:59',
-      });
-    }
-
-    if (config.includeCurrentTimeSheet) {
-      const currentRecordSnapshot = buildRecordSnapshotAtCutoff(record, now);
-      const recordLookupIndex = recordsForWorkbook.push(currentRecordSnapshot) - 1;
-      sheetDescriptors.push({
-        recordLookupIndex,
-        recordDate: record.date,
-        sheetName: reserveUniqueName(`${sheetDate} ${toSheetTimeToken(currentTime)}`, usedNames),
-        snapshotLabel: `Hora actual ${currentTime}`,
-      });
-    }
-
-    if (!config.includeEndOfDay2359Sheet && !config.includeCurrentTimeSheet) {
-      const recordLookupIndex = recordsForWorkbook.push(deepCloneRecord(record)) - 1;
-      sheetDescriptors.push({
-        recordLookupIndex,
-        recordDate: record.date,
-        sheetName: reserveUniqueName(sheetDate, usedNames),
-      });
-    }
+    const currentRecordSnapshot = buildRecordSnapshotAtCutoff(record, now);
+    const recordLookupIndex = recordsForWorkbook.push(currentRecordSnapshot) - 1;
+    sheetDescriptors.push({
+      recordLookupIndex,
+      recordDate: record.date,
+      sheetName: reserveUniqueName(`${sheetDate} ${toSheetTimeToken(currentTime)}`, usedNames),
+      snapshotLabel: `Hora actual ${currentTime}`,
+    });
   });
 
   return {
@@ -305,13 +241,11 @@ export const buildCensusWorkbookPlan = ({
 export const buildCensusWorkbookSheetDescriptors = ({
   monthRecords,
   currentDateString,
-  config,
   now = new Date(),
 }: BuildCensusSheetDescriptorsParams): CensusWorkbookSheetDescriptor[] => {
   return buildCensusWorkbookPlan({
     monthRecords,
     currentDateString,
-    config,
     now,
   }).sheetDescriptors;
 };

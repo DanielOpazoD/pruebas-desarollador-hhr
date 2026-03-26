@@ -2,7 +2,6 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { CensusEmailConfigModal } from '@/features/census/components/CensusEmailConfigModal';
-import { DEFAULT_CENSUS_EMAIL_EXCEL_SHEET_CONFIG } from '@/hooks/controllers/censusExcelSheetController';
 
 const buildProps = () => ({
   isOpen: true,
@@ -39,8 +38,6 @@ const buildProps = () => ({
   onTestModeChange: vi.fn(),
   testRecipient: '',
   onTestRecipientChange: vi.fn(),
-  excelSheetConfig: DEFAULT_CENSUS_EMAIL_EXCEL_SHEET_CONFIG,
-  onExcelSheetConfigChange: vi.fn(),
 });
 
 describe('CensusEmailConfigModal', () => {
@@ -88,16 +85,16 @@ describe('CensusEmailConfigModal', () => {
     expect(props.onMessageChange).toHaveBeenCalled();
   });
 
-  it('updates excel sheet configuration checkboxes', () => {
+  it('shows the fixed current-time export message', () => {
     const props = buildProps();
     render(<CensusEmailConfigModal {...props} />);
 
-    fireEvent.click(screen.getByLabelText(/hora actual/i));
-
-    expect(props.onExcelSheetConfigChange).toHaveBeenCalledWith({
-      ...DEFAULT_CENSUS_EMAIL_EXCEL_SHEET_CONFIG,
-      includeCurrentTimeSheet: true,
-    });
+    expect(
+      screen.getByText(/el excel adjunta siempre el día actual con la hora real del envío/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/la variante con corte a las 23:59 fue eliminada/i)
+    ).toBeInTheDocument();
   });
 
   it('shows the global firebase recipients hint', () => {

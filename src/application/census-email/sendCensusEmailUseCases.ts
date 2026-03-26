@@ -1,10 +1,7 @@
 import type { DailyRecord } from '@/types/domain/dailyRecord';
 import { formatDateDDMMYYYY as formatDate } from '@/utils/dateUtils';
 import { resolveSendingRecipients } from '@/hooks/controllers/censusEmailRecipientsController';
-import {
-  buildCensusWorkbookPlan,
-  type CensusEmailExcelSheetConfig,
-} from '@/hooks/controllers/censusExcelSheetController';
+import { buildCensusWorkbookPlan } from '@/hooks/controllers/censusExcelSheetController';
 import {
   buildCensusEmailConfirmationText,
   buildMonthIntegrityDates,
@@ -43,7 +40,6 @@ export interface SendCensusEmailInput extends BaseCensusEmailInput {
   testModeEnabled: boolean;
   testRecipient: string;
   isAdminUser: boolean;
-  excelSheetConfig: CensusEmailExcelSheetConfig;
 }
 
 export interface SendCensusEmailOutput {
@@ -143,7 +139,6 @@ export const executeSendCensusEmail = async (
     const workbookPlan = buildCensusWorkbookPlan({
       monthRecords: filteredRecords,
       currentDateString: input.currentDateString,
-      config: input.excelSheetConfig,
     });
 
     const sendResult = await censusEmailDeliveryPort.sendEmailWithResult({
