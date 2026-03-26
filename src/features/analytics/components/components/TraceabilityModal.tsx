@@ -90,6 +90,7 @@ export const TraceabilityModal: React.FC<TraceabilityModalProps> = ({
                   <>
                     <th className="pl-8 pr-4 py-3 font-medium text-slate-600 border-b">Paciente</th>
                     <th className="px-4 py-3 font-medium text-slate-600 border-b">RUT</th>
+                    <th className="px-4 py-3 font-medium text-slate-600 border-b">Diagnóstico</th>
                     <th className="px-4 py-3 font-medium text-slate-600 border-b">Ingreso</th>
                     <th className="px-4 py-3 font-medium text-slate-600 border-b">Egreso</th>
                     <th className="pl-4 pr-8 py-3 font-medium text-slate-600 border-b text-center">
@@ -103,6 +104,7 @@ export const TraceabilityModal: React.FC<TraceabilityModalProps> = ({
                     </th>
                     <th className="px-4 py-3 font-medium text-slate-600 border-b">Paciente</th>
                     <th className="px-4 py-3 font-medium text-slate-600 border-b">RUT</th>
+                    <th className="px-4 py-3 font-medium text-slate-600 border-b">Diagnóstico</th>
                     <th className="pl-4 pr-8 py-3 font-medium text-slate-600 border-b">
                       Ubicación
                     </th>
@@ -123,6 +125,13 @@ export const TraceabilityModal: React.FC<TraceabilityModalProps> = ({
                       </td>
                       <td className="px-4 py-2.5 text-slate-500 font-mono text-xs align-top">
                         {item.patient.rut}
+                      </td>
+                      <td className="px-4 py-2.5 text-slate-600 align-top">
+                        {item.patient.diagnosis ? (
+                          <span className="break-words">{item.patient.diagnosis}</span>
+                        ) : (
+                          <span className="text-slate-400 italic">--</span>
+                        )}
                       </td>
                       <td className="px-4 py-2.5 text-slate-600 whitespace-nowrap align-top">
                         <div className="flex items-center gap-2">
@@ -164,6 +173,13 @@ export const TraceabilityModal: React.FC<TraceabilityModalProps> = ({
                       <td className="px-4 py-2.5 font-medium text-slate-800 align-top">{p.name}</td>
                       <td className="px-4 py-2.5 text-slate-500 font-mono text-xs align-top">
                         {p.rut}
+                      </td>
+                      <td className="px-4 py-2.5 text-slate-600 align-top">
+                        {p.diagnosis ? (
+                          <span className="break-words">{p.diagnosis}</span>
+                        ) : (
+                          <span className="text-slate-400 italic">--</span>
+                        )}
                       </td>
                       <td className="pl-4 pr-8 py-2.5 text-slate-600 align-top">
                         {p.bedName ? (

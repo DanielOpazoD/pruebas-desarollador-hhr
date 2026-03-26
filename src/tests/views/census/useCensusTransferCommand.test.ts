@@ -10,16 +10,22 @@ import {
   DEFAULT_TRANSFER_ESCORT,
 } from '@/constants';
 
-const { mockGetLatestOpenTransferRequestByBedId, mockCreateTransferRequest, mockUseAuth } =
-  vi.hoisted(() => ({
-    mockGetLatestOpenTransferRequestByBedId: vi.fn(),
-    mockCreateTransferRequest: vi.fn(),
-    mockUseAuth: vi.fn(),
-  }));
+const {
+  mockGetLatestOpenTransferRequestByBedId,
+  mockCreateTransferRequest,
+  mockCompleteTransferWithResult,
+  mockUseAuth,
+} = vi.hoisted(() => ({
+  mockGetLatestOpenTransferRequestByBedId: vi.fn(),
+  mockCreateTransferRequest: vi.fn(),
+  mockCompleteTransferWithResult: vi.fn(),
+  mockUseAuth: vi.fn(),
+}));
 
 vi.mock('@/services/transfers/transferService', () => ({
   getLatestOpenTransferRequestByBedId: mockGetLatestOpenTransferRequestByBedId,
   createTransferRequest: mockCreateTransferRequest,
+  completeTransferWithResult: mockCompleteTransferWithResult,
 }));
 
 vi.mock('@/context/AuthContext', () => ({
@@ -126,6 +132,22 @@ describe('useCensusTransferCommand', () => {
         createdBy: 'doctor@example.com',
       })
     );
+    expect(mockCompleteTransferWithResult).not.toHaveBeenCalled();
+  });
+
+  it('finalizes the linked transfer request when one already exists for the bed', async () => {
+    mockGetLatestOpenTransferRequestByBedId.mockResolvedValue({ id: 'TR-9' });
+    mockCompleteTransferWithResult.mockResolvedValue({ status: 'success', data: null });
+    const { result, addTransfer, setTransferState } = createHook();
+
+    await act(async () => {
+      result.current({ time: '11:00' });
+    });
+
+    expect(addTransfer).toHaveBeenCalledTimes(1);
+    expect(setTransferState).toHaveBeenCalledTimes(1);
+    expect(mockCreateTransferRequest).not.toHaveBeenCalled();
+    expect(mockCompleteTransferWithResult).toHaveBeenCalledWith('TR-9', 'doctor@example.com');
   });
 
   it('does not sync transfer request when editing an existing transfer record', async () => {

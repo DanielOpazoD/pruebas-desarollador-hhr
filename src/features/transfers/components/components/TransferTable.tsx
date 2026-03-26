@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import type { TransferRequest, TransferStatus } from '@/types/transfers';
+import type { TransferFormData, TransferRequest, TransferStatus } from '@/types/transfers';
 import { TransferTableCloseActionsMenu } from './TransferTableCloseActionsMenu';
 import { TransferTableRow } from './TransferTableRow';
 import type { TransferTableMode } from '../controllers/transferTableController';
@@ -26,6 +26,7 @@ interface TransferTableProps {
   onArchive: (transfer: TransferRequest) => void;
   onDelete: (transfer: TransferRequest) => Promise<void>;
   onDeleteHistoryEntry: (transfer: TransferRequest, historyIndex: number) => Promise<void>;
+  onUpdateTransfer: (transferId: string, data: Partial<TransferFormData>) => Promise<void>;
 }
 
 interface TransferActionsMenuState {
@@ -35,13 +36,12 @@ interface TransferActionsMenuState {
 }
 
 const TABLE_COLUMNS = [
-  { key: 'status', label: 'Estado', className: 'w-[10%]' },
-  { key: 'bed', label: 'Cama', className: 'w-[6%]' },
-  { key: 'patient', label: 'Paciente (RUT)', className: 'w-[16%]' },
-  { key: 'diagnosis', label: 'Diagnóstico', className: 'w-[17%]' },
-  { key: 'destination', label: 'Hospital Destino', className: 'w-[24%]' },
+  { key: 'status', label: 'Estado', className: 'w-[14%]' },
+  { key: 'patient', label: 'Paciente', className: 'w-[21%]' },
+  { key: 'destination', label: 'Hospital Destino', className: 'w-[13%]' },
   { key: 'requestDate', label: 'Fecha Solicitud', className: 'w-[10%]' },
-  { key: 'actions', label: 'Acciones', className: 'w-[17%]' },
+  { key: 'notes', label: 'Notas', className: 'w-[27%]' },
+  { key: 'actions', label: 'Acciones', className: 'w-[15%]' },
 ] as const;
 
 export const TransferTable: React.FC<TransferTableProps> = ({
@@ -59,6 +59,7 @@ export const TransferTable: React.FC<TransferTableProps> = ({
   onArchive,
   onDelete,
   onDeleteHistoryEntry,
+  onUpdateTransfer,
 }) => {
   const { role } = useAuth();
   const [openActionsMenu, setOpenActionsMenu] = useState<TransferActionsMenuState | null>(null);
@@ -149,6 +150,7 @@ export const TransferTable: React.FC<TransferTableProps> = ({
               onViewDocs={onViewDocs}
               onUndo={onUndo}
               onArchive={onArchive}
+              onUpdateTransfer={onUpdateTransfer}
               onOpenCloseMenu={event => handleOpenActionsMenu(event, transfer)}
             />
           ))}

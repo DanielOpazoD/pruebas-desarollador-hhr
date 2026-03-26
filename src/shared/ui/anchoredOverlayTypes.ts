@@ -3,7 +3,9 @@ export interface TopLeftPosition {
   left: number;
 }
 
-export type OverlayAnchorRect = Pick<DOMRect, 'top' | 'bottom' | 'left'>;
+export type OverlayAnchorRect = Pick<DOMRect, 'top' | 'bottom' | 'left'> & {
+  right?: number;
+};
 
 export type VerticalPlacement = 'top' | 'bottom';
 

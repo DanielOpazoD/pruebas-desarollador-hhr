@@ -62,6 +62,7 @@ describe('censusTransferSyncController', () => {
   it('skips request creation when there is already an open linked transfer', async () => {
     const getLatest = vi.fn().mockResolvedValue({ id: 'TR-1' });
     const createTransfer = vi.fn();
+    const completeTransfer = vi.fn();
 
     await syncCensusTransferRequest({
       bedId: 'R1',
@@ -71,14 +72,17 @@ describe('censusTransferSyncController', () => {
       createdByEmail: 'test@example.com',
       getLatestOpenTransferRequestByBedId: getLatest,
       createTransferRequest: createTransfer,
+      completeTransferWithResult: completeTransfer,
     });
 
     expect(createTransfer).not.toHaveBeenCalled();
+    expect(completeTransfer).toHaveBeenCalledWith('TR-1', 'test@example.com');
   });
 
   it('creates a transfer request when there is no linked open transfer', async () => {
     const getLatest = vi.fn().mockResolvedValue(null);
     const createTransfer = vi.fn().mockResolvedValue({ id: 'TR-2' });
+    const completeTransfer = vi.fn();
 
     await syncCensusTransferRequest({
       bedId: 'R1',
@@ -93,6 +97,7 @@ describe('censusTransferSyncController', () => {
       createdByEmail: 'test@example.com',
       getLatestOpenTransferRequestByBedId: getLatest,
       createTransferRequest: createTransfer,
+      completeTransferWithResult: completeTransfer,
     });
 
     expect(createTransfer).toHaveBeenCalledWith(
@@ -104,5 +109,6 @@ describe('censusTransferSyncController', () => {
         createdBy: 'test@example.com',
       })
     );
+    expect(completeTransfer).not.toHaveBeenCalled();
   });
 });

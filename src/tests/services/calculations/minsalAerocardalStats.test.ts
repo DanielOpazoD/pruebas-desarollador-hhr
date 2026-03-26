@@ -90,9 +90,11 @@ describe('calculateMinsalStats transfer method breakdown', () => {
     expect(medicina?.aerocardal).toBe(1);
     expect(medicina?.aerocardalList).toHaveLength(1);
     expect(medicina?.aerocardalList?.[0]?.name).toBe('Paciente A');
+    expect(medicina?.aerocardalList?.[0]?.diagnosis).toBe('Diag A');
     expect(medicina?.fach).toBe(1);
     expect(medicina?.fachList).toHaveLength(1);
     expect(medicina?.fachList?.[0]?.name).toBe('Paciente B');
+    expect(medicina?.fachList?.[0]?.diagnosis).toBe('Diag B');
   });
 
   it('treats legacy "FACH" label as FACH transfer', () => {
@@ -131,5 +133,6 @@ describe('calculateMinsalStats transfer method breakdown', () => {
 
     expect(medicina?.fach).toBe(1);
     expect(medicina?.fachList?.[0]?.name).toBe('Paciente C');
+    expect(medicina?.fachList?.[0]?.diagnosis).toBe('Diag C');
   });
 });

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { PatientData } from '@/types';
 import type { TransferRequest } from '@/types/transfers';
 import {
+  buildTransferNote,
   buildCreateTransferPayload,
   buildHospitalizedPatients,
   buildTransferPatientSnapshot,
@@ -53,6 +54,9 @@ describe('transferManagementController', () => {
         destinationHospital: 'Hospital Base',
         transferReason: 'Complejidad',
         requestingDoctor: 'Dr. Uno',
+        transferNotes: [
+          buildTransferNote('Nota inicial', 'admin@test.com', '2026-03-03T10:30:00Z'),
+        ],
       },
       patient,
       '2026-03-03',
@@ -63,6 +67,11 @@ describe('transferManagementController', () => {
     expect(payload.patientSnapshot.name).toBe('Paciente Demo');
     expect(payload.createdBy).toBe('admin@test.com');
     expect(payload.status).toBe('REQUESTED');
+    expect(payload.transferNotes).toHaveLength(1);
+    expect(payload.transferNotes?.[0]).toMatchObject({
+      content: 'Nota inicial',
+      createdBy: 'admin@test.com',
+    });
   });
 
   it('filters visible transfers and resolves previous status', () => {

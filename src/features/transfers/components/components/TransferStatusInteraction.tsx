@@ -14,6 +14,8 @@ import {
 } from '@/shared/transfers/transferPresentation';
 import { LAYER_Z_INDEX } from '@/shared/ui/layering';
 
+const TRANSFER_STATUS_DROPDOWN_WIDTH = 288;
+
 interface TransferStatusInteractionProps {
   transfer: TransferRequest;
   onStatusChange: (status: TransferStatus) => Promise<void>;
@@ -43,6 +45,8 @@ export const TransferStatusInteraction: React.FC<TransferStatusInteractionProps>
     return resolveTransferStatusDropdownPosition({
       buttonRect: rect,
       viewportHeight: window.innerHeight,
+      viewportWidth: window.innerWidth,
+      estimatedPanelWidth: TRANSFER_STATUS_DROPDOWN_WIDTH,
     });
   }, []);
 

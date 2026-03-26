@@ -1,5 +1,11 @@
 const { createEmptySpecialtyBucket, normalizeSpecialty } = require('./minsalSpecialty');
 
+const resolveTraceabilityDiagnosis = value => {
+  if (typeof value !== 'string') return undefined;
+  const diagnosis = value.trim();
+  return diagnosis || undefined;
+};
+
 const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDate }) => {
   if (!records || records.length === 0) {
     return {
@@ -54,6 +60,14 @@ const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDa
       const specialty = normalizeSpecialty(bed.specialty);
       const existing = specialtyData.get(specialty) || createEmptySpecialtyBucket();
       existing.diasOcupados++;
+      existing.diasOcupadosList.push({
+        name: bed.patientName,
+        rut: bed.rut,
+        diagnosis: resolveTraceabilityDiagnosis(bed.pathology),
+        date: record.date,
+        bedName: bed.bedName,
+        admissionDate: bed.admissionDate,
+      });
       specialtyData.set(specialty, existing);
 
       if (bed.clinicalCrib && bed.clinicalCrib.patientName && bed.clinicalCrib.patientName.trim()) {
@@ -61,6 +75,14 @@ const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDa
         const cribSpecialty = normalizeSpecialty(bed.clinicalCrib.specialty);
         const cribExisting = specialtyData.get(cribSpecialty) || createEmptySpecialtyBucket();
         cribExisting.diasOcupados++;
+        cribExisting.diasOcupadosList.push({
+          name: bed.clinicalCrib.patientName,
+          rut: bed.clinicalCrib.rut,
+          diagnosis: resolveTraceabilityDiagnosis(bed.clinicalCrib.pathology),
+          date: record.date,
+          bedName: bed.clinicalCrib.bedName || bed.bedName,
+          admissionDate: bed.clinicalCrib.admissionDate,
+        });
         specialtyData.set(cribSpecialty, cribExisting);
       }
     });
@@ -73,9 +95,20 @@ const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDa
         const specialty = normalizeSpecialty(discharge.originalData?.specialty);
         const existing = specialtyData.get(specialty) || createEmptySpecialtyBucket();
         existing.egresos++;
+        const traceData = {
+          name: discharge.patientName,
+          rut: discharge.rut,
+          diagnosis: resolveTraceabilityDiagnosis(
+            discharge.diagnosis || discharge.originalData?.pathology
+          ),
+          date: record.date,
+          bedName: discharge.bedName,
+        };
+        existing.egresosList.push(traceData);
         if (discharge.status === 'Fallecido') {
           totalEgresosFallecidos++;
           existing.fallecidos++;
+          existing.fallecidosList.push(traceData);
         } else {
           totalEgresosVivos++;
         }
@@ -89,6 +122,15 @@ const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDa
         const specialty = normalizeSpecialty(transfer.originalData?.specialty);
         const existing = specialtyData.get(specialty) || createEmptySpecialtyBucket();
         existing.traslados++;
+        existing.trasladosList.push({
+          name: transfer.patientName,
+          rut: transfer.rut,
+          diagnosis: resolveTraceabilityDiagnosis(
+            transfer.diagnosis || transfer.originalData?.pathology
+          ),
+          date: record.date,
+          bedName: transfer.bedName,
+        });
         specialtyData.set(specialty, existing);
       });
     }
@@ -115,6 +157,10 @@ const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDa
         fallecidos: bucket.fallecidos,
         traslados: bucket.traslados,
         diasOcupados: bucket.diasOcupados,
+        diasOcupadosList: bucket.diasOcupadosList,
+        egresosList: bucket.egresosList,
+        trasladosList: bucket.trasladosList,
+        fallecidosList: bucket.fallecidosList,
         contribucionRelativa:
           totalDiasCamaOcupados > 0 ? (bucket.diasOcupados / totalDiasCamaOcupados) * 100 : 0,
         tasaMortalidad: egresosEsp > 0 ? (bucket.fallecidos / egresosEsp) * 100 : 0,

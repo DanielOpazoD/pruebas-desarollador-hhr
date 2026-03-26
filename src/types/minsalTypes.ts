@@ -28,6 +28,8 @@ export interface PatientTraceability {
   name: string;
   /** Patient RUT */
   rut: string;
+  /** Main diagnosis/pathology at the time of the event */
+  diagnosis?: string;
   /** Date when the event or status was recorded */
   date: string;
   /** Bed name or location */

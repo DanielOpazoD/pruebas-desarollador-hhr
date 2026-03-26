@@ -69,6 +69,7 @@ export type DestinationHospitalOption = (typeof DESTINATION_HOSPITALS)[number];
 export const MEDICAL_SPECIALTIES = [
   'Cirugia',
   'Ginecobstetricia',
+  'Pediatría',
   'Psiquiatría',
   'Medicina interna',
   'Urología',

@@ -1,10 +1,23 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { TransferManagementView } from '@/features/transfers/components/TransferManagementView';
 
+const { mockUpdateTransfer } = vi.hoisted(() => ({
+  mockUpdateTransfer: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('@/context/DailyRecordContext', () => ({
   useDailyRecordData: () => ({ record: null }),
+}));
+
+vi.mock('@/context/AuthContext', () => ({
+  useAuth: () => ({
+    role: 'admin',
+    currentUser: {
+      email: 'admin@hospital.cl',
+    },
+  }),
 }));
 
 vi.mock('@/hooks/useTransferManagement', () => ({
@@ -17,6 +30,14 @@ vi.mock('@/hooks/useTransferManagement', () => ({
         requestDate: '2026-03-05',
         statusHistory: [],
         destinationHospital: 'Hospital Del Salvador',
+        transferNotes: [
+          {
+            id: 'note-1',
+            content: 'Nota de coordinación inicial',
+            createdAt: '2026-03-05T10:30:00.000Z',
+            createdBy: 'nurse@hospital.cl',
+          },
+        ],
         patientSnapshot: { name: 'Paciente solicitado', rut: '1-9', diagnosis: 'Dx' },
       },
       {
@@ -77,7 +98,7 @@ vi.mock('@/hooks/useTransferManagement', () => ({
     isLoading: false,
     error: null,
     createTransfer: vi.fn(),
-    updateTransfer: vi.fn(),
+    updateTransfer: mockUpdateTransfer,
     advanceStatus: vi.fn(),
     setTransferStatus: vi.fn(),
     markAsTransferred: vi.fn(),
@@ -145,6 +166,9 @@ describe('TransferManagementView', () => {
     expect(screen.getByText('Paciente solicitado')).toBeInTheDocument();
     expect(screen.getByText('Paciente recepcionado')).toBeInTheDocument();
     expect(screen.getByText('Paciente aceptado')).toBeInTheDocument();
+    expect(screen.getByText('Cama: H1')).toBeInTheDocument();
+    expect(screen.getAllByText('Dg: Dx').length).toBeGreaterThan(0);
+    expect(screen.getByText('Nota de coordinación inicial')).toBeInTheDocument();
 
     expect(screen.queryByText('Paciente trasladado')).not.toBeInTheDocument();
     expect(screen.queryByText('Paciente cancelado')).not.toBeInTheDocument();
@@ -157,5 +181,51 @@ describe('TransferManagementView', () => {
     expect(screen.getByText('Paciente cancelado')).toBeInTheDocument();
     expect(screen.getByText('Paciente rechazado')).toBeInTheDocument();
     expect(screen.getByText('Paciente sin respuesta')).toBeInTheDocument();
+  });
+
+  it('allows admin users to add, edit and remove transfer notes inline', async () => {
+    render(<TransferManagementView />);
+
+    fireEvent.click(screen.getByRole('button', { name: /agregar nota/i }));
+    fireEvent.change(screen.getByLabelText(/agregar nota/i), {
+      target: { value: 'Nueva nota administrativa' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /guardar nota/i }));
+
+    await waitFor(() => {
+      expect(mockUpdateTransfer).toHaveBeenCalledWith(
+        'tr-requested',
+        expect.objectContaining({
+          transferNotes: expect.arrayContaining([
+            expect.objectContaining({ content: 'Nueva nota administrativa' }),
+          ]),
+        })
+      );
+    });
+
+    fireEvent.click(screen.getByTitle('Editar nota'));
+    fireEvent.change(screen.getByLabelText(/editar nota note-1/i), {
+      target: { value: 'Nota actualizada por admin' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^guardar$/i }));
+
+    await waitFor(() => {
+      expect(mockUpdateTransfer).toHaveBeenCalledWith(
+        'tr-requested',
+        expect.objectContaining({
+          transferNotes: expect.arrayContaining([
+            expect.objectContaining({ id: 'note-1', content: 'Nota actualizada por admin' }),
+          ]),
+        })
+      );
+    });
+
+    fireEvent.click(screen.getByTitle('Eliminar nota'));
+
+    await waitFor(() => {
+      expect(mockUpdateTransfer).toHaveBeenCalledWith('tr-requested', {
+        transferNotes: [],
+      });
+    });
   });
 });

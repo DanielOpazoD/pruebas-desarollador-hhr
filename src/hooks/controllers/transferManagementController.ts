@@ -2,6 +2,7 @@ import type { PatientData } from '@/types/domain/patient';
 import type {
   PatientSnapshot,
   TransferFormData,
+  TransferNote,
   TransferRequest,
   TransferStatus,
 } from '@/types/transfers';
@@ -38,6 +39,17 @@ export const buildTransferPatientSnapshot = (
   admissionDate: patient.admissionDate || recordDate,
 });
 
+export const buildTransferNote = (
+  content: string,
+  createdBy: string,
+  createdAt: string = new Date().toISOString()
+): TransferNote => ({
+  id: `transfer-note-${createdAt}-${Math.random().toString(36).slice(2, 8)}`,
+  content: content.trim(),
+  createdAt,
+  createdBy,
+});
+
 export const buildCreateTransferPayload = (
   data: TransferFormData,
   patient: PatientData,
@@ -54,6 +66,7 @@ export const buildCreateTransferPayload = (
   requiredSpecialty: data.requiredSpecialty,
   requiredBedType: data.requiredBedType,
   observations: data.observations,
+  transferNotes: data.transferNotes || [],
   customFields: data.customFields || {},
   status: 'REQUESTED' as const,
   requestDate,

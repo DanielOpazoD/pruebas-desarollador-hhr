@@ -12,6 +12,10 @@ const createEmptySpecialtyBucket = () => ({
   fallecidos: 0,
   traslados: 0,
   diasOcupados: 0,
+  diasOcupadosList: [],
+  egresosList: [],
+  trasladosList: [],
+  fallecidosList: [],
 });
 
 const normalizeSpecialty = specialty => {

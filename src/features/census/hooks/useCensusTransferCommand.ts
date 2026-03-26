@@ -13,6 +13,7 @@ import type { TransferExecutionInput } from '@/features/census/domain/movements/
 import type { TransferState } from '@/features/census/types/censusActionTypes';
 import { useAuth } from '@/context/AuthContext';
 import {
+  completeTransferWithResult,
   createTransferRequest,
   getLatestOpenTransferRequestByBedId,
 } from '@/services/transfers/transferService';
@@ -79,6 +80,7 @@ export const useCensusTransferCommand = ({
           createdByEmail,
           getLatestOpenTransferRequestByBedId,
           createTransferRequest,
+          completeTransferWithResult,
         });
       } catch (syncError) {
         console.error(

@@ -7,6 +7,12 @@ import { normalizeSpecialty, isFachEvacuationMethod } from './normalization';
 import { countOccupiedBeds, countBlockedBeds, calculateDailySnapshot } from './snapshot';
 import { getPatientsBySpecialty } from './specialty';
 
+const resolveTraceabilityDiagnosis = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') return undefined;
+  const diagnosis = value.trim();
+  return diagnosis || undefined;
+};
+
 /**
  * Filter records by date range
  */
@@ -110,6 +116,7 @@ export function calculateMinsalStats(
         existing.diasOcupadosList.push({
           name: p.patientName,
           rut: p.rut,
+          diagnosis: resolveTraceabilityDiagnosis(p.pathology),
           date: record.date,
           bedName: p.bedName,
           admissionDate: p.admissionDate,
@@ -127,6 +134,7 @@ export function calculateMinsalStats(
       const traceData = {
         name: d.patientName,
         rut: d.rut,
+        diagnosis: resolveTraceabilityDiagnosis(d.diagnosis || d.originalData?.pathology),
         date: record.date,
         bedName: d.bedName,
       };
@@ -147,6 +155,7 @@ export function calculateMinsalStats(
       const traceData = {
         name: t.patientName,
         rut: t.rut,
+        diagnosis: resolveTraceabilityDiagnosis(t.diagnosis || t.originalData?.pathology),
         date: record.date,
         bedName: t.bedName,
       };

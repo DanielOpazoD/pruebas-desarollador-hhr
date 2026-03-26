@@ -30,13 +30,33 @@ describe('functions minsalStatsCalculator', () => {
           beds: {
             b1: {
               patientName: 'Paciente',
+              pathology: 'Diagnóstico cama',
               specialty: 'Obstetricia',
-              clinicalCrib: { patientName: 'RN', specialty: 'Obstetricia' },
+              clinicalCrib: {
+                patientName: 'RN',
+                pathology: 'Diagnóstico RN',
+                specialty: 'Obstetricia',
+              },
             },
             b2: { isBlocked: true },
           },
-          discharges: [{ status: 'Fallecido', originalData: { specialty: 'Obstetricia' } }],
-          transfers: [{ originalData: { specialty: 'Obstetricia' } }],
+          discharges: [
+            {
+              patientName: 'Paciente',
+              rut: '11.111.111-1',
+              diagnosis: 'Diagnóstico egreso',
+              status: 'Fallecido',
+              originalData: { specialty: 'Obstetricia' },
+            },
+          ],
+          transfers: [
+            {
+              patientName: 'Paciente',
+              rut: '11.111.111-1',
+              diagnosis: 'Diagnóstico traslado',
+              originalData: { specialty: 'Obstetricia' },
+            },
+          ],
         },
       ],
     });
@@ -51,5 +71,7 @@ describe('functions minsalStatsCalculator', () => {
       fallecidos: 1,
       traslados: 1,
     });
+    expect(result.porEspecialidad[0].fallecidosList?.[0]?.diagnosis).toBe('Diagnóstico egreso');
+    expect(result.porEspecialidad[0].trasladosList?.[0]?.diagnosis).toBe('Diagnóstico traslado');
   });
 });

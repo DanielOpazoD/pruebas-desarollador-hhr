@@ -42,6 +42,7 @@ export const TransferManagementView: React.FC = () => {
     isLoading,
     error,
     setTransferStatus,
+    updateTransfer,
     undoTransfer,
     archiveTransfer,
     deleteHistoryEntry,
@@ -135,6 +136,7 @@ export const TransferManagementView: React.FC = () => {
             onArchive={archiveTransfer}
             onDelete={transfer => deleteTransfer(transfer.id)}
             onDeleteHistoryEntry={deleteHistoryEntry}
+            onUpdateTransfer={updateTransfer}
             emptyMessage="No hay solicitudes activas de traslado para este período"
           />
         )}
@@ -185,6 +187,7 @@ export const TransferManagementView: React.FC = () => {
                 onArchive={archiveTransfer}
                 onDelete={transfer => deleteTransfer(transfer.id)}
                 onDeleteHistoryEntry={deleteHistoryEntry}
+                onUpdateTransfer={updateTransfer}
                 emptyMessage="No hay traslados finalizados para este período"
               />
             )}

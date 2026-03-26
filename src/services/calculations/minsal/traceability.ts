@@ -4,6 +4,12 @@ import { EVACUATION_METHOD_AEROCARDAL } from '@/constants/clinical';
 import { PatientTraceability, SpecialtyTraceabilityType } from '@/types/minsalTypes';
 import { normalizeSpecialty, isFachEvacuationMethod } from './normalization';
 
+const resolveTraceabilityDiagnosis = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') return undefined;
+  const diagnosis = value.trim();
+  return diagnosis || undefined;
+};
+
 /**
  * Build traceability list lazily for a specialty + indicator type.
  */
@@ -41,6 +47,7 @@ export function buildSpecialtyTraceability(
           traceability.push({
             name: patient.patientName,
             rut: patient.rut,
+            diagnosis: resolveTraceabilityDiagnosis(patient.pathology),
             date: record.date,
             bedName: patient.bedName,
             admissionDate: patient.admissionDate,
@@ -55,6 +62,7 @@ export function buildSpecialtyTraceability(
           traceability.push({
             name: patient.clinicalCrib.patientName,
             rut: patient.clinicalCrib.rut,
+            diagnosis: resolveTraceabilityDiagnosis(patient.clinicalCrib.pathology),
             date: record.date,
             bedName: patient.clinicalCrib.bedName ?? patient.bedName,
             admissionDate: patient.clinicalCrib.admissionDate,
@@ -73,6 +81,9 @@ export function buildSpecialtyTraceability(
         traceability.push({
           name: discharge.patientName,
           rut: discharge.rut,
+          diagnosis: resolveTraceabilityDiagnosis(
+            discharge.diagnosis || discharge.originalData?.pathology
+          ),
           date: record.date,
           bedName: discharge.bedName,
           admissionDate: discharge.originalData?.admissionDate,
@@ -90,6 +101,9 @@ export function buildSpecialtyTraceability(
       traceability.push({
         name: transfer.patientName,
         rut: transfer.rut,
+        diagnosis: resolveTraceabilityDiagnosis(
+          transfer.diagnosis || transfer.originalData?.pathology
+        ),
         date: record.date,
         bedName: transfer.bedName,
         admissionDate: transfer.originalData?.admissionDate,

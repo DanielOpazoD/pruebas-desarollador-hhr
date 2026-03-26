@@ -60,6 +60,13 @@ export interface PatientSnapshot {
   admissionDate: string;
 }
 
+export interface TransferNote {
+  id: string;
+  content: string;
+  createdAt: string;
+  createdBy: string;
+}
+
 /**
  * Record of a status change in the transfer workflow
  */
@@ -90,6 +97,7 @@ export interface TransferRequest {
   requiredSpecialty?: string;
   requiredBedType?: string;
   observations?: string;
+  transferNotes?: TransferNote[];
 
   // Dynamic fields per hospital
   customFields: Record<string, string>;
@@ -125,6 +133,7 @@ export interface TransferFormData {
   requiredSpecialty?: string;
   requiredBedType?: string;
   observations?: string;
+  transferNotes?: TransferNote[];
   customFields?: Record<string, string>;
 }
 

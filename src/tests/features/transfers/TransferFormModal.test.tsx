@@ -62,4 +62,39 @@ describe('TransferFormModal', () => {
       );
     });
   });
+
+  it('includes Pediatría in required specialty and keeps notes management out of the modal', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <TransferFormModal
+        transfer={null}
+        patients={[
+          { id: 'BED_H5C1', name: 'Paciente Demo', bedId: 'BED_H5C1', diagnosis: 'Dx demo' },
+        ]}
+        onClose={vi.fn()}
+        onSave={onSave}
+      />
+    );
+
+    const selects = screen.getAllByRole('combobox');
+    fireEvent.change(selects[0], { target: { value: 'BED_H5C1' } });
+    fireEvent.change(selects[1], { target: { value: 'Hospital Del Salvador' } });
+
+    expect(screen.getByRole('option', { name: 'Pediatría' })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/agregar nota/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/notas del traslado/i)).not.toBeInTheDocument();
+
+    fireEvent.change(selects[2], { target: { value: 'Pediatría' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /crear solicitud/i }));
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          requiredSpecialty: 'Pediatría',
+        })
+      );
+    });
+  });
 });

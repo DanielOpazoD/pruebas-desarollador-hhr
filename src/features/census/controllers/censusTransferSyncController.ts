@@ -2,6 +2,7 @@ import { RECEIVING_CENTER_EXTRASYSTEM, RECEIVING_CENTER_OTHER } from '@/constant
 import type { TransferExecutionInput } from '@/features/census/domain/movements/contracts';
 import type { PatientData } from '@/types/domain/patient';
 import type {
+  completeTransferWithResult,
   createTransferRequest,
   getLatestOpenTransferRequestByBedId,
 } from '@/services/transfers/transferService';
@@ -64,6 +65,7 @@ interface SyncCensusTransferRequestParams {
   createdByEmail: string;
   getLatestOpenTransferRequestByBedId: typeof getLatestOpenTransferRequestByBedId;
   createTransferRequest: typeof createTransferRequest;
+  completeTransferWithResult: typeof completeTransferWithResult;
 }
 
 export const syncCensusTransferRequest = async ({
@@ -75,9 +77,11 @@ export const syncCensusTransferRequest = async ({
   createdByEmail,
   getLatestOpenTransferRequestByBedId,
   createTransferRequest,
+  completeTransferWithResult,
 }: SyncCensusTransferRequestParams): Promise<void> => {
   const linkedRequest = await getLatestOpenTransferRequestByBedId(bedId);
   if (linkedRequest) {
+    await completeTransferWithResult(linkedRequest.id, createdByEmail);
     return;
   }
 
