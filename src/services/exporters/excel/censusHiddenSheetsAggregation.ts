@@ -13,7 +13,7 @@ import type {
   UpcPatientAggregate,
   UpcPatientPresentation,
 } from './censusHiddenSheetsContracts';
-import { SPECIALTY_COLUMNS } from './censusHiddenSheetsStyles';
+import { SPECIALTY_COLUMNS } from './censusHiddenSheetsConfig';
 
 const normalizeText = (value?: string | null): string => (value || '').trim();
 
@@ -70,6 +70,10 @@ const buildBedHistory = (dailyBeds: Array<{ date: string; bedCode: string }>) =>
   };
 };
 
+/**
+ * Extracts the clinical rows that should count as real patients in hidden-sheet summaries.
+ * Empty beds and blocked beds are excluded; clinical cribs are promoted as independent rows.
+ */
 const collectRealPatients = (record: DailyRecord): ExtractedPatientRow[] => {
   const patients: ExtractedPatientRow[] = [];
 
@@ -102,6 +106,10 @@ export const getMonthContext = (date: string): CensusHiddenSheetMonthContext => 
   };
 };
 
+/**
+ * Hidden sheets must operate on one logical census snapshot per calendar date.
+ * The builder passes descriptors in precedence order, so the last descriptor for a date wins.
+ */
 export const buildLogicalSnapshotSheets = (
   sheets: CensusWorkbookSnapshotSheet[]
 ): CensusLogicalSnapshotSheet[] => {
@@ -145,6 +153,10 @@ export const buildSummaryRows = (sheets: CensusLogicalSnapshotSheet[]): SummaryD
     };
   });
 
+/**
+ * Aggregates UPC patients across logical snapshots and preserves bed history by day.
+ * RUT is the preferred identity key; patient name is the fallback when RUT is absent.
+ */
 export const buildUpcPatients = (
   sheets: CensusLogicalSnapshotSheet[]
 ): UpcPatientPresentation[] => {

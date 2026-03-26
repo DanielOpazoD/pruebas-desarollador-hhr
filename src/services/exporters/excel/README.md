@@ -1,0 +1,53 @@
+# Censo Maestro Excel: Hojas Ocultas
+
+Este módulo construye el Excel maestro del censo diario y agrega tres hojas ocultas al inicio del workbook:
+
+- `RESUMEN [MES] [AÑO]`
+- `PACIENTES UPC [MES] [AÑO]`
+- `DETALLE DIARIO UPC`
+
+## Pipeline
+
+1. `builder.ts` crea el workbook y resuelve los nombres visibles por día.
+2. `censusHiddenSheetsBuilder.ts` agrega las hojas ocultas antes de renderizar las hojas diarias visibles.
+3. `censusHiddenSheetsAggregation.ts` transforma `DailyRecord[]` en view models puros:
+   - snapshots lógicos por fecha,
+   - filas de resumen,
+   - pacientes UPC con historial de cama.
+4. `censusHiddenSheetsRenderer.ts` solo escribe celdas ExcelJS a partir de esos view models.
+5. `censusHiddenSheetsProtection.ts` aplica protección por hoja y estado `hidden`.
+6. `censusWorkbookSerializer.ts` postprocesa `xl/workbook.xml` para aplicar `workbookProtection lockStructure`.
+
+## Reglas E Invariantes
+
+- Las 3 hojas ocultas siempre van primero en el workbook.
+- La primera hoja visible al abrir el archivo debe ser la primera hoja diaria.
+- La contraseña `HHR` protege tanto las hojas ocultas como la estructura del libro.
+- El correo puede cifrar la apertura del archivo completo; la descarga local no.
+- La agregación de hojas ocultas opera sobre un solo snapshot lógico por fecha calendario.
+
+## Separación De Responsabilidades
+
+- `config`: nombres, etiquetas, umbrales y headers del módulo.
+- `aggregation`: reglas clínicas y consolidación de datos.
+- `renderer`: layout Excel, merges, fórmulas, widths y freeze panes.
+- `protection/serialization`: protección de hojas y protección OOXML de estructura.
+
+## Validación Manual
+
+1. Exportar un censo diario mensual.
+2. Abrir el `.xlsx` y confirmar que la primera pestaña visible es la primera hoja diaria.
+3. Confirmar que `RESUMEN`, `PACIENTES UPC` y `DETALLE DIARIO UPC` no aparecen inicialmente.
+4. En Excel, desproteger estructura con `HHR` y mostrar las hojas ocultas.
+5. Revisar:
+   - layout del resumen,
+   - `% Ocup.` en rojo solo sobre el umbral,
+   - historial de camas UPC,
+   - matriz diaria UPC,
+   - fórmulas de indicadores consolidados.
+
+## Estrategia De Pruebas
+
+- Unit: agregación, renderer y serializer.
+- Integración: builder del workbook completo y flujo de exportación.
+- Sanity: carga válida del `.xlsx`, protección de workbook, estados `hidden`, hoja activa correcta.

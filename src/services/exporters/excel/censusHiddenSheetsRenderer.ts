@@ -4,20 +4,21 @@ import { formatDateDDMMYYYY } from '@/services/exporters/excel/formatters';
 
 import type { SummaryDayRow, UpcPatientPresentation } from './censusHiddenSheetsContracts';
 import {
-  HIDDEN_PASSWORD,
-  setRowFill,
-  SHEET_PROTECTION_OPTIONS,
-  solidFill,
-  SUMMARY_HEADERS,
-  THIN_BORDER,
-  toArgb,
   SPECIALTY_COLUMNS,
-} from './censusHiddenSheetsStyles';
-
-export const applyHiddenSheetProtection = async (sheet: Worksheet): Promise<void> => {
-  await sheet.protect(HIDDEN_PASSWORD, SHEET_PROTECTION_OPTIONS);
-  sheet.state = 'hidden';
-};
+  SUMMARY_CONSOLIDATED_ROWS,
+  SUMMARY_GROUP_HEADERS,
+  SUMMARY_HEADERS,
+  SUMMARY_OCCUPANCY_ALERT_THRESHOLD,
+} from './censusHiddenSheetsConfig';
+import {
+  applyHeaderCell,
+  getExcelColumnName,
+  setMergedTitle,
+  setRowFill,
+} from './censusHiddenSheetsExcelHelpers';
+import { applyHiddenSheetProtection } from './censusHiddenSheetsProtection';
+import { solidFill, THIN_BORDER, toArgb } from './censusHiddenSheetsStyles';
+export { applyHiddenSheetProtection } from './censusHiddenSheetsProtection';
 
 interface RenderSummarySheetInput {
   sheet: Worksheet;
@@ -37,51 +38,43 @@ export const renderSummarySheet = ({
   year,
 }: RenderSummarySheetInput) => {
   sheet.columns = [{ width: 14 }, ...new Array(15).fill(null).map(() => ({ width: 11 }))];
-  sheet.mergeCells('A1:P1');
-  sheet.getCell('A1').value = `RESUMEN CENSO DIARIO — HOSPITAL HANGA ROA — ${monthName} ${year}`;
-  sheet.getCell('A1').font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
-  sheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
-  sheet.getCell('A1').fill = solidFill('#1F4E79');
-  sheet.getRow(1).height = 30;
-
-  sheet.mergeCells('A2:P2');
-  sheet.getCell('A2').value =
-    `Período: ${formatDateDDMMYYYY(firstDate)} al ${formatDateDDMMYYYY(lastDate)} (${rows.length} días registrados)`;
-  sheet.getCell('A2').font = {
-    name: 'Arial',
-    size: 10,
-    italic: true,
-    color: { argb: toArgb('#4472C4') },
-  };
-  sheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
-
-  sheet.mergeCells('A4:P4');
-  sheet.getCell('A4').value = 'CENSO DIARIO DE CAMAS Y MOVIMIENTOS';
-  sheet.getCell('A4').font = {
-    name: 'Arial',
-    size: 11,
-    bold: true,
-    color: { argb: toArgb('#1F4E79') },
-  };
-  sheet.getCell('A4').alignment = { horizontal: 'center', vertical: 'middle' };
-  sheet.getCell('A4').fill = solidFill('#D6E4F0');
-  sheet.getRow(4).height = 22;
+  setMergedTitle({
+    sheet,
+    range: 'A1:P1',
+    value: `RESUMEN CENSO DIARIO — HOSPITAL HANGA ROA — ${monthName} ${year}`,
+    font: { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } },
+    alignment: { horizontal: 'center', vertical: 'middle' },
+    fill: solidFill('#1F4E79'),
+    rowHeight: 30,
+  });
+  setMergedTitle({
+    sheet,
+    range: 'A2:P2',
+    value: `Período: ${formatDateDDMMYYYY(firstDate)} al ${formatDateDDMMYYYY(lastDate)} (${rows.length} días registrados)`,
+    font: { name: 'Arial', size: 10, italic: true, color: { argb: toArgb('#4472C4') } },
+    alignment: { horizontal: 'center', vertical: 'middle' },
+  });
+  setMergedTitle({
+    sheet,
+    range: 'A4:P4',
+    value: 'CENSO DIARIO DE CAMAS Y MOVIMIENTOS',
+    font: { name: 'Arial', size: 11, bold: true, color: { argb: toArgb('#1F4E79') } },
+    alignment: { horizontal: 'center', vertical: 'middle' },
+    fill: solidFill('#D6E4F0'),
+    rowHeight: 22,
+  });
 
   sheet.mergeCells('B5:F5');
   sheet.mergeCells('G5:J5');
   sheet.mergeCells('K5:P5');
-  const groupHeaders = [
-    { cell: 'B5', value: 'CENSO CAMAS', fill: '#1F4E79' },
-    { cell: 'G5', value: 'MOVIMIENTOS', fill: '#548235' },
-    { cell: 'K5', value: 'PACIENTES POR ESPECIALIDAD', fill: '#BF8F00' },
-  ];
-  groupHeaders.forEach(item => {
-    const cell = sheet.getCell(item.cell);
-    cell.value = item.value;
-    cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-    cell.alignment = { horizontal: 'center', vertical: 'middle' };
-    cell.fill = solidFill(item.fill);
-    cell.border = THIN_BORDER;
+  SUMMARY_GROUP_HEADERS.forEach(item => {
+    applyHeaderCell({
+      cell: sheet.getCell(item.cell),
+      value: item.value,
+      font: { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } },
+      alignment: { horizontal: 'center', vertical: 'middle' },
+      fill: solidFill(item.fill),
+    });
   });
 
   const headerColors = [
@@ -104,12 +97,13 @@ export const renderSummarySheet = ({
   ];
   const headerRow = sheet.getRow(6);
   SUMMARY_HEADERS.forEach((header, index) => {
-    const cell = headerRow.getCell(index + 1);
-    cell.value = header;
-    cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-    cell.fill = solidFill(headerColors[index]);
-    cell.border = THIN_BORDER;
+    applyHeaderCell({
+      cell: headerRow.getCell(index + 1),
+      value: header,
+      font: { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } },
+      alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
+      fill: solidFill(headerColors[index]),
+    });
   });
 
   rows.forEach((row, index) => {
@@ -136,7 +130,8 @@ export const renderSummarySheet = ({
       if (colNumber === 6) {
         cell.numFmt = '0%';
         cell.font =
-          typeof row.occupancyRate === 'number' && row.occupancyRate > 0.88
+          typeof row.occupancyRate === 'number' &&
+          row.occupancyRate > SUMMARY_OCCUPANCY_ALERT_THRESHOLD
             ? { name: 'Arial', size: 10, bold: true, color: { argb: toArgb('#C00000') } }
             : { name: 'Arial', size: 10, color: { argb: toArgb('#000000') } };
       }
@@ -154,21 +149,16 @@ export const renderSummarySheet = ({
   titleCell.fill = solidFill('#D6E4F0');
   sheet.getRow(titleRowNumber).height = 22;
 
-  const summaryRows = [
-    { label: 'Promedio', formula: 'AVERAGE', row: titleRowNumber + 1, fill: '#5B9BD5' },
-    { label: 'Máximo', formula: 'MAX', row: titleRowNumber + 2, fill: '#C0504D' },
-    { label: 'Mínimo', formula: 'MIN', row: titleRowNumber + 3, fill: '#70AD47' },
-    { label: 'Total', formula: 'SUM', row: titleRowNumber + 4, fill: '#7F7F7F' },
-  ];
-  summaryRows.forEach(item => {
-    const row = sheet.getRow(item.row);
+  SUMMARY_CONSOLIDATED_ROWS.forEach((item, index) => {
+    const rowNumber = titleRowNumber + index + 1;
+    const row = sheet.getRow(rowNumber);
     row.getCell(1).value = item.label;
     row.getCell(1).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
     row.getCell(1).fill = solidFill(item.fill);
     row.getCell(1).border = THIN_BORDER;
     row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
     for (let col = 2; col <= 16; col += 1) {
-      const columnLetter = String.fromCharCode(64 + col);
+      const columnLetter = getExcelColumnName(col);
       const cell = row.getCell(col);
       if (col === 6 && item.label === 'Total') {
         cell.value = '—';
@@ -221,23 +211,22 @@ export const renderUpcPatientsSheet = ({
     { width: 14 },
   ];
 
-  sheet.mergeCells('A1:K1');
-  sheet.getCell('A1').value = `REGISTRO PACIENTES UPC — HOSPITAL HANGA ROA — ${monthName} ${year}`;
-  sheet.getCell('A1').font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
-  sheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
-  sheet.getCell('A1').fill = solidFill('#7B2D26');
-  sheet.getRow(1).height = 30;
-
-  sheet.mergeCells('A2:K2');
-  sheet.getCell('A2').value =
-    `Pacientes con indicación UPC durante el período (total: ${patients.length})`;
-  sheet.getCell('A2').font = {
-    name: 'Arial',
-    size: 10,
-    italic: true,
-    color: { argb: toArgb('#C00000') },
-  };
-  sheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+  setMergedTitle({
+    sheet,
+    range: 'A1:K1',
+    value: `REGISTRO PACIENTES UPC — HOSPITAL HANGA ROA — ${monthName} ${year}`,
+    font: { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } },
+    alignment: { horizontal: 'center', vertical: 'middle' },
+    fill: solidFill('#7B2D26'),
+    rowHeight: 30,
+  });
+  setMergedTitle({
+    sheet,
+    range: 'A2:K2',
+    value: `Pacientes con indicación UPC durante el período (total: ${patients.length})`,
+    font: { name: 'Arial', size: 10, italic: true, color: { argb: toArgb('#C00000') } },
+    alignment: { horizontal: 'center', vertical: 'middle' },
+  });
 
   const headers = [
     '#',
@@ -254,12 +243,13 @@ export const renderUpcPatientsSheet = ({
   ];
   const headerRow = sheet.getRow(4);
   headers.forEach((header, index) => {
-    const cell = headerRow.getCell(index + 1);
-    cell.value = header;
-    cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-    cell.fill = solidFill('#7B2D26');
-    cell.border = THIN_BORDER;
+    applyHeaderCell({
+      cell: headerRow.getCell(index + 1),
+      value: header,
+      font: { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } },
+      alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
+      fill: solidFill('#7B2D26'),
+    });
   });
   headerRow.height = 36;
 
@@ -322,16 +312,7 @@ export const renderUpcDailyMatrixSheet = ({
   daysInMonth,
 }: RenderUpcDailyMatrixSheetInput) => {
   const lastColumnIndex = daysInMonth + 3;
-  const lastColumnLetter = (() => {
-    let dividend = lastColumnIndex;
-    let columnName = '';
-    while (dividend > 0) {
-      const modulo = (dividend - 1) % 26;
-      columnName = String.fromCharCode(65 + modulo) + columnName;
-      dividend = Math.floor((dividend - modulo) / 26);
-    }
-    return columnName;
-  })();
+  const lastColumnLetter = getExcelColumnName(lastColumnIndex);
 
   sheet.columns = [
     { width: 30 },
@@ -340,46 +321,51 @@ export const renderUpcDailyMatrixSheet = ({
     { width: 28 },
   ];
 
-  sheet.mergeCells(`A1:${lastColumnLetter}1`);
-  sheet.getCell('A1').value = `DETALLE DIARIO — PRESENCIA UPC POR PACIENTE — ${monthName} ${year}`;
-  sheet.getCell('A1').font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
-  sheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
-  sheet.getCell('A1').fill = solidFill('#7B2D26');
-  sheet.getRow(1).height = 30;
-
-  sheet.mergeCells(`A2:${lastColumnLetter}2`);
-  sheet.getCell('A2').value =
-    'Cada celda roja indica que el paciente estuvo catalogado como UPC ese día. La sigla indica la cama asignada.';
-  sheet.getCell('A2').font = {
-    name: 'Arial',
-    size: 9,
-    italic: true,
-    color: { argb: toArgb('#7B2D26') },
-  };
-  sheet.getCell('A2').alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+  setMergedTitle({
+    sheet,
+    range: `A1:${lastColumnLetter}1`,
+    value: `DETALLE DIARIO — PRESENCIA UPC POR PACIENTE — ${monthName} ${year}`,
+    font: { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } },
+    alignment: { horizontal: 'center', vertical: 'middle' },
+    fill: solidFill('#7B2D26'),
+    rowHeight: 30,
+  });
+  setMergedTitle({
+    sheet,
+    range: `A2:${lastColumnLetter}2`,
+    value:
+      'Cada celda roja indica que el paciente estuvo catalogado como UPC ese día. La sigla indica la cama asignada.',
+    font: { name: 'Arial', size: 9, italic: true, color: { argb: toArgb('#7B2D26') } },
+    alignment: { horizontal: 'left', vertical: 'middle', wrapText: true },
+  });
 
   const headerRow = sheet.getRow(4);
-  headerRow.getCell(1).value = 'Paciente';
-  headerRow.getCell(1).font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FFFFFFFF' } };
-  headerRow.getCell(1).fill = solidFill('#7B2D26');
-  headerRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
-  headerRow.getCell(1).border = THIN_BORDER;
+  applyHeaderCell({
+    cell: headerRow.getCell(1),
+    value: 'Paciente',
+    font: { name: 'Arial', size: 9, bold: true, color: { argb: 'FFFFFFFF' } },
+    alignment: { horizontal: 'center', vertical: 'middle' },
+    fill: solidFill('#7B2D26'),
+  });
   for (let day = 1; day <= daysInMonth; day += 1) {
-    const cell = headerRow.getCell(day + 1);
-    cell.value = day;
-    cell.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FFFFFFFF' } };
-    cell.fill = solidFill('#7B2D26');
-    cell.alignment = { horizontal: 'center', vertical: 'middle' };
-    cell.border = THIN_BORDER;
+    applyHeaderCell({
+      cell: headerRow.getCell(day + 1),
+      value: day,
+      font: { name: 'Arial', size: 9, bold: true, color: { argb: 'FFFFFFFF' } },
+      alignment: { horizontal: 'center', vertical: 'middle' },
+      fill: solidFill('#7B2D26'),
+    });
   }
   headerRow.getCell(daysInMonth + 2).value = 'Total';
   headerRow.getCell(daysInMonth + 3).value = 'Camas';
   [daysInMonth + 2, daysInMonth + 3].forEach(col => {
-    const cell = headerRow.getCell(col);
-    cell.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FFFFFFFF' } };
-    cell.fill = solidFill('#7B2D26');
-    cell.alignment = { horizontal: 'center', vertical: 'middle' };
-    cell.border = THIN_BORDER;
+    applyHeaderCell({
+      cell: headerRow.getCell(col),
+      value: headerRow.getCell(col).value as string,
+      font: { name: 'Arial', size: 9, bold: true, color: { argb: 'FFFFFFFF' } },
+      alignment: { horizontal: 'center', vertical: 'middle' },
+      fill: solidFill('#7B2D26'),
+    });
   });
 
   patients.forEach((patient, index) => {

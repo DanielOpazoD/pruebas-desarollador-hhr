@@ -1,6 +1,6 @@
 import type { Workbook } from 'exceljs';
 
-const WORKBOOK_STRUCTURE_PASSWORD = 'HHR';
+import { CENSUS_WORKBOOK_STRUCTURE_PASSWORD } from './censusHiddenSheetsProtection';
 
 const toUint8Array = (buffer: ArrayBuffer | Uint8Array | Buffer): Uint8Array => {
   if (buffer instanceof Uint8Array) {
@@ -10,6 +10,10 @@ const toUint8Array = (buffer: ArrayBuffer | Uint8Array | Buffer): Uint8Array => 
   return new Uint8Array(buffer);
 };
 
+/**
+ * Excel workbook structure protection uses the legacy 16-bit XOR hash stored in workbook.xml.
+ * This is distinct from the stronger worksheet protection hash handled by ExcelJS.
+ */
 const hashLegacyWorkbookPassword = (password: string): string => {
   let hash = 0;
 
@@ -28,6 +32,10 @@ const hashLegacyWorkbookPassword = (password: string): string => {
   return hash.toString(16).toUpperCase().padStart(4, '0');
 };
 
+/**
+ * Inserts workbookProtection into xl/workbook.xml while preserving the rest of the document.
+ * The node is placed as early as possible in workbook child order for compatibility.
+ */
 const injectWorkbookProtectionXml = (workbookXml: string, workbookPasswordHash: string): string => {
   const workbookProtectionTag = `<workbookProtection lockStructure="1" workbookPassword="${workbookPasswordHash}"/>`;
 
@@ -81,7 +89,7 @@ export const serializeProtectedCensusWorkbook = async (workbook: Workbook): Prom
   const workbookXml = workbookXmlFile.asText();
   const protectedWorkbookXml = injectWorkbookProtectionXml(
     workbookXml,
-    hashLegacyWorkbookPassword(WORKBOOK_STRUCTURE_PASSWORD)
+    hashLegacyWorkbookPassword(CENSUS_WORKBOOK_STRUCTURE_PASSWORD)
   );
 
   zip.file('xl/workbook.xml', protectedWorkbookXml);

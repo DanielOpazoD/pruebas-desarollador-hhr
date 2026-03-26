@@ -38,6 +38,8 @@ export const buildCensusMasterWorkbook = async (
 
   const firstVisibleSheetIndex = workbook.worksheets.findIndex(sheet => sheet.state !== 'hidden');
   if (firstVisibleSheetIndex >= 0) {
+    // Excel opens the workbook on the active tab. Hidden support sheets are inserted first,
+    // so we explicitly point the workbook view at the first visible day sheet.
     workbook.views = [
       {
         x: 0,

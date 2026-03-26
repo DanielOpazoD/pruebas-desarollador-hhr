@@ -1,0 +1,135 @@
+import ExcelJS from 'exceljs';
+import PizZip from 'pizzip';
+import { describe, expect, it } from 'vitest';
+
+import {
+  renderSummarySheet,
+  renderUpcDailyMatrixSheet,
+  renderUpcPatientsSheet,
+  applyHiddenSheetProtection,
+} from '@/services/exporters/excel/censusHiddenSheetsRenderer';
+import type {
+  SummaryDayRow,
+  UpcPatientPresentation,
+} from '@/services/exporters/excel/censusHiddenSheetsContracts';
+
+const buildUpcPatient = (
+  overrides: Partial<UpcPatientPresentation> = {}
+): UpcPatientPresentation => ({
+  key: 'patient-1',
+  patientName: 'Paciente UPC',
+  rut: '12.345.678-9',
+  age: '45',
+  diagnosis: 'Diagnóstico UPC',
+  specialty: 'Med Interna',
+  admissionDate: '2026-03-01',
+  firstSeenDate: '2026-03-24',
+  dailyBeds: [
+    { date: '2026-03-24', bedCode: 'R1' },
+    { date: '2026-03-25', bedCode: 'R2' },
+  ],
+  totalDays: 2,
+  daysDetail: '24-03-2026\n25-03-2026',
+  history: 'R1 (24-03-2026) → R2 (25-03-2026)',
+  changedBed: true,
+  ...overrides,
+});
+
+const getSolidFillArgb = (worksheet: ExcelJS.Worksheet, address: string) => {
+  const fill = worksheet.getCell(address).fill;
+  return fill && 'fgColor' in fill ? fill.fgColor?.argb : undefined;
+};
+
+describe('censusHiddenSheetsRenderer', () => {
+  it('renders summary sheet layout and occupancy styling', () => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('RESUMEN MARZO 2026');
+    const rows: SummaryDayRow[] = [
+      {
+        displaySheetName: '24-03-2026 10-15',
+        occupiedBeds: 18,
+        availableCapacity: 1,
+        blockedBeds: 0,
+        cribs: 0,
+        occupancyRate: 18 / 19,
+        discharges: 1,
+        transfers: 2,
+        cma: 0,
+        deceased: 0,
+        specialtyCounts: {
+          'Med Interna': 10,
+          Cirugía: 2,
+          Psiquiatría: 1,
+          Ginecobstetricia: 2,
+          Pediatría: 2,
+          Traumatología: 1,
+        },
+      },
+    ];
+
+    renderSummarySheet({
+      sheet,
+      rows,
+      firstDate: '2026-03-01',
+      lastDate: '2026-03-24',
+      monthName: 'MARZO',
+      year: '2026',
+    });
+
+    expect(sheet.getCell('A1').value).toBe(
+      'RESUMEN CENSO DIARIO — HOSPITAL HANGA ROA — MARZO 2026'
+    );
+    expect(sheet.getCell('A6').value).toBe('Fecha');
+    expect(sheet.getCell('F7').numFmt).toBe('0%');
+    expect(sheet.getCell('F7').font?.color?.argb).toBe('FFC00000');
+    expect(sheet.getCell('F7').fill).toEqual(sheet.getCell('A7').fill);
+    expect(sheet.getCell('A9').value).toBe('INDICADORES CONSOLIDADOS');
+    expect(sheet.getCell('A10').value).toBe('Promedio');
+    expect(getSolidFillArgb(sheet, 'A10')).toBe('FF5B9BD5');
+    expect(getSolidFillArgb(sheet, 'B10')).toBe('FFFFFFFF');
+    expect(sheet.views[0]).toEqual(
+      expect.objectContaining({ state: 'frozen', ySplit: 6, topLeftCell: 'A7' })
+    );
+    expect(sheet.columns[0]?.width).toBe(14);
+  });
+
+  it('renders UPC sheets and applies hidden sheet protection metadata', async () => {
+    const workbook = new ExcelJS.Workbook();
+    const upcSheet = workbook.addWorksheet('PACIENTES UPC MARZO 2026');
+    const matrixSheet = workbook.addWorksheet('DETALLE DIARIO UPC');
+    const patients = [buildUpcPatient()];
+
+    renderUpcPatientsSheet({
+      sheet: upcSheet,
+      patients,
+      monthName: 'MARZO',
+      year: '2026',
+    });
+    renderUpcDailyMatrixSheet({
+      sheet: matrixSheet,
+      patients,
+      monthName: 'MARZO',
+      year: '2026',
+      daysInMonth: 31,
+    });
+
+    expect(upcSheet.getCell('A1').value).toBe(
+      'REGISTRO PACIENTES UPC — HOSPITAL HANGA ROA — MARZO 2026'
+    );
+    expect(upcSheet.getCell('G5').font?.color?.argb).toBe('FFC00000');
+    expect(upcSheet.getCell('K5').value).toBe('Sí');
+    expect(matrixSheet.getCell('Y5').value).toBe('R1');
+    expect(getSolidFillArgb(matrixSheet, 'Y5')).toBe('FFC00000');
+    expect(matrixSheet.getCell('AH5').value).toBe('R1 (24-03-2026) → R2 (25-03-2026)');
+    expect(matrixSheet.views[0]).toEqual(
+      expect.objectContaining({ state: 'frozen', xSplit: 1, ySplit: 4, topLeftCell: 'B5' })
+    );
+
+    await applyHiddenSheetProtection(upcSheet);
+    expect(upcSheet.state).toBe('hidden');
+
+    const zip = new PizZip(await workbook.xlsx.writeBuffer());
+    const upcSheetXml = zip.file('xl/worksheets/sheet1.xml')?.asText() ?? '';
+    expect(upcSheetXml).toContain('<sheetProtection');
+  });
+});

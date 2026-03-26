@@ -6,6 +6,11 @@ import {
   buildUpcPatients,
   getMonthContext,
 } from './censusHiddenSheetsAggregation';
+import {
+  getSummarySheetName,
+  getUpcPatientsSheetName,
+  UPC_DAILY_DETAIL_SHEET_NAME,
+} from './censusHiddenSheetsConfig';
 import type { CensusWorkbookSnapshotSheet } from './censusHiddenSheetsContracts';
 import {
   applyHiddenSheetProtection,
@@ -32,7 +37,7 @@ export const addCensusHiddenSheets = async (
   const upcPatients = buildUpcPatients(logicalSheets);
 
   const summarySheet = workbook.addWorksheet(
-    `RESUMEN ${monthContext.monthName} ${monthContext.year}`
+    getSummarySheetName(monthContext.monthName, monthContext.year)
   );
   renderSummarySheet({
     sheet: summarySheet,
@@ -44,7 +49,7 @@ export const addCensusHiddenSheets = async (
   });
 
   const upcSheet = workbook.addWorksheet(
-    `PACIENTES UPC ${monthContext.monthName} ${monthContext.year}`
+    getUpcPatientsSheetName(monthContext.monthName, monthContext.year)
   );
   renderUpcPatientsSheet({
     sheet: upcSheet,
@@ -53,7 +58,7 @@ export const addCensusHiddenSheets = async (
     year: monthContext.year,
   });
 
-  const matrixSheet = workbook.addWorksheet('DETALLE DIARIO UPC');
+  const matrixSheet = workbook.addWorksheet(UPC_DAILY_DETAIL_SHEET_NAME);
   renderUpcDailyMatrixSheet({
     sheet: matrixSheet,
     patients: upcPatients,

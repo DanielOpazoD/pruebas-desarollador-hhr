@@ -72,8 +72,15 @@ describe('censusHiddenSheetsAggregation', () => {
     const record = buildRecord(
       '2026-03-24',
       {
-        R1: buildPatient('R1', { specialty: Specialty.MEDICINA }),
+        R1: buildPatient('R1', {
+          specialty: Specialty.MEDICINA,
+          clinicalCrib: buildPatient('R1-C', {
+            patientName: 'RN UPC',
+            specialty: Specialty.PEDIATRIA,
+          }),
+        }),
         R2: buildPatient('R2', { patientName: '', rut: '', age: '' }),
+        R3: buildPatient('R3', { patientName: 'Bloqueada', isBlocked: true }),
       },
       {
         discharges: [
@@ -98,6 +105,7 @@ describe('censusHiddenSheetsAggregation', () => {
     expect(row.transfers).toBe(1);
     expect(row.cma).toBe(1);
     expect(row.specialtyCounts[Specialty.MEDICINA]).toBe(1);
+    expect(row.specialtyCounts[Specialty.PEDIATRIA]).toBe(1);
   });
 
   it('aggregates UPC patients across days and marks bed changes', () => {
@@ -130,5 +138,34 @@ describe('censusHiddenSheetsAggregation', () => {
     expect(patients[0].history).toContain('R2');
     expect(patients[0].daysDetail).toContain('24-03-2026');
     expect(patients[0].daysDetail).toContain('25-03-2026');
+  });
+
+  it('falls back to patient name when UPC patient has no RUT and does not mark change for same bed', () => {
+    const firstDay = buildRecord('2026-03-24', {
+      R1: buildPatient('R1', {
+        patientName: 'Paciente Sin Rut',
+        rut: '',
+        isUPC: true,
+      }),
+    });
+    const secondDay = buildRecord('2026-03-25', {
+      R1: buildPatient('R1', {
+        patientName: 'Paciente Sin Rut',
+        rut: '',
+        isUPC: true,
+      }),
+    });
+
+    const patients = buildUpcPatients(
+      buildLogicalSnapshotSheets([
+        buildSnapshotSheet(firstDay, '24-03-2026'),
+        buildSnapshotSheet(secondDay, '25-03-2026'),
+      ])
+    );
+
+    expect(patients).toHaveLength(1);
+    expect(patients[0].rut).toBe('');
+    expect(patients[0].changedBed).toBe(false);
+    expect(patients[0].history).toContain('R1 (24-03-2026 a 25-03-2026)');
   });
 });
