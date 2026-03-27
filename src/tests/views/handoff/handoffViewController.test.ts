@@ -202,6 +202,7 @@ describe('handoffViewController', () => {
       role: 'doctor_specialist',
       readOnly: false,
       recordDate: '2026-03-26',
+      todayISO: '2026-03-26',
     });
     const auditDescriptor = resolveHandoffAuditDescriptor({
       isMedical: false,

@@ -47,7 +47,10 @@ const configureAuthPersistence = async (
       });
       return candidate.mode;
     } catch (error) {
-      console.warn(`[FirebaseConfig] ⚠️ Auth persistence (${candidate.mode}) failed:`, error);
+      firebaseBootstrapLogger.warn(
+        `[FirebaseConfig] ⚠️ Auth persistence (${candidate.mode}) failed:`,
+        error
+      );
     }
   }
 
@@ -77,7 +80,10 @@ export const initializeFirebaseServices = async (
       persistenceRequested: true,
     });
   } catch (fsErr) {
-    console.warn('[FirebaseConfig] ⚠️ Firestore persistence failed at init:', fsErr);
+    firebaseBootstrapLogger.warn(
+      '[FirebaseConfig] ⚠️ Firestore persistence failed at init:',
+      fsErr
+    );
     db = initializeFirestore(app, {
       ignoreUndefinedProperties: true,
     });
@@ -105,7 +111,10 @@ export const connectFirebaseEmulators = ({
     if (emulatorHost) {
       connectFirestoreEmulator(db, emulatorHost.host, emulatorHost.port);
     } else {
-      console.warn('[FirebaseConfig] Invalid Firestore emulator host:', firestoreEmulatorHost);
+      firebaseBootstrapLogger.warn(
+        '[FirebaseConfig] Invalid Firestore emulator host:',
+        firestoreEmulatorHost
+      );
     }
   }
 };

@@ -1,5 +1,5 @@
 import type { DischargeData, TransferData } from '@/types/domain/movements';
-import type { PatientData } from '@/types/domain/patient';
+import type { CensusHeaderPatientContract } from '@/application/census/censusStaffHeaderContracts';
 import { classifyPatientMovementForRecord } from '@/application/patient-flow/clinicalEpisode';
 
 export interface StaffSelectorsState {
@@ -31,7 +31,7 @@ interface MovementsInput {
 }
 
 interface AdmissionsInput {
-  beds?: Record<string, PatientData> | null;
+  beds?: Record<string, CensusHeaderPatientContract | undefined> | null;
   recordDate?: string;
 }
 
@@ -54,10 +54,12 @@ export const resolveMovementSummaryState = (
   admissionsCount: Math.max(0, input?.admissionsCount || 0),
 });
 
-const collectHospitalizedPatients = (beds?: Record<string, PatientData> | null): PatientData[] => {
+const collectHospitalizedPatients = (
+  beds?: Record<string, CensusHeaderPatientContract | undefined> | null
+): CensusHeaderPatientContract[] => {
   if (!beds) return [];
 
-  const patients: PatientData[] = [];
+  const patients: CensusHeaderPatientContract[] = [];
   Object.values(beds).forEach(patient => {
     if (patient?.patientName?.trim() && !patient?.isBlocked) {
       patients.push(patient);

@@ -1,6 +1,10 @@
+import { logger } from '@/services/utils/loggerService';
+
 type RepositoryMetricLevel = 'silent' | 'warn';
+
 const MAX_RECORDED_METRICS = 100;
 const MAX_REPORTED_WARNINGS = 5;
+const repositoryPerformanceLogger = logger.child('RepositoryPerformance');
 
 export interface RepositoryPerformanceMetric {
   operation: string;
@@ -61,7 +65,7 @@ const logRepositoryMetric = (
   const message = `[RepositoryPerf] ${operation} took ${Math.round(elapsedMs)}ms${
     context ? ` (${context})` : ''
   }`;
-  console.warn(message);
+  repositoryPerformanceLogger.warn(message);
 };
 
 interface MeasureRepositoryOperationOptions {

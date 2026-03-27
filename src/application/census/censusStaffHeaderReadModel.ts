@@ -1,4 +1,5 @@
 import type { Statistics } from '@/types/domain/base';
+import type { CensusHeaderPatientContract } from '@/application/census/censusStaffHeaderContracts';
 import {
   type CensusAccessProfile,
   isSpecialistCensusAccessProfile,
@@ -8,7 +9,6 @@ import {
   resolveStaffSelectorsState,
 } from '@/features/census/public';
 import type { DischargeData, TransferData } from '@/types/domain/movements';
-import type { PatientData } from '@/types/domain/patient';
 
 interface CensusStaffData {
   nursesDayShift?: string[] | null;
@@ -35,7 +35,7 @@ export const buildCensusStaffHeaderReadModel = ({
   readOnly: boolean;
   stats: Statistics | null;
   accessProfile: CensusAccessProfile;
-  beds?: Record<string, PatientData> | null;
+  beds?: Record<string, CensusHeaderPatientContract | undefined> | null;
   recordDate?: string;
   staffData?: CensusStaffData | null;
   movementsData?: CensusMovementsData | null;

@@ -4,9 +4,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT = process.cwd();
+const SRC_ROOT = path.join(ROOT, 'src');
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
-const DIRECT_IMPORT_PATTERN =
+const SCOPED_DIRECT_IMPORT_PATTERN =
   /from\s+['"]@\/services\/firebase-runtime\/firestoreRuntime['"]|from\s+['"]@\/services\/infrastructure\/db['"]/;
+const FIRESTORE_RUNTIME_IMPORT_PATTERN =
+  /from\s+['"]@\/services\/firebase-runtime\/firestoreRuntime['"]|import\s+['"]@\/services\/firebase-runtime\/firestoreRuntime['"]/;
 
 const SCOPED_ROOTS = [
   path.join(ROOT, 'src', 'features', 'clinical-documents'),
@@ -17,6 +20,7 @@ const SCOPED_ROOTS = [
 const ALLOWED_FILES = new Set(
   [
     path.join(ROOT, 'src', 'services', 'storage', 'firestore', 'firestoreServiceRuntime.ts'),
+    path.join(ROOT, 'src', 'services', 'repositories', 'repositoryFirestoreRuntime.ts'),
   ].map(value => path.normalize(value))
 );
 
@@ -54,7 +58,8 @@ const walkFiles = dirPath => {
   return files;
 };
 
-const violations = [];
+const scopedViolations = [];
+const globalViolations = [];
 
 for (const scopedRoot of SCOPED_ROOTS) {
   for (const filePath of walkFiles(scopedRoot)) {
@@ -63,16 +68,36 @@ for (const scopedRoot of SCOPED_ROOTS) {
     }
 
     const source = fs.readFileSync(filePath, 'utf8');
-    if (DIRECT_IMPORT_PATTERN.test(source)) {
-      violations.push(toPosix(path.relative(ROOT, filePath)));
+    if (SCOPED_DIRECT_IMPORT_PATTERN.test(source)) {
+      scopedViolations.push(toPosix(path.relative(ROOT, filePath)));
     }
   }
 }
 
-if (violations.length > 0) {
-  console.error('\nDirect Firestore runtime imports are not allowed in scoped modules:');
-  for (const violation of violations) {
-    console.error(`- ${violation}`);
+for (const filePath of walkFiles(SRC_ROOT)) {
+  if (ALLOWED_FILES.has(path.normalize(filePath))) {
+    continue;
+  }
+
+  const source = fs.readFileSync(filePath, 'utf8');
+  if (FIRESTORE_RUNTIME_IMPORT_PATTERN.test(source)) {
+    globalViolations.push(toPosix(path.relative(ROOT, filePath)));
+  }
+}
+
+if (scopedViolations.length > 0 || globalViolations.length > 0) {
+  if (scopedViolations.length > 0) {
+    console.error('\nDirect Firestore runtime imports are not allowed in scoped modules:');
+    for (const violation of scopedViolations) {
+      console.error(`- ${violation}`);
+    }
+  }
+
+  if (globalViolations.length > 0) {
+    console.error('\nDirect imports of firestoreRuntime are only allowed via runtime wrappers:');
+    for (const violation of globalViolations) {
+      console.error(`- ${violation}`);
+    }
   }
   process.exit(1);
 }

@@ -1,6 +1,6 @@
 import type { BedDefinition, Specialty } from '@/types/domain/base';
-import type { DailyRecord } from '@/types/domain/dailyRecord';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
+import type { HandoffMedicalRecordContract } from '@/domain/handoff/viewContracts';
 import {
   collectMedicalSpecialties,
   filterBedsByMedicalScope,
@@ -15,7 +15,7 @@ import {
 
 interface ResolveHandoffMedicalScreenStateInput {
   visibleBeds: BedDefinition[];
-  record: DailyRecord | null;
+  record: HandoffMedicalRecordContract | null;
   isMedical: boolean;
   medicalScope: MedicalHandoffScope;
   selectedMedicalSpecialty: Specialty | 'all';

@@ -65,8 +65,6 @@ describe('authRuntimeSupport', () => {
   });
 
   it('mounts the Firebase startup warning in the root element with highlighted env vars', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
     mountFirebaseConfigWarning('firebase warning', {
       title: 'Config pendiente',
       summary: 'Hay variables faltantes.',
@@ -77,15 +75,13 @@ describe('authRuntimeSupport', () => {
       footnote: 'Sin esto la app no inicia.',
     });
 
-    expect(warnSpy).toHaveBeenCalledWith('firebase warning');
+    expect(mockLoggerWarn).toHaveBeenCalledWith('firebase warning');
     expect(document.getElementById('root')?.innerHTML).toContain(
       '<code>VITE_FIREBASE_API_KEY</code>'
     );
     expect(document.getElementById('root')?.innerHTML).toContain(
       '<code>VITE_FIREBASE_PROJECT_ID</code>'
     );
-
-    warnSpy.mockRestore();
   });
 
   it('resolves bootstrap budgets with the intended precedence', () => {

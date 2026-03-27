@@ -10,6 +10,10 @@ import type {
   DailyRecordReadPort,
   DailyRecordWritePort,
 } from '@/application/ports/dailyRecordPort';
+import type {
+  PatientAnalysisPatientContract,
+  PatientAnalysisRecordContract,
+} from '@/application/patient-flow/patientAnalysisContracts';
 import type { PatientMasterWritePort } from '@/application/ports/patientMasterPort';
 import type { AuditPort } from '@/application/ports/auditPort';
 
@@ -28,10 +32,10 @@ export interface AnalysisResult {
   conflicts: Conflict[];
 }
 
-type DailyRecordRepositoryPort = Pick<
-  DailyRecordReadPort & DailyRecordWritePort,
-  'getAvailableDates' | 'getForDate' | 'updatePartial'
->;
+type DailyRecordRepositoryPort = Pick<DailyRecordReadPort, 'getAvailableDates'> &
+  Pick<DailyRecordWritePort, 'updatePartial'> & {
+    getForDate: (date: string) => Promise<PatientAnalysisRecordContract | null>;
+  };
 
 interface AnalyzePatientsInput {
   dailyRecordRepository: DailyRecordRepositoryPort;
@@ -51,6 +55,21 @@ interface MigratePatientsInput {
   analysis: AnalysisResult | null;
   patientMasterRepository: PatientMasterWritePort;
 }
+
+type PatientAnalysisOccupiedBedEntry = [
+  string,
+  PatientAnalysisPatientContract & {
+    rut: string;
+    patientName: string;
+  },
+];
+
+const isPatientAnalysisOccupiedBedEntry = (
+  entry: [string, PatientAnalysisPatientContract | undefined]
+): entry is PatientAnalysisOccupiedBedEntry => {
+  const patient = entry[1];
+  return Boolean(patient?.rut && isValidRut(patient.rut) && patient.patientName?.trim());
+};
 
 const buildAnalysis = async (
   dailyRecordRepository: DailyRecordRepositoryPort
@@ -74,7 +93,7 @@ const buildAnalysis = async (
     if (!record) continue;
 
     const bedsWithPatients = Object.entries(record.beds || {}).filter(
-      ([, patient]) => patient?.rut && isValidRut(patient.rut) && patient?.patientName
+      isPatientAnalysisOccupiedBedEntry
     );
     const rutsInCensusToday = new Set<string>();
 
@@ -98,6 +117,7 @@ const buildAnalysis = async (
         };
         patientsMap.set(normalizedRut, master);
       }
+      if (!master) continue;
 
       if (master.fullName.trim().toLowerCase() !== patient.patientName.trim().toLowerCase()) {
         const existingConflict = conflicts.find(conflict => conflict.rut === normalizedRut);

@@ -1,5 +1,6 @@
 import { collection, doc, limit, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
-import { defaultFirestoreRuntime } from '@/services/firebase-runtime/firestoreRuntime';
+import { defaultFirestoreServiceRuntime } from '@/services/storage/firestore/firestoreServiceRuntime';
+import type { FirestoreServiceRuntimePort } from '@/services/storage/firestore/ports/firestoreServiceRuntimePort';
 import type { WeeklyShift } from '@/types/whatsapp';
 import { logger } from '@/services/utils/loggerService';
 
@@ -25,57 +26,71 @@ const parseShiftDates = (messageText: string): { startDate: string; endDate: str
   };
 };
 
-export function subscribeToCurrentShift(callback: (shift: WeeklyShift | null) => void): () => void {
-  const shiftsRef = collection(defaultFirestoreRuntime.db, 'shifts', 'weekly', 'data');
-  const shiftsQuery = query(shiftsRef, orderBy('parsedAt', 'desc'), limit(1));
+export const createWhatsAppShiftStore = (
+  runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
+) => {
+  const getShiftsCollection = () => collection(runtime.getDb(), 'shifts', 'weekly', 'data');
 
-  return onSnapshot(shiftsQuery, snapshot => {
-    if (snapshot.empty) {
-      callback(null);
-      return;
-    }
+  const subscribeToCurrentShift = (callback: (shift: WeeklyShift | null) => void): (() => void) => {
+    const shiftsQuery = query(getShiftsCollection(), orderBy('parsedAt', 'desc'), limit(1));
 
-    callback(snapshot.docs[0].data() as WeeklyShift);
-  });
-}
+    return onSnapshot(shiftsQuery, snapshot => {
+      if (snapshot.empty) {
+        callback(null);
+        return;
+      }
 
-export async function saveManualShift(
-  messageText: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const lowerMessage = messageText.toLowerCase();
-    const hasShiftKeyword = TURNO_KEYWORDS.some(keyword => lowerMessage.includes(keyword));
-    if (!hasShiftKeyword) {
-      whatsappShiftLogger.warn('No se encontró palabra clave de turno');
-      return { success: false, error: 'El mensaje no parece ser un turno de pabellón' };
-    }
+      callback(snapshot.docs[0].data() as WeeklyShift);
+    });
+  };
 
-    const parsedDates = parseShiftDates(messageText);
-    if (!parsedDates) {
-      whatsappShiftLogger.warn('No se encontraron fechas en el mensaje de turno');
+  const saveManualShift = async (
+    messageText: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const lowerMessage = messageText.toLowerCase();
+      const hasShiftKeyword = TURNO_KEYWORDS.some(keyword => lowerMessage.includes(keyword));
+      if (!hasShiftKeyword) {
+        whatsappShiftLogger.warn('No se encontró palabra clave de turno');
+        return { success: false, error: 'El mensaje no parece ser un turno de pabellón' };
+      }
+
+      const parsedDates = parseShiftDates(messageText);
+      if (!parsedDates) {
+        whatsappShiftLogger.warn('No se encontraron fechas en el mensaje de turno');
+        return {
+          success: false,
+          error:
+            'No se encontraron fechas en el mensaje (formato: del DD/MM/YYYY hasta el DD/MM/YYYY)',
+        };
+      }
+
+      const shift: WeeklyShift = {
+        ...parsedDates,
+        source: 'manual' as const,
+        parsedAt: new Date().toISOString(),
+        staff: [],
+        originalMessage: messageText,
+      };
+
+      await setDoc(doc(getShiftsCollection(), shift.startDate), shift);
+      return { success: true };
+    } catch (error: unknown) {
+      whatsappShiftLogger.error('Error saving manual shift', error);
       return {
         success: false,
-        error:
-          'No se encontraron fechas en el mensaje (formato: del DD/MM/YYYY hasta el DD/MM/YYYY)',
+        error: error instanceof Error ? error.message : 'Error al guardar el turno',
       };
     }
+  };
 
-    const shift: WeeklyShift = {
-      ...parsedDates,
-      source: 'manual' as const,
-      parsedAt: new Date().toISOString(),
-      staff: [],
-      originalMessage: messageText,
-    };
+  return {
+    subscribeToCurrentShift,
+    saveManualShift,
+  };
+};
 
-    const shiftsRef = collection(defaultFirestoreRuntime.db, 'shifts', 'weekly', 'data');
-    await setDoc(doc(shiftsRef, shift.startDate), shift);
-    return { success: true };
-  } catch (error: unknown) {
-    whatsappShiftLogger.error('Error saving manual shift', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Error al guardar el turno',
-    };
-  }
-}
+const defaultWhatsAppShiftStore = createWhatsAppShiftStore();
+
+export const subscribeToCurrentShift = defaultWhatsAppShiftStore.subscribeToCurrentShift;
+export const saveManualShift = defaultWhatsAppShiftStore.saveManualShift;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { resolveHandoffMedicalScreenState } from '@/application/handoff';
-import type { BedDefinition, DailyRecord } from '@/types';
+import type { BedDefinition } from '@/types';
 import { Specialty } from '@/types';
 
 const BEDS: BedDefinition[] = [
@@ -20,7 +20,7 @@ const RECORD = {
   medicalHandoffSentAtByScope: {
     upc: '2026-03-03T10:30:00.000Z',
   },
-} as unknown as DailyRecord;
+};
 
 describe('handoffScreenReadModel', () => {
   it('resolves scoped medical screen state in one place', () => {

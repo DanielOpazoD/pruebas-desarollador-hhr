@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
-import { defaultFirestoreRuntime } from '@/services/firebase-runtime/firestoreRuntime';
+import { defaultFirestoreServiceRuntime } from '@/services/storage/firestore/firestoreServiceRuntime';
+import type { FirestoreServiceRuntimePort } from '@/services/storage/firestore/ports/firestoreServiceRuntimePort';
 import { logger } from '@/services/utils/loggerService';
 
 const whatsappTemplatesLogger = logger.child('WhatsAppTemplatesStore');
@@ -53,32 +54,41 @@ export function getDefaultTemplates(): MessageTemplate[] {
   ];
 }
 
-export async function getMessageTemplates(): Promise<MessageTemplate[]> {
-  try {
-    const docRef = doc(defaultFirestoreRuntime.db, 'whatsapp', 'templates');
-    const docSnap = await getDoc(docRef);
+export const createWhatsAppTemplatesStore = (
+  runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
+) => {
+  const getTemplatesDocRef = () => doc(runtime.getDb(), 'whatsapp', 'templates');
 
-    if (docSnap.exists()) {
-      return docSnap.data().templates || [];
+  const getMessageTemplates = async (): Promise<MessageTemplate[]> => {
+    try {
+      const docSnap = await getDoc(getTemplatesDocRef());
+
+      if (docSnap.exists()) {
+        return docSnap.data().templates || [];
+      }
+
+      return getDefaultTemplates();
+    } catch (_error) {
+      whatsappTemplatesLogger.error('Error getting templates', _error);
+      return getDefaultTemplates();
     }
+  };
 
-    return getDefaultTemplates();
-  } catch (_error) {
-    whatsappTemplatesLogger.error('Error getting templates', _error);
-    return getDefaultTemplates();
-  }
-}
+  const saveMessageTemplates = async (templates: MessageTemplate[]): Promise<boolean> => {
+    try {
+      await setDoc(getTemplatesDocRef(), { templates }, { merge: true });
+      return true;
+    } catch (_error) {
+      whatsappTemplatesLogger.error('Error saving templates', _error);
+      return false;
+    }
+  };
 
-export async function saveMessageTemplates(templates: MessageTemplate[]): Promise<boolean> {
-  try {
-    const docRef = doc(defaultFirestoreRuntime.db, 'whatsapp', 'templates');
-    await setDoc(docRef, { templates }, { merge: true });
-    return true;
-  } catch (_error) {
-    whatsappTemplatesLogger.error('Error saving templates', _error);
-    return false;
-  }
-}
+  return {
+    getMessageTemplates,
+    saveMessageTemplates,
+  };
+};
 
 export function formatHandoffMessage(
   template: string,
@@ -105,3 +115,8 @@ export function formatHandoffMessage(
     .replace(/\{\{handoffUrl\}\}/g, data.handoffUrl)
     .replace(/\{\{criticalPatients\}\}/g, String(data.criticalPatients || 0));
 }
+
+const defaultWhatsAppTemplatesStore = createWhatsAppTemplatesStore();
+
+export const getMessageTemplates = defaultWhatsAppTemplatesStore.getMessageTemplates;
+export const saveMessageTemplates = defaultWhatsAppTemplatesStore.saveMessageTemplates;

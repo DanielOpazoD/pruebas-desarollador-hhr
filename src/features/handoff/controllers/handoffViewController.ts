@@ -111,6 +111,7 @@ interface ResolveHandoffScreenFrameParams extends HandoffTitleParams {
   role?: UserRole;
   readOnly: boolean;
   recordDate?: string;
+  todayISO?: string;
 }
 
 export const resolveHandoffScreenFrame = ({
@@ -119,6 +120,7 @@ export const resolveHandoffScreenFrame = ({
   role,
   readOnly,
   recordDate,
+  todayISO,
 }: ResolveHandoffScreenFrameParams) => {
   const effectiveReadOnly =
     readOnly ||
@@ -127,6 +129,7 @@ export const resolveHandoffScreenFrame = ({
         role,
         readOnly,
         recordDate,
+        todayISO,
       }));
 
   return {

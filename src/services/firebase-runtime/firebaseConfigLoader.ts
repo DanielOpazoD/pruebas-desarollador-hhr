@@ -11,7 +11,7 @@ const saveCachedConfig = (config: FirebaseOptions) => {
     if (typeof localStorage === 'undefined') return;
     localStorage.setItem(CACHED_CONFIG_KEY, JSON.stringify(config));
   } catch (error) {
-    console.warn('[FirebaseConfig] Failed to cache Firebase config:', error);
+    firebaseConfigLoaderLogger.warn('[FirebaseConfig] Failed to cache Firebase config:', error);
   }
 };
 
@@ -24,7 +24,10 @@ const getCachedConfig = (): FirebaseOptions | null => {
     if (!parsed) return null;
     return parsed.apiKey ? parsed : null;
   } catch (error) {
-    console.warn('[FirebaseConfig] Failed to read cached Firebase config:', error);
+    firebaseConfigLoaderLogger.warn(
+      '[FirebaseConfig] Failed to read cached Firebase config:',
+      error
+    );
     return null;
   }
 };
@@ -77,7 +80,10 @@ export const loadFirebaseConfig = async (): Promise<FirebaseOptions> => {
     return config;
   } catch (error) {
     if (cached?.apiKey) {
-      console.warn('[FirebaseConfig] Using cached Firebase config due to network error');
+      firebaseConfigLoaderLogger.warn(
+        '[FirebaseConfig] Using cached Firebase config due to network error',
+        error
+      );
       return cached;
     }
 

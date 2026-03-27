@@ -2,6 +2,9 @@ import type { FirebaseApp } from 'firebase/app';
 import type { FirebaseStorage } from 'firebase/storage';
 import type { Functions } from 'firebase/functions';
 import { parseEmulatorHost } from '@/services/firebase-runtime/firebaseEnvironmentPolicy';
+import { logger } from '@/services/utils/loggerService';
+
+const firebaseLazyServicesLogger = logger.child('FirebaseLazyServices');
 
 interface FirebaseLazyServicesState {
   storage?: FirebaseStorage;
@@ -40,7 +43,10 @@ export const resolveFunctionsInstance = async (
     if (functionsEmulatorHost) {
       const emulatorHost = parseEmulatorHost(functionsEmulatorHost);
       if (!emulatorHost) {
-        console.warn('[FirebaseConfig] Invalid functions emulator host:', functionsEmulatorHost);
+        firebaseLazyServicesLogger.warn(
+          '[FirebaseConfig] Invalid functions emulator host:',
+          functionsEmulatorHost
+        );
         return state.functions;
       }
       const { connectFunctionsEmulator } = await import('firebase/functions');

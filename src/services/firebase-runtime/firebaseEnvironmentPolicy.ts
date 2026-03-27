@@ -1,3 +1,7 @@
+import { logger } from '@/services/utils/loggerService';
+
+const firebaseEnvironmentPolicyLogger = logger.child('FirebaseEnvironmentPolicy');
+
 export const shouldUseSingleTabFirestoreCache = () => {
   if (typeof window === 'undefined') return false;
 
@@ -32,7 +36,10 @@ export const decodeBase64 = (rawValue: string) => {
 
     return Buffer.from(normalized, 'base64').toString('utf-8');
   } catch (error) {
-    console.warn('Firebase API key could not be decoded from base64:', error);
+    firebaseEnvironmentPolicyLogger.warn(
+      'Firebase API key could not be decoded from base64:',
+      error
+    );
     return '';
   }
 };

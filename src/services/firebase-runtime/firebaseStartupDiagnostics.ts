@@ -9,6 +9,9 @@ import {
   getFirebaseStartupWarningCopy,
 } from '@/services/auth/firebaseStartupUiPolicy';
 import { mountFirebaseConfigWarning } from '@/services/auth/firebaseStartupWarningRenderer';
+import { logger } from '@/services/utils/loggerService';
+
+const firebaseStartupDiagnosticsLogger = logger.child('FirebaseStartupDiagnostics');
 
 export const warnWithFirebaseDiagnostics = (
   diagnostics: FirebaseRuntimeConfigDiagnostics,
@@ -24,14 +27,14 @@ export const warnOnFirebaseAuthConfig = (config: FirebaseOptions) => {
   const authConfigStatus = getFirebaseAuthConfigStatus(config.authDomain);
 
   if (!authConfigStatus.hasAuthDomain) {
-    console.warn(
+    firebaseStartupDiagnosticsLogger.warn(
       `[FirebaseConfig] ⚠️ ${authConfigStatus.supportSummary} ${authConfigStatus.supportAction}`
     );
     return;
   }
 
   if (!authConfigStatus.usesFirebaseHostedAuthDomain) {
-    console.warn(
+    firebaseStartupDiagnosticsLogger.warn(
       `[FirebaseConfig] ⚠️ ${authConfigStatus.supportSummary} ${authConfigStatus.supportAction}`
     );
   }

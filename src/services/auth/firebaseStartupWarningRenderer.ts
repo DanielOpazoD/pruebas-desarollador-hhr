@@ -2,6 +2,9 @@ import {
   getFirebaseStartupWarningCopy,
   type FirebaseStartupWarningCopy,
 } from './firebaseStartupUiPolicy';
+import { logger } from '@/services/utils/loggerService';
+
+const firebaseStartupWarningLogger = logger.child('FirebaseStartupWarningRenderer');
 
 const highlightEnvToken = (step: string) =>
   step
@@ -15,7 +18,7 @@ export const mountFirebaseConfigWarning = (
   message: string,
   warningCopy?: FirebaseStartupWarningCopy
 ) => {
-  console.warn(message);
+  firebaseStartupWarningLogger.warn(message);
 
   if (typeof document === 'undefined') return;
   const root = document.getElementById('root');

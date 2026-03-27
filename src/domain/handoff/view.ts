@@ -1,6 +1,6 @@
 import type { BedDefinition, Specialty } from '@/types/domain/base';
-import type { DailyRecord } from '@/types/domain/dailyRecord';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
+import type { HandoffMedicalRecordContract } from '@/domain/handoff/viewContracts';
 
 export const resolveInitialMedicalSpecialtyFromSearch = (
   search: string | undefined
@@ -22,7 +22,7 @@ export const resolveInitialMedicalScopeFromSearch = (
 
 export const filterBedsByMedicalScope = (
   visibleBeds: BedDefinition[],
-  record: DailyRecord | null,
+  record: HandoffMedicalRecordContract | null,
   isMedical: boolean,
   scope: MedicalHandoffScope
 ): BedDefinition[] => {
@@ -38,7 +38,7 @@ export const filterBedsByMedicalScope = (
 
 export const collectMedicalSpecialties = (
   beds: BedDefinition[],
-  record: DailyRecord | null,
+  record: HandoffMedicalRecordContract | null,
   isMedical: boolean
 ): Specialty[] => {
   if (!isMedical || !record) return [];
@@ -49,14 +49,14 @@ export const collectMedicalSpecialties = (
     const specialty = record.beds[bed.id]?.specialty;
     if (!specialty || specialty.trim() === '' || seen.has(specialty)) return;
     seen.add(specialty);
-    specialties.push(specialty);
+    specialties.push(specialty as Specialty);
   });
   return specialties;
 };
 
 export const filterBedsBySelectedMedicalSpecialty = (
   beds: BedDefinition[],
-  record: DailyRecord | null,
+  record: HandoffMedicalRecordContract | null,
   isMedical: boolean,
   selectedSpecialty: Specialty | 'all'
 ): BedDefinition[] => {
@@ -66,7 +66,7 @@ export const filterBedsBySelectedMedicalSpecialty = (
 
 export const hasVisibleMedicalPatients = (
   beds: BedDefinition[],
-  record: DailyRecord | null,
+  record: HandoffMedicalRecordContract | null,
   shouldShowPatient: (bedId: string) => boolean
 ): boolean =>
   beds.some(bed => {
