@@ -127,6 +127,25 @@ describe('send-census-email netlify function', () => {
     expect(buildCensusMasterBufferMock).not.toHaveBeenCalled();
   });
 
+  it('rejects malformed request payloads before generating the workbook', async () => {
+    const response = await handler({
+      httpMethod: 'POST',
+      headers: {
+        origin: 'https://app.example.com',
+        authorization: 'Bearer token-123',
+      },
+      body: JSON.stringify({
+        date: '2026-03-24',
+        records: [{ beds: {} }],
+      }),
+      path: '/.netlify/functions/send-census-email',
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toContain('payload de envío de censo inválido');
+    expect(buildCensusMasterBufferMock).not.toHaveBeenCalled();
+  });
+
   it('returns 401 when no bearer token is present', async () => {
     extractBearerTokenMock.mockImplementation(() => {
       throw new Error('Missing Authorization bearer token.');

@@ -4,6 +4,10 @@ import { loadClinicalAIContextFromFirestore } from './lib/clinical-ai-context';
 import { generateClinicalAIText, resolveClinicalAIProviderConfig } from './lib/ai-provider';
 import { buildClinicalAISummaryPrompt } from '../../src/application/ai/clinicalSummaryContextUseCase';
 import {
+  ClinicalSummaryRequestSchema,
+  ClinicalSummaryResponseSchema,
+} from '../../src/contracts/serverless';
+import {
   buildJsonResponse,
   getRequestOrigin,
   isOriginAllowed,
@@ -18,12 +22,6 @@ const CLINICAL_SUMMARY_ALLOWED_ROLES = new Set([
   'doctor_specialist',
   'editor',
 ]);
-
-interface ClinicalAISummaryBody {
-  recordDate?: string;
-  bedId?: string;
-  instruction?: string;
-}
 
 interface ClinicalAISummaryHandlerDependencies {
   getFirebaseServer: typeof getFirebaseServer;
@@ -104,13 +102,22 @@ export const createClinicalAISummaryHandler = (
         CLINICAL_SUMMARY_ALLOWED_ROLES
       );
 
-      const body = parseJsonBody<ClinicalAISummaryBody>(event.body);
+      const body = parseJsonBody<unknown>(event.body);
       if (!body.ok) {
         return buildJsonResponse(400, { error: body.error }, { requestOrigin });
       }
 
-      const recordDate = body.value.recordDate?.trim();
-      const bedId = body.value.bedId?.trim();
+      const request = ClinicalSummaryRequestSchema.safeParse(body.value);
+      if (!request.success) {
+        return buildJsonResponse(
+          400,
+          { error: 'recordDate y bedId son requeridos para resumir el contexto clínico.' },
+          { requestOrigin }
+        );
+      }
+
+      const recordDate = request.data.recordDate.trim();
+      const bedId = request.data.bedId.trim();
 
       if (!recordDate || !bedId) {
         return buildJsonResponse(
@@ -127,7 +134,7 @@ export const createClinicalAISummaryHandler = (
       });
       const prompt = buildClinicalAISummaryPrompt({
         context,
-        instruction: body.value.instruction,
+        instruction: request.data.instruction,
       });
       const summary = await dependencies.generateClinicalAIText({
         config: providerConfig,
@@ -137,12 +144,12 @@ export const createClinicalAISummaryHandler = (
 
       return buildJsonResponse(
         200,
-        {
+        ClinicalSummaryResponseSchema.parse({
           available: true,
           provider: providerConfig.provider,
           model: providerConfig.model,
           summary,
-        },
+        }),
         { requestOrigin }
       );
     } catch (error) {

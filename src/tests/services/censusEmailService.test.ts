@@ -82,4 +82,17 @@ describe('censusEmailService', () => {
       })
     ).rejects.toThrow();
   });
+
+  it('passes through the shared request contract when building the payload', async () => {
+    const { buildCensusEmailRequestBody } =
+      await import('@/services/integrations/censusEmailRequestPayload');
+
+    expect(() =>
+      buildCensusEmailRequestBody({
+        date: '2026-03-14',
+        records: [{ date: '2026-03-14', beds: {} } as never],
+        recipients: ['test@hospital.cl'],
+      })
+    ).not.toThrow();
+  });
 });

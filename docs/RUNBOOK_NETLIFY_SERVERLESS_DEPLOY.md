@@ -1,0 +1,58 @@
+# Runbook Netlify Serverless Deploy
+
+## Objetivo
+
+Diagnosticar rápido fallos de build, bundling y runtime en `netlify/functions`.
+
+## Fuente canónica
+
+- `package.json`
+- `.nvmrc`
+- `netlify.toml`
+- `reports/serverless-runtime-governance.md`
+- `docs/SERVERLESS_SENSITIVE_CONTRACTS.md`
+
+## Checklist de pre-deploy
+
+1. Confirmar que `.nvmrc`, `package.json > engines.node` y `netlify.toml > NODE_VERSION` estén alineados.
+2. Ejecutar `npm run check:serverless-runtime-governance`.
+3. Ejecutar `npm run check:netlify-functions-bundle`.
+4. Ejecutar `npm run build`.
+5. Confirmar variables de entorno obligatorias del endpoint afectado.
+
+## Fallos típicos
+
+### 1. Build local funciona y Netlify falla
+
+1. Revisar `reports/serverless-runtime-governance.md`.
+2. Confirmar versión de Node usada por Netlify.
+3. Revisar warnings `EBADENGINE` en el log de instalación.
+4. Repetir `npm run check:netlify-functions-bundle` localmente.
+
+### 2. Netlify no puede resolver una dependencia
+
+1. Identificar el archivo exacto reportado por Netlify.
+2. Verificar si importa runtime de Firebase Functions desde `netlify/functions`.
+3. Si el helper es puro, moverlo fuera del adapter de runtime.
+4. Si el módulo debe quedar externo, agregarlo explícitamente en `netlify.toml > external_node_modules`.
+
+### 3. Build del frontend pasa, pero falla el empaquetado de Functions
+
+1. Ejecutar `npm run check:netlify-functions-bundle`.
+2. Revisar imports cruzados desde `functions/lib/**` hacia `netlify/functions/**`.
+3. Confirmar que los helpers compartidos no dependan de `firebase-functions/v1`.
+
+## Variables y contratos
+
+- Variables de runtime Netlify: revisar `docs/SERVERLESS_SENSITIVE_CONTRACTS.md`.
+- Providers AI: revisar `docs/RUNBOOK_AI_PROVIDER_OPERATIONS.md`.
+- Módulos externos actuales: `xlsx-populate`, `exceljs`.
+
+## Comandos
+
+```bash
+npm run check:serverless-runtime-governance
+npm run check:netlify-functions-bundle
+npm run report:serverless-runtime-governance
+npm run build
+```

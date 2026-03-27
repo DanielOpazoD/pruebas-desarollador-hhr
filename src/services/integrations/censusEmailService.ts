@@ -9,7 +9,7 @@ import { buildCensusEmailRequestBody } from '@/services/integrations/censusEmail
 import { saveCensusEmailExportPassword } from '@/services/integrations/censusEmailAudit';
 import { resolveCensusEmailRecipients } from '@/services/integrations/censusEmailRecipients';
 import { assertCensusEmailSendingAllowed } from '@/services/integrations/censusEmailSendPolicy';
-import { z } from 'zod';
+import { CensusEmailResponseSchema, type CensusEmailResponse } from '@/contracts/serverless';
 
 interface TriggerEmailParams {
   date: string;
@@ -22,29 +22,15 @@ interface TriggerEmailParams {
   sheetDescriptors?: CensusWorkbookSheetDescriptor[];
 }
 
-interface EmailResponse {
-  success: boolean;
-  message: string;
-  gmailId: string;
-  censusDate?: string;
-  exportPassword?: string;
-}
-
-const censusEmailResponseSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-  gmailId: z.string(),
-  censusDate: z.string().optional(),
-  exportPassword: z.string().optional(),
-});
-
 const { endpoint: ENDPOINT, allowDevelopmentEmailSend } = resolveCensusEmailRuntimePolicy({
   isDevelopment: import.meta.env.DEV,
   allowDevEmailSendRaw: import.meta.env.VITE_ALLOW_DEV_EMAIL_SEND,
   endpointRaw: import.meta.env.VITE_CENSUS_EMAIL_ENDPOINT,
 });
 
-export const triggerCensusEmail = async (params: TriggerEmailParams): Promise<EmailResponse> => {
+export const triggerCensusEmail = async (
+  params: TriggerEmailParams
+): Promise<CensusEmailResponse> => {
   const {
     date,
     records,
@@ -82,7 +68,7 @@ export const triggerCensusEmail = async (params: TriggerEmailParams): Promise<Em
     }),
   });
 
-  const result = censusEmailResponseSchema.parse(await response.json()) as EmailResponse;
+  const result = CensusEmailResponseSchema.parse(await response.json());
 
   if (result.exportPassword && result.censusDate) {
     await saveCensusEmailExportPassword(

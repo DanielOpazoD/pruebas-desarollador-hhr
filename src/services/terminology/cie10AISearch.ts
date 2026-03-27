@@ -11,6 +11,11 @@ import { aiRequestManager } from '../ai/aiRequestManager';
 import { GoogleGenAI } from '@google/genai';
 import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 import { resolveCurrentUserAuthHeaders } from '@/services/auth/authRequestHeaders';
+import {
+  Cie10SearchRequestSchema,
+  Cie10SearchResponseSchema,
+  type Cie10SearchRequest,
+} from '@/contracts/serverless';
 
 let aiAvailabilityChecked = false;
 let aiIsAvailable = false;
@@ -79,10 +84,11 @@ async function searchWithServerlessFunction(
 ): Promise<{ available: boolean; results: CIE10Entry[] }> {
   try {
     const authHeaders = await resolveCurrentUserAuthHeaders();
+    const requestBody: Cie10SearchRequest = Cie10SearchRequestSchema.parse({ query });
     const response = await fetch('/.netlify/functions/cie10-ai-search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify(requestBody),
       signal,
     });
 
@@ -90,7 +96,7 @@ async function searchWithServerlessFunction(
       return { available: false, results: [] };
     }
 
-    const data = await response.json();
+    const data = Cie10SearchResponseSchema.parse(await response.json());
     return {
       available: data.available === true,
       results: data.results || [],
@@ -278,14 +284,15 @@ export async function checkAIAvailability(): Promise<boolean> {
 
   try {
     const authHeaders = await resolveCurrentUserAuthHeaders();
+    const requestBody: Cie10SearchRequest = Cie10SearchRequestSchema.parse({ query: '' });
     const response = await fetch('/.netlify/functions/cie10-ai-search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders },
-      body: JSON.stringify({ query: '' }),
+      body: JSON.stringify(requestBody),
     });
 
     if (response.ok) {
-      const data = await response.json();
+      const data = Cie10SearchResponseSchema.parse(await response.json());
       const isAvailable = data.available === true;
       aiAvailabilityChecked = true;
       aiIsAvailable = isAvailable;

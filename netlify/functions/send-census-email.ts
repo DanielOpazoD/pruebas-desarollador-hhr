@@ -13,7 +13,6 @@ import {
   MIN_EXCEL_SIZE,
 } from '../../src/services/exporters/excelValidation';
 import type { DailyRecord } from '../../src/types';
-import type { CensusWorkbookSheetDescriptor } from '../../src/services/exporters/censusMasterWorkbook';
 import {
   buildCorsHeaders,
   buildJsonResponse,
@@ -24,6 +23,10 @@ import {
   type NetlifyEventLike,
 } from './lib/http';
 import { authorizeRoleRequest, extractBearerToken } from './lib/firebase-auth';
+import {
+  CensusEmailRequestPayloadSchema,
+  CensusEmailResponseSchema,
+} from '../../src/contracts/serverless';
 
 const ALLOWED_ROLES = new Set(['nurse_hospital', 'admin']);
 
@@ -79,18 +82,17 @@ export const handler = async (event: NetlifyEventLike) => {
       return buildTextResponse(statusCode, message, { requestOrigin });
     }
 
-    const parsedBody = parseJsonBody<{
-      date: string;
-      records: DailyRecord[];
-      recipients?: string[];
-      nursesSignature?: string;
-      body?: string;
-      shareLink?: string;
-      sheetDescriptors?: CensusWorkbookSheetDescriptor[];
-    }>(event.body);
+    const parsedBody = parseJsonBody<unknown>(event.body);
 
     if (!parsedBody.ok) {
       return buildTextResponse(400, parsedBody.error, { requestOrigin });
+    }
+
+    const validatedBody = CensusEmailRequestPayloadSchema.safeParse(parsedBody.value);
+    if (!validatedBody.success) {
+      return buildTextResponse(400, 'Solicitud inválida: payload de envío de censo inválido.', {
+        requestOrigin,
+      });
     }
 
     const {
@@ -101,7 +103,7 @@ export const handler = async (event: NetlifyEventLike) => {
       body: emailBody,
       shareLink,
       sheetDescriptors,
-    } = parsedBody.value;
+    } = validatedBody.data;
 
     if (typeof shareLink === 'string' && shareLink.trim().length > 0) {
       return buildTextResponse(
@@ -208,13 +210,13 @@ export const handler = async (event: NetlifyEventLike) => {
 
     return buildJsonResponse(
       200,
-      {
+      CensusEmailResponseSchema.parse({
         success: true,
         message: 'Correo enviado correctamente.',
         gmailId: gmailResponse.id,
         censusDate: date,
         exportPassword: password,
-      },
+      }),
       { requestOrigin }
     );
   } catch (error: unknown) {

@@ -102,6 +102,22 @@ describe('Búsqueda IA CIE-10 (cie10AISearch)', () => {
       expect(results).toEqual([{ code: 'B01', description: 'Varicela' }]);
     });
 
+    it('ignora payloads malformados del serverless y cae a no disponible', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          available: 'si',
+          results: 'invalidos',
+        }),
+      } as Response);
+
+      vi.stubEnv('VITE_LOCAL_GEMINI_API_KEY', '');
+      const results = await cie10Module.searchCIE10WithAI('varicela');
+      vi.unstubAllEnvs();
+
+      expect(results).toEqual([]);
+    });
+
     it('retorna [] si serverless no disponible Y no hay API key local', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,

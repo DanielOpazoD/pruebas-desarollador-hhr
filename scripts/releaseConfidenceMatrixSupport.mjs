@@ -8,6 +8,8 @@ const RELEASE_PACK_PATH = path.join('scripts', 'config', 'release-confidence-pac
 const CRITICAL_SMOKE_PATH = path.join('scripts', 'config', 'critical-smoke-pack.json');
 const FLOW_BUDGETS_PATH = path.join('scripts', 'config', 'flow-performance-budgets.json');
 const CRITICAL_COVERAGE_PATH = path.join('scripts', 'config', 'critical-coverage-thresholds.json');
+const TECHNICAL_OWNERSHIP_PATH = path.join('scripts', 'config', 'technical-ownership-map.json');
+const PACKAGE_JSON_PATH = path.join('package.json');
 
 const readJson = filePath => JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
@@ -30,10 +32,15 @@ export const loadReleaseConfidenceMatrixConfig = root => {
     areas: areas.map(area => ({
       id: typeof area?.id === 'string' ? area.id.trim() : '',
       label: typeof area?.label === 'string' && area.label.trim() ? area.label.trim() : '',
+      ownerAreaId:
+        typeof area?.ownerAreaId === 'string' && area.ownerAreaId.trim()
+          ? area.ownerAreaId.trim()
+          : '',
       criticalCoverageZones: normalizeStringList(area?.criticalCoverageZones),
       blockingSteps: normalizeStringList(area?.blockingSteps),
       smokeScenarios: normalizeStringList(area?.smokeScenarios),
       flowBudgets: normalizeStringList(area?.flowBudgets),
+      validationSuites: normalizeStringList(area?.validationSuites),
     })),
   };
 };
@@ -43,6 +50,8 @@ const loadDependencies = root => {
   const criticalSmoke = readJson(path.join(root, CRITICAL_SMOKE_PATH));
   const flowBudgets = readJson(path.join(root, FLOW_BUDGETS_PATH));
   const criticalCoverage = readJson(path.join(root, CRITICAL_COVERAGE_PATH));
+  const technicalOwnership = readJson(path.join(root, TECHNICAL_OWNERSHIP_PATH));
+  const packageJson = readJson(path.join(root, PACKAGE_JSON_PATH));
 
   return {
     releaseStepIds: new Set(
@@ -58,6 +67,12 @@ const loadDependencies = root => {
     ),
     flowBudgetIds: new Set(Object.keys(flowBudgets.flows || {})),
     criticalCoverageZoneIds: new Set(Object.keys(criticalCoverage.zones || {})),
+    ownershipAreaIds: new Set(
+      Array.isArray(technicalOwnership.areas)
+        ? technicalOwnership.areas.map(area => area?.id).filter(Boolean)
+        : []
+    ),
+    scriptIds: new Set(Object.keys(packageJson.scripts || {})),
   };
 };
 
@@ -92,13 +107,20 @@ export const buildReleaseConfidenceMatrixReport = root => {
     if (
       area.criticalCoverageZones.length === 0 &&
       area.smokeScenarios.length === 0 &&
-      area.flowBudgets.length === 0
+      area.flowBudgets.length === 0 &&
+      area.validationSuites.length === 0
     ) {
       areaIssues.push('Area must declare at least one evidence source');
     }
 
     if (area.blockingSteps.length === 0) {
       areaIssues.push('Area must declare at least one blocking release step');
+    }
+
+    if (!area.ownerAreaId) {
+      areaIssues.push('Missing ownerAreaId');
+    } else if (!dependencies.ownershipAreaIds.has(area.ownerAreaId)) {
+      areaIssues.push(`Unknown technical ownership area: ${area.ownerAreaId}`);
     }
 
     const unknownCoverageZones = area.criticalCoverageZones.filter(
@@ -132,6 +154,13 @@ export const buildReleaseConfidenceMatrixReport = root => {
       areaIssues.push(`Unknown flow budgets: ${unknownFlowBudgets.join(', ')}`);
     }
 
+    const unknownValidationSuites = area.validationSuites.filter(
+      suite => !dependencies.scriptIds.has(suite)
+    );
+    if (unknownValidationSuites.length > 0) {
+      areaIssues.push(`Unknown validation suites: ${unknownValidationSuites.join(', ')}`);
+    }
+
     return {
       ...area,
       status: areaIssues.length === 0 ? 'ok' : 'invalid',
@@ -143,6 +172,7 @@ export const buildReleaseConfidenceMatrixReport = root => {
   const mappedBlockingSteps = new Set(areas.flatMap(area => area.blockingSteps));
   const mappedSmokeScenarios = new Set(areas.flatMap(area => area.smokeScenarios));
   const mappedFlowBudgets = new Set(areas.flatMap(area => area.flowBudgets));
+  const mappedOwnershipAreas = new Set(areas.map(area => area.ownerAreaId).filter(Boolean));
 
   const unmappedCoverageZones = [...dependencies.criticalCoverageZoneIds]
     .filter(zone => !mappedCoverageZones.has(zone))
@@ -156,6 +186,9 @@ export const buildReleaseConfidenceMatrixReport = root => {
   const unmappedFlowBudgets = [...dependencies.flowBudgetIds]
     .filter(flow => !mappedFlowBudgets.has(flow))
     .sort((left, right) => left.localeCompare(right));
+  const unmappedOwnershipAreas = [...dependencies.ownershipAreaIds]
+    .filter(areaId => !mappedOwnershipAreas.has(areaId))
+    .sort((left, right) => left.localeCompare(right));
 
   if (unmappedCoverageZones.length > 0) {
     issues.push(`Unmapped critical coverage zones: ${unmappedCoverageZones.join(', ')}`);
@@ -168,6 +201,9 @@ export const buildReleaseConfidenceMatrixReport = root => {
   }
   if (unmappedFlowBudgets.length > 0) {
     issues.push(`Unmapped flow budgets: ${unmappedFlowBudgets.join(', ')}`);
+  }
+  if (unmappedOwnershipAreas.length > 0) {
+    issues.push(`Unmapped technical ownership areas: ${unmappedOwnershipAreas.join(', ')}`);
   }
 
   for (const area of areas) {
@@ -185,6 +221,7 @@ export const buildReleaseConfidenceMatrixReport = root => {
       blockingSteps: dependencies.blockingStepIds.size,
       smokeScenarios: dependencies.smokeScenarioIds.size,
       flowBudgets: dependencies.flowBudgetIds.size,
+      ownershipAreas: dependencies.ownershipAreaIds.size,
     },
     coverageZones: {
       mapped: mappedCoverageZones.size,
@@ -201,6 +238,10 @@ export const buildReleaseConfidenceMatrixReport = root => {
     flowBudgets: {
       mapped: mappedFlowBudgets.size,
       unmapped: unmappedFlowBudgets,
+    },
+    ownershipAreas: {
+      mapped: mappedOwnershipAreas.size,
+      unmapped: unmappedOwnershipAreas,
     },
     areas,
     issues,
@@ -223,16 +264,17 @@ export const formatReleaseConfidenceMatrixMarkdown = report => {
     `- Blocking release steps mapped: ${report.blockingSteps.mapped}/${report.counts.blockingSteps}`,
     `- Smoke scenarios mapped: ${report.smokeScenarios.mapped}/${report.counts.smokeScenarios}`,
     `- Flow budgets mapped: ${report.flowBudgets.mapped}/${report.counts.flowBudgets}`,
+    `- Technical ownership areas mapped: ${report.ownershipAreas.mapped}/${report.counts.ownershipAreas}`,
     '',
     '## Areas',
     '',
-    '| Area | Coverage zones | Blocking steps | Smoke scenarios | Flow budgets | Status |',
-    '| --- | --- | --- | --- | --- | --- |',
+    '| Area | Owner | Coverage zones | Blocking steps | Smoke scenarios | Flow budgets | Validation suites | Status |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- |',
   ];
 
   for (const area of report.areas) {
     lines.push(
-      `| ${area.label} | ${formatList(area.criticalCoverageZones)} | ${formatList(area.blockingSteps)} | ${formatList(area.smokeScenarios)} | ${formatList(area.flowBudgets)} | ${area.status} |`
+      `| ${area.label} | ${area.ownerAreaId || '-'} | ${formatList(area.criticalCoverageZones)} | ${formatList(area.blockingSteps)} | ${formatList(area.smokeScenarios)} | ${formatList(area.flowBudgets)} | ${formatList(area.validationSuites)} | ${area.status} |`
     );
   }
 
@@ -241,6 +283,7 @@ export const formatReleaseConfidenceMatrixMarkdown = report => {
   lines.push(`- Unmapped blocking release steps: ${formatList(report.blockingSteps.unmapped)}`);
   lines.push(`- Unmapped smoke scenarios: ${formatList(report.smokeScenarios.unmapped)}`);
   lines.push(`- Unmapped flow budgets: ${formatList(report.flowBudgets.unmapped)}`);
+  lines.push(`- Unmapped technical ownership areas: ${formatList(report.ownershipAreas.unmapped)}`);
 
   if (report.issues.length > 0) {
     lines.push('', '## Issues', '');

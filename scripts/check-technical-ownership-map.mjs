@@ -14,6 +14,8 @@ const REQUIRED_AREA_IDS = [
   'census',
   'handoff',
   'backup',
+  'serverless',
+  'ai',
 ];
 
 const fail = issues => {

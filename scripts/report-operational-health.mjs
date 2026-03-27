@@ -226,6 +226,9 @@ const runbooks = [
   'docs/RUNBOOK_SUPPORT_OPERATIONS.md',
   'docs/RUNBOOK_OPERATIONAL_BUDGETS.md',
   authAccess.authIncidentRunbook,
+  'docs/RUNBOOK_NETLIFY_SERVERLESS_DEPLOY.md',
+  'docs/RUNBOOK_AI_PROVIDER_OPERATIONS.md',
+  'docs/SERVERLESS_SENSITIVE_CONTRACTS.md',
 ];
 const flowPerformanceSummary = readJsonReport('reports/e2e/flow-performance-budget-summary.json');
 const criticalCoverageSummary = readJsonReport('reports/critical-coverage.json');

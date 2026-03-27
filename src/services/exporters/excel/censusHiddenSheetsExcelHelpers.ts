@@ -80,3 +80,33 @@ export const applyHeaderCell = ({
   cell.alignment = alignment;
   cell.border = THIN_BORDER;
 };
+
+export const applyHeaderRow = ({
+  row,
+  values,
+  fill,
+  fontSize = 10,
+  rowHeight,
+}: {
+  row: Worksheet['lastRow'];
+  values: Array<string | number>;
+  fill: Fill;
+  fontSize?: number;
+  rowHeight?: number;
+}) => {
+  if (!row) return;
+
+  values.forEach((value, index) => {
+    applyHeaderCell({
+      cell: row.getCell(index + 1),
+      value,
+      font: { name: 'Arial', size: fontSize, bold: true, color: { argb: 'FFFFFFFF' } },
+      alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
+      fill,
+    });
+  });
+
+  if (rowHeight) {
+    row.height = rowHeight;
+  }
+};

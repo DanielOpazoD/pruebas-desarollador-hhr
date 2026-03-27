@@ -10,14 +10,26 @@ const REPORTS_DIR = path.join(ROOT, 'reports');
 const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
 const generatedAt = new Date().toISOString();
 
+const KIND_RISK_DEFAULTS = {
+  compatibility_facade: 'Aumenta el costo de cambio y puede perpetuar imports legacy.',
+  migration_shim: 'Puede ocultar deuda transicional y retrasar el retiro del modelo legacy.',
+  legacy_bridge: 'Extiende superficie de compatibilidad y riesgo operativo en reglas o datos.',
+  compatibility_barrel: 'Permite que consumidores nuevos sigan entrando por surfaces no canónicas.',
+  deprecated_bridge: 'Mantiene acoplamiento a controladores históricos y frena la convergencia al dominio nuevo.',
+};
+
 const entries = (config.entries || []).map(entry => ({
   ...entry,
   exists: fs.existsSync(path.join(ROOT, entry.path)),
+  riskIfRetained: entry.riskIfRetained || KIND_RISK_DEFAULTS[entry.kind] || 'Riesgo transicional no explicitado.',
 }));
 
 const report = {
   generatedAt,
   policyVersion: config.policyVersion || 'unknown',
+  expansionRule: config.expansionRule || '',
+  documentationRule: config.documentationRule || '',
+  exceptionProcess: config.exceptionProcess || '',
   trackedEntries: entries.length,
   missingEntries: entries.filter(entry => !entry.exists).map(entry => entry.path),
   entries,
@@ -36,14 +48,20 @@ const markdown = `# Compatibility Governance Snapshot
 - Policy version: ${report.policyVersion}
 - Tracked entries: ${report.trackedEntries}
 
+## Policy
+
+- Expansion rule: ${report.expansionRule}
+- Documentation rule: ${report.documentationRule}
+- Exception process: ${report.exceptionProcess}
+
 ## Compatibility Inventory
 
-| Path | Owner | Kind | Exists | Remaining consumers | Target |
-| --- | --- | --- | --- | --- | --- |
+| Path | Owner | Kind | Exists | Remaining consumers | Risk if retained | Target |
+| --- | --- | --- | --- | --- | --- | --- |
 ${entries
   .map(
     entry =>
-      `| \`${entry.path}\` | ${entry.owner} | ${entry.kind} | ${entry.exists ? 'yes' : 'no'} | ${entry.remainingConsumers} | ${entry.target} |`
+      `| \`${entry.path}\` | ${entry.owner} | ${entry.kind} | ${entry.exists ? 'yes' : 'no'} | ${entry.remainingConsumers} | ${entry.riskIfRetained} | ${entry.target} |`
   )
   .join('\n')}
 

@@ -97,6 +97,19 @@ describe('clinical-ai-summary netlify function', () => {
     expect(response.body).toContain('recordDate y bedId son requeridos');
   });
 
+  it('returns 400 when the payload shape is invalid', async () => {
+    const response = await handler({
+      httpMethod: 'POST',
+      headers: {
+        authorization: 'Bearer token-123',
+      },
+      body: JSON.stringify({ recordDate: 20260325, bedId: null }),
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toContain('recordDate y bedId son requeridos');
+  });
+
   it('returns a clinical summary for authorized callers', async () => {
     const response = await handler({
       httpMethod: 'POST',

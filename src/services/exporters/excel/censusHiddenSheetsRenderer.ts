@@ -12,6 +12,7 @@ import {
 } from './censusHiddenSheetsConfig';
 import {
   applyHeaderCell,
+  applyHeaderRow,
   getExcelColumnName,
   setMergedTitle,
   setRowFill,
@@ -241,16 +242,12 @@ export const renderUpcPatientsSheet = ({
     'Cambio Cama',
   ];
   const headerRow = sheet.getRow(4);
-  headers.forEach((header, index) => {
-    applyHeaderCell({
-      cell: headerRow.getCell(index + 1),
-      value: header,
-      font: { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } },
-      alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
-      fill: solidFill('#7B2D26'),
-    });
+  applyHeaderRow({
+    row: headerRow,
+    values: headers,
+    fill: solidFill('#7B2D26'),
+    rowHeight: 36,
   });
-  headerRow.height = 36;
 
   patients.forEach((patient, index) => {
     const row = sheet.getRow(5 + index);
@@ -339,32 +336,16 @@ export const renderUpcDailyMatrixSheet = ({
   });
 
   const headerRow = sheet.getRow(4);
-  applyHeaderCell({
-    cell: headerRow.getCell(1),
-    value: 'Paciente',
-    font: { name: 'Arial', size: 9, bold: true, color: { argb: 'FFFFFFFF' } },
-    alignment: { horizontal: 'center', vertical: 'middle' },
+  applyHeaderRow({
+    row: headerRow,
+    values: [
+      'Paciente',
+      ...new Array(daysInMonth).fill(null).map((_, index) => index + 1),
+      'Total',
+      'Camas',
+    ],
     fill: solidFill('#7B2D26'),
-  });
-  for (let day = 1; day <= daysInMonth; day += 1) {
-    applyHeaderCell({
-      cell: headerRow.getCell(day + 1),
-      value: day,
-      font: { name: 'Arial', size: 9, bold: true, color: { argb: 'FFFFFFFF' } },
-      alignment: { horizontal: 'center', vertical: 'middle' },
-      fill: solidFill('#7B2D26'),
-    });
-  }
-  headerRow.getCell(daysInMonth + 2).value = 'Total';
-  headerRow.getCell(daysInMonth + 3).value = 'Camas';
-  [daysInMonth + 2, daysInMonth + 3].forEach(col => {
-    applyHeaderCell({
-      cell: headerRow.getCell(col),
-      value: headerRow.getCell(col).value as string,
-      font: { name: 'Arial', size: 9, bold: true, color: { argb: 'FFFFFFFF' } },
-      alignment: { horizontal: 'center', vertical: 'middle' },
-      fill: solidFill('#7B2D26'),
-    });
+    fontSize: 9,
   });
 
   patients.forEach((patient, index) => {

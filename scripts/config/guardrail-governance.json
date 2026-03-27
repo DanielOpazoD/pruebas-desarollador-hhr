@@ -79,6 +79,11 @@
       "artifact": "reports/runtime-contracts.md"
     },
     {
+      "id": "serverless_runtime_governance",
+      "script": "report:serverless-runtime-governance",
+      "artifact": "reports/serverless-runtime-governance.md"
+    },
+    {
       "id": "guardrail_governance",
       "script": "report:guardrail-governance",
       "artifact": "reports/guardrail-governance.md"
@@ -121,6 +126,7 @@
       { "id": "check:legacy-bridge-boundary", "group": "boundaries" },
       { "id": "check:schema-governance", "group": "governance" },
       { "id": "check:runtime-contracts", "group": "governance" },
+      { "id": "check:serverless-runtime-governance", "group": "governance" },
       { "id": "check:docs-drift", "group": "governance" },
       { "id": "check:operational-runbooks", "group": "governance" },
       { "id": "check:folder-dependencies", "group": "boundaries" },

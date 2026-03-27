@@ -149,6 +149,8 @@ Gobierna la trazabilidad entre:
 - escenarios del `critical smoke pack`
 - `flow budgets`
 - pasos blocking de `test:release-confidence`
+- `ownerAreaId` hacia `technical-ownership-map`
+- `validationSuites` que sirven de entrada rápida o regresión focalizada por subsistema
 
 Artefactos:
 

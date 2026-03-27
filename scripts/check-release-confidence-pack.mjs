@@ -25,6 +25,7 @@ const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 const steps = Array.isArray(config.steps) ? config.steps : [];
 const profiles = config.profiles && typeof config.profiles === 'object' ? config.profiles : {};
 const requiredStepIds = [
+  'serverless_deploy_smoke',
   'unit_critical',
   'runtime_smoke',
   'rules_ci',

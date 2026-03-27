@@ -86,10 +86,13 @@ Salida esperada:
 1. correr `npm run report:release-confidence-matrix`
 2. revisar `reports/release-confidence-matrix.md`
 3. confirmar que cada área crítica siga mapeada a:
+   - un `ownerAreaId` válido de `technical-ownership-map`
    - una o más zonas de `critical coverage`, o evidencia equivalente de smoke/flow
+   - una o más `validationSuites` con scripts reales para el loop diario o la regresión específica
    - al menos un paso blocking del release pack
 4. si agregaste una zona nueva de coverage, un smoke nuevo o un flow budget nuevo, actualizar la matriz en la misma change
-5. no aceptar perfiles compactos sin trazabilidad explícita de qué área protegen
+5. si agregaste un subsistema crítico nuevo, enlazarlo en la misma change con ownership y suites
+6. no aceptar perfiles compactos sin trazabilidad explícita de qué área protegen
 
 ### Falla `check:technical-ownership-map`
 

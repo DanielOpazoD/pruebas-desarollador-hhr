@@ -40,6 +40,23 @@ const requiredDocs = [
       'reports/operational-health.md',
     ],
   },
+  {
+    file: 'docs/RUNBOOK_NETLIFY_SERVERLESS_DEPLOY.md',
+    patterns: [
+      'reports/serverless-runtime-governance.md',
+      'check:serverless-runtime-governance',
+      'check:netlify-functions-bundle',
+      'docs/SERVERLESS_SENSITIVE_CONTRACTS.md',
+    ],
+  },
+  {
+    file: 'docs/RUNBOOK_AI_PROVIDER_OPERATIONS.md',
+    patterns: ['AI_PROVIDER', 'GEMINI_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY'],
+  },
+  {
+    file: 'docs/SERVERLESS_SENSITIVE_CONTRACTS.md',
+    patterns: ['send-census-email', 'fhir-api', 'clinical-ai-summary', 'cie10-ai-search'],
+  },
 ];
 
 for (const doc of requiredDocs) {
@@ -74,7 +91,7 @@ if (!report.legacyBridge || typeof report.legacyBridge !== 'object') {
   fail('reports/operational-health.json must include legacyBridge summary');
 }
 
-if (!Array.isArray(report.runbooks) || report.runbooks.length < 3) {
+if (!Array.isArray(report.runbooks) || report.runbooks.length < 6) {
   fail('reports/operational-health.json must list the operational runbooks');
 }
 

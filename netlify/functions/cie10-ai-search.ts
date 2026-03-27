@@ -2,6 +2,10 @@ import { getFirebaseServer } from './lib/firebase-server';
 import { authorizeRoleRequest, extractBearerToken } from './lib/firebase-auth';
 import { generateClinicalAIText, resolveClinicalAIProviderConfig } from './lib/ai-provider';
 import {
+  Cie10SearchRequestSchema,
+  Cie10SearchResponseSchema,
+} from '../../src/contracts/serverless';
+import {
   buildCorsHeaders,
   buildJsonResponse,
   getRequestOrigin,
@@ -78,19 +82,36 @@ const handler = async (event: NetlifyEventLike) => {
     extractBearerToken(authorizationHeader);
     await authorizeRoleRequest(db, authorizationHeader, CIE10_ALLOWED_ROLES);
 
-    const body = parseJsonBody<{ query?: string }>(event.body);
+    const body = parseJsonBody<unknown>(event.body);
     if (!body.ok) {
       return buildJsonResponse(
         400,
-        { available: true, results: [], error: body.error },
+        Cie10SearchResponseSchema.parse({ available: true, results: [], error: body.error }),
         { requestOrigin }
       );
     }
 
-    const { query } = body.value;
+    const request = Cie10SearchRequestSchema.safeParse(body.value);
+    if (!request.success) {
+      return buildJsonResponse(
+        400,
+        Cie10SearchResponseSchema.parse({
+          available: true,
+          results: [],
+          error: 'Payload inválido para búsqueda CIE-10.',
+        }),
+        { requestOrigin }
+      );
+    }
+
+    const { query } = request.data;
 
     if (!query || query.length < 2) {
-      return buildJsonResponse(200, { available: true, results: [] }, { requestOrigin });
+      return buildJsonResponse(
+        200,
+        Cie10SearchResponseSchema.parse({ available: true, results: [] }),
+        { requestOrigin }
+      );
     }
 
     const prompt = `
@@ -143,7 +164,9 @@ IMPORTANTE: Responde SOLO con el JSON, sin explicaciones ni markdown.
         }));
     }
 
-    return buildJsonResponse(200, { available: true, results }, { requestOrigin });
+    return buildJsonResponse(200, Cie10SearchResponseSchema.parse({ available: true, results }), {
+      requestOrigin,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'AI search failed';
     const statusCode =
@@ -160,11 +183,11 @@ IMPORTANTE: Responde SOLO con el JSON, sin explicaciones ni markdown.
     console.error('Error in AI CIE-10 search:', error);
     return buildJsonResponse(
       200,
-      {
+      Cie10SearchResponseSchema.parse({
         available: true,
         results: [],
         error: 'AI search failed',
-      },
+      }),
       { requestOrigin }
     );
   }
