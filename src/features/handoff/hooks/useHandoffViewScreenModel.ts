@@ -10,8 +10,7 @@ import { useHandoffLogic } from '@/hooks';
 import { useUIState, type UseUIStateReturn } from '@/hooks/useUIState';
 import { getAttributedAuthors } from '@/services/admin/attributionService';
 import {
-  buildHandoffClinicalEventActions,
-  buildHandoffMedicalActions,
+  buildHandoffActionBundles,
   resolveHandoffMedicalBindings,
 } from '@/features/handoff/controllers/handoffViewBindingsController';
 import { resolveMedicalHandoffCapabilities } from '@/features/handoff/controllers/medicalHandoffAccessController';
@@ -202,9 +201,15 @@ export const useHandoffViewScreenModel = ({
     [recordDate, role, screenFrame.effectiveReadOnly]
   );
 
-  const medicalActions: HandoffMedicalActions = useMemo(
+  const {
+    medicalActions,
+    clinicalEventActions,
+  }: {
+    medicalActions: HandoffMedicalActions;
+    clinicalEventActions: HandoffClinicalEventActions;
+  } = useMemo(
     () =>
-      buildHandoffMedicalActions({
+      buildHandoffActionBundles({
         capabilities: medicalCapabilities,
         onCreatePrimaryEntry: handleMedicalPrimaryEntryCreate,
         onEntryNoteChange: handleMedicalEntryNoteChange,
@@ -212,22 +217,6 @@ export const useHandoffViewScreenModel = ({
         onEntryAdd: handleMedicalEntryAdd,
         onEntryDelete: handleMedicalEntryDelete,
         onRefreshAsCurrent: handleMedicalRefreshAsCurrent,
-      }),
-    [
-      handleMedicalEntryAdd,
-      handleMedicalEntryDelete,
-      handleMedicalEntryNoteChange,
-      handleMedicalEntrySpecialtyChange,
-      handleMedicalPrimaryEntryCreate,
-      handleMedicalRefreshAsCurrent,
-      medicalCapabilities,
-    ]
-  );
-
-  const clinicalEventActions: HandoffClinicalEventActions = useMemo(
-    () =>
-      buildHandoffClinicalEventActions({
-        canEditClinicalEvents: medicalCapabilities.canEditClinicalEvents,
         onAdd: handleClinicalEventAdd,
         onUpdate: handleClinicalEventUpdate,
         onDelete: handleClinicalEventDelete,
@@ -236,7 +225,13 @@ export const useHandoffViewScreenModel = ({
       handleClinicalEventAdd,
       handleClinicalEventDelete,
       handleClinicalEventUpdate,
-      medicalCapabilities.canEditClinicalEvents,
+      handleMedicalEntryAdd,
+      handleMedicalEntryDelete,
+      handleMedicalEntryNoteChange,
+      handleMedicalEntrySpecialtyChange,
+      handleMedicalPrimaryEntryCreate,
+      handleMedicalRefreshAsCurrent,
+      medicalCapabilities,
     ]
   );
 

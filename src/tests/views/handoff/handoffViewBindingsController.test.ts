@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  buildHandoffActionBundles,
   buildHandoffClinicalEventActions,
   buildHandoffMedicalActions,
   resolveEffectiveSelectedMedicalSpecialty,
@@ -86,6 +87,30 @@ describe('handoffViewBindingsController', () => {
     expect(readOnly.onAdd).toBeUndefined();
     expect(readOnly.onUpdate).toBeUndefined();
     expect(readOnly.onDelete).toBeUndefined();
+  });
+
+  it('builds a consistent action bundle for medical and clinical handlers', () => {
+    const bundle = buildHandoffActionBundles({
+      capabilities: buildCapabilities({
+        canDeleteObservationEntries: false,
+        canEditClinicalEvents: false,
+      }),
+      onCreatePrimaryEntry: vi.fn(),
+      onEntryNoteChange: vi.fn(),
+      onEntrySpecialtyChange: vi.fn(),
+      onEntryAdd: vi.fn(),
+      onEntryDelete: vi.fn(),
+      onRefreshAsCurrent: vi.fn(),
+      onAdd: vi.fn(),
+      onUpdate: vi.fn(),
+      onDelete: vi.fn(),
+    });
+
+    expect(bundle.medicalActions.onCreatePrimaryEntry).toBeTypeOf('function');
+    expect(bundle.medicalActions.onEntryDelete).toBeUndefined();
+    expect(bundle.clinicalEventActions.onAdd).toBeUndefined();
+    expect(bundle.clinicalEventActions.onUpdate).toBeUndefined();
+    expect(bundle.clinicalEventActions.onDelete).toBeUndefined();
   });
 
   it('resolves medical bindings with effective specialty fallback and scoped beds', () => {

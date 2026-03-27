@@ -31,6 +31,13 @@ interface BuildHandoffClinicalEventActionsParams {
   onDelete: (bedId: string, eventId: string) => void;
 }
 
+interface BuildHandoffActionBundlesParams extends BuildHandoffMedicalActionsParams {
+  capabilities: MedicalHandoffCapabilities;
+  onAdd: (bedId: string, event: Omit<ClinicalEvent, 'id' | 'createdAt'>) => void;
+  onUpdate: (bedId: string, eventId: string, data: Partial<ClinicalEvent>) => void;
+  onDelete: (bedId: string, eventId: string) => void;
+}
+
 interface ResolveHandoffMedicalBindingsParams {
   visibleBeds: BedDefinition[];
   record: DailyRecord | null;
@@ -121,4 +128,36 @@ export const buildHandoffClinicalEventActions = ({
   onAdd: canEditClinicalEvents ? onAdd : undefined,
   onUpdate: canEditClinicalEvents ? onUpdate : undefined,
   onDelete: canEditClinicalEvents ? onDelete : undefined,
+});
+
+export const buildHandoffActionBundles = ({
+  capabilities,
+  onCreatePrimaryEntry,
+  onEntryNoteChange,
+  onEntrySpecialtyChange,
+  onEntryAdd,
+  onEntryDelete,
+  onRefreshAsCurrent,
+  onAdd,
+  onUpdate,
+  onDelete,
+}: BuildHandoffActionBundlesParams): {
+  medicalActions: HandoffMedicalActions;
+  clinicalEventActions: HandoffClinicalEventActions;
+} => ({
+  medicalActions: buildHandoffMedicalActions({
+    capabilities,
+    onCreatePrimaryEntry,
+    onEntryNoteChange,
+    onEntrySpecialtyChange,
+    onEntryAdd,
+    onEntryDelete,
+    onRefreshAsCurrent,
+  }),
+  clinicalEventActions: buildHandoffClinicalEventActions({
+    canEditClinicalEvents: capabilities.canEditClinicalEvents,
+    onAdd,
+    onUpdate,
+    onDelete,
+  }),
 });
