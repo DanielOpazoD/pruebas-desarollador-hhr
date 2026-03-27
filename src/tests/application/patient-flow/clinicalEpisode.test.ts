@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { DataFactory } from '@/tests/factories/DataFactory';
 import {
   buildClinicalEpisodeKey,
   buildPatientPresenceSnapshot,
@@ -13,11 +12,12 @@ describe('clinicalEpisode application model', () => {
   });
 
   it('resolves a shared episode context from patient data', () => {
-    const patient = DataFactory.createMockPatient('R1', {
+    const patient = {
       patientName: 'Paciente',
       rut: '11.111.111-1',
       admissionDate: '2026-03-05',
-    });
+      specialty: 'medicina',
+    };
 
     expect(
       resolveClinicalEpisode(patient, {
@@ -34,11 +34,12 @@ describe('clinicalEpisode application model', () => {
   });
 
   it('builds presence snapshots and movement classification with shared rules', () => {
-    const patient = DataFactory.createMockPatient('R1', {
+    const patient = {
       rut: '11.111.111-1',
+      patientName: 'Paciente',
       admissionDate: '2026-03-06',
       admissionTime: '02:00',
-    });
+    };
 
     expect(buildPatientPresenceSnapshot(patient, 'R1')).toMatchObject({
       bedId: 'R1',
@@ -46,5 +47,22 @@ describe('clinicalEpisode application model', () => {
     });
     expect(classifyPatientMovementForRecord('2026-03-05', patient).isNewAdmission).toBe(true);
     expect(classifyPatientMovementForRecord('2026-03-06', patient).isNewAdmission).toBe(false);
+  });
+
+  it('accepts the minimal episode contract without full patient shape', () => {
+    expect(
+      buildPatientPresenceSnapshot(
+        {
+          rut: '22.222.222-2',
+          patientName: 'Contrato Mínimo',
+          admissionDate: '2026-03-07',
+        },
+        'R2'
+      )
+    ).toMatchObject({
+      patientRut: '22.222.222-2',
+      patientName: 'Contrato Mínimo',
+      episodeKey: '22.222.222-2__2026-03-07',
+    });
   });
 });

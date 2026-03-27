@@ -1,7 +1,6 @@
 import { buildClinicalEpisodeKey } from '@/application/patient-flow/clinicalEpisode';
+import type { ClinicalAISummaryRecordContract } from '@/application/ai/clinicalSummaryContextContracts';
 import type { ClinicalDocumentRecord } from '@/domain/clinical-documents/entities';
-import type { DailyRecord } from '@/types/domain/dailyRecord';
-import type { PatientData } from '@/types/domain/patient';
 
 const MAX_DOCUMENT_TEXT_LENGTH = 4000;
 
@@ -60,9 +59,9 @@ export interface ClinicalAISummaryContext {
     cie10Code?: string;
     cie10Description?: string;
     devices: string[];
-    clinicalEvents: PatientData['clinicalEvents'];
+    clinicalEvents: unknown[];
     medicalHandoffNote?: string;
-    medicalHandoffEntries: PatientData['medicalHandoffEntries'];
+    medicalHandoffEntries: unknown[];
     handoffNoteDayShift?: string;
     handoffNoteNightShift?: string;
   };
@@ -73,14 +72,14 @@ export interface ClinicalAISummaryContext {
     tensNightShift: string[];
     novedadesDayShift?: string;
     novedadesNightShift?: string;
-    dayChecklist: DailyRecord['handoffDayChecklist'];
-    nightChecklist: DailyRecord['handoffNightChecklist'];
+    dayChecklist?: ClinicalAISummaryRecordContract['handoffDayChecklist'];
+    nightChecklist?: ClinicalAISummaryRecordContract['handoffNightChecklist'];
   };
   medicalHandoff: {
     globalNote?: string;
-    bySpecialty: DailyRecord['medicalHandoffBySpecialty'];
+    bySpecialty?: ClinicalAISummaryRecordContract['medicalHandoffBySpecialty'];
     doctor?: string;
-    signature?: DailyRecord['medicalSignature'];
+    signature?: ClinicalAISummaryRecordContract['medicalSignature'];
   };
   clinicalDocuments: ClinicalAISummaryDocument[];
 }
@@ -90,7 +89,7 @@ export const buildClinicalAISummaryContext = ({
   bedId,
   documents,
 }: {
-  record: DailyRecord;
+  record: ClinicalAISummaryRecordContract;
   bedId: string;
   documents: ClinicalDocumentRecord[];
 }): ClinicalAISummaryContext => {
@@ -100,7 +99,7 @@ export const buildClinicalAISummaryContext = ({
     throw new Error(`Patient not found for bed '${bedId}' on record '${record.date}'.`);
   }
 
-  const episodeKey = buildClinicalEpisodeKey(patient.rut, patient.admissionDate);
+  const episodeKey = buildClinicalEpisodeKey(patient.rut || '', patient.admissionDate);
 
   return {
     recordDate: record.date,

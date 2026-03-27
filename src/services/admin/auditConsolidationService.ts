@@ -6,7 +6,8 @@
 
 import { collection, doc, getDocs, limit, orderBy, query, writeBatch } from 'firebase/firestore';
 import { getActiveHospitalId } from '@/constants/firestorePaths';
-import { defaultFirestoreRuntime } from '@/services/firebase-runtime/firestoreRuntime';
+import { defaultFirestoreServiceRuntime } from '@/services/storage/firestore/firestoreServiceRuntime';
+import type { FirestoreServiceRuntimePort } from '@/services/storage/firestore/ports/firestoreServiceRuntimePort';
 import type {
   AuditLogWithId,
   ConsolidationGroup,
@@ -47,20 +48,6 @@ export interface ConsolidationPreview {
   estimatedDeletions: number;
 }
 
-const fetchAuditLogs = async (): Promise<AuditLogWithId[]> => {
-  const auditRef = collection(defaultFirestoreRuntime.db, getAuditCollectionPath());
-  const auditQuery = query(auditRef, orderBy('timestamp', 'desc'), limit(5000));
-  const snapshot = await getDocs(auditQuery);
-
-  return snapshot.docs.map(
-    currentDoc =>
-      ({
-        id: currentDoc.id,
-        ...currentDoc.data(),
-      }) as AuditLogWithId
-  );
-};
-
 const filterLogsByAction = (logs: AuditLogWithId[], actionFilter?: string) =>
   actionFilter ? logs.filter(log => log.action === actionFilter) : logs;
 
@@ -84,90 +71,118 @@ const buildPreview = (groups: ConsolidationGroup[], totalLogs: number): Consolid
   estimatedDeletions: groups.reduce((sum, group) => sum + group.logs.length - 1, 0),
 });
 
-const applyConsolidationBatch = async (
-  groups: PreparedConsolidationGroup[],
-  result: ConsolidationResult
+export const createAuditConsolidationService = (
+  runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
 ) => {
-  const batch = writeBatch(defaultFirestoreRuntime.db);
+  const fetchAuditLogs = async (): Promise<AuditLogWithId[]> => {
+    const auditRef = collection(runtime.getDb(), getAuditCollectionPath());
+    const auditQuery = query(auditRef, orderBy('timestamp', 'desc'), limit(5000));
+    const snapshot = await getDocs(auditQuery);
 
-  for (const group of groups) {
-    const keepRef = doc(defaultFirestoreRuntime.db, getAuditCollectionPath(), group.keepId);
-    batch.update(keepRef, {
-      details: group.merged,
-      consolidatedCount: group.logs.length,
-      lastTimestamp: group.logs[group.logs.length - 1].timestamp,
-    });
-    result.logsConsolidated += 1;
-
-    for (const deleteId of group.deleteIds) {
-      batch.delete(doc(defaultFirestoreRuntime.db, getAuditCollectionPath(), deleteId));
-      result.logsDeleted += 1;
-    }
-  }
-
-  await batch.commit();
-};
-
-export async function previewConsolidation(
-  windowMinutes: number = DEFAULT_WINDOW_MINUTES,
-  actionFilter?: string
-): Promise<ConsolidationPreview> {
-  const logs = filterLogsByAction(await fetchAuditLogs(), actionFilter);
-  const duplicateGroups = selectDuplicateGroups(logs, windowMinutes);
-  return buildPreview(duplicateGroups, logs.length);
-}
-
-export async function executeConsolidation(
-  windowMinutes: number = DEFAULT_WINDOW_MINUTES,
-  actionFilter?: string,
-  onProgress?: (message: string) => void
-): Promise<ConsolidationResult> {
-  const result: ConsolidationResult = {
-    success: false,
-    totalLogs: 0,
-    groupsFound: 0,
-    logsConsolidated: 0,
-    logsDeleted: 0,
-    errors: [],
+    return snapshot.docs.map(
+      currentDoc =>
+        ({
+          id: currentDoc.id,
+          ...currentDoc.data(),
+        }) as AuditLogWithId
+    );
   };
 
-  try {
-    onProgress?.('Cargando logs de auditoría...');
+  const applyConsolidationBatch = async (
+    groups: PreparedConsolidationGroup[],
+    result: ConsolidationResult
+  ) => {
+    const batch = writeBatch(runtime.getDb());
 
-    const logs = await fetchAuditLogs();
-    result.totalLogs = logs.length;
+    for (const group of groups) {
+      const keepRef = doc(runtime.getDb(), getAuditCollectionPath(), group.keepId);
+      batch.update(keepRef, {
+        details: group.merged,
+        consolidatedCount: group.logs.length,
+        lastTimestamp: group.logs[group.logs.length - 1].timestamp,
+      });
+      result.logsConsolidated += 1;
 
-    const filteredLogs = filterLogsByAction(logs, actionFilter);
-    onProgress?.(`Analizando ${filteredLogs.length} logs...`);
+      for (const deleteId of group.deleteIds) {
+        batch.delete(doc(runtime.getDb(), getAuditCollectionPath(), deleteId));
+        result.logsDeleted += 1;
+      }
+    }
 
-    const duplicateGroups = selectDuplicateGroups(filteredLogs, windowMinutes);
-    result.groupsFound = duplicateGroups.length;
+    await batch.commit();
+  };
 
-    if (duplicateGroups.length === 0) {
-      onProgress?.('No se encontraron duplicados');
+  const previewConsolidation = async (
+    windowMinutes: number = DEFAULT_WINDOW_MINUTES,
+    actionFilter?: string
+  ): Promise<ConsolidationPreview> => {
+    const logs = filterLogsByAction(await fetchAuditLogs(), actionFilter);
+    const duplicateGroups = selectDuplicateGroups(logs, windowMinutes);
+    return buildPreview(duplicateGroups, logs.length);
+  };
+
+  const executeConsolidation = async (
+    windowMinutes: number = DEFAULT_WINDOW_MINUTES,
+    actionFilter?: string,
+    onProgress?: (message: string) => void
+  ): Promise<ConsolidationResult> => {
+    const result: ConsolidationResult = {
+      success: false,
+      totalLogs: 0,
+      groupsFound: 0,
+      logsConsolidated: 0,
+      logsDeleted: 0,
+      errors: [],
+    };
+
+    try {
+      onProgress?.('Cargando logs de auditoría...');
+
+      const logs = await fetchAuditLogs();
+      result.totalLogs = logs.length;
+
+      const filteredLogs = filterLogsByAction(logs, actionFilter);
+      onProgress?.(`Analizando ${filteredLogs.length} logs...`);
+
+      const duplicateGroups = selectDuplicateGroups(filteredLogs, windowMinutes);
+      result.groupsFound = duplicateGroups.length;
+
+      if (duplicateGroups.length === 0) {
+        onProgress?.('No se encontraron duplicados');
+        result.success = true;
+        return result;
+      }
+
+      onProgress?.(`Consolidando ${duplicateGroups.length} grupos...`);
+
+      const preparedGroups = prepareConsolidationGroups(duplicateGroups);
+      const batches = createConsolidationBatches(preparedGroups, MAX_BATCH_OPERATIONS);
+
+      for (let index = 0; index < batches.length; index += 1) {
+        await applyConsolidationBatch(batches[index], result);
+        onProgress?.(`Procesado batch ${index + 1}/${batches.length}...`);
+      }
+
       result.success = true;
-      return result;
+      onProgress?.('Consolidación completada!');
+    } catch (error) {
+      auditConsolidationLogger.error('Consolidation failed', error);
+      result.errors.push(error instanceof Error ? error.message : 'Error desconocido');
     }
 
-    onProgress?.(`Consolidando ${duplicateGroups.length} grupos...`);
+    return result;
+  };
 
-    const preparedGroups = prepareConsolidationGroups(duplicateGroups);
-    const batches = createConsolidationBatches(preparedGroups, MAX_BATCH_OPERATIONS);
+  return {
+    previewConsolidation,
+    executeConsolidation,
+  };
+};
 
-    for (let index = 0; index < batches.length; index += 1) {
-      await applyConsolidationBatch(batches[index], result);
-      onProgress?.(`Procesado batch ${index + 1}/${batches.length}...`);
-    }
+const defaultAuditConsolidationService = createAuditConsolidationService();
 
-    result.success = true;
-    onProgress?.('Consolidación completada!');
-  } catch (error) {
-    auditConsolidationLogger.error('Consolidation failed', error);
-    result.errors.push(error instanceof Error ? error.message : 'Error desconocido');
-  }
-
-  return result;
-}
+export const previewConsolidation = defaultAuditConsolidationService.previewConsolidation;
+export const executeConsolidation = defaultAuditConsolidationService.executeConsolidation;
 
 export {
   createConsolidationBatches,

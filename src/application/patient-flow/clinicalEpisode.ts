@@ -1,4 +1,4 @@
-import type { PatientData } from '@/types/domain/patient';
+import type { PatientEpisodeContract } from '@/application/patient-flow/clinicalEpisodeContracts';
 import { isNewAdmissionForClinicalDay } from '@/utils/dateUtils';
 
 export interface ClinicalEpisode {
@@ -28,7 +28,7 @@ export const buildClinicalEpisodeKey = (patientRut: string, admissionDate?: stri
   `${patientRut || 'sin-rut'}__${admissionDate || 'sin-ingreso'}`;
 
 export const resolveClinicalEpisode = (
-  patient: PatientData,
+  patient: PatientEpisodeContract,
   context?: {
     sourceDailyRecordDate?: string;
     sourceBedId?: string;
@@ -40,11 +40,11 @@ export const resolveClinicalEpisode = (
   sourceDailyRecordDate: context?.sourceDailyRecordDate,
   sourceBedId: context?.sourceBedId,
   specialty: patient.specialty,
-  episodeKey: buildClinicalEpisodeKey(patient.rut, patient.admissionDate),
+  episodeKey: buildClinicalEpisodeKey(patient.rut || '', patient.admissionDate),
 });
 
 export const buildPatientPresenceSnapshot = (
-  patient: PatientData,
+  patient: PatientEpisodeContract,
   bedId: string
 ): PatientPresenceSnapshot | null => {
   const patientRut = patient.rut?.trim();
