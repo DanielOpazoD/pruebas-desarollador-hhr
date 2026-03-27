@@ -1,6 +1,6 @@
 import React from 'react';
 import * as ExportService from '@/services/exporters/exportService';
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
 import { useNotification } from '@/context/UIContext';
 import { buildJsonImportNotifications } from '@/hooks/controllers/fileImportFeedbackController';
 import {

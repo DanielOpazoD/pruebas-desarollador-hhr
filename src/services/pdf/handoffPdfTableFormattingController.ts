@@ -1,4 +1,4 @@
-import { PatientData } from '@/types/domain/patient';
+import { PatientData } from '@/services/contracts/patientServiceContracts';
 import { ShiftType } from '@/types/domain/base';
 import { DeviceDetails } from '@/types/domain/clinical';
 

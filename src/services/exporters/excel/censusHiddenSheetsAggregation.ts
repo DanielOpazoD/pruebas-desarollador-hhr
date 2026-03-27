@@ -1,8 +1,8 @@
 import { MONTH_NAMES } from '@/constants/export';
 import { calculateStats } from '@/services/calculations/statsCalculator';
 import { formatDateDDMMYYYY } from '@/services/exporters/excel/formatters';
-import type { DailyRecord } from '@/types/domain/dailyRecord';
-import type { PatientData } from '@/types/domain/patient';
+import type { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
+import type { PatientData } from '@/services/contracts/patientServiceContracts';
 
 import type {
   CensusHiddenSheetMonthContext,

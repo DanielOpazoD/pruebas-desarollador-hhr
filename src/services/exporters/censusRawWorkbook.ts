@@ -1,6 +1,6 @@
 import type { Workbook } from 'exceljs';
-import { DailyRecord } from '@/types/domain/dailyRecord';
-import { PatientData } from '@/types/domain/patient';
+import { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
+import { PatientData } from '@/services/contracts/patientServiceContracts';
 import { BEDS } from '@/constants/beds';
 import { formatDateDDMMYYYY } from '@/utils/dateUtils';
 import { createWorkbook } from './excelUtils';

@@ -1,5 +1,5 @@
 import type { jsPDF } from 'jspdf';
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 import { ShiftType } from '@/types/domain/base';
 import { Schedule } from './handoffPdfUtils';
 import {

@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
 import { createEmptyPatient } from '@/services/factories/patientFactory';
 import { BEDS } from '@/constants/beds';
 import { useLatestRef } from '@/hooks/useLatestRef';

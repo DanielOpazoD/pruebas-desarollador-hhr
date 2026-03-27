@@ -1,4 +1,4 @@
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 import {
   getRecordForDate as getRecordFromIndexedDB,
   saveRecord as saveToIndexedDB,

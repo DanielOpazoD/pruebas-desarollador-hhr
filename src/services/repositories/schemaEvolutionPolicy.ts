@@ -1,5 +1,5 @@
 import { CURRENT_SCHEMA_VERSION, LEGACY_SCHEMA_VERSION } from '@/constants/version';
-import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 
 export type SchemaCompatibilityDisposition =
   | 'current'

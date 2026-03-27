@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
 import { useConfirmDialog, useNotification } from '@/context/UIContext';
 import { dispatchExportManagerNotice } from '@/hooks/controllers/exportManagerNoticeController';
 import {

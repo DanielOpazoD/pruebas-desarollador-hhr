@@ -9,8 +9,8 @@ import {
   DailyRecordPatch,
   MedicalHandoffActor,
   MedicalSpecialty,
-} from '@/types/domain/dailyRecord';
-import { PatientData } from '@/types/domain/patient';
+} from '@/hooks/contracts/dailyRecordHookContracts';
+import { PatientData } from '@/hooks/contracts/patientHookContracts';
 import { CudyrScore } from '@/types/domain/clinical';
 import { CMAData } from '@/types/domain/movements';
 import { PatientFieldValue } from '@/types/valueTypes';

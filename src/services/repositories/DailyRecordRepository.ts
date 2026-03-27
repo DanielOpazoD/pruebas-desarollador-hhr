@@ -6,8 +6,8 @@
  * for controlled compatibility and is protected by persistence boundary checks.
  */
 
-import { DailyRecord } from '@/types/domain/dailyRecord';
-import { DailyRecordPatch } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
+import { DailyRecordPatch } from '@/services/contracts/dailyRecordServiceContracts';
 import type { DailyRecordReadResult } from './contracts/dailyRecordQueries';
 import type { SyncDailyRecordResult } from './contracts/dailyRecordResults';
 // import {

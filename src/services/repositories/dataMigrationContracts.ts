@@ -1,4 +1,4 @@
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 import type { SchemaMigrationPlan } from '@/services/repositories/schemaGovernance';
 import type { SchemaCompatibilityDisposition } from '@/services/repositories/schemaEvolutionPolicy';
 

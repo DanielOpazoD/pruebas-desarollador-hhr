@@ -1,4 +1,4 @@
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 import { toRecordTimestamp as toPolicyRecordTimestamp } from '@/services/repositories/dailyRecordConsistencyPolicy';
 
 export const toRecordTimestamp = toPolicyRecordTimestamp;

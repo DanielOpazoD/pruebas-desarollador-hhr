@@ -1,5 +1,9 @@
-import type { DailyRecord } from '@/types/domain/dailyRecord';
-import type { MedicalHandoffAudit, MedicalHandoffEntry, PatientData } from '@/types/domain/patient';
+import type { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
+import type {
+  MedicalHandoffAudit,
+  MedicalHandoffEntry,
+  PatientData,
+} from '@/services/contracts/patientServiceContracts';
 import { createDailyRecordAggregate } from '@/services/repositories/dailyRecordAggregate';
 
 export const inheritPatientHandoffNotes = (

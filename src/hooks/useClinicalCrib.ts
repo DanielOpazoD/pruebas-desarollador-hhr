@@ -5,8 +5,8 @@
  */
 
 import { useCallback } from 'react';
-import { DailyRecord, DailyRecordPatch } from '@/types/domain/dailyRecord';
-import { PatientData } from '@/types/domain/patient';
+import { DailyRecord, DailyRecordPatch } from '@/hooks/contracts/dailyRecordHookContracts';
+import { PatientData } from '@/hooks/contracts/patientHookContracts';
 import { PatientFieldValue } from '@/types/valueTypes';
 import { logger } from '@/services/utils/loggerService';
 import {

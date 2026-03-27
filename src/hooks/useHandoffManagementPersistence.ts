@@ -4,7 +4,7 @@ import type {
   DailyRecord,
   MedicalHandoffActor,
   MedicalSpecialty,
-} from '@/types/domain/dailyRecord';
+} from '@/hooks/contracts/dailyRecordHookContracts';
 import type { AuditAction, AuditLogEntry } from '@/types/audit';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import type { ConfirmMedicalSpecialtyNoChangesInput } from '@/hooks/handoffManagementTypes';

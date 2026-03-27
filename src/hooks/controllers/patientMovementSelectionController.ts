@@ -1,6 +1,6 @@
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
 import { DischargeData, TransferData } from '@/types/domain/movements';
-import { PatientData } from '@/types/domain/patient';
+import { PatientData } from '@/hooks/contracts/patientHookContracts';
 
 export interface UndoMovementDescriptor {
   id: string;

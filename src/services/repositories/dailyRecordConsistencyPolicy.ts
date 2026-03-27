@@ -1,4 +1,4 @@
-import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 import {
   createConsistencyMetadata,
   type DailyRecordConflictSummary,

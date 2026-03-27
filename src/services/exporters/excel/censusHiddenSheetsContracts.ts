@@ -1,6 +1,6 @@
 import type { CensusWorkbookSheetDescriptor } from '@/services/exporters/excel/censusWorkbookContracts';
-import type { DailyRecord } from '@/types/domain/dailyRecord';
-import type { PatientData } from '@/types/domain/patient';
+import type { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
+import type { PatientData } from '@/services/contracts/patientServiceContracts';
 
 export interface CensusWorkbookSnapshotSheet {
   record: DailyRecord;

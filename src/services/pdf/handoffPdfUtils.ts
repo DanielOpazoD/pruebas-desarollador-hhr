@@ -1,4 +1,4 @@
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 import { ShiftType } from '@/types/domain/base';
 import { calculateHospitalizedDays } from '@/utils/dateUtils';
 import { resolveHandoffShiftStaff } from '@/services/staff/dailyRecordStaffing';

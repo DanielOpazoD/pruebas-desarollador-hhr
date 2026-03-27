@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
 import { DailyRecordPatch } from './useDailyRecordTypes';
 import { useLatestRef } from '@/hooks/useLatestRef';
 

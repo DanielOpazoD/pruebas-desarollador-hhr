@@ -1,4 +1,4 @@
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 import { safeJsonParse } from '@/utils/jsonUtils';
 import {
   STORAGE_KEY,

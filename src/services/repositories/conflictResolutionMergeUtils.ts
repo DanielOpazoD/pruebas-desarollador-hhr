@@ -1,4 +1,4 @@
-import { PatientData } from '@/types/domain/patient';
+import { PatientData } from '@/services/contracts/patientServiceContracts';
 import { resolveConflictDomainContextForPath } from '@/services/repositories/conflictResolutionDomainPolicy';
 import { decideScalarByPolicy } from '@/services/repositories/conflictResolutionPolicy';
 import { isPlainObject, isPrimitive } from '@/services/repositories/conflictResolutionUtils';

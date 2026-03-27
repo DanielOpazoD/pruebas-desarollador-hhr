@@ -1,4 +1,4 @@
-import { PatientData } from '@/types/domain/patient';
+import { PatientData } from '@/services/contracts/patientServiceContracts';
 import { BEDS } from '@/constants/beds';
 import { normalizeSpecialty } from './normalization';
 

@@ -1,4 +1,4 @@
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 import { getRecordFromFirestore } from '@/services/storage/firestore';
 import { migrateLegacyDataWithReport } from '@/services/repositories/dataMigration';
 import {

@@ -1,4 +1,4 @@
-import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 
 export interface EmptyDailyRecordMovements {
   discharges: DailyRecord['discharges'];

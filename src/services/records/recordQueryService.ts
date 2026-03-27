@@ -1,5 +1,5 @@
-import { DailyRecord } from '@/types/domain/dailyRecord';
-import { PatientData } from '@/types/domain/patient';
+import { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
+import { PatientData } from '@/services/contracts/patientServiceContracts';
 import {
   getAllRecordsSorted,
   getRecordsForMonth,

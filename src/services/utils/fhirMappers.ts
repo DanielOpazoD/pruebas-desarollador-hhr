@@ -5,7 +5,7 @@
  * FHIR resources (R4).
  */
 
-import { PatientData } from '@/types/domain/patient';
+import { PatientData } from '@/services/contracts/patientServiceContracts';
 import { FhirResource } from '@/types/domain/clinical';
 
 /**

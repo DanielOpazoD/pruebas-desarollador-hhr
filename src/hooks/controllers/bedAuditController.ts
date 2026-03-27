@@ -1,6 +1,6 @@
 import type { CudyrScore } from '@/types/domain/clinical';
-import type { DailyRecord } from '@/types/domain/dailyRecord';
-import type { PatientData } from '@/types/domain/patient';
+import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { PatientData } from '@/hooks/contracts/patientHookContracts';
 import type { PatientFieldValue } from '@/types/valueTypes';
 import type { AuditDeviceChange, AuditDeviceChangesMap } from '@/types/audit';
 

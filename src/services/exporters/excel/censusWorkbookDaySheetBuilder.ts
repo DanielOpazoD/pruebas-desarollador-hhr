@@ -1,6 +1,6 @@
 import type { Workbook } from 'exceljs';
 
-import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 import { calculateStats } from '@/services/calculations/statsCalculator';
 import { addHeaderSection } from '@/services/exporters/excel/sections/headerSection';
 import { addSummarySection } from '@/services/exporters/excel/sections/summarySection';

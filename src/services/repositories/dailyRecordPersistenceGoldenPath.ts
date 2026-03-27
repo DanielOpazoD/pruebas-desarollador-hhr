@@ -1,4 +1,4 @@
-import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 import { resolveDailyRecordReadConsistency } from '@/services/repositories/dailyRecordConsistencyPolicy';
 import { resolvePreferredDailyRecord } from '@/services/repositories/dailyRecordSyncCompatibility';
 

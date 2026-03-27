@@ -5,8 +5,8 @@
  * This is a requirement for MINSAL interoperability (CENS / SIDRA).
  */
 
-import { PatientData } from '@/types/domain/patient';
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { PatientData } from '@/services/contracts/patientServiceContracts';
+import { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 
 /**
  * Minimal FHIR Patient Resource

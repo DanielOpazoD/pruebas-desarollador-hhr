@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
 import { BEDS } from '@/constants/beds';
 import { isAdmittedDuringShift } from '@/utils/dateUtils';
 import {

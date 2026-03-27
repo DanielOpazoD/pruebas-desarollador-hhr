@@ -1,4 +1,4 @@
-import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
 import type { StorageLookupResult } from '@/services/backup/storageLookupContracts';
 import { resolveHandoffShiftStaff } from '@/services/staff/dailyRecordStaffing';
 

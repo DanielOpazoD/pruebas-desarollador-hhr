@@ -1,6 +1,9 @@
 import { BEDS } from '@/constants/beds';
-import type { DailyRecord, DailyRecordPatch } from '@/types/domain/dailyRecord';
-import type { PatientData } from '@/types/domain/patient';
+import type {
+  DailyRecord,
+  DailyRecordPatch,
+} from '@/services/contracts/dailyRecordServiceContracts';
+import type { PatientData } from '@/services/contracts/patientServiceContracts';
 import { clonePatient, createEmptyPatient } from '@/services/factories/patientFactory';
 import { parsePatientDataWithDefaults } from '@/schemas/zodSchemas';
 import { mapPatientToFhir } from '@/services/utils/fhirMappers';

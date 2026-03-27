@@ -1,7 +1,7 @@
 import { doc, onSnapshot } from 'firebase/firestore';
 
 import { parseDailyRecordWithDefaults } from '@/schemas/zodSchemas';
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 
 import { getLegacyDb } from './legacyFirebaseCore';
 import { isLegacyReadBlocked } from './legacyFirebaseAccessPolicy';

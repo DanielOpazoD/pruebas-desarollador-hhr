@@ -1,4 +1,4 @@
-import { PatientData } from '@/types/domain/patient';
+import { PatientData } from '@/hooks/contracts/patientHookContracts';
 import { ControllerError, ControllerResult, failWithCode, ok } from '@/shared/controllerResult';
 
 export type UndoPatientMovementErrorCode =

@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { PatientData } from '@/types/domain/patient';
+import { PatientData } from '@/hooks/contracts/patientHookContracts';
 
 interface UseExamRequestParams {
   patient: PatientData;

@@ -1,7 +1,7 @@
 import { BedDefinition } from '@/types/domain/base';
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
 import { DischargeData, DischargeType, TransferData } from '@/types/domain/movements';
-import { PatientData } from '@/types/domain/patient';
+import { PatientData } from '@/hooks/contracts/patientHookContracts';
 import type { DischargeAddCommandPayload, TransferCommandPayload } from '@/types/movements';
 import { ControllerError, ControllerResult, failWithCode, ok } from '@/shared/controllerResult';
 import { resolveMovementDisplayDate } from '@/hooks/controllers/censusMovementDatePresentationController';

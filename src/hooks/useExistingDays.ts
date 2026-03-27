@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { DailyRecord } from '@/types/domain/dailyRecord';
-import { PatientData } from '@/types/domain/patient';
+import { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import { PatientData } from '@/hooks/contracts/patientHookContracts';
 import { fetchRecordsForMonth } from '@/services/records/recordQueryService';
 import { logger } from '@/services/utils/loggerService';
 

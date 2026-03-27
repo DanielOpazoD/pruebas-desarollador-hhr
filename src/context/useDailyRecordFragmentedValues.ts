@@ -7,7 +7,7 @@ import type {
   SyncStatus,
 } from '@/hooks/useDailyRecordTypes';
 import type { CMAData, DischargeData, TransferData } from '@/types/domain/movements';
-import type { PatientData } from '@/types/domain/patient';
+import type { PatientData } from '@/hooks/contracts/patientHookContracts';
 import type { StabilityRules } from '@/hooks/useStabilityRules';
 
 interface UseDailyRecordFragmentedValuesResult {

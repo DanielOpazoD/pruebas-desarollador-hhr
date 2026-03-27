@@ -3,7 +3,7 @@
  * Calculates hospital census statistics from bed data.
  */
 
-import { PatientData } from '@/types/domain/patient';
+import { PatientData } from '@/services/contracts/patientServiceContracts';
 import { BEDS, HOSPITAL_CAPACITY } from '@/constants/beds';
 
 /**

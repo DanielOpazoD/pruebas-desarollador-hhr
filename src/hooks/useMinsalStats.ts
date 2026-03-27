@@ -22,7 +22,7 @@ import {
   DateRangePreset,
   MinsalStatistics,
 } from '@/types/minsalTypes';
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
 import { defaultFunctionsRuntime } from '@/services/firebase-runtime/functionsRuntime';
 
 interface UseMinsalStatsResult {

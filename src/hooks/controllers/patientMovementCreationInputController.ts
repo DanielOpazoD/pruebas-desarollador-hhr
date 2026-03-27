@@ -1,6 +1,6 @@
 import { BedDefinition } from '@/types/domain/base';
-import { DailyRecord } from '@/types/domain/dailyRecord';
-import { PatientData } from '@/types/domain/patient';
+import { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import { PatientData } from '@/hooks/contracts/patientHookContracts';
 import type {
   DischargeAddCommandPayload,
   DischargeTarget,

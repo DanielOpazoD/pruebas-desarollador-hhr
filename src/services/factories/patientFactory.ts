@@ -3,7 +3,7 @@
  * Creates new patient data objects with proper defaults.
  */
 
-import { PatientData } from '@/types/domain/patient';
+import { PatientData } from '@/services/contracts/patientServiceContracts';
 import { BEDS } from '@/constants/beds';
 import { EMPTY_PATIENT } from '@/constants/patient';
 

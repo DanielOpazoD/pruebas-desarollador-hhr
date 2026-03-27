@@ -7,7 +7,7 @@
  * Requirement: Ley 20.584 - Interoperability of Clinical Records.
  */
 
-import { PatientData } from '@/types/domain/patient';
+import { PatientData } from '@/services/contracts/patientServiceContracts';
 
 export interface FhirPatient {
   resourceType: 'Patient';

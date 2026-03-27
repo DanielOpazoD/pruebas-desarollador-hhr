@@ -1,4 +1,4 @@
-import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 import type { ErrorSeverity } from '@/services/logging/errorLogTypes';
 import { logError } from '@/services/utils/errorService';
 import type { SyncTask } from '@/services/storage/syncQueueTypes';

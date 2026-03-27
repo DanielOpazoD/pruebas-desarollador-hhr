@@ -1,5 +1,5 @@
-import type { DailyRecord } from '@/types/domain/dailyRecord';
-import type { PatientData } from '@/types/domain/patient';
+import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { PatientData } from '@/hooks/contracts/patientHookContracts';
 
 export interface MovePatientValidationResult {
   canMove: boolean;
