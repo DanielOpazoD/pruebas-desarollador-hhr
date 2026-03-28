@@ -18,4 +18,7 @@ export const getLegacyCompatibilityMode = (): LegacyCompatibilityMode =>
 export const isLegacyBridgeEnabled = (): boolean =>
   getLegacyCompatibilityMode() === 'explicit_bridge';
 
+// Legacy compatibility remains a controlled read/normalize boundary for
+// records arriving from older Firebase clients. It must not re-enter the
+// main persistence path as an implicit fallback.
 export const shouldUseLegacyCompatibilityInHotPath = (): boolean => false;

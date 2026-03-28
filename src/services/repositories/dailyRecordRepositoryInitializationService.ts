@@ -1,4 +1,4 @@
-import { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
+import { DailyRecord } from '@/types/domain/dailyRecord';
 import { saveRecord as saveToIndexedDB } from '@/services/storage/indexeddb/indexedDbRecordService';
 import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import {

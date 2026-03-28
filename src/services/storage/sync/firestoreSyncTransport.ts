@@ -1,7 +1,7 @@
 import { setDoc } from 'firebase/firestore';
 import type { SyncTask } from '@/services/storage/syncQueueTypes';
 import type { SyncTransportPort } from '@/services/storage/sync/syncQueuePorts';
-import type { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import { measureRepositoryOperation } from '@/services/repositories/repositoryPerformance';
 import {
   sanitizeForFirestore,
