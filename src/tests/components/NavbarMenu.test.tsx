@@ -113,4 +113,30 @@ describe('NavbarMenu', () => {
 
     expect(screen.getByText('Diagnóstico del Sistema')).toBeInTheDocument();
   });
+
+  it('changes module when clicking a system module entry', () => {
+    render(<NavbarMenu {...defaultProps} />);
+    const brandButton = screen
+      .queryByRole('heading', { name: /Hospital Hanga Roa/i })
+      ?.closest('button');
+    if (brandButton) fireEvent.click(brandButton);
+
+    fireEvent.click(screen.getByText('Auditoría'));
+
+    expect(defaultProps.setModule).toHaveBeenCalledWith('AUDIT');
+    expect(defaultProps.onOpenSettings).not.toHaveBeenCalled();
+  });
+
+  it('opens settings when clicking the settings entry', () => {
+    render(<NavbarMenu {...defaultProps} />);
+    const brandButton = screen
+      .queryByRole('heading', { name: /Hospital Hanga Roa/i })
+      ?.closest('button');
+    if (brandButton) fireEvent.click(brandButton);
+
+    fireEvent.click(screen.getByText('Configuración'));
+
+    expect(defaultProps.onOpenSettings).toHaveBeenCalledTimes(1);
+    expect(defaultProps.setModule).not.toHaveBeenCalled();
+  });
 });

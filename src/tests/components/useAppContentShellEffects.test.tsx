@@ -1,0 +1,104 @@
+import { renderHook, act } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useAppContentShellEffects } from '@/components/layout/app-content/useAppContentShellEffects';
+import { recordOperationalTelemetry } from '@/services/observability/operationalTelemetryService';
+
+vi.mock('@/services/observability/operationalTelemetryService', () => ({
+  recordOperationalTelemetry: vi.fn(),
+}));
+
+describe('useAppContentShellEffects', () => {
+  const createBaseParams = (): Parameters<typeof useAppContentShellEffects>[0] => ({
+    role: 'admin',
+    currentModule: 'CENSUS',
+    setCurrentModule: vi.fn(),
+    censusLocalViewMode: 'TABLE',
+    setCensusLocalViewMode: vi.fn(),
+    isSignatureMode: false,
+    setSelectedShift: vi.fn(),
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('sanitizes invalid modules for restricted roles', () => {
+    const baseParams = createBaseParams();
+
+    renderHook(() =>
+      useAppContentShellEffects({
+        ...baseParams,
+        role: 'doctor_specialist',
+        currentModule: 'AUDIT',
+      })
+    );
+
+    expect(baseParams.setCurrentModule).toHaveBeenCalledWith('CENSUS');
+  });
+
+  it('forces table mode for specialist roles', () => {
+    const baseParams = createBaseParams();
+
+    renderHook(() =>
+      useAppContentShellEffects({
+        ...baseParams,
+        role: 'doctor_specialist',
+        censusLocalViewMode: '3D',
+      })
+    );
+
+    expect(baseParams.setCensusLocalViewMode).toHaveBeenCalledWith('TABLE');
+  });
+
+  it('forwards navigate-module and set-shift events', () => {
+    const baseParams = createBaseParams();
+
+    renderHook(() => useAppContentShellEffects(baseParams));
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent('navigate-module', { detail: 'CUDYR' }));
+      window.dispatchEvent(new CustomEvent('set-shift', { detail: 'night' }));
+    });
+
+    expect(baseParams.setCurrentModule).toHaveBeenCalledWith('CUDYR');
+    expect(baseParams.setSelectedShift).toHaveBeenCalledWith('night');
+  });
+
+  it('records app shell telemetry only once per mount', () => {
+    const baseParams = createBaseParams();
+
+    const { rerender } = renderHook(props => useAppContentShellEffects(props), {
+      initialProps: baseParams,
+    });
+
+    rerender({
+      ...baseParams,
+      currentModule: 'CUDYR',
+    });
+
+    expect(recordOperationalTelemetry).toHaveBeenCalledTimes(1);
+    expect(recordOperationalTelemetry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: 'app_shell_ready',
+        context: expect.objectContaining({
+          module: 'CENSUS',
+          role: 'admin',
+        }),
+      }),
+      { allowSuccess: true }
+    );
+  });
+
+  it('does not record app shell telemetry in signature mode', () => {
+    const baseParams = createBaseParams();
+
+    renderHook(() =>
+      useAppContentShellEffects({
+        ...baseParams,
+        isSignatureMode: true,
+      })
+    );
+
+    expect(recordOperationalTelemetry).not.toHaveBeenCalled();
+  });
+});

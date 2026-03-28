@@ -73,6 +73,26 @@ describe('NavbarTabs', () => {
     expect(defaultProps.setCensusViewMode).toHaveBeenCalled();
   });
 
+  it('changes to a clinical handoff module when clicking a clinical tab', () => {
+    render(<NavbarTabs {...defaultProps} />);
+
+    fireEvent.click(screen.getByText('Entrega Turno Enfermería'));
+
+    expect(defaultProps.onModuleChange).toHaveBeenCalledWith('NURSING_HANDOFF');
+    expect(defaultProps.setCensusViewMode).not.toHaveBeenCalled();
+  });
+
+  it('reapplies register mode when clicking the main census tab', () => {
+    render(
+      <NavbarTabs {...defaultProps} currentModule="MEDICAL_HANDOFF" censusViewMode="ANALYTICS" />
+    );
+
+    fireEvent.click(screen.getByText('Censo Diario'));
+
+    expect(defaultProps.onModuleChange).toHaveBeenCalledWith('CENSUS');
+    expect(defaultProps.setCensusViewMode).toHaveBeenCalledWith('REGISTER');
+  });
+
   it('applies active style to current module and handles CUDYR alias', () => {
     const { rerender } = render(<NavbarTabs {...defaultProps} currentModule="CENSUS" />);
     const censusButton = screen.getByText('Censo Diario').closest('button');
