@@ -1,4 +1,4 @@
-import { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordDateRef } from '@/types/domain/dailyRecordSlices';
 import { getTodayISO } from '@/utils/dateUtils';
 
 export interface StabilityRules {
@@ -38,7 +38,7 @@ const startsWithAny = (value: string, prefixes: readonly string[]): boolean =>
   prefixes.some(prefix => value.startsWith(prefix));
 
 export const buildStabilityRules = (
-  record: DailyRecord | null,
+  record: DailyRecordDateRef | null,
   { isAdmin, isEditor, todayISO = getTodayISO(), now = new Date() }: BuildStabilityRulesOptions
 ): StabilityRules => {
   if (!record || !isEditor) {

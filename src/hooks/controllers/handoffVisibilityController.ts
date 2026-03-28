@@ -1,4 +1,7 @@
-import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type {
+  DailyRecordBedLayoutState,
+  DailyRecordDateRef,
+} from '@/types/domain/dailyRecordSlices';
 
 interface BedDescriptor {
   id: string;
@@ -6,7 +9,7 @@ interface BedDescriptor {
 }
 
 export const getVisibleHandoffBeds = <TBed extends BedDescriptor>(
-  record: DailyRecord | null,
+  record: DailyRecordBedLayoutState | null,
   beds: TBed[]
 ): TBed[] => {
   if (!record) return [];
@@ -16,7 +19,7 @@ export const getVisibleHandoffBeds = <TBed extends BedDescriptor>(
 };
 
 export const shouldShowHandoffPatient = (
-  record: DailyRecord | null,
+  record: (DailyRecordDateRef & DailyRecordBedLayoutState) | null,
   bedId: string,
   selectedShift: 'day' | 'night',
   isAdmittedDuringShift: (
@@ -42,7 +45,7 @@ export const shouldShowHandoffPatient = (
 };
 
 export const hasVisibleHandoffPatients = (
-  record: DailyRecord | null,
+  record: DailyRecordBedLayoutState | null,
   visibleBeds: BedDescriptor[],
   shouldShowPatient: (bedId: string) => boolean
 ): boolean => {

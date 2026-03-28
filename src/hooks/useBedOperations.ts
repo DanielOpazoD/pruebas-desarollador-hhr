@@ -5,7 +5,7 @@
  */
 
 import { useCallback } from 'react';
-import { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecord } from '@/hooks/useDailyRecordTypes';
 import { useAuditContext } from '@/context/AuditContext';
 import type { DailyRecordPatch } from './useDailyRecordTypes';
 import { buildClearAllBedsPatch, buildClearPatientPatch } from './useBedOperationsController';

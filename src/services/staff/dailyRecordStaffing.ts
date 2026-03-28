@@ -1,12 +1,12 @@
-import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecordStaffingState } from '@/types/domain/dailyRecordSlices';
 
 type DailyRecordStaffingCompatShape = Pick<
-  DailyRecord,
+  DailyRecordStaffingState,
   'nurses' | 'nurseName' | 'nursesDayShift' | 'nursesNightShift'
 >;
 
 type DailyRecordShiftStaffingShape = Pick<
-  DailyRecord,
+  DailyRecordStaffingState,
   'nurses' | 'nurseName' | 'nursesDayShift' | 'nursesNightShift'
 >;
 
@@ -47,7 +47,7 @@ export const resolveNightShiftNurses = (
 export const applyDailyRecordStaffingCompatibility = <T extends DailyRecordStaffingCompatShape>(
   record: T
 ): T => {
-  const compatRecord = record as unknown as DailyRecord;
+  const compatRecord = record as unknown as DailyRecordStaffingCompatShape;
   const resolvedDayShift = toEmptyShiftPair(resolveDayShiftNurses(compatRecord));
   const resolvedNightShift = toEmptyShiftPair(resolveNightShiftNurses(compatRecord));
 
@@ -123,7 +123,7 @@ export const resolveExportableNursesText = (
 export const resolveHandoffShiftStaff = (
   record:
     | Pick<
-        DailyRecord,
+        DailyRecordStaffingState,
         'nurses' | 'nurseName' | 'nursesDayShift' | 'nursesNightShift' | 'handoffNightReceives'
       >
     | null

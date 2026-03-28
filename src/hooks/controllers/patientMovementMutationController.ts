@@ -1,4 +1,4 @@
-import { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecord } from '@/hooks/useDailyRecordTypes';
 import { DischargeType, TransferData } from '@/types/domain/movements';
 import type { IeehData } from '@/types/domain/movements';
 

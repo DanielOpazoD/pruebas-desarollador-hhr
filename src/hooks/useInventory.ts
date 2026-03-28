@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
-import { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordBedsState } from '@/types/domain/dailyRecordSlices';
 import { BEDS, HOSPITAL_CAPACITY } from '@/constants/beds';
 
 /**
  * Hook to manage hospital inventory summaries.
  * Provides computed stats about beds and patients.
  */
-export const useInventory = (record: DailyRecord | null) => {
+export const useInventory = (record: DailyRecordBedsState | null) => {
   return useMemo(() => {
     if (!record) {
       return {

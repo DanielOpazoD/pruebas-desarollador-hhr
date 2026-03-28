@@ -1,9 +1,9 @@
-import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordBedAuditState } from '@/types/domain/dailyRecordSlices';
 import type { PatientData } from '@/hooks/contracts/patientHookContracts';
 import type { DailyRecordContextType } from '@/hooks/useDailyRecordTypes';
 
 interface CopyPatientParams {
-  record: DailyRecord | null;
+  record: DailyRecordBedAuditState | null;
   bedId: string;
   targetDate: string;
   targetBedId?: string;
@@ -13,7 +13,7 @@ interface DailyRecordContextDependencies extends Omit<
   DailyRecordContextType,
   'copyPatientToDate' | 'record'
 > {
-  record: DailyRecord | null;
+  record: DailyRecordContextType['record'];
   copyPatientToDate: DailyRecordContextType['copyPatientToDate'];
 }
 

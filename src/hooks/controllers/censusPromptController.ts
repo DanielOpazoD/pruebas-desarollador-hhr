@@ -1,4 +1,4 @@
-import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordDateRef } from '@/types/domain/dailyRecordSlices';
 
 export interface CensusPromptState {
   previousRecordAvailable: boolean;
@@ -8,7 +8,7 @@ export interface CensusPromptState {
 
 export interface CensusPromptDataLoadDeps {
   currentDateString: string;
-  getPreviousDay: (date: string) => Promise<DailyRecord | null>;
+  getPreviousDay: (date: string) => Promise<DailyRecordDateRef | null>;
   getAvailableDates: () => Promise<string[]>;
 }
 
@@ -19,7 +19,7 @@ export const INITIAL_CENSUS_PROMPT_STATE: CensusPromptState = {
 };
 
 export const resolvePreviousDayState = (
-  previousDay: DailyRecord | null
+  previousDay: DailyRecordDateRef | null
 ): Pick<CensusPromptState, 'previousRecordAvailable' | 'previousRecordDate'> => ({
   previousRecordAvailable: Boolean(previousDay),
   previousRecordDate: previousDay?.date,

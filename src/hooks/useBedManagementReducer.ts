@@ -1,4 +1,5 @@
-import { DailyRecord, DailyRecordPatch } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecord } from '@/hooks/useDailyRecordTypes';
+import type { DailyRecordPatch } from '@/types/domain/dailyRecordPatch';
 import { PatientData } from '@/hooks/contracts/patientHookContracts';
 import { CudyrScore } from '@/types/domain/clinical';
 import { BedType } from '@/types/domain/base';

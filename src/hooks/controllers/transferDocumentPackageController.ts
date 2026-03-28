@@ -1,4 +1,4 @@
-import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordBedsState } from '@/types/domain/dailyRecordSlices';
 import type { TransferRequest } from '@/types/transfers';
 import type {
   GeneratedDocument,
@@ -35,7 +35,7 @@ export type TransferDocumentPackageResult =
   | TransferDocumentPackageError;
 
 export const buildTransferPatientData = (
-  record: DailyRecord | null,
+  record: DailyRecordBedsState | null,
   transfer: TransferRequest
 ): TransferPatientData => {
   const currentPatient = record?.beds[transfer.bedId];
@@ -80,7 +80,7 @@ export const buildTransferDocumentSignature = (
 
 interface PrepareTransferDocumentPackageParams {
   cache: Map<string, TransferDocumentPackageCacheEntry>;
-  record: DailyRecord | null;
+  record: DailyRecordBedsState | null;
   transfer: TransferRequest;
   hospitalId: string;
   responses: QuestionnaireResponse;

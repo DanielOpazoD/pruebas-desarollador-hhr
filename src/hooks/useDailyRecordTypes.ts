@@ -4,12 +4,12 @@
  * Separated for clarity and reusability.
  */
 
-import {
-  DailyRecord,
-  DailyRecordPatch,
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecordPatch } from '@/types/domain/dailyRecordPatch';
+import type {
   MedicalHandoffActor,
   MedicalSpecialty,
-} from '@/hooks/contracts/dailyRecordHookContracts';
+} from '@/types/domain/dailyRecordMedicalHandoff';
 import { PatientData } from '@/hooks/contracts/patientHookContracts';
 import { CudyrScore } from '@/types/domain/clinical';
 import { CMAData } from '@/types/domain/movements';
@@ -17,6 +17,7 @@ import { PatientFieldValue } from '@/types/valueTypes';
 import type { PatientMovementActions } from '@/types/movements';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
+export type { DailyRecord } from '@/types/domain/dailyRecord';
 export type { DailyRecordPatch };
 
 // ============================================================================

@@ -1,10 +1,10 @@
 import { useMemo, useCallback } from 'react';
-import { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordStaffingState } from '@/types/domain/dailyRecordSlices';
 import { DailyRecordPatch } from './useDailyRecordTypes';
 import { useLatestRef } from '@/hooks/useLatestRef';
 
 export const useNurseManagement = (
-  record: DailyRecord | null,
+  record: DailyRecordStaffingState | null,
   patchRecord: (partial: DailyRecordPatch) => Promise<void>
 ) => {
   const recordRef = useLatestRef(record);
@@ -38,7 +38,7 @@ export const useNurseManagement = (
 };
 
 export const useTensManagement = (
-  record: DailyRecord | null,
+  record: DailyRecordStaffingState | null,
   patchRecord: (partial: DailyRecordPatch) => Promise<void>
 ) => {
   const recordRef = useLatestRef(record);

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordStaffingState } from '@/types/domain/dailyRecordSlices';
 import { resolveHandoffShiftStaff } from '@/services/staff/dailyRecordStaffing';
 
 export type NursingShift = 'day' | 'night';
@@ -9,7 +9,10 @@ export type NursingShift = 'day' | 'night';
  *
  * Manages staff lists (delivering, receiving, TENS) derived from the DailyRecord.
  */
-export const useHandoffStaff = (record: DailyRecord | null, selectedShift: NursingShift) => {
+export const useHandoffStaff = (
+  record: DailyRecordStaffingState | null,
+  selectedShift: NursingShift
+) => {
   const deliversList = useMemo(() => {
     return resolveHandoffShiftStaff(record, selectedShift).delivers;
   }, [record, selectedShift]);

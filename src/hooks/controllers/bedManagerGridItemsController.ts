@@ -1,5 +1,5 @@
 import type { BedDefinition } from '@/types/domain/base';
-import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordBedLayoutState } from '@/types/domain/dailyRecordSlices';
 
 export interface BedManagerBlockedGridItem {
   id: string;
@@ -16,7 +16,7 @@ export interface BedManagerExtraGridItem {
 
 export const resolveBlockedBedsGridItems = (
   beds: BedDefinition[],
-  recordBeds: DailyRecord['beds'] | null | undefined
+  recordBeds: DailyRecordBedLayoutState['beds'] | null | undefined
 ): BedManagerBlockedGridItem[] =>
   beds
     .filter(bed => !bed.isExtra)

@@ -1,5 +1,5 @@
 import type { CudyrScore } from '@/types/domain/clinical';
-import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordBedAuditState } from '@/types/domain/dailyRecordSlices';
 import type { PatientData } from '@/hooks/contracts/patientHookContracts';
 import type { PatientFieldValue } from '@/types/valueTypes';
 import type { AuditDeviceChange, AuditDeviceChangesMap } from '@/types/audit';
@@ -113,7 +113,7 @@ export const resolvePatientChangeAudit = (
 };
 
 export const buildCudyrAuditDetails = (
-  record: DailyRecord,
+  record: DailyRecordBedAuditState,
   bedId: string,
   field: keyof CudyrScore,
   value: number
@@ -142,7 +142,7 @@ export const buildCudyrAuditDetails = (
 };
 
 export const buildCribCudyrAuditDetails = (
-  record: DailyRecord,
+  record: DailyRecordBedAuditState,
   bedId: string,
   field: keyof CudyrScore,
   value: number

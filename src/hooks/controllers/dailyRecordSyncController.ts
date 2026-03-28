@@ -1,4 +1,4 @@
-import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordDateRef } from '@/types/domain/dailyRecordSlices';
 import type { SyncStatus } from '@/hooks/useDailyRecordTypes';
 import { resolveDailyRecordSyncStatus } from '@/hooks/controllers/dailyRecordSyncStatusController';
 
@@ -9,7 +9,7 @@ interface MutationLike {
 }
 
 interface PreviousDayReader {
-  getPreviousDay: (date: string) => Promise<DailyRecord | null>;
+  getPreviousDay: (date: string) => Promise<DailyRecordDateRef | null>;
 }
 
 interface WarningNotifier {

@@ -5,7 +5,9 @@
  */
 
 import { useCallback } from 'react';
-import { DailyRecord, DailyRecordPatch } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordBedsState } from '@/types/domain/dailyRecordSlices';
+import type { DailyRecordPatch } from '@/types/domain/dailyRecordPatch';
+import type { DailyRecord } from '@/hooks/useDailyRecordTypes';
 import { PatientData } from '@/hooks/contracts/patientHookContracts';
 import { PatientFieldValue } from '@/types/valueTypes';
 import { logger } from '@/services/utils/loggerService';
@@ -27,8 +29,8 @@ export interface ClinicalCribActions {
 const clinicalCribLogger = logger.child('useClinicalCrib');
 
 export const useClinicalCrib = (
-  record: DailyRecord | null,
-  saveAndUpdate: (updatedRecord: DailyRecord) => void,
+  record: DailyRecordBedsState | null,
+  _saveAndUpdate: (updatedRecord: DailyRecord) => void,
   patchRecord: (partial: DailyRecordPatch) => Promise<void>
 ): ClinicalCribActions => {
   /**

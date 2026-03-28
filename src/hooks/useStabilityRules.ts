@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordDateRef } from '@/types/domain/dailyRecordSlices';
 import { useAuthState } from './useAuthState';
 import { buildStabilityRules, type StabilityRules } from './stabilityRulesController';
 export type { StabilityRules } from './stabilityRulesController';
@@ -14,7 +14,7 @@ export type { StabilityRules } from './stabilityRulesController';
  * 3. Manual Lock: If dayShiftLocked or nightShiftLocked is true,
  *    corresponding fields are locked.
  */
-export const useStabilityRules = (record: DailyRecord | null): StabilityRules => {
+export const useStabilityRules = (record: DailyRecordDateRef | null): StabilityRules => {
   const { role, isEditor } = useAuthState();
   const isAdmin = role === 'admin';
 

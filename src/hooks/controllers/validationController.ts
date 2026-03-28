@@ -1,4 +1,4 @@
-import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordBedsState } from '@/types/domain/dailyRecordSlices';
 import type { PatientData } from '@/hooks/contracts/patientHookContracts';
 
 export interface MovePatientValidationResult {
@@ -8,7 +8,7 @@ export interface MovePatientValidationResult {
 
 export const validateMovePatient = (
   targetBedId: string,
-  record: DailyRecord | null
+  record: DailyRecordBedsState | null
 ): MovePatientValidationResult => {
   if (!record) {
     return { canMove: false, reason: 'No hay registro cargado' };

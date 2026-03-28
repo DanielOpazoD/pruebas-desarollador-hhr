@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordStaffingState } from '@/types/domain/dailyRecordSlices';
 import { resolveShiftNurseSignature } from '@/services/staff/dailyRecordStaffing';
 
-export const useNurseSignature = (record: DailyRecord | null) => {
+export const useNurseSignature = (record: DailyRecordStaffingState | null) => {
   return useMemo(() => resolveShiftNurseSignature(record, 'night'), [record]);
 };
 

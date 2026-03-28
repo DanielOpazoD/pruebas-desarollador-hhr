@@ -1,4 +1,4 @@
-import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordMedicalMessagingState } from '@/types/domain/dailyRecordSlices';
 
 interface VisibleBed {
   id: string;
@@ -13,7 +13,7 @@ export interface ManualMedicalHandoffMessageModel {
 }
 
 export const buildManualMedicalHandoffMessageModel = (
-  record: DailyRecord,
+  record: DailyRecordMedicalMessagingState,
   visibleBeds: VisibleBed[]
 ): ManualMedicalHandoffMessageModel => {
   const hospitalized = visibleBeds.filter(bed => {

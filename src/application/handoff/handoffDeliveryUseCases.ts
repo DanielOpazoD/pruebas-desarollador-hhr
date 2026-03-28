@@ -8,7 +8,8 @@ import {
   type ApplicationOutcome,
 } from '@/application/shared/applicationOutcome';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
-import type { DailyRecord, DailyRecordPatch } from '@/application/shared/dailyRecordContracts';
+import type { DailyRecord } from '@/application/shared/dailyRecordContracts';
+import type { DailyRecordPatch } from '@/application/shared/dailyRecordContracts';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import { buildPatchedRecord, createMissingRecordOutcome } from './handoffUseCaseSupport';
 

@@ -1,4 +1,4 @@
-import { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecord } from '@/hooks/useDailyRecordTypes';
 import { PatientData } from '@/hooks/contracts/patientHookContracts';
 
 interface ApplyUndoDischargeInput {

@@ -1,5 +1,5 @@
 import type { BedDefinition } from '@/types/domain/base';
-import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordBedLayoutState } from '@/types/domain/dailyRecordSlices';
 import { formatCensusShortDayMonth } from '@/shared/census/censusPresentation';
 
 export interface MoveCopyDateOption {
@@ -96,8 +96,8 @@ export const resolveMoveCopyBaseDate = (
 
 interface ResolveMoveCopyBedOptionsParams {
   allBeds: BedDefinition[];
-  currentRecord: DailyRecord;
-  targetRecord: DailyRecord | null;
+  currentRecord: DailyRecordBedLayoutState;
+  targetRecord: DailyRecordBedLayoutState | null;
   sourceBedId: string | null;
   targetBedId: string | null;
 }
