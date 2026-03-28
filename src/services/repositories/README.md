@@ -52,6 +52,16 @@ dejar el runtime por defecto solo como composición. El repositorio no debe depe
 
 ## Compatibilidad Histórica de Sync
 
+- La compatibilidad con datos legacy que llegan desde la version oficial antigua por Firebase sigue
+  siendo un invariante productivo. La simplificacion estructural no debe tocar ni retirar:
+  - `dataMigration.ts`
+  - `schemaGovernance.ts`
+  - `schemaEvolutionPolicy.ts`
+  - `legacyCompatibilityPolicy.ts`
+  - los grace paths de reglas/runtime que permiten abrir registros historicos
+- La regla operativa es `leer y normalizar`: la app acepta payloads antiguos, los migra al modelo
+  canonico actual y sigue operando internamente sobre ese formato.
+
 - `dailyRecordRepositoryInitializationService.ts` conserva bootstrap compatible con:
   - registros ya presentes en IndexedDB
   - lectura remota actual desde Firestore

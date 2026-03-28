@@ -13,7 +13,7 @@ Entrega de turno de enfermeria y medicos, con flujos de gestion, delivery y hand
 
 - `components/`: shell visual y vistas de handoff.
 - `hooks/`: screen models/runtime hooks para aislar wiring grande de las vistas.
-- `controllers/`: policies de pantalla, adapters internos y bridges deprecated inventariados.
+- `controllers/`: policies de pantalla y adapters internos del feature.
 - `application/handoff`: use cases y read models del contexto.
 - `domain/handoff`: reglas puras de entries, management y vistas.
 
@@ -23,9 +23,8 @@ Entrega de turno de enfermeria y medicos, con flujos de gestion, delivery y hand
 - Los controllers de pantalla (`handoffViewController`, `handoffViewBindingsController`,
   `handoffMedicalContentController`, `clinicalEventsPanelController`) concentran wiring puro,
   presentation policy y payload normalization; la UI no debe reabsorber esas decisiones.
-- Los controllers deprecated solo mantienen compatibilidad temporal; no deben recibir logica nueva.
 - Los resultados operativos de gestion y delivery deben salir como `ApplicationOutcome`.
-- El source productivo no debe importar el barrel `features/handoff/controllers` ni los bridges deprecated.
+- El source productivo no debe importar el barrel `features/handoff/controllers`.
 
 ## Invariantes
 
@@ -38,21 +37,11 @@ Entrega de turno de enfermeria y medicos, con flujos de gestion, delivery y hand
 - `ClinicalEventsPanel.tsx` debe limitarse a estado local de UI; sorting, defaults y normalizacion
   del formulario deben salir por `clinicalEventsPanelController.ts`.
 - Los flows de firma, continuidad y patient entries deben seguir auditando con payload compatible.
-- Los bridges deprecated quedan permitidos solo para compatibilidad de tests o adapters inventariados.
 - Cuando una entrega medica se copia al dia siguiente, el contenido se hereda pero la vigencia diaria no:
   `currentStatus*` debe reiniciarse para que la UI muestre "pendiente hoy" hasta nueva confirmacion
   o actualizacion del especialista.
 - `doctor_specialist` puede editar solo la entrega del dia actual; dias previos deben quedar en solo lectura
   tanto en la UI como en la capa de mutacion.
-
-## Bridges activos
-
-- `handoffManagementController.ts`
-- `medicalPatientHandoffController.ts`
-- `medicalPatientHandoffMutationController.ts`
-- `handoffScreenController.ts`
-- `medicalPatientHandoffViewController.ts`
-- `medicalPatientHandoffRenderController.ts`
 
 ## Entry points recomendados
 

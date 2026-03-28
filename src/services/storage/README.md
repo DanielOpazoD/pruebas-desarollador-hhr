@@ -66,6 +66,9 @@ ese caso debe tratarse como degradación operativa real, no como cola vacía.
 - `localStorageService.ts` sigue existiendo solo como gateway legacy mínimo y deprecated.
 - `migration/legacyFirestoreBridge.ts` concentra la compatibilidad histórica de lectura desde rutas Firestore antiguas.
 - `legacyFirebaseService.ts` queda como fachada deprecated detrás de ese bridge.
+- La compatibilidad legacy que entra por Firebase debe preservarse como frontera explícita de lectura
+  y normalización; la simplificación de storage no debe convertirla otra vez en fallback implícito
+  del hot path ni retirar los paths todavía soportados para registros históricos.
 - `legacyFirebaseRecordService.ts` se mantiene como fachada pública interna para record reads, rangos, suscripciones y discovery, con módulos especializados por responsabilidad.
 - La compatibilidad legacy ya no participa del camino caliente de `DailyRecord`; se importa
   explícitamente desde `legacyRecordBridgeService.ts` cuando se requiere migración controlada.

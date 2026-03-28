@@ -9,31 +9,13 @@ const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
 
 const RESTRICTED_EXACT_IMPORTS = new Set([
   '@/features/handoff/controllers',
-  '@/features/handoff/controllers/handoffManagementController',
-  '@/features/handoff/controllers/medicalPatientHandoffController',
-  '@/features/handoff/controllers/medicalPatientHandoffMutationController',
-  '@/features/handoff/controllers/handoffScreenController',
-  '@/features/handoff/controllers/medicalPatientHandoffViewController',
-  '@/features/handoff/controllers/medicalPatientHandoffRenderController',
 ]);
 
 const RESTRICTED_SUFFIXES = [
   '/features/handoff/controllers',
-  '/features/handoff/controllers/handoffManagementController',
-  '/features/handoff/controllers/medicalPatientHandoffController',
-  '/features/handoff/controllers/medicalPatientHandoffMutationController',
-  '/features/handoff/controllers/handoffScreenController',
-  '/features/handoff/controllers/medicalPatientHandoffViewController',
-  '/features/handoff/controllers/medicalPatientHandoffRenderController',
 ];
 
 const ALLOWED_IMPORTERS = new Set([
-  'src/features/handoff/controllers/handoffManagementController.ts',
-  'src/features/handoff/controllers/medicalPatientHandoffController.ts',
-  'src/features/handoff/controllers/medicalPatientHandoffMutationController.ts',
-  'src/features/handoff/controllers/handoffScreenController.ts',
-  'src/features/handoff/controllers/medicalPatientHandoffViewController.ts',
-  'src/features/handoff/controllers/medicalPatientHandoffRenderController.ts',
   'src/features/handoff/controllers/index.ts',
   'src/features/handoff/index.ts',
 ]);
