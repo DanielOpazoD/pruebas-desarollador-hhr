@@ -52,6 +52,7 @@
     "check:census-feature-boundary": "node scripts/check-census-feature-boundary.mjs",
     "check:clinical-documents-feature-boundary": "node scripts/check-clinical-documents-feature-boundary.mjs",
     "check:handoff-feature-boundary": "node scripts/check-handoff-feature-boundary.mjs",
+    "check:handoff-pdf-contract-boundary": "node scripts/check-handoff-pdf-contract-boundary.mjs",
     "check:transfers-feature-boundary": "node scripts/check-transfers-feature-boundary.mjs",
     "check:lazy-views-feature-entrypoints": "node scripts/check-lazy-views-feature-entrypoints.mjs",
     "check:feature-dependencies": "node scripts/check-feature-dependencies.mjs",

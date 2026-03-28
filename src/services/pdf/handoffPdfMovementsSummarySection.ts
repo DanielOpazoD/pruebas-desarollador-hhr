@@ -1,12 +1,12 @@
 import type { jsPDF } from 'jspdf';
 
-import { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
+import type { HandoffPdfMovementsRecord } from '@/services/pdf/contracts/handoffPdfContracts';
 
 import type { AutoTableFunction, JsPDFWithAutoTable } from './handoffPdfTypes';
 import type { HandoffPdfMovementSummaryTable } from './handoffPdfSectionTypes';
 
 export const buildMovementsSummaryTables = (
-  record: DailyRecord
+  record: HandoffPdfMovementsRecord
 ): HandoffPdfMovementSummaryTable[] => [
   {
     title: 'ALTAS:',
@@ -49,7 +49,7 @@ export const buildMovementsSummaryTables = (
 
 export const addMovementsSummary = (
   doc: jsPDF,
-  record: DailyRecord,
+  record: HandoffPdfMovementsRecord,
   margin: number,
   startY: number,
   autoTable: AutoTableFunction

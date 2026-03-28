@@ -1,8 +1,8 @@
 import type { jsPDF } from 'jspdf';
 
 import { BEDS } from '@/constants/beds';
-import { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 import { ShiftType } from '@/types/domain/base';
+import type { HandoffPdfPatientTableRecord } from '@/services/pdf/contracts/handoffPdfContracts';
 import { formatDateDDMMYYYY } from '@/utils/dateUtils';
 
 import { calculateHospitalizedDays } from './handoffPdfUtils';
@@ -19,7 +19,7 @@ export const PATIENT_TABLE_HEADERS = [
 ];
 
 export const buildPatientTableBody = (
-  record: DailyRecord,
+  record: HandoffPdfPatientTableRecord,
   isMedical: boolean,
   selectedShift: ShiftType
 ): HandoffPdfTableRow[] => {
@@ -105,7 +105,7 @@ const createPatientTableDidDrawCell =
 
 export const addPatientTable = (
   doc: jsPDF,
-  record: DailyRecord,
+  record: HandoffPdfPatientTableRecord,
   isMedical: boolean,
   selectedShift: ShiftType,
   currentY: number,

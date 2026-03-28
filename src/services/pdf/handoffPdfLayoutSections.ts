@@ -1,12 +1,16 @@
 import type { jsPDF } from 'jspdf';
-import { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 import { ShiftType } from '@/types/domain/base';
+import type {
+  HandoffPdfChecklistRecord,
+  HandoffPdfNovedadesRecord,
+  HandoffPdfRecord,
+} from '@/services/pdf/contracts/handoffPdfContracts';
 import { formatDateDDMMYYYY } from '@/utils/dateUtils';
 import { getBase64ImageFromURL, getHandoffStaffInfo, Schedule } from './handoffPdfUtils';
 
 export const addHandoffHeader = async (
   doc: jsPDF,
-  record: DailyRecord,
+  record: HandoffPdfRecord,
   isMedical: boolean,
   selectedShift: ShiftType,
   schedule: Schedule,
@@ -54,7 +58,7 @@ export const addHandoffHeader = async (
 
 export const addStaffAndChecklist = (
   doc: jsPDF,
-  record: DailyRecord,
+  record: HandoffPdfChecklistRecord & HandoffPdfRecord,
   selectedShift: ShiftType,
   margin: number,
   startY: number
@@ -149,7 +153,7 @@ export const addStaffAndChecklist = (
 
 export const addNovedadesSection = (
   doc: jsPDF,
-  novedadesText: string | undefined,
+  novedadesText: HandoffPdfNovedadesRecord[keyof HandoffPdfNovedadesRecord] | string | undefined,
   margin: number,
   startY: number
 ) => {

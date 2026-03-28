@@ -1,6 +1,6 @@
 import type { jsPDF } from 'jspdf';
-import { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 import { ShiftType } from '@/types/domain/base';
+import type { HandoffPdfRecord } from '@/services/pdf/contracts/handoffPdfContracts';
 import { Schedule } from './handoffPdfUtils';
 import {
   addPatientTable,
@@ -18,7 +18,7 @@ import {
  * Supports both Medical and Nursing formats.
  */
 export const generateHandoffPdf = async (
-  record: DailyRecord,
+  record: HandoffPdfRecord,
   isMedical: boolean,
   selectedShift: ShiftType,
   schedule: Schedule

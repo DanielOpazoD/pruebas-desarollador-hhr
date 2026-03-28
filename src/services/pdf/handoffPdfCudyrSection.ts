@@ -1,7 +1,7 @@
 import type { jsPDF } from 'jspdf';
 import { BEDS } from '@/constants/beds';
 import { CudyrScore } from '@/types/domain/clinical';
-import { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
+import type { HandoffPdfRecord } from '@/services/pdf/contracts/handoffPdfContracts';
 import { resolveNightShiftNurses } from '@/services/staff/dailyRecordStaffing';
 import { formatDateDDMMYYYY, formatTimeHHMM } from '@/utils/dateUtils';
 import { AutoTableFunction, CellHookData, JsPDFWithAutoTable } from './handoffPdfTypes';
@@ -36,7 +36,7 @@ const getCudyrCategory = (dependency: number, risk: number): string => {
 
 export const addCudyrTable = (
   doc: jsPDF,
-  record: DailyRecord,
+  record: HandoffPdfRecord,
   margin: number,
   autoTable: AutoTableFunction
 ) => {
