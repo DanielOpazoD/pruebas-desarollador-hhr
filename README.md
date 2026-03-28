@@ -184,6 +184,7 @@ import { useDailyRecord } from '@/hooks/useDailyRecord';
 - [Scorecard de release readiness](reports/release-readiness-scorecard.md)
 - [Gobernanza de guardrails](reports/guardrail-governance.md)
 - [Política de cambio sostenible](reports/sustainable-change-policy.md)
+- [Baseline de ejecución técnica](reports/technical-execution-baseline.md)
 - [Checklist de cambio seguro](docs/SAFE_CHANGE_CHECKLIST.md)
 - [Definition of Done técnico](docs/ENGINEERING_DEFINITION_OF_DONE.md)
 - [Registro de deuda técnica](docs/TECHNICAL_DEBT_REGISTER.md)

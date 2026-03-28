@@ -41,7 +41,11 @@ vi.mock('@/services/auth/authAccessResolution', () => ({
   resolveFirebaseUserRole: (user: unknown) => mockResolveFirebaseUserRole(user),
 }));
 
-import { onAuthSessionStateChange } from '@/services/auth/authSession';
+import {
+  getCurrentAuthSessionState,
+  onAuthSessionStateChange,
+  signOut,
+} from '@/services/auth/authSession';
 import { ensureUserRoleClaim } from '@/services/auth/authClaimSyncService';
 
 const flushObserverRegistration = async (): Promise<void> => {
@@ -202,5 +206,30 @@ describe('authSession', () => {
         }),
       })
     );
+  });
+
+  it('supports injected auth runtime seams for session helpers', async () => {
+    const injectedAuth = { currentUser: { email: 'injected@hospital.cl' } };
+
+    await signOut({
+      authRuntime: {
+        ready: Promise.resolve(),
+        auth: injectedAuth as never,
+        getCurrentUser: () => ({ email: 'injected@hospital.cl' }) as never,
+      },
+    });
+
+    expect(mockFirebaseSignOut).toHaveBeenCalledWith(injectedAuth);
+    expect(mockClearRoleCacheForEmail).toHaveBeenCalledWith('injected@hospital.cl');
+
+    expect(
+      getCurrentAuthSessionState({
+        authRuntime: {
+          ready: Promise.resolve(),
+          auth: injectedAuth as never,
+          getCurrentUser: () => null,
+        },
+      }).status
+    ).toBe('unauthenticated');
   });
 });

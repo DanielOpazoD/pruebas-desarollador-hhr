@@ -118,18 +118,26 @@ describe('authAccessResolution', () => {
   });
 
   it('rehydrates an authorized current user without exposing an empty shell', async () => {
-    mockAuth.currentUser = {
-      uid: 'spec-2',
-      email: 'specialist@hospital.cl',
-      isAnonymous: false,
-    };
     mockResolveGeneralLoginAccessForEmail.mockResolvedValue({
       allowed: true,
       role: 'doctor_specialist',
       resolution: 'authorized',
     });
 
-    await expect(authorizeCurrentFirebaseUser()).resolves.toEqual({
+    await expect(
+      authorizeCurrentFirebaseUser({
+        authRuntime: {
+          ready: Promise.resolve(),
+          auth: mockAuth as never,
+          getCurrentUser: () =>
+            ({
+              uid: 'spec-2',
+              email: 'specialist@hospital.cl',
+              isAnonymous: false,
+            }) as never,
+        },
+      })
+    ).resolves.toEqual({
       uid: 'spec-2',
       email: 'specialist@hospital.cl',
       role: 'doctor_specialist',

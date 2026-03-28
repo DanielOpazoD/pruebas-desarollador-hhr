@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "canonicalSources": [
+    "docs/TECHNICAL_DEBT_REGISTER.md",
+    "reports/architectural-hotspots.md",
+    "reports/quality-metrics.md",
+    "reports/system-confidence.md",
+    "reports/technical-ownership-map.md",
+    "scripts/config/critical-coverage-thresholds.json",
+    "scripts/config/release-confidence-matrix.json"
+  ],
+  "streams": [
+    {
+      "id": "domain-contracts",
+      "goal": "Reducir fan-in sobre contratos y tipos hotspot mediante facades y ports"
+    },
+    {
+      "id": "runtime-infrastructure",
+      "goal": "Extender seams inyectables y reducir dependencia obligatoria de singletons runtime"
+    },
+    {
+      "id": "app-shell-composition",
+      "goal": "Mantener el shell inicial pequeño, observable y con boundaries explícitos"
+    },
+    {
+      "id": "testing-governance",
+      "goal": "Ampliar critical coverage y alinear scorecards/reportes con el trabajo estructural"
+    }
+  ],
+  "backlog": [
+    {
+      "id": "daily-record-facades",
+      "priority": "P0",
+      "stream": "domain-contracts",
+      "closureSignal": "Nuevos consumers de DailyRecord salen por facades o ports aprobados"
+    },
+    {
+      "id": "app-shell-critical-coverage",
+      "priority": "P0",
+      "stream": "testing-governance",
+      "closureSignal": "check:critical-coverage incluye src/app-shell con baseline estable"
+    },
+    {
+      "id": "auth-runtime-seams",
+      "priority": "P1",
+      "stream": "runtime-infrastructure",
+      "closureSignal": "Seams clave de auth aceptan runtime explícito sin romper compatibilidad"
+    },
+    {
+      "id": "release-confidence-app-shell",
+      "priority": "P1",
+      "stream": "testing-governance",
+      "closureSignal": "La matriz de release confidence mapea app-shell sin zonas huérfanas"
+    },
+    {
+      "id": "legacy-console-reduction",
+      "priority": "P2",
+      "stream": "runtime-infrastructure",
+      "closureSignal": "No crecen usos legacy de console.warn/error fuera de sinks estructurados"
+    }
+  ]
+}

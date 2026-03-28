@@ -20,7 +20,7 @@
       "id": "census_runtime",
       "label": "Censo y shell inicial",
       "ownerAreaId": "census",
-      "criticalCoverageZones": ["src/features/census/controllers"],
+      "criticalCoverageZones": ["src/features/census/controllers", "src/app-shell"],
       "blockingSteps": [
         "runtime_smoke",
         "critical_coverage",

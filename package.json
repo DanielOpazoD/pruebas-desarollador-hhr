@@ -116,6 +116,7 @@
     "report:serverless-runtime-governance": "node scripts/report-serverless-runtime-governance.mjs",
     "report:serverless-sensitive-coverage": "node scripts/report-serverless-sensitive-coverage.mjs",
     "report:critical-coverage": "npm run test:coverage:critical && node scripts/report-critical-coverage.mjs",
+    "report:technical-execution-baseline": "node scripts/report-technical-execution-baseline.mjs",
     "report:release-confidence-matrix": "node scripts/report-release-confidence-matrix.mjs",
     "report:release-readiness-scorecard": "npm run report:quality-metrics && npm run report:compatibility-governance && npm run report:compatibility-import-governance && npm run report:operational-health && npm run report:system-confidence && npm run report:release-confidence-matrix && npm run report:technical-ownership-map && npm run report:guardrail-governance && node scripts/report-release-readiness-scorecard.mjs",
     "report:guardrail-governance": "node scripts/report-guardrail-governance.mjs",

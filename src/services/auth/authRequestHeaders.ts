@@ -1,9 +1,19 @@
-import { defaultAuthRuntime } from '@/services/firebase-runtime/authRuntime';
+import { type AuthRuntime, defaultAuthRuntime } from '@/services/firebase-runtime/authRuntime';
 
-export const resolveCurrentUserBearerToken = async (): Promise<string | null> => {
-  await defaultAuthRuntime.ready;
+interface AuthRuntimeOptions {
+  authRuntime?: AuthRuntime;
+}
 
-  const currentUser = defaultAuthRuntime.getCurrentUser();
+const resolveAuthRuntime = ({ authRuntime }: AuthRuntimeOptions = {}): AuthRuntime =>
+  authRuntime ?? defaultAuthRuntime;
+
+export const resolveCurrentUserBearerToken = async (
+  options?: AuthRuntimeOptions
+): Promise<string | null> => {
+  const authRuntime = resolveAuthRuntime(options);
+  await authRuntime.ready;
+
+  const currentUser = authRuntime.getCurrentUser();
   if (!currentUser || currentUser.isAnonymous) {
     return null;
   }
@@ -11,8 +21,10 @@ export const resolveCurrentUserBearerToken = async (): Promise<string | null> =>
   return currentUser.getIdToken();
 };
 
-export const resolveCurrentUserAuthHeaders = async (): Promise<Record<string, string>> => {
-  const token = await resolveCurrentUserBearerToken();
+export const resolveCurrentUserAuthHeaders = async (
+  options?: AuthRuntimeOptions
+): Promise<Record<string, string>> => {
+  const token = await resolveCurrentUserBearerToken(options);
   if (!token) {
     return {};
   }

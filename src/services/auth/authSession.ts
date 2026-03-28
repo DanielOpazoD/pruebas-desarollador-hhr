@@ -11,12 +11,20 @@ import {
   createUnauthorizedAuthSessionState,
   toAnonymousSignatureAuthSessionState,
 } from '@/services/auth/authSessionState';
-import { defaultAuthRuntime } from '@/services/firebase-runtime/authRuntime';
+import { type AuthRuntime, defaultAuthRuntime } from '@/services/firebase-runtime/authRuntime';
 
-export const signOut = async (): Promise<void> => {
-  await defaultAuthRuntime.ready;
-  const userEmail = defaultAuthRuntime.getCurrentUser()?.email;
-  await firebaseSignOut(defaultAuthRuntime.auth);
+interface AuthRuntimeOptions {
+  authRuntime?: AuthRuntime;
+}
+
+const resolveAuthRuntime = ({ authRuntime }: AuthRuntimeOptions = {}): AuthRuntime =>
+  authRuntime ?? defaultAuthRuntime;
+
+export const signOut = async (options?: AuthRuntimeOptions): Promise<void> => {
+  const authRuntime = resolveAuthRuntime(options);
+  await authRuntime.ready;
+  const userEmail = authRuntime.getCurrentUser()?.email;
+  await firebaseSignOut(authRuntime.auth);
 
   if (userEmail) {
     try {
@@ -36,70 +44,69 @@ export const signOut = async (): Promise<void> => {
 };
 
 export const onAuthSessionStateChange = (
-  callback: (sessionState: AuthSessionState) => void | Promise<void>
+  callback: (sessionState: AuthSessionState) => void | Promise<void>,
+  options?: AuthRuntimeOptions
 ): (() => void) => {
+  const authRuntime = resolveAuthRuntime(options);
   let active = true;
   let unsubscribeAuth = () => {};
 
-  void defaultAuthRuntime.ready
+  void authRuntime.ready
     .then(() => {
       if (!active) {
         return;
       }
 
-      unsubscribeAuth = onAuthStateChanged(
-        defaultAuthRuntime.auth,
-        async (firebaseUser: User | null) => {
-          if (!firebaseUser) {
-            await callback(createUnauthenticatedAuthSessionState());
-            return;
-          }
-
-          if (firebaseUser.isAnonymous) {
-            await callback(
-              toAnonymousSignatureAuthSessionState({
-                uid: firebaseUser.uid,
-                email: null,
-                displayName: 'Anonymous Doctor',
-                role: 'viewer',
-              })
-            );
-            return;
-          }
-
-          try {
-            const sessionState = await resolveAuthSessionState(firebaseUser, {
-              signOutUnauthorizedUser: () => firebaseSignOut(defaultAuthRuntime.auth),
-              resolveFirebaseUserRole,
-            });
-            await callback(sessionState);
-            if (sessionState.status === 'authorized' && sessionState.user.role) {
-              void ensureUserRoleClaim(firebaseUser, sessionState.user.role);
-            }
-          } catch (error) {
-            const operationalError = recordAuthOperationalError(
-              'on_auth_session_state_change',
-              error,
-              {
-                code: 'auth_session_state_resolution_failed',
-                message: 'Failed to resolve authentication session state.',
-                severity: 'warning',
-                userSafeMessage: 'No se pudo resolver la sesión actual.',
-              }
-            );
-            await callback(
-              createAuthErrorSessionState({
-                code: operationalError.code,
-                message: operationalError.message,
-                userSafeMessage: operationalError.userSafeMessage,
-                severity: operationalError.severity === 'error' ? 'error' : 'warning',
-                technicalContext: operationalError.context,
-                telemetryTags: ['auth', 'session_state'],
-              })
-            );
-          }
+      unsubscribeAuth = onAuthStateChanged(authRuntime.auth, async (firebaseUser: User | null) => {
+        if (!firebaseUser) {
+          await callback(createUnauthenticatedAuthSessionState());
+          return;
         }
-      );
+
+        if (firebaseUser.isAnonymous) {
+          await callback(
+            toAnonymousSignatureAuthSessionState({
+              uid: firebaseUser.uid,
+              email: null,
+              displayName: 'Anonymous Doctor',
+              role: 'viewer',
+            })
+          );
+          return;
+        }
+
+        try {
+          const sessionState = await resolveAuthSessionState(firebaseUser, {
+            signOutUnauthorizedUser: () => firebaseSignOut(authRuntime.auth),
+            resolveFirebaseUserRole,
+          });
+          await callback(sessionState);
+          if (sessionState.status === 'authorized' && sessionState.user.role) {
+            void ensureUserRoleClaim(firebaseUser, sessionState.user.role);
+          }
+        } catch (error) {
+          const operationalError = recordAuthOperationalError(
+            'on_auth_session_state_change',
+            error,
+            {
+              code: 'auth_session_state_resolution_failed',
+              message: 'Failed to resolve authentication session state.',
+              severity: 'warning',
+              userSafeMessage: 'No se pudo resolver la sesión actual.',
+            }
+          );
+          await callback(
+            createAuthErrorSessionState({
+              code: operationalError.code,
+              message: operationalError.message,
+              userSafeMessage: operationalError.userSafeMessage,
+              severity: operationalError.severity === 'error' ? 'error' : 'warning',
+              technicalContext: operationalError.context,
+              telemetryTags: ['auth', 'session_state'],
+            })
+          );
+        }
+      });
     })
     .catch(async error => {
       const operationalError = recordAuthOperationalError('on_auth_session_state_change', error, {
@@ -128,8 +135,9 @@ export const onAuthSessionStateChange = (
   };
 };
 
-export const getCurrentAuthSessionState = (): AuthSessionState => {
-  const user = defaultAuthRuntime.getCurrentUser();
+export const getCurrentAuthSessionState = (options?: AuthRuntimeOptions): AuthSessionState => {
+  const authRuntime = resolveAuthRuntime(options);
+  const user = authRuntime.getCurrentUser();
   if (!user) {
     return createUnauthenticatedAuthSessionState();
   }

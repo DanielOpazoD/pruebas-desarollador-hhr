@@ -3,7 +3,7 @@ import { AuthUser, UserRole } from '@/types/auth';
 import { resolveGeneralLoginAccessForEmail } from '@/services/auth/authPolicy';
 import { createAuthError, toAuthUser } from '@/services/auth/authShared';
 import { recordAuthOperationalError } from '@/services/auth/authOperationalTelemetry';
-import { defaultAuthRuntime } from '@/services/firebase-runtime/authRuntime';
+import { type AuthRuntime, defaultAuthRuntime } from '@/services/firebase-runtime/authRuntime';
 import { resolveUserRoleClaim } from '@/services/auth/authClaimSyncService';
 
 const STANDARD_UNAUTHORIZED_MESSAGE =
@@ -11,13 +11,27 @@ const STANDARD_UNAUTHORIZED_MESSAGE =
 const ROLE_VALIDATION_UNAVAILABLE_MESSAGE =
   'No se pudo validar tu acceso en este momento. Intenta nuevamente en unos segundos.';
 
-const rejectUnauthorizedUser = async (message: string): Promise<never> => {
-  await defaultAuthRuntime.ready;
-  await firebaseSignOut(defaultAuthRuntime.auth);
+interface AuthRuntimeOptions {
+  authRuntime?: AuthRuntime;
+}
+
+const resolveAuthRuntime = ({ authRuntime }: AuthRuntimeOptions = {}): AuthRuntime =>
+  authRuntime ?? defaultAuthRuntime;
+
+const rejectUnauthorizedUser = async (
+  message: string,
+  authRuntime: AuthRuntime
+): Promise<never> => {
+  await authRuntime.ready;
+  await firebaseSignOut(authRuntime.auth);
   throw new Error(message);
 };
 
-export const authorizeFirebaseUser = async (user: User): Promise<AuthUser> => {
+export const authorizeFirebaseUser = async (
+  user: User,
+  options?: AuthRuntimeOptions
+): Promise<AuthUser> => {
+  const authRuntime = resolveAuthRuntime(options);
   const { allowed, role, resolution } = await resolveGeneralLoginAccessForEmail(user.email || '');
   if (allowed && role) {
     return toAuthUser(user, role);
@@ -33,20 +47,23 @@ export const authorizeFirebaseUser = async (user: User): Promise<AuthUser> => {
   }
 
   if (!allowed) {
-    return rejectUnauthorizedUser(STANDARD_UNAUTHORIZED_MESSAGE);
+    return rejectUnauthorizedUser(STANDARD_UNAUTHORIZED_MESSAGE, authRuntime);
   }
   throw createAuthError('auth/role-validation-unavailable', ROLE_VALIDATION_UNAVAILABLE_MESSAGE);
 };
 
-export const authorizeCurrentFirebaseUser = async (): Promise<AuthUser | null> => {
-  await defaultAuthRuntime.ready;
-  const existingUser = defaultAuthRuntime.getCurrentUser();
+export const authorizeCurrentFirebaseUser = async (
+  options?: AuthRuntimeOptions
+): Promise<AuthUser | null> => {
+  const authRuntime = resolveAuthRuntime(options);
+  await authRuntime.ready;
+  const existingUser = authRuntime.getCurrentUser();
   if (!existingUser || existingUser.isAnonymous) {
     return null;
   }
 
   try {
-    return await authorizeFirebaseUser(existingUser);
+    return await authorizeFirebaseUser(existingUser, { authRuntime });
   } catch (error) {
     const err = error as { message?: string };
     if (err.message?.includes('no autorizado')) {

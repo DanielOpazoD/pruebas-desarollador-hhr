@@ -47,4 +47,22 @@ describe('authRequestHeaders', () => {
     });
     expect(getIdToken).toHaveBeenCalledTimes(2);
   });
+
+  it('supports an injected auth runtime seam', async () => {
+    const getIdToken = vi.fn().mockResolvedValue('injected-token');
+
+    await expect(
+      resolveCurrentUserBearerToken({
+        authRuntime: {
+          ready: Promise.resolve(),
+          auth: {} as never,
+          getCurrentUser: () =>
+            ({
+              isAnonymous: false,
+              getIdToken,
+            }) as never,
+        },
+      })
+    ).resolves.toBe('injected-token');
+  });
 });

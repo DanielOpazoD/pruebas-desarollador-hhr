@@ -84,6 +84,25 @@
         "branches": 85.0
       }
     },
+    "src/app-shell": {
+      "label": "src/app-shell",
+      "sources": [
+        "src/components/layout/AppContent.tsx",
+        "src/components/layout/NavbarMenu.tsx",
+        "src/components/layout/NavbarTabs.tsx",
+        "src/components/layout/StorageStatusBadge.tsx",
+        "src/components/layout/app-content/useAppContentEventBridge.ts",
+        "src/components/ui/DatabaseStatusBanner.tsx"
+      ],
+      "tests": "src/tests/components",
+      "minTestFileCount": 6,
+      "minTestToSourceRatio": 1.5,
+      "coverageBaseline": {
+        "lines": 80.0,
+        "functions": 70.0,
+        "branches": 81.0
+      }
+    },
     "src/services/storage/sync-critical": {
       "label": "src/services/storage/sync-critical",
       "sources": [
