@@ -7,7 +7,7 @@ import {
   Origin,
   BiologicalSex,
 } from './types';
-import { PatientIdentityStatus } from '@/types/domain/base';
+import { PatientIdentityStatus } from '@/types/domain/patientIdentity';
 
 export const normalizeNamePart = (value: string): string => value.trim().replace(/\s+/g, ' ');
 const normalizeComparableName = (value: string): string => normalizeNamePart(value).toLowerCase();

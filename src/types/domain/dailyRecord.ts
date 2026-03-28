@@ -1,50 +1,25 @@
-import type { Specialty, PatientStatus, BedType } from './base';
+import type { BedType } from './base';
 import type { PatientData } from './patient';
-import type {
-  CudyrScore,
-  ClinicalEvent,
-  DeviceDetails,
-  DeviceInstance,
-  FhirResource,
-} from './clinical';
 import type { DischargeData, TransferData, CMAData } from './movements';
-
-export type MedicalSpecialty =
-  | 'cirugia'
-  | 'traumatologia'
-  | 'ginecobstetricia'
-  | 'pediatria'
-  | 'psiquiatria'
-  | 'medicinaInterna';
-
-export interface MedicalHandoffActor {
-  uid: string;
-  displayName: string;
-  email: string;
-  specialty?: MedicalSpecialty;
-  role?: string;
-}
-
-export interface MedicalHandoffDailyContinuityEntry {
-  status: 'updated_by_specialist' | 'confirmed_no_changes';
-  confirmedBy?: MedicalHandoffActor;
-  confirmedAt?: string;
-  comment?: string;
-}
-
-export interface MedicalSpecialtyHandoffNote {
-  note: string;
-  createdAt: string;
-  updatedAt: string;
-  author: MedicalHandoffActor;
-  lastEditor?: MedicalHandoffActor;
-  version: number;
-  dailyContinuity?: Record<string, MedicalHandoffDailyContinuityEntry>;
-}
-
-export type MedicalHandoffBySpecialty = Partial<
-  Record<MedicalSpecialty, MedicalSpecialtyHandoffNote>
->;
+import type {
+  MedicalHandoffBySpecialty,
+  MedicalSignature,
+  MedicalSignatureByScope,
+  MedicalSignatureScope,
+  MedicalSignatureTimestampByScope,
+} from './dailyRecordMedicalHandoff';
+export type {
+  MedicalHandoffActor,
+  MedicalHandoffBySpecialty,
+  MedicalHandoffDailyContinuityEntry,
+  MedicalSignature,
+  MedicalSignatureByScope,
+  MedicalSignatureScope,
+  MedicalSignatureTimestampByScope,
+  MedicalSpecialty,
+  MedicalSpecialtyHandoffNote,
+} from './dailyRecordMedicalHandoff';
+export type { DailyRecordPatch, DailyRecordPatchPath } from './dailyRecordPatch';
 
 export interface DailyRecord {
   date: string;
@@ -100,23 +75,10 @@ export interface DailyRecord {
   // ===== Medical Handoff Signature =====
   medicalHandoffDoctor?: string; // Doctor delivering the shift
   medicalHandoffSentAt?: string; // Timestamp when the share link was clicked
-  medicalHandoffSentAtByScope?: Partial<Record<'all' | 'upc' | 'no-upc', string>>;
-  medicalSignatureLinkTokenByScope?: Partial<Record<'all' | 'upc' | 'no-upc', string>>;
-  medicalSignature?: {
-    doctorName: string;
-    signedAt: string; // ISO timestamp
-    userAgent?: string; // Optional device info
-  };
-  medicalSignatureByScope?: Partial<
-    Record<
-      'all' | 'upc' | 'no-upc',
-      {
-        doctorName: string;
-        signedAt: string;
-        userAgent?: string;
-      }
-    >
-  >;
+  medicalHandoffSentAtByScope?: MedicalSignatureTimestampByScope;
+  medicalSignatureLinkTokenByScope?: Partial<Record<MedicalSignatureScope, string>>;
+  medicalSignature?: MedicalSignature;
+  medicalSignatureByScope?: MedicalSignatureByScope;
 
   // ===== CUDYR Lock (Prevents new patients from being added to CUDYR after cutoff) =====
   /** Whether CUDYR editing is locked for this day */
@@ -128,119 +90,3 @@ export interface DailyRecord {
   /** ISO timestamp when the last CUDYR score or closure was saved */
   cudyrUpdatedAt?: string;
 }
-
-// ============================================================================
-// Patch Types for Type-Safe Firestore Updates
-// ============================================================================
-
-/**
- * Represents a dot-notation path for nested object updates.
- * Used by Firestore's updateDoc for partial updates.
- */
-
-// Type-safe paths for PatientData fields
-type PatientFieldPath = `beds.${string}.${keyof PatientData}`;
-type PatientCudyrPath = `beds.${string}.cudyr.${keyof CudyrScore}`;
-type PatientClinicalCribPath = `beds.${string}.clinicalCrib.${keyof PatientData}`;
-type PatientDeviceDetailsPath = `beds.${string}.deviceDetails.${string}`;
-
-// Type-safe paths for Top-level DailyRecord fields
-type TopLevelPath = keyof Pick<
-  DailyRecord,
-  | 'date'
-  | 'lastUpdated'
-  | 'nurses'
-  | 'nurseName'
-  | 'nursesDayShift'
-  | 'nursesNightShift'
-  | 'tensDayShift'
-  | 'tensNightShift'
-  | 'activeExtraBeds'
-  | 'discharges'
-  | 'transfers'
-  | 'cma'
-  | 'beds'
-  | 'handoffNovedadesDayShift'
-  | 'handoffNovedadesNightShift'
-  | 'medicalHandoffNovedades'
-  | 'medicalHandoffBySpecialty'
-  | 'medicalHandoffDoctor'
-  | 'medicalHandoffSentAt'
-  | 'medicalHandoffSentAtByScope'
-  | 'medicalSignatureLinkTokenByScope'
-  | 'medicalSignature'
-  | 'medicalSignatureByScope'
-  | 'cudyrLocked'
-  | 'cudyrLockedAt'
-  | 'cudyrLockedBy'
-  | 'cudyrUpdatedAt'
->;
-
-// Type-safe paths for Handoff Checklist
-type HandoffDayChecklistPath = `handoffDayChecklist.${string}`;
-type HandoffNightChecklistPath = `handoffNightChecklist.${string}`;
-type HandoffStaffPath =
-  | `handoffDayDelivers`
-  | `handoffDayReceives`
-  | `handoffNightDelivers`
-  | `handoffNightReceives`;
-type MedicalSignaturePath =
-  | `medicalSignature`
-  | `medicalSignature.${string}`
-  | `medicalSignatureByScope`
-  | `medicalSignatureByScope.${string}`
-  | `medicalSignatureByScope.${string}.${string}`
-  | `medicalHandoffSentAtByScope`
-  | `medicalHandoffSentAtByScope.${string}`
-  | `medicalSignatureLinkTokenByScope`
-  | `medicalSignatureLinkTokenByScope.${string}`;
-
-/**
- * Union of all valid patch paths.
- * This provides compile-time checking for patch keys.
- */
-export type DailyRecordPatchPath =
-  | TopLevelPath
-  | PatientFieldPath
-  | PatientCudyrPath
-  | PatientClinicalCribPath
-  | PatientDeviceDetailsPath
-  | HandoffDayChecklistPath
-  | HandoffNightChecklistPath
-  | HandoffStaffPath
-  | MedicalSignaturePath;
-
-/**
- * Type-safe patch object for DailyRecord updates.
- * Keys are dot-notation paths, values are the corresponding field types.
- * The string index signature allows dynamic paths while known paths get type hints.
- */
-export type DailyRecordPatch = {
-  [K in DailyRecordPatchPath]?: K extends TopLevelPath
-    ? DailyRecord[K]
-    : K extends PatientCudyrPath
-      ? number
-      : K extends HandoffDayChecklistPath | HandoffNightChecklistPath
-        ? boolean | string
-        : K extends HandoffStaffPath
-          ? string[]
-          : // For dynamic paths, allow common value types
-              | string
-              | number
-              | boolean
-              | string[]
-              | PatientData
-              | CudyrScore
-              | DeviceDetails
-              | PatientStatus
-              | Specialty
-              | ClinicalEvent[]
-              | DeviceInstance[]
-              | FhirResource
-              | Record<string, unknown>
-              | null
-              | undefined;
-} & {
-  // Fallback: Allow any string key with unknown value for truly dynamic paths
-  [key: string]: unknown;
-};

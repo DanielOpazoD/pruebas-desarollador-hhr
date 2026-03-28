@@ -1,7 +1,7 @@
 import type { jsPDF } from 'jspdf';
 
 import { BEDS } from '@/constants/beds';
-import { ShiftType } from '@/types/domain/base';
+import type { ShiftType } from '@/types/domain/shift';
 import type { HandoffPdfPatientTableRecord } from '@/services/pdf/contracts/handoffPdfContracts';
 import { formatDateDDMMYYYY } from '@/utils/dateUtils';
 

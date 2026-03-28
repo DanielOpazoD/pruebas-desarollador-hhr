@@ -1,5 +1,5 @@
 import { PatientData } from '@/services/contracts/patientServiceContracts';
-import { ShiftType } from '@/types/domain/base';
+import type { ShiftType } from '@/types/domain/shift';
 import { DeviceDetails } from '@/types/domain/clinical';
 
 import { calculateHospitalizedDays } from './handoffPdfUtils';

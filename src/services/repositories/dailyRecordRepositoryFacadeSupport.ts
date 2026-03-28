@@ -1,4 +1,5 @@
-import { DailyRecord, DailyRecordPatch } from '@/types/domain/dailyRecord';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecordPatch } from '@/types/domain/dailyRecordPatch';
 import { deleteRecord as deleteFromIndexedDB } from '@/services/storage/records';
 import {
   deleteRecordFromFirestore,

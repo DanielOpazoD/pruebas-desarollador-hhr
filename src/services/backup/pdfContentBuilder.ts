@@ -8,9 +8,9 @@
 
 import type jsPDF from 'jspdf';
 // import autoTable from 'jspdf-autotable'; // Removed static import
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import { PatientData } from '@/services/contracts/patientServiceContracts';
-import { ShiftType } from '@/types/domain/base';
+import type { ShiftType } from '@/types/domain/shift';
 import { DeviceDetails } from '@/types/domain/clinical';
 import { BEDS } from '@/constants/beds';
 import { formatDateDDMMYYYY } from '@/utils/dateUtils';

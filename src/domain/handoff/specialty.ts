@@ -1,9 +1,9 @@
 import type { AuthUser } from '@/types/auth';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import type {
-  DailyRecord,
   MedicalSpecialty,
   MedicalSpecialtyHandoffNote,
-} from '@/types/domain/dailyRecord';
+} from '@/types/domain/dailyRecordMedicalHandoff';
 import { canManageAllMedicalSpecialties } from '@/shared/access/operationalAccessPolicy';
 
 export const MEDICAL_SPECIALTY_ORDER: readonly MedicalSpecialty[] = [

@@ -1,5 +1,5 @@
 import { PatientData } from '@/types/domain/patient';
-import { PatientIdentityStatus } from '@/types/domain/base';
+import { PatientIdentityStatus } from '@/types/domain/patientIdentity';
 
 export type BiologicalSex = 'Masculino' | 'Femenino' | 'Indeterminado';
 export type Insurance = 'Fonasa' | 'Isapre' | 'Particular';

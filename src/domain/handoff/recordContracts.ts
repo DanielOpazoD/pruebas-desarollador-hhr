@@ -1,11 +1,11 @@
+import type { DailyRecord as RootDailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecordPatch as RootDailyRecordPatch } from '@/types/domain/dailyRecordPatch';
 import type {
-  DailyRecord as RootDailyRecord,
-  DailyRecordPatch as RootDailyRecordPatch,
   MedicalHandoffActor as RootMedicalHandoffActor,
   MedicalSpecialty as RootMedicalSpecialty,
   MedicalHandoffBySpecialty,
   MedicalSpecialtyHandoffNote as RootMedicalSpecialtyHandoffNote,
-} from '@/types/domain/dailyRecord';
+} from '@/types/domain/dailyRecordMedicalHandoff';
 import type { DischargeData, TransferData, CMAData } from '@/types/domain/movements';
 import type { HandoffPatientContract } from '@/domain/handoff/patientContracts';
 

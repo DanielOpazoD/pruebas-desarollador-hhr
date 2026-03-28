@@ -1,4 +1,4 @@
-import { ShiftType } from '@/types/domain/base';
+import type { ShiftType } from '@/types/domain/shift';
 import type { HandoffPdfStaffingRecord } from '@/services/pdf/contracts/handoffPdfContracts';
 import { calculateHospitalizedDays } from '@/utils/dateUtils';
 import { resolveHandoffShiftStaff } from '@/services/staff/dailyRecordStaffing';

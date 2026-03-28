@@ -1,10 +1,10 @@
+import type { DailyRecord as RootDailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecordPatch as RootDailyRecordPatch } from '@/types/domain/dailyRecordPatch';
 import type {
-  DailyRecord as RootDailyRecord,
-  DailyRecordPatch as RootDailyRecordPatch,
   MedicalHandoffActor as RootMedicalHandoffActor,
   MedicalSpecialty as RootMedicalSpecialty,
   MedicalSpecialtyHandoffNote as RootMedicalSpecialtyHandoffNote,
-} from '@/types/domain/dailyRecord';
+} from '@/types/domain/dailyRecordMedicalHandoff';
 
 export type DailyRecord = RootDailyRecord;
 export type DailyRecordPatch = RootDailyRecordPatch;

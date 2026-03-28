@@ -1,4 +1,4 @@
-import type { DailyRecordPatch } from '@/types/domain/dailyRecord';
+import type { DailyRecordPatch } from '@/types/domain/dailyRecordPatch';
 
 export type DailyRecordDomainContext =
   | 'clinical'

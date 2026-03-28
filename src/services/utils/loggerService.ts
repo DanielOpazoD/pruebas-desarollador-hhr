@@ -9,26 +9,11 @@
  * - Context support for grouping related logs
  */
 
-// ============================================================================
-// Types
-// ============================================================================
+import { emitConsoleLog } from '@/services/utils/loggerConsoleSink';
+import { formatLogMessage } from '@/services/utils/loggerFormat';
+import type { LogEntry, LogLevel, LoggerConfig } from '@/services/utils/loggerTypes';
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'none';
-
-export interface LogEntry {
-  timestamp: string;
-  level: LogLevel;
-  message: string;
-  context?: string;
-  data?: unknown;
-}
-
-interface LoggerConfig {
-  minLevel: LogLevel;
-  enableTimestamps: boolean;
-  enableContext: boolean;
-  maxStoredEntries: number;
-}
+export type { LogEntry, LogLevel } from '@/services/utils/loggerTypes';
 
 // Level priority for filtering
 const LEVEL_PRIORITY: Record<LogLevel, number> = {
@@ -47,27 +32,6 @@ const getPerformanceNow = (): number =>
   typeof performance !== 'undefined' && typeof performance.now === 'function'
     ? performance.now()
     : Date.now();
-
-const emitConsole = (level: LogLevel, formattedMessage: string, data?: unknown): void => {
-  const payload = data !== undefined ? data : '';
-
-  switch (level) {
-    case 'debug':
-      // eslint-disable-next-line no-console
-      console.debug(formattedMessage, payload);
-      break;
-    case 'info':
-      // eslint-disable-next-line no-console
-      console.info(formattedMessage, payload);
-      break;
-    case 'warn':
-      console.warn(formattedMessage, payload);
-      break;
-    case 'error':
-      console.error(formattedMessage, payload);
-      break;
-  }
-};
 
 // ============================================================================
 // Logger Class
@@ -119,24 +83,6 @@ class LoggerService {
     return LEVEL_PRIORITY[level] >= LEVEL_PRIORITY[this.config.minLevel];
   }
 
-  private formatMessage(level: LogLevel, message: string, context?: string): string {
-    const parts: string[] = [];
-
-    if (this.config.enableTimestamps) {
-      parts.push(`[${new Date().toISOString().slice(11, 23)}]`);
-    }
-
-    parts.push(`[${level.toUpperCase()}]`);
-
-    if (context && this.config.enableContext) {
-      parts.push(`[${context}]`);
-    }
-
-    parts.push(message);
-
-    return parts.join(' ');
-  }
-
   private storeEntry(entry: LogEntry): void {
     this.entries.push(entry);
     if (this.entries.length > this.config.maxStoredEntries) {
@@ -157,8 +103,8 @@ class LoggerService {
 
     this.storeEntry(entry);
 
-    const formattedMessage = this.formatMessage(level, message, context);
-    emitConsole(level, formattedMessage, data);
+    const formattedMessage = formatLogMessage(this.config, level, message, context);
+    emitConsoleLog(level, formattedMessage, data);
   }
 
   // ========================================================================

@@ -23,8 +23,8 @@ export enum PatientStatus {
   EMPTY = '',
 }
 
-export type ShiftType = 'day' | 'night';
-export type PatientIdentityStatus = 'provisional' | 'official';
+export type { ShiftType } from './shift';
+export type { PatientIdentityStatus } from './patientIdentity';
 
 export interface BedDefinition {
   id: string;

@@ -1,5 +1,5 @@
 import type { jsPDF } from 'jspdf';
-import { ShiftType } from '@/types/domain/base';
+import type { ShiftType } from '@/types/domain/shift';
 import type {
   HandoffPdfChecklistRecord,
   HandoffPdfNovedadesRecord,

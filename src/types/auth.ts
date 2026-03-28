@@ -3,7 +3,7 @@
  * Centralized type definitions for user authentication and authorization.
  */
 
-import type { MedicalSpecialty } from './domain/dailyRecord';
+import type { MedicalSpecialty } from './domain/dailyRecordMedicalHandoff';
 
 /**
  * Available user roles in the application.

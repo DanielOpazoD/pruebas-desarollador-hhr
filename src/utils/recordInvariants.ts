@@ -1,4 +1,5 @@
-import { DailyRecord, DailyRecordPatch } from '@/types/domain/dailyRecord';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecordPatch } from '@/types/domain/dailyRecordPatch';
 import { BEDS, EXTRA_BEDS } from '@/constants/beds';
 import { createEmptyPatient } from '@/services/factories/patientFactory';
 

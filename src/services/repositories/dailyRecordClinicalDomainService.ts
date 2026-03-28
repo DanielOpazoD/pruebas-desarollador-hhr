@@ -1,5 +1,6 @@
 import { BEDS } from '@/constants/beds';
-import type { DailyRecord, DailyRecordPatch } from '@/types/domain/dailyRecord';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecordPatch } from '@/types/domain/dailyRecordPatch';
 import type { PatientData } from '@/services/contracts/patientServiceContracts';
 import { clonePatient, createEmptyPatient } from '@/services/factories/patientFactory';
 import { parsePatientDataWithDefaults } from '@/schemas/zodSchemas';

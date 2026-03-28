@@ -1,4 +1,5 @@
-import { DailyRecord, DailyRecordPatch } from '@/types/domain/dailyRecord';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecordPatch } from '@/types/domain/dailyRecordPatch';
 import { applyPatches } from '@/utils/patchUtils';
 import {
   CONFLICT_RESOLUTION_POLICY_VERSION,

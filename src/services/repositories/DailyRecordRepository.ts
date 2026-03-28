@@ -7,7 +7,7 @@
  */
 
 import { DailyRecord } from '@/types/domain/dailyRecord';
-import { DailyRecordPatch } from '@/types/domain/dailyRecord';
+import type { DailyRecordPatch } from '@/types/domain/dailyRecordPatch';
 import type { DailyRecordReadResult } from './contracts/dailyRecordQueries';
 import type { SyncDailyRecordResult } from './contracts/dailyRecordResults';
 // import {

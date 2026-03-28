@@ -1,5 +1,6 @@
 import type { DailyRecord } from '@/domain/handoff/recordContracts';
-import type { BedDefinition, ShiftType, Specialty } from '@/types/domain/base';
+import type { BedDefinition, Specialty } from '@/types/domain/base';
+import type { ShiftType } from '@/types/domain/shift';
 import { buildMedicalHandoffSummary } from './medicalSpecialtyHandoffController';
 import { resolveHandoffDocumentTitleLabel } from '@/shared/handoff/handoffPresentation';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
