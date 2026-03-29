@@ -5,7 +5,7 @@
  * Ensures data is preserved and backed up in IndexedDB.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { isIndexedDBAvailable, migrateFromLocalStorage } from '@/services/storage/core';
 import { storageMigrationLogger } from '@/hooks/hookLoggers';
 
@@ -32,13 +32,31 @@ export const useStorageMigration = (options: UseStorageMigrationOptions = {}): M
     didMigrate: false,
     error: null,
   });
+  const isMountedRef = useRef(true);
+  const migrationRequestIdRef = useRef(0);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!enabled) {
       return;
     }
 
+    const requestId = ++migrationRequestIdRef.current;
+    let cancelled = false;
+
+    const isStale = () =>
+      cancelled || !isMountedRef.current || requestId !== migrationRequestIdRef.current;
+
     const runMigration = async () => {
+      if (isStale()) {
+        return;
+      }
+
       setState({
         isComplete: false,
         isMigrating: true,
@@ -49,6 +67,9 @@ export const useStorageMigration = (options: UseStorageMigrationOptions = {}): M
       // Check if IndexedDB is available
       if (!isIndexedDBAvailable()) {
         storageMigrationLogger.warn('IndexedDB not available, using localStorage only');
+        if (isStale()) {
+          return;
+        }
         setState({
           isComplete: true,
           isMigrating: false,
@@ -62,6 +83,10 @@ export const useStorageMigration = (options: UseStorageMigrationOptions = {}): M
         // Run migration (will skip if already done)
         const didMigrate = await migrateFromLocalStorage();
 
+        if (isStale()) {
+          return;
+        }
+
         setState({
           isComplete: true,
           isMigrating: false,
@@ -70,6 +95,9 @@ export const useStorageMigration = (options: UseStorageMigrationOptions = {}): M
         });
       } catch (error) {
         storageMigrationLogger.error('Storage migration failed', error);
+        if (isStale()) {
+          return;
+        }
         setState({
           isComplete: true,
           isMigrating: false,
@@ -79,7 +107,11 @@ export const useStorageMigration = (options: UseStorageMigrationOptions = {}): M
       }
     };
 
-    runMigration();
+    void runMigration();
+
+    return () => {
+      cancelled = true;
+    };
   }, [enabled]);
 
   return useMemo(

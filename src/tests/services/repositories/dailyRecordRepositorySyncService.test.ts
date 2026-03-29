@@ -137,4 +137,42 @@ describe('dailyRecordRepositorySyncService', () => {
       false
     );
   });
+
+  it('ignores async subscription results that complete after unsubscribe', async () => {
+    let emitRecord: ((record: DailyRecord | null, hasPendingWrites: boolean) => void) | null = null;
+    const unsubscribe = vi.fn();
+
+    vi.mocked(getRecordFromIndexedDB).mockImplementation(
+      () =>
+        new Promise(resolve => {
+          setTimeout(() => {
+            resolve({
+              date: '2026-03-03',
+              beds: { R1: { patientName: 'Paciente Local' } },
+              lastUpdated: '2026-03-03T12:00:00.000Z',
+            } as unknown as DailyRecord);
+          }, 0);
+        })
+    );
+
+    vi.mocked(subscribeToRecord).mockImplementationOnce((_date, callback) => {
+      emitRecord = callback;
+      return unsubscribe;
+    });
+
+    const callback = vi.fn();
+    const stop = subscribeDetailed('2026-03-03', callback);
+
+    expect(emitRecord).toBeTypeOf('function');
+    const fireSubscription = emitRecord as unknown as (
+      record: DailyRecord | null,
+      hasPendingWrites: boolean
+    ) => void;
+    fireSubscription(null, false);
+    stop();
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    expect(callback).not.toHaveBeenCalled();
+  });
 });

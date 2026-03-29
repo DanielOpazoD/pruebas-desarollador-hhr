@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   getSyncQueueTelemetry,
   listRecentSyncQueueOperations,
@@ -60,13 +60,28 @@ export const useSyncQueueMonitor = (
   } = options;
   const [stats, setStats] = useState<SyncQueueStats>(EMPTY_STATS);
   const [operations, setOperations] = useState<SyncQueueOperation[]>([]);
+  const isMountedRef = useRef(true);
+  const refreshRequestIdRef = useRef(0);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const refresh = useCallback(async () => {
+    const requestId = ++refreshRequestIdRef.current;
+
     try {
       const [nextStats, nextOps] = await Promise.all([
         getSyncQueueTelemetry(),
         listRecentSyncQueueOperations(operationLimit),
       ]);
+
+      if (!isMountedRef.current || requestId !== refreshRequestIdRef.current) {
+        return;
+      }
+
       setStats({
         pending: nextStats.pending,
         failed: nextStats.failed,
@@ -79,6 +94,10 @@ export const useSyncQueueMonitor = (
       });
       setOperations(nextOps);
     } catch (error) {
+      if (!isMountedRef.current || requestId !== refreshRequestIdRef.current) {
+        return;
+      }
+
       syncQueueMonitorLogger.warn('Failed to refresh queue monitor', error);
     }
   }, [operationLimit]);

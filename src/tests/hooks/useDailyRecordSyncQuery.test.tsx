@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useDailyRecordSyncQuery } from '@/hooks/useDailyRecordSyncQuery';
 import * as DailyRecordRepository from '@/services/repositories/DailyRecordRepository';
+import { createSyncDailyRecordResult } from '@/services/repositories/contracts/dailyRecordResults';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
 import type { DailyRecord } from '@/types';
 import { DataFactory } from '@/tests/factories/DataFactory';
@@ -52,6 +53,16 @@ vi.mock('@/services/repositories/DailyRecordRepository', () => {
 });
 
 import { UIProvider } from '@/context/UIContext';
+
+const createDeferred = <T,>() => {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+};
 
 const createWrapper = () => {
   const { wrapper } = createQueryClientTestWrapper({
@@ -140,6 +151,58 @@ describe('useDailyRecordSyncQuery', () => {
 
     await waitFor(() => {
       expect(DailyRecordRepository.syncWithFirestoreDetailed).toHaveBeenCalledWith(mockDate);
+    });
+  });
+
+  it('keeps the newest refresh result when an older sync resolves later', async () => {
+    vi.mocked(DailyRecordRepository.getForDateWithMeta).mockResolvedValue(
+      buildReadResult(mockRecord)
+    );
+
+    const firstRefresh = createDeferred<ReturnType<typeof createSyncDailyRecordResult>>();
+    const secondRefresh = createDeferred<ReturnType<typeof createSyncDailyRecordResult>>();
+
+    vi.mocked(DailyRecordRepository.syncWithFirestoreDetailed)
+      .mockImplementationOnce(() => firstRefresh.promise)
+      .mockImplementationOnce(() => secondRefresh.promise);
+
+    const { result } = renderHook(() => useDailyRecordSyncQuery(mockDate), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.record).not.toBeNull());
+    vi.mocked(DailyRecordRepository.syncWithFirestoreDetailed).mockClear();
+    vi.mocked(DailyRecordRepository.getForDateWithMeta).mockClear();
+
+    result.current.refresh();
+    result.current.refresh();
+
+    await waitFor(() => {
+      expect(DailyRecordRepository.syncWithFirestoreDetailed).toHaveBeenCalledTimes(2);
+    });
+
+    secondRefresh.resolve(
+      createSyncDailyRecordResult({
+        date: mockDate,
+        outcome: 'clean',
+        record: mockRecord,
+      })
+    );
+
+    await waitFor(() => {
+      expect(DailyRecordRepository.getForDateWithMeta).toHaveBeenCalledTimes(1);
+    });
+
+    firstRefresh.resolve(
+      createSyncDailyRecordResult({
+        date: mockDate,
+        outcome: 'clean',
+        record: mockRecord,
+      })
+    );
+
+    await waitFor(() => {
+      expect(DailyRecordRepository.getForDateWithMeta).toHaveBeenCalledTimes(1);
     });
   });
 

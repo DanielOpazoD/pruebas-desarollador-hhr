@@ -9,6 +9,16 @@ vi.mock('@/services/storage/core', () => ({
   isIndexedDBAvailable: vi.fn(),
 }));
 
+const createDeferred = <T>() => {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+};
+
 describe('useStorageMigration', () => {
   let consoleSpies: Array<{ mockRestore: () => void }> = [];
 
@@ -100,5 +110,49 @@ describe('useStorageMigration', () => {
     });
 
     expect(result.current.error).toBe('Unknown error');
+  });
+
+  it('keeps the newest migration result when an older run resolves later', async () => {
+    vi.mocked(storageCore.isIndexedDBAvailable).mockReturnValue(true);
+
+    const firstMigration = createDeferred<boolean>();
+    const secondMigration = createDeferred<boolean>();
+
+    vi.mocked(storageCore.migrateFromLocalStorage)
+      .mockImplementationOnce(() => firstMigration.promise)
+      .mockImplementationOnce(() => secondMigration.promise);
+
+    const { result, rerender } = renderHook(
+      ({ enabled }: { enabled: boolean }) => useStorageMigration({ enabled }),
+      {
+        initialProps: { enabled: true },
+      }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isMigrating).toBe(true);
+    });
+
+    rerender({ enabled: false });
+    rerender({ enabled: true });
+
+    await waitFor(() => {
+      expect(storageCore.migrateFromLocalStorage).toHaveBeenCalledTimes(2);
+    });
+
+    secondMigration.resolve(false);
+
+    await waitFor(() => {
+      expect(result.current.isComplete).toBe(true);
+      expect(result.current.isMigrating).toBe(false);
+      expect(result.current.didMigrate).toBe(false);
+    });
+
+    firstMigration.resolve(true);
+
+    await waitFor(() => {
+      expect(result.current.didMigrate).toBe(false);
+      expect(result.current.error).toBeNull();
+    });
   });
 });

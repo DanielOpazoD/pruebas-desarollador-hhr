@@ -60,24 +60,37 @@ export const subscribeDetailed = (
   date: string,
   callback: (result: SyncDailyRecordResult, hasPendingWrites: boolean) => void
 ): (() => void) => {
-  return subscribeToRecord(date, async (record, hasPendingWrites) => {
-    const migrated = record ? migrateLegacyData(record, date) : null;
-    const result = hasPendingWrites
-      ? createSyncDailyRecordResult({
-          date,
-          outcome: migrated ? 'clean' : 'missing',
-          record: migrated,
-          consistencyState: migrated ? 'up_to_date' : 'missing_remote',
-          sourceOfTruth: migrated ? 'local' : 'none',
-          retryability: 'not_applicable',
-          recoveryAction: 'none',
-          conflictSummary: null,
-          observabilityTags: ['daily_record', 'sync', 'subscription_pending_write'],
-          repairApplied: false,
-        })
-      : await resolveSubscriptionResult(date, migrated, migrated ? 'resolved' : 'missing');
-    callback(result, hasPendingWrites);
+  let active = true;
+
+  const unsubscribe = subscribeToRecord(date, (record, hasPendingWrites) => {
+    void (async () => {
+      if (!active) return;
+
+      const migrated = record ? migrateLegacyData(record, date) : null;
+      const result = hasPendingWrites
+        ? createSyncDailyRecordResult({
+            date,
+            outcome: migrated ? 'clean' : 'missing',
+            record: migrated,
+            consistencyState: migrated ? 'up_to_date' : 'missing_remote',
+            sourceOfTruth: migrated ? 'local' : 'none',
+            retryability: 'not_applicable',
+            recoveryAction: 'none',
+            conflictSummary: null,
+            observabilityTags: ['daily_record', 'sync', 'subscription_pending_write'],
+            repairApplied: false,
+          })
+        : await resolveSubscriptionResult(date, migrated, migrated ? 'resolved' : 'missing');
+
+      if (!active) return;
+      callback(result, hasPendingWrites);
+    })();
   });
+
+  return () => {
+    active = false;
+    unsubscribe();
+  };
 };
 
 export const subscribe = (

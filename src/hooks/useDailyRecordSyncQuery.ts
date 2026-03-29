@@ -67,6 +67,8 @@ export const useDailyRecordSyncQuery = (
   const deleteMutation = useDeleteDailyRecordMutation();
   const pendingRefetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const todayNullRecoveryAttemptedRef = useRef<string | null>(null);
+  const isMountedRef = useRef(true);
+  const refreshRequestIdRef = useRef(0);
 
   const clearPendingRefetchTimeout = useCallback(() => {
     if (pendingRefetchTimeoutRef.current !== null) {
@@ -75,7 +77,12 @@ export const useDailyRecordSyncQuery = (
     }
   }, []);
 
-  useEffect(() => clearPendingRefetchTimeout, [clearPendingRefetchTimeout]);
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      clearPendingRefetchTimeout();
+    };
+  }, [clearPendingRefetchTimeout]);
 
   useEffect(() => {
     if (record) {
@@ -99,18 +106,28 @@ export const useDailyRecordSyncQuery = (
 
     todayNullRecoveryAttemptedRef.current = currentDateString;
 
+    let cancelled = false;
+
     void executeSyncDailyRecord({
       date: currentDateString,
       repository: dailyRecord,
     }).then(outcome => {
+      if (cancelled || !isMountedRef.current) {
+        return;
+      }
+
       dailyRecordObservability.recordOutcome('recover_today_empty_daily_record', outcome, {
         date: currentDateString,
         context: {
           source: 'useDailyRecordSyncQuery',
         },
       });
-      refetch();
+      void refetch();
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentDateString, dailyRecord, record, recordRuntime, refetch]);
 
   // 3. Status Mapping
@@ -227,10 +244,16 @@ export const useDailyRecordSyncQuery = (
   }, []);
 
   const refresh = useCallback(() => {
+    const requestId = ++refreshRequestIdRef.current;
+
     void executeSyncDailyRecord({
       date: currentDateString,
       repository: dailyRecord,
     }).then(outcome => {
+      if (!isMountedRef.current || requestId !== refreshRequestIdRef.current) {
+        return;
+      }
+
       dailyRecordObservability.recordOutcome('refresh_daily_record', outcome, {
         date: currentDateString,
       });
@@ -240,7 +263,7 @@ export const useDailyRecordSyncQuery = (
       } else if (notice.channel === 'error') {
         notifyError(notice.title || 'Sincronización', notice.message);
       }
-      refetch();
+      void refetch();
     });
   }, [currentDateString, dailyRecord, refetch, warning, notifyError]);
 
