@@ -2,6 +2,7 @@ import type { jsPDF } from 'jspdf';
 import type { ShiftType } from '@/types/domain/shift';
 import type { HandoffPdfRecord } from '@/services/pdf/contracts/handoffPdfContracts';
 import { Schedule } from './handoffPdfUtils';
+import { saveAndDownloadPdf } from './pdfBase';
 import {
   addPatientTable,
   addMovementsSummary,
@@ -12,6 +13,12 @@ import {
   addPageFooter,
   AutoTableFunction,
 } from './handoffPdfSections';
+
+const buildHandoffPdfFileName = (date: string, selectedShift: ShiftType): string => {
+  const [year, month, day] = date.split('-');
+  const shiftLabel = selectedShift === 'day' ? 'Largo' : 'Noche';
+  return `${day}-${month}-${year} - Turno ${shiftLabel}.pdf`;
+};
 
 /**
  * Generate a lightweight PDF for the Handoff report.
@@ -75,37 +82,6 @@ export const generateHandoffPdf = async (
   // 7. PAGE NUMBERS
   addPageFooter(doc, margin);
 
-  // Output: Trigger Print Dialog Directly (using hidden iframe)
-  triggerIframePrint(doc);
-};
-
-/**
- * Helper to trigger print via a hidden iframe
- */
-const triggerIframePrint = (doc: jsPDF) => {
-  const blob = doc.output('blob');
-  const url = URL.createObjectURL(blob);
-
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'fixed';
-  iframe.style.right = '0';
-  iframe.style.bottom = '0';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
-  iframe.style.border = '0';
-  iframe.src = url;
-
-  document.body.appendChild(iframe);
-
-  iframe.onload = () => {
-    iframe.contentWindow?.focus();
-    iframe.contentWindow?.print();
-    setTimeout(
-      () => {
-        URL.revokeObjectURL(url);
-        document.body.removeChild(iframe);
-      },
-      10 * 60 * 1000
-    ); // Cleanup after 10 min
-  };
+  const pdfBytes = new Uint8Array(doc.output('arraybuffer') as ArrayBuffer);
+  await saveAndDownloadPdf(pdfBytes, buildHandoffPdfFileName(record.date, selectedShift));
 };
