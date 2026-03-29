@@ -63,6 +63,15 @@ describe('specialistAccessPolicy', () => {
       canEditSpecialistTodayBoundRecord({
         role: 'doctor_specialist',
         readOnly: false,
+        recordDate: '2026-03-14T00:00:00.000Z',
+        todayISO: '2026-03-14',
+      })
+    ).toBe(true);
+
+    expect(
+      canEditSpecialistTodayBoundRecord({
+        role: 'doctor_specialist',
+        readOnly: false,
         recordDate: '2026-03-13',
         todayISO: '2026-03-14',
       })

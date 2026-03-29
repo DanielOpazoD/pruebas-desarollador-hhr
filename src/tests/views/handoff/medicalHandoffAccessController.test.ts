@@ -28,6 +28,20 @@ describe('medicalHandoffAccessController', () => {
     expect(capabilities.canOpenNightCudyr).toBe(false);
   });
 
+  it('keeps specialist edit capabilities when the loaded record date includes an ISO timestamp', () => {
+    const capabilities = resolveMedicalHandoffCapabilities({
+      role: 'doctor_specialist',
+      readOnly: false,
+      recordDate: '2026-03-14T03:00:00.000Z',
+      todayISO: '2026-03-14',
+    });
+
+    expect(capabilities.canCreatePrimaryObservationEntry).toBe(true);
+    expect(capabilities.canEditObservationEntries).toBe(true);
+    expect(capabilities.canAddObservationEntries).toBe(true);
+    expect(capabilities.canDeleteObservationEntries).toBe(true);
+  });
+
   it('keeps delivery/signature restrictions for specialists while allowing handoff management', () => {
     const capabilities = resolveMedicalHandoffCapabilities({
       role: 'doctor_specialist',

@@ -95,6 +95,15 @@ describe('operationalAccessPolicy', () => {
       canEditMedicalHandoffForDate({
         role: 'doctor_specialist',
         readOnly: false,
+        recordDate: '2026-03-16T00:00:00.000Z',
+        todayISO: '2026-03-16',
+      })
+    ).toBe(true);
+
+    expect(
+      canEditMedicalHandoffForDate({
+        role: 'doctor_specialist',
+        readOnly: false,
         recordDate: '2026-03-15',
         todayISO: '2026-03-16',
       })
