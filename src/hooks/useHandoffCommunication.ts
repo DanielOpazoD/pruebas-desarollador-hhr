@@ -13,6 +13,7 @@ import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import { createScopedLogger } from '@/services/utils/loggerScope';
 import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
+import { resolveHandoffShareLinkPlan } from '@/hooks/controllers/handoffShareLinkController';
 import { buildManualMedicalHandoffMessageModel } from '@/hooks/controllers/manualMedicalHandoffMessageController';
 
 /**
@@ -21,15 +22,6 @@ import { buildManualMedicalHandoffMessageModel } from '@/hooks/controllers/manua
  * Handles WhatsApp integrations and link sharing for handoffs.
  */
 const handoffCommunicationLogger = createScopedLogger('useHandoffCommunication');
-
-const hasDomainOutcomeFeedback = <T>(outcome: ApplicationOutcome<T>): boolean =>
-  Boolean(outcome.userSafeMessage || outcome.issues?.length);
-
-const resolveShareLinkSuccessDescription = (scope: MedicalHandoffScope): string => {
-  const scopeLabel =
-    scope === 'upc' ? 'UPC' : scope === 'no-upc' ? 'No UPC' : 'todos los pacientes';
-  return `El link para firma médica de ${scopeLabel} ha sido copiado al portapapeles.`;
-};
 
 export const useHandoffCommunication = (
   record: DailyRecord | null,
@@ -68,25 +60,20 @@ export const useHandoffCommunication = (
       if (!record) return;
       try {
         const result = await ensureMedicalHandoffSignatureLink(scope);
-        if (result.status === 'success' && result.data?.handoffUrl) {
-          await writeClipboardText(result.data.handoffUrl);
-          onSuccess('Enlace copiado', resolveShareLinkSuccessDescription(scope));
-          return;
-        }
-
         const e2eFallbackUrl = buildE2EFallbackSignatureLink(scope);
-        if (e2eFallbackUrl && !hasDomainOutcomeFeedback(result)) {
-          await writeClipboardText(e2eFallbackUrl);
-          onSuccess(
-            'Enlace copiado',
-            'Se generó un enlace de firma médica en modo E2E para continuar la validación.'
-          );
+        const sharePlan = resolveHandoffShareLinkPlan({
+          scope,
+          result,
+          e2eFallbackUrl,
+        });
+
+        if (sharePlan.kind === 'copy') {
+          await writeClipboardText(sharePlan.text);
+          onSuccess(sharePlan.successMessage, sharePlan.successDescription);
           return;
         }
 
-        onSuccess(
-          resolveApplicationOutcomeMessage(result, 'No se pudo copiar el enlace al portapapeles.')
-        );
+        onSuccess(sharePlan.message);
       } catch (error: unknown) {
         const err = error as Error;
         onSuccess(err.message || 'No se pudo copiar el enlace al portapapeles.');

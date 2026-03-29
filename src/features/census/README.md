@@ -46,6 +46,7 @@ clinicalShiftCalendarController
 | `controllers/bedManagerModalController.ts`               | Transiciones y validación del flujo de bloqueo de camas         |
 | `controllers/bedManagerGridItemsController.ts`           | Mapeo puro de `DailyRecord` a props de grillas de camas         |
 | `controllers/censusMovementActionIconController.ts`      | Resolución de iconografía para acciones de movimientos          |
+| `components/patient-row/nameInputController.ts`          | Contrato puro de display/edición del nombre del paciente        |
 | `hooks/useDischargeModalForm.ts`                         | Form flow de altas                                              |
 | `hooks/useTransferModalForm.ts`                          | Form flow de traslados                                          |
 | `hooks/useBedManagerModalModel.ts`                       | Orquestación UI vs dominio del modal de camas                   |

@@ -8,52 +8,11 @@ import { ArrowRight, Baby } from 'lucide-react';
 import { DebouncedInput } from '@/components/ui/DebouncedInput';
 import { PatientInputSchema } from '@/schemas/inputSchemas';
 import { BaseCellProps, DebouncedTextHandler } from './inputCellTypes';
+import { resolveNameInputState } from './nameInputController';
 
 interface NameInputProps extends BaseCellProps {
   onChange: DebouncedTextHandler;
 }
-
-const normalizePart = (value: string): string => value.trim().replace(/\s+/g, ' ');
-const normalizeComparableName = (value: string): string => normalizePart(value).toLowerCase();
-
-const resolveFullName = (data: NameInputProps['data'], preferLegacyName = false): string => {
-  const firstName = data.firstName || '';
-  const lastName = data.lastName || '';
-  const secondLastName = data.secondLastName || '';
-  const hasSplitFields = Boolean(firstName.trim() || lastName.trim() || secondLastName.trim());
-  const fullNameFromParts = [firstName, lastName, secondLastName]
-    .map(normalizePart)
-    .filter(Boolean)
-    .join(' ');
-  const legacyName = normalizePart(data.patientName || '');
-
-  if (
-    !preferLegacyName &&
-    hasSplitFields &&
-    normalizeComparableName(fullNameFromParts) === normalizeComparableName(legacyName)
-  ) {
-    return fullNameFromParts;
-  }
-
-  if (!preferLegacyName && hasSplitFields && !legacyName) {
-    return fullNameFromParts;
-  }
-
-  return legacyName;
-};
-
-const isOfficialIdentity = (data: NameInputProps['data']): boolean => {
-  if (data.identityStatus) {
-    return data.identityStatus === 'official';
-  }
-
-  const hasNameParts = Boolean(
-    data.firstName?.trim() || data.lastName?.trim() || data.secondLastName?.trim()
-  );
-  const normalizedRut = (data.rut || '').trim();
-  const hasOfficialRut = normalizedRut.length > 0 && normalizedRut !== '-';
-  return hasNameParts && hasOfficialRut;
-};
 
 export const NameInput: React.FC<NameInputProps> = ({
   data,
@@ -62,9 +21,12 @@ export const NameInput: React.FC<NameInputProps> = ({
   readOnly = false,
   onChange,
 }) => {
-  const isProvisionalClinicalCrib = isSubRow && !isOfficialIdentity(data);
-  const canEditInlineName = !readOnly && !isEmpty && isProvisionalClinicalCrib;
-  const fullName = resolveFullName(data, isProvisionalClinicalCrib);
+  const { fullName, canEditInlineName } = resolveNameInputState({
+    data,
+    isSubRow,
+    isEmpty,
+    readOnly,
+  });
   const handlePatientNameChange = canEditInlineName ? onChange('patientName') : () => undefined;
 
   const hasValidationError =
