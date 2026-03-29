@@ -131,6 +131,9 @@ describe('authRuntimeSupport', () => {
   });
 
   it('reads, writes and clears cached roles across IndexedDB and legacy localStorage', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(fixedCacheTimestamp));
+
     const email = 'Doctor@Hospital.cl';
     const cacheKey = `${ROLE_CACHE_PREFIX}${normalizeEmail(email)}`;
 
@@ -167,6 +170,8 @@ describe('authRuntimeSupport', () => {
 
     await clearRoleCacheForEmail(email);
     expect(mockSaveSetting).toHaveBeenLastCalledWith(cacheKey, null);
+
+    vi.useRealTimers();
   });
 
   it('degrades role cache failures without throwing', async () => {
