@@ -38,10 +38,13 @@ test.describe('Sync conflict resolution', () => {
 
     const row = getRow(page, 'R1');
     const patientNameInput = row.locator('input[name="patientName"]').first();
+    const statusSelect = row
+      .locator('select')
+      .filter({ has: page.locator('option[value="Grave"]') });
 
     await patientNameInput.fill('LOCAL DRAFT');
     await patientNameInput.blur();
-    await expect(patientNameInput).toHaveValue('LOCAL DRAFT');
+    await expect(patientNameInput).toHaveValue('Local Draft');
 
     await page.evaluate(date => {
       const storageKey = 'hanga_roa_hospital_data';
@@ -84,6 +87,6 @@ test.describe('Sync conflict resolution', () => {
     await expect(page.getByTestId('census-table')).toBeVisible({ timeout: 20_000 });
     await expect(patientNameInput).toHaveValue('REMOTE VERSION');
     await expect(row.locator('input[placeholder*="Diagnóstico"]').first()).toHaveValue('REMOTE DX');
-    await expect(row.locator('select').first()).toHaveValue('Grave');
+    await expect(statusSelect).toHaveValue('Grave');
   });
 });

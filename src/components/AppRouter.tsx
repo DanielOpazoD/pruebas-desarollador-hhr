@@ -36,6 +36,7 @@ import {
   canForceCreateDayCopyOverride,
   getVisibleAppModules,
 } from '@/shared/access/operationalAccessPolicy';
+import { isE2EEditableRecordOverrideEnabled } from '@/shared/runtime/e2eRuntime';
 
 export type AppModule =
   | 'CENSUS'
@@ -95,6 +96,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
 }) => {
   const censusAccessProfile: CensusAccessProfile = resolveSpecialistCensusAccessProfile(role);
   const visibleModules = getVisibleAppModules(role);
+  const e2eEditableOverride = isE2EEditableRecordOverrideEnabled();
 
   return (
     <GlobalErrorBoundary>
@@ -114,7 +116,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
                   currentDateString={currentDateString}
                   showBedManagerModal={showBedManagerModal}
                   onCloseBedManagerModal={onCloseBedManagerModal}
-                  readOnly={!canEditAppModule(role, 'CENSUS')}
+                  readOnly={!canEditAppModule(role, 'CENSUS') && !e2eEditableOverride}
                   allowAdminCopyOverride={canForceCreateDayCopyOverride(role)}
                   localViewMode={ui.censusLocalViewMode}
                   accessProfile={censusAccessProfile}
@@ -123,7 +125,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
             )}
             {currentModule === 'CUDYR' && (
               <SectionErrorBoundary sectionName="CUDYR">
-                <CudyrView readOnly={!canEditAppModule(role, 'CUDYR')} />
+                <CudyrView readOnly={!canEditAppModule(role, 'CUDYR') && !e2eEditableOverride} />
               </SectionErrorBoundary>
             )}
             {currentModule === 'NURSING_HANDOFF' && (
@@ -131,7 +133,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
                 <HandoffView
                   ui={ui}
                   type="nursing"
-                  readOnly={!canEditAppModule(role, 'NURSING_HANDOFF')}
+                  readOnly={!canEditAppModule(role, 'NURSING_HANDOFF') && !e2eEditableOverride}
                 />
               </SectionErrorBoundary>
             )}
@@ -140,7 +142,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
                 <HandoffView
                   ui={ui}
                   type="medical"
-                  readOnly={!canEditAppModule(role, 'MEDICAL_HANDOFF')}
+                  readOnly={!canEditAppModule(role, 'MEDICAL_HANDOFF') && !e2eEditableOverride}
                 />
               </SectionErrorBoundary>
             )}

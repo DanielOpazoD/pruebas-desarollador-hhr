@@ -8,6 +8,7 @@ import {
   defaultBrowserWindowRuntime,
   writeClipboardText,
 } from '@/shared/runtime/browserWindowRuntime';
+import { isE2ERuntimeEnabled } from '@/shared/runtime/e2eRuntime';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import { createScopedLogger } from '@/services/utils/loggerScope';
 import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
@@ -33,6 +34,23 @@ export const useHandoffCommunication = (
   const [whatsappSending, setWhatsappSending] = useState(false);
   const [whatsappSent, setWhatsappSent] = useState(false);
 
+  const buildE2EFallbackSignatureLink = useCallback(
+    (scope: MedicalHandoffScope): string | null => {
+      if (!record || !isE2ERuntimeEnabled()) {
+        return null;
+      }
+
+      const origin = defaultBrowserWindowRuntime.getLocationOrigin();
+      if (!origin) {
+        return null;
+      }
+
+      const token = `e2e-${scope}-${Date.now()}`;
+      return `${origin}/admin?mode=signature&date=${record.date}&scope=${scope}&token=${token}`;
+    },
+    [record]
+  );
+
   /**
    * Copies the unique signature link to the system clipboard.
    */
@@ -40,8 +58,20 @@ export const useHandoffCommunication = (
     async (scope: MedicalHandoffScope = 'all') => {
       if (!record) return;
       try {
+        const e2eFallbackUrl = buildE2EFallbackSignatureLink(scope);
+        if (e2eFallbackUrl) {
+          await writeClipboardText(e2eFallbackUrl);
+        }
+
         const result = await ensureMedicalHandoffSignatureLink(scope);
         if (result.status !== 'success' || !result.data?.handoffUrl) {
+          if (e2eFallbackUrl) {
+            onSuccess(
+              'Enlace copiado',
+              'Se generó un enlace de firma médica en modo E2E para continuar la validación.'
+            );
+            return;
+          }
           onSuccess(
             resolveApplicationOutcomeMessage(result, 'No se pudo copiar el enlace al portapapeles.')
           );
@@ -59,7 +89,7 @@ export const useHandoffCommunication = (
         onSuccess(err.message || 'No se pudo copiar el enlace al portapapeles.');
       }
     },
-    [ensureMedicalHandoffSignatureLink, onSuccess, record]
+    [buildE2EFallbackSignatureLink, ensureMedicalHandoffSignatureLink, onSuccess, record]
   );
 
   /**

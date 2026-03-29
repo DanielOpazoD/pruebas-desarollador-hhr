@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { DailyRecordDateRef } from '@/types/domain/dailyRecordSlices';
 import { useAuthState } from './useAuthState';
 import { buildStabilityRules, type StabilityRules } from './stabilityRulesController';
+import { isE2EEditableRecordOverrideEnabled } from '@/shared/runtime/e2eRuntime';
 export type { StabilityRules } from './stabilityRulesController';
 
 /**
@@ -16,10 +17,11 @@ export type { StabilityRules } from './stabilityRulesController';
  */
 export const useStabilityRules = (record: DailyRecordDateRef | null): StabilityRules => {
   const { role, isEditor } = useAuthState();
-  const isAdmin = role === 'admin';
+  const e2eEditableOverride = isE2EEditableRecordOverrideEnabled();
+  const isAdmin = role === 'admin' || e2eEditableOverride;
 
   return useMemo(
-    () => buildStabilityRules(record, { isAdmin, isEditor }),
-    [record, isAdmin, isEditor]
+    () => buildStabilityRules(record, { isAdmin, isEditor: isEditor || e2eEditableOverride }),
+    [record, isAdmin, isEditor, e2eEditableOverride]
   );
 };

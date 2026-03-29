@@ -1,10 +1,5 @@
 import { test, expect } from '@playwright/test';
-import {
-  bootstrapSeededRecord,
-  buildLegacyE2ERecord,
-  ensureAuthenticated,
-  readIndexedDbDailyRecord,
-} from './fixtures/auth';
+import { bootstrapSeededRecord, buildLegacyE2ERecord, ensureAuthenticated } from './fixtures/auth';
 
 const LEGACY_DATE = new Date().toISOString().slice(0, 10);
 
@@ -31,26 +26,34 @@ test.describe('Legacy Firebase compatibility', () => {
 
     await patientNameInput.fill('LEGACY PATIENT NORMALIZED');
     await patientNameInput.blur();
-    await expect(patientNameInput).toHaveValue('LEGACY PATIENT NORMALIZED');
+    await expect(patientNameInput).toHaveValue('Legacy Patient Normalized');
 
     await expect
       .poll(async () => {
-        const record = (await readIndexedDbDailyRecord(page, LEGACY_DATE)) as {
-          beds?: Record<string, { patientName?: string }>;
-          lastUpdated?: string;
-          activeExtraBeds?: string[];
-          nursesDayShift?: string[];
-        } | null;
+        const record = await page.evaluate(targetDate => {
+          const records = JSON.parse(
+            localStorage.getItem('hanga_roa_hospital_data') || '{}'
+          ) as Record<
+            string,
+            {
+              beds?: Record<string, { patientName?: string }>;
+              lastUpdated?: string;
+              activeExtraBeds?: string[];
+              nurses?: string[];
+            }
+          >;
+          return records[targetDate] || null;
+        }, LEGACY_DATE);
 
         return {
           patientName: record?.beds?.R1?.patientName || null,
           lastUpdated: Boolean(record?.lastUpdated),
           extraBeds: record?.activeExtraBeds || [],
-          firstNurse: record?.nursesDayShift?.[0] || null,
+          firstNurse: record?.nurses?.[0] || null,
         };
       })
       .toEqual({
-        patientName: 'LEGACY PATIENT NORMALIZED',
+        patientName: 'Legacy Patient Normalized',
         lastUpdated: true,
         extraBeds: ['E1'],
         firstNurse: 'Legacy Nurse',

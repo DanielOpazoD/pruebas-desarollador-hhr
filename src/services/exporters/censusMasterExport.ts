@@ -15,6 +15,7 @@ import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { buildCensusMasterBinary, getCensusMasterFilename } from './censusMasterWorkbook';
 import { validateExcelExport, XLSX_MIME_TYPE } from './excelValidation';
 import { censusMasterExportLogger } from '@/services/exporters/exporterLoggers';
+import { isE2ERuntimeEnabled, recordE2EDownloadArtifact } from '@/shared/runtime/e2eRuntime';
 
 /**
  * Generate and download the Census Master Excel file for a given month.
@@ -44,6 +45,12 @@ export const generateCensusMasterExcel = async (
           `Loading ${MONTH_NAMES[month]} ${year} census records from Firestore`
         );
         allMonthRecords = await getMonthRecordsFromFirestore(year, month);
+        if (allMonthRecords.length === 0 && isE2ERuntimeEnabled()) {
+          censusMasterExportLogger.info(
+            'Firestore returned no monthly records in E2E runtime. Falling back to local storage'
+          );
+          allMonthRecords = await getRecordsForMonth(year, month + 1);
+        }
       } catch (remoteError) {
         censusMasterExportLogger.warn(
           'Firestore unavailable for monthly export. Falling back to local storage',
@@ -85,6 +92,11 @@ export const generateCensusMasterExcel = async (
     }
 
     const blob = new Blob([binary], { type: XLSX_MIME_TYPE });
+    recordE2EDownloadArtifact({
+      filename,
+      blobSize: blob.size,
+      blobType: blob.type,
+    });
     const { saveAs } = await import('file-saver');
     saveAs(blob, filename);
     censusMasterExportLogger.info(

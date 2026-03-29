@@ -1,166 +1,169 @@
-import { test, expect } from '@playwright/test';
-import { injectMockUser, injectMockData, ensureRecordExists } from './fixtures/auth';
+import { test, expect, type Page } from '@playwright/test';
+import {
+  E2E_DEFAULT_DATE,
+  bootstrapSeededRecord,
+  buildCanonicalE2ERecord,
+  ensureAuthenticated,
+} from './fixtures/auth';
 
-/**
- * E2E Test: Audit Trail Verification
- * Tests that critical actions are logged in the audit system.
- */
+const buildAuditLogs = (date: string) =>
+  [
+    {
+      id: `audit-login-${date}`,
+      timestamp: `${date}T08:00:00.000Z`,
+      userId: 'daniel.opazo@hospitalhangaroa.cl',
+      userDisplayName: 'E2E Test Admin',
+      action: 'USER_LOGIN',
+      entityType: 'user',
+      entityId: 'e2e-test-admin-uid',
+      summary: 'Inicio de sesión del usuario administrador',
+      details: {
+        displayName: 'E2E Test Admin',
+      },
+      recordDate: date,
+    },
+    {
+      id: `audit-patient-${date}`,
+      timestamp: `${date}T09:15:00.000Z`,
+      userId: 'daniel.opazo@hospitalhangaroa.cl',
+      userDisplayName: 'E2E Test Admin',
+      action: 'PATIENT_MODIFIED',
+      entityType: 'patient',
+      entityId: 'R1',
+      summary: 'Actualizó datos del paciente de la cama R1',
+      details: {
+        patientName: 'Audit Patient',
+        rut: '12345678-5',
+        bedId: 'R1',
+        field: 'pathology',
+        oldValue: 'Dx previo',
+        newValue: 'Neumonía',
+        changes: {
+          pathology: {
+            old: 'Dx previo',
+            new: 'Neumonía',
+          },
+        },
+      },
+      patientIdentifier: '12345***-*',
+      recordDate: date,
+    },
+    {
+      id: `audit-export-${date}`,
+      timestamp: `${date}T10:45:00.000Z`,
+      userId: 'daniel.opazo@hospitalhangaroa.cl',
+      userDisplayName: 'E2E Test Admin',
+      action: 'DATA_EXPORTED',
+      entityType: 'dailyRecord',
+      entityId: date,
+      summary: 'Exportó la auditoría del día',
+      details: {
+        field: 'exportFormat',
+        value: 'excel',
+      },
+      recordDate: date,
+    },
+  ] as const;
+
+const openAuditView = async (page: Page) => {
+  const brandMenuButton = page.getByRole('button', {
+    name: /Hospital Hanga Roa/i,
+  });
+  await expect(brandMenuButton).toBeVisible({ timeout: 10000 });
+  await brandMenuButton.click();
+
+  const auditButton = page.getByRole('button', { name: 'Auditoría', exact: true });
+  await expect(auditButton).toBeVisible({ timeout: 10000 });
+  await auditButton.click();
+
+  await expect(page.getByRole('heading', { name: /Registro de Auditoría/i })).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.locator('table').last()).toBeVisible({ timeout: 10000 });
+};
 
 test.describe('Audit Trail Flow', () => {
-    test.beforeEach(async ({ page }) => {
-        await injectMockUser(page, 'admin');
-        await injectMockData(page, undefined, true); // With patient
-        await ensureRecordExists(page);
+  test.beforeEach(async ({ page }) => {
+    const date = E2E_DEFAULT_DATE;
+    const record = buildCanonicalE2ERecord(date, {
+      beds: {
+        ...((buildCanonicalE2ERecord(date).beds as Record<string, unknown>) || {}),
+        R1: {
+          ...((buildCanonicalE2ERecord(date).beds as Record<string, Record<string, unknown>>).R1 ||
+            {}),
+          patientName: 'Audit Patient',
+          rut: '12345678-5',
+          pathology: 'Dx previo',
+          status: 'Estable',
+          age: '45',
+        },
+      },
     });
 
-    test('should navigate to audit view', async ({ page }) => {
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
+    await page.addInitScript(
+      ({ auditLogs }: { auditLogs: unknown[] }) => {
+        localStorage.setItem('hanga_roa_audit_logs', JSON.stringify(auditLogs));
+        localStorage.removeItem('indexeddb_migration_complete');
+      },
+      { auditLogs: buildAuditLogs(date) }
+    );
 
-        // Look for Audit navigation
-        // Could be in main nav, settings menu, or admin section
-        const auditNavButton = page.locator('button:has-text("Auditoría"), a:has-text("Auditoría"), nav button:has-text("Auditoría")');
-
-        if (await auditNavButton.isVisible()) {
-            await auditNavButton.click();
-
-            // Verify audit view loaded
-            await expect(page.locator('h1:has-text("Auditoría"), h2:has-text("Auditoría")')).toBeVisible({ timeout: 5000 });
-
-            // Check for audit log table
-            await expect(page.locator('table')).toBeVisible();
-        } else {
-            // Try accessing via URL if nav is hidden
-            await page.goto('/#/audit');
-            await page.waitForLoadState('domcontentloaded');
-
-            // Check if audit view loads
-            const heading = page.locator('text=Auditoría, text=Registros de Auditoría');
-            // Skip test if not implemented
-            if (!await heading.isVisible({ timeout: 3000 })) {
-                test.skip();
-            }
-        }
+    await bootstrapSeededRecord(page, {
+      role: 'admin',
+      date,
+      record,
+      useRuntimeOverride: true,
     });
 
-    test('should filter audit logs by date', async ({ page }) => {
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
+    await page.goto(`/censo?date=${date}`);
+    await ensureAuthenticated(page);
+    await expect(page.getByTestId('census-table')).toBeVisible({ timeout: 20000 });
+  });
 
-        // Navigate to audit
-        const auditNav = page.locator('button:has-text("Auditoría")');
-        if (!await auditNav.isVisible({ timeout: 3000 })) {
-            test.skip();
-            return;
-        }
-        await auditNav.click();
+  test('should navigate to audit view', async ({ page }) => {
+    await openAuditView(page);
 
-        // Look for date filter
-        const dateFilter = page.locator('input[type="date"][name*="filter"], input[type="date"]').first();
-        if (await dateFilter.isVisible()) {
-            const today = new Date().toISOString().split('T')[0];
-            await dateFilter.fill(today);
+    await expect(page.getByText('3 registros', { exact: true })).toBeVisible();
+  });
 
-            // Verify filter applied (table should update)
-            await page.waitForTimeout(500);
+  test('should filter audit logs by date', async ({ page }) => {
+    await openAuditView(page);
 
-            // Check that table still exists
-            await expect(page.locator('table')).toBeVisible();
-        }
-    });
+    const startDateFilter = page.locator('input[type="date"]').first();
+    const endDateFilter = page.locator('input[type="date"]').nth(1);
 
-    test('should show action details', async ({ page }) => {
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
+    await startDateFilter.fill(E2E_DEFAULT_DATE);
+    await endDateFilter.fill(E2E_DEFAULT_DATE);
 
-        // Navigate to audit
-        const auditNav = page.locator('button:has-text("Auditoría")');
-        if (!await auditNav.isVisible({ timeout: 3000 })) {
-            test.skip();
-            return;
-        }
-        await auditNav.click();
+    await expect(page.locator('tbody tr')).toHaveCount(3);
+  });
 
-        // Wait for table
-        await expect(page.locator('table')).toBeVisible({ timeout: 5000 });
+  test('should show action details', async ({ page }) => {
+    await openAuditView(page);
 
-        // Click on first row to see details
-        const firstRow = page.locator('tbody tr').first();
-        if (await firstRow.isVisible()) {
-            await firstRow.click();
+    const patientRow = page.locator('tbody tr').filter({ hasText: 'Audit Patient' }).first();
+    await expect(patientRow).toBeVisible();
+    await patientRow.click();
 
-            // Should show action type, user, timestamp
-            // Look for common audit fields
-            const actionType = page.locator('text=Tipo de Acción, text=Acción');
-            const user = page.locator('text=Usuario');
-            const timestamp = page.locator('text=Fecha, text=Timestamp');
+    await expect(page.getByText('Audit Patient', { exact: true })).toBeVisible();
+    await expect(page.getByText(/Neumonía/i)).toBeVisible();
+  });
 
-            // At least one should be visible
-            const anyVisible = await actionType.isVisible() ||
-                await user.isVisible() ||
-                await timestamp.isVisible();
+  test('should export audit logs', async ({ page }) => {
+    await openAuditView(page);
 
-            if (anyVisible) {
-                expect(anyVisible).toBeTruthy();
-            }
-        }
-    });
+    const exportButton = page.getByRole('button', { name: /Exportar Excel/i }).first();
+    await expect(exportButton).toBeVisible();
+    await exportButton.click();
 
-    test('should export audit logs', async ({ page }) => {
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
+    await expect(exportButton).toBeVisible();
+  });
 
-        // Navigate to audit
-        const auditNav = page.locator('button:has-text("Auditoría")');
-        if (!await auditNav.isVisible({ timeout: 3000 })) {
-            test.skip();
-            return;
-        }
-        await auditNav.click();
+  test('should display audit entries for different action types', async ({ page }) => {
+    await openAuditView(page);
 
-        // Look for export button
-        const exportBtn = page.locator('button:has-text("Exportar"), button:has-text("Descargar")');
-        if (await exportBtn.isVisible()) {
-            // Set up download listener
-            const downloadPromise = page.waitForEvent('download', { timeout: 5000 }).catch(() => null);
-
-            await exportBtn.click();
-
-            const download = await downloadPromise;
-            if (download) {
-                // Verify download started
-                expect(download.suggestedFilename()).toContain('audit');
-            }
-        }
-    });
-
-    test('should display audit entries for different action types', async ({ page }) => {
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
-
-        // Navigate to audit
-        const auditNav = page.locator('button:has-text("Auditoría")');
-        if (!await auditNav.isVisible({ timeout: 3000 })) {
-            test.skip();
-            return;
-        }
-        await auditNav.click();
-
-        await expect(page.locator('table')).toBeVisible({ timeout: 5000 });
-
-        // Look for common audit action types in the table
-        const actionTypes = [
-            'PATIENT_ADMITTED',
-            'PATIENT_DISCHARGED',
-            'PATIENT_TRANSFERRED',
-            'PATIENT_VIEWED',
-            'USER_LOGIN'
-        ];
-
-        // Check if any action type appears in table
-        for (const action of actionTypes) {
-            const cell = page.locator(`td:has-text("${action}")`);
-            if (await cell.isVisible({ timeout: 1000 }).catch(() => false)) {
-                break;
-            }
-        }
-
-        // If audit is populated, should find at least one action
-        // If empty, that's also valid for a new system
-    });
+    await expect(page.locator('tbody')).toContainText('Inicio de Sesión');
+    await expect(page.locator('tbody')).toContainText('Modificación de Datos');
+    await expect(page.locator('tbody')).toContainText('Exportación de Datos');
+  });
 });

@@ -38,6 +38,7 @@ interface BootstrapSeededRecordOptions {
   date?: string;
   record: Record<string, unknown>;
   useRuntimeOverride?: boolean;
+  forceEditableRecord?: boolean;
 }
 
 const BASE_BED_IDS = [
@@ -342,6 +343,7 @@ export async function bootstrapSeededRecord(
     date = E2E_DEFAULT_DATE,
     record,
     useRuntimeOverride = true,
+    forceEditableRecord = true,
   }: BootstrapSeededRecordOptions
 ) {
   const mockUser = MOCK_USERS[role];
@@ -352,18 +354,27 @@ export async function bootstrapSeededRecord(
       dateStr,
       seededRecord,
       runtimeOverride,
+      editableRecordOverride,
     }: {
       user: typeof mockUser;
       dateStr: string;
       seededRecord: Record<string, unknown>;
       runtimeOverride: boolean;
+      editableRecordOverride: boolean;
     }) => {
       const STORAGE_KEY = 'hanga_roa_hospital_data';
       localStorage.setItem('hhr_e2e_bootstrap_user', JSON.stringify(user));
+      if (editableRecordOverride) {
+        localStorage.setItem('hhr_e2e_force_editable_record', 'true');
+      } else {
+        localStorage.removeItem('hhr_e2e_force_editable_record');
+      }
       localStorage.setItem('hhr_db_initialized', 'true');
 
       const records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      records[dateStr] = seededRecord;
+      if (!records[dateStr]) {
+        records[dateStr] = seededRecord;
+      }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
 
       const runtimeWindow = window as Window & {
@@ -386,6 +397,7 @@ export async function bootstrapSeededRecord(
       dateStr: date,
       seededRecord: record,
       runtimeOverride: useRuntimeOverride,
+      editableRecordOverride: forceEditableRecord,
     }
   );
 }
@@ -488,6 +500,7 @@ export async function readIndexedDbDailyRecord(page: Page, date: string) {
 export async function clearAuth(page: Page) {
   await page.evaluate(() => {
     localStorage.removeItem('hhr_e2e_bootstrap_user');
+    localStorage.removeItem('hhr_e2e_force_editable_record');
   });
 }
 

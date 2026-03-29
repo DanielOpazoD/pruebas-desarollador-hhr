@@ -1,110 +1,113 @@
 /**
  * Census Navigation E2E Tests
- * Tests for date navigation and census view interactions
+ * Tests for date navigation and census view interactions with seeded auth/data.
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+import {
+  bootstrapSeededRecord,
+  buildCanonicalE2ERecord,
+  ensureAuthenticated,
+} from './fixtures/auth';
+
+const getTodayDate = () => new Date().toISOString().slice(0, 10);
+
+const buildNavigationRecord = (date: string) =>
+  buildCanonicalE2ERecord(date, {
+    beds: {
+      ...(buildCanonicalE2ERecord(date).beds as Record<string, unknown>),
+      R1: {
+        ...(buildCanonicalE2ERecord(date).beds as Record<string, Record<string, unknown>>).R1,
+        patientName: 'Navigation Patient',
+        pathology: 'Navegacion',
+        status: 'Estable',
+        age: '34',
+      },
+    },
+  });
+
+const openCensus = async (page: Page) => {
+  const date = getTodayDate();
+  await bootstrapSeededRecord(page, {
+    role: 'editor',
+    date,
+    record: buildNavigationRecord(date),
+    useRuntimeOverride: true,
+    forceEditableRecord: true,
+  });
+  await page.goto(`/censo?date=${date}`);
+  await ensureAuthenticated(page);
+  await expect(page.getByTestId('census-table')).toBeVisible({ timeout: 20000 });
+};
 
 test.describe('Census Navigation', () => {
-    // These tests run in E2E mode with mocked auth
-    test.use({ storageState: 'e2e/fixtures/auth-state.json' });
+  test.describe('Date Selector', () => {
+    test('should display date navigation controls', async ({ page }) => {
+      await openCensus(page);
 
-    test.describe('Date Selector', () => {
-        test('should display date navigation controls', async ({ page }) => {
-            await page.goto('/censo');
-
-            // Look for date navigation elements
-            const dateSelector = page.locator('[data-testid="date-selector"], .date-navigation, button:has-text("Hoy")');
-            await expect(dateSelector.first()).toBeVisible({ timeout: 10000 }).catch(() => {
-                // Selector may vary, try alternative
-            });
-        });
-
-        test('should show current date by default', async ({ page }) => {
-            await page.goto('/censo');
-
-            // Current date should be visible somewhere
-            const today = new Date();
-            const dayStr = String(today.getDate()).padStart(2, '0');
-
-            await expect(page.getByText(dayStr)).toBeVisible({ timeout: 10000 }).catch(() => {
-                // Date format may vary
-            });
-        });
+      await expect(page.getByRole('button', { name: 'Camas' })).toBeVisible();
+      await expect(
+        page.getByText(String(new Date().getFullYear()), { exact: true }).first()
+      ).toBeVisible();
     });
 
-    test.describe('Bed Grid', () => {
-        test('should display bed grid layout', async ({ page }) => {
-            await page.goto('/censo');
+    test('should show current date by default', async ({ page }) => {
+      await openCensus(page);
 
-            // Beds should be visible
-            await expect(page.locator('[data-bed-id], .bed-card, .bed-row').first())
-                .toBeVisible({ timeout: 10000 }).catch(() => {
-                    // Try alternative selectors
-                });
-        });
+      const today = new Date();
+      const dayStr = String(today.getDate());
+      await expect(page.getByRole('button', { name: dayStr }).first()).toBeVisible();
+    });
+  });
 
-        test('should show bed sections (UTI, Medias, etc.)', async ({ page }) => {
-            await page.goto('/censo');
+  test.describe('Bed Grid', () => {
+    test('should display bed grid layout', async ({ page }) => {
+      await openCensus(page);
 
-            // Check for room/section labels
-            const sectionLabels = ['R1', 'R2', 'M', 'UTI', 'Habitación'];
-            for (const label of sectionLabels) {
-                const element = page.getByText(label, { exact: false }).first();
-                const isVisible = await element.isVisible().catch(() => false);
-                if (isVisible) break; // At least one should be visible
-            }
-        });
+      await expect(page.locator('tbody tr').first()).toBeVisible();
     });
 
-    test.describe('Patient Information', () => {
-        test('should allow clicking on a bed to see patient details', async ({ page }) => {
-            await page.goto('/censo');
+    test('should show bed sections', async ({ page }) => {
+      await openCensus(page);
 
-            // Wait for beds to load
-            await page.waitForSelector('[data-bed-id], .bed-card, td', { timeout: 10000 }).catch(() => { });
-
-            // Click on a bed
-            const bed = page.locator('[data-bed-id="R1"], td:has-text("R1"), .bed-card').first();
-            if (await bed.isVisible()) {
-                await bed.click();
-
-                // Modal or detail panel should appear
-                await expect(page.locator('dialog, .modal, [role="dialog"]').first())
-                    .toBeVisible({ timeout: 5000 }).catch(() => { });
-            }
-        });
+      await expect(page.locator('tbody')).toContainText('R1');
+      await expect(page.locator('tbody')).toContainText('H1C1');
     });
+  });
+
+  test.describe('Patient Information', () => {
+    test('should allow focusing patient details inputs from a bed row', async ({ page }) => {
+      await openCensus(page);
+
+      const patientInput = page.locator('input[name="patientName"]').first();
+      await expect(patientInput).toHaveValue('Navigation Patient');
+      await patientInput.click();
+      await expect(patientInput).toBeFocused();
+    });
+  });
 });
 
 test.describe('Census Actions', () => {
-    test.use({ storageState: 'e2e/fixtures/auth-state.json' });
-
-    test('should have create day button when no record exists', async ({ page }) => {
-        // Navigate to a date far in the future
-        await page.goto('/censo?date=2099-01-01');
-
-        // Should show create button or message
-        const createBtn = page.getByRole('button', { name: /crear|iniciar|copiar/i });
-        await expect(createBtn.first()).toBeVisible({ timeout: 5000 }).catch(() => {
-            // May auto-create or show different UI
-        });
+  test('should have create day button when no record exists', async ({ page }) => {
+    await bootstrapSeededRecord(page, {
+      role: 'editor',
+      date: getTodayDate(),
+      record: buildNavigationRecord(getTodayDate()),
+      useRuntimeOverride: true,
+      forceEditableRecord: true,
     });
+    await page.goto('/censo?date=2099-01-01');
+    await ensureAuthenticated(page);
 
-    test('should show PDF export options', async ({ page }) => {
-        await page.goto('/censo');
-
-        // Look for export/print button
-        const exportBtn = page.getByRole('button', { name: /exportar|pdf|imprimir/i });
-        const isExportVisible = await exportBtn.first().isVisible({ timeout: 10000 }).catch(() => false);
-
-        if (!isExportVisible) {
-            // Export may be in menu - try clicking menu first
-            const menuBtn = page.getByRole('button', { name: /menú|opciones/i });
-            const isMenuVisible = await menuBtn.isVisible().catch(() => false);
-            if (isMenuVisible) {
-                await menuBtn.click();
-            }
-        }
+    const createBtn = page.getByRole('button', {
+      name: /crear|iniciar|copiar|registro en blanco/i,
     });
+    await expect(createBtn.first()).toBeVisible({ timeout: 10000 });
+  });
+
+  test('should show save/export entrypoint', async ({ page }) => {
+    await openCensus(page);
+
+    await expect(page.getByRole('button', { name: /Guardar/i })).toBeVisible({ timeout: 10000 });
+  });
 });

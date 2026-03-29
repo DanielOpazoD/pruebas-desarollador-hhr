@@ -1,59 +1,69 @@
 import { test, expect } from '@playwright/test';
-import { injectMockUser, injectMockData, ensureRecordExists } from './fixtures/auth';
+import {
+  bootstrapSeededRecord,
+  buildCanonicalE2ERecord,
+  ensureAuthenticated,
+} from './fixtures/auth';
 
 /**
  * Chaos Test: Network Intermittency
  * Ensures that the app handles offline transitions gracefully without losing data.
  */
+
+const getTodayDate = () => new Date().toISOString().slice(0, 10);
+
+const buildChaosRecord = (date: string) =>
+  buildCanonicalE2ERecord(date, {
+    beds: {
+      ...(buildCanonicalE2ERecord(date).beds as Record<string, unknown>),
+      R1: {
+        ...(buildCanonicalE2ERecord(date).beds as Record<string, Record<string, unknown>>).R1,
+        patientName: 'CHAOS_BASE',
+        pathology: 'Chaos DX',
+        status: 'Estable',
+      },
+    },
+  });
+
 test.describe('Chaos Network Simulation', () => {
   test.beforeEach(async ({ page }) => {
-    await injectMockUser(page, 'editor');
-    await injectMockData(page);
-    await ensureRecordExists(page);
+    const date = getTodayDate();
+    await bootstrapSeededRecord(page, {
+      role: 'editor',
+      date,
+      record: buildChaosRecord(date),
+      useRuntimeOverride: true,
+      forceEditableRecord: true,
+    });
+    await page.goto(`/censo?date=${date}`);
+    await ensureAuthenticated(page);
+    await expect(page.getByTestId('census-table')).toBeVisible({ timeout: 20000 });
   });
 
   test('should preserve data when switching between offline/online', async ({ page, context }) => {
-    const table = page.getByTestId('census-table').first();
-    await expect(table).toBeVisible({ timeout: 15000 });
+    const getNameInput = () => page.locator('input[name="patientName"]').first();
+    const nameInput = getNameInput();
+    await expect(nameInput).toBeEditable({ timeout: 10000 });
 
-    const bedRow = table.locator('tr').filter({ hasText: 'R1' }).first();
-    const nameInput = bedRow.locator('input[type="text"]').first();
-    await expect(nameInput).toBeEnabled({ timeout: 10000 });
-
-    // 1. Initial State: Online
     await nameInput.fill('ONLINE_INITIAL');
     await nameInput.blur();
 
-    // 2. Go Offline
     await context.setOffline(true);
+    const offlineInput = getNameInput();
+    await offlineInput.fill('OFFLINE_CHANGE');
+    await offlineInput.blur();
+    await expect(offlineInput).toHaveValue('Offline_change');
 
-    // We trigger a change to force the UI to react to offline state
-    await nameInput.fill('OFFLINE_CHANGE');
-    await nameInput.blur();
-
-    // Verify UI reflects offline or at least doesn't crash
-    await expect(nameInput).toHaveValue('OFFLINE_CHANGE');
-
-    // 3. Go back Online
     await context.setOffline(false);
+    const resumedInput = getNameInput();
+    await resumedInput.fill('ONLINE_RESUMED');
+    await resumedInput.blur();
+    await expect(resumedInput).toHaveValue('Online_resumed');
 
-    // 4. Verify data remains and app is still functional
-    await nameInput.fill('ONLINE_RESUMED');
-    await nameInput.blur();
-
-    await expect(nameInput).toHaveValue('ONLINE_RESUMED');
-
-    // Refresh page to ensure LocalStorage persisted correctly
     await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('census-table')).toBeVisible({ timeout: 15000 });
 
-    const refreshedTable = page.getByTestId('census-table').first();
-    await expect(refreshedTable).toBeVisible({ timeout: 15000 });
-    const refreshedInput = refreshedTable
-      .locator('tr')
-      .filter({ hasText: 'R1' })
-      .locator('input[type="text"]')
-      .first();
-
-    await expect(refreshedInput).toHaveValue('ONLINE_RESUMED', { timeout: 10000 });
+    const refreshedInput = page.locator('input[name="patientName"]').first();
+    await expect(refreshedInput).toHaveValue('Online_resumed', { timeout: 10000 });
   });
 });

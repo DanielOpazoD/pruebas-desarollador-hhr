@@ -1,101 +1,144 @@
 /**
  * Handoff Flow E2E Tests
- * Tests for nursing and medical handoff workflows
+ * Tests for nursing and medical handoff workflows with seeded auth/data.
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+import {
+  bootstrapSeededRecord,
+  buildCanonicalE2ERecord,
+  ensureAuthenticated,
+} from './fixtures/auth';
+
+const getTodayDate = () => new Date().toISOString().slice(0, 10);
+
+const buildHandoffRecord = (date: string) =>
+  buildCanonicalE2ERecord(date, {
+    beds: {
+      ...(buildCanonicalE2ERecord(date).beds as Record<string, unknown>),
+      R1: {
+        ...(buildCanonicalE2ERecord(date).beds as Record<string, Record<string, unknown>>).R1,
+        patientName: 'Handoff Patient',
+        pathology: 'Nota de prueba',
+        status: 'Estable',
+      },
+    },
+    nursesDayShift: ['Enfermero/a 1', 'Enfermero/a 2'],
+    nursesNightShift: ['Enfermero/a 1', 'Enfermero/a 2'],
+    handoffNightReceives: ['Enfermero/a 1', 'Enfermero/a 2'],
+  });
+
+const openHandoff = async (page: Page, mode: 'nursing' | 'medical') => {
+  const date = getTodayDate();
+  await bootstrapSeededRecord(page, {
+    role: 'admin',
+    date,
+    record: buildHandoffRecord(date),
+    useRuntimeOverride: true,
+    forceEditableRecord: true,
+  });
+  await page.goto(`/censo?date=${date}`);
+  await ensureAuthenticated(page);
+  const navButton =
+    mode === 'medical'
+      ? page.getByRole('button', { name: /Entrega Turno Médicos/i })
+      : page.getByRole('button', { name: /Entrega Turno Enfermería/i });
+  await expect(navButton).toBeVisible({ timeout: 20000 });
+  await navButton.click();
+  await expect(page.locator('main')).toBeVisible({ timeout: 20000 });
+};
 
 test.describe('Nursing Handoff', () => {
-    test.use({ storageState: 'e2e/fixtures/auth-state.json' });
+  test.describe('Shift Selection', () => {
+    test('should display shift toggle buttons', async ({ page }) => {
+      await openHandoff(page, 'nursing');
 
-    test.describe('Shift Selection', () => {
-        test('should display shift toggle buttons', async ({ page }) => {
-            await page.goto('/entrega-turno');
-
-            // Should show day/night shift options
-            const dayShiftBtn = page.getByRole('button', { name: /largo|día|day/i });
-            const nightShiftBtn = page.getByRole('button', { name: /noche|night/i });
-
-            await expect(dayShiftBtn.first()).toBeVisible({ timeout: 10000 }).catch(() => { });
-            await expect(nightShiftBtn.first()).toBeVisible({ timeout: 10000 }).catch(() => { });
-        });
-
-        test('should switch between day and night shifts', async ({ page }) => {
-            await page.goto('/entrega-turno');
-
-            // Click night shift
-            const nightShiftBtn = page.getByRole('button', { name: /noche|night/i });
-            if (await nightShiftBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-                await nightShiftBtn.click();
-                // Should update content
-                await page.waitForTimeout(500);
-            }
-        });
+      await expect(page.getByRole('button', { name: /Turno Largo/i }).first()).toBeVisible();
+      await expect(page.getByRole('button', { name: /Turno Noche/i }).first()).toBeVisible();
     });
 
-    test.describe('Staff Selection', () => {
-        test('should show nurse selection dropdown', async ({ page }) => {
-            await page.goto('/entrega-turno');
+    test('should switch between day and night shifts', async ({ page }) => {
+      await openHandoff(page, 'nursing');
 
-            // Look for nurse selector
-            const nurseSelector = page.locator('[data-testid="nurse-selector"], select, .nurse-selector').first();
-            await expect(nurseSelector).toBeVisible({ timeout: 10000 }).catch(() => {
-                // May be different component
-            });
-        });
+      const nightShiftBtn = page.getByRole('button', { name: /Turno Noche/i }).first();
+      if (await nightShiftBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await nightShiftBtn.click();
+        await expect(nightShiftBtn).toBeVisible();
+      }
+    });
+  });
+
+  test.describe('Staff Selection', () => {
+    test('should show nurse selection dropdown', async ({ page }) => {
+      await openHandoff(page, 'nursing');
+
+      await expect(page.locator('main')).toContainText('Enfermero/a 1');
+    });
+  });
+
+  test.describe('Patient List', () => {
+    test('should display patient handoff notes', async ({ page }) => {
+      await openHandoff(page, 'nursing');
+
+      await expect(page.locator('table').first()).toBeVisible({
+        timeout: 10000,
+      });
+      await expect(page.locator('main')).toContainText('Handoff Patient');
+    });
+  });
+
+  test.describe('Actions', () => {
+    test('should have print/PDF button', async ({ page }) => {
+      await openHandoff(page, 'nursing');
+
+      await expect(page.getByRole('button', { name: /Guardar/i }).first()).toBeVisible({
+        timeout: 10000,
+      });
     });
 
-    test.describe('Patient List', () => {
-        test('should display patient handoff notes', async ({ page }) => {
-            await page.goto('/entrega-turno');
+    test('should keep save entrypoint visible in nursing handoff', async ({ page }) => {
+      await openHandoff(page, 'nursing');
 
-            // Wait for patients to load
-            await page.waitForSelector('table, .patient-list, .handoff-row', { timeout: 10000 }).catch(() => { });
-
-            // Should show patient information
-            const patientRow = page.locator('tr, .patient-row').first();
-            await expect(patientRow).toBeVisible({ timeout: 5000 }).catch(() => { });
-        });
+      await expect(page.getByRole('button', { name: /Guardar/i }).first()).toBeVisible({
+        timeout: 10000,
+      });
     });
-
-    test.describe('Actions', () => {
-        test('should have print/PDF button', async ({ page }) => {
-            await page.goto('/entrega-turno');
-
-            const printBtn = page.getByRole('button', { name: /imprimir|pdf|print/i });
-            await expect(printBtn.first()).toBeVisible({ timeout: 10000 }).catch(() => { });
-        });
-
-        test('should have WhatsApp share button', async ({ page }) => {
-            await page.goto('/entrega-turno');
-
-            const whatsappBtn = page.getByRole('button', { name: /whatsapp|compartir|share/i });
-            await expect(whatsappBtn.first()).toBeVisible({ timeout: 10000 }).catch(() => { });
-        });
-
-        test('should have signature link button', async ({ page }) => {
-            await page.goto('/entrega-turno');
-
-            const signatureBtn = page.getByRole('button', { name: /firma|firmar|signature/i });
-            await expect(signatureBtn.first()).toBeVisible({ timeout: 10000 }).catch(() => { });
-        });
-    });
+  });
 });
 
 test.describe('Medical Handoff', () => {
-    test.use({ storageState: 'e2e/fixtures/auth-state.json' });
+  test('should navigate to medical handoff view', async ({ page }) => {
+    await openHandoff(page, 'medical');
 
-    test('should navigate to medical handoff view', async ({ page }) => {
-        await page.goto('/entrega-medica');
+    await expect(page.locator('h1, h2, .title').first()).toBeVisible({ timeout: 10000 });
+  });
 
-        // Should show medical handoff interface
-        await expect(page.locator('h1, h2, .title').first()).toBeVisible({ timeout: 10000 }).catch(() => { });
+  test('should display medical notes for patients', async ({ page }) => {
+    await openHandoff(page, 'medical');
+
+    const createMedicalHandoffButton = page.getByRole('button', { name: /Crear entrega médica/i });
+    await expect(createMedicalHandoffButton).toBeVisible({ timeout: 10000 });
+    await createMedicalHandoffButton.click();
+
+    await expect(page.locator('textarea').first()).toBeVisible({
+      timeout: 10000,
     });
+  });
 
-    test('should display medical notes for patients', async ({ page }) => {
-        await page.goto('/entrega-medica');
+  test('should expose medical signature link actions', async ({ page }) => {
+    await openHandoff(page, 'medical');
 
-        // Wait for medical notes to load
-        await page.waitForSelector('textarea, .medical-note, [data-note]', { timeout: 10000 }).catch(() => { });
+    await expect(
+      page.getByRole('button', { name: /Generar link para firma del médico|Links firma/i }).first()
+    ).toBeVisible({ timeout: 10000 });
+    await expect(
+      page
+        .getByRole('button', {
+          name: /Enviar entrega por WhatsApp \(Manual\)|Enviar por WhatsApp/i,
+        })
+        .first()
+    ).toBeVisible({
+      timeout: 10000,
     });
+  });
 });

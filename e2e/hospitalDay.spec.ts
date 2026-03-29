@@ -1,51 +1,72 @@
-import { test, expect } from '@playwright/test';
-import { setupE2EContext, ensureRecordExists } from './fixtures/auth';
+import { test, expect, type Page } from '@playwright/test';
+import {
+  bootstrapSeededRecord,
+  buildCanonicalE2ERecord,
+  ensureAuthenticated,
+} from './fixtures/auth';
 
-/**
- * E2E Test: Complete Day Workflow
- * Simulates a full hospital day: Login -> Load data -> Shift change -> Logout
- */
+const getTodayDate = () => new Date().toISOString().slice(0, 10);
+
+const buildHospitalDayRecord = (date: string) =>
+  buildCanonicalE2ERecord(date, {
+    beds: {
+      ...(buildCanonicalE2ERecord(date).beds as Record<string, unknown>),
+      R1: {
+        ...(buildCanonicalE2ERecord(date).beds as Record<string, Record<string, unknown>>).R1,
+        patientName: 'Workflow Patient',
+        pathology: 'Workflow DX',
+        status: 'Estable',
+        age: '52',
+      },
+    },
+  });
+
+const openHospitalDay = async (page: Page, role: 'admin' | 'viewer') => {
+  const date = getTodayDate();
+  await bootstrapSeededRecord(page, {
+    role,
+    date,
+    record: buildHospitalDayRecord(date),
+    useRuntimeOverride: true,
+    forceEditableRecord: role !== 'viewer',
+  });
+  await page.goto(`/censo?date=${date}`);
+  await ensureAuthenticated(page);
+  await expect(page.getByTestId('census-table')).toBeVisible({ timeout: 20000 });
+  return date;
+};
 
 test.describe('Complete Hospital Day E2E', () => {
-    test('should complete a full hospital day workflow', async ({ page }) => {
-        // 1. SETUP CONTEXT (Auth + Data + Single Reload)
-        await setupE2EContext(page, 'admin');
-        await ensureRecordExists(page);
+  test('should complete a full hospital day workflow', async ({ page }) => {
+    await openHospitalDay(page, 'admin');
 
-        // 2. Verify table loaded
-        const table = page.getByTestId('census-table');
-        await expect(table).toBeVisible({ timeout: 15000 });
+    const nameInput = page.locator('input[name="patientName"]').first();
+    await expect(nameInput).toBeEditable({ timeout: 10000 });
+    await nameInput.fill('PACIENTE WORKFLOW');
+    await expect(nameInput).toHaveValue(/paciente workflow/i);
 
-        // 3. ADD PATIENT DATA
-        // Using a more specific selector for the first patient name input
-        const nameInput = table.locator('input[type="text"]').first();
-        await expect(nameInput).toBeVisible();
-        await nameInput.clear();
-        await nameInput.fill('PACIENTE WORKFLOW');
-        await nameInput.press('Enter');
-
-        // 4. NAVIGATE TO NURSING HANDOFF
-        await page.getByRole('button', { name: 'Entrega Turno Enfermería' }).click();
-        await expect(page.locator('h2').first()).toBeVisible({ timeout: 10000 });
-
-        // 5. NAVIGATE TO MEDICAL HANDOFF
-        await page.getByRole('button', { name: 'Entrega Turno Médicos' }).click();
-        await expect(page.locator('h2').first()).toBeVisible({ timeout: 10000 });
-
-        // 6. NAVIGATE BACK TO CENSUS
-        await page.getByRole('button', { name: 'Censo Diario' }).click();
-        await expect(table).toBeVisible({ timeout: 10000 });
+    await page.getByRole('button', { name: 'Entrega Turno Enfermería' }).click();
+    await expect(page.getByRole('heading', { name: /Entrega de Turno/i }).first()).toBeVisible({
+      timeout: 10000,
     });
 
-    test('should prevent unauthorized access (viewer role)', async ({ page }) => {
-        await setupE2EContext(page, 'viewer', true);
-        await ensureRecordExists(page);
-
-        const table = page.getByTestId('census-table');
-        await expect(table).toBeVisible({ timeout: 15000 });
-
-        // Inputs should be disabled for viewer
-        const patientInput = table.locator('input[type="text"]').first();
-        await expect(patientInput).toBeDisabled({ timeout: 5000 });
+    await page.getByRole('button', { name: 'Entrega Turno Médicos' }).click();
+    await expect(page.getByRole('heading', { name: /Entrega de Turno/i }).first()).toBeVisible({
+      timeout: 10000,
     });
+
+    await page.getByRole('button', { name: 'Censo Diario' }).click();
+    await expect(page.getByTestId('census-table')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('input[name="patientName"]').first()).toHaveValue(
+      /paciente workflow/i
+    );
+  });
+
+  test('should prevent unauthorized access (viewer role)', async ({ page }) => {
+    await openHospitalDay(page, 'viewer');
+
+    const patientInput = page.locator('input[name="patientName"]').first();
+    await expect(patientInput).toBeVisible({ timeout: 10000 });
+    await expect(patientInput).toHaveAttribute('readonly', '');
+  });
 });

@@ -2,6 +2,7 @@ import { DailyRecord } from '@/types/domain/dailyRecord';
 import { localPersistence } from '@/services/storage/localpersistence/localPersistenceService';
 import { buildMonthRecordPrefix } from '@/services/storage/storageDateSupport';
 import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
+import { isE2ERuntimeEnabled } from '@/shared/runtime/e2eRuntime';
 
 import { ensureDbReady, hospitalDB as db, isDatabaseInFallbackMode } from './indexedDbCore';
 
@@ -15,6 +16,17 @@ const toRecordMap = (records: DailyRecord[]): Record<string, DailyRecord> => {
 
 const sortRecordsDescending = (records: DailyRecord[]): DailyRecord[] =>
   [...records].sort((a, b) => b.date.localeCompare(a.date));
+
+const syncE2ERuntimeRecordMirror = (record: DailyRecord): void => {
+  if (!isE2ERuntimeEnabled() || typeof window === 'undefined') {
+    return;
+  }
+
+  localPersistence.records.save(record);
+  if (window.__HHR_E2E_OVERRIDE__) {
+    window.__HHR_E2E_OVERRIDE__[record.date] = record;
+  }
+};
 
 export const getAllRecords = async (): Promise<Record<string, DailyRecord>> => {
   try {
@@ -115,9 +127,11 @@ export const saveRecord = async (record: DailyRecord): Promise<void> => {
     await ensureDbReady();
     if (isDatabaseInFallbackMode()) {
       localPersistence.records.save(record);
+      syncE2ERuntimeRecordMirror(record);
       return;
     }
     await db.dailyRecords.put(record);
+    syncE2ERuntimeRecordMirror(record);
   } catch (error) {
     recordOperationalErrorTelemetry('indexeddb', 'indexeddb_save_record', error, {
       code: 'indexeddb_save_record_failed',
@@ -139,11 +153,13 @@ export const saveRecords = async (records: DailyRecord[]): Promise<void> => {
     if (isDatabaseInFallbackMode()) {
       records.forEach(record => {
         localPersistence.records.save(record);
+        syncE2ERuntimeRecordMirror(record);
       });
       return;
     }
 
     await db.dailyRecords.bulkPut(records);
+    records.forEach(syncE2ERuntimeRecordMirror);
   } catch (error) {
     recordOperationalErrorTelemetry('indexeddb', 'indexeddb_save_records', error, {
       code: 'indexeddb_save_records_failed',

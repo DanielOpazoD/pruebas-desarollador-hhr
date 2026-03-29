@@ -1,27 +1,55 @@
-/**
- * E2E Tests: Patient Registration Flow
- * Tests the complete flow of creating a day and registering a patient.
- */
+import { test, expect, type Page } from '@playwright/test';
+import {
+  bootstrapSeededRecord,
+  buildCanonicalE2ERecord,
+  ensureAuthenticated,
+} from './fixtures/auth';
 
-import { test, expect } from '@playwright/test';
-import { injectMockUser, injectMockData, ensureRecordExists } from './fixtures/auth';
+const getTodayDate = () => new Date().toISOString().slice(0, 10);
+
+const buildRegistrationRecord = (date: string) =>
+  buildCanonicalE2ERecord(date, {
+    beds: {
+      ...(buildCanonicalE2ERecord(date).beds as Record<string, unknown>),
+      R1: {
+        ...(buildCanonicalE2ERecord(date).beds as Record<string, Record<string, unknown>>).R1,
+        patientName: '',
+        pathology: '',
+        status: '',
+      },
+    },
+  });
+
+const openRegistrationFlow = async (page: Page) => {
+  const date = getTodayDate();
+  await bootstrapSeededRecord(page, {
+    role: 'editor',
+    date,
+    record: buildRegistrationRecord(date),
+    useRuntimeOverride: true,
+    forceEditableRecord: true,
+  });
+  await page.goto(`/censo?date=${date}`);
+  await ensureAuthenticated(page);
+  await expect(page.getByTestId('census-table')).toBeVisible({ timeout: 20000 });
+};
 
 test.describe('Patient Registration Flow', () => {
-    test.beforeEach(async ({ page }) => {
-        await injectMockUser(page, 'editor');
-        await injectMockData(page);
-        await ensureRecordExists(page);
-    });
+  test.beforeEach(async ({ page }) => {
+    await openRegistrationFlow(page);
+  });
 
-    test('should allow creating a blank day and adding a patient', async ({ page }) => {
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
+  test('should allow creating a blank day and adding a patient', async ({ page }) => {
+    const emptyBedRow = page.locator('tbody tr').filter({ hasText: 'Agregar paciente' }).first();
+    await expect(emptyBedRow).toBeVisible({ timeout: 10000 });
+    await emptyBedRow.click();
 
-        // Add patient to first input
-        const nameInput = page.locator('table input[type="text"]').first();
-        await expect(nameInput).toBeEnabled({ timeout: 5000 });
+    const nameInput = page.locator('input[name="patientName"]').first();
+    await expect(nameInput).toBeEditable({ timeout: 10000 });
 
-        await nameInput.fill('NUEVO PACIENTE E2E');
-        await page.waitForTimeout(500);
-        await expect(nameInput).toHaveValue('NUEVO PACIENTE E2E');
-    });
+    await nameInput.fill('NUEVO PACIENTE E2E');
+    await nameInput.blur();
+
+    await expect(nameInput).toHaveValue(/nuevo paciente e2e/i);
+  });
 });

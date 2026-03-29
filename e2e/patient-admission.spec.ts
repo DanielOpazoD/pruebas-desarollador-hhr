@@ -1,33 +1,69 @@
-import { test, expect } from '@playwright/test';
-import { injectMockUser, injectMockData, ensureRecordExists } from './fixtures/auth';
+import { test, expect, type Page } from '@playwright/test';
+import {
+  bootstrapSeededRecord,
+  buildCanonicalE2ERecord,
+  ensureAuthenticated,
+} from './fixtures/auth';
+
+const getTodayDate = () => new Date().toISOString().slice(0, 10);
+
+const buildAdmissionRecord = (date: string) =>
+  buildCanonicalE2ERecord(date, {
+    beds: {
+      ...(buildCanonicalE2ERecord(date).beds as Record<string, unknown>),
+      R1: {
+        ...(buildCanonicalE2ERecord(date).beds as Record<string, Record<string, unknown>>).R1,
+        patientName: '',
+        pathology: '',
+        status: '',
+      },
+    },
+  });
+
+const openAdmissionFlow = async (page: Page) => {
+  const date = getTodayDate();
+  await bootstrapSeededRecord(page, {
+    role: 'admin',
+    date,
+    record: buildAdmissionRecord(date),
+    useRuntimeOverride: true,
+    forceEditableRecord: true,
+  });
+  await page.goto(`/censo?date=${date}`);
+  await ensureAuthenticated(page);
+  await expect(page.getByTestId('census-table')).toBeVisible({ timeout: 20000 });
+};
 
 test.describe('Patient Admission Flow', () => {
-    test.beforeEach(async ({ page }) => {
-        await injectMockUser(page, 'admin');
-        await injectMockData(page);
-        await ensureRecordExists(page);
-    });
+  test.beforeEach(async ({ page }) => {
+    await openAdmissionFlow(page);
+  });
 
-    test('should admit a new patient to an empty bed', async ({ page }) => {
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
+  test('should admit a new patient to an empty bed', async ({ page }) => {
+    const emptyBedRow = page.locator('tbody tr').filter({ hasText: 'Agregar paciente' }).first();
+    await expect(emptyBedRow).toBeVisible({ timeout: 10000 });
+    await emptyBedRow.click();
 
-        // Find first input and fill patient data
-        const nameInput = page.locator('table input[type="text"]').first();
-        await expect(nameInput).toBeEnabled({ timeout: 5000 });
+    const nameInput = page.locator('input[name="patientName"]').first();
+    await expect(nameInput).toBeEditable({ timeout: 10000 });
 
-        await nameInput.fill('Test Patient E2E');
-        await expect(nameInput).toHaveValue('Test Patient E2E');
+    await nameInput.fill('Test Patient E2E');
+    await nameInput.blur();
 
-        // Verify data persisted
-        await expect(page.locator('table')).toBeVisible();
-    });
+    await expect(nameInput).toHaveValue(/test patient e2e/i);
+    await expect(page.getByRole('button', { name: /Guardar/i })).toBeVisible({ timeout: 10000 });
+  });
 
-    test('should validate required fields', async ({ page }) => {
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
+  test('should validate required fields', async ({ page }) => {
+    const emptyBedRow = page.locator('tbody tr').filter({ hasText: 'Agregar paciente' }).first();
+    await expect(emptyBedRow).toBeVisible({ timeout: 10000 });
+    await emptyBedRow.click();
 
-        // Verify table has inputs for data entry
-        const inputs = page.locator('table input[type="text"]');
-        const count = await inputs.count();
-        expect(count).toBeGreaterThan(0);
-    });
+    const patientInputs = page.locator('input[name="patientName"]');
+    await expect(patientInputs.first()).toBeVisible({ timeout: 10000 });
+    await expect(await patientInputs.count()).toBeGreaterThan(0);
+
+    const pathologyInput = page.getByPlaceholder('Diagnóstico (texto libre)').first();
+    await expect(pathologyInput).toBeVisible();
+  });
 });

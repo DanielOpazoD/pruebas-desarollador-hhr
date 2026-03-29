@@ -38,21 +38,47 @@ test.describe('Census persistence and reload', () => {
     const row = getRow(page, 'R1');
     const patientNameInput = row.locator('input[name="patientName"]').first();
     const diagnosisInput = row.locator('input[placeholder*="Diagnóstico"]').first();
-    const statusSelect = row.locator('select').first();
+    const statusSelect = row
+      .locator('select')
+      .filter({ has: page.locator('option[value="Grave"]') });
 
     await patientNameInput.fill('UPDATED PATIENT');
     await patientNameInput.blur();
     await diagnosisInput.fill('UPDATED DX');
     await diagnosisInput.blur();
-    await statusSelect.selectOption('Grave');
+    await statusSelect.selectOption({ label: 'Grave' });
 
-    await expect(patientNameInput).toHaveValue('UPDATED PATIENT');
+    await expect(patientNameInput).toHaveValue('Updated Patient');
     await expect(diagnosisInput).toHaveValue('UPDATED DX');
     await expect(statusSelect).toHaveValue('Grave');
 
+    await expect
+      .poll(async () =>
+        page.evaluate(targetDate => {
+          const records = JSON.parse(
+            localStorage.getItem('hanga_roa_hospital_data') || '{}'
+          ) as Record<
+            string,
+            {
+              beds?: Record<string, { patientName?: string; pathology?: string; status?: string }>;
+            }
+          >;
+          return {
+            patientName: records[targetDate]?.beds?.R1?.patientName || '',
+            pathology: records[targetDate]?.beds?.R1?.pathology || '',
+            status: records[targetDate]?.beds?.R1?.status || '',
+          };
+        }, PERSISTENCE_DATE)
+      )
+      .toEqual({
+        patientName: 'Updated Patient',
+        pathology: 'UPDATED DX',
+        status: 'Grave',
+      });
+
     await page.reload();
     await expect(page.getByTestId('census-table')).toBeVisible({ timeout: 20_000 });
-    await expect(patientNameInput).toHaveValue('UPDATED PATIENT');
+    await expect(patientNameInput).toHaveValue('Updated Patient');
     await expect(diagnosisInput).toHaveValue('UPDATED DX');
     await expect(statusSelect).toHaveValue('Grave');
   });

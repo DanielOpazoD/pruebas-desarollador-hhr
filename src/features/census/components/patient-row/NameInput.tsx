@@ -63,7 +63,7 @@ export const NameInput: React.FC<NameInputProps> = ({
   onChange,
 }) => {
   const isProvisionalClinicalCrib = isSubRow && !isOfficialIdentity(data);
-  const canEditInlineRnName = isProvisionalClinicalCrib && !readOnly && !isEmpty;
+  const canEditInlineName = !readOnly && !isEmpty && (!isSubRow || isProvisionalClinicalCrib);
   const fullName = resolveFullName(data, isProvisionalClinicalCrib);
 
   const hasValidationError =
@@ -83,7 +83,7 @@ export const NameInput: React.FC<NameInputProps> = ({
           name="patientName"
           className={clsx(
             'w-full p-0.5 h-7 border rounded transition-all duration-200 text-[13px] font-medium',
-            canEditInlineRnName
+            canEditInlineName
               ? 'bg-white text-slate-800 focus:ring-2 focus:ring-pink-200 focus:border-pink-400'
               : 'bg-slate-50 text-slate-700 cursor-default',
             isSubRow ? 'border-pink-100 text-xs h-6' : 'border-slate-200',
@@ -91,7 +91,7 @@ export const NameInput: React.FC<NameInputProps> = ({
           )}
           placeholder={isSubRow ? 'Nombre RN / Niño' : isEmpty ? '' : 'Nombre Paciente'}
           value={fullName}
-          readOnly={!canEditInlineRnName}
+          readOnly={!canEditInlineName}
           onChange={onChange('patientName')}
           debounceMs={350}
         />

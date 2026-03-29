@@ -40,6 +40,8 @@ test.describe('Census Closing Flow', () => {
 
     // Verify that data is displayed correct before "closing"
     await expect(page.locator('table')).toBeVisible();
-    await expect(page.locator('text=Hospital Hanga Roa')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Hospital Hanga Roa', exact: true })
+    ).toBeVisible();
   });
 });

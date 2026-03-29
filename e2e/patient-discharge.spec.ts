@@ -1,76 +1,70 @@
-import { test, expect } from '@playwright/test';
-import { injectMockUser, injectMockData, ensureRecordExists } from './fixtures/auth';
+import { test, expect, type Page } from '@playwright/test';
+import {
+  bootstrapSeededRecord,
+  buildCanonicalE2ERecord,
+  ensureAuthenticated,
+} from './fixtures/auth';
 
-/**
- * E2E Test: Patient Discharge Flow
- * Tests the complete process of discharging a patient from the hospital.
- */
+const getTodayDate = () => new Date().toISOString().slice(0, 10);
+
+const buildDischargeRecord = (date: string) =>
+  buildCanonicalE2ERecord(date, {
+    beds: {
+      ...(buildCanonicalE2ERecord(date).beds as Record<string, unknown>),
+      R1: {
+        ...(buildCanonicalE2ERecord(date).beds as Record<string, Record<string, unknown>>).R1,
+        patientName: 'Discharge Patient',
+        pathology: 'Discharge DX',
+        status: 'Estable',
+        age: '44',
+      },
+    },
+  });
+
+const openDischargeCensus = async (page: Page) => {
+  const date = getTodayDate();
+  await bootstrapSeededRecord(page, {
+    role: 'admin',
+    date,
+    record: buildDischargeRecord(date),
+    useRuntimeOverride: true,
+    forceEditableRecord: true,
+  });
+  await page.goto(`/censo?date=${date}`);
+  await ensureAuthenticated(page);
+  await expect(page.getByTestId('census-table')).toBeVisible({ timeout: 20000 });
+};
 
 test.describe('Patient Discharge Flow', () => {
-    test.beforeEach(async ({ page }) => {
-        await injectMockUser(page, 'admin');
-        // Inject data WITH a patient in bed R1
-        await injectMockData(page, undefined, true);
-        // Ensure record exists (this handles blank record button)
-        await ensureRecordExists(page);
-    });
+  test.beforeEach(async ({ page }) => {
+    await openDischargeCensus(page);
+  });
 
-    test('should discharge patient with Alta Médica', async ({ page }) => {
-        // 1. Wait for census table to load
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
+  test('should discharge patient with Alta Médica', async ({ page }) => {
+    const patientRow = page.locator('[data-testid="patient-row"][data-bed-id="R1"]').first();
+    await expect(patientRow.locator('input[name="patientName"]').first()).toHaveValue(
+      /discharge patient/i
+    );
 
-        // 2. Find any occupied bed row with patient name
-        // 3. Look for discharge action buttons in the row
-        const firstRow = page.locator('table tbody tr').first();
-        const actionBtn = firstRow.locator('button').first();
+    const actionButton = patientRow.locator('button[title="Acciones"]').first();
+    await expect(actionButton).toBeVisible({ timeout: 10000 });
+    await actionButton.evaluate(element => (element as HTMLButtonElement).click());
 
-        if (await actionBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-            await actionBtn.click();
+    const dischargeEntry = page.getByText(/Alta|Egreso/i).first();
+    await expect(dischargeEntry).toBeVisible({ timeout: 10000 });
+  });
 
-            // 4. Wait for modal or action menu
-            await page.waitForTimeout(500);
+  test('should show census with beds', async ({ page }) => {
+    const rows = page.locator('tbody tr');
+    await expect(rows.first()).toBeVisible({ timeout: 10000 });
+    await expect(await rows.count()).toBeGreaterThan(0);
+  });
 
-            // 5. Look for discharge option
-            const dischargeBtn = page.locator('button:has-text("Alta"), button:has-text("Egreso")').first();
-            if (await dischargeBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-                await dischargeBtn.click();
-
-                // 6. If reason select appears, choose one
-                const reasonSelect = page.locator('select').first();
-                if (await reasonSelect.isVisible({ timeout: 2000 }).catch(() => false)) {
-                    const options = await reasonSelect.locator('option').allTextContents();
-                    if (options.length > 1) {
-                        await reasonSelect.selectOption({ index: 1 });
-                    }
-                }
-
-                // 7. Confirm
-                const confirmBtn = page.locator('button:has-text("Confirmar"), button:has-text("Guardar")').first();
-                if (await confirmBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-                    await confirmBtn.click();
-                }
-            }
-        }
-
-        // Test passes if no errors - actual discharge logic varies by UI
-        await expect(page.locator('table')).toBeVisible();
-    });
-
-    test('should show census with beds', async ({ page }) => {
-        // Simplified test that census loads with beds
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
-
-        const rows = page.locator('table tbody tr');
-        const count = await rows.count();
-        expect(count).toBeGreaterThan(0);
-    });
-
-    test('should have bed management UI', async ({ page }) => {
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
-
-        // Check that bed rows have inputs for patient data
-        const patientInputs = page.locator('table input[type="text"]');
-        const count = await patientInputs.count();
-        expect(count).toBeGreaterThan(0);
-    });
+  test('should have bed management UI', async ({ page }) => {
+    const patientInput = page
+      .locator('[data-testid="patient-row"][data-bed-id="R1"] input[name="patientName"]')
+      .first();
+    await expect(patientInput).toBeVisible({ timeout: 10000 });
+    await expect(patientInput).toHaveValue(/discharge patient/i);
+  });
 });

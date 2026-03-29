@@ -9,39 +9,6 @@ const EXPORT_DATE = new Date().toISOString().slice(0, 10);
 
 test.describe('Export artifact validation', () => {
   test('downloads a local Excel artifact with a non-empty payload', async ({ page }) => {
-    await page.addInitScript(() => {
-      const runtimeWindow = window as Window & {
-        __HHR_DOWNLOAD_CAPTURE__?: {
-          blobSize: number;
-          blobType: string;
-          filename: string;
-        } | null;
-      };
-      const blobByUrl = new Map<string, Blob>();
-      const originalCreateObjectURL = URL.createObjectURL.bind(URL);
-
-      URL.createObjectURL = (blob: Blob | MediaSource): string => {
-        const url = originalCreateObjectURL(blob);
-        if (blob instanceof Blob) {
-          blobByUrl.set(url, blob);
-        }
-        return url;
-      };
-
-      const originalClick = HTMLAnchorElement.prototype.click;
-      HTMLAnchorElement.prototype.click = function clickPatched() {
-        if (this.download && this.href) {
-          const blob = blobByUrl.get(this.href);
-          runtimeWindow.__HHR_DOWNLOAD_CAPTURE__ = {
-            blobSize: blob?.size || 0,
-            blobType: blob?.type || '',
-            filename: this.download,
-          };
-        }
-        return originalClick.call(this);
-      };
-    });
-
     const baseRecord = buildCanonicalE2ERecord(EXPORT_DATE);
     const beds = (baseRecord.beds as Record<string, Record<string, unknown>>) || {};
 
@@ -66,7 +33,7 @@ test.describe('Export artifact validation', () => {
 
     const saveButton = page.getByRole('button', { name: /Guardar|Guardado|Archivado/i }).first();
     await expect(saveButton).toBeVisible();
-    await saveButton.click();
+    await saveButton.evaluate((element: HTMLElement) => element.click());
 
     await page.getByText('Descargar Local', { exact: false }).click();
     await expect
@@ -74,14 +41,14 @@ test.describe('Export artifact validation', () => {
         page.evaluate(
           () =>
             (window as Window & { __HHR_DOWNLOAD_CAPTURE__?: unknown }).__HHR_DOWNLOAD_CAPTURE__ ||
-            null
+            window.localStorage.getItem('hhr_e2e_last_download')
         )
       )
       .toBeTruthy();
 
     const downloadMeta = await page.evaluate(
       () =>
-        (
+        ((
           window as Window & {
             __HHR_DOWNLOAD_CAPTURE__?: {
               blobSize: number;
@@ -89,7 +56,12 @@ test.describe('Export artifact validation', () => {
               filename: string;
             } | null;
           }
-        ).__HHR_DOWNLOAD_CAPTURE__
+        ).__HHR_DOWNLOAD_CAPTURE__ ||
+          JSON.parse(window.localStorage.getItem('hhr_e2e_last_download') || 'null')) as {
+          blobSize: number;
+          blobType: string;
+          filename: string;
+        } | null
     );
 
     expect(downloadMeta?.filename).toMatch(/\.xlsx$/i);

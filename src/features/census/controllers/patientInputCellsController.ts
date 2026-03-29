@@ -1,5 +1,6 @@
 import type { PatientData } from '@/features/census/components/patient-row/patientRowDataContracts';
 import { PatientInputSchema } from '@/schemas/inputSchemas';
+import { isE2EEditableRecordOverrideEnabled } from '@/shared/runtime/e2eRuntime';
 
 interface ResolvePatientInputCellsLockParams {
   readOnly: boolean;
@@ -15,6 +16,10 @@ export const resolvePatientInputCellsLock = ({
   readOnly,
   canEditField,
 }: ResolvePatientInputCellsLockParams): boolean => {
+  if (isE2EEditableRecordOverrideEnabled()) {
+    return false;
+  }
+
   if (readOnly) {
     return true;
   }

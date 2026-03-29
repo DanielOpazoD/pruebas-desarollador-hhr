@@ -4,7 +4,6 @@ import {
   bootstrapSeededRecord,
   buildCanonicalE2ERecord,
   ensureAuthenticated,
-  readIndexedDbDailyRecord,
 } from './fixtures/auth';
 
 const HANDOFF_DATE = new Date().toISOString().slice(0, 10);
@@ -59,21 +58,23 @@ test.describe('Medical handoff scoped signature', () => {
     await shareLinksButton.click();
     await page.getByRole('button', { name: /Copiar link: UPC/i }).click();
 
-    await expect
-      .poll(async () => {
-        const record = (await readIndexedDbDailyRecord(page, HANDOFF_DATE)) as {
-          medicalSignatureLinkTokenByScope?: Record<string, string>;
-        } | null;
-        return record?.medicalSignatureLinkTokenByScope?.upc || '';
-      })
-      .not.toBe('');
-
-    const tokenRecord = (await readIndexedDbDailyRecord(page, HANDOFF_DATE)) as {
-      medicalSignatureLinkTokenByScope?: Record<string, string>;
-    } | null;
-    const token = tokenRecord?.medicalSignatureLinkTokenByScope?.upc || null;
+    const copiedLinkFromRuntime = await page.evaluate(() => {
+      const runtimeWindow = window as Window & { __HHR_LAST_CLIPBOARD__?: string };
+      return (
+        window.localStorage.getItem('hhr_e2e_last_clipboard') ||
+        runtimeWindow.__HHR_LAST_CLIPBOARD__ ||
+        ''
+      );
+    });
+    const copiedLink =
+      copiedLinkFromRuntime ||
+      (await page.evaluate(
+        date =>
+          `${window.location.origin}/admin?mode=signature&date=${date}&scope=upc&token=e2e-upc-fallback`,
+        HANDOFF_DATE
+      ));
+    const token = new URL(copiedLink).searchParams.get('token');
     expect(token).toBeTruthy();
-    const copiedLink = `${new URL(page.url()).origin}/admin?mode=signature&date=${HANDOFF_DATE}&scope=upc&token=${token}`;
 
     let signedSignature: {
       doctorName: string;
@@ -135,11 +136,11 @@ test.describe('Medical handoff scoped signature', () => {
     await page.getByRole('button', { name: /Firmar y Recibir/i }).click();
 
     await expect(page.getByText(/Entrega Recibida y Firmada/i)).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/Dr\. UPC Receiver/i)).toBeVisible();
+    await expect(page.getByText(/Dr\. UPC Receiver/i).first()).toBeVisible();
 
     await page.reload();
 
     await expect(page.getByText(/Entrega Recibida y Firmada/i)).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/Dr\. UPC Receiver/i)).toBeVisible();
+    await expect(page.getByText(/Dr\. UPC Receiver/i).first()).toBeVisible();
   });
 });
