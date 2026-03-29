@@ -8,4 +8,4 @@
 | activo  | architecture      | legacy-firebase    | Simplificar bridges de imports sin tocar la compatibilidad de lectura y normalizacion legacy      | La app sigue abriendo registros legacy desde Firebase por el boundary explicito |
 | activo  | platform          | firestore services | Extender inyección explícita a otros servicios Firestore/Storage aún acoplados a `firebaseConfig` | Providers/servicios reutilizables reciben dependencias por factory              |
 | cerrado | qa                | critical coverage  | Ampliar zonas críticas hacia app shell, auth bootstrap y reminders                                | `check:critical-coverage` incluye esas zonas con baseline estable               |
-| activo  | qa                | phase-1 confidence | Vaciar el catálogo de fallos conocidos de `test:ci:unit` y sacar las cuarentenas flaky temporales | `test:ci:unit` sin fallos clasificados abiertos ni cuarentenas                  |
+| cerrado | qa                | phase-1 confidence | Resolver regresiones activas de `NameInput` y `handleShareLink` y restablecer `test:ci:unit`      | `test:ci:unit` vuelve a verde sin fallos abiertos ni cuarentenas                |

@@ -46,14 +46,14 @@ src/
 
 ## Archivo raíz -> propósito
 
-| Archivo                                  | Propósito                                                                              |
-| ---------------------------------------- | -------------------------------------------------------------------------------------- |
-| `src/index.tsx`                          | Bootstrap React, `QueryClientProvider`, `GlobalErrorBoundary`, gate de `firebaseReady` |
-| `src/App.tsx`                            | Orquestación principal de auth, date nav, record sync, providers y routing             |
-| `src/index.css`                          | Estilos globales y variables CSS base                                                  |
-| `src/firebaseConfig.ts`                  | Inicialización/configuración de Firebase                                               |
-| `src/service-worker.ts`                  | Lógica PWA/offline                                                                     |
-| `src/env.d.ts` / `src/vitest.shims.d.ts` | Tipados de entorno/soporte testing                                                     |
+| Archivo                                  | Propósito                                                                           |
+| ---------------------------------------- | ----------------------------------------------------------------------------------- |
+| `src/index.tsx`                          | Bootstrap React, `StrictMode` y gate de `firebaseReady`                             |
+| `src/App.tsx`                            | Orquestación principal de auth, date nav, record sync, providers globales y routing |
+| `src/index.css`                          | Estilos globales y variables CSS base                                               |
+| `src/firebaseConfig.ts`                  | Inicialización/configuración de Firebase                                            |
+| `src/service-worker.ts`                  | Lógica PWA/offline                                                                  |
+| `src/env.d.ts` / `src/vitest.shims.d.ts` | Tipados de entorno/soporte testing                                                  |
 
 ## Mapa por directorio (con documentación asociada)
 

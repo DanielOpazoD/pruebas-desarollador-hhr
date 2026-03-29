@@ -1,33 +1,71 @@
-import { test, expect } from '@playwright/test';
-import { injectMockUser, injectMockData, ensureRecordExists } from './fixtures/auth';
+import { test, expect, type Page } from '@playwright/test';
+import {
+  bootstrapSeededRecord,
+  buildCanonicalE2ERecord,
+  ensureAuthenticated,
+} from './fixtures/auth';
 
-/**
- * E2E Test: Full Report & Signature Flow
- * Validates that an editor can enter handoff info and a signature link is available.
- */
+const getTodayDate = () => new Date().toISOString().slice(0, 10);
+
+const buildReportFlowRecord = (date: string) =>
+  buildCanonicalE2ERecord(date, {
+    beds: {
+      ...(buildCanonicalE2ERecord(date).beds as Record<string, unknown>),
+      R1: {
+        ...(buildCanonicalE2ERecord(date).beds as Record<string, Record<string, unknown>>).R1,
+        patientName: 'Report Patient',
+        pathology: 'Report DX',
+        status: 'Estable',
+      },
+    },
+    nursesDayShift: ['Enfermero/a 1', 'Enfermero/a 2'],
+    nursesNightShift: ['Enfermero/a 1', 'Enfermero/a 2'],
+    handoffNightReceives: ['Enfermero/a 1', 'Enfermero/a 2'],
+  });
+
+const openReportFlow = async (page: Page) => {
+  const date = getTodayDate();
+  await bootstrapSeededRecord(page, {
+    role: 'editor',
+    date,
+    record: buildReportFlowRecord(date),
+    useRuntimeOverride: true,
+    forceEditableRecord: true,
+  });
+  await page.goto(`/censo?date=${date}`);
+  await ensureAuthenticated(page);
+  await expect(page.getByTestId('census-table')).toBeVisible({ timeout: 20000 });
+};
+
 test.describe('Handoff & Signature Link Flow', () => {
-    test.beforeEach(async ({ page }) => {
-        await injectMockUser(page, 'editor');
-        await injectMockData(page);
-        await ensureRecordExists(page);
+  test.beforeEach(async ({ page }) => {
+    await openReportFlow(page);
+  });
+
+  test('should allow entering handoff notes and show share link', async ({ page }) => {
+    const handoffBtn = page.getByRole('button', { name: /Entrega Turno Médicos/i }).first();
+    await expect(handoffBtn).toBeVisible({ timeout: 10000 });
+    await handoffBtn.click();
+
+    const createMedicalHandoffButton = page.getByRole('button', { name: /Crear entrega médica/i });
+    await expect(createMedicalHandoffButton).toBeVisible({ timeout: 10000 });
+    await createMedicalHandoffButton.click();
+
+    await expect(page.locator('textarea').first()).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByRole('button', { name: /Generar link para firma del médico|Links firma/i }).first()
+    ).toBeVisible({ timeout: 10000 });
+  });
+
+  test('should navigate to Census and verify export options', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /Guardar/i }).first()).toBeVisible({
+      timeout: 10000,
     });
 
-    test('should allow entering handoff notes and show share link', async ({ page }) => {
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
-
-        // Navigate to Nursing Handoff
-        const handoffBtn = page.locator('button:has-text("Entrega")').first();
-        if (await handoffBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-            await handoffBtn.click();
-            await expect(page.locator('h2').first()).toBeVisible({ timeout: 10000 });
-        }
-    });
-
-    test('should navigate to Census and verify Export options', async ({ page }) => {
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
-
-        // Check for Excel Export button
-        const excelBtn = page.locator('button:has-text("EXCEL")').first();
-        await expect(excelBtn).toBeVisible({ timeout: 10000 });
-    });
+    await page
+      .getByRole('button', { name: /Guardar/i })
+      .first()
+      .click();
+    await expect(page.getByText(/Excel Local|Excel/i).first()).toBeVisible({ timeout: 10000 });
+  });
 });

@@ -76,6 +76,37 @@ describe('NameInput', () => {
     expect(nameInput).toHaveAttribute('readonly');
   });
 
+  it('does not emit inline updates for main-row names', () => {
+    const handlePatientName = vi.fn();
+    const onChange: DebouncedTextHandler = field =>
+      field === 'patientName' ? handlePatientName : vi.fn();
+    const data = DataFactory.createMockPatient('R1', {
+      patientName: 'Paciente Principal',
+      firstName: 'Paciente',
+      lastName: 'Principal',
+      secondLastName: '',
+      identityStatus: 'official',
+      rut: '12.345.678-9',
+    });
+
+    const { container } = render(
+      <table>
+        <tbody>
+          <tr>
+            <NameInput data={data} onChange={onChange} />
+          </tr>
+        </tbody>
+      </table>
+    );
+
+    const nameInput = container.querySelector('input[name="patientName"]') as HTMLInputElement;
+    expect(nameInput).toHaveAttribute('readonly');
+
+    fireEvent.change(nameInput, { target: { value: 'Paciente Editado' } });
+    fireEvent.blur(nameInput);
+    expect(handlePatientName).not.toHaveBeenCalled();
+  });
+
   it('allows inline edition for provisional clinical crib rows', () => {
     const handlePatientName = vi.fn();
     const onChange: DebouncedTextHandler = field =>

@@ -11,15 +11,20 @@
     },
     {
       "id": "merge_gate",
+      "label": "Pre Merge",
+      "script": "ci:pre-merge",
+      "level": "merge-gate",
+      "requiredScripts": ["typecheck", "lint", "check:quality", "test:ci:unit"],
+      "purpose": "Verificacion compacta obligatoria antes de merge para tipado, lint, guardrails y suite unitaria/integracion."
+    },
+    {
+      "id": "merge_gate_extended",
       "label": "Merge Gate",
       "script": "ci:merge-gate",
       "level": "merge-gate",
       "requiredScripts": [
-        "typecheck",
-        "lint",
+        "ci:pre-merge",
         "lint:strict:core",
-        "check:quality",
-        "test:ci:unit",
         "check:critical-coverage",
         "build",
         "check:bundle-budget"

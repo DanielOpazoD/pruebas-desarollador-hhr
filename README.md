@@ -108,7 +108,8 @@ Los accesos directos al handoff médico ya no usan un “modo especialista” se
 | `npm run check:quality`                      | Checks de arquitectura, tamaño de módulo y boundaries runtime                                    |
 | `npm run check:test-failure-catalog`         | Valida el catálogo versionado de fallos conocidos y cuarentenas                                  |
 | `npm run ci:inner-loop`                      | Gate corto para desarrollo diario (`typecheck`, lint estricto, quality y riesgo unitario)        |
-| `npm run ci:merge-gate`                      | Gate blocking previo a merge (`quality`, unitarios completos, cobertura crítica, build, bundle)  |
+| `npm run ci:pre-merge`                       | Verificación compacta obligatoria antes de merge (`typecheck`, lint, quality y `test:ci:unit`)   |
+| `npm run ci:merge-gate`                      | Gate blocking ampliado para merge (`pre-merge`, lint estricto, cobertura crítica, build, bundle) |
 | `npm run ci:release-gate`                    | Gate final de release (`merge-gate` + Firestore rules/emulador/E2E crítico)                      |
 | `npm run test:rules`                         | Tests de reglas Firestore                                                                        |
 | `npm run test:risk:admin-health`             | Riesgo operativo de health dashboard y contratos                                                 |
@@ -271,6 +272,7 @@ E2E_CRITICAL_BROWSERS=chromium,firefox npm run test:e2e:critical
 Mapa operativo resumido:
 
 - `npm run ci:inner-loop`
+- `npm run ci:pre-merge`
 - `npm run ci:merge-gate`
 - `npm run ci:release-gate`
 

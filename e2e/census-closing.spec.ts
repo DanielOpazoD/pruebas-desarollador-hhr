@@ -1,11 +1,22 @@
 import { test, expect } from '@playwright/test';
-import { injectMockUser, injectMockData, ensureRecordExists } from './fixtures/auth';
+import {
+  E2E_DEFAULT_DATE,
+  bootstrapSeededRecord,
+  buildCanonicalE2ERecord,
+  ensureAuthenticated,
+} from './fixtures/auth';
 
 test.describe('Census Closing Flow', () => {
   test.beforeEach(async ({ page }) => {
-    await injectMockUser(page, 'admin');
-    await injectMockData(page);
-    await ensureRecordExists(page);
+    await bootstrapSeededRecord(page, {
+      role: 'admin',
+      date: E2E_DEFAULT_DATE,
+      record: buildCanonicalE2ERecord(E2E_DEFAULT_DATE),
+      useRuntimeOverride: true,
+    });
+    await page.goto(`/censo?date=${E2E_DEFAULT_DATE}`);
+    await ensureAuthenticated(page);
+    await expect(page.getByTestId('census-table')).toBeVisible({ timeout: 20000 });
   });
 
   test('should allow admin to close current census day', async ({ page }) => {
@@ -39,9 +50,7 @@ test.describe('Census Closing Flow', () => {
     }
 
     // Verify that data is displayed correct before "closing"
-    await expect(page.locator('table')).toBeVisible();
-    await expect(
-      page.getByRole('heading', { name: 'Hospital Hanga Roa', exact: true })
-    ).toBeVisible();
+    await expect(page.getByTestId('census-table')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Hospital Hanga Roa/i })).toBeVisible();
   });
 });

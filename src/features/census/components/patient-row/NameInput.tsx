@@ -63,8 +63,9 @@ export const NameInput: React.FC<NameInputProps> = ({
   onChange,
 }) => {
   const isProvisionalClinicalCrib = isSubRow && !isOfficialIdentity(data);
-  const canEditInlineName = !readOnly && !isEmpty && (!isSubRow || isProvisionalClinicalCrib);
+  const canEditInlineName = !readOnly && !isEmpty && isProvisionalClinicalCrib;
   const fullName = resolveFullName(data, isProvisionalClinicalCrib);
+  const handlePatientNameChange = canEditInlineName ? onChange('patientName') : () => undefined;
 
   const hasValidationError =
     !PatientInputSchema.pick({ patientName: true }).safeParse({ patientName: fullName }).success &&
@@ -92,7 +93,7 @@ export const NameInput: React.FC<NameInputProps> = ({
           placeholder={isSubRow ? 'Nombre RN / Niño' : isEmpty ? '' : 'Nombre Paciente'}
           value={fullName}
           readOnly={!canEditInlineName}
-          onChange={onChange('patientName')}
+          onChange={handlePatientNameChange}
           debounceMs={350}
         />
         {isSubRow && (

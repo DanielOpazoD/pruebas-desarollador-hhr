@@ -261,7 +261,15 @@ export async function setupE2EContext(
   );
 
   // 3. Single reload to apply all state
-  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+  try {
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes('Frame load interrupted')) {
+      throw error;
+    }
+    await page.waitForLoadState('domcontentloaded', { timeout: 30000 }).catch(() => {});
+  }
 
   // Refuerzo: esperar a que no haya llamadas de red pendientes agresivas
   await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
@@ -509,6 +517,7 @@ export async function clearAuth(page: Page) {
  * Uses stable data-testid instead of text selectors
  */
 export async function ensureRecordExists(page: Page) {
+  const initialStateTimeoutMs = 45_000;
   const loginButton = page.getByRole('button', { name: /Ingresar con Google/i });
   const loginButtonById = page.getByTestId('login-google-button');
   if (
@@ -552,7 +561,7 @@ export async function ensureRecordExists(page: Page) {
     // El prompt visible ya implica que la pantalla está lista para interactuar.
   } else {
     // Solo esperar quietud de red si todavía no apareció ni tabla ni prompt.
-    await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+    await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
 
     if (await tableById.isVisible().catch(() => false)) {
       return;
@@ -560,8 +569,18 @@ export async function ensureRecordExists(page: Page) {
   }
 
   try {
-    // Si la tabla no cargó, uno de estos DEBE estar
-    await expect(blankBtn.or(copyBtn)).toBeVisible({ timeout: 15000 });
+    // Si la tabla no cargó, uno de estos DEBE estar.
+    await expect
+      .poll(
+        async () => {
+          if (await tableById.isVisible().catch(() => false)) return 'table';
+          if (await blankBtn.isVisible().catch(() => false)) return 'blank';
+          if (await copyBtn.isVisible().catch(() => false)) return 'copy';
+          return 'pending';
+        },
+        { timeout: initialStateTimeoutMs }
+      )
+      .toMatch(/table|blank|copy/);
   } catch {
     // Fallback: si aun así no está, vemos si en el ínterin apareció la tabla
     if (await tableById.isVisible().catch(() => false)) return;
@@ -580,7 +599,7 @@ export async function ensureRecordExists(page: Page) {
   }
 
   // Final confirmation
-  await expect(tableById).toBeVisible({ timeout: 15000 });
+  await expect(tableById).toBeVisible({ timeout: initialStateTimeoutMs });
 }
 
 export { expect };

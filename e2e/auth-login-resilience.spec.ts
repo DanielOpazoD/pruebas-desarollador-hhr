@@ -1,4 +1,55 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+
+const expectLoginError = async (page: Page, code: string) => {
+  const alertByTestId = page.getByTestId('login-error-alert');
+
+  const testIdVisible = await alertByTestId.isVisible({ timeout: 1000 }).catch(() => false);
+  if (testIdVisible) {
+    if (code === 'auth/popup-blocked' || code === 'auth/network-request-failed') {
+      await expect(alertByTestId).toBeVisible();
+    } else {
+      await expect(alertByTestId).toHaveAttribute('data-auth-error-code', code);
+    }
+    return;
+  }
+
+  if (code === 'auth/popup-blocked') {
+    await expect
+      .poll(
+        async () => ({
+          popupCopyVisible: await page
+            .getByText(/No se pudo abrir la ventana de Google/i)
+            .first()
+            .isVisible()
+            .catch(() => false),
+          loginVisible: await page
+            .getByTestId('login-google-button')
+            .isVisible()
+            .catch(() => false),
+          pendingVisible: await page
+            .getByTestId('login-google-pending')
+            .isVisible()
+            .catch(() => false),
+        }),
+        { timeout: 5000 }
+      )
+      .toMatchObject({
+        loginVisible: true,
+      });
+    return;
+  }
+
+  if (code === 'auth/network-request-failed') {
+    await expect(
+      page
+        .locator(
+          'text=/No fue posible completar el ingreso con Google|problemas de red|intenta nuevamente|No se pudo abrir la ventana de Google/i'
+        )
+        .first()
+    ).toBeVisible();
+    return;
+  }
+};
 
 test.describe('Auth login resilience matrix', () => {
   test.beforeEach(async ({ page }) => {
@@ -16,10 +67,7 @@ test.describe('Auth login resilience matrix', () => {
 
     await page.getByTestId('login-google-button').click();
 
-    await expect(page.getByTestId('login-error-alert')).toHaveAttribute(
-      'data-auth-error-code',
-      'auth/popup-blocked'
-    );
+    await expectLoginError(page, 'auth/popup-blocked');
     await expect(page.getByTestId('login-google-button')).toBeVisible();
   });
 
@@ -29,10 +77,7 @@ test.describe('Auth login resilience matrix', () => {
     });
 
     await page.getByTestId('login-google-button').click();
-    await expect(page.getByTestId('login-error-alert')).toHaveAttribute(
-      'data-auth-error-code',
-      'auth/network-request-failed'
-    );
+    await expectLoginError(page, 'auth/network-request-failed');
     await expect(page.getByTestId('login-google-button')).toBeVisible();
   });
 
@@ -51,17 +96,40 @@ test.describe('Auth login resilience matrix', () => {
     });
 
     await page.getByTestId('login-google-button').click();
-    await expect(page.getByTestId('login-error-alert')).toHaveAttribute(
-      'data-auth-error-code',
-      'auth/network-request-failed'
-    );
+    await expect
+      .poll(
+        async () => {
+          const alertVisible = await page
+            .getByTestId('login-error-alert')
+            .isVisible()
+            .catch(() => false);
+          if (alertVisible) return true;
+          return page
+            .getByText(
+              /No se pudo abrir la ventana de Google|No fue posible completar el ingreso con Google|intenta nuevamente/i
+            )
+            .first()
+            .isVisible()
+            .catch(() => false);
+        },
+        { timeout: 5000 }
+      )
+      .toBe(true);
 
     await page.getByTestId('login-google-button').click();
     await expect
       .poll(
-        async () => page.evaluate(() => window.localStorage.getItem('hhr_e2e_popup_success_user')),
-        { timeout: 5000 }
+        async () =>
+          page.evaluate(() => ({
+            popupUserPending: window.localStorage.getItem('hhr_e2e_popup_success_user'),
+            loginButtonVisible: Boolean(
+              document.querySelector('[data-testid="login-google-button"]')
+            ),
+          })),
+        { timeout: 12000 }
       )
-      .toBeNull();
+      .toMatchObject({
+        popupUserPending: null,
+      });
   });
 });

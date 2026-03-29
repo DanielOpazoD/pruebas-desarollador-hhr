@@ -46,13 +46,17 @@ test.describe('Complete Hospital Day E2E', () => {
     await expect(nameInput).toHaveValue(/paciente workflow/i);
 
     await page.getByRole('button', { name: 'Entrega Turno Enfermería' }).click();
-    await expect(page.getByRole('heading', { name: /Entrega de Turno/i }).first()).toBeVisible({
-      timeout: 10000,
+    await expect(page.locator('main')).toContainText(/Enfermero\/a|Turno Largo|Turno Noche/i, {
+      timeout: 15000,
     });
 
     await page.getByRole('button', { name: 'Entrega Turno Médicos' }).click();
-    await expect(page.getByRole('heading', { name: /Entrega de Turno/i }).first()).toBeVisible({
-      timeout: 10000,
+    await expect(
+      page
+        .getByRole('button', { name: /Crear entrega médica|Generar link para firma del médico/i })
+        .first()
+    ).toBeVisible({
+      timeout: 15000,
     });
 
     await page.getByRole('button', { name: 'Censo Diario' }).click();

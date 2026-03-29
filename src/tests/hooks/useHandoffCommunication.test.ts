@@ -6,8 +6,11 @@ import type { DailyRecord } from '@/types';
 import type { MessageTemplate } from '@/services/integrations/whatsapp/whatsappService';
 import { DataFactory } from '@/tests/factories/DataFactory';
 
-const mockWriteClipboardText = vi.fn();
-const mockOpen = vi.fn();
+const { mockWriteClipboardText, mockOpen, mockIsE2ERuntimeEnabled } = vi.hoisted(() => ({
+  mockWriteClipboardText: vi.fn(),
+  mockOpen: vi.fn(),
+  mockIsE2ERuntimeEnabled: vi.fn(() => false),
+}));
 
 vi.mock('@/shared/runtime/browserWindowRuntime', () => ({
   defaultBrowserWindowRuntime: {
@@ -15,6 +18,10 @@ vi.mock('@/shared/runtime/browserWindowRuntime', () => ({
     open: (...args: unknown[]) => mockOpen(...args),
   },
   writeClipboardText: (...args: unknown[]) => mockWriteClipboardText(...args),
+}));
+
+vi.mock('@/shared/runtime/e2eRuntime', () => ({
+  isE2ERuntimeEnabled: () => mockIsE2ERuntimeEnabled(),
 }));
 
 vi.mock('@/services/integrations/whatsapp/whatsappService', () => ({
@@ -41,6 +48,7 @@ describe('useHandoffCommunication', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockIsE2ERuntimeEnabled.mockReturnValue(false);
     ensureMedicalHandoffSignatureLink.mockResolvedValue({
       status: 'success',
       data: {
@@ -68,6 +76,7 @@ describe('useHandoffCommunication', () => {
     });
 
     await waitFor(() => {
+      expect(mockWriteClipboardText).toHaveBeenCalledTimes(1);
       expect(mockWriteClipboardText).toHaveBeenCalledWith(
         'https://hhr.test?mode=signature&date=2026-02-15&scope=all&token=test-token'
       );
@@ -103,6 +112,7 @@ describe('useHandoffCommunication', () => {
     });
 
     await waitFor(() => {
+      expect(mockWriteClipboardText).toHaveBeenCalledTimes(1);
       expect(mockWriteClipboardText).toHaveBeenCalledWith(
         'https://hhr.test?mode=signature&date=2026-02-15&scope=upc&token=upc-token'
       );
@@ -194,6 +204,43 @@ describe('useHandoffCommunication', () => {
     await waitFor(() => {
       expect(onSuccess).toHaveBeenCalledWith(
         'La firma médica no está disponible para este perfil.'
+      );
+    });
+  });
+
+  it('uses the E2E fallback link only when the runtime explicitly enables it', async () => {
+    mockIsE2ERuntimeEnabled.mockReturnValue(true);
+    mockWriteClipboardText.mockResolvedValue(undefined);
+    ensureMedicalHandoffSignatureLink.mockResolvedValue({
+      status: 'failed',
+      data: null,
+      issues: [],
+    });
+
+    const { result } = renderHook(() =>
+      useHandoffCommunication(
+        createRecord(),
+        [],
+        vi.fn(),
+        ensureMedicalHandoffSignatureLink,
+        onSuccess
+      )
+    );
+
+    act(() => {
+      result.current.handleShareLink();
+    });
+
+    await waitFor(() => {
+      expect(mockWriteClipboardText).toHaveBeenCalledTimes(1);
+      expect(mockWriteClipboardText).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /^https:\/\/hhr\.test\/admin\?mode=signature&date=2026-02-15&scope=all&token=e2e-all-/
+        )
+      );
+      expect(onSuccess).toHaveBeenCalledWith(
+        'Enlace copiado',
+        'Se generó un enlace de firma médica en modo E2E para continuar la validación.'
       );
     });
   });

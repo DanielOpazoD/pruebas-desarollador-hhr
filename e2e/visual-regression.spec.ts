@@ -115,9 +115,19 @@ async function injectVRTData(page: Page) {
     { dateStr }
   );
 
-  // 3. Navigate
-  await page.goto(`/censo?date=${VRT_DATE}`);
-  await page.waitForLoadState('domcontentloaded');
+  // 3. Navigate once and tolerate transient Firefox/WebKit navigation failures.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      await page.goto(`/censo?date=${VRT_DATE}`);
+      await page.waitForLoadState('domcontentloaded');
+      return;
+    } catch (error) {
+      if (attempt === 1) {
+        throw error;
+      }
+      await page.waitForTimeout(300);
+    }
+  }
 }
 
 test.describe('Visual Regression Testing', () => {
@@ -152,7 +162,6 @@ test.describe('Visual Regression Testing', () => {
 
   test('3D Hospital Map baseline', async ({ page }) => {
     await injectVRTData(page);
-    await page.goto(`/censo?date=${VRT_DATE}`);
 
     // Find the map toggle button by title
     const mapButton = page.locator('button[title="Ver Mapa 3D"]');
@@ -177,7 +186,6 @@ test.describe('Visual Regression Testing', () => {
 
   test('Patient Dialog UI baseline', async ({ page }) => {
     await injectVRTData(page);
-    await page.goto(`/censo?date=${VRT_DATE}`);
 
     // Wait for table to be ready
     const table = page.getByTestId('census-table');
@@ -187,11 +195,12 @@ test.describe('Visual Regression Testing', () => {
     const patientRow = page.locator('tr').filter({ hasText: 'R1' });
     await expect(patientRow).toBeVisible({ timeout: 15000 });
 
-    // Clicking the age field opens the Demographics Modal
-    const ageField = patientRow.locator('input[placeholder="Edad"]');
-    await ageField.click();
+    // Open the demographics modal from the patient row action button
+    const demographicsButton = patientRow.getByRole('button', { name: /Datos del Paciente/i });
+    await expect(demographicsButton).toBeVisible({ timeout: 10000 });
+    await demographicsButton.click();
 
-    const dialog = page.locator('role=dialog');
+    const dialog = page.getByRole('dialog').first();
     await expect(dialog).toBeVisible({ timeout: 10000 });
 
     // Give time for animations

@@ -1,43 +1,82 @@
-import { test, expect } from '@playwright/test';
-import { injectMockUser, injectMockData, ensureRecordExists } from './fixtures/auth';
+import { test, expect, type Page } from '@playwright/test';
+import {
+  bootstrapSeededRecord,
+  buildCanonicalE2ERecord,
+  ensureAuthenticated,
+} from './fixtures/auth';
 
-/**
- * E2E Test: RBAC (Role Based Access Control) Security
- * Ensures that 'viewer' role is strictly read-only on the UI.
- */
+const getTodayDate = () => new Date().toISOString().slice(0, 10);
+
+const buildViewerRecord = (date: string) =>
+  buildCanonicalE2ERecord(date, {
+    beds: {
+      ...(buildCanonicalE2ERecord(date).beds as Record<string, unknown>),
+      R1: {
+        ...(buildCanonicalE2ERecord(date).beds as Record<string, Record<string, unknown>>).R1,
+        patientName: 'Viewer Patient',
+        pathology: 'Viewer DX',
+        status: 'Estable',
+      },
+    },
+    nursesDayShift: ['Enfermero/a 1', 'Enfermero/a 2'],
+    nursesNightShift: ['Enfermero/a 1', 'Enfermero/a 2'],
+    handoffNightReceives: ['Enfermero/a 1', 'Enfermero/a 2'],
+  });
+
+const openViewerCensus = async (page: Page) => {
+  const date = getTodayDate();
+  await bootstrapSeededRecord(page, {
+    role: 'viewer',
+    date,
+    record: buildViewerRecord(date),
+    useRuntimeOverride: true,
+    forceEditableRecord: false,
+  });
+  await page.goto(`/censo?date=${date}`);
+  await ensureAuthenticated(page);
+  await expect(page.getByTestId('census-table')).toBeVisible({ timeout: 20000 });
+};
+
 test.describe('RBAC Security - Viewer Role', () => {
-    test.beforeEach(async ({ page }) => {
-        await injectMockUser(page, 'viewer');
-        await injectMockData(page, undefined, true);
-        await ensureRecordExists(page);
+  test.beforeEach(async ({ page }) => {
+    await openViewerCensus(page);
+  });
+
+  test('should disable patient input fields for viewers', async ({ page }) => {
+    const nameInput = page.locator('input[name="patientName"]').first();
+    await expect(nameInput).toBeVisible({ timeout: 10000 });
+    await expect(nameInput).toHaveAttribute('readonly', '');
+  });
+
+  test('should keep patient rows non-editable for viewers even when row actions are visible', async ({
+    page,
+  }) => {
+    await expect(page.getByRole('button', { name: /Guardar/i })).toHaveCount(0);
+
+    const rowActionButton = page
+      .locator('[data-testid="patient-row"][data-bed-id="R1"] button[title="Acciones"]')
+      .first();
+    await expect(rowActionButton).toBeVisible({ timeout: 10000 });
+    await rowActionButton.evaluate(element => (element as HTMLButtonElement).click());
+
+    const nameInput = page.locator('input[name="patientName"]').first();
+    await expect(nameInput).toHaveAttribute('readonly', '');
+  });
+
+  test('should permit viewing handoff but prevent editing', async ({ page }) => {
+    const handoffBtn = page.getByRole('button', { name: /Entrega Turno Enfermería/i }).first();
+    await expect(handoffBtn).toBeVisible({ timeout: 10000 });
+    await handoffBtn.click();
+
+    await expect(page.locator('main')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: /Turno Largo/i }).first()).toBeVisible({
+      timeout: 10000,
     });
-
-    test('should disable patient input fields for viewers', async ({ page }) => {
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
-
-        const nameInput = page.locator('table input[type="text"]').first();
-        await expect(nameInput).toBeDisabled({ timeout: 5000 });
+    await expect(page.locator('textarea[disabled], textarea[readonly]').first()).toBeVisible({
+      timeout: 10000,
     });
-
-    test('should hide sensitive action buttons for viewers', async ({ page }) => {
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
-
-        // Verify table is read-only (inputs disabled)
-        const inputs = page.locator('table input[type="text"]');
-        const firstInput = inputs.first();
-        if (await firstInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-            await expect(firstInput).toBeDisabled();
-        }
+    await expect(page.locator('input[type="checkbox"][disabled]').first()).toBeVisible({
+      timeout: 10000,
     });
-
-    test('should permit viewing handoff but prevent editing', async ({ page }) => {
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
-
-        // Navigate to handoff
-        const handoffBtn = page.locator('button:has-text("Entrega")').first();
-        if (await handoffBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-            await handoffBtn.click();
-            await expect(page.locator('h2').first()).toBeVisible({ timeout: 10000 });
-        }
-    });
+  });
 });

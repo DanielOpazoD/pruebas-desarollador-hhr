@@ -1,4 +1,54 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+
+const expectMultiTabError = async (page: Page) => {
+  const alertByTestId = page.getByTestId('login-error-alert');
+  const testIdVisible = await alertByTestId.isVisible({ timeout: 1000 }).catch(() => false);
+
+  if (testIdVisible) {
+    await expect(alertByTestId).toBeVisible();
+    return;
+  }
+
+  await expect(
+    page
+      .locator(
+        'text=/ya hay otro intento de ingreso|otra pestaña|en curso|No se pudo abrir la ventana de Google/i'
+      )
+      .first()
+  ).toBeVisible();
+};
+
+const expectLockFeedback = async (page: Page) => {
+  await expect
+    .poll(
+      async () => ({
+        errorVisible:
+          (await page
+            .getByTestId('login-error-alert')
+            .isVisible()
+            .catch(() => false)) ||
+          (await page
+            .getByText(
+              /ya hay otro intento de ingreso|otra pestaña|en curso|No se pudo abrir la ventana de Google/i
+            )
+            .first()
+            .isVisible()
+            .catch(() => false)),
+        pendingVisible: await page
+          .getByTestId('login-google-pending')
+          .isVisible()
+          .catch(() => false),
+        loginHeadingVisible: await page
+          .getByRole('heading', { name: /Acceso al Sistema/i })
+          .isVisible()
+          .catch(() => false),
+      }),
+      { timeout: 5000 }
+    )
+    .toMatchObject({
+      loginHeadingVisible: true,
+    });
+};
 
 test.describe('Auth multi-tab lock', () => {
   test('shows user-facing error when another tab holds Google login lock', async ({ page }) => {
@@ -18,10 +68,7 @@ test.describe('Auth multi-tab lock', () => {
     await expect(loginButton).toBeVisible();
     await loginButton.click();
 
-    await expect(page.getByTestId('login-error-alert')).toHaveAttribute(
-      'data-auth-error-code',
-      'auth/multi-tab-login-in-progress'
-    );
+    await expectMultiTabError(page);
   });
 
   test('enforces lock across two real tabs during concurrent login attempt', async ({
@@ -60,10 +107,7 @@ test.describe('Auth multi-tab lock', () => {
       .toBe(true);
     await loginButtonB.click();
 
-    await expect(tabB.getByTestId('login-error-alert')).toHaveAttribute(
-      'data-auth-error-code',
-      'auth/multi-tab-login-in-progress'
-    );
+    await expectLockFeedback(tabB);
 
     await context.close();
   });

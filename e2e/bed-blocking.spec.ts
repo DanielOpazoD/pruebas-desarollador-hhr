@@ -55,13 +55,13 @@ test.describe('Bed Blocking Flow', () => {
 
     await reasonInput.press('Enter');
 
-    // 7. Verify SubDialog closes and bed button indicates blocked state
-    await expect(subDialog).not.toBeVisible();
-    await expect(bedBtn).toHaveClass(/amber-50/); // bg-amber-50 is used for blocked state
+    // 7. Verify the transient dialog clears.
+    await expect(subDialog).not.toBeVisible({ timeout: 15000 });
 
-    // 8. Close main modal
-    // Assuming click outside or Close button
+    // 8. Close main modal and verify the row reflects the blocked state.
     await page.keyboard.press('Escape');
+    const bedRow = page.locator('tr').filter({ hasText: 'H1C1' }).first();
+    await expect(bedRow).toContainText('Cama Bloqueada', { timeout: 15000 });
   });
 
   test('should not allow patient admission to blocked bed', async ({ page }) => {
@@ -80,7 +80,8 @@ test.describe('Bed Blocking Flow', () => {
     await subDialog.locator('input[type="text"]').fill('Aislamiento');
     await subDialog.locator('input[type="text"]').press('Enter'); // Access via keyboard for speed/reliability
 
-    await expect(subDialog).not.toBeVisible();
+    await expect(bedBtn).toHaveClass(/amber-50/, { timeout: 15000 });
+    await expect(subDialog).not.toBeVisible({ timeout: 15000 });
     await page.keyboard.press('Escape'); // Close manager
 
     // 2. Try to click the blocked bed row
@@ -118,10 +119,8 @@ test.describe('Bed Blocking Flow', () => {
     const subDialog = getModalByTitle(page, /Bloquear Cama H3C1/i);
     await subDialog.locator('input[type="text"]').fill('Test Block');
     await subDialog.locator('input[type="text"]').press('Enter');
-    await expect(subDialog).not.toBeVisible();
-
-    // Verify blocked
-    await expect(bedBtn).toHaveClass(/amber-50/);
+    await expect(bedBtn).toHaveClass(/amber-50/, { timeout: 15000 });
+    await expect(subDialog).not.toBeVisible({ timeout: 15000 });
 
     // Click again to Unblock/Edit
     await bedBtn.dispatchEvent('click');
@@ -136,7 +135,7 @@ test.describe('Bed Blocking Flow', () => {
     await unblockBtn.dispatchEvent('click');
 
     // Verify unblocked state
-    await expect(editDialog).not.toBeVisible();
+    await expect(editDialog).not.toBeVisible({ timeout: 15000 });
     await expect(bedBtn).not.toHaveClass(/amber-50/);
   });
 

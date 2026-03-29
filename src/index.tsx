@@ -1,10 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { QueryClientProvider } from '@tanstack/react-query';
 import App from '@/App';
 import { firebaseReady, mountConfigWarning } from '@/firebaseConfig';
-import { queryClient } from '@/config/queryClient';
-import { GlobalErrorBoundary } from '@/components/shared/GlobalErrorBoundary';
 import { getFirebaseStartupFailureMessage } from '@/services/auth/firebaseStartupUiPolicy';
 import { createScopedLogger } from '@/services/utils/loggerScope';
 
@@ -42,11 +39,7 @@ const renderApp = () => {
   bootLogger.info('Rendering application');
   root.render(
     <React.StrictMode>
-      <GlobalErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <App />
-        </QueryClientProvider>
-      </GlobalErrorBoundary>
+      <App />
     </React.StrictMode>
   );
 };

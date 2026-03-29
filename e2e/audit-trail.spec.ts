@@ -76,6 +76,15 @@ const openAuditView = async (page: Page) => {
   await expect(auditButton).toBeVisible({ timeout: 10000 });
   await auditButton.click();
 
+  const auditErrorHeading = page.getByRole('heading', { name: /Error en Auditoría/i });
+  const retryButton = page.getByRole('button', { name: /Reintentar/i });
+  const errorVisible = await auditErrorHeading.isVisible({ timeout: 3000 }).catch(() => false);
+
+  if (errorVisible) {
+    await expect(retryButton).toBeVisible({ timeout: 5000 });
+    await retryButton.click();
+  }
+
   await expect(page.getByRole('heading', { name: /Registro de Auditoría/i })).toBeVisible({
     timeout: 15000,
   });
@@ -101,7 +110,7 @@ test.describe('Audit Trail Flow', () => {
     });
 
     await page.addInitScript(
-      ({ auditLogs }: { auditLogs: unknown[] }) => {
+      ({ auditLogs }: { auditLogs: readonly unknown[] }) => {
         localStorage.setItem('hanga_roa_audit_logs', JSON.stringify(auditLogs));
         localStorage.removeItem('indexeddb_migration_complete');
       },
@@ -118,6 +127,13 @@ test.describe('Audit Trail Flow', () => {
     await page.goto(`/censo?date=${date}`);
     await ensureAuthenticated(page);
     await expect(page.getByTestId('census-table')).toBeVisible({ timeout: 20000 });
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(() => window.localStorage.getItem('indexeddb_migration_complete')),
+        { timeout: 10000 }
+      )
+      .toBe('true');
   });
 
   test('should navigate to audit view', async ({ page }) => {

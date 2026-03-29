@@ -21,9 +21,9 @@ Salida esperada:
 
 - feedback rápido sobre tipado, lint, guardrails estructurales y riesgos unitarios críticos.
 
-### `ci:merge-gate`
+### `ci:pre-merge`
 
-Usar antes de merge o cuando una change toca código clínico, almacenamiento, auth, bundle o lazy loading.
+Usar como verificación compacta obligatoria antes de merge.
 
 Incluye:
 
@@ -31,6 +31,19 @@ Incluye:
 - `npm run lint -- --max-warnings 0`
 - `npm run check:quality`
 - `npm run test:ci:unit`
+
+Salida esperada:
+
+- contrato base de tipado, lint, guardrails y suite unitaria/integración de CI en verde antes de abrir o actualizar un PR.
+
+### `ci:merge-gate`
+
+Usar cuando una change toca código clínico, almacenamiento, auth, bundle o lazy loading.
+
+Incluye:
+
+- `npm run ci:pre-merge`
+- `npm run lint:strict:core`
 - `npm run check:critical-coverage`
 - `npm run build`
 - `npm run check:bundle-budget`
@@ -156,7 +169,7 @@ Salida esperada:
 1. correr `npm run report:guardrail-governance`
 2. revisar `reports/guardrail-governance.md`
 3. confirmar que:
-   - `ci:inner-loop`, `ci:merge-gate` y `ci:release-gate` sigan declarando exactamente los scripts protegidos
+   - `ci:inner-loop`, `ci:pre-merge`, `ci:merge-gate` y `ci:release-gate` sigan declarando exactamente los scripts protegidos
    - `test:release-confidence` siga cubriendo el pack blocking compacto
    - los reportes report-only sigan apuntando a artefactos reales
 4. si agregaste un guardrail nuevo, decidir en la misma change si nace como blocking o report-only
@@ -237,5 +250,6 @@ Salida esperada:
 ## Regla práctica
 
 - cambio local chico: `ci:inner-loop`
+- cambio funcional antes de abrir o actualizar PR: `ci:pre-merge`
 - cambio funcional o refactor con impacto real: `ci:merge-gate`
 - cambio de release, Firebase o UX crítica: `ci:release-gate`

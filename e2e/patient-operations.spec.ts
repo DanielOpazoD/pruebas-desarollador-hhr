@@ -1,44 +1,85 @@
 /**
  * E2E Tests: Patient Operations
- * Tests discharge and transfer patient flows with mocked authentication.
+ * Tests row-level patient operations and navigation with seeded auth/data.
  */
 
-import { test, expect } from '@playwright/test';
-import { injectMockUser, injectMockData, ensureRecordExists } from './fixtures/auth';
+import { test, expect, type Page } from '@playwright/test';
+import {
+  bootstrapSeededRecord,
+  buildCanonicalE2ERecord,
+  ensureAuthenticated,
+} from './fixtures/auth';
+
+const getTodayDate = () => new Date().toISOString().slice(0, 10);
+
+const buildPatientOperationsRecord = (date: string) =>
+  buildCanonicalE2ERecord(date, {
+    beds: {
+      ...(buildCanonicalE2ERecord(date).beds as Record<string, unknown>),
+      R1: {
+        ...(buildCanonicalE2ERecord(date).beds as Record<string, Record<string, unknown>>).R1,
+        patientName: 'Operations Patient',
+        pathology: 'Operations DX',
+        status: 'Estable',
+      },
+    },
+  });
+
+const openPatientOperations = async (page: Page) => {
+  const date = getTodayDate();
+  await bootstrapSeededRecord(page, {
+    role: 'editor',
+    date,
+    record: buildPatientOperationsRecord(date),
+    useRuntimeOverride: true,
+    forceEditableRecord: true,
+  });
+  await page.goto(`/censo?date=${date}`);
+  await ensureAuthenticated(page);
+  await expect(page.getByTestId('census-table')).toBeVisible({ timeout: 20000 });
+};
 
 test.describe('Patient Operations Flow', () => {
-    test.beforeEach(async ({ page }) => {
-        await injectMockUser(page, 'editor');
-        await injectMockData(page, undefined, true);
-        await ensureRecordExists(page);
+  test.beforeEach(async ({ page }) => {
+    await openPatientOperations(page);
+  });
+
+  test('should expose row-level discharge/egress actions for an occupied patient', async ({
+    page,
+  }) => {
+    const patientRow = page.locator('[data-testid="patient-row"][data-bed-id="R1"]').first();
+    await expect(patientRow.locator('input[name="patientName"]').first()).toHaveValue(
+      /operations patient/i
+    );
+
+    const actionsButton = patientRow.locator('button[title="Acciones"]').first();
+    await expect(actionsButton).toBeVisible({ timeout: 10000 });
+    await actionsButton.evaluate(element => (element as HTMLButtonElement).click());
+
+    await expect(page.getByText(/Alta|Egreso/i).first()).toBeVisible({ timeout: 10000 });
+  });
+
+  test('should switch to Medical Handoff view', async ({ page }) => {
+    const medicalHandoffBtn = page.getByRole('button', { name: /Entrega Turno Médicos/i }).first();
+    await expect(medicalHandoffBtn).toBeVisible({ timeout: 10000 });
+    await medicalHandoffBtn.click();
+
+    await expect(page.locator('main')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /Entrega de Turno/i }).first()).toBeVisible({
+      timeout: 10000,
     });
+  });
 
-    test('should show discharge modal and perform discharge', async ({ page }) => {
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
+  test('should switch to Nursing Handoff view', async ({ page }) => {
+    const nursingHandoffBtn = page
+      .getByRole('button', { name: /Entrega Turno Enfermería/i })
+      .first();
+    await expect(nursingHandoffBtn).toBeVisible({ timeout: 10000 });
+    await nursingHandoffBtn.click();
 
-        // Verify table has inputs
-        const inputs = page.locator('table input[type="text"]');
-        const count = await inputs.count();
-        expect(count).toBeGreaterThan(0);
+    await expect(page.locator('main')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: /Turno Largo/i }).first()).toBeVisible({
+      timeout: 10000,
     });
-
-    test('should switch to Medical Handoff view', async ({ page }) => {
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
-
-        const medicalHandoffBtn = page.locator('button:has-text("Entrega Turno Médicos")').first();
-        if (await medicalHandoffBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-            await medicalHandoffBtn.click();
-            await expect(page.locator('h2').first()).toBeVisible({ timeout: 10000 });
-        }
-    });
-
-    test('should switch to Nursing Handoff view', async ({ page }) => {
-        await expect(page.locator('table')).toBeVisible({ timeout: 15000 });
-
-        const nursingHandoffBtn = page.locator('button:has-text("Entrega Turno Enfermería")').first();
-        if (await nursingHandoffBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-            await nursingHandoffBtn.click();
-            await expect(page.locator('h2').first()).toBeVisible({ timeout: 10000 });
-        }
-    });
+  });
 });

@@ -41,6 +41,7 @@ Evitar que la deuda estructural vuelva a crecer después de las fases de estabil
 - `check:quality` no debe bloquear por scorecards ejecutivos derivados si las fuentes primarias del riesgo ya están protegidas; `release-readiness-scorecard` queda como artefacto report-only.
 - `release-confidence-matrix` también queda como guardrail report-only: sigue siendo obligatorio para trazabilidad, pero no duplica bloqueo si el pack de release, la cobertura crítica y los budgets ya siguen verdes.
 - `npm run ci:inner-loop`
+- `npm run ci:pre-merge`
 - `npm run ci:merge-gate`
 - `npm run ci:release-gate`
 - `npm run ci:quality-core`
@@ -61,7 +62,8 @@ Evitar que la deuda estructural vuelva a crecer después de las fases de estabil
 
 - El mapa corto de ejecución y fallback vive en [docs/CI_GATES_AND_FAILURE_RUNBOOKS.md](./CI_GATES_AND_FAILURE_RUNBOOKS.md).
 - `ci:inner-loop` es la ruta local rápida.
-- `ci:merge-gate` es la ruta blocking previa a merge.
+- `ci:pre-merge` es la verificación compacta obligatoria antes de merge.
+- `ci:merge-gate` es la ruta blocking ampliada previa a merge.
 - `ci:release-gate` agrega emuladores, reglas y E2E críticos.
 - `test:release-confidence` es el pack blocking compacto; no debe crecer sin justificar el riesgo nuevo en `guardrail-governance.json`.
 - Los budgets por flujo se leen desde `reports/e2e/flow-performance-budget.json` y su resumen en `reports/e2e/flow-performance-budget-summary.json` / `.md`.

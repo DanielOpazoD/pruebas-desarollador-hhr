@@ -27,6 +27,7 @@ const bootstrapCensusSession = async (
 
 test.describe('Critical Census Flows (Firestore emulator-backed runtime)', () => {
   test('renders census table with the seeded patient row', async ({ page }) => {
+    test.setTimeout(60_000);
     await bootstrapCensusSession(page, 'admin');
 
     const input = getPatientNameInput(page);
@@ -38,6 +39,8 @@ test.describe('Critical Census Flows (Firestore emulator-backed runtime)', () =>
     page,
     context,
   }) => {
+    test.setTimeout(60_000);
+
     await bootstrapCensusSession(page, 'admin');
 
     await expect(page.getByTestId('census-table')).toBeVisible();
@@ -48,12 +51,14 @@ test.describe('Critical Census Flows (Firestore emulator-backed runtime)', () =>
 
     await context.setOffline(false);
     await expect.poll(() => page.evaluate(() => navigator.onLine)).toBe(true);
+    await page.waitForTimeout(500);
 
     await expect(page.getByTestId('census-table')).toBeVisible();
     await expect(page.getByRole('button', { name: /Guardar/i })).toBeVisible();
   });
 
   test('viewer role can reach the censo workspace without crashing', async ({ page }) => {
+    test.setTimeout(60_000);
     await bootstrapCensusSession(page, 'viewer', { ensureEditableRecord: false });
 
     await expect(page.getByRole('main')).toBeVisible();

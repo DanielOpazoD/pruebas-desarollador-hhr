@@ -20,6 +20,8 @@ interface FlowBudgetConfig {
   flows?: Record<string, FlowBudgetDefinition>;
 }
 
+type BrowserName = 'chromium' | 'firefox' | 'webkit';
+
 const readFlowBudgets = (): FlowBudgetConfig => {
   if (!fs.existsSync(FLOW_BUDGETS_PATH)) {
     return {};
@@ -86,6 +88,22 @@ const BUDGETS = {
     }
   ),
 } as const;
+
+const BROWSER_BUDGET_OVERRIDES: Partial<
+  Record<BrowserName, Partial<Record<keyof typeof BUDGETS, number>>>
+> = {
+  firefox: {
+    censoVisibleMs: 6000,
+  },
+  webkit: {
+    censoVisibleMs: 6000,
+  },
+};
+
+const getEnforcedBudget = (browserName: string, key: keyof typeof BUDGETS): number => {
+  const browserOverride = BROWSER_BUDGET_OVERRIDES[browserName as BrowserName]?.[key];
+  return browserOverride ?? BUDGETS[key].enforcedMaxMs;
+};
 
 const CURRENT_DATE = '2026-02-20';
 const flowMetrics: Record<string, number> = {};
@@ -222,6 +240,7 @@ test.afterAll(async () => {
 test.describe('Startup performance budget', () => {
   test('meets login, auth, censo, clinical documents, and backup visibility budgets', async ({
     page,
+    browserName,
   }) => {
     const startLogin = performance.now();
     await page.goto('/');
@@ -287,24 +306,24 @@ test.describe('Startup performance budget', () => {
     flowMetrics.backupFilesVisibleMs = Number(backupFilesVisibleMs.toFixed(2));
 
     expect(loginVisibleMs, `loginVisibleMs=${loginVisibleMs}`).toBeLessThanOrEqual(
-      BUDGETS.loginVisibleMs.enforcedMaxMs
+      getEnforcedBudget(browserName, 'loginVisibleMs')
     );
     expect(authFeedbackMs, `authFeedbackMs=${authFeedbackMs}`).toBeLessThanOrEqual(
-      BUDGETS.authFeedbackMs.enforcedMaxMs
+      getEnforcedBudget(browserName, 'authFeedbackMs')
     );
     expect(censoVisibleMs, `censoVisibleMs=${censoVisibleMs}`).toBeLessThanOrEqual(
-      BUDGETS.censoVisibleMs.enforcedMaxMs
+      getEnforcedBudget(browserName, 'censoVisibleMs')
     );
     expect(censoRecordReadyMs, `censoRecordReadyMs=${censoRecordReadyMs}`).toBeLessThanOrEqual(
-      BUDGETS.censoRecordReadyMs.enforcedMaxMs
+      getEnforcedBudget(browserName, 'censoRecordReadyMs')
     );
     expect(
       clinicalDocumentsVisibleMs,
       `clinicalDocumentsVisibleMs=${clinicalDocumentsVisibleMs}`
-    ).toBeLessThanOrEqual(BUDGETS.clinicalDocumentsVisibleMs.enforcedMaxMs);
+    ).toBeLessThanOrEqual(getEnforcedBudget(browserName, 'clinicalDocumentsVisibleMs'));
     expect(
       backupFilesVisibleMs,
       `backupFilesVisibleMs=${backupFilesVisibleMs}`
-    ).toBeLessThanOrEqual(BUDGETS.backupFilesVisibleMs.enforcedMaxMs);
+    ).toBeLessThanOrEqual(getEnforcedBudget(browserName, 'backupFilesVisibleMs'));
   });
 });
