@@ -174,6 +174,7 @@ import { useDailyRecord } from '@/hooks/useDailyRecord';
 
 ### Documentos troncales
 
+- [Auditoría técnica de la aplicación](docs/TECHNICAL_APPLICATION_AUDIT.md)
 - [Modelo de acceso y login](docs/AUTH_ACCESS_MODEL.md)
 - [Runbook de incidentes de acceso](docs/RUNBOOK_AUTH_ACCESS_INCIDENTS.md)
 - [Arquitectura global](docs/ARCHITECTURE.md)
