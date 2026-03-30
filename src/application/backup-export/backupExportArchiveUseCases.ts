@@ -87,6 +87,7 @@ export const executeBackupCensusExcel = async (
 export interface ExportHandoffPdfInput {
   record: HandoffPdfRecord | null;
   selectedShift: 'day' | 'night';
+  isMedical?: boolean;
 }
 
 export const executeExportHandoffPdf = async (
@@ -100,7 +101,7 @@ export const executeExportHandoffPdf = async (
 
   try {
     const { generateHandoffPdf } = await import('@/services/pdf/handoffPdfGenerator');
-    await generateHandoffPdf(input.record, false, input.selectedShift, {
+    await generateHandoffPdf(input.record, Boolean(input.isMedical), input.selectedShift, {
       dayStart: '08:00',
       dayEnd: '20:00',
       nightStart: '20:00',

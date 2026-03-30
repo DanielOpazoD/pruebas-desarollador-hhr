@@ -2,7 +2,7 @@ import type { jsPDF } from 'jspdf';
 import type { ShiftType } from '@/types/domain/shift';
 import type { HandoffPdfRecord } from '@/services/pdf/contracts/handoffPdfContracts';
 import { Schedule } from './handoffPdfUtils';
-import { saveAndDownloadPdf } from './pdfBase';
+import { openPdfPrintDialog } from './pdfBase';
 import {
   addPatientTable,
   addMovementsSummary,
@@ -83,5 +83,6 @@ export const generateHandoffPdf = async (
   addPageFooter(doc, margin);
 
   const pdfBytes = new Uint8Array(doc.output('arraybuffer') as ArrayBuffer);
-  await saveAndDownloadPdf(pdfBytes, buildHandoffPdfFileName(record.date, selectedShift));
+  const fileName = buildHandoffPdfFileName(record.date, selectedShift);
+  await openPdfPrintDialog(pdfBytes, fileName);
 };

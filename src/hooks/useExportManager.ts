@@ -55,10 +55,14 @@ export const useExportManager = ({
   });
 
   const handleExportPDF = useCallback(async () => {
-    const outcome = await executeExportHandoffPdf({ record, selectedShift });
+    const outcome = await executeExportHandoffPdf({
+      record,
+      selectedShift,
+      isMedical: currentModule === 'MEDICAL_HANDOFF',
+    });
     recordOperationalOutcome('export', 'export_handoff_pdf', outcome, {
       date: record?.date,
-      context: { shift: selectedShift },
+      context: { shift: selectedShift, module: currentModule },
       allowSuccess: true,
     });
     const notice = presentBackupExportOutcome(outcome, {
@@ -68,7 +72,7 @@ export const useExportManager = ({
       fallbackErrorMessage: 'Error al generar el PDF. Por favor intente nuevamente.',
     });
     dispatchExportManagerNotice(notice, { success, warning, error: notifyError });
-  }, [notifyError, record, selectedShift, success, warning]);
+  }, [currentModule, notifyError, record, selectedShift, success, warning]);
 
   const handleBackupExcel = useCallback(async () => {
     setIsBackingUp(true);

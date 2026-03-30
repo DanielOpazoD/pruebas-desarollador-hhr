@@ -93,6 +93,44 @@ describe('useExportManager', () => {
     expect(result.current.isBackingUp).toBe(false);
   });
 
+  it('exports nursing handoff PDFs in print-preview mode', async () => {
+    const { result } = renderHook(() =>
+      useExportManager({
+        ...defaultProps,
+        currentModule: 'NURSING_HANDOFF',
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleExportPDF();
+    });
+
+    expect(backupExportUseCases.executeExportHandoffPdf).toHaveBeenCalledWith({
+      record: mockRecord,
+      selectedShift: 'day',
+      isMedical: false,
+    });
+  });
+
+  it('exports medical handoff PDFs as local downloads', async () => {
+    const { result } = renderHook(() =>
+      useExportManager({
+        ...defaultProps,
+        currentModule: 'MEDICAL_HANDOFF',
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleExportPDF();
+    });
+
+    expect(backupExportUseCases.executeExportHandoffPdf).toHaveBeenCalledWith({
+      record: mockRecord,
+      selectedShift: 'day',
+      isMedical: true,
+    });
+  });
+
   it('should check archive status on mount for CENSUS module', async () => {
     renderHook(() => useExportManager(defaultProps));
 
