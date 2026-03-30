@@ -19,8 +19,8 @@ export const HandoffSaveDropdown: React.FC<HandoffSaveDropdownProps> = ({
     close();
 
     if (action === 'pdf') {
-      await onBackupPDF?.(true);
       onExportPDF?.();
+      void onBackupPDF?.(true);
       return;
     }
 
