@@ -4,6 +4,7 @@
  * Common functions for PDF manipulation using pdf-lib.
  */
 import { PDFDocument, PDFName } from 'pdf-lib';
+import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 
 /**
  * Injects a JavaScript auto-print action into the PDF catalog.
@@ -76,44 +77,17 @@ export const openPdfPrintDialog = async (
 ): Promise<void> => {
   const pdfBytes: Uint8Array =
     pdfSource instanceof PDFDocument ? await pdfSource.save() : pdfSource;
-
-  const blob = new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' });
+  const printDoc = await PDFDocument.load(pdfBytes);
+  injectPrintScript(printDoc);
+  const finalBytes = await printDoc.save();
+  const blob = new Blob([finalBytes as unknown as BlobPart], { type: 'application/pdf' });
   const url = URL.createObjectURL(blob);
-  const iframe = document.createElement('iframe');
+  const popup = defaultBrowserWindowRuntime.open(url, '_blank');
 
-  iframe.style.position = 'fixed';
-  iframe.style.right = '0';
-  iframe.style.bottom = '0';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
-  iframe.style.border = '0';
+  if (!popup) {
+    void saveAndDownloadPdf(finalBytes as Uint8Array, fallbackName);
+    return;
+  }
 
-  const cleanup = () => {
-    window.setTimeout(() => {
-      iframe.remove();
-      URL.revokeObjectURL(url);
-    }, 1000);
-  };
-
-  iframe.onload = () => {
-    const frameWindow = iframe.contentWindow;
-    if (!frameWindow) {
-      cleanup();
-      void saveAndDownloadPdf(pdfBytes, fallbackName);
-      return;
-    }
-
-    const afterPrintListener = () => cleanup();
-    frameWindow.addEventListener('afterprint', afterPrintListener, { once: true });
-
-    window.setTimeout(() => {
-      frameWindow.focus();
-      frameWindow.print();
-    }, 150);
-
-    window.setTimeout(cleanup, 60000);
-  };
-
-  iframe.src = url;
-  document.body.appendChild(iframe);
+  window.setTimeout(() => URL.revokeObjectURL(url), 60000);
 };
