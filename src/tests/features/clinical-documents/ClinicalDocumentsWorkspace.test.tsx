@@ -16,6 +16,10 @@ import { ClinicalDocumentTemplateRepository } from '@/services/repositories/Clin
 import type { PatientData } from '@/types';
 import { PatientStatus, Specialty } from '@/types/core';
 
+const { openClinicalDocumentBrowserPrintPreview } = vi.hoisted(() => ({
+  openClinicalDocumentBrowserPrintPreview: vi.fn(async () => true),
+}));
+
 const authState = {
   user: { uid: 'u1', email: 'doctor@test.com', displayName: 'Doctor Test' },
   role: 'doctor_urgency',
@@ -60,7 +64,7 @@ vi.mock('@/constants/firestorePaths', async importOriginal => {
 });
 
 vi.mock('@/features/clinical-documents/services/clinicalDocumentPrintPdfService', () => ({
-  openClinicalDocumentBrowserPrintPreview: vi.fn(() => true),
+  openClinicalDocumentBrowserPrintPreview,
 }));
 
 const clinicalDocument = createClinicalDocumentDraft({
@@ -175,6 +179,8 @@ vi.mock('@/application/clinical-documents/clinicalDocumentPdfExportUseCase', asy
 describe('ClinicalDocumentsWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    openClinicalDocumentBrowserPrintPreview.mockReset();
+    openClinicalDocumentBrowserPrintPreview.mockResolvedValue(true);
     Object.defineProperty(globalThis.document, 'execCommand', {
       value: vi.fn(() => true),
       configurable: true,
@@ -253,7 +259,7 @@ describe('ClinicalDocumentsWorkspace', () => {
     );
   });
 
-  it('renders the real shell and wires create/sign/pdf through use-case boundaries', async () => {
+  it('renders the real shell and wires create/sign/print through use-case boundaries', async () => {
     render(
       <ClinicalDocumentsWorkspace
         patient={workspacePatient}
@@ -270,13 +276,19 @@ describe('ClinicalDocumentsWorkspace', () => {
     antecedentesEditor.innerHTML = 'Antecedentes actualizados';
     fireEvent.input(antecedentesEditor);
     fireEvent.click(screen.getByRole('button', { name: /crear documento/i }));
+
+    await waitFor(() => {
+      expect(clinicalDocumentUseCases.executeCreateClinicalDocumentDraft).toHaveBeenCalled();
+    });
+
+    fireEvent.click(screen.getAllByRole('button', { name: /epicrisis médica/i })[0]);
     fireEvent.click(screen.getByRole('button', { name: /firmar/i }));
     fireEvent.click(screen.getByRole('button', { name: /pdf/i }));
 
     await waitFor(() => {
-      expect(clinicalDocumentUseCases.executeCreateClinicalDocumentDraft).toHaveBeenCalled();
       expect(clinicalDocumentUseCases.executeSignClinicalDocument).toHaveBeenCalled();
-      expect(notificationApi.info).toHaveBeenCalled();
+      expect(openClinicalDocumentBrowserPrintPreview).toHaveBeenCalled();
+      expect(notificationApi.info).not.toHaveBeenCalled();
     });
   });
 

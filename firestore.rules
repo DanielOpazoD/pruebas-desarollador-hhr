@@ -211,6 +211,55 @@ service cloud.firestore {
              isGeneralViewer();
     }
 
+    function canManageCensusAccess() {
+      return isAdmin() || isEditorRole();
+    }
+
+    function isInvitationOwner() {
+      return hasEmail() &&
+             resource != null &&
+             resource.data != null &&
+             resource.data.email == getUserEmail();
+    }
+
+    function isValidInvitationClaim() {
+      let affectedKeys = request.resource.data.diff(resource.data).affectedKeys();
+
+      return isAuthenticated() &&
+             isInvitationOwner() &&
+             resource.data.status == 'pending' &&
+             (resource.data.expiresAt == null || request.time.toMillis() <= resource.data.expiresAt) &&
+             affectedKeys.hasOnly(['status', 'usedBy', 'usedAt']) &&
+             request.resource.data.status == 'used' &&
+             request.resource.data.usedBy == request.auth.uid &&
+             request.resource.data.usedAt is int;
+    }
+
+    function isValidCensusAccessUserWrite(userId) {
+      let payload = request.resource.data;
+
+      return payload.id == userId &&
+             payload.email is string &&
+             payload.role in ['viewer', 'editor', 'admin'] &&
+             payload.isActive is bool;
+    }
+
+    function canReadCensusAccessLog(logOwnerId) {
+      return isAdmin() || (isAuthenticated() && request.auth.uid == logOwnerId);
+    }
+
+    function isValidOwnCensusAccessLog() {
+      let payload = request.resource.data;
+
+      return isAuthenticated() &&
+             hasEmail() &&
+             payload.keys().hasOnly(['userId', 'email', 'action', 'timestamp']) &&
+             payload.userId == request.auth.uid &&
+             payload.email == getUserEmail() &&
+             payload.action is string &&
+             payload.timestamp is int;
+    }
+
     // System health payload guard:
     // - caller can only write own doc
     // - schema is constrained
@@ -510,6 +559,26 @@ service cloud.firestore {
 
     match /config/roles {
       allow read, write: if isAdmin();
+    }
+
+    match /census-access-invitations/{invitationId} {
+      allow read: if canManageCensusAccess() || isInvitationOwner();
+      allow create, delete: if canManageCensusAccess();
+      allow update: if canManageCensusAccess() || isValidInvitationClaim();
+    }
+
+    match /census-access-users/{userId} {
+      allow read: if canManageCensusAccess();
+      allow create, update: if canManageCensusAccess() && isValidCensusAccessUserWrite(userId);
+      allow delete: if canManageCensusAccess();
+    }
+
+    match /census-access-logs/{logId} {
+      allow read: if resource != null &&
+                   resource.data != null &&
+                   canReadCensusAccessLog(resource.data.userId);
+      allow create: if isValidOwnCensusAccessLog();
+      allow update, delete: if false;
     }
 
     // ============================================

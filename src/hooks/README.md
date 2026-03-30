@@ -47,6 +47,9 @@ Cuando una operación necesita coordinar repositorios, clasificar outcomes remot
 - `useAudit.ts` delega escritura/lectura remota a `src/application/audit/*` y mantiene en el hook solo la fachada de UI + debounce.
 - `useBedManagement.ts` ahora centraliza validación/auditoría/reducer a [controllers/bedManagementDispatchController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/bedManagementDispatchController.ts), reduciendo lógica inline de dispatch.
 - `useExportManager.ts` y el browser de respaldos consumen ahora casos de uso separados por bounded context en `src/application/backup-export/*`, manteniendo el barrel `backupExportUseCases.ts` como API estable del módulo.
+- `useExportManager.ts` debe tratar `Descarga local` de handoff como flujo de impresión PDF paginado:
+  el hook no imprime HTML en bruto; delega a `backupExportArchiveUseCases.ts`, que genera el PDF
+  y abre el cuadro de impresión desde un `iframe` embebido para evitar diferencias entre entornos.
 - La telemetría operativa del core puede reenviarse a un endpoint externo configurable por `VITE_OPERATIONAL_TELEMETRY_ENDPOINT`; los hooks emiten eventos estructurados y no conocen vendors concretos.
 - Los hooks del core operativo consumen un `errorService` de fachada; la clasificación, retry y fan-out a sinks quedan fuera del hook para evitar mezclar policy con side effects.
 - **LatestRef pattern**: evita stale closures en callbacks largos.

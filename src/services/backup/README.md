@@ -38,3 +38,6 @@
   toasts y badges no diverjan entre vistas.
 - El borrado de archivos y el backfill masivo del browser de respaldos se consideran acciones
   de mantenimiento admin; la UI no debe habilitarlos para perfiles clínicos no administrativos.
+- La exportacion local de handoff (`Descarga local`) no debe usar `window.print()` sobre el DOM:
+  debe generar el PDF institucional paginado y abrir la impresion desde ese PDF para preservar
+  numeracion real de paginas y consistencia entre localhost/Netlify.

@@ -100,6 +100,8 @@ export const executeExportHandoffPdf = async (
   }
 
   try {
+    // Handoff local export must use the generated PDF pipeline instead of window.print()
+    // so pagination stays stable ("Pagina X de Y") across localhost/Netlify/browser contexts.
     const { generateHandoffPdf } = await import('@/services/pdf/handoffPdfGenerator');
     const schedule = getShiftSchedule(input.record.date);
     await generateHandoffPdf(input.record, Boolean(input.isMedical), input.selectedShift, schedule);
