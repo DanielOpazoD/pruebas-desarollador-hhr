@@ -100,13 +100,11 @@ export const executeExportHandoffPdf = async (
   }
 
   try {
-    const { generateHandoffPdf } = await import('@/services/pdf/handoffPdfGenerator');
-    await generateHandoffPdf(input.record, Boolean(input.isMedical), input.selectedShift, {
-      dayStart: '08:00',
-      dayEnd: '20:00',
-      nightStart: '20:00',
-      nightEnd: '08:00',
-    });
+    if (typeof window === 'undefined' || typeof window.print !== 'function') {
+      throw new Error('La impresión no está disponible en este entorno.');
+    }
+
+    window.print();
     return createApplicationSuccess(null);
   } catch (error) {
     return createApplicationFailed(null, [

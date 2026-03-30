@@ -66,10 +66,11 @@ export const useExportManager = ({
       allowSuccess: true,
     });
     const notice = presentBackupExportOutcome(outcome, {
-      successTitle: 'PDF generado',
-      partialTitle: 'PDF generado con observaciones',
-      failedTitle: 'Error al generar PDF',
-      fallbackErrorMessage: 'Error al generar el PDF. Por favor intente nuevamente.',
+      successTitle: 'Vista de impresión abierta',
+      successMessage: 'Ajusta destino, márgenes y escala en el cuadro de impresión.',
+      partialTitle: 'Vista de impresión abierta con observaciones',
+      failedTitle: 'Error al abrir la impresión',
+      fallbackErrorMessage: 'Error al abrir la impresión. Por favor intente nuevamente.',
     });
     dispatchExportManagerNotice(notice, { success, warning, error: notifyError });
   }, [currentModule, notifyError, record, selectedShift, success, warning]);
