@@ -48,4 +48,21 @@ describe('HandoffSaveDropdown', () => {
     expect(onBackupPDF).toHaveBeenCalledWith(false);
     expect(onExportPDF).not.toHaveBeenCalled();
   });
+
+  it('hides firebase backup action when disabled for nursing users', () => {
+    render(
+      <HandoffSaveDropdown
+        onExportPDF={vi.fn()}
+        onBackupPDF={vi.fn().mockResolvedValue(undefined)}
+        isArchived={false}
+        isBackingUp={false}
+        showFirebaseBackupOption={false}
+      />
+    );
+
+    fireEvent.click(screen.getByTitle('Opciones de guardado (PDF/Nube)'));
+
+    expect(screen.getByText('Descarga local')).toBeInTheDocument();
+    expect(screen.queryByText('Respaldo en Firebase')).not.toBeInTheDocument();
+  });
 });

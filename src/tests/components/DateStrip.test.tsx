@@ -86,6 +86,24 @@ describe('DateStrip', () => {
     expect(screen.getByText('Sincronizado')).toBeInTheDocument();
   });
 
+  it('hides firebase backup option in census save menu', () => {
+    render(<DateStrip {...defaultProps} currentModule="CENSUS" />);
+
+    fireEvent.click(screen.getByTitle('Opciones de guardado'));
+
+    expect(screen.getByText('Descargar Local')).toBeInTheDocument();
+    expect(screen.queryByText('Respaldo en Firebase')).not.toBeInTheDocument();
+  });
+
+  it('hides firebase backup option in nursing handoff save menu', () => {
+    render(<DateStrip {...defaultProps} currentModule="NURSING_HANDOFF" />);
+
+    fireEvent.click(screen.getByTitle('Opciones de guardado (PDF/Nube)'));
+
+    expect(screen.getByText('Descarga local')).toBeInTheDocument();
+    expect(screen.queryByText('Respaldo en Firebase')).not.toBeInTheDocument();
+  });
+
   it('triggers actions when buttons are clicked', () => {
     render(<DateStrip {...defaultProps} />);
 

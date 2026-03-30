@@ -67,6 +67,3 @@ export const resolveTransferDestinationLabel = (
 export const resolveTransferEscortLabel = (
   transfer: Pick<TransferData, 'evacuationMethod' | 'transferEscort'>
 ): string => (transfer.evacuationMethod === 'Aerocardal' ? '-' : transfer.transferEscort || '-');
-
-export const resolveMovementShiftBadge = (selectedShift: ShiftType): string | null =>
-  selectedShift === 'night' ? '(turno noche)' : null;

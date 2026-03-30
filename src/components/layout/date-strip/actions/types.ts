@@ -18,6 +18,7 @@ export interface SaveDropdownProps {
   onBackupExcel?: () => Promise<void>;
   isArchived?: boolean;
   isBackingUp: boolean;
+  showFirebaseBackupOption?: boolean;
 }
 
 export interface HandoffSaveDropdownProps {
@@ -25,6 +26,7 @@ export interface HandoffSaveDropdownProps {
   onBackupPDF?: (skipConfirmation?: boolean) => Promise<void>;
   isArchived?: boolean;
   isBackingUp: boolean;
+  showFirebaseBackupOption?: boolean;
 }
 
 export interface EmailDropdownProps {

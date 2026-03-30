@@ -18,7 +18,6 @@ import {
   filterDischargesByShift,
   filterTransfersByShift,
   resolveMovementEmptyMessage,
-  resolveMovementShiftBadge,
   resolveTransferDestinationLabel,
   resolveTransferEscortLabel,
 } from '@/features/handoff/controllers/movementsSummaryController';
@@ -44,7 +43,6 @@ export const MovementsSummary: React.FC<MovementsSummaryProps> = ({
     () => filterCmaByShift(record.cma, selectedShift),
     [record.cma, selectedShift]
   );
-  const shiftBadge = resolveMovementShiftBadge(selectedShift);
 
   return (
     <div className="space-y-4 print:space-y-2 print:text-[11px] print:leading-tight">
@@ -52,8 +50,7 @@ export const MovementsSummary: React.FC<MovementsSummaryProps> = ({
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 print:p-0 print:shadow-none print:border-none print:bg-transparent">
         <h3 className="font-bold text-lg text-slate-700 mb-2 flex items-center gap-2 print:text-sm print:mb-1 print:text-black">
           <UserMinus size={20} className="text-red-500 print:w-4 print:h-4" />
-          Altas{' '}
-          {shiftBadge && <span className="text-sm font-normal text-slate-400">{shiftBadge}</span>}
+          Altas
         </h3>
         {filteredDischarges.length === 0 ? (
           <p className="text-slate-400 italic text-sm print:text-[10px]">
@@ -101,8 +98,7 @@ export const MovementsSummary: React.FC<MovementsSummaryProps> = ({
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 print:p-0 print:shadow-none print:border-none print:bg-transparent">
         <h3 className="font-bold text-lg text-slate-700 mb-2 flex items-center gap-2 print:text-sm print:mb-1 print:text-black">
           <ArrowRightLeft size={20} className="text-blue-500 print:w-4 print:h-4" />
-          Traslados{' '}
-          {shiftBadge && <span className="text-sm font-normal text-slate-400">{shiftBadge}</span>}
+          Traslados
         </h3>
         {filteredTransfers.length === 0 ? (
           <p className="text-slate-400 italic text-sm print:text-[10px]">

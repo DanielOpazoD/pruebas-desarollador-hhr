@@ -12,6 +12,7 @@ export const HandoffSaveDropdown: React.FC<HandoffSaveDropdownProps> = ({
   onBackupPDF,
   isArchived = false,
   isBackingUp,
+  showFirebaseBackupOption = true,
 }) => {
   const { isOpen, menuRef, toggle, close } = useDropdownMenu();
 
@@ -66,14 +67,16 @@ export const HandoffSaveDropdown: React.FC<HandoffSaveDropdownProps> = ({
             iconHoverColorClassName="group-hover:bg-emerald-100"
           />
 
-          <DateStripActionItem
-            onClick={() => void handleAction('backup')}
-            icon={Save}
-            title="Respaldo en Firebase"
-            subtitle="Respaldo seguro en Firebase"
-            colorClassName="bg-amber-50 text-amber-600"
-            iconHoverColorClassName="group-hover:bg-amber-100"
-          />
+          {showFirebaseBackupOption && (
+            <DateStripActionItem
+              onClick={() => void handleAction('backup')}
+              icon={Save}
+              title="Respaldo en Firebase"
+              subtitle="Respaldo seguro en Firebase"
+              colorClassName="bg-amber-50 text-amber-600"
+              iconHoverColorClassName="group-hover:bg-amber-100"
+            />
+          )}
         </DateStripDropdownPanel>
       )}
     </div>

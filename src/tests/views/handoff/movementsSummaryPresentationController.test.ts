@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   resolveMovementEmptyMessage,
-  resolveMovementShiftBadge,
   resolveTransferDestinationLabel,
   resolveTransferEscortLabel,
 } from '@/features/handoff/controllers/movementsSummaryController';
@@ -30,10 +29,5 @@ describe('movementsSummary presentation helpers', () => {
         transferEscort: 'Acompañante',
       })
     ).toBe('-');
-  });
-
-  it('shows shift badge only for night handoff', () => {
-    expect(resolveMovementShiftBadge('day')).toBeNull();
-    expect(resolveMovementShiftBadge('night')).toBe('(turno noche)');
   });
 });

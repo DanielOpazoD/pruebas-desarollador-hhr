@@ -1,23 +1,35 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { executeExportHandoffPdf } from '@/application/backup-export/backupExportArchiveUseCases';
 
+const generateHandoffPdf = vi.fn();
+
+vi.mock('@/services/pdf/handoffPdfGenerator', () => ({
+  generateHandoffPdf,
+}));
+
 describe('backupExportArchiveUseCases', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    generateHandoffPdf.mockReset();
   });
 
-  it('opens the browser print dialog for local handoff exports', async () => {
-    const printSpy = vi.spyOn(window, 'print').mockImplementation(() => undefined);
-
+  it('generates the paginated handoff PDF for local exports', async () => {
     const outcome = await executeExportHandoffPdf({
       record: {
         date: '2026-03-29',
+        handoffNovedadesDayShift: '',
+        handoffNovedadesNightShift: '',
       } as never,
       selectedShift: 'day',
       isMedical: false,
     });
 
-    expect(printSpy).toHaveBeenCalledTimes(1);
+    expect(generateHandoffPdf).toHaveBeenCalledWith(
+      expect.objectContaining({ date: '2026-03-29' }),
+      false,
+      'day',
+      expect.any(Object)
+    );
     expect(outcome.status).toBe('success');
   });
 

@@ -82,10 +82,69 @@ export const openPdfPrintDialog = async (
   const finalBytes = await printDoc.save();
   const blob = new Blob([finalBytes as unknown as BlobPart], { type: 'application/pdf' });
   const url = URL.createObjectURL(blob);
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.tabIndex = -1;
+  iframe.style.position = 'fixed';
+  iframe.style.width = '1px';
+  iframe.style.height = '1px';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.opacity = '0.01';
+  iframe.style.pointerEvents = 'none';
+  iframe.style.border = '0';
+
+  const removeIframe = () => {
+    iframe.remove();
+  };
+
+  const cleanup = () => {
+    removeIframe();
+    URL.revokeObjectURL(url);
+  };
+
+  try {
+    const fallbackTimeout = window.setTimeout(() => {
+      removeIframe();
+
+      const popup = defaultBrowserWindowRuntime.open(url, '_blank');
+      if (!popup) {
+        void saveAndDownloadPdf(finalBytes as Uint8Array, fallbackName);
+        URL.revokeObjectURL(url);
+        return;
+      }
+
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }, 4000);
+
+    iframe.addEventListener(
+      'load',
+      () => {
+        window.clearTimeout(fallbackTimeout);
+        const frameWindow = iframe.contentWindow;
+
+        if (frameWindow && typeof frameWindow.print === 'function') {
+          frameWindow.focus();
+          window.setTimeout(() => frameWindow.print(), 250);
+        }
+
+        window.setTimeout(cleanup, 60000);
+      },
+      { once: true }
+    );
+
+    iframe.src = url;
+    document.body.appendChild(iframe);
+    return;
+  } catch {
+    cleanup();
+  }
+
   const popup = defaultBrowserWindowRuntime.open(url, '_blank');
 
   if (!popup) {
     void saveAndDownloadPdf(finalBytes as Uint8Array, fallbackName);
+    URL.revokeObjectURL(url);
     return;
   }
 

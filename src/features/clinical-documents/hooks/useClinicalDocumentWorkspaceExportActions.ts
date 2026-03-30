@@ -172,10 +172,6 @@ export const useClinicalDocumentWorkspaceExportActions = ({
       },
       { allowSuccess: true }
     );
-    notify.info(
-      'Vista de impresión abierta',
-      'Ajusta escala, márgenes y destino en el cuadro de impresión del navegador.'
-    );
 
     if (selectedDocument.status === 'signed' && !isUploadingPdf) {
       void handleUploadPdf({

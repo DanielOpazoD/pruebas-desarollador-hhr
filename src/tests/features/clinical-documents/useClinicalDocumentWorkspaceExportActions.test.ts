@@ -210,10 +210,7 @@ describe('useClinicalDocumentWorkspaceExportActions', () => {
     });
 
     expect(printOpenUseCase.executeOpenClinicalDocumentPrint).toHaveBeenCalledWith(document);
-    expect(notify.info).toHaveBeenCalledWith(
-      'Vista de impresión abierta',
-      'Ajusta escala, márgenes y destino en el cuadro de impresión del navegador.'
-    );
+    expect(notify.info).not.toHaveBeenCalled();
     expect(pdfExportUseCase.executeExportClinicalDocumentPdf).toHaveBeenCalledWith(
       expect.objectContaining({
         record: document,

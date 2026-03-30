@@ -148,6 +148,7 @@ export const DateStrip: React.FC<DateStripProps> = ({
                 onBackupPDF={onBackupPDF}
                 isArchived={isArchived}
                 isBackingUp={isBackingUp}
+                showFirebaseBackupOption={false}
               />
             )}
 
@@ -160,6 +161,7 @@ export const DateStrip: React.FC<DateStripProps> = ({
                     onBackupExcel={onBackupExcel}
                     isArchived={isArchived}
                     isBackingUp={isBackingUp}
+                    showFirebaseBackupOption={false}
                   />
                 )}
               </>

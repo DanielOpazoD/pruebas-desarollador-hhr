@@ -78,9 +78,6 @@ export const NavbarMenu: React.FC<NavbarMenuProps> = ({
           <h1 className="text-lg font-display font-bold leading-tight tracking-tight">
             Hospital Hanga Roa
           </h1>
-          <p className="text-[10px] font-bold text-red-300 uppercase tracking-[0.2em]">
-            MODO PRUEBA BETA
-          </p>
         </div>
         <ChevronDown
           size={16}

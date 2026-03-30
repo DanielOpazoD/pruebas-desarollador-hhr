@@ -12,6 +12,7 @@ export const SaveDropdown: React.FC<SaveDropdownProps> = ({
   onBackupExcel,
   isArchived = false,
   isBackingUp,
+  showFirebaseBackupOption = true,
 }) => {
   const { isOpen, menuRef, toggle, close } = useDropdownMenu();
 
@@ -55,14 +56,16 @@ export const SaveDropdown: React.FC<SaveDropdownProps> = ({
 
       {isOpen && (
         <DateStripDropdownPanel title="Opciones de Guardado" widthClassName="w-52">
-          <DateStripActionItem
-            onClick={() => void handleAction('backup')}
-            icon={Save}
-            title="Respaldo en Firebase"
-            subtitle="Respaldo seguro en Firebase"
-            colorClassName="bg-amber-50 text-amber-600"
-            iconHoverColorClassName="group-hover:bg-amber-100"
-          />
+          {showFirebaseBackupOption && (
+            <DateStripActionItem
+              onClick={() => void handleAction('backup')}
+              icon={Save}
+              title="Respaldo en Firebase"
+              subtitle="Respaldo seguro en Firebase"
+              colorClassName="bg-amber-50 text-amber-600"
+              iconHoverColorClassName="group-hover:bg-amber-100"
+            />
+          )}
 
           <DateStripActionItem
             onClick={() => void handleAction('excel')}
