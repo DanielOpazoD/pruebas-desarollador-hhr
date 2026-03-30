@@ -21,19 +21,19 @@
     --tw-skew-y: 0 !important;
     --tw-scale-x: 1 !important;
     --tw-scale-y: 1 !important;
-    --tw-pan-x: !important;
-    --tw-pan-y: !important;
-    --tw-pinch-zoom: !important;
+    --tw-pan-x:  !important;
+    --tw-pan-y:  !important;
+    --tw-pinch-zoom:  !important;
     --tw-scroll-snap-strictness: proximity !important;
-    --tw-gradient-from-position: !important;
-    --tw-gradient-via-position: !important;
-    --tw-gradient-to-position: !important;
-    --tw-ordinal: !important;
-    --tw-slashed-zero: !important;
-    --tw-numeric-figure: !important;
-    --tw-numeric-spacing: !important;
-    --tw-numeric-fraction: !important;
-    --tw-ring-inset: !important;
+    --tw-gradient-from-position:  !important;
+    --tw-gradient-via-position:  !important;
+    --tw-gradient-to-position:  !important;
+    --tw-ordinal:  !important;
+    --tw-slashed-zero:  !important;
+    --tw-numeric-figure:  !important;
+    --tw-numeric-spacing:  !important;
+    --tw-numeric-fraction:  !important;
+    --tw-ring-inset:  !important;
     --tw-ring-offset-width: 0px !important;
     --tw-ring-offset-color: #fff !important;
     --tw-ring-color: rgb(59 130 246 / 0.5) !important;
@@ -41,24 +41,24 @@
     --tw-ring-shadow: 0 0 #0000 !important;
     --tw-shadow: 0 0 #0000 !important;
     --tw-shadow-colored: 0 0 #0000 !important;
-    --tw-blur: !important;
-    --tw-brightness: !important;
-    --tw-contrast: !important;
-    --tw-grayscale: !important;
-    --tw-hue-rotate: !important;
-    --tw-invert: !important;
-    --tw-saturate: !important;
-    --tw-sepia: !important;
-    --tw-drop-shadow: !important;
-    --tw-backdrop-blur: !important;
-    --tw-backdrop-brightness: !important;
-    --tw-backdrop-contrast: !important;
-    --tw-backdrop-grayscale: !important;
-    --tw-backdrop-hue-rotate: !important;
-    --tw-backdrop-invert: !important;
-    --tw-backdrop-opacity: !important;
-    --tw-backdrop-saturate: !important;
-    --tw-backdrop-sepia: !important;
+    --tw-blur:  !important;
+    --tw-brightness:  !important;
+    --tw-contrast:  !important;
+    --tw-grayscale:  !important;
+    --tw-hue-rotate:  !important;
+    --tw-invert:  !important;
+    --tw-saturate:  !important;
+    --tw-sepia:  !important;
+    --tw-drop-shadow:  !important;
+    --tw-backdrop-blur:  !important;
+    --tw-backdrop-brightness:  !important;
+    --tw-backdrop-contrast:  !important;
+    --tw-backdrop-grayscale:  !important;
+    --tw-backdrop-hue-rotate:  !important;
+    --tw-backdrop-invert:  !important;
+    --tw-backdrop-opacity:  !important;
+    --tw-backdrop-saturate:  !important;
+    --tw-backdrop-sepia:  !important;
     border-radius: 0 !important;
   }
 
@@ -69,7 +69,7 @@
   main {
     background: white !important;
     color: #000 !important;
-    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+    font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif !important;
     -webkit-print-color-adjust: economy !important;
     print-color-adjust: economy !important;
   }
@@ -95,6 +95,13 @@
   .btn-ripple,
   nav,
   footer {
+    display: none !important;
+  }
+
+  /* Blindaje extra para overlays flotantes que pueden quedar montados durante la impresión */
+  [role='dialog'].no-print,
+  [aria-live='polite'],
+  [aria-live='assertive'] {
     display: none !important;
   }
 

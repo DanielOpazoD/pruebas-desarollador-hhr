@@ -262,7 +262,7 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       {children}
 
       {/* Toast Container */}
-      <div className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-1">
+      <div className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-1 no-print">
         {notifications.map(notification => (
           <ToastRenderer
             key={notification.id}

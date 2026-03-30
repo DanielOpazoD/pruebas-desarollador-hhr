@@ -54,7 +54,7 @@ export const ConfirmDialogRenderer: React.FC<ConfirmDialogRendererProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] animate-fade-in"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] animate-fade-in no-print"
       onClick={e => {
         if (e.target === e.currentTarget && !dialog.isAlert) {
           onCancel();
