@@ -3,6 +3,10 @@ import {
   normalizeClinicalDocumentContentForStorage,
   sanitizeClinicalDocumentHtml,
 } from '@/features/clinical-documents/controllers/clinicalDocumentRichTextController';
+import type {
+  ClinicalDocumentSection,
+  ClinicalDocumentSectionLayout,
+} from '@/features/clinical-documents/domain/entities';
 
 export type ClinicalDocumentPlanSubsectionId = 'generales' | 'farmacologicas' | 'control_clinico';
 
@@ -46,6 +50,19 @@ const createEmptyPlanSubsections = (): Record<ClinicalDocumentPlanSubsectionId, 
 const isRecognizedPlanHeading = (element: HTMLElement): ClinicalDocumentPlanSubsectionId | null => {
   const text = normalizeTitle(element.textContent || '');
   return PLAN_ID_BY_NORMALIZED_TITLE[text] || null;
+};
+
+const hasRecognizedPlanHeading = (value: string): boolean => {
+  const normalized = normalizeClinicalDocumentContentForStorage(value);
+  if (!normalized || typeof document === 'undefined') {
+    return false;
+  }
+
+  const container = document.createElement('div');
+  container.innerHTML = normalized;
+  return Array.from(container.children).some(child =>
+    isRecognizedPlanHeading(child as HTMLElement)
+  );
 };
 
 const normalizeSubsectionContent = (value: string): string => {
@@ -160,6 +177,12 @@ export const parseClinicalDocumentPlanSectionContent = (
   return parsed;
 };
 
+export const resolveClinicalDocumentPlanSectionLayout = (
+  section: Pick<ClinicalDocumentSection, 'content' | 'layout'>
+): ClinicalDocumentSectionLayout =>
+  section.layout ||
+  (section.content.trim() && !hasRecognizedPlanHeading(section.content) ? 'unified' : 'structured');
+
 const nodeToHtml = (node: ChildNode): string => {
   if (typeof document === 'undefined') {
     return '';
@@ -203,6 +226,43 @@ export const updateClinicalDocumentPlanSubsectionContent = (
     ...parseClinicalDocumentPlanSectionContent(value),
     [subsectionId]: nextSubsectionContent,
   });
+
+export const buildUnifiedClinicalDocumentPlanSectionContent = (value: string): string => {
+  const normalized = normalizeClinicalDocumentContentForStorage(value);
+  if (!normalized) {
+    return '';
+  }
+
+  if (!hasRecognizedPlanHeading(normalized)) {
+    return normalized;
+  }
+
+  const parsed = parseClinicalDocumentPlanSectionContent(normalized);
+  const mergedContent = CLINICAL_DOCUMENT_PLAN_SUBSECTIONS.map(subsection => parsed[subsection.id])
+    .filter(content => Boolean(content.trim()))
+    .join('<div><br></div>');
+
+  return normalizeSubsectionContent(sanitizeClinicalDocumentHtml(mergedContent));
+};
+
+export const buildStructuredClinicalDocumentPlanSectionContent = (value: string): string => {
+  const normalized = normalizeClinicalDocumentContentForStorage(value);
+  if (!normalized) {
+    return '';
+  }
+
+  if (hasRecognizedPlanHeading(normalized)) {
+    return buildClinicalDocumentPlanSectionContent(
+      parseClinicalDocumentPlanSectionContent(normalized)
+    );
+  }
+
+  return buildClinicalDocumentPlanSectionContent({
+    generales: normalized,
+    farmacologicas: '',
+    control_clinico: '',
+  });
+};
 
 export const appendClinicalDocumentPlanSubsectionText = (
   value: string,

@@ -37,6 +37,7 @@ const sectionSchema = z.object({
   title: z.string(),
   content: z.string(),
   kind: z.enum(['standard', 'clinical-update']).optional(),
+  layout: z.enum(['structured', 'unified']).optional(),
   updateDate: z.string().optional(),
   updateTime: z.string().optional(),
   order: z.number(),

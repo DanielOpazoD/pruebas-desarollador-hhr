@@ -40,7 +40,7 @@ export const ClinicalDocumentsModal: React.FC<ClinicalDocumentsModalProps> = ({
       }
       icon={<FileText size={18} className="text-medical-600" />}
       size="full"
-      className="max-w-[96vw] xl:max-w-[1500px]"
+      className="max-w-[96vw] max-h-[96vh] xl:max-w-[1500px]"
       variant="white"
       bodyClassName="p-0"
       scrollableBody={false}

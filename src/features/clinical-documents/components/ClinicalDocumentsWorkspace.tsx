@@ -61,7 +61,7 @@ export const ClinicalDocumentsWorkspace: React.FC<ClinicalDocumentsWorkspaceProp
 
   return (
     <div
-      className="grid h-[72vh] min-h-[72vh] grid-cols-[260px_minmax(0,1fr)]"
+      className="grid h-[82vh] min-h-[82vh] grid-cols-[260px_minmax(0,1fr)]"
       data-testid="clinical-documents-workspace"
     >
       {toolbarNode && headerActionsContainer

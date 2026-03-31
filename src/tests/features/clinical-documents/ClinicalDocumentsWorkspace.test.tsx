@@ -346,7 +346,7 @@ describe('ClinicalDocumentsWorkspace', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('evolución médica')).toBeInTheDocument();
+      expect(screen.getAllByText('Evolución médica').length).toBeGreaterThan(0);
       expect(screen.getByText(/^Evolución$/, { selector: 'p' })).toBeInTheDocument();
     });
   });

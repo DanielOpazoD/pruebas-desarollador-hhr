@@ -93,6 +93,7 @@ const defaultHandlers = {
   setPatientFieldVisibility: vi.fn(),
   patchSectionTitle: vi.fn(),
   patchSection: vi.fn(),
+  setSectionLayout: vi.fn(),
   setSectionVisibility: vi.fn(),
   moveSection: vi.fn(),
   reorderSection: vi.fn(),

@@ -25,6 +25,24 @@ export const formatClinicalDocumentDateTime = (isoString?: string): string => {
 export const getClinicalDocumentPatientFieldGridClass = (fieldId: string): string =>
   `clinical-document-patient-field stacked clinical-document-patient-field--${fieldId}`;
 
+export const formatClinicalDocumentAuthorName = (value?: string | null): string => {
+  const normalized = (value || '').replace(/\s+/g, ' ').trim();
+  if (!normalized) {
+    return 'Usuario';
+  }
+
+  const tokens = normalized.split(' ').filter(Boolean);
+  if (tokens.length === 1) {
+    return tokens[0];
+  }
+
+  if (tokens.length === 2) {
+    return `${tokens[0]} ${tokens[1]}`;
+  }
+
+  return `${tokens[0]} ${tokens[tokens.length - 2]}`;
+};
+
 export const getClinicalDocumentPatientFieldLabel = (
   field: ClinicalDocumentRecord['patientFields'][number],
   documentType: ClinicalDocumentRecord['documentType']
@@ -52,7 +70,7 @@ export const buildClinicalDocumentActor = (
 ) => ({
   uid: user?.uid || '',
   email: user?.email || '',
-  displayName: user?.displayName || user?.email || 'Usuario',
+  displayName: formatClinicalDocumentAuthorName(user?.displayName || user?.email || 'Usuario'),
   role: role || 'viewer',
 });
 

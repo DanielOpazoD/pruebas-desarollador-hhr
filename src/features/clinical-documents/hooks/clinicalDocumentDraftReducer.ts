@@ -35,6 +35,11 @@ export type ClinicalDocumentDraftAction =
   | { type: 'SET_FIELD_VISIBILITY'; fieldId: string; visible: boolean }
   | { type: 'PATCH_SECTION'; sectionId: string; content: string }
   | { type: 'PATCH_SECTION_TITLE'; sectionId: string; title: string }
+  | {
+      type: 'PATCH_SECTION_LAYOUT';
+      sectionId: string;
+      layout: import('@/features/clinical-documents/domain/entities').ClinicalDocumentSectionLayout;
+    }
   | { type: 'SET_SECTION_VISIBILITY'; sectionId: string; visible: boolean }
   | { type: 'MOVE_SECTION'; sectionId: string; direction: 'up' | 'down' }
   | { type: 'REORDER_SECTION'; sourceSectionId: string; targetSectionId: string }
@@ -174,6 +179,13 @@ export const clinicalDocumentDraftReducer = (
         ...draft,
         sections: draft.sections.map(section =>
           section.id === action.sectionId ? { ...section, title: action.title } : section
+        ),
+      }));
+    case 'PATCH_SECTION_LAYOUT':
+      return patchDraft(state, draft => ({
+        ...draft,
+        sections: draft.sections.map(section =>
+          section.id === action.sectionId ? { ...section, layout: action.layout } : section
         ),
       }));
     case 'SET_SECTION_VISIBILITY':

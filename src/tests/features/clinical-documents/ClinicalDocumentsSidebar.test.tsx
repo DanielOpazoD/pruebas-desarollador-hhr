@@ -89,7 +89,8 @@ describe('ClinicalDocumentsSidebar', () => {
 
     fireEvent.click(screen.getByTitle(/eliminar documento/i));
     expect(onDeleteDocument).toHaveBeenCalledWith(document);
-    expect(screen.getByText(document.title.toLocaleLowerCase('es-CL'))).toBeInTheDocument();
+    expect(screen.getByText('Epicrisis médica')).toBeInTheDocument();
+    expect(screen.getByText(/doctor test/i)).toBeInTheDocument();
     expect(screen.queryByText(/borrador/i)).not.toBeInTheDocument();
   });
 });

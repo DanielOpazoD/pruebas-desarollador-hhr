@@ -57,6 +57,10 @@ export interface ClinicalDocumentSheetProps {
   setPatientFieldVisibility: (fieldId: string, visible: boolean) => void;
   patchSectionTitle: (sectionId: string, title: string) => void;
   patchSection: (sectionId: string, content: string) => void;
+  setSectionLayout: (
+    sectionId: string,
+    layout: import('@/features/clinical-documents/domain/entities').ClinicalDocumentSectionLayout
+  ) => void;
   setSectionVisibility: (sectionId: string, visible: boolean) => void;
   moveSection: (sectionId: string, direction: 'up' | 'down') => void;
   reorderSection: (sourceSectionId: string, targetSectionId: string) => void;

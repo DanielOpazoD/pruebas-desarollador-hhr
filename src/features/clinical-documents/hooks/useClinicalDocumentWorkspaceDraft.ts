@@ -45,6 +45,10 @@ export interface ClinicalDocumentWorkspaceDraftState {
   setPatientFieldVisibility: (fieldId: string, visible: boolean) => void;
   patchSection: (sectionId: string, content: string) => void;
   patchSectionTitle: (sectionId: string, title: string) => void;
+  setSectionLayout: (
+    sectionId: string,
+    layout: import('@/features/clinical-documents/domain/entities').ClinicalDocumentSectionLayout
+  ) => void;
   setSectionVisibility: (sectionId: string, visible: boolean) => void;
   moveSection: (sectionId: string, direction: 'up' | 'down') => void;
   reorderSection: (sourceSectionId: string, targetSectionId: string) => void;
@@ -168,6 +172,8 @@ export const useClinicalDocumentWorkspaceDraft = ({
     patchSection: (sectionId, content) => dispatch({ type: 'PATCH_SECTION', sectionId, content }),
     patchSectionTitle: (sectionId, title) =>
       dispatch({ type: 'PATCH_SECTION_TITLE', sectionId, title }),
+    setSectionLayout: (sectionId, layout) =>
+      dispatch({ type: 'PATCH_SECTION_LAYOUT', sectionId, layout }),
     setSectionVisibility: (sectionId, visible) =>
       dispatch({ type: 'SET_SECTION_VISIBILITY', sectionId, visible }),
     moveSection: (sectionId, direction) => dispatch({ type: 'MOVE_SECTION', sectionId, direction }),

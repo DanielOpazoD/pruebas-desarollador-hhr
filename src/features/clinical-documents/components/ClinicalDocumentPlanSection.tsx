@@ -1,8 +1,10 @@
 import React from 'react';
 
 import {
+  buildUnifiedClinicalDocumentPlanSectionContent,
   CLINICAL_DOCUMENT_PLAN_SUBSECTIONS,
   parseClinicalDocumentPlanSectionContent,
+  resolveClinicalDocumentPlanSectionLayout,
   updateClinicalDocumentPlanSubsectionContent,
 } from '@/features/clinical-documents/controllers/clinicalDocumentPlanSectionController';
 import { ClinicalDocumentRichTextEditor } from '@/features/clinical-documents/components/ClinicalDocumentRichTextEditor';
@@ -18,7 +20,26 @@ export const ClinicalDocumentPlanSection: React.FC<ClinicalDocumentSpecialSectio
   onEditorActivate,
   onEditorDeactivate,
 }) => {
+  const sectionLayout = resolveClinicalDocumentPlanSectionLayout(section);
   const parsedPlanContent = parseClinicalDocumentPlanSectionContent(section.content);
+
+  if (sectionLayout === 'unified') {
+    return (
+      <div className="clinical-document-plan-subsections-shell">
+        <ClinicalDocumentRichTextEditor
+          sectionId={section.id}
+          sectionTitle={section.title}
+          value={buildUnifiedClinicalDocumentPlanSectionContent(section.content)}
+          onChange={content =>
+            onPatchSection(section.id, buildUnifiedClinicalDocumentPlanSectionContent(content))
+          }
+          onActivate={onEditorActivate}
+          onDeactivate={onEditorDeactivate}
+          disabled={!canEdit || document.isLocked}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="clinical-document-plan-subsections-shell">

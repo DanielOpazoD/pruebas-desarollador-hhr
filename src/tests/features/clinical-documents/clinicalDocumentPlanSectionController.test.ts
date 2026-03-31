@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   appendClinicalDocumentPlanSubsectionText,
+  buildStructuredClinicalDocumentPlanSectionContent,
   buildClinicalDocumentPlanSectionContent,
+  buildUnifiedClinicalDocumentPlanSectionContent,
   parseClinicalDocumentPlanSectionContent,
+  resolveClinicalDocumentPlanSectionLayout,
   updateClinicalDocumentPlanSubsectionContent,
 } from '@/features/clinical-documents/controllers/clinicalDocumentPlanSectionController';
 
@@ -42,5 +45,38 @@ describe('clinicalDocumentPlanSectionController', () => {
     const parsed = parseClinicalDocumentPlanSectionContent(twice);
 
     expect(parsed.generales).toBe('<div>Reposo Absoluto</div><div>Reposo Relativo</div>');
+  });
+
+  it('can simplify the structured plan into a unified free-text section', () => {
+    const structured = buildClinicalDocumentPlanSectionContent({
+      generales: '<div>Reposo relativo</div>',
+      farmacologicas: '<div>Paracetamol</div>',
+      control_clinico: '<div>Control en 7 días</div>',
+    });
+
+    const unified = buildUnifiedClinicalDocumentPlanSectionContent(structured);
+
+    expect(unified).not.toContain('Indicaciones generales');
+    expect(unified).toContain('Reposo relativo');
+    expect(unified).toContain('Paracetamol');
+    expect(unified).toContain('Control en 7 días');
+    expect(resolveClinicalDocumentPlanSectionLayout({ content: unified, layout: undefined })).toBe(
+      'unified'
+    );
+  });
+
+  it('can rebuild a unified plan section into the structured template', () => {
+    const rebuilt = buildStructuredClinicalDocumentPlanSectionContent(
+      '<div>Reposo relativo, analgesia y control en 7 días</div>'
+    );
+
+    expect(rebuilt).toContain('Indicaciones generales');
+    expect(rebuilt).toContain('Indicaciones farmacológicas');
+    expect(rebuilt).toContain('Control clínico');
+
+    const parsed = parseClinicalDocumentPlanSectionContent(rebuilt);
+    expect(parsed.generales).toContain('Reposo relativo');
+    expect(parsed.farmacologicas).toBe('');
+    expect(parsed.control_clinico).toBe('');
   });
 });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildClinicalDocumentPdfFileName,
+  formatClinicalDocumentAuthorName,
   formatClinicalDocumentDateTime,
   getClinicalDocumentPatientFieldLabel,
   hydrateLegacyClinicalDocument,
@@ -78,5 +79,10 @@ describe('clinicalDocumentWorkspaceController', () => {
     );
 
     expect(buildClinicalDocumentPdfFileName(record)).toBe('08-03-2026 - Felipe Reyes Opazo.pdf');
+  });
+
+  it('formats author names as first name plus first surname', () => {
+    expect(formatClinicalDocumentAuthorName('Juan Pablo Perez Soto')).toBe('Juan Perez');
+    expect(formatClinicalDocumentAuthorName('Ana Perez')).toBe('Ana Perez');
   });
 });

@@ -3,8 +3,20 @@ import { FilePlus2, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
 
 import { getClinicalDocumentTypeLabel } from '@/features/clinical-documents/controllers/clinicalDocumentTemplateController';
-import { formatClinicalDocumentDateTime } from '@/features/clinical-documents/controllers/clinicalDocumentWorkspaceController';
+import {
+  formatClinicalDocumentAuthorName,
+  formatClinicalDocumentDateTime,
+} from '@/features/clinical-documents/controllers/clinicalDocumentWorkspaceController';
 import type { ClinicalDocumentsSidebarProps } from '@/features/clinical-documents/contracts/clinicalDocumentsSidebarContracts';
+
+const formatSidebarDocumentTitle = (value: string): string => {
+  const normalized = value.trim().toLocaleLowerCase('es-CL');
+  if (!normalized) {
+    return '';
+  }
+
+  return normalized.charAt(0).toLocaleUpperCase('es-CL') + normalized.slice(1);
+};
 
 export const ClinicalDocumentsSidebar: React.FC<ClinicalDocumentsSidebarProps> = ({
   canEdit,
@@ -88,7 +100,7 @@ export const ClinicalDocumentsSidebar: React.FC<ClinicalDocumentsSidebarProps> =
                     className="flex-1 text-left"
                   >
                     <span className="text-[12px] font-bold leading-tight text-slate-800">
-                      {document.title.toLocaleLowerCase('es-CL')}
+                      {formatSidebarDocumentTitle(document.title)}
                     </span>
                     <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">
                       {getClinicalDocumentTypeLabel(document.documentType)}
@@ -106,7 +118,7 @@ export const ClinicalDocumentsSidebar: React.FC<ClinicalDocumentsSidebarProps> =
                   )}
                 </div>
                 <p className="mt-0.5 text-[9px] text-slate-500">
-                  {document.audit.updatedBy.displayName || 'Sin autor'} ·{' '}
+                  {formatClinicalDocumentAuthorName(document.audit.updatedBy.displayName)} ·{' '}
                   {formatClinicalDocumentDateTime(document.audit.updatedAt)}
                 </p>
               </div>
