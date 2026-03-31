@@ -10,8 +10,11 @@ export interface FugaNotificationPayload {
   specialty?: string;
   recordDate: string;
   time: string;
+  automaticMessage: string;
   note?: string;
   recipients?: string[];
+  testMode?: boolean;
+  testRecipient?: string;
 }
 
 export interface FugaNotificationResponse {
