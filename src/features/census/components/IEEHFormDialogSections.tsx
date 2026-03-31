@@ -257,7 +257,7 @@ export const IEEHDialogFooter: React.FC<{
       className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-sm"
     >
       {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
-      {isGenerating ? 'Generando...' : 'Generar PDF'}
+      {isGenerating ? 'Preparando impresión...' : 'Imprimir documento'}
     </button>
   </div>
 );

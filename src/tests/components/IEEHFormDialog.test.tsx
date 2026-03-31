@@ -2,14 +2,14 @@ import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { IEEHFormDialog } from '../../features/census/components/IEEHFormDialog';
-import { downloadIEEHForm } from '../../services/pdf/ieehPdfService';
+import { printIEEHForm } from '../../services/pdf/ieehPdfService';
 import { PatientStatus, Specialty } from '../../types/core';
 import type { PatientData } from '../../types';
 import type { DischargeFormData } from '../../services/pdf/ieehPdfService';
 
 // Mock services
 vi.mock('../../services/pdf/ieehPdfService', () => ({
-  downloadIEEHForm: vi.fn(),
+  printIEEHForm: vi.fn(),
 }));
 
 vi.mock('../../services/terminology/terminologyService', () => ({
@@ -82,7 +82,7 @@ describe('IEEHFormDialog Component', () => {
     expect(descInput).toHaveValue('APENDICECTOMIA');
   });
 
-  it('calls downloadIEEHForm when clicking "Generar PDF"', async () => {
+  it('calls printIEEHForm when clicking "Imprimir documento"', async () => {
     render(
       <IEEHFormDialog
         isOpen={true}
@@ -92,10 +92,10 @@ describe('IEEHFormDialog Component', () => {
       />
     );
 
-    fireEvent.click(screen.getByText(/Generar PDF/i));
+    fireEvent.click(screen.getByText(/Imprimir documento/i));
 
     await waitFor(() => {
-      expect(downloadIEEHForm).toHaveBeenCalled();
+      expect(printIEEHForm).toHaveBeenCalled();
     });
   });
 });

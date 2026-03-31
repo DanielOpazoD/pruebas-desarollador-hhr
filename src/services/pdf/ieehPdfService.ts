@@ -31,7 +31,7 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { PatientData } from '@/services/contracts/patientServiceContracts';
 import { splitPatientName, calculateAge, formatDateToCL } from '@/utils/clinicalUtils';
-import { saveAndDownloadPdf } from './pdfBase';
+import { openPdfPrintDialog, saveAndDownloadPdf } from './pdfBase';
 import { FIELD_COORDS, mapInsurance, mapSex, mapProcedencia } from './ieehPdfCoordinates';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 
@@ -333,6 +333,25 @@ export const downloadIEEHForm = async (
   const suggestedName = `IEEH_${safeName}_${new Date().toISOString().slice(0, 10)}.pdf`;
 
   await saveAndDownloadPdf(pdfBytes, suggestedName);
+};
+
+/**
+ * Generate and open the browser print dialog for the filled IEEH form.
+ */
+export const printIEEHForm = async (
+  patient: PatientData,
+  discharge: DischargeFormData = {}
+): Promise<void> => {
+  const pdfBytes = await fillIEEHForm(patient, discharge);
+
+  const patientName = patient.patientName || 'paciente';
+  const safeName = patientName
+    .replace(/[^a-zA-ZáéíóúñÁÉÍÓÚÑ\s]/g, '')
+    .trim()
+    .replace(/\s+/g, '_');
+  const fallbackName = `IEEH_${safeName}_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+  await openPdfPrintDialog(pdfBytes, fallbackName);
 };
 
 /**
