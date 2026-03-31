@@ -6,16 +6,6 @@ import { createClinicalDocumentDraft } from '@/features/clinical-documents/domai
 import { useClinicalDocumentWorkspaceDocumentActions } from '@/features/clinical-documents/hooks/useClinicalDocumentWorkspaceDocumentActions';
 import * as clinicalDocumentUseCases from '@/application/clinical-documents/clinicalDocumentUseCases';
 
-const permissionMocks = vi.hoisted(() => ({
-  canSignClinicalDocument: vi.fn(),
-  canUnsignClinicalDocument: vi.fn(),
-}));
-
-vi.mock('@/features/clinical-documents/controllers/clinicalDocumentPermissionController', () => ({
-  canSignClinicalDocument: permissionMocks.canSignClinicalDocument,
-  canUnsignClinicalDocument: permissionMocks.canUnsignClinicalDocument,
-}));
-
 vi.mock('@/application/clinical-documents/clinicalDocumentUseCases', async () => {
   const actual = await vi.importActual<
     typeof import('@/application/clinical-documents/clinicalDocumentUseCases')
@@ -25,8 +15,6 @@ vi.mock('@/application/clinical-documents/clinicalDocumentUseCases', async () =>
     ...actual,
     executeCreateClinicalDocumentDraft: vi.fn(),
     executeDeleteClinicalDocument: vi.fn(),
-    executeSignClinicalDocument: vi.fn(),
-    executeUnsignClinicalDocument: vi.fn(),
   };
 });
 
@@ -87,16 +75,12 @@ describe('useClinicalDocumentWorkspaceDocumentActions', () => {
 
   let setSelectedDocumentId: React.Dispatch<React.SetStateAction<string | null>>;
   let setDraft: React.Dispatch<React.SetStateAction<ReturnType<typeof buildRecord> | null>>;
-  let setIsSaving: React.Dispatch<React.SetStateAction<boolean>>;
   let lastPersistedSnapshotRef: React.MutableRefObject<string>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    permissionMocks.canSignClinicalDocument.mockReturnValue(true);
-    permissionMocks.canUnsignClinicalDocument.mockReturnValue(true);
     setSelectedDocumentId = vi.fn();
     setDraft = vi.fn();
-    setIsSaving = vi.fn();
     lastPersistedSnapshotRef = { current: '' };
     notify.confirm.mockResolvedValue(true);
   });
@@ -112,15 +96,12 @@ describe('useClinicalDocumentWorkspaceDocumentActions', () => {
         episode: selectedDocument,
         selectedTemplateId: 'epicrisis',
         templates,
-        selectedDocument,
         selectedDocumentId: selectedDocument.id,
         canEdit: false,
         canDelete: false,
-        validationIssues: [],
         notify,
         setSelectedDocumentId,
         setDraft,
-        setIsSaving,
         lastPersistedSnapshotRef,
       })
     );
@@ -154,15 +135,12 @@ describe('useClinicalDocumentWorkspaceDocumentActions', () => {
         episode: selectedDocument,
         selectedTemplateId: 'epicrisis',
         templates,
-        selectedDocument,
         selectedDocumentId: selectedDocument.id,
         canEdit: true,
         canDelete: true,
-        validationIssues: [],
         notify,
         setSelectedDocumentId,
         setDraft,
-        setIsSaving,
         lastPersistedSnapshotRef,
       })
     );
@@ -178,82 +156,6 @@ describe('useClinicalDocumentWorkspaceDocumentActions', () => {
       'Se generó el borrador inicial del documento.'
     );
     expect(lastPersistedSnapshotRef.current).not.toBe('');
-  });
-
-  it('blocks signing when validation issues are present', async () => {
-    const selectedDocument = buildRecord();
-    const { result } = renderHook(() =>
-      useClinicalDocumentWorkspaceDocumentActions({
-        patient: patient as never,
-        role: 'doctor_urgency',
-        user: { uid: 'u1', email: 'doctor@test.com', displayName: 'Doctor Test' },
-        hospitalId: 'hhr',
-        episode: selectedDocument,
-        selectedTemplateId: 'epicrisis',
-        templates,
-        selectedDocument,
-        selectedDocumentId: selectedDocument.id,
-        canEdit: true,
-        canDelete: true,
-        validationIssues: [{ message: 'Falta sección obligatoria.' }],
-        notify,
-        setSelectedDocumentId,
-        setDraft,
-        setIsSaving,
-        lastPersistedSnapshotRef,
-      })
-    );
-
-    await act(async () => {
-      await result.current.handleSign();
-    });
-
-    expect(notify.warning).toHaveBeenCalledWith(
-      'Documento incompleto',
-      'Falta sección obligatoria.'
-    );
-    expect(clinicalDocumentUseCases.executeSignClinicalDocument).not.toHaveBeenCalled();
-  });
-
-  it('warns when trying to unsign a document that no longer qualifies', async () => {
-    permissionMocks.canUnsignClinicalDocument.mockReturnValue(false);
-    const selectedDocument = {
-      ...buildRecord(),
-      status: 'signed' as const,
-      isLocked: true,
-    };
-
-    const { result } = renderHook(() =>
-      useClinicalDocumentWorkspaceDocumentActions({
-        patient: patient as never,
-        role: 'doctor_urgency',
-        user: { uid: 'u1', email: 'doctor@test.com', displayName: 'Doctor Test' },
-        hospitalId: 'hhr',
-        episode: selectedDocument,
-        selectedTemplateId: 'epicrisis',
-        templates,
-        selectedDocument,
-        selectedDocumentId: selectedDocument.id,
-        canEdit: true,
-        canDelete: true,
-        validationIssues: [],
-        notify,
-        setSelectedDocumentId,
-        setDraft,
-        setIsSaving,
-        lastPersistedSnapshotRef,
-      })
-    );
-
-    await act(async () => {
-      await result.current.handleUnsign();
-    });
-
-    expect(notify.warning).toHaveBeenCalledWith(
-      'No se puede quitar la firma',
-      'Solo se puede quitar firma de epicrisis firmadas el mismo día de emisión.'
-    );
-    expect(clinicalDocumentUseCases.executeUnsignClinicalDocument).not.toHaveBeenCalled();
   });
 
   it('clears selected state after deleting the active document', async () => {
@@ -273,15 +175,12 @@ describe('useClinicalDocumentWorkspaceDocumentActions', () => {
         episode: selectedDocument,
         selectedTemplateId: 'epicrisis',
         templates,
-        selectedDocument,
         selectedDocumentId: selectedDocument.id,
         canEdit: true,
         canDelete: true,
-        validationIssues: [],
         notify,
         setSelectedDocumentId,
         setDraft,
-        setIsSaving,
         lastPersistedSnapshotRef,
       })
     );
@@ -298,19 +197,19 @@ describe('useClinicalDocumentWorkspaceDocumentActions', () => {
     );
   });
 
-  it('surfaces failed outcome messages without relying on thrown exceptions', async () => {
+  it('surfaces failed delete outcome messages without relying on thrown exceptions', async () => {
     const selectedDocument = buildRecord();
-    vi.mocked(clinicalDocumentUseCases.executeSignClinicalDocument).mockResolvedValue({
+    vi.mocked(clinicalDocumentUseCases.executeDeleteClinicalDocument).mockResolvedValue({
       status: 'failed',
       data: null,
       issues: [
         {
           kind: 'remote_blocked',
-          message: 'Firma remota bloqueada',
-          userSafeMessage: 'La firma quedó bloqueada por consistencia.',
+          message: 'El documento está protegido',
+          userSafeMessage: 'El documento no se pudo eliminar por consistencia remota.',
         },
       ],
-      userSafeMessage: 'La firma quedó bloqueada por consistencia.',
+      userSafeMessage: 'El documento no se pudo eliminar por consistencia remota.',
     });
 
     const { result } = renderHook(() =>
@@ -322,26 +221,23 @@ describe('useClinicalDocumentWorkspaceDocumentActions', () => {
         episode: selectedDocument,
         selectedTemplateId: 'epicrisis',
         templates,
-        selectedDocument,
         selectedDocumentId: selectedDocument.id,
         canEdit: true,
         canDelete: true,
-        validationIssues: [],
         notify,
         setSelectedDocumentId,
         setDraft,
-        setIsSaving,
         lastPersistedSnapshotRef,
       })
     );
 
     await act(async () => {
-      await result.current.handleSign();
+      await result.current.handleDeleteDocument(selectedDocument);
     });
 
     expect(notify.error).toHaveBeenCalledWith(
-      'No se pudo firmar',
-      'La firma quedó bloqueada por consistencia.'
+      'No se pudo eliminar',
+      'El documento no se pudo eliminar por consistencia remota.'
     );
   });
 });

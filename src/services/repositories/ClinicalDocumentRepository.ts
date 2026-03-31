@@ -166,40 +166,6 @@ export const ClinicalDocumentRepository = {
     return enriched;
   },
 
-  async sign(
-    record: ClinicalDocumentRecord,
-    hospitalId: string = getActiveHospitalId()
-  ): Promise<ClinicalDocumentRecord> {
-    const enriched = sanitizeForFirestore(
-      enrichRecord({
-        ...record,
-        isLocked: true,
-        status: 'signed',
-      })
-    );
-    await db.setDoc(getClinicalDocumentsCollectionPath(hospitalId), record.id, enriched, {
-      merge: true,
-    });
-    return enriched;
-  },
-
-  async unsign(
-    record: ClinicalDocumentRecord,
-    hospitalId: string = getActiveHospitalId()
-  ): Promise<ClinicalDocumentRecord> {
-    const enriched = sanitizeForFirestore(
-      enrichRecord({
-        ...record,
-        isLocked: false,
-        status: 'draft',
-      })
-    );
-    await db.setDoc(getClinicalDocumentsCollectionPath(hospitalId), record.id, enriched, {
-      merge: true,
-    });
-    return enriched;
-  },
-
   async archive(
     documentId: string,
     patch: Pick<ClinicalDocumentRecord, 'status' | 'audit'>,

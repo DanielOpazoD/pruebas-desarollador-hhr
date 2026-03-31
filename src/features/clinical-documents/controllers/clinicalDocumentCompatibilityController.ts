@@ -28,6 +28,11 @@ const applyClinicalDocumentDefinitionDefaults = (
   return {
     ...record,
     schemaVersion: CURRENT_CLINICAL_DOCUMENT_SCHEMA_VERSION,
+    status:
+      record.status === 'signed' || record.status === 'ready_for_signature'
+        ? 'draft'
+        : record.status,
+    isLocked: false,
     sections: normalizedSections,
     patientInfoTitle: record.patientInfoTitle || 'Información del Paciente',
     footerMedicoLabel: record.footerMedicoLabel || 'Médico',

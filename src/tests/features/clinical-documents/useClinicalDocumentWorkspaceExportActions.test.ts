@@ -33,8 +33,8 @@ vi.mock('@/services/observability/operationalTelemetryService', () => ({
   recordOperationalTelemetry: vi.fn(),
 }));
 
-const buildRecord = (status: 'draft' | 'signed' = 'signed'): ClinicalDocumentRecord => ({
-  ...createClinicalDocumentDraft({
+const buildRecord = (): ClinicalDocumentRecord =>
+  createClinicalDocumentDraft({
     templateId: 'epicrisis',
     hospitalId: 'hhr',
     actor: {
@@ -63,10 +63,7 @@ const buildRecord = (status: 'draft' | 'signed' = 'signed'): ClinicalDocumentRec
     },
     medico: 'Doctor Test',
     especialidad: 'Medicina',
-  }),
-  status,
-  isLocked: status === 'signed',
-});
+  });
 
 describe('useClinicalDocumentWorkspaceExportActions', () => {
   const notify = {
@@ -94,10 +91,10 @@ describe('useClinicalDocumentWorkspaceExportActions', () => {
     });
   });
 
-  it('warns when attempting to upload an unsigned document', async () => {
+  it('exports draft documents to Drive without requiring a signature state', async () => {
     const { result } = renderHook(() =>
       useClinicalDocumentWorkspaceExportActions({
-        selectedDocument: buildRecord('draft'),
+        selectedDocument: buildRecord(),
         hospitalId: 'hhr',
         notify,
         setDraft,
@@ -108,11 +105,13 @@ describe('useClinicalDocumentWorkspaceExportActions', () => {
       await result.current.handleUploadPdf();
     });
 
-    expect(notify.warning).toHaveBeenCalledWith(
-      'Documento no firmado',
-      'Solo los documentos firmados pueden exportarse a Google Drive.'
+    expect(pdfExportUseCase.executeExportClinicalDocumentPdf).toHaveBeenCalledWith(
+      expect.objectContaining({
+        record: expect.objectContaining({ status: 'draft' }),
+        hospitalId: 'hhr',
+        fileName: expect.any(String),
+      })
     );
-    expect(pdfExportUseCase.executeExportClinicalDocumentPdf).not.toHaveBeenCalled();
   });
 
   it('marks the draft as failed when the export use case fails', async () => {
@@ -121,7 +120,7 @@ describe('useClinicalDocumentWorkspaceExportActions', () => {
       data: null,
       issues: [{ kind: 'unknown', message: 'drive down' }],
     });
-    const document = buildRecord('signed');
+    const document = buildRecord();
 
     const { result } = renderHook(() =>
       useClinicalDocumentWorkspaceExportActions({
@@ -147,7 +146,7 @@ describe('useClinicalDocumentWorkspaceExportActions', () => {
       userSafeMessage: 'El respaldo en Drive no está disponible temporalmente.',
       issues: [{ kind: 'unknown', message: 'drive raw failure' }],
     });
-    const document = buildRecord('signed');
+    const document = buildRecord();
 
     const { result } = renderHook(() =>
       useClinicalDocumentWorkspaceExportActions({
@@ -170,7 +169,7 @@ describe('useClinicalDocumentWorkspaceExportActions', () => {
 
   it('warns when print preview cannot be prepared', async () => {
     vi.mocked(printOpenUseCase.executeOpenClinicalDocumentPrint).mockResolvedValue(false);
-    const document = buildRecord('signed');
+    const document = buildRecord();
 
     const { result } = renderHook(() =>
       useClinicalDocumentWorkspaceExportActions({
@@ -192,8 +191,8 @@ describe('useClinicalDocumentWorkspaceExportActions', () => {
     expect(pdfExportUseCase.executeExportClinicalDocumentPdf).not.toHaveBeenCalled();
   });
 
-  it('opens print preview and triggers Drive backup for signed documents', async () => {
-    const document = buildRecord('signed');
+  it('opens print preview without triggering automatic Drive backup', async () => {
+    const document = buildRecord();
 
     const { result } = renderHook(() =>
       useClinicalDocumentWorkspaceExportActions({
@@ -206,21 +205,10 @@ describe('useClinicalDocumentWorkspaceExportActions', () => {
 
     await act(async () => {
       await result.current.handlePrint();
-      await Promise.resolve();
     });
 
     expect(printOpenUseCase.executeOpenClinicalDocumentPrint).toHaveBeenCalledWith(document);
     expect(notify.info).not.toHaveBeenCalled();
-    expect(pdfExportUseCase.executeExportClinicalDocumentPdf).toHaveBeenCalledWith(
-      expect.objectContaining({
-        record: document,
-        hospitalId: 'hhr',
-        fileName: expect.any(String),
-      })
-    );
-    expect(notify.success).toHaveBeenCalledWith(
-      'PDF enviado a Drive',
-      'La vista de impresión quedó abierta y el PDF se está respaldando en el Drive institucional.'
-    );
+    expect(pdfExportUseCase.executeExportClinicalDocumentPdf).not.toHaveBeenCalled();
   });
 });

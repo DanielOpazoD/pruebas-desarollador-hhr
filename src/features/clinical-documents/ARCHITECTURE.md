@@ -20,6 +20,6 @@
 
 1. ¿El documento/template nuevo pasa contratos runtime?
 2. ¿La definición del `documentType` está registrada y validada?
-3. ¿El flujo crítico `crear -> editar -> guardar -> firmar -> imprimir -> exportar` sigue cubierto?
+3. ¿El flujo crítico `crear -> editar -> guardar -> imprimir -> exportar` sigue cubierto?
 4. ¿Se agregó test del caso nuevo en `clinical-documents`?
 5. ¿La documentación del feature quedó actualizada?

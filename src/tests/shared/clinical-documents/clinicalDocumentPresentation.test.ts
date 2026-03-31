@@ -15,8 +15,8 @@ describe('clinicalDocumentPresentation', () => {
   });
 
   it('centraliza labels y estilos de estado', () => {
-    expect(getClinicalDocumentStatusLabel('ready_for_signature')).toBe('Lista');
-    expect(getClinicalDocumentStatusClassName('signed')).toContain('emerald');
+    expect(getClinicalDocumentStatusLabel('ready_for_signature')).toBe('Borrador');
+    expect(getClinicalDocumentStatusClassName('signed')).toContain('slate');
   });
 
   it('resolves source daily-record dates with the same shared formatter', () => {

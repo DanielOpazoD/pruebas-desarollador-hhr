@@ -29,20 +29,6 @@ vi.mock('@/context/AuthContext', () => ({
   useAuth: () => authState,
 }));
 
-vi.mock(
-  '@/features/clinical-documents/controllers/clinicalDocumentPermissionController',
-  async importOriginal => {
-    const actual =
-      await importOriginal<
-        typeof import('@/features/clinical-documents/controllers/clinicalDocumentPermissionController')
-      >();
-    return {
-      ...actual,
-      canUnsignClinicalDocument: vi.fn(() => true),
-    };
-  }
-);
-
 const notificationApi = {
   success: vi.fn(),
   warning: vi.fn(),
@@ -161,8 +147,6 @@ vi.mock('@/application/clinical-documents/clinicalDocumentUseCases', async () =>
     executeCreateClinicalDocumentDraft: vi.fn(),
     executePersistClinicalDocumentDraft: vi.fn(),
     executeDeleteClinicalDocument: vi.fn(),
-    executeSignClinicalDocument: vi.fn(),
-    executeUnsignClinicalDocument: vi.fn(),
   };
 });
 
@@ -213,34 +197,6 @@ describe('ClinicalDocumentsWorkspace', () => {
     vi.mocked(clinicalDocumentUseCases.executePersistClinicalDocumentDraft).mockResolvedValue(
       persistDraftResult
     );
-    const signResult: ApplicationOutcome<ClinicalDocumentRecord | null> = {
-      status: 'success',
-      data: {
-        ...clinicalDocument,
-        status: 'signed',
-        isLocked: true,
-        audit: {
-          ...clinicalDocument.audit,
-          signedAt: '2026-03-06T13:00:00.000Z',
-          signedBy: {
-            uid: 'u1',
-            email: 'doctor@test.com',
-            displayName: 'Doctor Test',
-            role: 'doctor_urgency',
-          },
-        },
-      },
-      issues: [],
-    };
-    vi.mocked(clinicalDocumentUseCases.executeSignClinicalDocument).mockResolvedValue(signResult);
-    const unsignResult: ApplicationOutcome<ClinicalDocumentRecord | null> = {
-      status: 'success',
-      data: { ...clinicalDocument, status: 'draft', isLocked: false },
-      issues: [],
-    };
-    vi.mocked(clinicalDocumentUseCases.executeUnsignClinicalDocument).mockResolvedValue(
-      unsignResult
-    );
     const deleteResult: ApplicationOutcome<null> = {
       status: 'success',
       data: null,
@@ -259,7 +215,7 @@ describe('ClinicalDocumentsWorkspace', () => {
     );
   });
 
-  it('renders the real shell and wires create/sign/print through use-case boundaries', async () => {
+  it('renders the real shell and wires create/print/drive through use-case boundaries', async () => {
     render(
       <ClinicalDocumentsWorkspace
         patient={workspacePatient}
@@ -282,17 +238,28 @@ describe('ClinicalDocumentsWorkspace', () => {
     });
 
     fireEvent.click(screen.getAllByRole('button', { name: /epicrisis médica/i })[0]);
-    fireEvent.click(screen.getByRole('button', { name: /firmar/i }));
     fireEvent.click(screen.getByRole('button', { name: /pdf/i }));
+    fireEvent.click(screen.getByRole('button', { name: /drive/i }));
 
     await waitFor(() => {
-      expect(clinicalDocumentUseCases.executeSignClinicalDocument).toHaveBeenCalled();
       expect(openClinicalDocumentBrowserPrintPreview).toHaveBeenCalled();
+      expect(
+        clinicalDocumentPdfExportUseCase.executeExportClinicalDocumentPdf
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          record: expect.objectContaining({
+            id: clinicalDocument.id,
+            status: 'draft',
+          }),
+          hospitalId: 'hhr',
+          fileName: expect.any(String),
+        })
+      );
       expect(notificationApi.info).not.toHaveBeenCalled();
     });
   });
 
-  it('supports sign -> upload -> unsign on the real shell boundary', async () => {
+  it('supports manual drive upload on the real shell boundary', async () => {
     render(
       <ClinicalDocumentsWorkspace
         patient={workspacePatient}
@@ -302,17 +269,10 @@ describe('ClinicalDocumentsWorkspace', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /firmar/i })).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: /firmar/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /quitar firma/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /drive/i })).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole('button', { name: /drive/i }));
-    fireEvent.click(screen.getByRole('button', { name: /quitar firma/i }));
 
     await waitFor(() => {
       expect(
@@ -326,7 +286,6 @@ describe('ClinicalDocumentsWorkspace', () => {
           fileName: expect.any(String),
         })
       );
-      expect(clinicalDocumentUseCases.executeUnsignClinicalDocument).toHaveBeenCalled();
     });
   });
 
@@ -347,7 +306,7 @@ describe('ClinicalDocumentsWorkspace', () => {
     });
 
     expect(screen.queryByRole('button', { name: /guardar/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /firmar/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /drive/i })).toBeInTheDocument();
   });
 
   it('allows hiding and restoring sections on the real shell boundary', async () => {

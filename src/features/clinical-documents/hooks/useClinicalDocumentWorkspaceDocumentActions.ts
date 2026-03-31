@@ -13,14 +13,8 @@ import {
   serializeClinicalDocument,
 } from '@/features/clinical-documents/controllers/clinicalDocumentWorkspaceController';
 import {
-  canSignClinicalDocument,
-  canUnsignClinicalDocument,
-} from '@/features/clinical-documents/controllers/clinicalDocumentPermissionController';
-import {
   executeCreateClinicalDocumentDraft,
   executeDeleteClinicalDocument,
-  executeSignClinicalDocument,
-  executeUnsignClinicalDocument,
 } from '@/application/clinical-documents/clinicalDocumentUseCases';
 import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 import {
@@ -47,15 +41,12 @@ interface UseClinicalDocumentWorkspaceDocumentActionsParams {
   episode: ClinicalDocumentEpisodeContext;
   selectedTemplateId: string;
   templates: Array<{ id: string }>;
-  selectedDocument: ClinicalDocumentRecord | null;
   selectedDocumentId: string | null;
   canEdit: boolean;
   canDelete: boolean;
-  validationIssues: Array<{ message: string }>;
   notify: NotificationPort;
   setSelectedDocumentId: (documentId: string | null) => void;
   setDraft: React.Dispatch<React.SetStateAction<ClinicalDocumentRecord | null>>;
-  setIsSaving: React.Dispatch<React.SetStateAction<boolean>>;
   lastPersistedSnapshotRef: React.MutableRefObject<string>;
 }
 
@@ -83,15 +74,12 @@ export const useClinicalDocumentWorkspaceDocumentActions = ({
   episode,
   selectedTemplateId,
   templates,
-  selectedDocument,
   selectedDocumentId,
   canEdit,
   canDelete,
-  validationIssues,
   notify,
   setSelectedDocumentId,
   setDraft,
-  setIsSaving,
   lastPersistedSnapshotRef,
 }: UseClinicalDocumentWorkspaceDocumentActionsParams) => {
   const createDocument = useCallback(async () => {
@@ -247,132 +235,8 @@ export const useClinicalDocumentWorkspaceDocumentActions = ({
     ]
   );
 
-  const handleSign = useCallback(async () => {
-    if (!selectedDocument || !user || !canSignClinicalDocument(role, selectedDocument)) {
-      return;
-    }
-    if (validationIssues.length > 0) {
-      notify.warning('Documento incompleto', validationIssues[0]?.message);
-      return;
-    }
-    setIsSaving(true);
-    try {
-      const actor = buildClinicalDocumentActor(user, role);
-      const result = await executeSignClinicalDocument(selectedDocument, hospitalId, actor);
-      recordOperationalOutcome('clinical_document', 'sign_clinical_document', result, {
-        date: selectedDocument.sourceDailyRecordDate,
-        context: { documentId: selectedDocument.id },
-        allowSuccess: true,
-      });
-      const outcomeError = resolveClinicalDocumentOutcomeError(
-        result,
-        'No se pudo firmar el documento.'
-      );
-      if (outcomeError || !result.data) {
-        recordOperationalTelemetry({
-          category: 'clinical_document',
-          status: 'failed',
-          operation: 'sign_clinical_document',
-          date: selectedDocument?.sourceDailyRecordDate,
-          issues: [outcomeError || 'No se pudo firmar el documento.'],
-          context: { documentId: selectedDocument?.id },
-        });
-        notify.error('No se pudo firmar', outcomeError || 'Intenta nuevamente.');
-        return;
-      }
-      lastPersistedSnapshotRef.current = serializeClinicalDocument(result.data);
-      setDraft(result.data);
-      notify.success('Documento firmado', `${result.data.title} quedó cerrado y bloqueado.`);
-    } catch (error) {
-      recordOperationalTelemetry({
-        category: 'clinical_document',
-        status: 'failed',
-        operation: 'sign_clinical_document',
-        date: selectedDocument?.sourceDailyRecordDate,
-        issues: [error instanceof Error ? error.message : 'No se pudo firmar el documento.'],
-        context: { documentId: selectedDocument?.id },
-      });
-      notify.error('No se pudo firmar', 'Intenta nuevamente.');
-    } finally {
-      setIsSaving(false);
-    }
-  }, [
-    hospitalId,
-    lastPersistedSnapshotRef,
-    notify,
-    role,
-    selectedDocument,
-    setDraft,
-    setIsSaving,
-    user,
-    validationIssues,
-  ]);
-
-  const handleUnsign = useCallback(async () => {
-    if (!selectedDocument || !user || !canUnsignClinicalDocument(role, selectedDocument)) {
-      notify.warning(
-        'No se puede quitar la firma',
-        'Solo se puede quitar firma de epicrisis firmadas el mismo día de emisión.'
-      );
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const actor = buildClinicalDocumentActor(user, role);
-      const result = await executeUnsignClinicalDocument(selectedDocument, hospitalId, actor);
-      recordOperationalOutcome('clinical_document', 'unsign_clinical_document', result, {
-        date: selectedDocument.sourceDailyRecordDate,
-        context: { documentId: selectedDocument.id },
-        allowSuccess: true,
-      });
-      const outcomeError = resolveClinicalDocumentOutcomeError(
-        result,
-        'No se pudo quitar la firma.'
-      );
-      if (outcomeError || !result.data) {
-        recordOperationalTelemetry({
-          category: 'clinical_document',
-          status: 'failed',
-          operation: 'unsign_clinical_document',
-          date: selectedDocument?.sourceDailyRecordDate,
-          issues: [outcomeError || 'No se pudo quitar la firma.'],
-          context: { documentId: selectedDocument?.id },
-        });
-        notify.error('No se pudo quitar la firma', outcomeError || 'Intenta nuevamente.');
-        return;
-      }
-      lastPersistedSnapshotRef.current = serializeClinicalDocument(result.data);
-      setDraft(result.data);
-      notify.success('Firma quitada', 'La epicrisis volvió a borrador con registro en auditoría.');
-    } catch (error) {
-      recordOperationalTelemetry({
-        category: 'clinical_document',
-        status: 'failed',
-        operation: 'unsign_clinical_document',
-        date: selectedDocument?.sourceDailyRecordDate,
-        issues: [error instanceof Error ? error.message : 'No se pudo quitar la firma.'],
-        context: { documentId: selectedDocument?.id },
-      });
-      notify.error('No se pudo quitar la firma', 'Intenta nuevamente.');
-    } finally {
-      setIsSaving(false);
-    }
-  }, [
-    hospitalId,
-    lastPersistedSnapshotRef,
-    notify,
-    role,
-    selectedDocument,
-    setDraft,
-    setIsSaving,
-    user,
-  ]);
-
   return {
     createDocument,
     handleDeleteDocument,
-    handleSign,
-    handleUnsign,
   };
 };

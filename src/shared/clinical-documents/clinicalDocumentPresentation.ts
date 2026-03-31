@@ -49,9 +49,8 @@ export const formatClinicalDocumentPdfDate = (rawDate?: string): string | null =
 export const getClinicalDocumentStatusLabel = (status: ClinicalDocumentStatus): string => {
   switch (status) {
     case 'ready_for_signature':
-      return 'Lista';
     case 'signed':
-      return 'Firmada';
+      return 'Borrador';
     case 'archived':
       return 'Archivada';
     default:
@@ -62,9 +61,8 @@ export const getClinicalDocumentStatusLabel = (status: ClinicalDocumentStatus): 
 export const getClinicalDocumentStatusClassName = (status: ClinicalDocumentStatus): string => {
   switch (status) {
     case 'signed':
-      return 'bg-emerald-100 text-emerald-700';
     case 'ready_for_signature':
-      return 'bg-amber-100 text-amber-700';
+      return 'bg-slate-100 text-slate-600';
     case 'archived':
       return 'bg-slate-200 text-slate-600';
     default:

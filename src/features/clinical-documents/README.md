@@ -19,7 +19,7 @@
 1. `useClinicalDocumentWorkspaceBootstrap` carga templates y subscribe documentos por episodio.
 2. `useClinicalDocumentWorkspaceDraft` hidrata documentos legacy al esquema actual, mantiene draft local y resuelve conflictos remotos.
 3. `ClinicalDocumentSheet` compone subcomponentes puros y usa `useClinicalDocumentSheetState` para estado UI no persistente.
-4. `useClinicalDocumentWorkspaceDocumentActions` guarda, firma y desfirma.
+4. `useClinicalDocumentWorkspaceDocumentActions` crea y elimina borradores.
 5. `useClinicalDocumentWorkspaceExportActions` imprime y exporta PDF.
 6. Repositorio y templates validan contratos runtime antes de devolver o persistir datos.
 
@@ -59,13 +59,13 @@
   notices compartidos; errores recuperables de Drive no deben volver a salir como excepciones
   “normales” dentro del workspace.
 - `useClinicalDocumentWorkspaceDocumentActions` debe tratar outcomes fallidos como estado esperado:
-  crear, eliminar, firmar y desfimar no deben depender de `throw` para informar bloqueos o
+  crear y eliminar no deben depender de `throw` para informar bloqueos o
   degradaciones recuperables al usuario.
 
 ## Invariantes
 
 - `sections` siempre se ordenan por `order`.
-- `status === signed` implica `isLocked === true` al persistir.
+- Estados legacy firmados deben hidratarse como borradores editables antes de salir del repositorio.
 - `footerMedicoLabel`, `footerEspecialidadLabel` y `patientInfoTitle` nunca deben quedar vacíos tras hidratar/persistir.
 - Nuevas migraciones deben pasar por el controlador de compatibilidad, no por parches ad hoc en componentes.
 

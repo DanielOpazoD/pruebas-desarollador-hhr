@@ -1,4 +1,3 @@
-import type { UserRole } from '@/types/auth';
 import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domain/entities';
 import type { ClinicalDocumentIndicationSpecialtyId } from '@/features/clinical-documents/controllers/clinicalDocumentIndicationsController';
 import type { ClinicalDocumentPlanSubsectionId } from '@/features/clinical-documents/controllers/clinicalDocumentPlanSectionController';
@@ -26,13 +25,9 @@ export interface ClinicalDocumentSheetEditorApi {
 export interface ClinicalDocumentSheetProps {
   selectedDocument: ClinicalDocumentRecord | null;
   canEdit: boolean;
-  canUnsignSelectedDocument: boolean;
-  role: UserRole | undefined;
   isSaving: boolean;
   isUploadingPdf: boolean;
   validationIssues: Array<{ message: string }>;
-  onSign: () => void;
-  onUnsign: () => void;
   onPrint: () => void;
   onUploadPdf: () => void;
   patchDocumentTitle: (title: string) => void;

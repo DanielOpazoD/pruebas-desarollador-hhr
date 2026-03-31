@@ -52,11 +52,7 @@ export const useClinicalDocumentWorkspaceExportActions = ({
 
   const handleUploadPdf = useCallback(
     async (options: UploadPdfOptions = {}) => {
-      if (!selectedDocument || selectedDocument.status !== 'signed') {
-        notify.warning(
-          'Documento no firmado',
-          'Solo los documentos firmados pueden exportarse a Google Drive.'
-        );
+      if (!selectedDocument) {
         return;
       }
 
@@ -172,16 +168,7 @@ export const useClinicalDocumentWorkspaceExportActions = ({
       },
       { allowSuccess: true }
     );
-
-    if (selectedDocument.status === 'signed' && !isUploadingPdf) {
-      void handleUploadPdf({
-        notifySuccess: true,
-        successTitle: 'PDF enviado a Drive',
-        successMessage:
-          'La vista de impresión quedó abierta y el PDF se está respaldando en el Drive institucional.',
-      });
-    }
-  }, [handleUploadPdf, isUploadingPdf, notify, selectedDocument]);
+  }, [notify, selectedDocument]);
 
   return {
     handlePrint,

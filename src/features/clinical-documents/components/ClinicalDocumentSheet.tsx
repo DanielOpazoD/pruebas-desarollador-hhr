@@ -12,12 +12,8 @@ import { useClinicalDocumentSheetState } from '@/features/clinical-documents/hoo
 export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
   selectedDocument,
   canEdit,
-  canUnsignSelectedDocument,
-  role,
   isSaving,
   isUploadingPdf,
-  onSign,
-  onUnsign,
   onPrint,
   onUploadPdf,
   onResetDocumentContent,
@@ -67,15 +63,11 @@ export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
       <ClinicalDocumentFormattingToolbar
         selectedDocument={selectedDocument}
         canEdit={canEdit}
-        canUnsignSelectedDocument={canUnsignSelectedDocument}
-        role={role}
         isSaving={isSaving}
         isUploadingPdf={isUploadingPdf}
         formattingDisabled={sheetState.formattingDisabled || !canEdit}
         isFormattingOpen={sheetState.isFormattingOpen}
         activeEditorHistoryState={sheetState.activeEditorHistoryState}
-        onSign={onSign}
-        onUnsign={onUnsign}
         onPrint={onPrint}
         onUploadPdf={onUploadPdf}
         onResetDocumentContent={onResetDocumentContent}

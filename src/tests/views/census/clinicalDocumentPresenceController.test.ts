@@ -100,7 +100,7 @@ describe('clinicalDocumentPresenceController', () => {
         ...baseDocument,
         id: 'doc-1',
         episodeKey: '11.111.111-1__2026-03-05',
-        status: 'signed',
+        status: 'draft',
       },
       {
         ...baseDocument,

@@ -10,14 +10,12 @@ import {
   ListOrdered,
   Printer,
   Redo2,
-  RotateCcw,
   SquarePen,
   Underline,
   Undo2,
   UploadCloud,
 } from 'lucide-react';
 
-import { canSignClinicalDocument } from '@/features/clinical-documents/controllers/clinicalDocumentPermissionController';
 import type {
   ClinicalDocumentFormattingCommand,
   ClinicalDocumentSheetProps,
@@ -26,15 +24,11 @@ import type {
 interface ClinicalDocumentFormattingToolbarProps {
   selectedDocument: NonNullable<ClinicalDocumentSheetProps['selectedDocument']>;
   canEdit: boolean;
-  canUnsignSelectedDocument: boolean;
-  role: ClinicalDocumentSheetProps['role'];
   isSaving: boolean;
   isUploadingPdf: boolean;
   formattingDisabled: boolean;
   isFormattingOpen: boolean;
   activeEditorHistoryState: { canUndo: boolean; canRedo: boolean };
-  onSign: () => void;
-  onUnsign: () => void;
   onPrint: () => void;
   onUploadPdf: () => void;
   onResetDocumentContent: () => void;
@@ -60,15 +54,11 @@ export const ClinicalDocumentFormattingToolbar: React.FC<
 > = ({
   selectedDocument,
   canEdit,
-  canUnsignSelectedDocument,
-  role,
   isSaving,
   isUploadingPdf,
   formattingDisabled,
   isFormattingOpen,
   activeEditorHistoryState,
-  onSign,
-  onUnsign,
   onPrint,
   onUploadPdf,
   onResetDocumentContent,
@@ -82,25 +72,6 @@ export const ClinicalDocumentFormattingToolbar: React.FC<
       <div className="relative flex flex-wrap gap-2 shrink-0">
         <button
           type="button"
-          onClick={onSign}
-          disabled={!canSignClinicalDocument(role, selectedDocument)}
-          className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black uppercase tracking-widest text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200"
-        >
-          Firmar
-        </button>
-        {canUnsignSelectedDocument && (
-          <button
-            type="button"
-            onClick={onUnsign}
-            disabled={isSaving}
-            className="rounded-xl border border-rose-200 px-3 py-2 text-xs font-black uppercase tracking-widest text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:border-slate-200"
-          >
-            <RotateCcw size={14} className="inline mr-2" />
-            Quitar firma
-          </button>
-        )}
-        <button
-          type="button"
           onClick={onPrint}
           className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50"
         >
@@ -110,7 +81,7 @@ export const ClinicalDocumentFormattingToolbar: React.FC<
         <button
           type="button"
           onClick={onUploadPdf}
-          disabled={isUploadingPdf || selectedDocument.status !== 'signed'}
+          disabled={isUploadingPdf}
           className={`rounded-xl px-3 py-2 text-xs font-black uppercase tracking-widest disabled:cursor-not-allowed disabled:text-slate-300 disabled:border-slate-200 ${
             driveExported
               ? 'border border-emerald-200 text-emerald-700 hover:bg-emerald-50'

@@ -39,8 +39,6 @@ const buildDocument = () =>
   });
 
 const defaultHandlers = {
-  onSign: vi.fn(),
-  onUnsign: vi.fn(),
   onPrint: vi.fn(),
   onUploadPdf: vi.fn(),
   onResetDocumentContent: vi.fn(),
@@ -76,8 +74,6 @@ describe('ClinicalDocumentSheet', () => {
       <ClinicalDocumentSheet
         selectedDocument={null}
         canEdit={true}
-        canUnsignSelectedDocument={false}
-        role="doctor_urgency"
         isSaving={false}
         isUploadingPdf={false}
         validationIssues={[]}
@@ -103,8 +99,6 @@ describe('ClinicalDocumentSheet', () => {
       <ClinicalDocumentSheet
         selectedDocument={document}
         canEdit={true}
-        canUnsignSelectedDocument={false}
-        role="doctor_urgency"
         isSaving={false}
         isUploadingPdf={false}
         validationIssues={[{ message: 'Falta completar diagnóstico.' }]}
@@ -189,8 +183,6 @@ describe('ClinicalDocumentSheet', () => {
 
   it('shows drive link and saved state when the PDF is exported to institutional drive', () => {
     const document = buildDocument();
-    document.status = 'signed';
-    document.isLocked = true;
     document.pdf = {
       exportStatus: 'exported',
       webViewLink: 'https://drive.google.com/test-file',
@@ -200,8 +192,6 @@ describe('ClinicalDocumentSheet', () => {
       <ClinicalDocumentSheet
         selectedDocument={document}
         canEdit={true}
-        canUnsignSelectedDocument={true}
-        role="doctor_urgency"
         isSaving={false}
         isUploadingPdf={false}
         validationIssues={[]}
@@ -215,8 +205,8 @@ describe('ClinicalDocumentSheet', () => {
     expect(screen.getByRole('button', { name: /guardado en drive/i })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /abrir drive/i })).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: /indicaciones predeterminadas/i })
-    ).not.toBeInTheDocument();
+      screen.getByRole('button', { name: /abrir panel de indicaciones predeterminadas/i })
+    ).toBeInTheDocument();
   });
 
   it('allows adding a custom indication to the active specialty', async () => {
@@ -226,8 +216,6 @@ describe('ClinicalDocumentSheet', () => {
       <ClinicalDocumentSheet
         selectedDocument={document}
         canEdit={true}
-        canUnsignSelectedDocument={false}
-        role="doctor_urgency"
         isSaving={false}
         isUploadingPdf={false}
         validationIssues={[]}
@@ -262,8 +250,6 @@ describe('ClinicalDocumentSheet', () => {
       <ClinicalDocumentSheet
         selectedDocument={document}
         canEdit={true}
-        canUnsignSelectedDocument={false}
-        role="doctor_urgency"
         isSaving={false}
         isUploadingPdf={false}
         validationIssues={[]}

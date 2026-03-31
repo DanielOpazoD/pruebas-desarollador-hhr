@@ -173,4 +173,21 @@ describe('ClinicalDocumentRepository.listByEpisodeKeys', () => {
 
     expect(result.map(document => document.id)).toEqual(['d-1']);
   });
+
+  it('normalizes legacy signed documents back to editable drafts on read', async () => {
+    vi.mocked(db.getDocs).mockResolvedValueOnce([
+      {
+        ...buildDoc('legacy-signed', 'rut-1__2026-03-01', '2026-03-05T10:00:00.000Z', 'signed'),
+        isLocked: true,
+      },
+    ]);
+
+    const [result] = await ClinicalDocumentRepository.listByEpisodeKeys(
+      ['rut-1__2026-03-01'],
+      'hhr'
+    );
+
+    expect(result.status).toBe('draft');
+    expect(result.isLocked).toBe(false);
+  });
 });

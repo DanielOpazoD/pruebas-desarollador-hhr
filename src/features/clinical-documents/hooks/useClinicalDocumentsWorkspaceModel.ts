@@ -8,7 +8,6 @@ import {
   canDeleteClinicalDocuments,
   canEditClinicalDocuments,
   canReadClinicalDocuments,
-  canUnsignClinicalDocument,
 } from '@/features/clinical-documents/controllers/clinicalDocumentPermissionController';
 import { buildClinicalDocumentWorkspaceNotifyPort } from '@/features/clinical-documents/controllers/clinicalDocumentWorkspaceController';
 import type { ClinicalDocumentSheetProps } from '@/features/clinical-documents/components/clinicalDocumentSheetShared';
@@ -72,7 +71,6 @@ export const useClinicalDocumentsWorkspaceModel = ({
     draft,
     setDraft,
     isSaving,
-    setIsSaving,
     validationIssues,
     lastPersistedSnapshotRef,
     patchPatientField,
@@ -99,8 +97,6 @@ export const useClinicalDocumentsWorkspaceModel = ({
   });
 
   const selectedDocument = draft;
-  const canUnsignSelectedDocument =
-    selectedDocument && user ? canUnsignClinicalDocument(role, selectedDocument) : false;
 
   const {
     indicationsCatalog,
@@ -116,26 +112,22 @@ export const useClinicalDocumentsWorkspaceModel = ({
     canEdit,
   });
 
-  const { createDocument, handleDeleteDocument, handleSign, handleUnsign } =
-    useClinicalDocumentWorkspaceDocumentActions({
-      patient,
-      role,
-      user,
-      hospitalId,
-      episode,
-      selectedTemplateId,
-      templates,
-      selectedDocument,
-      selectedDocumentId,
-      canEdit,
-      canDelete,
-      validationIssues,
-      notify: notifyPort,
-      setSelectedDocumentId,
-      setDraft,
-      setIsSaving,
-      lastPersistedSnapshotRef,
-    });
+  const { createDocument, handleDeleteDocument } = useClinicalDocumentWorkspaceDocumentActions({
+    patient,
+    role,
+    user,
+    hospitalId,
+    episode,
+    selectedTemplateId,
+    templates,
+    selectedDocumentId,
+    canEdit,
+    canDelete,
+    notify: notifyPort,
+    setSelectedDocumentId,
+    setDraft,
+    lastPersistedSnapshotRef,
+  });
 
   const { handlePrint, handleUploadPdf, isUploadingPdf } =
     useClinicalDocumentWorkspaceExportActions({
@@ -185,13 +177,9 @@ export const useClinicalDocumentsWorkspaceModel = ({
     sheetProps: {
       selectedDocument,
       canEdit,
-      canUnsignSelectedDocument: Boolean(canUnsignSelectedDocument),
-      role,
       isSaving,
       isUploadingPdf,
       validationIssues,
-      onSign: handleSign,
-      onUnsign: () => void handleUnsign(),
       onPrint: handlePrint,
       onUploadPdf: () => void handleUploadPdf(),
       onResetDocumentContent: () => void handleResetDocumentContent(),
