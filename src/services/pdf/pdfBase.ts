@@ -73,7 +73,8 @@ export const saveAndDownloadPdf = async (
  */
 export const openPdfPrintDialog = async (
   pdfSource: PDFDocument | Uint8Array,
-  fallbackName: string
+  fallbackName: string,
+  reservedPrintWindow?: Window | null
 ): Promise<void> => {
   const pdfBytes: Uint8Array =
     pdfSource instanceof PDFDocument ? await pdfSource.save() : pdfSource;
@@ -103,7 +104,29 @@ export const openPdfPrintDialog = async (
     URL.revokeObjectURL(url);
   };
 
+  const finalizeReservedWindow = () => {
+    if (!reservedPrintWindow) {
+      return;
+    }
+
+    reservedPrintWindow.location.href = url;
+    reservedPrintWindow.focus();
+    window.setTimeout(() => {
+      try {
+        reservedPrintWindow.print();
+      } catch {
+        // Ignore print failures and keep browser-native PDF controls as fallback.
+      }
+    }, 450);
+    window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+  };
+
   try {
+    if (reservedPrintWindow) {
+      finalizeReservedWindow();
+      return;
+    }
+
     const fallbackTimeout = window.setTimeout(() => {
       removeIframe();
 

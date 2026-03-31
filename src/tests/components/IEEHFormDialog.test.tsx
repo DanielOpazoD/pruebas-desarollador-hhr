@@ -98,4 +98,29 @@ describe('IEEHFormDialog Component', () => {
       expect(printIEEHForm).toHaveBeenCalled();
     });
   });
+
+  it('sends "No" defaults for cirugía y procedimiento sin interacción previa', async () => {
+    render(
+      <IEEHFormDialog
+        isOpen={true}
+        onClose={vi.fn()}
+        patient={mockPatient}
+        baseDischargeData={baseDischargeData}
+      />
+    );
+
+    fireEvent.click(screen.getByText(/Imprimir documento/i));
+
+    await waitFor(() => {
+      expect(printIEEHForm).toHaveBeenCalled();
+    });
+
+    const firstCall = vi.mocked(printIEEHForm).mock.calls[0];
+    expect(firstCall?.[1]).toEqual(
+      expect.objectContaining({
+        intervencionQuirurgica: '2',
+        procedimiento: '2',
+      })
+    );
+  });
 });
