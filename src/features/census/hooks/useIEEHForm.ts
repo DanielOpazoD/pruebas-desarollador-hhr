@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { PatientData } from '@/features/census/controllers/censusActionPatientContracts';
 import type { IeehData } from '@/types/domain/movements';
 import type { DischargeFormData } from '@/services/pdf/ieehPdfService';
-import { downloadIEEHForm } from '@/services/pdf/ieehPdfService';
+import { printIEEHForm } from '@/services/pdf/ieehPdfService';
 import { searchDiagnoses, forceAISearch } from '@/services/terminology/terminologyService';
 import type { TerminologyConcept } from '@/services/terminology/terminologyService';
 
@@ -199,7 +199,7 @@ export function useIEEHForm({
         });
       }
 
-      await downloadIEEHForm(patient, fullDischargeData);
+      await printIEEHForm(patient, fullDischargeData);
       onClose();
     } catch (err) {
       console.error('[IEEH] Error generando formulario:', err);
