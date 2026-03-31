@@ -34,12 +34,10 @@ export const resolvePatientActionMenuViewState = ({
     const showClinicalDocumentsAction = showClinicalSection && hasClinicalDocumentsAction;
     const showExamRequestAction = showClinicalSection && hasExamRequestAction;
     const showImagingRequestAction = showClinicalSection && hasImagingRequestAction;
-    const showMenuTrigger =
-      showClinicalDocumentsAction || showExamRequestAction || showImagingRequestAction;
 
     return {
       showDemographicsAction: !isBlocked,
-      showMenuTrigger,
+      showMenuTrigger: false,
       showHistoryAction: false,
       showUtilityActions: false,
       showClinicalSection,
@@ -51,7 +49,7 @@ export const resolvePatientActionMenuViewState = ({
   }
 
   const showUtilityActions = !readOnly;
-  const showMenuTrigger = !readOnly || hasHistoryAction || hasClinicalDocumentsAction;
+  const showMenuTrigger = !readOnly || hasHistoryAction;
   const showDemographicsAction = !isBlocked && !readOnly;
   const showClinicalSection = !isBlocked && (!readOnly || hasClinicalDocumentsAction);
   const showHistoryAction = !readOnly && hasHistoryAction;

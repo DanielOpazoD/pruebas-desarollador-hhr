@@ -2,6 +2,7 @@ import React from 'react';
 import { FileText, MoreHorizontal, User } from 'lucide-react';
 import { MedicalButton } from '@/components/ui/base/MedicalButton';
 import type { CensusAccessProfile } from '@/features/census/types/censusAccessProfile';
+import { PatientRowOrbitalQuickActions } from '@/features/census/components/patient-row/PatientRowOrbitalQuickActions';
 import type {
   PatientActionMenuCallbacks,
   PatientActionMenuIndicators,
@@ -87,6 +88,15 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
 
   return (
     <div className="flex flex-col items-center gap-0.5 relative py-0.5" ref={menuRef}>
+      <PatientRowOrbitalQuickActions
+        showClinicalDocumentsAction={binding.availability.showClinicalDocumentsAction}
+        showExamRequestAction={binding.availability.showExamRequestAction}
+        showImagingRequestAction={binding.availability.showImagingRequestAction}
+        onViewClinicalDocuments={handleViewClinicalDocuments}
+        onViewExamRequest={handleViewExamRequest}
+        onViewImagingRequest={handleViewImagingRequest}
+      />
+
       {binding.availability.showDemographicsAction && (
         <div className="flex items-center gap-0.5">
           <MedicalButton
@@ -117,9 +127,6 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
         onClose={close}
         onAction={handleAction}
         onViewHistory={handleViewHistory}
-        onViewClinicalDocuments={handleViewClinicalDocuments}
-        onViewExamRequest={handleViewExamRequest}
-        onViewImagingRequest={handleViewImagingRequest}
       />
     </div>
   );

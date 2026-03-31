@@ -9,9 +9,9 @@ interface PatientActionMenuClinicalSectionProps {
   showExamRequestAction: boolean;
   showImagingRequestAction: boolean;
   onAction: (action: PatientRowAction) => void;
-  onViewClinicalDocuments: () => void;
-  onViewExamRequest: () => void;
-  onViewImagingRequest: () => void;
+  onViewClinicalDocuments?: () => void;
+  onViewExamRequest?: () => void;
+  onViewImagingRequest?: () => void;
 }
 
 export const PatientActionMenuClinicalSection: React.FC<PatientActionMenuClinicalSectionProps> = ({

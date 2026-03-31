@@ -63,7 +63,7 @@ describe('patientActionMenuViewController', () => {
     });
 
     expect(view.showDemographicsAction).toBe(false);
-    expect(view.showMenuTrigger).toBe(true);
+    expect(view.showMenuTrigger).toBe(false);
     expect(view.showHistoryAction).toBe(false);
     expect(view.showUtilityActions).toBe(false);
     expect(view.showClinicalSection).toBe(true);
@@ -86,7 +86,7 @@ describe('patientActionMenuViewController', () => {
 
     expect(view).toEqual({
       showDemographicsAction: true,
-      showMenuTrigger: true,
+      showMenuTrigger: false,
       showHistoryAction: false,
       showUtilityActions: false,
       showClinicalSection: true,

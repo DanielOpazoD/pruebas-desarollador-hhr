@@ -7,8 +7,8 @@ import { resolvePatientActionMenuPanelClassName } from '@/features/census/contro
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';
 import { resolvePatientActionMenuPanelModel } from '@/features/census/controllers/patientActionMenuPanelController';
 import { PatientActionMenuUtilityGrid } from '@/features/census/components/patient-row/PatientActionMenuUtilityGrid';
-import { PatientActionMenuClinicalSection } from '@/features/census/components/patient-row/PatientActionMenuClinicalSection';
 import { PatientActionMenuHistoryAction } from '@/features/census/components/patient-row/PatientActionMenuHistoryAction';
+import { PatientActionMenuClinicalSection } from '@/features/census/components/patient-row/PatientActionMenuClinicalSection';
 
 interface PatientActionMenuPanelProps {
   isOpen: boolean;
@@ -17,9 +17,6 @@ interface PatientActionMenuPanelProps {
   onClose: () => void;
   onAction: (action: PatientRowAction) => void;
   onViewHistory: () => void;
-  onViewClinicalDocuments: () => void;
-  onViewExamRequest: () => void;
-  onViewImagingRequest: () => void;
 }
 
 export const PatientActionMenuPanel: React.FC<PatientActionMenuPanelProps> = ({
@@ -29,9 +26,6 @@ export const PatientActionMenuPanel: React.FC<PatientActionMenuPanelProps> = ({
   onClose,
   onAction,
   onViewHistory,
-  onViewClinicalDocuments,
-  onViewExamRequest,
-  onViewImagingRequest,
 }) => {
   if (!isOpen) {
     return null;
@@ -42,6 +36,10 @@ export const PatientActionMenuPanel: React.FC<PatientActionMenuPanelProps> = ({
     utilityActions,
     showCmaAction: binding.showCmaAction,
   });
+
+  if (!model.showHistoryAction && !model.showUtilityActions && model.clinicalActions.length === 0) {
+    return null;
+  }
 
   return (
     <>
@@ -60,16 +58,13 @@ export const PatientActionMenuPanel: React.FC<PatientActionMenuPanelProps> = ({
           <PatientActionMenuUtilityGrid utilityActions={model.utilityActions} onAction={onAction} />
         )}
 
-        {model.showClinicalSection && (
+        {model.clinicalActions.length > 0 && (
           <PatientActionMenuClinicalSection
             clinicalActions={model.clinicalActions}
-            showClinicalDocumentsAction={model.showClinicalDocumentsAction}
-            showExamRequestAction={model.showExamRequestAction}
-            showImagingRequestAction={model.showImagingRequestAction}
+            showClinicalDocumentsAction={false}
+            showExamRequestAction={false}
+            showImagingRequestAction={false}
             onAction={onAction}
-            onViewClinicalDocuments={onViewClinicalDocuments}
-            onViewExamRequest={onViewExamRequest}
-            onViewImagingRequest={onViewImagingRequest}
           />
         )}
       </div>

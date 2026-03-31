@@ -17,7 +17,7 @@ export const PatientMainRowActionCell: React.FC<PatientMainRowActionCellProps> =
   onViewImagingRequest,
   onViewHistory,
 }) => (
-  <td className="p-0 text-center border-r border-slate-200 relative w-10 print:hidden">
+  <td className="p-0 text-center border-r border-slate-200 relative w-10 overflow-visible print:hidden">
     <PatientActionMenu
       isBlocked={isBlocked}
       onAction={onAction}

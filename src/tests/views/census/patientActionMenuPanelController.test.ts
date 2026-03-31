@@ -31,9 +31,6 @@ describe('patientActionMenuPanelController', () => {
 
     expect(model.showHistoryAction).toBe(true);
     expect(model.showUtilityActions).toBe(true);
-    expect(model.showClinicalSection).toBe(true);
-    expect(model.showClinicalDocumentsAction).toBe(true);
-    expect(model.showExamRequestAction).toBe(false);
     expect(model.utilityActions.map(action => action.action)).toEqual(['clear']);
     expect(model.clinicalActions.map(action => action.action)).toEqual([
       'discharge',
@@ -80,8 +77,5 @@ describe('patientActionMenuPanelController', () => {
     });
 
     expect(model.clinicalActions).toEqual([]);
-    expect(model.showClinicalDocumentsAction).toBe(true);
-    expect(model.showExamRequestAction).toBe(true);
-    expect(model.showImagingRequestAction).toBe(true);
   });
 });

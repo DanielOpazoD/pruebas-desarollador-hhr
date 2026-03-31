@@ -35,21 +35,16 @@ describe('PatientActionMenuPanel', () => {
         onClose={vi.fn()}
         onAction={vi.fn()}
         onViewHistory={vi.fn()}
-        onViewClinicalDocuments={vi.fn()}
-        onViewExamRequest={vi.fn()}
-        onViewImagingRequest={vi.fn()}
       />
     );
 
     expect(container.firstChild).toBeNull();
   });
 
-  it('renders history/clinical actions and dispatches callbacks', () => {
+  it('renders history, utility actions and clinical management actions', () => {
     const onClose = vi.fn();
     const onAction = vi.fn();
     const onViewHistory = vi.fn();
-    const onViewClinicalDocuments = vi.fn();
-    const onViewExamRequest = vi.fn();
 
     render(
       <PatientActionMenuPanel
@@ -88,9 +83,6 @@ describe('PatientActionMenuPanel', () => {
         onClose={onClose}
         onAction={onAction}
         onViewHistory={onViewHistory}
-        onViewClinicalDocuments={onViewClinicalDocuments}
-        onViewExamRequest={onViewExamRequest}
-        onViewImagingRequest={vi.fn()}
       />
     );
 
@@ -100,11 +92,18 @@ describe('PatientActionMenuPanel', () => {
     fireEvent.click(screen.getByText('Limpiar'));
     expect(onAction).toHaveBeenCalledWith('clear');
 
-    fireEvent.click(screen.getByText('Documentos Clínicos'));
-    expect(onViewClinicalDocuments).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByText('Dar de Alta'));
+    expect(onAction).toHaveBeenCalledWith('discharge');
 
-    fireEvent.click(screen.getByText('Solicitud Exámenes'));
-    expect(onViewExamRequest).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByText('Trasladar'));
+    expect(onAction).toHaveBeenCalledWith('transfer');
+
+    fireEvent.click(screen.getByText('Egreso CMA'));
+    expect(onAction).toHaveBeenCalledWith('cma');
+
+    expect(screen.queryByText('Documentos Clínicos')).not.toBeInTheDocument();
+    expect(screen.queryByText('Solicitud Exámenes')).not.toBeInTheDocument();
+    expect(screen.queryByText('Solicitud de Imágenes')).not.toBeInTheDocument();
 
     const overlay = document.querySelector('.fixed.inset-0.z-40');
     if (!overlay) {
@@ -114,8 +113,8 @@ describe('PatientActionMenuPanel', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('renders only restricted clinical openings for specialist census access', () => {
-    render(
+  it('returns null when the classic panel has no remaining actions to show', () => {
+    const { container } = render(
       <PatientActionMenuPanel
         isOpen={true}
         binding={{
@@ -144,17 +143,9 @@ describe('PatientActionMenuPanel', () => {
         onClose={vi.fn()}
         onAction={vi.fn()}
         onViewHistory={vi.fn()}
-        onViewClinicalDocuments={vi.fn()}
-        onViewExamRequest={vi.fn()}
-        onViewImagingRequest={vi.fn()}
       />
     );
 
-    expect(screen.queryByText('Dar de Alta')).not.toBeInTheDocument();
-    expect(screen.queryByText('Trasladar')).not.toBeInTheDocument();
-    expect(screen.queryByText('Egreso CMA')).not.toBeInTheDocument();
-    expect(screen.getByText('Documentos Clínicos')).toBeInTheDocument();
-    expect(screen.getByText('Solicitud Exámenes')).toBeInTheDocument();
-    expect(screen.getByText('Solicitud de Imágenes')).toBeInTheDocument();
+    expect(container.firstChild).toBeNull();
   });
 });

@@ -70,7 +70,7 @@ export const PatientMainRowView: React.FC<PatientMainRowViewProps> = ({
 
   return (
     <tr
-      className={mainRowViewState.rowClassName}
+      className={`${mainRowViewState.rowClassName} group/patient-row`}
       style={style}
       data-testid="patient-row"
       data-bed-id={bed.id}
