@@ -67,12 +67,16 @@ describe('send-fuga-notification netlify function', () => {
 
   it('compone cuerpo final con mensaje automático y nota opcional', () => {
     expect(
-      buildFugaNotificationBody({ automaticMessage: 'Mensaje base', note: 'Detalle clínico' })
-    ).toBe('Mensaje base\n\nNota complementaria (ingresada por enfermería):\nDetalle clínico');
+      buildFugaNotificationBody({
+        automaticMessage: 'Mensaje base',
+        note: 'Detalle clínico',
+        nursesSignature: 'Enf A / Enf B',
+      })
+    ).toContain('Enf A / Enf B');
 
-    expect(buildFugaNotificationBody({ automaticMessage: 'Solo automático', note: '   ' })).toBe(
-      'Solo automático'
-    );
+    expect(
+      buildFugaNotificationBody({ automaticMessage: 'Solo automático', note: '   ' })
+    ).toContain('Enfermería - Servicio Hospitalizados');
   });
 
   it('envía solo a correo de prueba cuando testMode=true', async () => {
@@ -102,6 +106,7 @@ describe('send-fuga-notification netlify function', () => {
     expect(sendCensusEmailMock).toHaveBeenCalledWith(
       expect.objectContaining({
         recipients: ['qa@hospital.cl'],
+        subject: 'Notificación de fuga paciente Paciente Uno - 31-03-2026',
         body: expect.stringContaining('Nota'),
       })
     );

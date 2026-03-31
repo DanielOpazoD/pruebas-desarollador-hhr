@@ -4,6 +4,9 @@ import { MailWarning } from 'lucide-react';
 import type { DischargeData } from '@/types/domain/movements';
 import { sendFugaNotification } from '@/services/integrations/fugaNotificationService';
 import { useAuthState } from '@/hooks/useAuthState';
+import { useDailyRecordStaff } from '@/context/DailyRecordContext';
+import { resolveShiftNurseSignature } from '@/services/staff/dailyRecordStaffing';
+import { formatDateDDMMYYYY } from '@/utils/dateUtils';
 
 interface FugaNotificationModalProps {
   isOpen: boolean;
@@ -49,12 +52,12 @@ const buildDefaultAutomaticMessage = (input: {
   [
     'Estimad@s,',
     '',
-    `Se informa fuga del siguiente paciente ${input.patientName} (RUT/ID: ${input.rut}) a las ${input.time}.`,
+    `Se informa fuga del siguiente paciente ${input.patientName} (RUT: ${input.rut}) a las ${input.time}.`,
     '',
     `Cama: ${input.bedName}`,
     `Diagnóstico: ${input.diagnosis}`,
     `Especialidad: ${input.specialty || 'No especificada'}`,
-    `Fecha de egreso: ${input.recordDate}`,
+    `Fecha de egreso: ${formatDateDDMMYYYY(input.recordDate)}`,
     '',
     'Este reporte es automático desde el sistema de censo diario.',
   ].join('\n');
@@ -66,6 +69,11 @@ export const FugaNotificationModal: React.FC<FugaNotificationModalProps> = ({
   recordDate,
 }) => {
   const { role } = useAuthState();
+  const staffRecord = useDailyRecordStaff();
+  const nursesSignature = useMemo(
+    () => resolveShiftNurseSignature(staffRecord || undefined, 'night'),
+    [staffRecord]
+  );
   const isAdminUser = role === 'admin';
   const [manualRecipients, setManualRecipients] = useState('');
   const [testMode, setTestMode] = useState(false);
@@ -164,6 +172,7 @@ export const FugaNotificationModal: React.FC<FugaNotificationModalProps> = ({
         specialty: String(specialty || ''),
         recordDate: dischargeItem.movementDate || recordDate,
         time: dischargeItem.time,
+        nursesSignature,
         automaticMessage: automaticMessage.trim(),
         note: note.trim() || undefined,
         recipients: isPsychiatry && !(isAdminUser && testMode) ? undefined : resolvedRecipients,
@@ -236,7 +245,7 @@ export const FugaNotificationModal: React.FC<FugaNotificationModalProps> = ({
             <span className="font-semibold">Paciente:</span> {dischargeItem.patientName}
           </p>
           <p>
-            <span className="font-semibold">RUT/ID:</span> {dischargeItem.rut}
+            <span className="font-semibold">RUT:</span> {dischargeItem.rut}
           </p>
           <p>
             <span className="font-semibold">Hora fuga:</span> {dischargeItem.time}

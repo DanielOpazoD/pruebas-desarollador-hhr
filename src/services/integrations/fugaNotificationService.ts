@@ -11,6 +11,7 @@ export interface FugaNotificationPayload {
   recordDate: string;
   time: string;
   automaticMessage: string;
+  nursesSignature?: string;
   note?: string;
   recipients?: string[];
   testMode?: boolean;
