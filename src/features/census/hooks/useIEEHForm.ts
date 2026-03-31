@@ -5,6 +5,7 @@ import type { DischargeFormData } from '@/services/pdf/ieehPdfService';
 import { printIEEHForm } from '@/services/pdf/ieehPdfService';
 import { searchDiagnoses, forceAISearch } from '@/services/terminology/terminologyService';
 import type { TerminologyConcept } from '@/services/terminology/terminologyService';
+import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 
 export interface UseIEEHFormProps {
   isOpen: boolean;
@@ -40,11 +41,11 @@ export function useIEEHForm({
   const [condicionEgreso, setCondicionEgreso] = useState('1');
 
   // ── Surgery ──
-  const [tieneIntervencion, setTieneIntervencion] = useState<boolean | null>(null);
+  const [tieneIntervencion, setTieneIntervencion] = useState(false);
   const [intervencionDescrip, setIntervencionDescrip] = useState('');
 
   // ── Procedure ──
-  const [tieneProcedimiento, setTieneProcedimiento] = useState<boolean | null>(null);
+  const [tieneProcedimiento, setTieneProcedimiento] = useState(false);
   const [procedimientoDescrip, setProcedimientoDescrip] = useState('');
 
   // ── Treating Doctor ──
@@ -66,18 +67,10 @@ export function useIEEHForm({
         setCie10Display(savedIeehData.diagnosticoPrincipal || '');
         setCondicionEgreso(savedIeehData.condicionEgreso || '1');
 
-        if (savedIeehData.intervencionQuirurgica) {
-          setTieneIntervencion(savedIeehData.intervencionQuirurgica === '1');
-        } else {
-          setTieneIntervencion(null);
-        }
+        setTieneIntervencion(savedIeehData.intervencionQuirurgica === '1');
         setIntervencionDescrip(savedIeehData.intervencionQuirurgDescrip || '');
 
-        if (savedIeehData.procedimiento) {
-          setTieneProcedimiento(savedIeehData.procedimiento === '1');
-        } else {
-          setTieneProcedimiento(null);
-        }
+        setTieneProcedimiento(savedIeehData.procedimiento === '1');
         setProcedimientoDescrip(savedIeehData.procedimientoDescrip || '');
 
         setTratanteAp1(savedIeehData.tratanteApellido1 || '');
@@ -91,9 +84,9 @@ export function useIEEHForm({
 
         // Reset previously unset fields for new dialog
         setCondicionEgreso('1');
-        setTieneIntervencion(null);
+        setTieneIntervencion(false);
         setIntervencionDescrip('');
-        setTieneProcedimiento(null);
+        setTieneProcedimiento(false);
         setProcedimientoDescrip('');
         setTratanteAp1('');
         setTratanteAp2('');
@@ -159,6 +152,7 @@ export function useIEEHForm({
   };
 
   const handleGenerate = async () => {
+    const reservedPrintWindow = defaultBrowserWindowRuntime.open('', '_blank');
     setIsGenerating(true);
     setError('');
     try {
@@ -167,12 +161,11 @@ export function useIEEHForm({
         diagnosticoPrincipal: diagnostico || undefined,
         cie10Code: cie10Code || undefined,
         condicionEgreso,
-        intervencionQuirurgica:
-          tieneIntervencion != null ? (tieneIntervencion ? '1' : '2') : undefined,
+        intervencionQuirurgica: tieneIntervencion ? '1' : '2',
         intervencionQuirurgDescrip: tieneIntervencion
           ? intervencionDescrip || undefined
           : undefined,
-        procedimiento: tieneProcedimiento != null ? (tieneProcedimiento ? '1' : '2') : undefined,
+        procedimiento: tieneProcedimiento ? '1' : '2',
         procedimientoDescrip: tieneProcedimiento ? procedimientoDescrip || undefined : undefined,
         tratanteApellido1: tratanteAp1 || undefined,
         tratanteApellido2: tratanteAp2 || undefined,
@@ -185,12 +178,11 @@ export function useIEEHForm({
           diagnosticoPrincipal: diagnostico || undefined,
           cie10Code: cie10Code || undefined,
           condicionEgreso,
-          intervencionQuirurgica:
-            tieneIntervencion != null ? (tieneIntervencion ? '1' : '2') : undefined,
+          intervencionQuirurgica: tieneIntervencion ? '1' : '2',
           intervencionQuirurgDescrip: tieneIntervencion
             ? intervencionDescrip || undefined
             : undefined,
-          procedimiento: tieneProcedimiento != null ? (tieneProcedimiento ? '1' : '2') : undefined,
+          procedimiento: tieneProcedimiento ? '1' : '2',
           procedimientoDescrip: tieneProcedimiento ? procedimientoDescrip || undefined : undefined,
           tratanteApellido1: tratanteAp1 || undefined,
           tratanteApellido2: tratanteAp2 || undefined,
@@ -199,9 +191,10 @@ export function useIEEHForm({
         });
       }
 
-      await printIEEHForm(patient, fullDischargeData);
+      await printIEEHForm(patient, fullDischargeData, reservedPrintWindow);
       onClose();
     } catch (err) {
+      reservedPrintWindow?.close();
       console.error('[IEEH] Error generando formulario:', err);
       setError('Error al generar el PDF. Revise la consola.');
     } finally {

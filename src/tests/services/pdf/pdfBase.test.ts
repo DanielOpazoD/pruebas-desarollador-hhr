@@ -45,4 +45,22 @@ describe('pdfBase', () => {
     expect(printSpy).toHaveBeenCalledTimes(1);
     expect(document.body.contains(fakeIframe)).toBe(true);
   });
+
+  it('reuses a pre-opened window to avoid popup blockers', async () => {
+    const reservedWindow = {
+      location: { href: '' },
+      focus: vi.fn(),
+      print: vi.fn(),
+    } as unknown as Window;
+    const pdfDoc = await PDFDocument.create();
+    pdfDoc.addPage();
+    const bytes = await pdfDoc.save();
+
+    await openPdfPrintDialog(bytes as Uint8Array, 'handoff.pdf', reservedWindow);
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(reservedWindow.location.href).toBe('blob:pdf-test');
+    expect(reservedWindow.focus).toHaveBeenCalledTimes(1);
+    expect(reservedWindow.print).toHaveBeenCalledTimes(1);
+  });
 });

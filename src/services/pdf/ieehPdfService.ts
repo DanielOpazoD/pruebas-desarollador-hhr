@@ -340,7 +340,8 @@ export const downloadIEEHForm = async (
  */
 export const printIEEHForm = async (
   patient: PatientData,
-  discharge: DischargeFormData = {}
+  discharge: DischargeFormData = {},
+  printWindow?: Window | null
 ): Promise<void> => {
   const pdfBytes = await fillIEEHForm(patient, discharge);
 
@@ -351,7 +352,7 @@ export const printIEEHForm = async (
     .replace(/\s+/g, '_');
   const fallbackName = `IEEH_${safeName}_${new Date().toISOString().slice(0, 10)}.pdf`;
 
-  await openPdfPrintDialog(pdfBytes, fallbackName);
+  await openPdfPrintDialog(pdfBytes, fallbackName, printWindow);
 };
 
 /**
