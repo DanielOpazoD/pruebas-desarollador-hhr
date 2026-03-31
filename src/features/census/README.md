@@ -35,26 +35,46 @@ clinicalShiftCalendarController
   -> presentation (dateLabel + timeLabel)
 ```
 
+### Launcher orbital de acciones clínicas
+
+```text
+hover/focus fila ocupada
+  -> PatientRowOrbitalQuickActions
+  -> usePatientRowOrbitalLauncherRuntime
+  -> portal fuera de la tabla
+  -> 3 acciones rápidas: documentos / laboratorio / imágenes
+```
+
+- El launcher orbital vive visualmente fuera del borde izquierdo de la tabla, aunque se ancla a la fila del paciente.
+- Solo expone accesos rápidos clínicos: `Documentos clínicos`, `Solicitud Exámenes` y `Solicitud de Imágenes`.
+- El panel clásico conserva la gestión clínica histórica (`Dar de Alta`, `Trasladar`, `Egreso CMA`) y no debe duplicar estas tres aperturas rápidas.
+- En desktop aparece por `hover` de la fila o del área externa del launcher; en touch permanece visible.
+- Solo un launcher puede permanecer activo a la vez para no perder foco visual al recorrer otras filas.
+- La iconografía cultural del launcher se define en `components/patient-row/patientRowOrbitalQuickActionAssets.ts`.
+
 ## Archivos clave
 
-| Archivo                                                  | Motivo                                                          |
-| -------------------------------------------------------- | --------------------------------------------------------------- |
-| `controllers/clinicalShiftCalendarController.ts`         | Fuente única de invariantes de fecha/turno                      |
-| `controllers/censusActionExecutionController.ts`         | Resolución de comandos tipados                                  |
-| `controllers/censusActionRuntimeController.ts`           | Ejecución runtime desacoplada de provider                       |
-| `controllers/patientMovementCommandRuntimeController.ts` | Bridge command -> action runtime                                |
-| `controllers/bedManagerModalController.ts`               | Transiciones y validación del flujo de bloqueo de camas         |
-| `controllers/bedManagerGridItemsController.ts`           | Mapeo puro de `DailyRecord` a props de grillas de camas         |
-| `controllers/censusMovementActionIconController.ts`      | Resolución de iconografía para acciones de movimientos          |
-| `components/patient-row/nameInputController.ts`          | Contrato puro de display/edición del nombre del paciente        |
-| `hooks/useDischargeModalForm.ts`                         | Form flow de altas                                              |
-| `hooks/useTransferModalForm.ts`                          | Form flow de traslados                                          |
-| `hooks/useBedManagerModalModel.ts`                       | Orquestación UI vs dominio del modal de camas                   |
-| `hooks/useCensusMovementActionsCellModel.ts`             | View-model para celda de acciones de movimientos                |
-| `hooks/useCensusViewScreenModel.ts`                      | Fachada de pantalla para ramas `analytics/empty/register`       |
-| `hooks/useCensusTableRuntime.ts`                         | Runtime unificado de tabla (dependencias + resize + activación) |
-| `hooks/useDischargesSectionModel.ts`                     | Fachada de wiring para altas                                    |
-| `hooks/useTransfersSectionModel.ts`                      | Fachada de wiring para traslados                                |
+| Archivo                                                         | Motivo                                                          |
+| --------------------------------------------------------------- | --------------------------------------------------------------- |
+| `controllers/clinicalShiftCalendarController.ts`                | Fuente única de invariantes de fecha/turno                      |
+| `controllers/censusActionExecutionController.ts`                | Resolución de comandos tipados                                  |
+| `controllers/censusActionRuntimeController.ts`                  | Ejecución runtime desacoplada de provider                       |
+| `controllers/patientMovementCommandRuntimeController.ts`        | Bridge command -> action runtime                                |
+| `controllers/bedManagerModalController.ts`                      | Transiciones y validación del flujo de bloqueo de camas         |
+| `controllers/bedManagerGridItemsController.ts`                  | Mapeo puro de `DailyRecord` a props de grillas de camas         |
+| `controllers/censusMovementActionIconController.ts`             | Resolución de iconografía para acciones de movimientos          |
+| `components/patient-row/nameInputController.ts`                 | Contrato puro de display/edición del nombre del paciente        |
+| `hooks/useDischargeModalForm.ts`                                | Form flow de altas                                              |
+| `hooks/useTransferModalForm.ts`                                 | Form flow de traslados                                          |
+| `hooks/useBedManagerModalModel.ts`                              | Orquestación UI vs dominio del modal de camas                   |
+| `hooks/useCensusMovementActionsCellModel.ts`                    | View-model para celda de acciones de movimientos                |
+| `hooks/useCensusViewScreenModel.ts`                             | Fachada de pantalla para ramas `analytics/empty/register`       |
+| `hooks/useCensusTableRuntime.ts`                                | Runtime unificado de tabla (dependencias + resize + activación) |
+| `hooks/useDischargesSectionModel.ts`                            | Fachada de wiring para altas                                    |
+| `hooks/useTransfersSectionModel.ts`                             | Fachada de wiring para traslados                                |
+| `components/patient-row/PatientRowOrbitalQuickActions.tsx`      | Launcher portalizado de acciones clínicas rápidas               |
+| `components/patient-row/usePatientRowOrbitalLauncherRuntime.ts` | Runtime UI del launcher orbital                                 |
+| `components/patient-row/patientRowOrbitalQuickActionAssets.ts`  | Mapeo de assets culturales del launcher                         |
 
 ## Calidad
 
@@ -100,6 +120,7 @@ clinicalShiftCalendarController
 ## Test entrypoints recomendados
 
 - `npx vitest run src/tests/views/census`
+- `npx vitest run src/tests/views/census/PatientRowOrbitalQuickActions.test.tsx src/tests/views/census/patientRowOrbitalQuickActionsController.test.ts`
 - `npm run test:ci:unit`
 
 ## Comandos de validación del módulo
