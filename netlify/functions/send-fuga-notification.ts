@@ -22,8 +22,11 @@ const FugaNotificationPayloadSchema = z.object({
   specialty: z.string().optional(),
   recordDate: z.string().min(1),
   time: z.string().min(1),
+  automaticMessage: z.string().min(1),
   note: z.string().optional(),
   recipients: z.array(z.string().email()).optional(),
+  testMode: z.boolean().optional(),
+  testRecipient: z.string().email().optional(),
 });
 
 const PSYCHIATRY_RECIPIENTS = [
@@ -43,28 +46,11 @@ const isPsychiatrySpecialty = (value?: string): boolean => {
   return normalized === 'psiquiatria' || normalized.includes('psiquiatr');
 };
 
-const buildFugaNotificationBody = (input: {
-  patientName: string;
-  rut: string;
-  diagnosis: string;
-  bedName: string;
-  specialty?: string;
-  recordDate: string;
-  time: string;
+export const buildFugaNotificationBody = (input: {
+  automaticMessage: string;
   note?: string;
 }): string => {
-  const automaticBlock = [
-    'Estimad@s,',
-    '',
-    `Se informa fuga del siguiente paciente ${input.patientName} (RUT/ID: ${input.rut}) a las ${input.time}.`,
-    '',
-    `Cama: ${input.bedName}`,
-    `Diagnóstico: ${input.diagnosis}`,
-    `Especialidad: ${input.specialty || 'No especificada'}`,
-    `Fecha de egreso: ${input.recordDate}`,
-    '',
-    'Este reporte es automático desde el sistema de censo diario.',
-  ].join('\n');
+  const automaticBlock = input.automaticMessage.trim();
 
   const trimmedNote = input.note?.trim();
 
@@ -73,6 +59,21 @@ const buildFugaNotificationBody = (input: {
   }
 
   return `${automaticBlock}\n\nNota complementaria (ingresada por enfermería):\n${trimmedNote}`;
+};
+
+export const resolveFugaRecipients = (input: {
+  specialty?: string;
+  recipients?: string[];
+  testMode?: boolean;
+  testRecipient?: string;
+}): string[] => {
+  if (input.testMode) {
+    return input.testRecipient ? [input.testRecipient] : [];
+  }
+
+  return isPsychiatrySpecialty(input.specialty)
+    ? [...PSYCHIATRY_RECIPIENTS]
+    : input.recipients || [];
 };
 
 export const handler = async (event: NetlifyEventLike) => {
@@ -117,8 +118,9 @@ export const handler = async (event: NetlifyEventLike) => {
       );
     }
 
+    let authContext: Awaited<ReturnType<typeof authorizeRoleRequest>>;
     try {
-      await authorizeRoleRequest(db, authorizationHeader, ALLOWED_ROLES);
+      authContext = await authorizeRoleRequest(db, authorizationHeader, ALLOWED_ROLES);
     } catch (error) {
       const message =
         error instanceof Error
@@ -143,9 +145,13 @@ export const handler = async (event: NetlifyEventLike) => {
 
     const payload = validatedBody.data;
 
-    const resolvedRecipients = isPsychiatrySpecialty(payload.specialty)
-      ? [...PSYCHIATRY_RECIPIENTS]
-      : payload.recipients || [];
+    if (payload.testMode && authContext.role !== 'admin') {
+      return buildTextResponse(403, 'Solo un usuario admin puede usar modo prueba.', {
+        requestOrigin,
+      });
+    }
+
+    const resolvedRecipients = resolveFugaRecipients(payload);
 
     if (resolvedRecipients.length === 0) {
       return buildTextResponse(

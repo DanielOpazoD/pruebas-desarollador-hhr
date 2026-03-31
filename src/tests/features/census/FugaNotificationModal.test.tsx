@@ -1,0 +1,132 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import React from 'react';
+import { FugaNotificationModal } from '@/features/census/components/FugaNotificationModal';
+
+const sendFugaNotificationMock = vi.fn();
+const useAuthStateMock = vi.fn();
+
+vi.mock('@/services/integrations/fugaNotificationService', () => ({
+  sendFugaNotification: (...args: unknown[]) => sendFugaNotificationMock(...args),
+}));
+
+vi.mock('@/hooks/useAuthState', () => ({
+  useAuthState: () => useAuthStateMock(),
+}));
+
+describe('FugaNotificationModal', () => {
+  const baseDischarge = {
+    id: '1',
+    patientName: 'Paciente Test',
+    rut: '11.111.111-1',
+    diagnosis: 'Diagnóstico Test',
+    bedName: 'Cama 1',
+    dischargeType: 'Fuga',
+    movementDate: '2026-03-31',
+    time: '14:30',
+    originalData: {
+      specialty: 'Cirugía',
+    },
+  } as any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useAuthStateMock.mockReturnValue({ role: 'nurse_hospital' });
+    sendFugaNotificationMock.mockResolvedValue({ success: true, message: 'ok', gmailId: '1' });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  });
+
+  it('valida correo inválido en destinatarios manuales', async () => {
+    render(
+      <FugaNotificationModal
+        isOpen
+        onClose={vi.fn()}
+        dischargeItem={baseDischarge}
+        recordDate="2026-03-31"
+      />
+    );
+
+    fireEvent.change(screen.getByPlaceholderText(/ejemplo1@hospital.cl/i), {
+      target: { value: 'correo-invalido' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /enviar notificación/i }));
+
+    expect(await screen.findByText(/no son válidos/i)).toBeInTheDocument();
+    expect(sendFugaNotificationMock).not.toHaveBeenCalled();
+  });
+
+  it('permite editar mensaje automático y lo envía como obligatorio', async () => {
+    render(
+      <FugaNotificationModal
+        isOpen
+        onClose={vi.fn()}
+        dischargeItem={baseDischarge}
+        recordDate="2026-03-31"
+      />
+    );
+
+    fireEvent.change(screen.getByPlaceholderText(/ejemplo1@hospital.cl/i), {
+      target: { value: 'destino@hospital.cl' },
+    });
+
+    const automaticMessageField = screen.getByRole('textbox', {
+      name: /mensaje automático \(editable\)/i,
+    });
+    fireEvent.change(automaticMessageField, {
+      target: { value: 'Mensaje ajustado por enfermería' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /enviar notificación/i }));
+
+    await waitFor(() => {
+      expect(sendFugaNotificationMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          automaticMessage: 'Mensaje ajustado por enfermería',
+          note: undefined,
+          recipients: ['destino@hospital.cl'],
+        })
+      );
+    });
+  });
+
+  it('admin en modo prueba exige correo válido y envía solo al testRecipient', async () => {
+    useAuthStateMock.mockReturnValue({ role: 'admin' });
+
+    render(
+      <FugaNotificationModal
+        isOpen
+        onClose={vi.fn()}
+        dischargeItem={baseDischarge}
+        recordDate="2026-03-31"
+      />
+    );
+
+    fireEvent.click(screen.getByLabelText(/modo prueba \(admin\)/i));
+    expect(screen.getByText(/estás enviando en modo prueba/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText(/correo.prueba@hospital.cl/i), {
+      target: { value: 'correo-invalido' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /enviar notificación/i }));
+
+    expect(await screen.findByText(/no son válidos/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText(/correo.prueba@hospital.cl/i), {
+      target: { value: 'test@hospital.cl' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /enviar notificación/i }));
+
+    await waitFor(() => {
+      expect(sendFugaNotificationMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          testMode: true,
+          testRecipient: 'test@hospital.cl',
+          recipients: ['test@hospital.cl'],
+        })
+      );
+    });
+  });
+});
