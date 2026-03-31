@@ -1,22 +1,29 @@
 import React from 'react';
 import { Eye } from 'lucide-react';
 
-import { ClinicalDocumentFormattingToolbar } from '@/features/clinical-documents/components/ClinicalDocumentFormattingToolbar';
 import { ClinicalDocumentFooterSection } from '@/features/clinical-documents/components/ClinicalDocumentFooterSection';
 import { ClinicalDocumentPatientInfoSection } from '@/features/clinical-documents/components/ClinicalDocumentPatientInfoSection';
 import { ClinicalDocumentSectionList } from '@/features/clinical-documents/components/ClinicalDocumentSectionList';
 import { ClinicalDocumentSheetHeader } from '@/features/clinical-documents/components/ClinicalDocumentSheetHeader';
 import type { ClinicalDocumentSheetProps } from '@/features/clinical-documents/components/clinicalDocumentSheetShared';
-import { useClinicalDocumentSheetState } from '@/features/clinical-documents/hooks/useClinicalDocumentSheetState';
 
 export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
   selectedDocument,
   canEdit,
-  isSaving,
-  isUploadingPdf,
-  onPrint,
-  onUploadPdf,
-  onResetDocumentContent,
+  toolbar,
+  activeTitleTarget,
+  onSetActiveTitleTarget,
+  draggedSectionId,
+  dragOverSectionId,
+  activePlanSubsectionId,
+  activeIndicationsSpecialtyId,
+  isIndicationsPanelOpen,
+  onSetActivePlanSubsectionId,
+  onSetActiveIndicationsSpecialtyId,
+  onToggleIndicationsPanel,
+  onEditorActivate,
+  onEditorDeactivate,
+  dragHandlers,
   patchDocumentTitle,
   patchPatientInfoTitle,
   patchPatientField,
@@ -37,8 +44,6 @@ export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
   deleteIndication,
   importIndicationsCatalog,
 }) => {
-  const sheetState = useClinicalDocumentSheetState(selectedDocument);
-
   if (!selectedDocument) {
     return (
       <div className="mx-auto max-w-4xl rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
@@ -60,20 +65,7 @@ export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
 
   return (
     <div className="mx-auto max-w-6xl space-y-3">
-      <ClinicalDocumentFormattingToolbar
-        selectedDocument={selectedDocument}
-        canEdit={canEdit}
-        isSaving={isSaving}
-        isUploadingPdf={isUploadingPdf}
-        formattingDisabled={sheetState.formattingDisabled || !canEdit}
-        isFormattingOpen={sheetState.isFormattingOpen}
-        activeEditorHistoryState={sheetState.activeEditorHistoryState}
-        onPrint={onPrint}
-        onUploadPdf={onUploadPdf}
-        onResetDocumentContent={onResetDocumentContent}
-        onToggleFormatting={() => sheetState.setIsFormattingOpen(prev => !prev)}
-        onApplyFormatting={sheetState.applyFormatting}
-      />
+      {toolbar}
 
       <div id="clinical-document-sheet" className="clinical-document-sheet">
         <ClinicalDocumentSheetHeader
@@ -116,8 +108,8 @@ export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
           document={selectedDocument}
           visiblePatientFields={visiblePatientFields}
           canEdit={canEdit}
-          activeTitleTarget={sheetState.activeTitleTarget}
-          onSetActiveTitleTarget={sheetState.setActiveTitleTarget}
+          activeTitleTarget={activeTitleTarget}
+          onSetActiveTitleTarget={onSetActiveTitleTarget}
           onPatchPatientInfoTitle={patchPatientInfoTitle}
           onPatchPatientFieldLabel={patchPatientFieldLabel}
           onPatchPatientField={patchPatientField}
@@ -128,31 +120,31 @@ export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
           document={selectedDocument}
           visibleSections={visibleSections}
           canEdit={canEdit}
-          activeTitleTarget={sheetState.activeTitleTarget}
-          draggedSectionId={sheetState.draggedSectionId}
-          dragOverSectionId={sheetState.dragOverSectionId}
-          activePlanSubsectionId={sheetState.activePlanSubsectionId}
-          activeIndicationsSpecialtyId={sheetState.activeIndicationsSpecialtyId}
-          isIndicationsPanelOpen={sheetState.isIndicationsPanelOpen}
+          activeTitleTarget={activeTitleTarget}
+          draggedSectionId={draggedSectionId}
+          dragOverSectionId={dragOverSectionId}
+          activePlanSubsectionId={activePlanSubsectionId}
+          activeIndicationsSpecialtyId={activeIndicationsSpecialtyId}
+          isIndicationsPanelOpen={isIndicationsPanelOpen}
           indicationsCatalog={indicationsCatalog}
           isSavingCustomIndication={isSavingCustomIndication}
           customIndicationError={customIndicationError}
-          onSetActiveTitleTarget={sheetState.setActiveTitleTarget}
+          onSetActiveTitleTarget={onSetActiveTitleTarget}
           onPatchSectionTitle={patchSectionTitle}
           onPatchSection={patchSection}
           onSetSectionVisibility={setSectionVisibility}
           onMoveSection={moveSection}
           onReorderSection={reorderSection}
-          onEditorActivate={sheetState.handleEditorActivate}
-          onEditorDeactivate={sheetState.handleEditorDeactivate}
-          onSetActivePlanSubsectionId={sheetState.setActivePlanSubsectionId}
-          onSetActiveIndicationsSpecialtyId={sheetState.setActiveIndicationsSpecialtyId}
-          onToggleIndicationsPanel={() => sheetState.setIsIndicationsPanelOpen(prev => !prev)}
+          onEditorActivate={onEditorActivate}
+          onEditorDeactivate={onEditorDeactivate}
+          onSetActivePlanSubsectionId={onSetActivePlanSubsectionId}
+          onSetActiveIndicationsSpecialtyId={onSetActiveIndicationsSpecialtyId}
+          onToggleIndicationsPanel={onToggleIndicationsPanel}
           onAddCustomIndication={addCustomIndication}
           onUpdateIndication={updateIndication}
           onDeleteIndication={deleteIndication}
           onImportIndicationsCatalog={importIndicationsCatalog}
-          dragHandlers={sheetState.sectionDragHandlers}
+          dragHandlers={dragHandlers}
         />
 
         <ClinicalDocumentFooterSection
@@ -160,7 +152,7 @@ export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
           canEdit={canEdit}
           onPatchFooterLabel={patchFooterLabel}
           onPatchDocumentMeta={patchDocumentMeta}
-          onClearActiveTitleTarget={() => sheetState.setActiveTitleTarget(null)}
+          onClearActiveTitleTarget={() => onSetActiveTitleTarget(null)}
         />
       </div>
     </div>

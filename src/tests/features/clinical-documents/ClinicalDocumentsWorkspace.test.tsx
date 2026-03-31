@@ -125,6 +125,23 @@ const activeTemplate: ClinicalDocumentTemplate = {
   defaultFooterEspecialidadLabel: 'Especialidad',
 };
 
+const secondaryTemplate: ClinicalDocumentTemplate = {
+  id: 'evolucion',
+  name: 'Evolución',
+  title: 'Evolución médica',
+  version: 1,
+  patientFields: [],
+  sections: [],
+  allowCustomTitle: false,
+  allowAddSection: false,
+  allowClinicalUpdateSections: false,
+  status: 'active',
+  documentType: 'evolucion',
+  defaultPatientInfoTitle: 'Información del Paciente',
+  defaultFooterMedicoLabel: 'Médico',
+  defaultFooterEspecialidadLabel: 'Especialidad',
+};
+
 vi.mock('@/services/repositories/ClinicalDocumentRepository', () => ({
   ClinicalDocumentRepository: {
     subscribeByEpisode: vi.fn(),
@@ -172,7 +189,10 @@ describe('ClinicalDocumentsWorkspace', () => {
     authState.user = { uid: 'u1', email: 'doctor@test.com', displayName: 'Doctor Test' };
     authState.role = 'doctor_urgency';
 
-    vi.mocked(ClinicalDocumentTemplateRepository.listActive).mockResolvedValue([activeTemplate]);
+    vi.mocked(ClinicalDocumentTemplateRepository.listActive).mockResolvedValue([
+      activeTemplate,
+      secondaryTemplate,
+    ]);
 
     vi.mocked(ClinicalDocumentRepository.subscribeByEpisode).mockImplementation(
       (_episodeKey, callback) => {
@@ -231,7 +251,7 @@ describe('ClinicalDocumentsWorkspace', () => {
     const antecedentesEditor = screen.getByRole('textbox', { name: /contenido antecedentes/i });
     antecedentesEditor.innerHTML = 'Antecedentes actualizados';
     fireEvent.input(antecedentesEditor);
-    fireEvent.click(screen.getByRole('button', { name: /crear documento/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^crear$/i }));
 
     await waitFor(() => {
       expect(clinicalDocumentUseCases.executeCreateClinicalDocumentDraft).toHaveBeenCalled();
@@ -239,7 +259,6 @@ describe('ClinicalDocumentsWorkspace', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: /epicrisis médica/i })[0]);
     fireEvent.click(screen.getByRole('button', { name: /pdf/i }));
-    fireEvent.click(screen.getByRole('button', { name: /drive/i }));
 
     await waitFor(() => {
       expect(openClinicalDocumentBrowserPrintPreview).toHaveBeenCalled();
@@ -307,6 +326,29 @@ describe('ClinicalDocumentsWorkspace', () => {
 
     expect(screen.queryByRole('button', { name: /guardar/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /drive/i })).toBeInTheDocument();
+  });
+
+  it('updates the open document to the newly selected template type', async () => {
+    render(
+      <ClinicalDocumentsWorkspace
+        patient={workspacePatient}
+        currentDateString="2026-03-06"
+        bedId="R1"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Doctor Test')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByRole('combobox', { name: /tipo de documento/i }), {
+      target: { value: 'evolucion' },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('evolución médica')).toBeInTheDocument();
+      expect(screen.getByText(/^Evolución$/, { selector: 'p' })).toBeInTheDocument();
+    });
   });
 
   it('allows hiding and restoring sections on the real shell boundary', async () => {

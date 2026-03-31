@@ -31,7 +31,7 @@ interface ClinicalDocumentFormattingToolbarProps {
   activeEditorHistoryState: { canUndo: boolean; canRedo: boolean };
   onPrint: () => void;
   onUploadPdf: () => void;
-  onResetDocumentContent: () => void;
+  onRestoreTemplate: () => void;
   onToggleFormatting: () => void;
   onApplyFormatting: (command: ClinicalDocumentFormattingCommand) => void;
 }
@@ -61,62 +61,88 @@ export const ClinicalDocumentFormattingToolbar: React.FC<
   activeEditorHistoryState,
   onPrint,
   onUploadPdf,
-  onResetDocumentContent,
+  onRestoreTemplate,
   onToggleFormatting,
   onApplyFormatting,
 }) => {
   const driveExported = selectedDocument.pdf?.exportStatus === 'exported';
+  const formattingReady = canEdit && !selectedDocument.isLocked && !formattingDisabled;
+  const iconButtonClass =
+    'relative inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-colors disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300';
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-3 rounded-2xl bg-white border border-slate-200 px-4 py-3">
-      <div className="relative flex flex-wrap gap-2 shrink-0">
+    <div className="flex flex-wrap items-center justify-between gap-2 bg-transparent px-0 py-0">
+      <span
+        className={`min-w-[84px] text-[10px] font-bold uppercase tracking-[0.16em] ${
+          isSaving ? 'text-slate-400' : 'text-transparent select-none'
+        }`}
+        aria-live="polite"
+      >
+        Guardando...
+      </span>
+      <div className="relative flex flex-wrap items-center justify-end gap-1.5 shrink-0">
         <button
           type="button"
           onClick={onPrint}
-          className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50"
+          className="inline-flex h-8 items-center rounded-lg border border-slate-200 px-2.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 hover:bg-slate-50"
         >
-          <Printer size={14} className="inline mr-2" />
+          <Printer size={13} className="mr-1.5 inline" />
           PDF
         </button>
         <button
           type="button"
           onClick={onUploadPdf}
           disabled={isUploadingPdf}
-          className={`rounded-xl px-3 py-2 text-xs font-black uppercase tracking-widest disabled:cursor-not-allowed disabled:text-slate-300 disabled:border-slate-200 ${
+          className={`inline-flex h-8 items-center rounded-lg px-2.5 text-[10px] font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:text-slate-300 disabled:border-slate-200 ${
             driveExported
               ? 'border border-emerald-200 text-emerald-700 hover:bg-emerald-50'
               : 'border border-blue-200 text-blue-700 hover:bg-blue-50'
           }`}
         >
           {driveExported ? (
-            <CheckCircle2 size={14} className="inline mr-2" />
+            <CheckCircle2 size={13} className="mr-1.5 inline" />
           ) : (
-            <UploadCloud size={14} className="inline mr-2" />
+            <UploadCloud size={13} className="mr-1.5 inline" />
           )}
           {driveExported ? 'Guardado en Drive' : 'Drive'}
         </button>
         <button
           type="button"
-          onClick={onResetDocumentContent}
+          onClick={onRestoreTemplate}
           disabled={!canEdit || selectedDocument.isLocked}
-          className="rounded-xl border border-amber-200 px-3 py-2 text-xs font-black uppercase tracking-widest text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:border-slate-200"
+          aria-label="Reestablecer plantilla"
+          title="Reestablecer plantilla"
+          className={`${iconButtonClass} border-amber-200 text-amber-700 hover:bg-amber-50`}
         >
-          <SquarePen size={14} className="inline mr-2" />
-          Reiniciar
+          <SquarePen size={13} />
         </button>
         <button
           type="button"
           onClick={onToggleFormatting}
           disabled={!canEdit || selectedDocument.isLocked}
-          className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+          aria-pressed={isFormattingOpen}
+          aria-label="Formato"
+          title="Formato"
+          className={`${iconButtonClass} transition-colors ${
+            formattingReady
+              ? 'border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100'
+              : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+          }`}
         >
-          Formato
+          <span
+            aria-hidden="true"
+            className={`absolute mt-[-16px] mr-[-16px] h-1.5 w-1.5 rounded-full ${
+              formattingReady ? 'bg-sky-500' : 'bg-slate-300'
+            }`}
+          />
+          <Bold size={13} />
         </button>
         {isFormattingOpen && (
-          <div className="clinical-document-global-toolbar-modal">
-            <p className="clinical-document-global-toolbar-caption">
-              Aplica formato sobre la sección que tengas seleccionada.
-            </p>
+          <div
+            className={`clinical-document-global-toolbar-modal ${
+              formattingReady ? 'clinical-document-global-toolbar-modal--ready' : ''
+            }`}
+          >
             <div
               className="clinical-document-toolbar"
               role="toolbar"
@@ -147,14 +173,6 @@ export const ClinicalDocumentFormattingToolbar: React.FC<
           </div>
         )}
       </div>
-      <span
-        className={`min-w-[92px] text-right text-[11px] font-bold uppercase tracking-wider ${
-          isSaving ? 'text-slate-400' : 'text-transparent select-none'
-        }`}
-        aria-live="polite"
-      >
-        Guardando...
-      </span>
     </div>
   );
 };

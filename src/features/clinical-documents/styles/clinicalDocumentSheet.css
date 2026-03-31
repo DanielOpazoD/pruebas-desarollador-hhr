@@ -258,6 +258,11 @@
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
 }
 
+.clinical-document-global-toolbar-modal--ready {
+  border-color: #bae6fd;
+  box-shadow: 0 14px 34px rgba(14, 116, 144, 0.14);
+}
+
 .clinical-document-indications-transfer-option {
   display: inline-flex;
   align-items: center;

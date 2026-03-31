@@ -179,4 +179,64 @@ describe('clinicalDocumentDraftReducer', () => {
     expect(committed.baseState.updatedAt).toBe('2026-03-06T12:45:00.000Z');
     expect(committed.isSaving).toBe(false);
   });
+
+  it('restores the original template structure while preserving patient values', () => {
+    const document = buildDocument();
+    document.title = 'Título manual';
+    document.patientInfoTitle = 'Datos clínicos resumidos';
+    document.footerMedicoLabel = 'Profesional';
+    document.sections = document.sections.map(section =>
+      section.id === 'antecedentes'
+        ? { ...section, title: 'Antecedentes reescritos', content: '<p>Texto editado</p>' }
+        : { ...section, visible: false }
+    );
+
+    const loaded = clinicalDocumentDraftReducer(createClinicalDocumentDraftReducerInitialState(), {
+      type: 'LOAD_DOCUMENT',
+      document,
+      snapshot: JSON.stringify(document),
+    });
+
+    const restored = clinicalDocumentDraftReducer(loaded, {
+      type: 'RESTORE_TEMPLATE_CONTENT',
+    });
+
+    expect(restored.draft?.title).toBe('Epicrisis médica');
+    expect(restored.draft?.patientInfoTitle).toBe('Información del Paciente');
+    expect(restored.draft?.footerMedicoLabel).toBe('Médico');
+    expect(restored.draft?.sections.every(section => section.content === '')).toBe(true);
+    expect(restored.draft?.sections.find(section => section.id === 'antecedentes')?.title).toBe(
+      'Antecedentes'
+    );
+    expect(restored.draft?.patientFields.find(field => field.id === 'nombre')?.value).toBe(
+      'Paciente Test'
+    );
+    expect(restored.draft?.pdf).toBeUndefined();
+  });
+
+  it('applies a new template to the current draft when the document type changes', () => {
+    const document = buildDocument();
+    document.sections = document.sections.map(section =>
+      section.id === 'antecedentes' ? { ...section, content: '<p>Texto previo</p>' } : section
+    );
+
+    const loaded = clinicalDocumentDraftReducer(createClinicalDocumentDraftReducerInitialState(), {
+      type: 'LOAD_DOCUMENT',
+      document,
+      snapshot: JSON.stringify(document),
+    });
+
+    const switched = clinicalDocumentDraftReducer(loaded, {
+      type: 'APPLY_TEMPLATE',
+      templateId: 'evolucion',
+    });
+
+    expect(switched.draft?.templateId).toBe('evolucion');
+    expect(switched.draft?.documentType).toBe('evolucion');
+    expect(switched.draft?.title).toMatch(/evoluci/i);
+    expect(switched.draft?.sections.every(section => section.content === '')).toBe(true);
+    expect(switched.draft?.patientFields.find(field => field.id === 'nombre')?.value).toBe(
+      'Paciente Test'
+    );
+  });
 });

@@ -25,10 +25,28 @@ interface UseClinicalDocumentsWorkspaceModelParams {
   isActive: boolean;
 }
 
+type ClinicalDocumentsWorkspaceSheetProps = Omit<
+  ClinicalDocumentSheetProps,
+  | 'toolbar'
+  | 'activeTitleTarget'
+  | 'onSetActiveTitleTarget'
+  | 'draggedSectionId'
+  | 'dragOverSectionId'
+  | 'activePlanSubsectionId'
+  | 'activeIndicationsSpecialtyId'
+  | 'isIndicationsPanelOpen'
+  | 'onSetActivePlanSubsectionId'
+  | 'onSetActiveIndicationsSpecialtyId'
+  | 'onToggleIndicationsPanel'
+  | 'onEditorActivate'
+  | 'onEditorDeactivate'
+  | 'dragHandlers'
+>;
+
 interface ClinicalDocumentsWorkspaceModel {
   canRead: boolean;
   sidebarProps: ClinicalDocumentsSidebarProps;
-  sheetProps: ClinicalDocumentSheetProps;
+  sheetProps: ClinicalDocumentsWorkspaceSheetProps;
 }
 
 export const useClinicalDocumentsWorkspaceModel = ({
@@ -85,7 +103,8 @@ export const useClinicalDocumentsWorkspaceModel = ({
     patchPatientInfoTitle,
     patchFooterLabel,
     patchDocumentMeta,
-    resetDocumentContent,
+    applyTemplate,
+    restoreTemplateContent,
   } = useClinicalDocumentWorkspaceDraft({
     documents,
     selectedDocumentId,
@@ -97,6 +116,11 @@ export const useClinicalDocumentsWorkspaceModel = ({
   });
 
   const selectedDocument = draft;
+  const sidebarDocuments = useMemo(
+    () =>
+      draft ? documents.map(document => (document.id === draft.id ? draft : document)) : documents,
+    [documents, draft]
+  );
 
   const {
     indicationsCatalog,
@@ -137,16 +161,24 @@ export const useClinicalDocumentsWorkspaceModel = ({
       setDraft,
     });
 
-  const handleResetDocumentContent = async () => {
+  const handleSelectTemplate = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    if (!draft || !canEdit || draft.isLocked) {
+      return;
+    }
+    applyTemplate(templateId);
+  };
+
+  const handleRestoreTemplate = async () => {
     if (!draft || !canEdit || draft.isLocked) {
       return;
     }
 
     const confirmed = await confirm({
-      title: 'Vaciar documento clínico',
+      title: 'Reestablecer plantilla del documento',
       message:
-        'Se limpiará el contenido clínico del documento actual y el borrador se volverá a guardar automáticamente.',
-      confirmText: 'Vaciar',
+        'Se restaurarán el título, las etiquetas y las secciones base de la plantilla. El contenido clínico editable actual se reemplazará por la estructura original del documento.',
+      confirmText: 'Reestablecer',
       cancelText: 'Cancelar',
       variant: 'warning',
     });
@@ -155,8 +187,11 @@ export const useClinicalDocumentsWorkspaceModel = ({
       return;
     }
 
-    resetDocumentContent();
-    info('Documento reiniciado', 'La planilla quedó en cero para seguir editando.');
+    restoreTemplateContent();
+    info(
+      'Plantilla reestablecida',
+      'El documento volvió a su estructura base y quedó listo para seguir editando.'
+    );
   };
 
   return {
@@ -167,9 +202,9 @@ export const useClinicalDocumentsWorkspaceModel = ({
       patientName: patient.patientName,
       templates,
       selectedTemplateId,
-      onSelectTemplate: setSelectedTemplateId,
+      onSelectTemplate: handleSelectTemplate,
       onCreateDocument: () => void createDocument(),
-      documents,
+      documents: sidebarDocuments,
       selectedDocumentId,
       onSelectDocument: setSelectedDocumentId,
       onDeleteDocument: document => void handleDeleteDocument(document),
@@ -182,7 +217,7 @@ export const useClinicalDocumentsWorkspaceModel = ({
       validationIssues,
       onPrint: handlePrint,
       onUploadPdf: () => void handleUploadPdf(),
-      onResetDocumentContent: () => void handleResetDocumentContent(),
+      onRestoreTemplate: () => void handleRestoreTemplate(),
       patchDocumentTitle,
       patchPatientInfoTitle,
       patchPatientField,

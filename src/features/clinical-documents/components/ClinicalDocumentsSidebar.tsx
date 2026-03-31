@@ -5,10 +5,6 @@ import clsx from 'clsx';
 import { getClinicalDocumentTypeLabel } from '@/features/clinical-documents/controllers/clinicalDocumentTemplateController';
 import { formatClinicalDocumentDateTime } from '@/features/clinical-documents/controllers/clinicalDocumentWorkspaceController';
 import type { ClinicalDocumentsSidebarProps } from '@/features/clinical-documents/contracts/clinicalDocumentsSidebarContracts';
-import {
-  getClinicalDocumentStatusClassName,
-  getClinicalDocumentStatusLabel,
-} from '@/shared/clinical-documents/clinicalDocumentPresentation';
 
 export const ClinicalDocumentsSidebar: React.FC<ClinicalDocumentsSidebarProps> = ({
   canEdit,
@@ -24,17 +20,14 @@ export const ClinicalDocumentsSidebar: React.FC<ClinicalDocumentsSidebarProps> =
   onDeleteDocument,
 }) => {
   return (
-    <aside className="border-r border-slate-200 bg-slate-50/70 p-3 space-y-3">
+    <aside className="space-y-2.5 border-r border-slate-200 bg-slate-50/70 p-2.5">
       <div className="space-y-1.5">
-        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
-          Nuevo documento
-        </p>
         {!canEdit && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
             Perfil en solo lectura: puedes revisar e imprimir, pero no crear nuevos documentos.
           </div>
         )}
-        <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-2.5">
+        <div className="space-y-1.5 rounded-lg border border-slate-200 bg-white p-2">
           <label className="flex flex-col gap-1">
             <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
               Tipo de documento
@@ -42,7 +35,7 @@ export const ClinicalDocumentsSidebar: React.FC<ClinicalDocumentsSidebarProps> =
             <select
               value={selectedTemplateId}
               onChange={event => onSelectTemplate(event.target.value)}
-              className="rounded-md border border-slate-300 bg-slate-50 px-2.5 py-2 text-sm text-slate-800"
+              className="rounded-md border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-[12px] text-slate-800"
             >
               {templates.map(template => (
                 <option key={template.id} value={template.id}>
@@ -56,14 +49,14 @@ export const ClinicalDocumentsSidebar: React.FC<ClinicalDocumentsSidebarProps> =
             onClick={onCreateDocument}
             disabled={!canEdit || !patientName}
             className={clsx(
-              'w-full rounded-lg border px-2.5 py-2 text-[11px] font-black uppercase tracking-wider transition-all',
+              'w-full rounded-lg border px-2 py-1 text-[10px] font-black uppercase tracking-[0.16em] transition-all',
               canEdit && patientName
                 ? 'border-medical-300 bg-medical-50 text-medical-800 hover:bg-medical-100'
                 : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
             )}
           >
-            <FilePlus2 size={14} className="inline mr-2" />
-            Crear documento
+            <FilePlus2 size={12} className="inline mr-1.5" />
+            Crear
           </button>
         </div>
       </div>
@@ -77,12 +70,12 @@ export const ClinicalDocumentsSidebar: React.FC<ClinicalDocumentsSidebarProps> =
             No hay documentos clínicos para este episodio.
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {documents.map(document => (
               <div
                 key={document.id}
                 className={clsx(
-                  'rounded-lg border bg-white px-2.5 py-2.5 transition-all',
+                  'rounded-lg border bg-white px-2 py-1.5 transition-all',
                   selectedDocumentId === document.id
                     ? 'border-medical-300 bg-medical-50'
                     : 'border-slate-200 hover:border-slate-300'
@@ -94,33 +87,25 @@ export const ClinicalDocumentsSidebar: React.FC<ClinicalDocumentsSidebarProps> =
                     onClick={() => onSelectDocument(document.id)}
                     className="flex-1 text-left"
                   >
-                    <span className="text-[13px] font-bold text-slate-800">{document.title}</span>
-                    <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <span className="text-[12px] font-bold leading-tight text-slate-800">
+                      {document.title.toLocaleLowerCase('es-CL')}
+                    </span>
+                    <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">
                       {getClinicalDocumentTypeLabel(document.documentType)}
                     </p>
                   </button>
-                  <div className="flex items-center gap-1">
-                    <span
-                      className={clsx(
-                        'rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider',
-                        getClinicalDocumentStatusClassName(document.status)
-                      )}
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => onDeleteDocument(document)}
+                      className="rounded-md border border-red-200 p-[3px] text-red-600 hover:bg-red-50"
+                      title="Eliminar documento"
                     >
-                      {getClinicalDocumentStatusLabel(document.status)}
-                    </span>
-                    {canDelete && (
-                      <button
-                        type="button"
-                        onClick={() => onDeleteDocument(document)}
-                        className="rounded-md border border-red-200 p-1 text-red-600 hover:bg-red-50"
-                        title="Eliminar documento"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    )}
-                  </div>
+                      <Trash2 size={11} />
+                    </button>
+                  )}
                 </div>
-                <p className="mt-0.5 text-[10px] text-slate-500">
+                <p className="mt-0.5 text-[9px] text-slate-500">
                   {document.audit.updatedBy.displayName || 'Sin autor'} ·{' '}
                   {formatClinicalDocumentDateTime(document.audit.updatedAt)}
                 </p>

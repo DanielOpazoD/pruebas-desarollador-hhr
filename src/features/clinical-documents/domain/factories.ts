@@ -39,6 +39,35 @@ export const getClinicalDocumentTemplate = (templateId?: string): ClinicalDocume
   CLINICAL_DOCUMENT_TEMPLATES[templateId || DEFAULT_CLINICAL_DOCUMENT_TEMPLATE_ID] ||
   CLINICAL_DOCUMENT_TEMPLATES[DEFAULT_CLINICAL_DOCUMENT_TEMPLATE_ID];
 
+export const restoreClinicalDocumentDraftTemplate = (
+  record: ClinicalDocumentRecord,
+  templateId = record.templateId
+): ClinicalDocumentRecord => {
+  const template = getClinicalDocumentTemplate(templateId);
+  const patientFieldValues = Object.fromEntries(
+    record.patientFields.map(field => [field.id, field.value])
+  );
+  const restoredRecord: ClinicalDocumentRecord = {
+    ...record,
+    documentType: template.documentType,
+    templateId: template.id,
+    templateVersion: template.version,
+    title: template.title,
+    patientInfoTitle: template.defaultPatientInfoTitle,
+    footerMedicoLabel: template.defaultFooterMedicoLabel,
+    footerEspecialidadLabel: template.defaultFooterEspecialidadLabel,
+    patientFields: clonePatientFields(template, patientFieldValues),
+    sections: cloneSections(template),
+    pdf: undefined,
+  };
+  const renderedText = buildClinicalDocumentRenderedText(restoredRecord);
+  return {
+    ...restoredRecord,
+    renderedText,
+    integrityHash: createHash(renderedText),
+  };
+};
+
 export const buildClinicalDocumentRenderedText = (
   record: Pick<
     ClinicalDocumentRecord,

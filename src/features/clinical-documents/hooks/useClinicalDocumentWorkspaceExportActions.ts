@@ -168,7 +168,8 @@ export const useClinicalDocumentWorkspaceExportActions = ({
       },
       { allowSuccess: true }
     );
-  }, [notify, selectedDocument]);
+    await handleUploadPdf({ notifySuccess: false });
+  }, [handleUploadPdf, notify, selectedDocument]);
 
   return {
     handlePrint,

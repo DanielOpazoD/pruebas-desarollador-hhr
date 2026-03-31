@@ -22,6 +22,7 @@ export const ClinicalDocumentsModal: React.FC<ClinicalDocumentsModalProps> = ({
   currentDateString,
   bedId,
 }) => {
+  const headerActionsId = React.useId();
   const episode = buildClinicalDocumentEpisodeContext(patient, currentDateString, bedId);
   const episodeDate = formatClinicalDocumentDate(episode.admissionDate || currentDateString);
 
@@ -43,12 +44,14 @@ export const ClinicalDocumentsModal: React.FC<ClinicalDocumentsModalProps> = ({
       variant="white"
       bodyClassName="p-0"
       scrollableBody={false}
+      headerActions={<div id={headerActionsId} className="flex items-center gap-1" />}
     >
       <ClinicalDocumentsWorkspace
         patient={patient}
         currentDateString={currentDateString}
         bedId={bedId}
         isActive={isOpen}
+        headerActionsContainerId={headerActionsId}
       />
     </BaseModal>
   );

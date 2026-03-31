@@ -191,7 +191,7 @@ describe('useClinicalDocumentWorkspaceExportActions', () => {
     expect(pdfExportUseCase.executeExportClinicalDocumentPdf).not.toHaveBeenCalled();
   });
 
-  it('opens print preview without triggering automatic Drive backup', async () => {
+  it('opens print preview and synchronizes the PDF with Drive automatically', async () => {
     const document = buildRecord();
 
     const { result } = renderHook(() =>
@@ -208,7 +208,13 @@ describe('useClinicalDocumentWorkspaceExportActions', () => {
     });
 
     expect(printOpenUseCase.executeOpenClinicalDocumentPrint).toHaveBeenCalledWith(document);
-    expect(notify.info).not.toHaveBeenCalled();
-    expect(pdfExportUseCase.executeExportClinicalDocumentPdf).not.toHaveBeenCalled();
+    expect(pdfExportUseCase.executeExportClinicalDocumentPdf).toHaveBeenCalledWith(
+      expect.objectContaining({
+        record: expect.objectContaining({ id: document.id }),
+        hospitalId: 'hhr',
+        fileName: expect.any(String),
+      })
+    );
+    expect(notify.success).not.toHaveBeenCalled();
   });
 });

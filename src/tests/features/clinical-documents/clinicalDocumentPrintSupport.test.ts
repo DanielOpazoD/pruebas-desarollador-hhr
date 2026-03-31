@@ -64,6 +64,28 @@ describe('clinicalDocumentPrintSupport', () => {
     });
   });
 
+  it('removes empty printable sections from the cloned sheet', async () => {
+    const originalSheet = document.createElement('section');
+    const clone = document.createElement('section');
+    clone.innerHTML = `
+      <div class="clinical-document-section-block">
+        <h3 class="clinical-document-section-title">Vacía</h3>
+        <div class="clinical-document-rich-text-editor"><p><br></p></div>
+      </div>
+      <div class="clinical-document-section-block">
+        <h3 class="clinical-document-section-title">Con contenido</h3>
+        <div class="clinical-document-rich-text-editor"><p>Hallazgos clínicos</p></div>
+      </div>
+    `;
+
+    await sanitizeClinicalDocumentSheetClone(originalSheet, clone);
+
+    const printableSections = clone.querySelectorAll('.clinical-document-section-block');
+    expect(printableSections).toHaveLength(1);
+    expect(clone.textContent).toContain('Con contenido');
+    expect(clone.textContent).not.toContain('Vacía');
+  });
+
   it('waits for image load and font readiness before resolving', async () => {
     vi.useFakeTimers();
     const sheet = document.createElement('section');

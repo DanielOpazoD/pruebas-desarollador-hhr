@@ -38,10 +38,54 @@ const buildDocument = () =>
     especialidad: 'Cirugía',
   });
 
+const buildToolbar = (handlers: { onPrint: () => void; onRestoreTemplate: () => void }) => (
+  <>
+    <button type="button" aria-label="PDF" onClick={handlers.onPrint}>
+      PDF
+    </button>
+    <button type="button" aria-label="Reestablecer plantilla" onClick={handlers.onRestoreTemplate}>
+      Reestablecer plantilla
+    </button>
+    <button type="button" aria-label="Formato" aria-pressed="true">
+      Formato
+    </button>
+    <button type="button" aria-label="Deshacer" disabled>
+      Deshacer
+    </button>
+    <button type="button" aria-label="Rehacer" disabled>
+      Rehacer
+    </button>
+    <button type="button" aria-label="Negrita">
+      Negrita
+    </button>
+    <button type="button" aria-label="Guardado en Drive">
+      Guardado en Drive
+    </button>
+  </>
+);
+
 const defaultHandlers = {
   onPrint: vi.fn(),
   onUploadPdf: vi.fn(),
-  onResetDocumentContent: vi.fn(),
+  onRestoreTemplate: vi.fn(),
+  activeTitleTarget: null,
+  onSetActiveTitleTarget: vi.fn(),
+  draggedSectionId: null,
+  dragOverSectionId: null,
+  activePlanSubsectionId: 'generales' as const,
+  activeIndicationsSpecialtyId: 'tmt' as const,
+  isIndicationsPanelOpen: false,
+  onSetActivePlanSubsectionId: vi.fn(),
+  onSetActiveIndicationsSpecialtyId: vi.fn(),
+  onToggleIndicationsPanel: vi.fn(),
+  onEditorActivate: vi.fn(),
+  onEditorDeactivate: vi.fn(),
+  dragHandlers: {
+    onDragStart: vi.fn(),
+    onDragOver: vi.fn(),
+    onDragLeave: vi.fn(),
+    onDragEnd: vi.fn(),
+  },
   patchDocumentTitle: vi.fn(),
   patchPatientInfoTitle: vi.fn(),
   patchPatientField: vi.fn(),
@@ -81,6 +125,7 @@ describe('ClinicalDocumentSheet', () => {
         isSavingCustomIndication={false}
         customIndicationError={null}
         {...defaultHandlers}
+        toolbar={buildToolbar(defaultHandlers)}
       />
     );
 
@@ -106,6 +151,9 @@ describe('ClinicalDocumentSheet', () => {
         isSavingCustomIndication={false}
         customIndicationError={null}
         {...defaultHandlers}
+        activeTitleTarget="section:antecedentes"
+        isIndicationsPanelOpen={true}
+        toolbar={buildToolbar(defaultHandlers)}
       />
     );
 
@@ -135,24 +183,22 @@ describe('ClinicalDocumentSheet', () => {
       'src',
       '/images/logos/logo_SSMO.jpg'
     );
+    expect(
+      screen.queryByText(/aplica formato sobre la sección que tengas seleccionada/i)
+    ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /pdf/i }));
-    fireEvent.click(screen.getByRole('button', { name: /reiniciar/i }));
+    fireEvent.click(screen.getByRole('button', { name: /reestablecer plantilla/i }));
     fireEvent.click(screen.getByRole('button', { name: /formato/i }));
     expect(screen.getByRole('button', { name: /deshacer/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /rehacer/i })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: /negrita/i }));
-    fireEvent.click(
-      screen.getByRole('button', { name: /abrir panel de indicaciones predeterminadas/i })
-    );
-    fireEvent.click(screen.getByRole('tab', { name: /TMT/i }));
     fireEvent.click(screen.getByRole('button', { name: /^Reposo Absoluto$/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Antecedentes' }));
     fireEvent.click(screen.getByRole('button', { name: /bajar sección antecedentes/i }));
     const dataTransfer = {
       effectAllowed: 'move',
       setData: vi.fn(),
-      getData: vi.fn(),
+      getData: vi.fn(() => 'antecedentes'),
     };
     fireEvent.dragStart(screen.getByRole('button', { name: /arrastrar sección antecedentes/i }), {
       dataTransfer,
@@ -164,10 +210,8 @@ describe('ClinicalDocumentSheet', () => {
     fireEvent.dragOver(historiaSectionBlock!, { dataTransfer });
     fireEvent.drop(historiaSectionBlock!, { dataTransfer });
     fireEvent.click(screen.getByRole('button', { name: /eliminar sección antecedentes/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Nombre' }));
-    fireEvent.click(screen.getByRole('button', { name: /eliminar campo nombre/i }));
     expect(defaultHandlers.onPrint).toHaveBeenCalled();
-    expect(defaultHandlers.onResetDocumentContent).toHaveBeenCalled();
+    expect(defaultHandlers.onRestoreTemplate).toHaveBeenCalled();
     expect(defaultHandlers.patchSection).toHaveBeenCalledWith(
       'plan',
       expect.stringContaining('Reposo Absoluto')
@@ -178,7 +222,10 @@ describe('ClinicalDocumentSheet', () => {
       'historia-evolucion'
     );
     expect(defaultHandlers.setSectionVisibility).toHaveBeenCalledWith('antecedentes', false);
-    expect(defaultHandlers.setPatientFieldVisibility).toHaveBeenCalledWith('nombre', false);
+    expect(screen.getByRole('button', { name: /^formato$/i })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
   });
 
   it('shows drive link and saved state when the PDF is exported to institutional drive', () => {
@@ -199,13 +246,15 @@ describe('ClinicalDocumentSheet', () => {
         isSavingCustomIndication={false}
         customIndicationError={null}
         {...defaultHandlers}
+        isIndicationsPanelOpen={true}
+        toolbar={buildToolbar(defaultHandlers)}
       />
     );
 
     expect(screen.getByRole('button', { name: /guardado en drive/i })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /abrir drive/i })).not.toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /abrir panel de indicaciones predeterminadas/i })
+      screen.getByRole('button', { name: /panel de indicaciones predeterminadas/i })
     ).toBeInTheDocument();
   });
 
@@ -223,13 +272,11 @@ describe('ClinicalDocumentSheet', () => {
         isSavingCustomIndication={false}
         customIndicationError={null}
         {...defaultHandlers}
+        isIndicationsPanelOpen={true}
+        toolbar={buildToolbar(defaultHandlers)}
       />
     );
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /abrir panel de indicaciones predeterminadas/i })
-    );
-    fireEvent.click(screen.getByRole('tab', { name: /TMT/i }));
     fireEvent.change(screen.getByLabelText(/agregar propia/i), {
       target: { value: 'Curación diaria de herida' },
     });
@@ -257,13 +304,11 @@ describe('ClinicalDocumentSheet', () => {
         isSavingCustomIndication={false}
         customIndicationError={null}
         {...defaultHandlers}
+        isIndicationsPanelOpen={true}
+        toolbar={buildToolbar(defaultHandlers)}
       />
     );
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /abrir panel de indicaciones predeterminadas/i })
-    );
-    fireEvent.click(screen.getByRole('tab', { name: /TMT/i }));
     fireEvent.click(screen.getByRole('button', { name: /editar indicación reposo absoluto/i }));
     fireEvent.change(screen.getByDisplayValue('Reposo Absoluto'), {
       target: { value: 'Reposo en domicilio' },

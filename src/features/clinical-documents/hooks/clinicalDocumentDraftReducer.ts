@@ -1,5 +1,6 @@
 import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domain/entities';
 import { normalizeClinicalDocumentContentForStorage } from '@/features/clinical-documents/controllers/clinicalDocumentRichTextController';
+import { restoreClinicalDocumentDraftTemplate } from '@/features/clinical-documents/domain/factories';
 import {
   moveClinicalDocumentVisibleSection,
   reorderClinicalDocumentVisibleSections,
@@ -44,7 +45,8 @@ export type ClinicalDocumentDraftAction =
       type: 'PATCH_DOCUMENT_META';
       patch: Partial<Pick<ClinicalDocumentRecord, 'medico' | 'especialidad'>>;
     }
-  | { type: 'RESET_DOCUMENT_CONTENT' }
+  | { type: 'APPLY_TEMPLATE'; templateId: string }
+  | { type: 'RESTORE_TEMPLATE_CONTENT' }
   | { type: 'AUTOSAVE_REQUESTED' }
   | { type: 'AUTOSAVE_MARK_CLEAN'; document: ClinicalDocumentRecord; snapshot: string }
   | { type: 'AUTOSAVE_COMMIT_BASE'; document: ClinicalDocumentRecord; snapshot: string }
@@ -220,17 +222,12 @@ export const clinicalDocumentDraftReducer = (
         ...draft,
         ...action.patch,
       }));
-    case 'RESET_DOCUMENT_CONTENT':
-      return patchDraft(state, draft => ({
-        ...draft,
-        medico: '',
-        especialidad: '',
-        sections: draft.sections.map(section => ({
-          ...section,
-          content: '',
-          visible: true,
-        })),
-      }));
+    case 'APPLY_TEMPLATE':
+      return patchDraft(state, draft =>
+        restoreClinicalDocumentDraftTemplate(draft, action.templateId)
+      );
+    case 'RESTORE_TEMPLATE_CONTENT':
+      return patchDraft(state, draft => restoreClinicalDocumentDraftTemplate(draft));
     case 'AUTOSAVE_REQUESTED':
       return {
         ...state,

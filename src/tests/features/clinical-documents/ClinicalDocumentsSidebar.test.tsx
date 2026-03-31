@@ -55,7 +55,8 @@ describe('ClinicalDocumentsSidebar', () => {
     );
 
     expect(screen.getByText(/perfil en solo lectura/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /crear documento/i })).toBeDisabled();
+    expect(screen.queryByText(/^nuevo documento$/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^crear$/i })).toBeDisabled();
   });
 
   it('renders documents and delegates selection and deletion', () => {
@@ -88,5 +89,7 @@ describe('ClinicalDocumentsSidebar', () => {
 
     fireEvent.click(screen.getByTitle(/eliminar documento/i));
     expect(onDeleteDocument).toHaveBeenCalledWith(document);
+    expect(screen.getByText(document.title.toLocaleLowerCase('es-CL'))).toBeInTheDocument();
+    expect(screen.queryByText(/borrador/i)).not.toBeInTheDocument();
   });
 });

@@ -97,6 +97,37 @@ const inlineBrandingImages = async (sheetClone: HTMLElement) => {
   }
 };
 
+const normalizePrintableText = (value: string): string =>
+  value
+    .replace(/\u00a0/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const isEditorNodeEmpty = (node: Element): boolean => {
+  if (node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement) {
+    return normalizePrintableText(node.value) === '';
+  }
+
+  return normalizePrintableText(node.textContent || '') === '';
+};
+
+const removeEmptyPrintableSections = (sheetClone: HTMLElement) => {
+  sheetClone.querySelectorAll('.clinical-document-section-block').forEach(sectionNode => {
+    const editorNodes = Array.from(
+      sectionNode.querySelectorAll(
+        '.clinical-document-rich-text-editor, .clinical-document-input, .clinical-document-textarea'
+      )
+    );
+    if (editorNodes.length === 0) {
+      return;
+    }
+    const hasVisibleContent = editorNodes.some(node => !isEditorNodeEmpty(node));
+    if (!hasVisibleContent) {
+      sectionNode.remove();
+    }
+  });
+};
+
 export const sanitizeClinicalDocumentSheetClone = async (
   originalSheet: HTMLElement,
   sheetClone: HTMLElement
@@ -117,6 +148,7 @@ export const sanitizeClinicalDocumentSheetClone = async (
       node.readOnly = true;
     }
   });
+  removeEmptyPrintableSections(sheetClone);
 };
 
 const waitForImageReady = async (image: HTMLImageElement, ownerWindow: Window): Promise<void> => {

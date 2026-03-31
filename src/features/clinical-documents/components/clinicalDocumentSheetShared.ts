@@ -2,6 +2,7 @@ import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domai
 import type { ClinicalDocumentIndicationSpecialtyId } from '@/features/clinical-documents/controllers/clinicalDocumentIndicationsController';
 import type { ClinicalDocumentPlanSubsectionId } from '@/features/clinical-documents/controllers/clinicalDocumentPlanSectionController';
 import type { ClinicalDocumentIndicationsCatalog } from '@/features/clinical-documents/services/clinicalDocumentIndicationsCatalogService';
+import type { DragEvent, ReactNode, SetStateAction } from 'react';
 
 export type ClinicalDocumentFormattingCommand =
   | 'bold'
@@ -27,6 +28,25 @@ export interface ClinicalDocumentSheetProps {
   canEdit: boolean;
   isSaving: boolean;
   isUploadingPdf: boolean;
+  toolbar?: ReactNode;
+  activeTitleTarget: string | null;
+  onSetActiveTitleTarget: React.Dispatch<SetStateAction<string | null>>;
+  draggedSectionId: string | null;
+  dragOverSectionId: string | null;
+  activePlanSubsectionId: ClinicalDocumentPlanSubsectionId;
+  activeIndicationsSpecialtyId: ClinicalDocumentIndicationSpecialtyId;
+  isIndicationsPanelOpen: boolean;
+  onSetActivePlanSubsectionId: (subsectionId: ClinicalDocumentPlanSubsectionId) => void;
+  onSetActiveIndicationsSpecialtyId: (specialtyId: ClinicalDocumentIndicationSpecialtyId) => void;
+  onToggleIndicationsPanel: () => void;
+  onEditorActivate: (activeSectionId: string, editorApi: ClinicalDocumentSheetEditorApi) => void;
+  onEditorDeactivate: (sectionId: string) => void;
+  dragHandlers: {
+    onDragStart: (event: DragEvent<HTMLButtonElement>, sectionId: string) => void;
+    onDragOver: (event: DragEvent<HTMLElement>, sectionId: string, canInteract: boolean) => void;
+    onDragLeave: (sectionId: string) => void;
+    onDragEnd: () => void;
+  };
   validationIssues: Array<{ message: string }>;
   onPrint: () => void;
   onUploadPdf: () => void;
@@ -61,7 +81,7 @@ export interface ClinicalDocumentSheetProps {
     itemId: string
   ) => Promise<boolean>;
   importIndicationsCatalog: (catalog: unknown) => Promise<boolean>;
-  onResetDocumentContent: () => void;
+  onRestoreTemplate: () => void;
 }
 
 export interface ClinicalDocumentSpecialSectionRendererProps {

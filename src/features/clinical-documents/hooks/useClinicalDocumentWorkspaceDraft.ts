@@ -54,7 +54,8 @@ export interface ClinicalDocumentWorkspaceDraftState {
   patchDocumentMeta: (
     patch: Partial<Pick<ClinicalDocumentRecord, 'medico' | 'especialidad'>>
   ) => void;
-  resetDocumentContent: () => void;
+  applyTemplate: (templateId: string) => void;
+  restoreTemplateContent: () => void;
 }
 
 const hydrateIncomingDocument = (
@@ -176,6 +177,7 @@ export const useClinicalDocumentWorkspaceDraft = ({
     patchPatientInfoTitle: title => dispatch({ type: 'PATCH_PATIENT_INFO_TITLE', title }),
     patchFooterLabel: (kind, title) => dispatch({ type: 'PATCH_FOOTER_LABEL', kind, title }),
     patchDocumentMeta: patch => dispatch({ type: 'PATCH_DOCUMENT_META', patch }),
-    resetDocumentContent: () => dispatch({ type: 'RESET_DOCUMENT_CONTENT' }),
+    applyTemplate: templateId => dispatch({ type: 'APPLY_TEMPLATE', templateId }),
+    restoreTemplateContent: () => dispatch({ type: 'RESTORE_TEMPLATE_CONTENT' }),
   };
 };
