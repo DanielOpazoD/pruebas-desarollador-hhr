@@ -14,6 +14,12 @@ vi.mock('@/hooks/useAuthState', () => ({
   useAuthState: () => useAuthStateMock(),
 }));
 
+vi.mock('@/context/DailyRecordContext', () => ({
+  useDailyRecordStaff: () => ({
+    nursesNightShift: ['Enf Uno', 'Enf Dos'],
+  }),
+}));
+
 describe('FugaNotificationModal', () => {
   const baseDischarge = {
     id: '1',
@@ -45,6 +51,12 @@ describe('FugaNotificationModal', () => {
         recordDate="2026-03-31"
       />
     );
+
+    const automaticMessageField = screen.getByRole('textbox', {
+      name: /mensaje automático \(editable\)/i,
+    }) as HTMLTextAreaElement;
+    expect(automaticMessageField.value).toContain('(RUT: 11.111.111-1)');
+    expect(automaticMessageField.value).toContain('Fecha de egreso: 31-03-2026');
 
     fireEvent.change(screen.getByPlaceholderText(/ejemplo1@hospital.cl/i), {
       target: { value: 'correo-invalido' },
@@ -83,6 +95,7 @@ describe('FugaNotificationModal', () => {
       expect(sendFugaNotificationMock).toHaveBeenCalledWith(
         expect.objectContaining({
           automaticMessage: 'Mensaje ajustado por enfermería',
+          nursesSignature: 'Enf Uno / Enf Dos',
           note: undefined,
           recipients: ['destino@hospital.cl'],
         })

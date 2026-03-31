@@ -11,6 +11,7 @@ import {
   type NetlifyEventLike,
 } from './lib/http';
 import { authorizeRoleRequest, extractBearerToken } from './lib/firebase-auth';
+import { formatDateDDMMYYYY } from '../../src/utils/dateUtils';
 
 const ALLOWED_ROLES = new Set(['nurse_hospital', 'admin']);
 
@@ -23,6 +24,7 @@ const FugaNotificationPayloadSchema = z.object({
   recordDate: z.string().min(1),
   time: z.string().min(1),
   automaticMessage: z.string().min(1),
+  nursesSignature: z.string().optional(),
   note: z.string().optional(),
   recipients: z.array(z.string().email()).optional(),
   testMode: z.boolean().optional(),
@@ -48,17 +50,28 @@ const isPsychiatrySpecialty = (value?: string): boolean => {
 
 export const buildFugaNotificationBody = (input: {
   automaticMessage: string;
+  nursesSignature?: string;
   note?: string;
 }): string => {
   const automaticBlock = input.automaticMessage.trim();
-
   const trimmedNote = input.note?.trim();
+  const trimmedNursesSignature = input.nursesSignature?.trim();
+
+  const signatureBlock = [
+    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+    trimmedNursesSignature || '',
+    'Enfermería - Servicio Hospitalizados',
+    'Hospital Hanga Roa',
+    'Anexo MINSAL 328388',
+  ]
+    .filter(Boolean)
+    .join('\n');
 
   if (!trimmedNote) {
-    return automaticBlock;
+    return `${automaticBlock}\n\n${signatureBlock}`;
   }
 
-  return `${automaticBlock}\n\nNota complementaria (ingresada por enfermería):\n${trimmedNote}`;
+  return `${automaticBlock}\n\nNota complementaria (ingresada por enfermería):\n${trimmedNote}\n\n${signatureBlock}`;
 };
 
 export const resolveFugaRecipients = (input: {
@@ -161,7 +174,7 @@ export const handler = async (event: NetlifyEventLike) => {
       );
     }
 
-    const subject = `Notificación de fuga paciente ${payload.patientName} - ${payload.recordDate}`;
+    const subject = `Notificación de fuga paciente ${payload.patientName} - ${formatDateDDMMYYYY(payload.recordDate)}`;
     const body = buildFugaNotificationBody(payload);
 
     const gmailResponse = await sendCensusEmail({
