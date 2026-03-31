@@ -1,7 +1,7 @@
 import type { MasterPatient } from '@/types/domain/patientMaster';
 import { formatRut, isValidRut } from '@/utils/rutUtils';
-import { DailyRecordRepository } from './DailyRecordRepository';
 import { bulkUpsertPatients } from './PatientMasterRepository';
+import { getAvailableDates, getForDate } from './dailyRecordRepositoryReadService';
 
 const normalizeId = (rut: string): string => formatRut(rut).toUpperCase();
 
@@ -13,11 +13,11 @@ export const migrateFromDailyRecords = async (): Promise<{
   scannedDays: number;
   totalPatients: number;
 }> => {
-  const dates = await DailyRecordRepository.getAllDates();
+  const dates = await getAvailableDates();
   const uniquePatients = new Map<string, MasterPatient>();
 
   for (const date of dates) {
-    const record = await DailyRecordRepository.getForDate(date);
+    const record = await getForDate(date);
     if (!record?.beds) continue;
 
     Object.values(record.beds).forEach(patient => {

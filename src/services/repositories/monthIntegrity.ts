@@ -6,7 +6,7 @@
  * statistical calculations and audit trails.
  */
 
-import { initializeDay } from './DailyRecordRepository';
+import { initializeDay } from './dailyRecordRepositoryInitializationService';
 import { getRecordsForMonth } from '@/services/storage/indexeddb/indexedDbRecordService';
 import {
   buildMonthIntegrityDateRange,
