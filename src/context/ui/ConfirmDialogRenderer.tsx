@@ -50,7 +50,10 @@ export const ConfirmDialogRenderer: React.FC<ConfirmDialogRendererProps> = ({
   if (!dialog.isOpen) return null;
 
   const requiresInput = !!dialog.requireInputConfirm;
-  const isInputValid = !requiresInput || inputValue === dialog.requireInputConfirm;
+  const normalize = (value: string) =>
+    dialog.inputConfirmCaseSensitive ? value.trim() : value.trim().toLowerCase();
+  const isInputValid =
+    !requiresInput || normalize(inputValue) === normalize(dialog.requireInputConfirm ?? '');
 
   return (
     <div

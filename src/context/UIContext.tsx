@@ -93,6 +93,7 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     variant: 'warning',
     isAlert: false,
     requireInputConfirm: undefined,
+    inputConfirmCaseSensitive: true,
     resolve: null,
   });
 
@@ -184,6 +185,7 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         variant: options.variant || 'warning',
         isAlert: false,
         requireInputConfirm: options.requireInputConfirm,
+        inputConfirmCaseSensitive: options.inputConfirmCaseSensitive ?? true,
         resolve,
       });
     });
@@ -200,6 +202,7 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         variant: 'info',
         isAlert: true,
         requireInputConfirm: undefined,
+        inputConfirmCaseSensitive: true,
         resolve: () => resolve(),
       });
     });

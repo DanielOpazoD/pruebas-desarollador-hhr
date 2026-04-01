@@ -15,6 +15,7 @@ export interface ConfirmOptions {
   cancelText?: string;
   variant?: 'danger' | 'warning' | 'info';
   requireInputConfirm?: string;
+  inputConfirmCaseSensitive?: boolean;
 }
 
 export interface DialogState {
@@ -26,5 +27,6 @@ export interface DialogState {
   variant: 'danger' | 'warning' | 'info';
   isAlert: boolean;
   requireInputConfirm?: string;
+  inputConfirmCaseSensitive: boolean;
   resolve: ((value: boolean) => void) | null;
 }
