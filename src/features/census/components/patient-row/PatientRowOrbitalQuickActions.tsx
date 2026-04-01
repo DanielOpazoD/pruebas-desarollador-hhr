@@ -181,13 +181,13 @@ export const PatientRowOrbitalQuickActions: React.FC<PatientRowOrbitalQuickActio
                     height: `${TRIGGER_SIZE}px`,
                   }}
                 >
-                  <span className="flex h-8 w-8 items-center justify-center overflow-visible">
+                  <span className="flex h-7 w-7 items-center justify-center overflow-visible">
                     <img
                       src={PATIENT_ROW_ORBITAL_TRIGGER_ICON_SRC}
                       alt=""
                       aria-hidden="true"
                       draggable={false}
-                      className="h-8 w-8 object-contain [filter:drop-shadow(1px_0_0_rgba(20,184,166,0.7))_drop-shadow(-1px_0_0_rgba(20,184,166,0.7))_drop-shadow(0_1px_0_rgba(20,184,166,0.7))_drop-shadow(0_-1px_0_rgba(20,184,166,0.7))_drop-shadow(1px_1px_0_rgba(20,184,166,0.52))_drop-shadow(-1px_-1px_0_rgba(20,184,166,0.52))_drop-shadow(1px_-1px_0_rgba(20,184,166,0.52))_drop-shadow(-1px_1px_0_rgba(20,184,166,0.52))]"
+                      className="h-7 w-7 object-contain [filter:drop-shadow(1px_0_0_rgba(20,184,166,0.7))_drop-shadow(-1px_0_0_rgba(20,184,166,0.7))_drop-shadow(0_1px_0_rgba(20,184,166,0.7))_drop-shadow(0_-1px_0_rgba(20,184,166,0.7))_drop-shadow(1px_1px_0_rgba(20,184,166,0.52))_drop-shadow(-1px_-1px_0_rgba(20,184,166,0.52))_drop-shadow(1px_-1px_0_rgba(20,184,166,0.52))_drop-shadow(-1px_1px_0_rgba(20,184,166,0.52))]"
                     />
                   </span>
                 </motion.button>
