@@ -5,6 +5,7 @@ import { FugaNotificationModal } from '@/features/census/components/FugaNotifica
 
 const sendFugaNotificationMock = vi.fn();
 const useAuthStateMock = vi.fn();
+const confirmMock = vi.fn();
 
 vi.mock('@/services/integrations/fugaNotificationService', () => ({
   sendFugaNotification: (...args: unknown[]) => sendFugaNotificationMock(...args),
@@ -12,6 +13,12 @@ vi.mock('@/services/integrations/fugaNotificationService', () => ({
 
 vi.mock('@/hooks/useAuthState', () => ({
   useAuthState: () => useAuthStateMock(),
+}));
+
+vi.mock('@/context/UIContext', () => ({
+  useUI: () => ({
+    confirm: (...args: unknown[]) => confirmMock(...args),
+  }),
 }));
 
 vi.mock('@/context/DailyRecordContext', () => ({
@@ -39,7 +46,7 @@ describe('FugaNotificationModal', () => {
     vi.clearAllMocks();
     useAuthStateMock.mockReturnValue({ role: 'nurse_hospital' });
     sendFugaNotificationMock.mockResolvedValue({ success: true, message: 'ok', gmailId: '1' });
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    confirmMock.mockResolvedValue(true);
   });
 
   it('valida correo inválido en destinatarios manuales', async () => {
@@ -98,6 +105,34 @@ describe('FugaNotificationModal', () => {
           nursesSignature: 'Enf Uno / Enf Dos',
           note: undefined,
           recipients: ['destino@hospital.cl'],
+        })
+      );
+    });
+  });
+
+  it('muestra modo automático para psiquiatría sin requerir destinatarios manuales', async () => {
+    render(
+      <FugaNotificationModal
+        isOpen
+        onClose={vi.fn()}
+        dischargeItem={{
+          ...baseDischarge,
+          originalData: { specialty: 'Psiquiatría' },
+        }}
+        recordDate="2026-03-31"
+      />
+    );
+
+    expect(screen.getByText(/destinatarios automáticos psiquiatría/i)).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/ejemplo1@hospital.cl/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /enviar notificación/i }));
+
+    await waitFor(() => {
+      expect(sendFugaNotificationMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recipients: undefined,
+          specialty: 'Psiquiatría',
         })
       );
     });

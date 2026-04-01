@@ -6,6 +6,45 @@
 import { PDFDocument, PDFName } from 'pdf-lib';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 
+const RESERVED_WINDOW_PRINT_DELAY_MS = 450;
+const IFRAME_PRINT_DELAY_MS = 250;
+const IFRAME_FALLBACK_TIMEOUT_MS = 4000;
+const PDF_OBJECT_URL_TTL_MS = 60000;
+
+const revokeObjectUrlLater = (url: string): void => {
+  window.setTimeout(() => URL.revokeObjectURL(url), PDF_OBJECT_URL_TTL_MS);
+};
+
+const scheduleDownloadFallback = (
+  pdfBytes: Uint8Array,
+  fallbackName: string,
+  url: string
+): void => {
+  const popup = defaultBrowserWindowRuntime.open(url, '_blank');
+  if (!popup) {
+    void saveAndDownloadPdf(pdfBytes, fallbackName);
+    URL.revokeObjectURL(url);
+    return;
+  }
+
+  revokeObjectUrlLater(url);
+};
+
+const createHiddenPrintFrame = (): HTMLIFrameElement => {
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.tabIndex = -1;
+  iframe.style.position = 'fixed';
+  iframe.style.width = '1px';
+  iframe.style.height = '1px';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.opacity = '0.01';
+  iframe.style.pointerEvents = 'none';
+  iframe.style.border = '0';
+  return iframe;
+};
+
 /**
  * Injects a JavaScript auto-print action into the PDF catalog.
  */
@@ -83,17 +122,7 @@ export const openPdfPrintDialog = async (
   const finalBytes = await printDoc.save();
   const blob = new Blob([finalBytes as unknown as BlobPart], { type: 'application/pdf' });
   const url = URL.createObjectURL(blob);
-  const iframe = document.createElement('iframe');
-  iframe.setAttribute('aria-hidden', 'true');
-  iframe.tabIndex = -1;
-  iframe.style.position = 'fixed';
-  iframe.style.width = '1px';
-  iframe.style.height = '1px';
-  iframe.style.right = '0';
-  iframe.style.bottom = '0';
-  iframe.style.opacity = '0.01';
-  iframe.style.pointerEvents = 'none';
-  iframe.style.border = '0';
+  const iframe = createHiddenPrintFrame();
 
   const removeIframe = () => {
     iframe.remove();
@@ -117,8 +146,8 @@ export const openPdfPrintDialog = async (
       } catch {
         // Ignore print failures and keep browser-native PDF controls as fallback.
       }
-    }, 450);
-    window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }, RESERVED_WINDOW_PRINT_DELAY_MS);
+    revokeObjectUrlLater(url);
   };
 
   try {
@@ -129,16 +158,8 @@ export const openPdfPrintDialog = async (
 
     const fallbackTimeout = window.setTimeout(() => {
       removeIframe();
-
-      const popup = defaultBrowserWindowRuntime.open(url, '_blank');
-      if (!popup) {
-        void saveAndDownloadPdf(finalBytes as Uint8Array, fallbackName);
-        URL.revokeObjectURL(url);
-        return;
-      }
-
-      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
-    }, 4000);
+      scheduleDownloadFallback(finalBytes as Uint8Array, fallbackName, url);
+    }, IFRAME_FALLBACK_TIMEOUT_MS);
 
     iframe.addEventListener(
       'load',
@@ -148,10 +169,10 @@ export const openPdfPrintDialog = async (
 
         if (frameWindow && typeof frameWindow.print === 'function') {
           frameWindow.focus();
-          window.setTimeout(() => frameWindow.print(), 250);
+          window.setTimeout(() => frameWindow.print(), IFRAME_PRINT_DELAY_MS);
         }
 
-        window.setTimeout(cleanup, 60000);
+        window.setTimeout(cleanup, PDF_OBJECT_URL_TTL_MS);
       },
       { once: true }
     );
@@ -163,13 +184,5 @@ export const openPdfPrintDialog = async (
     cleanup();
   }
 
-  const popup = defaultBrowserWindowRuntime.open(url, '_blank');
-
-  if (!popup) {
-    void saveAndDownloadPdf(finalBytes as Uint8Array, fallbackName);
-    URL.revokeObjectURL(url);
-    return;
-  }
-
-  window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+  scheduleDownloadFallback(finalBytes as Uint8Array, fallbackName, url);
 };

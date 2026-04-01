@@ -52,6 +52,36 @@ hover/focus fila ocupada
 - Solo un launcher puede permanecer activo a la vez para no perder foco visual al recorrer otras filas.
 - La iconografía cultural del launcher se define en `components/patient-row/patientRowOrbitalQuickActionAssets.ts`.
 
+### Acción de fuga por correo
+
+```text
+egreso tipo Fuga
+  -> DischargeRowView
+  -> FugaNotificationModal
+  -> useFugaNotificationModalModel
+  -> fugaNotificationPolicyController
+  -> send-fuga-notification
+  -> Gmail
+```
+
+- La acción `FUGA` solo aparece para egresos cuyo tipo es `Fuga`.
+- Psiquiatría usa destinatarios automáticos resueltos en backend.
+- `admin` puede usar `modo prueba`; enfermería no.
+
+### IEEH orientado a impresión
+
+```text
+botón IEEH
+  -> IEEHFormDialog
+  -> useIEEHForm
+  -> ieehFormDataController
+  -> ieehPdfService
+  -> pdfBase.openPdfPrintDialog
+```
+
+- El flujo IEEH ya no se modela como descarga directa.
+- La preparación del formulario se mantiene separada de la lógica de impresión del PDF.
+
 ## Archivos clave
 
 | Archivo                                                         | Motivo                                                          |
@@ -75,6 +105,10 @@ hover/focus fila ocupada
 | `components/patient-row/PatientRowOrbitalQuickActions.tsx`      | Launcher portalizado de acciones clínicas rápidas               |
 | `components/patient-row/usePatientRowOrbitalLauncherRuntime.ts` | Runtime UI del launcher orbital                                 |
 | `components/patient-row/patientRowOrbitalQuickActionAssets.ts`  | Mapeo de assets culturales del launcher                         |
+| `components/FugaNotificationModal.tsx`                          | Modal de notificación de fuga por correo                        |
+| `hooks/useFugaNotificationModalModel.ts`                        | Orquestación UI del envío de fuga                               |
+| `controllers/fugaNotificationPolicyController.ts`               | Política compartida de destinatarios y validación de fuga       |
+| `controllers/ieehFormDataController.ts`                         | Serialización pura del formulario IEEH                          |
 
 ## Calidad
 

@@ -7,7 +7,9 @@ interface SendCensusEmailParams {
   attachmentBuffer?: ArrayBuffer | Buffer;
   attachmentName?: string;
   nursesSignature?: string;
+  /** Optional explicit subject override for operational flows such as fuga notifications. */
   subject?: string;
+  /** Optional plain-text body override. Defaults to the standard census email body when omitted. */
   body?: string;
 
   encryptionPin?: string;

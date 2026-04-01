@@ -1,12 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import { BaseModal } from '@/components/shared/BaseModal';
 import { MailWarning } from 'lucide-react';
 import type { DischargeData } from '@/types/domain/movements';
-import { sendFugaNotification } from '@/services/integrations/fugaNotificationService';
-import { useAuthState } from '@/hooks/useAuthState';
-import { useDailyRecordStaff } from '@/context/DailyRecordContext';
-import { resolveShiftNurseSignature } from '@/services/staff/dailyRecordStaffing';
-import { formatDateDDMMYYYY } from '@/utils/dateUtils';
+import { useFugaNotificationModalModel } from '@/features/census/hooks/useFugaNotificationModalModel';
 
 interface FugaNotificationModalProps {
   isOpen: boolean;
@@ -15,184 +11,35 @@ interface FugaNotificationModalProps {
   recordDate: string;
 }
 
-const PSYCHIATRY_RECIPIENTS = [
-  'angelica.vargas@hospitalhangaroa.cl',
-  'mariapaz.ureta@hospitalhangaroa.cl',
-] as const;
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const normalizeText = (value?: string): string =>
-  String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toLowerCase();
-
-const isPsychiatrySpecialty = (value?: string): boolean => {
-  const normalized = normalizeText(value);
-  return normalized === 'psiquiatria' || normalized.includes('psiquiatr');
-};
-
-const parseEmails = (input: string): string[] =>
-  input
-    .split(/[;,\n\s]+/)
-    .map(value => value.trim().toLowerCase())
-    .filter(Boolean);
-
-const buildDefaultAutomaticMessage = (input: {
-  patientName: string;
-  rut: string;
-  time: string;
-  bedName: string;
-  diagnosis: string;
-  specialty: string;
-  recordDate: string;
-}): string =>
-  [
-    'Estimad@s,',
-    '',
-    `Se informa fuga del siguiente paciente ${input.patientName} (RUT: ${input.rut}) a las ${input.time}.`,
-    '',
-    `Cama: ${input.bedName}`,
-    `Diagnóstico: ${input.diagnosis}`,
-    `Especialidad: ${input.specialty || 'No especificada'}`,
-    `Fecha de egreso: ${formatDateDDMMYYYY(input.recordDate)}`,
-    '',
-    'Este reporte es automático desde el sistema de censo diario.',
-  ].join('\n');
-
 export const FugaNotificationModal: React.FC<FugaNotificationModalProps> = ({
   isOpen,
   onClose,
   dischargeItem,
   recordDate,
 }) => {
-  const { role } = useAuthState();
-  const staffRecord = useDailyRecordStaff();
-  const nursesSignature = useMemo(
-    () => resolveShiftNurseSignature(staffRecord || undefined, 'night'),
-    [staffRecord]
-  );
-  const isAdminUser = role === 'admin';
-  const [manualRecipients, setManualRecipients] = useState('');
-  const [testMode, setTestMode] = useState(false);
-  const [testRecipient, setTestRecipient] = useState('');
-  const [note, setNote] = useState('');
-  const [automaticMessage, setAutomaticMessage] = useState(() =>
-    buildDefaultAutomaticMessage({
-      patientName: dischargeItem.patientName,
-      rut: dischargeItem.rut,
-      diagnosis: dischargeItem.diagnosis,
-      bedName: dischargeItem.bedName,
-      specialty: String(dischargeItem.originalData?.specialty || ''),
-      recordDate: dischargeItem.movementDate || recordDate,
-      time: dischargeItem.time,
-    })
-  );
-  const [isSending, setIsSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const specialty = dischargeItem.originalData?.specialty || '';
-  const isPsychiatry = useMemo(() => isPsychiatrySpecialty(String(specialty)), [specialty]);
-
-  const resolvedRecipients = useMemo(() => {
-    if (isAdminUser && testMode) {
-      return testRecipient.trim() ? [testRecipient.trim().toLowerCase()] : [];
-    }
-
-    if (isPsychiatry) return [...PSYCHIATRY_RECIPIENTS];
-    return parseEmails(manualRecipients);
-  }, [isAdminUser, isPsychiatry, manualRecipients, testMode, testRecipient]);
-
-  const hasInvalidEmails = useMemo(
-    () => resolvedRecipients.some(email => !EMAIL_REGEX.test(email)),
-    [resolvedRecipients]
-  );
-
-  React.useEffect(() => {
-    setAutomaticMessage(
-      buildDefaultAutomaticMessage({
-        patientName: dischargeItem.patientName,
-        rut: dischargeItem.rut,
-        diagnosis: dischargeItem.diagnosis,
-        bedName: dischargeItem.bedName,
-        specialty: String(specialty || ''),
-        recordDate: dischargeItem.movementDate || recordDate,
-        time: dischargeItem.time,
-      })
-    );
-    setManualRecipients('');
-    setTestMode(false);
-    setTestRecipient('');
-    setNote('');
-    setError(null);
-  }, [dischargeItem, recordDate, specialty, isOpen]);
-
-  const handleSend = async () => {
-    setError(null);
-
-    if (!automaticMessage.trim()) {
-      setError('El mensaje automático es obligatorio.');
-      return;
-    }
-
-    if (resolvedRecipients.length === 0) {
-      setError('Debes ingresar al menos un correo destinatario para enviar la notificación.');
-      return;
-    }
-
-    if (hasInvalidEmails) {
-      setError('Uno o más correos ingresados no son válidos.');
-      return;
-    }
-
-    if (isAdminUser && testMode && !testRecipient.trim()) {
-      setError('Debes ingresar un correo de prueba válido.');
-      return;
-    }
-
-    const targetLabel = resolvedRecipients.join(', ');
-    const isConfirmed = window.confirm(
-      `Se enviará la notificación a: ${targetLabel}${isAdminUser && testMode ? ' (modo prueba)' : ''}. ¿Deseas continuar?`
-    );
-
-    if (!isConfirmed) {
-      return;
-    }
-
-    setIsSending(true);
-
-    try {
-      await sendFugaNotification({
-        patientName: dischargeItem.patientName,
-        rut: dischargeItem.rut,
-        diagnosis: dischargeItem.diagnosis,
-        bedName: dischargeItem.bedName,
-        specialty: String(specialty || ''),
-        recordDate: dischargeItem.movementDate || recordDate,
-        time: dischargeItem.time,
-        nursesSignature,
-        automaticMessage: automaticMessage.trim(),
-        note: note.trim() || undefined,
-        recipients: isPsychiatry && !(isAdminUser && testMode) ? undefined : resolvedRecipients,
-        testMode: isAdminUser ? testMode : false,
-        testRecipient: isAdminUser && testMode ? testRecipient.trim().toLowerCase() : undefined,
-      });
-
-      onClose();
-      setManualRecipients('');
-      setNote('');
-      setTestMode(false);
-      setTestRecipient('');
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error ? requestError.message : 'No se pudo enviar el correo.'
-      );
-    } finally {
-      setIsSending(false);
-    }
-  };
+  const {
+    isAdminUser,
+    specialty,
+    manualRecipients,
+    testMode,
+    testRecipient,
+    note,
+    automaticMessage,
+    isSending,
+    error,
+    isPsychiatry,
+    setManualRecipients,
+    setTestMode,
+    setTestRecipient,
+    setNote,
+    setAutomaticMessage,
+    handleSend,
+  } = useFugaNotificationModalModel({
+    isOpen,
+    onClose,
+    dischargeItem,
+    recordDate,
+  });
 
   return (
     <BaseModal
@@ -258,12 +105,10 @@ export const FugaNotificationModal: React.FC<FugaNotificationModalProps> = ({
 
         {isPsychiatry && !(isAdminUser && testMode) ? (
           <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs">
-            <p className="font-semibold text-emerald-700">Destinatarios predefinidos Psiquiatría</p>
-            <ul className="list-disc ml-5 mt-1 text-emerald-800">
-              {PSYCHIATRY_RECIPIENTS.map(email => (
-                <li key={email}>{email}</li>
-              ))}
-            </ul>
+            <p className="font-semibold text-emerald-700">Destinatarios automáticos Psiquiatría</p>
+            <p className="mt-1 text-emerald-800">
+              El envío usará la lista automática configurada para Psiquiatría en el backend.
+            </p>
           </div>
         ) : !(isAdminUser && testMode) ? (
           <label className="block">

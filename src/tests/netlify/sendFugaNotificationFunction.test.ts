@@ -18,11 +18,11 @@ vi.mock('../../../netlify/functions/lib/firebase-server', () => ({
   getFirebaseServer: () => getFirebaseServerMock(),
 }));
 
+import { handler } from '../../../netlify/functions/send-fuga-notification';
 import {
   buildFugaNotificationBody,
-  handler,
   resolveFugaRecipients,
-} from '../../../netlify/functions/send-fuga-notification';
+} from '@/features/census/controllers/fugaNotificationPolicyController';
 
 describe('send-fuga-notification netlify function', () => {
   const originalEnv = { ...process.env };
@@ -36,6 +36,8 @@ describe('send-fuga-notification netlify function', () => {
       DEPLOY_URL: '',
       SITE_URL: '',
       APP_URL: '',
+      FUGA_PSYCHIATRY_RECIPIENTS:
+        'angelica.vargas@hospitalhangaroa.cl,mariapaz.ureta@hospitalhangaroa.cl',
     };
 
     sendCensusEmailMock.mockResolvedValue({ id: 'gmail-fuga-123' });
@@ -51,7 +53,12 @@ describe('send-fuga-notification netlify function', () => {
   it('resuelve destinatarios psiquiatría en modo normal', () => {
     expect(
       resolveFugaRecipients({ specialty: 'Psiquiatría', recipients: ['otro@hospital.cl'] })
-    ).toEqual(['angelica.vargas@hospitalhangaroa.cl', 'mariapaz.ureta@hospitalhangaroa.cl']);
+    ).toEqual({
+      mode: 'automatic',
+      recipients: [],
+      usesAutomaticPsychiatryRecipients: true,
+      displayLabel: 'destinatarios automáticos de Psiquiatría',
+    });
   });
 
   it('resuelve destinatario único en modo prueba', () => {
@@ -59,10 +66,16 @@ describe('send-fuga-notification netlify function', () => {
       resolveFugaRecipients({
         specialty: 'Psiquiatría',
         recipients: ['otro@hospital.cl'],
+        psychiatryRecipients: ['psiq@hospital.cl'],
         testMode: true,
         testRecipient: 'test@hospital.cl',
       })
-    ).toEqual(['test@hospital.cl']);
+    ).toEqual({
+      mode: 'test',
+      recipients: ['test@hospital.cl'],
+      usesAutomaticPsychiatryRecipients: false,
+      displayLabel: 'test@hospital.cl',
+    });
   });
 
   it('compone cuerpo final con mensaje automático y nota opcional', () => {
@@ -110,6 +123,35 @@ describe('send-fuga-notification netlify function', () => {
         body: expect.stringContaining('Nota'),
       })
     );
+  });
+
+  it('rechaza psiquiatría si no hay destinatarios automáticos configurados', async () => {
+    process.env.FUGA_PSYCHIATRY_RECIPIENTS = '';
+
+    const response = await handler({
+      httpMethod: 'POST',
+      headers: {
+        origin: 'https://app.example.com',
+        authorization: 'Bearer token-123',
+      },
+      body: JSON.stringify({
+        patientName: 'Paciente Tres',
+        rut: '3-5',
+        diagnosis: 'Diag',
+        bedName: 'A-3',
+        specialty: 'Psiquiatría',
+        recordDate: '2026-03-31',
+        time: '12:00',
+        automaticMessage: 'Mensaje editable',
+      }),
+      path: '/.netlify/functions/send-fuga-notification',
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toContain(
+      'No hay destinatarios automáticos configurados para Psiquiatría'
+    );
+    expect(sendCensusEmailMock).not.toHaveBeenCalled();
   });
 
   it('rechaza modo prueba si rol no es admin', async () => {

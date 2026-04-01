@@ -12,6 +12,12 @@ import {
 } from './lib/http';
 import { authorizeRoleRequest, extractBearerToken } from './lib/firebase-auth';
 import { formatDateDDMMYYYY } from '../../src/utils/dateUtils';
+import {
+  buildFugaNotificationBody,
+  parseFugaRecipientConfig,
+  resolveFugaRecipients,
+  validateFugaNotificationRequest,
+} from '../../src/features/census/controllers/fugaNotificationPolicyController';
 
 const ALLOWED_ROLES = new Set(['nurse_hospital', 'admin']);
 
@@ -31,63 +37,8 @@ const FugaNotificationPayloadSchema = z.object({
   testRecipient: z.string().email().optional(),
 });
 
-const PSYCHIATRY_RECIPIENTS = [
-  'angelica.vargas@hospitalhangaroa.cl',
-  'mariapaz.ureta@hospitalhangaroa.cl',
-] as const;
-
-const normalizeText = (value?: string): string =>
-  String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toLowerCase();
-
-const isPsychiatrySpecialty = (value?: string): boolean => {
-  const normalized = normalizeText(value);
-  return normalized === 'psiquiatria' || normalized.includes('psiquiatr');
-};
-
-export const buildFugaNotificationBody = (input: {
-  automaticMessage: string;
-  nursesSignature?: string;
-  note?: string;
-}): string => {
-  const automaticBlock = input.automaticMessage.trim();
-  const trimmedNote = input.note?.trim();
-  const trimmedNursesSignature = input.nursesSignature?.trim();
-
-  const signatureBlock = [
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-    trimmedNursesSignature || '',
-    'Enfermería - Servicio Hospitalizados',
-    'Hospital Hanga Roa',
-    'Anexo MINSAL 328388',
-  ]
-    .filter(Boolean)
-    .join('\n');
-
-  if (!trimmedNote) {
-    return `${automaticBlock}\n\n${signatureBlock}`;
-  }
-
-  return `${automaticBlock}\n\nNota complementaria (ingresada por enfermería):\n${trimmedNote}\n\n${signatureBlock}`;
-};
-
-export const resolveFugaRecipients = (input: {
-  specialty?: string;
-  recipients?: string[];
-  testMode?: boolean;
-  testRecipient?: string;
-}): string[] => {
-  if (input.testMode) {
-    return input.testRecipient ? [input.testRecipient] : [];
-  }
-
-  return isPsychiatrySpecialty(input.specialty)
-    ? [...PSYCHIATRY_RECIPIENTS]
-    : input.recipients || [];
-};
+const resolvePsychiatryRecipientsFromEnv = (): string[] =>
+  parseFugaRecipientConfig(process.env.FUGA_PSYCHIATRY_RECIPIENTS);
 
 export const handler = async (event: NetlifyEventLike) => {
   const requestOrigin = getRequestOrigin(event);
@@ -164,12 +115,23 @@ export const handler = async (event: NetlifyEventLike) => {
       });
     }
 
-    const resolvedRecipients = resolveFugaRecipients(payload);
+    const resolvedRecipients = resolveFugaRecipients({
+      specialty: payload.specialty,
+      recipients: payload.recipients,
+      testMode: payload.testMode,
+      testRecipient: payload.testRecipient,
+      psychiatryRecipients: resolvePsychiatryRecipientsFromEnv(),
+    });
+    const validation = validateFugaNotificationRequest({
+      automaticMessage: payload.automaticMessage,
+      resolvedRecipients,
+      requireAutomaticRecipients: true,
+    });
 
-    if (resolvedRecipients.length === 0) {
+    if (!validation.isValid) {
       return buildTextResponse(
         400,
-        'Debe ingresar al menos un correo destinatario para notificar la fuga.',
+        validation.error || 'No se pudo validar la notificación de fuga.',
         { requestOrigin }
       );
     }
@@ -179,7 +141,7 @@ export const handler = async (event: NetlifyEventLike) => {
 
     const gmailResponse = await sendCensusEmail({
       date: payload.recordDate,
-      recipients: resolvedRecipients,
+      recipients: resolvedRecipients.recipients,
       subject,
       body,
     });
