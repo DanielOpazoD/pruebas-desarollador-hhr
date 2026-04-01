@@ -21,6 +21,7 @@ const formatSidebarDocumentTitle = (value: string): string => {
 export const ClinicalDocumentsSidebar: React.FC<ClinicalDocumentsSidebarProps> = ({
   canEdit,
   canDelete,
+  readOnlyMessage,
   patientName,
   templates,
   selectedTemplateId,
@@ -34,9 +35,9 @@ export const ClinicalDocumentsSidebar: React.FC<ClinicalDocumentsSidebarProps> =
   return (
     <aside className="space-y-2.5 border-r border-slate-200 bg-slate-50/70 p-2.5">
       <div className="space-y-1.5">
-        {!canEdit && (
+        {readOnlyMessage && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
-            Perfil en solo lectura: puedes revisar e imprimir, pero no crear nuevos documentos.
+            {readOnlyMessage}
           </div>
         )}
         <div className="space-y-1.5 rounded-lg border border-slate-200 bg-white p-2">

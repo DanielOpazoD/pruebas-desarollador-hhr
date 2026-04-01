@@ -9,6 +9,11 @@ import {
   canEditClinicalDocuments,
   canReadClinicalDocuments,
 } from '@/features/clinical-documents/controllers/clinicalDocumentPermissionController';
+import {
+  buildClinicalDocumentsReadOnlyMessage,
+  canMutateClinicalDocumentsEpisode,
+  resolveClinicalDocumentPersistReason,
+} from '@/features/clinical-documents/controllers/clinicalDocumentEpisodeStatusController';
 import { buildClinicalDocumentWorkspaceNotifyPort } from '@/features/clinical-documents/controllers/clinicalDocumentWorkspaceController';
 import type { ClinicalDocumentSheetProps } from '@/features/clinical-documents/components/clinicalDocumentSheetShared';
 import type { ClinicalDocumentsSidebarProps } from '@/features/clinical-documents/contracts/clinicalDocumentsSidebarContracts';
@@ -59,8 +64,13 @@ export const useClinicalDocumentsWorkspaceModel = ({
   const { success, warning, error: notifyError, info, confirm } = useNotification();
 
   const canRead = canReadClinicalDocuments(role);
-  const canEdit = canEditClinicalDocuments(role);
-  const canDelete = canDeleteClinicalDocuments(role);
+  const canEditByRole = canEditClinicalDocuments(role);
+  const canDeleteByRole = canDeleteClinicalDocuments(role);
+  const canMutateEpisode = canMutateClinicalDocumentsEpisode(patient, role);
+  const canEdit = canEditByRole && canMutateEpisode;
+  const canDelete = canDeleteByRole && canMutateEpisode;
+  const readOnlyMessage = buildClinicalDocumentsReadOnlyMessage(patient, role, canEditByRole);
+  const persistReason = resolveClinicalDocumentPersistReason(patient, role);
   const hospitalId = getActiveHospitalId();
   const notifyPort = useMemo(
     () => buildClinicalDocumentWorkspaceNotifyPort(success, warning, notifyError, info, confirm),
@@ -113,6 +123,7 @@ export const useClinicalDocumentsWorkspaceModel = ({
     isActive,
     hospitalId,
     role,
+    persistReason,
     user,
   });
 
@@ -200,6 +211,7 @@ export const useClinicalDocumentsWorkspaceModel = ({
     sidebarProps: {
       canEdit,
       canDelete,
+      readOnlyMessage,
       patientName: patient.patientName,
       templates,
       selectedTemplateId,

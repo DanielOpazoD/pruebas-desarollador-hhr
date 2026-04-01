@@ -328,6 +328,54 @@ describe('ClinicalDocumentsWorkspace', () => {
     expect(screen.getByRole('button', { name: /drive/i })).toBeInTheDocument();
   });
 
+  it('blocks editing for non-admin users when the episode is closed', async () => {
+    authState.user = { uid: 's1', email: 'specialist@test.com', displayName: 'Specialist Test' };
+    authState.role = 'doctor_specialist';
+
+    render(
+      <ClinicalDocumentsWorkspace
+        patient={{
+          ...workspacePatient,
+          dischargeDate: '2026-03-08',
+          episodeClosureKind: 'discharge',
+        }}
+        currentDateString="2026-03-06"
+        bedId="R1"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/episodio cerrado por alta/i)).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole('button', { name: /^crear$/i })).toBeDisabled();
+    expect(screen.queryByTitle(/eliminar documento/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps admin editing enabled on closed episodes', async () => {
+    authState.user = { uid: 'a1', email: 'admin@test.com', displayName: 'Admin Test' };
+    authState.role = 'admin';
+
+    render(
+      <ClinicalDocumentsWorkspace
+        patient={{
+          ...workspacePatient,
+          transferDate: '2026-03-08',
+          episodeClosureKind: 'transfer',
+        }}
+        currentDateString="2026-03-06"
+        bedId="R1"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /^crear$/i })).toBeEnabled();
+    });
+
+    expect(screen.queryByText(/episodio cerrado/i)).not.toBeInTheDocument();
+    expect(screen.getByTitle(/eliminar documento/i)).toBeInTheDocument();
+  });
+
   it('updates the open document to the newly selected template type', async () => {
     render(
       <ClinicalDocumentsWorkspace

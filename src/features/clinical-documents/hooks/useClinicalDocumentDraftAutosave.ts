@@ -19,6 +19,7 @@ interface UseClinicalDocumentDraftAutosaveParams {
   isActive: boolean;
   hospitalId: string;
   role: string;
+  persistReason: 'autosave' | 'admin_fix';
   user: {
     uid?: string;
     email?: string | null;
@@ -37,6 +38,7 @@ export const useClinicalDocumentDraftAutosave = ({
   isActive,
   hospitalId,
   role,
+  persistReason,
   user,
   dispatch,
   draftRef,
@@ -68,7 +70,7 @@ export const useClinicalDocumentDraftAutosave = ({
           hospitalId,
           role,
           user,
-          reason: 'autosave',
+          reason: persistReason,
         });
 
         recordOperationalOutcome('clinical_document', 'autosave_clinical_document', result, {
@@ -138,6 +140,7 @@ export const useClinicalDocumentDraftAutosave = ({
     isActive,
     lastPersistedSnapshotRef,
     role,
+    persistReason,
     user,
   ]);
 };

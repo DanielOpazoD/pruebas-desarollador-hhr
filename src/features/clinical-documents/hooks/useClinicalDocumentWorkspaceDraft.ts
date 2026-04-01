@@ -22,6 +22,7 @@ interface UseClinicalDocumentWorkspaceDraftParams {
   isActive: boolean;
   hospitalId: string;
   role: string;
+  persistReason: 'autosave' | 'admin_fix';
   user: {
     uid?: string;
     email?: string | null;
@@ -74,6 +75,7 @@ export const useClinicalDocumentWorkspaceDraft = ({
   isActive,
   hospitalId,
   role,
+  persistReason,
   user,
 }: UseClinicalDocumentWorkspaceDraftParams): ClinicalDocumentWorkspaceDraftState => {
   const [state, dispatch] = useReducer(
@@ -115,6 +117,7 @@ export const useClinicalDocumentWorkspaceDraft = ({
     isActive,
     hospitalId,
     role,
+    persistReason,
     user,
     dispatch,
     draftRef,

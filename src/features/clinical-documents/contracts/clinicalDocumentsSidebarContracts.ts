@@ -8,6 +8,7 @@ export interface ClinicalDocumentsSidebarTemplateOption {
 export interface ClinicalDocumentsSidebarProps {
   canEdit: boolean;
   canDelete: boolean;
+  readOnlyMessage?: string | null;
   patientName?: string;
   templates: ClinicalDocumentsSidebarTemplateOption[];
   selectedTemplateId: string;

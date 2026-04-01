@@ -92,7 +92,7 @@ interface PersistClinicalDocumentEditorDraftInput {
     email?: string | null;
     displayName?: string | null;
   };
-  reason: 'autosave' | 'manual';
+  reason: 'autosave' | 'manual' | 'admin_fix';
 }
 
 export const executePersistClinicalDocumentEditorDraft = (

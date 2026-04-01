@@ -42,6 +42,7 @@ describe('ClinicalDocumentsSidebar', () => {
       <ClinicalDocumentsSidebar
         canEdit={false}
         canDelete={false}
+        readOnlyMessage="Perfil en solo lectura: puedes revisar e imprimir, pero no crear nuevos documentos."
         patientName=""
         templates={[{ id: 'epicrisis', name: 'Epicrisis' }]}
         selectedTemplateId="epicrisis"
@@ -68,6 +69,7 @@ describe('ClinicalDocumentsSidebar', () => {
       <ClinicalDocumentsSidebar
         canEdit={true}
         canDelete={true}
+        readOnlyMessage={null}
         patientName="Paciente Test"
         templates={[{ id: 'epicrisis', name: 'Epicrisis' }]}
         selectedTemplateId="epicrisis"
@@ -92,5 +94,30 @@ describe('ClinicalDocumentsSidebar', () => {
     expect(screen.getByText('Epicrisis médica')).toBeInTheDocument();
     expect(screen.getByText(/doctor test/i)).toBeInTheDocument();
     expect(screen.queryByText(/borrador/i)).not.toBeInTheDocument();
+  });
+
+  it('shows closed-episode notice while keeping the selected document visible', () => {
+    const document = buildDocument();
+
+    render(
+      <ClinicalDocumentsSidebar
+        canEdit={false}
+        canDelete={false}
+        readOnlyMessage="Episodio cerrado por alta: solo ADMIN puede crear, editar o eliminar documentos."
+        patientName="Paciente Test"
+        templates={[{ id: 'epicrisis', name: 'Epicrisis' }]}
+        selectedTemplateId="epicrisis"
+        onSelectTemplate={() => {}}
+        onCreateDocument={() => {}}
+        documents={[document]}
+        selectedDocumentId={document.id}
+        onSelectDocument={() => {}}
+        onDeleteDocument={() => {}}
+      />
+    );
+
+    expect(screen.getByText(/episodio cerrado por alta/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^crear$/i })).toBeDisabled();
+    expect(screen.queryByTitle(/eliminar documento/i)).not.toBeInTheDocument();
   });
 });

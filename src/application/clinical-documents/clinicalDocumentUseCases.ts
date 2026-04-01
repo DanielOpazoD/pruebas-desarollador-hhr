@@ -12,7 +12,7 @@ import {
   type ClinicalDocumentPort,
 } from '@/application/ports/clinicalDocumentPort';
 
-type PersistReason = 'autosave' | 'manual';
+type PersistReason = 'autosave' | 'manual' | 'admin_fix';
 
 interface ClinicalDocumentUseCaseDependencies {
   clinicalDocumentPort?: ClinicalDocumentPort;

@@ -88,6 +88,51 @@ export const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'history' | 'documents'>('history');
+  const canOpenDocumentsTab = Boolean(patient && currentDateString && bedId);
+  const isDocumentsTabActive = activeTab === 'documents' && canOpenDocumentsTab;
+
+  const documentsPanelWithEpisodeState =
+    patient && history && React.isValidElement(documentsPanel)
+      ? (() => {
+          const lastMovement = history.movements[history.movements.length - 1];
+          const closurePatch =
+            lastMovement?.type === 'discharge'
+              ? {
+                  episodeClosureKind: 'discharge' as const,
+                  episodeClosureDate: lastMovement.date,
+                  dischargeDate: lastMovement.date,
+                }
+              : lastMovement?.type === 'transfer'
+                ? {
+                    episodeClosureKind: 'transfer' as const,
+                    episodeClosureDate: lastMovement.date,
+                    transferDate: lastMovement.date,
+                  }
+                : {
+                    episodeClosureKind: undefined,
+                    episodeClosureDate: undefined,
+                    dischargeDate: undefined,
+                    transferDate: undefined,
+                  };
+
+          return React.cloneElement(
+            documentsPanel as React.ReactElement<{
+              patient: PatientData & {
+                episodeClosureKind?: 'discharge' | 'transfer';
+                episodeClosureDate?: string;
+                dischargeDate?: string;
+                transferDate?: string;
+              };
+            }>,
+            {
+              patient: {
+                ...patient,
+                ...closurePatch,
+              },
+            }
+          );
+        })()
+      : documentsPanel;
 
   useEffect(() => {
     if (!isOpen) {
@@ -174,8 +219,13 @@ export const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({
           </div>
         )}
 
-        {activeTab === 'documents' && patient && currentDateString && bedId ? (
-          documentsPanel
+        {isDocumentsTabActive && (isLoading || !history) ? (
+          <div className="flex flex-col items-center justify-center py-8 text-slate-400">
+            <Loader2 size={24} className="animate-spin mb-2 text-blue-500" />
+            <span className="text-xs font-medium">Buscando historial clínico...</span>
+          </div>
+        ) : isDocumentsTabActive ? (
+          documentsPanelWithEpisodeState
         ) : isLoading ? (
           <div className="flex flex-col items-center justify-center py-8 text-slate-400">
             <Loader2 size={24} className="animate-spin mb-2 text-blue-500" />
