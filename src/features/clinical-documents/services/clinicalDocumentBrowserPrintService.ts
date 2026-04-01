@@ -7,6 +7,11 @@ import {
   sanitizeClinicalDocumentSheetClone,
 } from '@/features/clinical-documents/services/clinicalDocumentPrintSupport';
 
+const DOCUMENT_TYPES_WITH_PATIENT_SIGNATURE = new Set<ClinicalDocumentType>([
+  'epicrisis',
+  'epicrisis_traslado',
+]);
+
 export const openClinicalDocumentBrowserPrintPreview = async (
   pageTitle: string,
   documentType: ClinicalDocumentType = 'epicrisis'
@@ -27,15 +32,18 @@ export const openClinicalDocumentBrowserPrintPreview = async (
   await sanitizeClinicalDocumentSheetClone(sheet, sheetClone);
 
   const printOptions = getClinicalDocumentDefinition(documentType).printOptions;
+  const includePatientSignature = DOCUMENT_TYPES_WITH_PATIENT_SIGNATURE.has(documentType);
   const printRoot = document.createElement('div');
   printRoot.id = CLINICAL_DOCUMENT_INLINE_PRINT_ROOT_ID;
-  printRoot.innerHTML = [
-    sheetClone.outerHTML,
-    '<div class="clinical-document-print-signature-block" aria-hidden="true">',
-    '  <div class="clinical-document-patient-signature-line"></div>',
-    '  <div class="clinical-document-patient-signature-label">Firma paciente/familiar responsable</div>',
-    '</div>',
-  ].join('');
+  printRoot.innerHTML = includePatientSignature
+    ? [
+        sheetClone.outerHTML,
+        '<div class="clinical-document-print-signature-block" aria-hidden="true">',
+        '  <div class="clinical-document-patient-signature-line"></div>',
+        '  <div class="clinical-document-patient-signature-label">Firma paciente/familiar responsable</div>',
+        '</div>',
+      ].join('')
+    : sheetClone.outerHTML;
 
   const printStyle = document.createElement('style');
   printStyle.id = CLINICAL_DOCUMENT_INLINE_PRINT_STYLE_ID;

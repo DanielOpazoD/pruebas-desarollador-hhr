@@ -35,4 +35,14 @@ describe('clinicalDocumentPrintPdfService', () => {
     expect(html).not.toContain('clinical-document-section-drag-handle');
     expect(html).toContain('Firma paciente/familiar responsable');
   });
+
+  it('omits patient signature footer for non-epicrisis document types', async () => {
+    const html = await buildClinicalDocumentPrintHtml({
+      pageTitle: 'Evolución clínica',
+      documentType: 'evolucion',
+    });
+
+    expect(html).toContain('@page { size: letter; margin: 8mm; }');
+    expect(html).not.toContain('Firma paciente/familiar responsable');
+  });
 });
