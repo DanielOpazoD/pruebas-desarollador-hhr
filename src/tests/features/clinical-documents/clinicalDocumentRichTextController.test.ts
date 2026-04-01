@@ -12,6 +12,12 @@ describe('clinicalDocumentRichTextController', () => {
     );
   });
 
+  it('avoids double-encoding html entities coming from contenteditable innerHTML', () => {
+    expect(
+      normalizeClinicalDocumentContentForStorage('Paciente con &lt; 24h y &gt; 3 episodios')
+    ).toBe('Paciente con &lt; 24h y &gt; 3 episodios');
+  });
+
   it('sanitizes unsupported tags and extracts plain text for exports', () => {
     const html = normalizeClinicalDocumentContentForStorage(
       '<script>alert(1)</script><b>Alta</b><div>Sin complicaciones</div><ul><li>Control</li></ul>'
@@ -21,6 +27,16 @@ describe('clinicalDocumentRichTextController', () => {
     expect(stripClinicalDocumentHtml(html)).toContain('Alta');
     expect(stripClinicalDocumentHtml(html)).toContain('Sin complicaciones');
     expect(stripClinicalDocumentHtml(html)).toContain('• Control');
+  });
+
+  it('normalizes blockquote indent markup to plain div containers', () => {
+    const html = normalizeClinicalDocumentContentForStorage(
+      '<blockquote><div>- Prerrenal</div><blockquote><div>- Renal</div></blockquote></blockquote>'
+    );
+
+    expect(html).not.toContain('<blockquote');
+    expect(html).toContain('<div>- Prerrenal</div>');
+    expect(html).toContain('<div>- Renal</div>');
   });
 
   it('keeps ordered list numbering when extracting plain text for exports', () => {

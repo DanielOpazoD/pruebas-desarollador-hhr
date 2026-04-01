@@ -17,6 +17,14 @@ interface PrintHtmlOptions {
   documentType?: ClinicalDocumentType;
 }
 
+const DOCUMENT_TYPES_WITH_PATIENT_SIGNATURE = new Set<ClinicalDocumentType>([
+  'epicrisis',
+  'epicrisis_traslado',
+]);
+
+const shouldRenderPatientSignature = (documentType?: ClinicalDocumentType): boolean =>
+  DOCUMENT_TYPES_WITH_PATIENT_SIGNATURE.has(documentType || 'epicrisis');
+
 const collectAppStyleTags = (): string => {
   if (typeof document === 'undefined') {
     return '';
@@ -58,6 +66,16 @@ export const buildClinicalDocumentPrintHtml = async (
       window.getComputedStyle(document.body).fontFamily ||
       "Inter, 'Segoe UI', Roboto, Arial, sans-serif"
   );
+  const patientSignatureMarkup = shouldRenderPatientSignature(options.documentType)
+    ? [
+        '<div class="clinical-document-print-bottom-bar" aria-hidden="true">',
+        '  <div class="clinical-document-print-footer-left">',
+        '    <div class="clinical-document-patient-signature-line"></div>',
+        '    <div class="clinical-document-patient-signature-label">Firma paciente/familiar responsable</div>',
+        '  </div>',
+        '</div>',
+      ].join('\n')
+    : '';
 
   return [
     '<!doctype html>',
@@ -74,12 +92,7 @@ export const buildClinicalDocumentPrintHtml = async (
     '</head>',
     '<body class="clinical-documents-print">',
     sheetClone.outerHTML,
-    '<div class="clinical-document-print-bottom-bar" aria-hidden="true">',
-    '  <div class="clinical-document-print-footer-left">',
-    '    <div class="clinical-document-patient-signature-line"></div>',
-    '    <div class="clinical-document-patient-signature-label">Firma paciente/familiar responsable</div>',
-    '  </div>',
-    '</div>',
+    patientSignatureMarkup,
     '</body>',
     '</html>',
   ].join('');

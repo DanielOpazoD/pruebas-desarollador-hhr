@@ -24,6 +24,25 @@ const escapeHtml = (value: string): string =>
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 
+const decodeHtmlEntities = (value: string): string => {
+  if (!value) {
+    return '';
+  }
+
+  if (typeof document === 'undefined') {
+    return value
+      .replaceAll('&lt;', '<')
+      .replaceAll('&gt;', '>')
+      .replaceAll('&quot;', '"')
+      .replaceAll('&#39;', "'")
+      .replaceAll('&amp;', '&');
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = value;
+  return textarea.value;
+};
+
 const normalizeWhitespaceHtml = (value: string): string =>
   value
     .replace(/<div><br><\/div>/gi, '<br>')
@@ -32,7 +51,7 @@ const normalizeWhitespaceHtml = (value: string): string =>
     .trim();
 
 export const convertPlainTextToClinicalDocumentHtml = (value: string): string => {
-  const normalized = value.trim();
+  const normalized = decodeHtmlEntities(value).trim();
   if (!normalized) {
     return '';
   }
@@ -69,7 +88,8 @@ export const sanitizeClinicalDocumentHtml = (value: string): string => {
       return sanitizedChildren;
     }
 
-    const clone = document.createElement(tagName.toLowerCase());
+    const normalizedTagName = tagName === 'BLOCKQUOTE' ? 'div' : tagName.toLowerCase();
+    const clone = document.createElement(normalizedTagName);
     const safeStyle = sanitizeElementStyle(element);
     if (safeStyle) {
       clone.setAttribute('style', safeStyle);

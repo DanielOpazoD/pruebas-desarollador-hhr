@@ -66,4 +66,19 @@ describe('clinicalDocumentBrowserPrintService', () => {
     expect(document.title).toBe('Workspace');
     vi.useRealTimers();
   });
+
+  it('does not render patient signature block for non-epicrisis document types', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(window, 'print').mockImplementation(() => {});
+    document.body.innerHTML = `<section id="${CLINICAL_DOCUMENT_SHEET_ID}"><div>Contenido</div></section>`;
+
+    const opened = await openClinicalDocumentBrowserPrintPreview('Evolución clínica', 'evolucion');
+
+    expect(opened).toBe(true);
+    const printRoot = document.getElementById(CLINICAL_DOCUMENT_INLINE_PRINT_ROOT_ID);
+    expect(printRoot?.innerHTML).not.toContain('Firma paciente/familiar responsable');
+
+    window.dispatchEvent(new Event('afterprint'));
+    vi.useRealTimers();
+  });
 });
