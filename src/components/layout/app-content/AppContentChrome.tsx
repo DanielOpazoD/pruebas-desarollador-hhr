@@ -3,21 +3,53 @@ import { Navbar } from '@/components/layout/Navbar';
 import { DateStrip } from '@/components/layout/DateStrip';
 import { BookmarkBar } from '@/components/bookmarks/BookmarkBar';
 import { AppRouter } from '@/components/AppRouter';
+import { BEDS } from '@/constants/beds';
 import {
   shouldRenderBookmarkBar,
   shouldRenderDateStrip,
 } from '@/components/layout/app-content/appContentVisibilityController';
 import type { UseUIStateReturn } from '@/hooks/useUIState';
 import type { AppContentRuntime } from '@/components/layout/app-content/useAppContentRuntime';
+import type { MedicalIndicationsPatientOption } from '@/components/layout/date-strip/MedicalIndicationsQuickAction';
+import { formatDateToCL } from '@/utils/clinicalUtils';
 
 export interface AppContentChromeProps {
   ui: UseUIStateReturn;
   runtime: AppContentRuntime;
 }
 
+const calculateDaysOfStay = (admissionDate?: string): string => {
+  if (!admissionDate) return '';
+  const parsed = new Date(formatDateToCL(admissionDate).split('-').reverse().join('-'));
+  if (Number.isNaN(parsed.getTime())) return '';
+  const now = new Date();
+  const days = Math.ceil((now.getTime() - parsed.getTime()) / (1000 * 60 * 60 * 24));
+  return String(Math.max(days, 1));
+};
+
 export const AppContentChrome: React.FC<AppContentChromeProps> = ({ ui, runtime }) => {
   const { auth, dateNav, censusEmail, fileOps, syncStatus, lastSyncTime, exportManager } = runtime;
   const { isSignatureMode, currentDateString } = dateNav;
+
+  const medicalIndicationsPatients = React.useMemo<MedicalIndicationsPatientOption[]>(() => {
+    const bedsById = new Map(BEDS.map(bed => [bed.id, bed]));
+
+    return Object.entries(runtime.record?.beds || {})
+      .filter(([, patient]) => Boolean(patient.patientName?.trim()))
+      .map(([bedId, patient]) => ({
+        bedId,
+        label: `${bedsById.get(bedId)?.name || bedId} · ${patient.patientName}`,
+        patientName: patient.patientName || '',
+        rut: patient.rut || '',
+        diagnosis: patient.cie10Description || patient.pathology || '',
+        age: patient.age || '',
+        birthDate: formatDateToCL(patient.birthDate || ''),
+        allergies: '',
+        admissionDate: formatDateToCL(patient.admissionDate || ''),
+        daysOfStay: calculateDaysOfStay(patient.admissionDate),
+        treatingDoctor: '',
+      }));
+  }, [runtime.record]);
 
   const openCensusDate = React.useCallback(
     (isoDate: string) => {
@@ -119,6 +151,7 @@ export const AppContentChrome: React.FC<AppContentChromeProps> = ({ ui, runtime 
           onBackupPDF={exportManager.handleBackupHandoff}
           navigateDays={dateNav.navigateDays}
           accessProfile={runtime.censusAccessProfile}
+          medicalIndicationsPatients={medicalIndicationsPatients}
         />
       )}
 

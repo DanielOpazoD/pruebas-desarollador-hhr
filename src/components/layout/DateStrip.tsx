@@ -11,6 +11,7 @@ import { DateStripQuickActions } from '@/components/layout/date-strip/DateStripQ
 import { DateStripBookmarkToggle } from '@/components/layout/date-strip/DateStripBookmarkToggle';
 import { DateStripYearNavigator } from '@/components/layout/date-strip/DateStripYearNavigator';
 import { DateStripMonthNavigator } from '@/components/layout/date-strip/DateStripMonthNavigator';
+import type { MedicalIndicationsPatientOption } from '@/components/layout/date-strip/MedicalIndicationsQuickAction';
 import { useDateStripWheelNavigation } from '@/components/layout/date-strip/useDateStripWheelNavigation';
 import type { CensusAccessProfile } from '@/shared/access/censusAccessProfile';
 import { isSpecialistCensusAccessProfile } from '@/shared/access/censusAccessProfile';
@@ -69,6 +70,7 @@ export interface DateStripProps
   isBackingUp: boolean;
   currentModule: string;
   accessProfile?: CensusAccessProfile;
+  medicalIndicationsPatients?: MedicalIndicationsPatientOption[];
 }
 
 export const DateStrip: React.FC<DateStripProps> = ({
@@ -103,6 +105,7 @@ export const DateStrip: React.FC<DateStripProps> = ({
   isBackingUp,
   currentModule,
   accessProfile = 'default',
+  medicalIndicationsPatients = [],
 }) => {
   const daysContainerRef = useRef<HTMLDivElement>(null);
 
@@ -211,6 +214,9 @@ export const DateStrip: React.FC<DateStripProps> = ({
             localViewMode={localViewMode}
             setLocalViewMode={setLocalViewMode}
             hide3DToggle={specialistCensusAccess}
+            medicalIndicationsPatients={
+              currentModule === 'CENSUS' ? medicalIndicationsPatients : []
+            }
           />
         </div>
       </div>
