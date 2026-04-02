@@ -35,6 +35,7 @@ export type AuditAction =
   | 'DATA_EXPORTED'
   | 'PATIENT_HARMONIZED'
   | 'CONFLICT_AUTO_MERGED'
+  | 'DATA_ADMISSION_DATES_BACKFILLED'
   | 'SYSTEM_ERROR';
 
 // Specific detail interfaces for different actions

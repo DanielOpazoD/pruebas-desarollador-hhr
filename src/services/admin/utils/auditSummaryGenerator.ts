@@ -69,6 +69,8 @@ export const generateSummary = (
       return `Entrega médica restaurada: ${Array.isArray(details.clearedFields) ? (details.clearedFields as string[]).join(', ') : 'firmas eliminadas'}`;
     case 'CONFLICT_AUTO_MERGED':
       return `Auto-merge de conflicto: ${entityId} (${(details.entryCount as number) ?? 0} decisiones)`;
+    case 'DATA_ADMISSION_DATES_BACKFILLED':
+      return `Fechas de ingreso corregidas: ${(details.correctionCount as number) ?? 0} ajustes`;
     default:
       return action;
   }

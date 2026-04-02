@@ -18,6 +18,7 @@ import {
   User,
   Upload,
   Download,
+  Search,
 } from 'lucide-react';
 import { AuditAction, AuditLogEntry } from '@/types/audit';
 import { formatAuditTimestamp, parseAuditTimestamp } from '@/services/admin/utils/auditUtils';
@@ -71,6 +72,7 @@ export const actionIcons: Record<AuditAction, React.ReactNode> = {
   VIEW_PATIENT: React.createElement(Eye, { size: 14 }),
   PATIENT_HARMONIZED: React.createElement(Activity, { size: 14 }),
   CONFLICT_AUTO_MERGED: React.createElement(GitBranch, { size: 14 }),
+  DATA_ADMISSION_DATES_BACKFILLED: React.createElement(Search, { size: 14 }),
   SYSTEM_ERROR: React.createElement(AlertCircle, { size: 14 }),
 };
 
@@ -107,6 +109,7 @@ export const actionColors: Record<AuditAction, string> = {
   VIEW_PATIENT: 'bg-teal-50 text-teal-700 border-teal-100',
   PATIENT_HARMONIZED: 'bg-violet-50 text-violet-700 border-violet-100',
   CONFLICT_AUTO_MERGED: 'bg-cyan-50 text-cyan-700 border-cyan-100',
+  DATA_ADMISSION_DATES_BACKFILLED: 'bg-amber-50 text-amber-700 border-amber-100',
   SYSTEM_ERROR: 'bg-red-50 text-red-700 border-red-100',
 };
 
@@ -159,6 +162,8 @@ export const renderHumanDetails = (log: AuditLogEntry) => {
       return `Error del sistema: ${details.message || 'Error no especificado'}.`;
     case 'CONFLICT_AUTO_MERGED':
       return `Se aplicó auto-merge de conflicto para ${log.entityId} con política ${details.policyVersion || 'N/A'}.`;
+    case 'DATA_ADMISSION_DATES_BACKFILLED':
+      return `Se corrigieron ${details.correctionCount || 0} fechas de ingreso históricas.`;
     default:
       return typeof details === 'string' ? details : JSON.stringify(details).slice(0, 100) + '...';
   }

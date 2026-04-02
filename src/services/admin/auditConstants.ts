@@ -48,5 +48,6 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   DATA_EXPORTED: 'Exportación de Datos',
   PATIENT_HARMONIZED: 'Armonización de Identidad',
   CONFLICT_AUTO_MERGED: 'Conflicto Auto-Resuelto',
+  DATA_ADMISSION_DATES_BACKFILLED: 'Corrección Fechas de Ingreso',
   SYSTEM_ERROR: 'Error del Sistema',
 };
