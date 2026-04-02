@@ -262,63 +262,47 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
       <BaseModal
         isOpen={isMedicalIndicationsOpen}
         onClose={() => setIsMedicalIndicationsOpen(false)}
-        title="Indicaciones médicas"
-        size="3xl"
+        title={
+          medicalIndicationsPatient
+            ? `Indicaciones médicas · ${medicalIndicationsPatient.patientName}`
+            : 'Indicaciones médicas'
+        }
+        size="5xl"
         variant="white"
+        className="max-w-[92vw]"
+        bodyClassName="max-h-[84vh] overflow-y-auto px-4 py-3"
       >
         {!medicalIndicationsPatient ? null : (
           <>
-            <div className="grid grid-cols-2 gap-4 p-1">
-              <div className="col-span-2 text-xs font-semibold text-slate-600">
-                Paciente hospitalizado
-                <div className="mt-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm font-normal text-slate-700">
-                  {medicalIndicationsPatient.label}
-                </div>
-              </div>
-              <label className="text-xs font-semibold text-slate-600">
-                Fecha de nacimiento
-                <input
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600 shadow-inner"
-                  value={formatDateToDDMMYYYY(medicalIndicationsPatient.birthDate)}
-                  readOnly
-                />
-              </label>
-              <label className="text-xs font-semibold text-slate-600">
-                Fecha de ingreso
-                <input
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600 shadow-inner"
-                  value={formatDateToDDMMYYYY(medicalIndicationsPatient.admissionDate)}
-                  readOnly
-                />
-              </label>
-              <label className="text-xs font-semibold text-slate-600">
+            <div className="grid grid-cols-2 gap-3 p-0.5 text-[13px]">
+              <label className="text-[11px] font-semibold text-slate-600">
                 Médico tratante
                 <input
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
                   value={treatingDoctor}
                   onChange={event => setTreatingDoctor(event.target.value)}
                 />
               </label>
-              <label className="text-xs font-semibold text-slate-600">
+              <label className="text-[11px] font-semibold text-slate-600">
                 Reposo
                 <input
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
                   value={reposo}
                   onChange={event => setReposo(event.target.value)}
                 />
               </label>
-              <label className="text-xs font-semibold text-slate-600">
+              <label className="text-[11px] font-semibold text-slate-600">
                 Régimen
                 <input
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
                   value={regimen}
                   onChange={event => setRegimen(event.target.value)}
                 />
               </label>
-              <label className="text-xs font-semibold text-slate-600">
+              <label className="text-[11px] font-semibold text-slate-600">
                 Kinesiología
                 <select
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
                   value={kineType}
                   onChange={event =>
                     setKineType(
@@ -332,23 +316,23 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
                   <option value="ambas">Motora y respiratoria</option>
                 </select>
               </label>
-              <label className="text-xs font-semibold text-slate-600">
+              <label className="text-[11px] font-semibold text-slate-600">
                 Veces por día
                 <input
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
                   value={kineTimes}
                   onChange={event => setKineTimes(event.target.value)}
                 />
               </label>
-              <label className="col-span-2 text-xs font-semibold text-slate-600">
+              <label className="col-span-2 text-[11px] font-semibold text-slate-600">
                 Pendientes
                 <input
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
                   value={pendingNotes}
                   onChange={event => setPendingNotes(event.target.value)}
                 />
               </label>
-              <div className="col-span-2 rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-medical-50/40 p-4 shadow-sm">
+              <div className="col-span-2 rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-medical-50/40 p-3 shadow-sm">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">
                     Indicaciones clínicas
@@ -377,9 +361,9 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
                     </button>
                   </div>
                 </div>
-                <div className="mt-2 flex gap-2">
+                <div className="mt-1.5 flex gap-2">
                   <input
-                    className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm bg-white"
+                    className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-[13px] bg-white"
                     value={indicationDraft}
                     disabled={!isEditingIndications}
                     onChange={event => setIndicationDraft(event.target.value)}
@@ -404,7 +388,7 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
                     Agregar
                   </button>
                 </div>
-                <div className="mt-3 grid gap-2 max-h-[220px] overflow-y-auto pr-1">
+                <div className="mt-2 grid gap-1.5">
                   {activeIndications.length === 0 ? (
                     <p className="text-xs text-slate-500">Aún no hay indicaciones agregadas.</p>
                   ) : (

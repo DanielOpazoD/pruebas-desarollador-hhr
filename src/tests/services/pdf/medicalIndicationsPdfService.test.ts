@@ -69,8 +69,8 @@ describe('medicalIndicationsPdfService', () => {
       expect.objectContaining({ x: 98.33 })
     );
     expect(mockDrawText).toHaveBeenCalledWith('ABSOLUTO', expect.objectContaining({ x: 22.33 }));
-    expect(mockDrawText).toHaveBeenCalledWith('#1 IND 1', expect.objectContaining({ x: 23 }));
-    expect(mockDrawText).toHaveBeenCalledWith('#2 IND 2', expect.objectContaining({ x: 24.33 }));
+    expect(mockDrawText).toHaveBeenCalledWith('1. IND 1', expect.objectContaining({ x: 23 }));
+    expect(mockDrawText).toHaveBeenCalledWith('2. IND 2', expect.objectContaining({ x: 24.33 }));
     expect(mockDrawText).toHaveBeenCalledWith('01-03-2026', expect.objectContaining({ x: 506.33 }));
   });
 
@@ -100,7 +100,7 @@ describe('medicalIndicationsPdfService', () => {
 
     const drawnTexts = mockDrawText.mock.calls.map(call => call[0]);
     const indicationLines = drawnTexts.filter(
-      text => typeof text === 'string' && text.includes('#1')
+      text => typeof text === 'string' && text.includes('1.')
     );
     expect(indicationLines.length).toBeGreaterThan(0);
     expect(drawnTexts.some(text => typeof text === 'string' && text.includes('AAAAAAAA'))).toBe(
