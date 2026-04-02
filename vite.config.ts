@@ -122,6 +122,7 @@ export default defineConfig(({ mode }) => {
           algorithm: 'gzip',
           ext: '.gz',
           threshold: 10240, // Only compress files > 10KB
+          verbose: false,
           deleteOriginFile: false,
         }),
       // Brotli compression (better ratio than gzip)
@@ -130,6 +131,7 @@ export default defineConfig(({ mode }) => {
           algorithm: 'brotliCompress',
           ext: '.br',
           threshold: 10240,
+          verbose: false,
           deleteOriginFile: false,
         }),
     ].filter(Boolean),

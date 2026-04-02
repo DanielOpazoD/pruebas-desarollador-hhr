@@ -6,6 +6,7 @@
 import { PatientData } from '@/services/contracts/patientServiceContracts';
 import { BEDS } from '@/constants/beds';
 import { EMPTY_PATIENT } from '@/constants/patient';
+import { deepClone } from '@/utils/deepClone';
 
 /**
  * Create an empty patient data object with proper defaults based on bed configuration.
@@ -42,5 +43,5 @@ export const createEmptyPatient = (bedId: string): PatientData => {
  * Deep copy a patient data object to prevent reference issues
  */
 export const clonePatient = (patient: PatientData): PatientData => {
-  return JSON.parse(JSON.stringify(patient));
+  return deepClone(patient);
 };

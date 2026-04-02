@@ -2,6 +2,7 @@ import { BedDefinition } from '@/types/domain/beds';
 import type { DailyRecord } from '@/features/census/contracts/censusRecordContracts';
 import type { PatientData } from '@/features/census/domain/movements/contracts/patient';
 import { ControllerResult, failWithCode, ok } from '@/features/census/controllers/controllerResult';
+import { deepClone } from '@/utils/deepClone';
 
 export type MovementCreationErrorCode = 'BED_NOT_FOUND' | 'SOURCE_BED_EMPTY';
 
@@ -12,8 +13,7 @@ export interface MovementAuditEntry {
   status: 'Vivo' | 'Fallecido';
 }
 
-export const clonePatientSnapshot = (patient: PatientData): PatientData =>
-  JSON.parse(JSON.stringify(patient)) as PatientData;
+export const clonePatientSnapshot = (patient: PatientData): PatientData => deepClone(patient);
 
 export const resolveMovementBedDefinition = (
   bedId: string,

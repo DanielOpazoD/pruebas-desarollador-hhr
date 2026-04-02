@@ -22,6 +22,7 @@ import { DataFactory } from '../factories/DataFactory';
 import * as DailyRecordRepository from '@/services/repositories/DailyRecordRepository';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
 import { wireStatefulDailyRecordRepoMock } from '@/tests/utils/dailyRecordRepositoryMockUtils';
+import { deepClone } from '@/utils/deepClone';
 
 // ============================================================================
 // MOCKS (Repository Layer)
@@ -205,7 +206,7 @@ describe('Critical Integration Paths', () => {
       },
     });
     // Ensure stateful mock is also initialized!
-    currentRecord = JSON.parse(JSON.stringify(initialRecord));
+    currentRecord = deepClone(initialRecord);
     // mocked getForDate will use currentRecord automatically
 
     const { result } = renderHook(() => useDailyRecord(mockDate), {

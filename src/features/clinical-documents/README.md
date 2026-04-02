@@ -11,8 +11,8 @@
 
 ## Decision Guide
 
-- Contrato del workspace y extensibilidad: [docs/ADR_CLINICAL_DOCUMENT_WORKSPACE_CONTRACT.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/ADR_CLINICAL_DOCUMENT_WORKSPACE_CONTRACT.md)
-- Nota de arquitectura del feature: [ARCHITECTURE.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/features/clinical-documents/ARCHITECTURE.md)
+- Contrato del workspace y extensibilidad: [docs/ADR_CLINICAL_DOCUMENT_WORKSPACE_CONTRACT.md](../../../docs/ADR_CLINICAL_DOCUMENT_WORKSPACE_CONTRACT.md)
+- Nota de arquitectura del feature: [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 ## Flujo principal
 
@@ -73,7 +73,7 @@
 
 - `npm run test:clinical-documents`
 - `npm run check:clinical-documents`
-- Nota de arquitectura en [ARCHITECTURE.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/features/clinical-documents/ARCHITECTURE.md)
+- Nota de arquitectura en [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 ## Runtime boundaries
 
@@ -101,6 +101,6 @@
 
 ## Safe change links
 
-- [docs/QUALITY_GUARDRAILS.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/QUALITY_GUARDRAILS.md)
-- [docs/SAFE_CHANGE_CHECKLIST.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/SAFE_CHANGE_CHECKLIST.md)
-- [docs/ADR_CLINICAL_DOCUMENT_WORKSPACE_CONTRACT.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/ADR_CLINICAL_DOCUMENT_WORKSPACE_CONTRACT.md)
+- [docs/QUALITY_GUARDRAILS.md](../../../docs/QUALITY_GUARDRAILS.md)
+- [docs/SAFE_CHANGE_CHECKLIST.md](../../../docs/SAFE_CHANGE_CHECKLIST.md)
+- [docs/ADR_CLINICAL_DOCUMENT_WORKSPACE_CONTRACT.md](../../../docs/ADR_CLINICAL_DOCUMENT_WORKSPACE_CONTRACT.md)

@@ -4,6 +4,7 @@ import type { DailyRecord, DailyRecordPatch } from '@/hooks/contracts/dailyRecor
 import type { PatientData } from '@/hooks/contracts/patientHookContracts';
 import { BedType } from '@/types/domain/beds';
 import { getBedTypeForRecord } from '@/utils/bedTypeUtils';
+import { deepClone } from '@/utils/deepClone';
 
 export const buildClearedPatient = (record: DailyRecord, bedId: string): PatientData => {
   const cleanPatient = createEmptyPatient(bedId);
@@ -40,7 +41,7 @@ export const buildMoveOrCopyPatch = (
 
   const patch: DailyRecordPatch = {};
   patch[`beds.${targetBedId}`] = {
-    ...structuredClone(sourceData),
+    ...deepClone(sourceData),
     bedId: targetBedId,
     location: record.beds[targetBedId].location,
   };

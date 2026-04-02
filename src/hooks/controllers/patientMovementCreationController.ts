@@ -5,6 +5,7 @@ import { PatientData } from '@/hooks/contracts/patientHookContracts';
 import type { DischargeAddCommandPayload, TransferCommandPayload } from '@/types/movements';
 import { ControllerError, ControllerResult, failWithCode, ok } from '@/shared/controllerResult';
 import { resolveMovementDisplayDate } from '@/hooks/controllers/censusMovementDatePresentationController';
+import { deepClone } from '@/utils/deepClone';
 
 export type MovementCreationErrorCode = 'BED_NOT_FOUND' | 'SOURCE_BED_EMPTY';
 
@@ -49,9 +50,6 @@ type AddTransferMovementResult = ControllerResult<
   MovementCreationErrorCode,
   MovementCreationError
 >;
-
-const clonePatientSnapshot = (patient: PatientData): PatientData =>
-  JSON.parse(JSON.stringify(patient)) as PatientData;
 
 const resolveBedDefinition = (
   bedId: string,
@@ -117,7 +115,7 @@ const buildDischargeEntry = ({
   insurance,
   origin,
   isRapanui,
-  originalData: clonePatientSnapshot(patient),
+  originalData: deepClone(patient),
   isNested,
 });
 
@@ -171,7 +169,7 @@ const buildTransferEntry = ({
   insurance,
   origin,
   isRapanui,
-  originalData: clonePatientSnapshot(patient),
+  originalData: deepClone(patient),
   isNested,
 });
 

@@ -1,6 +1,7 @@
 import { applyPatches } from '@/utils/patchUtils';
 import type { DailyRecord, DailyRecordPatch } from '@/types';
 import { vi } from 'vitest';
+import { deepClone } from '@/utils/deepClone';
 
 interface DailyRecordRepositoryMockLike {
   getForDate: (date: string) => Promise<DailyRecord | null>;
@@ -18,7 +19,7 @@ interface StatefulWireOptions {
   setCurrentRecord: (record: DailyRecord | null) => void;
 }
 
-const cloneRecord = (record: DailyRecord): DailyRecord => JSON.parse(JSON.stringify(record));
+const cloneRecord = (record: DailyRecord): DailyRecord => deepClone(record);
 
 export const wireStatefulDailyRecordRepoMock = (
   repo: DailyRecordRepositoryMockLike,

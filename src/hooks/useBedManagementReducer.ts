@@ -7,6 +7,7 @@ import { PatientFieldValue } from '@/types/valueTypes';
 import { createEmptyPatient } from '@/services/factories/patientFactory';
 import { BEDS } from '@/constants/beds';
 import { getBedTypeForRecord } from '@/utils/bedTypeUtils';
+import { deepClone } from '@/utils/deepClone';
 import {
   clearDeliveryRouteFields,
   clearGinecobstetriciaFields,
@@ -189,7 +190,7 @@ export const bedManagementReducer = (
       const { sourceBedId, targetBedId } = action;
       const sourceData = state.beds[sourceBedId];
       const targetPatient = {
-        ...JSON.parse(JSON.stringify(sourceData)),
+        ...deepClone(sourceData),
         bedId: targetBedId,
         location: state.beds[targetBedId].location,
       };

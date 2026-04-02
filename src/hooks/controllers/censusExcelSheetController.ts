@@ -1,5 +1,6 @@
 import type { CensusExportRecord } from '@/services/contracts/censusExportServiceContracts';
 import type { CensusWorkbookSheetDescriptor } from '@/services/exporters/censusMasterWorkbook';
+import { deepClone } from '@/utils/deepClone';
 
 interface BuildCensusSheetDescriptorsParams {
   monthRecords: CensusExportRecord[];
@@ -53,9 +54,6 @@ const reserveUniqueName = (desiredName: string, usedNames: Set<string>): string 
   usedNames.add(fallback);
   return fallback;
 };
-
-const deepCloneRecord = (record: CensusExportRecord): CensusExportRecord =>
-  JSON.parse(JSON.stringify(record)) as CensusExportRecord;
 
 const parseTimeParts = (timeValue?: string): { hours: number; minutes: number } | null => {
   if (!timeValue || typeof timeValue !== 'string') {
@@ -123,7 +121,7 @@ const buildRecordSnapshotAtCutoff = (
   record: CensusExportRecord,
   cutoff: Date
 ): CensusExportRecord => {
-  const snapshot = deepCloneRecord(record);
+  const snapshot = deepClone(record);
 
   Object.entries(snapshot.beds || {}).forEach(([bedId, patient]) => {
     if (!patient) return;
@@ -186,9 +184,9 @@ const buildRecordSnapshotAtCutoff = (
 
   movementsAfterCutoff.forEach(movement => {
     if (!movement.bedId || !movement.originalData) return;
-    snapshot.beds[movement.bedId] = JSON.parse(
-      JSON.stringify(movement.originalData)
-    ) as NonNullable<typeof movement.originalData>;
+    snapshot.beds[movement.bedId] = deepClone(movement.originalData) as NonNullable<
+      typeof movement.originalData
+    >;
   });
 
   snapshot.discharges = (snapshot.discharges || []).filter(discharge =>
@@ -216,7 +214,7 @@ export const buildCensusWorkbookPlan = ({
     const sheetDate = toSheetDate(record.date);
 
     if (record.date !== currentDateString) {
-      const recordLookupIndex = recordsForWorkbook.push(deepCloneRecord(record)) - 1;
+      const recordLookupIndex = recordsForWorkbook.push(deepClone(record)) - 1;
       sheetDescriptors.push({
         recordLookupIndex,
         recordDate: record.date,

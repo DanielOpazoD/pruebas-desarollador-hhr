@@ -9,7 +9,7 @@ Este documento es la puerta de entrada para navegar el código rápidamente. El 
 ## Orden recomendado de lectura
 
 1. [`/README.md`](../README.md)
-2. [`/docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)
+2. [`/docs/architecture.md`](../docs/architecture.md)
 3. Este archivo (`src/README.md`)
 4. README del directorio que vas a modificar (tabla de abajo)
 
@@ -121,7 +121,7 @@ find src/features -maxdepth 3 -type d | sort
 ## Reglas de mantenimiento
 
 - Si agregas un archivo en un directorio principal, actualiza su `README.md`.
-- Si mueves responsabilidades entre capas, actualiza también `docs/ARCHITECTURE.md`.
+- Si mueves responsabilidades entre capas, actualiza también `docs/architecture.md`.
 - Si cambias contratos (`types`, `schemas`, `domain/contracts`), documenta el impacto en el README del módulo.
 - Los contratos de controller reutilizados entre features deben vivir en `src/shared/contracts/`, no dentro de una feature.
 - Las imports desde `src/App.tsx`, `src/views/*` y cualquier consumidor externo a una feature deben pasar por el `index.ts` o `public.ts` del módulo correspondiente.

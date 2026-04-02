@@ -177,7 +177,7 @@ import { useDailyRecord } from '@/hooks/useDailyRecord';
 - [Auditoría técnica de la aplicación](docs/TECHNICAL_APPLICATION_AUDIT.md)
 - [Modelo de acceso y login](docs/AUTH_ACCESS_MODEL.md)
 - [Runbook de incidentes de acceso](docs/RUNBOOK_AUTH_ACCESS_INCIDENTS.md)
-- [Arquitectura global](docs/ARCHITECTURE.md)
+- [Arquitectura global](docs/architecture.md)
 - [Runbook de sync y resiliencia](docs/RUNBOOK_SYNC_RESILIENCE.md)
 - [Checklist diario admin (1 pagina)](docs/RUNBOOK_DAILY_ADMIN_CHECKLIST.md)
 - [Runbook técnico de soporte](docs/RUNBOOK_SUPPORT_OPERATIONS.md)
