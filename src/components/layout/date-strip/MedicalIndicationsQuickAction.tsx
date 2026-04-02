@@ -1,5 +1,15 @@
 import React from 'react';
-import { ArrowDown, ArrowUp, FilePlus2, Pencil, Save } from 'lucide-react';
+import {
+  Activity,
+  ArrowDown,
+  ArrowUp,
+  ClipboardList,
+  FilePlus2,
+  Pencil,
+  Stethoscope,
+  Trash2,
+  UserRound,
+} from 'lucide-react';
 import { BaseModal } from '@/components/shared/BaseModal';
 import { printMedicalIndicationsPdf } from '@/services/pdf/medicalIndicationsPdfService';
 import { formatDateToDDMMYYYY } from '@/components/layout/date-strip/medicalIndicationsUtils';
@@ -51,7 +61,7 @@ export const MedicalIndicationsQuickAction: React.FC<MedicalIndicationsQuickActi
   const [indications, setIndications] = React.useState<string[]>(() =>
     Array.from({ length: INDICATIONS_LINES }, () => '')
   );
-  const [isEditingIndications, setIsEditingIndications] = React.useState(false);
+  const [isEditingIndications, setIsEditingIndications] = React.useState(true);
   const [isOrderingIndications, setIsOrderingIndications] = React.useState(false);
   const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
   const [editingValue, setEditingValue] = React.useState('');
@@ -181,9 +191,9 @@ export const MedicalIndicationsQuickAction: React.FC<MedicalIndicationsQuickActi
             ? `Indicaciones médicas · ${selectedPatient.patientName}`
             : 'Indicaciones médicas'
         }
-        size="5xl"
+        size="3xl"
         variant="white"
-        className="max-w-[92vw]"
+        className="max-w-[78vw]"
         bodyClassName="max-h-[84vh] overflow-y-auto px-4 py-3"
         headerActions={
           patients.length > 1 ? (
@@ -204,7 +214,10 @@ export const MedicalIndicationsQuickAction: React.FC<MedicalIndicationsQuickActi
       >
         <div className="grid grid-cols-2 gap-3 p-0.5 text-[13px]">
           <label className="text-[11px] font-semibold text-slate-600">
-            Médico tratante
+            <span className="inline-flex items-center gap-1">
+              <UserRound size={12} className="text-slate-400" />
+              Médico tratante
+            </span>
             <input
               className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
               value={treatingDoctor}
@@ -232,31 +245,39 @@ export const MedicalIndicationsQuickAction: React.FC<MedicalIndicationsQuickActi
             />
           </label>
 
-          <label className="text-[11px] font-semibold text-slate-600">
-            Kinesiología
-            <select
-              className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
-              value={kineType}
-              onChange={event =>
-                setKineType(event.target.value as 'motora' | 'respiratoria' | 'ambas' | 'ninguna')
-              }
-            >
-              <option value="ninguna">Sin indicación</option>
-              <option value="motora">Motora</option>
-              <option value="respiratoria">Respiratoria</option>
-              <option value="ambas">Motora y respiratoria</option>
-            </select>
-          </label>
+          <div className="col-span-2 grid grid-cols-1 gap-3 md:grid-cols-2">
+            <label className="text-[11px] font-semibold text-slate-600">
+              <span className="inline-flex items-center gap-1">
+                <Activity size={12} className="text-slate-400" />
+                Kinesiología
+              </span>
+              <select
+                className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
+                value={kineType}
+                onChange={event =>
+                  setKineType(event.target.value as 'motora' | 'respiratoria' | 'ambas' | 'ninguna')
+                }
+              >
+                <option value="ninguna">Sin indicación</option>
+                <option value="motora">Motora</option>
+                <option value="respiratoria">Respiratoria</option>
+                <option value="ambas">Motora y respiratoria</option>
+              </select>
+            </label>
 
-          <label className="text-[11px] font-semibold text-slate-600">
-            Veces por día
-            <input
-              className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
-              value={kineTimes}
-              onChange={event => setKineTimes(event.target.value)}
-              placeholder="Ej: 2"
-            />
-          </label>
+            <label className="text-[11px] font-semibold text-slate-600">
+              <span className="inline-flex items-center gap-1">
+                <Stethoscope size={12} className="text-slate-400" />
+                Frecuencia de atención
+              </span>
+              <input
+                className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
+                value={kineTimes}
+                onChange={event => setKineTimes(event.target.value)}
+                placeholder="Ej: 2 veces/día"
+              />
+            </label>
+          </div>
 
           <label className="col-span-2 text-[11px] font-semibold text-slate-600">
             Pendientes
@@ -269,7 +290,8 @@ export const MedicalIndicationsQuickAction: React.FC<MedicalIndicationsQuickActi
 
           <div className="col-span-2 rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-medical-50/40 p-3 shadow-sm">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">
+              <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
+                <ClipboardList size={12} className="text-slate-500" />
                 Indicaciones clínicas
               </p>
               <div className="flex gap-2">
@@ -291,8 +313,8 @@ export const MedicalIndicationsQuickAction: React.FC<MedicalIndicationsQuickActi
                     setEditingValue('');
                   }}
                 >
-                  {isEditingIndications ? <Save size={12} /> : <Pencil size={12} />}
-                  {isEditingIndications ? 'Guardar cambios' : 'Modificar indicaciones'}
+                  {isEditingIndications ? <Pencil size={12} /> : <Pencil size={12} />}
+                  {isEditingIndications ? 'Edición activa' : 'Modificar indicaciones'}
                 </button>
               </div>
             </div>
@@ -392,18 +414,22 @@ export const MedicalIndicationsQuickAction: React.FC<MedicalIndicationsQuickActi
                         <button
                           type="button"
                           onClick={() => startEditing(index, item)}
-                          className="text-xs text-medical-600 hover:text-medical-700"
+                          className="rounded p-1 text-medical-600 hover:bg-medical-50 hover:text-medical-700"
+                          aria-label={`Editar indicación #${index + 1}`}
+                          title={`Editar indicación #${index + 1}`}
                         >
-                          Editar
+                          <Pencil size={14} />
                         </button>
                       )}
                       <button
                         type="button"
                         onClick={() => removeIndication(index)}
                         disabled={!isEditingIndications}
-                        className="text-xs text-rose-600 hover:text-rose-700 disabled:opacity-40"
+                        className="rounded p-1 text-rose-600 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-40"
+                        aria-label={`Quitar indicación #${index + 1}`}
+                        title={`Quitar indicación #${index + 1}`}
                       >
-                        Quitar
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </div>
