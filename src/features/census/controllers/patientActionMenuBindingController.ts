@@ -25,6 +25,7 @@ export const resolvePatientActionMenuBinding = ({
   hasClinicalDocumentsAction,
   hasExamRequestAction,
   hasImagingRequestAction,
+  hasMedicalIndicationsAction,
   indicators,
 }: ResolvePatientActionMenuBindingParams): PatientActionMenuBinding => ({
   align,
@@ -41,5 +42,6 @@ export const resolvePatientActionMenuBinding = ({
     hasClinicalDocumentsAction,
     hasExamRequestAction,
     hasImagingRequestAction,
+    hasMedicalIndicationsAction,
   }),
 });

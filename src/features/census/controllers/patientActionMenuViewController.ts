@@ -6,6 +6,7 @@ export interface ResolvePatientActionMenuViewParams {
   hasClinicalDocumentsAction: boolean;
   hasExamRequestAction: boolean;
   hasImagingRequestAction: boolean;
+  hasMedicalIndicationsAction?: boolean;
 }
 
 export interface PatientActionMenuViewState {
@@ -18,6 +19,7 @@ export interface PatientActionMenuViewState {
   showClinicalDocumentsAction: boolean;
   showExamRequestAction: boolean;
   showImagingRequestAction: boolean;
+  showMedicalIndicationsAction: boolean;
 }
 
 export const resolvePatientActionMenuViewState = ({
@@ -28,12 +30,15 @@ export const resolvePatientActionMenuViewState = ({
   hasClinicalDocumentsAction,
   hasExamRequestAction,
   hasImagingRequestAction,
+  hasMedicalIndicationsAction,
 }: ResolvePatientActionMenuViewParams): PatientActionMenuViewState => {
   if (accessProfile === 'specialist') {
     const showClinicalSection = !isBlocked;
     const showClinicalDocumentsAction = showClinicalSection && hasClinicalDocumentsAction;
     const showExamRequestAction = showClinicalSection && hasExamRequestAction;
     const showImagingRequestAction = showClinicalSection && hasImagingRequestAction;
+    const showMedicalIndicationsAction =
+      showClinicalSection && Boolean(hasMedicalIndicationsAction);
 
     return {
       showDemographicsAction: !isBlocked,
@@ -45,6 +50,7 @@ export const resolvePatientActionMenuViewState = ({
       showClinicalDocumentsAction,
       showExamRequestAction,
       showImagingRequestAction,
+      showMedicalIndicationsAction,
     };
   }
 
@@ -64,6 +70,8 @@ export const resolvePatientActionMenuViewState = ({
     showClinicalDocumentsAction: showClinicalSection && hasClinicalDocumentsAction,
     showExamRequestAction: !readOnly && showClinicalSection && hasExamRequestAction,
     showImagingRequestAction: !readOnly && showClinicalSection && hasImagingRequestAction,
+    showMedicalIndicationsAction:
+      !readOnly && showClinicalSection && Boolean(hasMedicalIndicationsAction),
   };
 };
 

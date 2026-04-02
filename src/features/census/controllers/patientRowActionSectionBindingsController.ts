@@ -1,6 +1,7 @@
 import type { PatientMainRowViewProps } from '@/features/census/components/patient-row/patientRowViewContracts';
 import type { PatientMainRowActionCellProps } from '@/features/census/components/patient-row/patientRowViewContracts';
 import { calculateHospitalizedDays } from '@/features/census/controllers/patientBedConfigViewController';
+import type { MedicalIndicationsPatientOption } from '@/components/layout/date-strip/MedicalIndicationsQuickAction';
 
 export type PatientActionSectionBinding = PatientMainRowActionCellProps;
 
@@ -40,6 +41,19 @@ export const buildPatientActionSectionBinding = ({
     admissionDate: data.admissionDate,
     currentDate: currentDateString,
   });
+  const medicalIndicationsPatient: MedicalIndicationsPatientOption = {
+    bedId: data.bedId,
+    label: `${data.bedId} - ${data.patientName || 'Paciente sin nombre'}`,
+    patientName: data.patientName || '',
+    rut: data.rut || '',
+    diagnosis: data.pathology || '',
+    age: data.age || '',
+    birthDate: data.birthDate || '',
+    allergies: '',
+    admissionDate: data.admissionDate || '',
+    daysOfStay: String(daysHospitalized ?? ''),
+    treatingDoctor: '',
+  };
 
   return {
     isBlocked,
@@ -60,8 +74,10 @@ export const buildPatientActionSectionBinding = ({
     onViewImagingRequest: mainRowViewState.rowActionsAvailability.canOpenImagingRequest
       ? onOpenImagingRequest
       : undefined,
+    onViewMedicalIndications: data.patientName ? () => undefined : undefined,
     onViewHistory: mainRowViewState.rowActionsAvailability.canOpenHistory
       ? onOpenHistory
       : undefined,
+    medicalIndicationsPatient: data.patientName ? medicalIndicationsPatient : undefined,
   };
 };

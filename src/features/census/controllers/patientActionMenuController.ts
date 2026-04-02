@@ -16,6 +16,7 @@ export interface PatientActionMenuCallbackAvailability {
   hasClinicalDocumentsAction: boolean;
   hasExamRequestAction: boolean;
   hasImagingRequestAction: boolean;
+  hasMedicalIndicationsAction?: boolean;
 }
 
 interface ResolvePatientActionMenuCallbackAvailabilityParams {
@@ -23,6 +24,7 @@ interface ResolvePatientActionMenuCallbackAvailabilityParams {
   onViewClinicalDocuments?: () => void;
   onViewExamRequest?: () => void;
   onViewImagingRequest?: () => void;
+  onViewMedicalIndications?: () => void;
 }
 
 export const resolvePatientActionMenuCallbackAvailability = ({
@@ -30,11 +32,13 @@ export const resolvePatientActionMenuCallbackAvailability = ({
   onViewClinicalDocuments,
   onViewExamRequest,
   onViewImagingRequest,
+  onViewMedicalIndications,
 }: ResolvePatientActionMenuCallbackAvailabilityParams): PatientActionMenuCallbackAvailability => ({
   hasHistoryAction: typeof onViewHistory === 'function',
   hasClinicalDocumentsAction: typeof onViewClinicalDocuments === 'function',
   hasExamRequestAction: typeof onViewExamRequest === 'function',
   hasImagingRequestAction: typeof onViewImagingRequest === 'function',
+  hasMedicalIndicationsAction: typeof onViewMedicalIndications === 'function',
 });
 
 interface BuildPatientActionMenuModelParams {

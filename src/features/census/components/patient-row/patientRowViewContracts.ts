@@ -3,6 +3,7 @@ import type { DiagnosisMode } from '@/features/census/types/censusTableTypes';
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';
 import type { BedDefinition, BedType } from '@/types/domain/beds';
 import type { PatientData } from '@/features/census/components/patient-row/patientRowDataContracts';
+import type { MedicalIndicationsPatientOption } from '@/components/layout/date-strip/MedicalIndicationsQuickAction';
 import type { UserRole } from '@/types/auth';
 import type { CensusAccessProfile } from '@/features/census/types/censusAccessProfile';
 import type {
@@ -66,6 +67,7 @@ export interface PatientMainRowActionCellProps
   align: RowMenuAlign;
   showCmaAction?: boolean;
   accessProfile?: CensusAccessProfile;
+  medicalIndicationsPatient?: MedicalIndicationsPatientOption;
 }
 
 export interface PatientMainRowViewProps

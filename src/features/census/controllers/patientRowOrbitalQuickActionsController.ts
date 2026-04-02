@@ -2,12 +2,17 @@ export interface PatientRowOrbitalQuickActionsAvailability {
   showClinicalDocumentsAction: boolean;
   showExamRequestAction: boolean;
   showImagingRequestAction: boolean;
+  showMedicalIndicationsAction?: boolean;
 }
 
-export type PatientRowOrbitalQuickActionAsset = 'rongorongo' | 'mangai' | 'ahutepitokura';
+export type PatientRowOrbitalQuickActionAsset =
+  | 'rongorongo'
+  | 'mangai'
+  | 'ahutepitokura'
+  | 'manutara';
 
 export interface PatientRowOrbitalQuickActionItem {
-  id: 'clinical-documents' | 'exam-request' | 'imaging-request';
+  id: 'clinical-documents' | 'exam-request' | 'imaging-request' | 'medical-indications';
   label: string;
   tooltip: string;
   angleDeg: number;
@@ -49,6 +54,15 @@ const ORBITAL_ACTION_DEFINITIONS: Array<
     buttonClassName: 'bg-white text-slate-700 hover:bg-slate-100',
     visible: 'showImagingRequestAction',
   },
+  {
+    id: 'medical-indications',
+    label: 'Indicaciones',
+    tooltip: 'Indicaciones médicas',
+    angleDeg: 120,
+    iconAsset: 'manutara',
+    buttonClassName: 'bg-white text-slate-700 hover:bg-slate-100',
+    visible: 'showMedicalIndicationsAction',
+  },
 ];
 
 const toRadians = (degrees: number): number => (degrees * Math.PI) / 180;
@@ -73,4 +87,5 @@ export const hasPatientRowOrbitalQuickActions = (
 ): boolean =>
   availability.showClinicalDocumentsAction ||
   availability.showExamRequestAction ||
-  availability.showImagingRequestAction;
+  availability.showImagingRequestAction ||
+  Boolean(availability.showMedicalIndicationsAction);

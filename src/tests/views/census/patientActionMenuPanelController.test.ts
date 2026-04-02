@@ -15,6 +15,7 @@ describe('patientActionMenuPanelController', () => {
         showClinicalDocumentsAction: true,
         showExamRequestAction: false,
         showImagingRequestAction: true,
+        showMedicalIndicationsAction: false,
       },
       utilityActions: [
         {
@@ -51,6 +52,7 @@ describe('patientActionMenuPanelController', () => {
         showClinicalDocumentsAction: true,
         showExamRequestAction: true,
         showImagingRequestAction: true,
+        showMedicalIndicationsAction: false,
       },
       utilityActions: [],
       showCmaAction: false,
@@ -71,6 +73,7 @@ describe('patientActionMenuPanelController', () => {
         showClinicalDocumentsAction: true,
         showExamRequestAction: true,
         showImagingRequestAction: true,
+        showMedicalIndicationsAction: false,
       },
       utilityActions: [],
       showCmaAction: true,
