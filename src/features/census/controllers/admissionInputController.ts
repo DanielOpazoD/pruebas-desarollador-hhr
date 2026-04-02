@@ -1,4 +1,4 @@
-import { getTodayISO } from '@/utils/dateUtils';
+import { getTodayISO, normalizeDateOnly } from '@/utils/dateUtils';
 import {
   resolveAdmissionDateAudit as resolveAdmissionDateAuditPolicy,
   type AdmissionDateAuditResolution,
@@ -22,6 +22,25 @@ export const resolveIsCriticalAdmissionEmpty = (
   patientName?: string,
   admissionDate?: string
 ): boolean => Boolean(patientName) && !admissionDate;
+
+export const resolveAdmissionDateIsEditable = ({
+  recordDate,
+  firstSeenDate,
+  isNewAdmission,
+}: {
+  recordDate: string;
+  firstSeenDate?: string;
+  isNewAdmission: boolean;
+}): boolean => {
+  const normalizedRecordDate = normalizeDateOnly(recordDate);
+  const normalizedFirstSeenDate = normalizeDateOnly(firstSeenDate);
+
+  if (normalizedRecordDate && normalizedFirstSeenDate) {
+    return normalizedRecordDate === normalizedFirstSeenDate;
+  }
+
+  return isNewAdmission;
+};
 
 export const resolveAdmissionDateChange = ({
   nextDate,

@@ -18,7 +18,12 @@ describe('AdmissionInput', () => {
       <table>
         <tbody>
           <tr>
-            <AdmissionInput data={data} currentDateString="2026-02-20" onChange={onChange} />
+            <AdmissionInput
+              data={data}
+              currentDateString="2026-02-20"
+              isNewAdmission
+              onChange={onChange}
+            />
           </tr>
         </tbody>
       </table>
@@ -70,5 +75,36 @@ describe('AdmissionInput', () => {
       admissionDate: '2026-03-10',
       admissionTime: expect.any(String),
     });
+  });
+
+  it('locks admission date editing after the first observed day', () => {
+    const data = DataFactory.createMockPatient('R1', {
+      admissionDate: '2026-03-10',
+      firstSeenDate: '2026-03-10',
+      admissionTime: '08:30',
+      patientName: 'Paciente Prueba',
+    });
+
+    const onChange = vi.fn((_: string) => vi.fn());
+
+    render(
+      <table>
+        <tbody>
+          <tr>
+            <AdmissionInput
+              data={data}
+              currentDateString="2026-03-11"
+              isNewAdmission={false}
+              onChange={onChange}
+            />
+          </tr>
+        </tbody>
+      </table>
+    );
+
+    const dateInput = screen.getByDisplayValue('2026-03-10') as HTMLInputElement;
+    expect(dateInput).toBeDisabled();
+    expect(screen.getByLabelText('Editar fecha de ingreso')).toBeDisabled();
+    expect(screen.queryByLabelText('Corregir fecha de ingreso sugerida')).not.toBeInTheDocument();
   });
 });

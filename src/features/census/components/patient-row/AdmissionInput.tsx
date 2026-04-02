@@ -13,6 +13,7 @@ import {
   resolveAdmissionDateChange,
   resolveAdmissionDateAudit,
   resolveAdmissionDateMax,
+  resolveAdmissionDateIsEditable,
   resolveIsCriticalAdmissionEmpty,
 } from '@/features/census/controllers/admissionInputController';
 
@@ -42,6 +43,13 @@ export const AdmissionInput: React.FC<AdmissionInputProps> = ({
     admissionTime: data.admissionTime,
     firstSeenDate: data.firstSeenDate,
   });
+  const isAdmissionDateEditable =
+    !readOnly &&
+    resolveAdmissionDateIsEditable({
+      recordDate: currentDateString,
+      firstSeenDate: data.firstSeenDate,
+      isNewAdmission,
+    });
   const isAdmissionDateSuspicious = isNewAdmission && audit.isSuspicious && !isCriticalEmpty;
 
   if (isEmpty && !isSubRow) {
@@ -49,6 +57,10 @@ export const AdmissionInput: React.FC<AdmissionInputProps> = ({
   }
 
   const handleDateChange = (val: string) => {
+    if (!isAdmissionDateEditable) {
+      return;
+    }
+
     const resolution = resolveAdmissionDateChange({
       nextDate: val,
       currentAdmissionTime: data.admissionTime,
@@ -66,7 +78,7 @@ export const AdmissionInput: React.FC<AdmissionInputProps> = ({
   };
 
   const handleOpenDateEditor = () => {
-    if (readOnly) {
+    if (readOnly || !isAdmissionDateEditable) {
       return;
     }
 
@@ -82,7 +94,7 @@ export const AdmissionInput: React.FC<AdmissionInputProps> = ({
   };
 
   const handleApplySuggestedDate = () => {
-    if (!audit.suggestedAdmissionDate) {
+    if (!isAdmissionDateEditable || !audit.suggestedAdmissionDate) {
       return;
     }
 
@@ -131,13 +143,15 @@ export const AdmissionInput: React.FC<AdmissionInputProps> = ({
           value={data.admissionDate || ''}
           onChange={handleDateChange}
           onClick={() => setShowTime(true)}
-          disabled={readOnly}
+          disabled={readOnly || !isAdmissionDateEditable}
           title={
             isCriticalEmpty
               ? 'Campo crítico requerido para entrega'
-              : isAdmissionDateSuspicious
-                ? `${audit.message || 'Fecha sospechosa'} Sugerida: ${audit.suggestedAdmissionDate}`
-                : undefined
+              : !isAdmissionDateEditable
+                ? 'Solo editable el primer día de aparición en censo'
+                : isAdmissionDateSuspicious
+                  ? `${audit.message || 'Fecha sospechosa'} Sugerida: ${audit.suggestedAdmissionDate}`
+                  : undefined
           }
         />
         <button
@@ -146,11 +160,11 @@ export const AdmissionInput: React.FC<AdmissionInputProps> = ({
           className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-medical-600 transition-colors disabled:opacity-40"
           title="Editar fecha de ingreso"
           aria-label="Editar fecha de ingreso"
-          disabled={readOnly}
+          disabled={readOnly || !isAdmissionDateEditable}
         >
           <Pencil size={11} />
         </button>
-        {isAdmissionDateSuspicious && (
+        {isAdmissionDateSuspicious && isAdmissionDateEditable && (
           <button
             type="button"
             onClick={handleApplySuggestedDate}
@@ -160,7 +174,7 @@ export const AdmissionInput: React.FC<AdmissionInputProps> = ({
             )}
             title={`${audit.message || 'Fecha sugerida'} ${audit.suggestedAdmissionDate ? `Aplicar ${audit.suggestedAdmissionDate}` : ''}`.trim()}
             aria-label="Corregir fecha de ingreso sugerida"
-            disabled={readOnly || !audit.suggestedAdmissionDate}
+            disabled={readOnly || !isAdmissionDateEditable || !audit.suggestedAdmissionDate}
           >
             <AlertCircle size={8} className="text-white" />
           </button>

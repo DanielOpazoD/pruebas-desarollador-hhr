@@ -3,6 +3,7 @@ import {
   resolveAdmissionDateChange,
   resolveAdmissionDateAudit,
   resolveAdmissionDateMax,
+  resolveAdmissionDateIsEditable,
   resolveIsCriticalAdmissionEmpty,
 } from '@/features/census/controllers/admissionInputController';
 
@@ -63,5 +64,39 @@ describe('admissionInputController', () => {
 
     expect(audit.isSuspicious).toBe(false);
     expect(audit.suggestedAdmissionDate).toBe('2026-03-11');
+  });
+
+  it('only allows editing on the first observed census day', () => {
+    expect(
+      resolveAdmissionDateIsEditable({
+        recordDate: '2026-03-10',
+        firstSeenDate: '2026-03-10',
+        isNewAdmission: true,
+      })
+    ).toBe(true);
+
+    expect(
+      resolveAdmissionDateIsEditable({
+        recordDate: '2026-03-11',
+        firstSeenDate: '2026-03-10',
+        isNewAdmission: false,
+      })
+    ).toBe(false);
+  });
+
+  it('falls back to admission classification when firstSeenDate is missing', () => {
+    expect(
+      resolveAdmissionDateIsEditable({
+        recordDate: '2026-03-10',
+        isNewAdmission: true,
+      })
+    ).toBe(true);
+
+    expect(
+      resolveAdmissionDateIsEditable({
+        recordDate: '2026-03-11',
+        isNewAdmission: false,
+      })
+    ).toBe(false);
   });
 });
