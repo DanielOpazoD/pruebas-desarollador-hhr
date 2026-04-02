@@ -6,6 +6,7 @@ import {
   MEDICAL_INDICATIONS_PDF_TEMPLATE_FALLBACK_PATHS,
   MEDICAL_INDICATIONS_PDF_TEMPLATE_PATH,
 } from '@/services/pdf/medicalIndicationsPdfCoordinates';
+import { formatDateToDDMMYYYY } from '@/components/layout/date-strip/medicalIndicationsUtils';
 
 const TEXT_COLOR = rgb(0, 0, 0);
 const FONT_SIZE = 11;
@@ -50,6 +51,82 @@ const drawFieldText = (
   });
 };
 
+const fitTextToWidth = (
+  text: string,
+  maxWidth: number,
+  font: import('pdf-lib').PDFFont
+): { fitted: string; rest: string } => {
+  const cleanText = text.trim();
+  if (!cleanText) return { fitted: '', rest: '' };
+  if (font.widthOfTextAtSize(cleanText, FONT_SIZE) <= maxWidth) {
+    return { fitted: cleanText, rest: '' };
+  }
+
+  const words = cleanText.split(/\s+/);
+  let fitted = '';
+
+  for (let index = 0; index < words.length; index += 1) {
+    const nextCandidate = fitted ? `${fitted} ${words[index]}` : words[index];
+    if (font.widthOfTextAtSize(nextCandidate, FONT_SIZE) <= maxWidth) {
+      fitted = nextCandidate;
+      continue;
+    }
+
+    if (!fitted) {
+      let chunk = '';
+      for (const char of words[index]) {
+        const nextChunk = `${chunk}${char}`;
+        if (font.widthOfTextAtSize(nextChunk, FONT_SIZE) <= maxWidth) {
+          chunk = nextChunk;
+        } else {
+          break;
+        }
+      }
+
+      const restWord = words[index].slice(chunk.length);
+      const restWords = [restWord, ...words.slice(index + 1)].filter(Boolean).join(' ');
+      return { fitted: chunk, rest: restWords.trim() };
+    }
+
+    const rest = words.slice(index).join(' ');
+    return { fitted: fitted.trim(), rest: rest.trim() };
+  }
+
+  return { fitted: fitted.trim(), rest: '' };
+};
+
+const drawIndications = (
+  page: import('pdf-lib').PDFPage,
+  font: import('pdf-lib').PDFFont,
+  indications: string[]
+): void => {
+  const printableLines = Array.from(
+    { length: MEDICAL_INDICATIONS_LINE_FIELD_NAMES.length },
+    () => ''
+  );
+  let lineCursor = 0;
+
+  indications
+    .map(item => item.trim())
+    .filter(Boolean)
+    .forEach((indication, index) => {
+      let remainingText = `#${index + 1} ${indication}`.trim();
+      while (remainingText && lineCursor < printableLines.length) {
+        const fieldName = MEDICAL_INDICATIONS_LINE_FIELD_NAMES[lineCursor];
+        const maxWidth = MEDICAL_INDICATIONS_PDF_COORDINATES[fieldName].width;
+        const { fitted, rest } = fitTextToWidth(remainingText, maxWidth, font);
+        printableLines[lineCursor] = fitted;
+        remainingText = rest;
+        lineCursor += 1;
+      }
+    });
+
+  printableLines.forEach((value, index) => {
+    const fieldName = MEDICAL_INDICATIONS_LINE_FIELD_NAMES[index];
+    drawFieldText(page, font, fieldName, value);
+  });
+};
+
 export const fillMedicalIndicationsPdf = async (
   data: MedicalIndicationsPdfData
 ): Promise<Uint8Array> => {
@@ -65,7 +142,7 @@ export const fillMedicalIndicationsPdf = async (
   drawFieldText(page, font, 'fecha_nacimiento', data.fecha_nacimiento);
   drawFieldText(page, font, 'paciente_alergias', data.paciente_alergias);
   drawFieldText(page, font, 'medicotratante', data.medicotratante);
-  drawFieldText(page, font, 'fecha_ingreso', data.fecha_ingreso);
+  drawFieldText(page, font, 'fecha_ingreso', formatDateToDDMMYYYY(data.fecha_ingreso));
   drawFieldText(page, font, 'fecha_actual', data.fecha_actual);
   drawFieldText(page, font, 'diasEstada', data.diasEstada);
   drawFieldText(page, font, 'Reposoindicacion', data.Reposoindicacion);
@@ -75,12 +152,7 @@ export const fillMedicalIndicationsPdf = async (
   drawFieldText(page, font, 'Kinecantidadvecesdia', data.Kinecantidadvecesdia);
   drawFieldText(page, font, 'Pendientes', data.Pendientes);
 
-  data.indicaciones
-    .slice(0, MEDICAL_INDICATIONS_LINE_FIELD_NAMES.length)
-    .forEach((value, index) => {
-      const variableName = MEDICAL_INDICATIONS_LINE_FIELD_NAMES[index];
-      drawFieldText(page, font, variableName, value || '');
-    });
+  drawIndications(page, font, data.indicaciones);
 
   return pdfDoc.save();
 };
