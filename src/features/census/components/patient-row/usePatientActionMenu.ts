@@ -25,6 +25,7 @@ interface UsePatientActionMenuParams {
   onViewClinicalDocuments?: () => void;
   onViewExamRequest?: () => void;
   onViewImagingRequest?: () => void;
+  onViewMedicalIndications?: () => void;
 }
 
 interface UsePatientActionMenuResult {
@@ -39,6 +40,7 @@ interface UsePatientActionMenuResult {
   handleViewClinicalDocuments: () => void;
   handleViewExamRequest: () => void;
   handleViewImagingRequest: () => void;
+  handleViewMedicalIndications: () => void;
 }
 
 export const usePatientActionMenu = ({
@@ -53,6 +55,7 @@ export const usePatientActionMenu = ({
   onViewClinicalDocuments,
   onViewExamRequest,
   onViewImagingRequest,
+  onViewMedicalIndications,
 }: UsePatientActionMenuParams): UsePatientActionMenuResult => {
   const { isOpen, menuRef, toggle, close } = useDropdownMenu();
 
@@ -70,6 +73,7 @@ export const usePatientActionMenu = ({
           onViewClinicalDocuments,
           onViewExamRequest,
           onViewImagingRequest,
+          onViewMedicalIndications,
         }),
       }),
     [
@@ -79,6 +83,7 @@ export const usePatientActionMenu = ({
       onViewClinicalDocuments,
       onViewExamRequest,
       onViewImagingRequest,
+      onViewMedicalIndications,
       onViewHistory,
       accessProfile,
       readOnly,
@@ -114,6 +119,11 @@ export const usePatientActionMenu = ({
     close();
   }, [close, onViewImagingRequest]);
 
+  const handleViewMedicalIndications = useCallback(() => {
+    onViewMedicalIndications?.();
+    close();
+  }, [close, onViewMedicalIndications]);
+
   return {
     isOpen,
     menuRef,
@@ -126,5 +136,6 @@ export const usePatientActionMenu = ({
     handleViewClinicalDocuments,
     handleViewExamRequest,
     handleViewImagingRequest,
+    handleViewMedicalIndications,
   };
 };

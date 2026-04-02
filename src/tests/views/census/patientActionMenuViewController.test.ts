@@ -26,6 +26,7 @@ describe('patientActionMenuViewController', () => {
       showClinicalDocumentsAction: true,
       showExamRequestAction: true,
       showImagingRequestAction: true,
+      showMedicalIndicationsAction: false,
     });
   });
 
@@ -94,6 +95,7 @@ describe('patientActionMenuViewController', () => {
       showClinicalDocumentsAction: true,
       showExamRequestAction: true,
       showImagingRequestAction: true,
+      showMedicalIndicationsAction: false,
     });
   });
 

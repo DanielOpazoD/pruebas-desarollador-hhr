@@ -18,6 +18,7 @@ interface PatientRowOrbitalQuickActionsProps extends PatientRowOrbitalQuickActio
   onViewClinicalDocuments?: () => void;
   onViewExamRequest?: () => void;
   onViewImagingRequest?: () => void;
+  onViewMedicalIndications?: () => void;
 }
 
 const TRIGGER_SIZE = 36;
@@ -29,9 +30,11 @@ export const PatientRowOrbitalQuickActions: React.FC<PatientRowOrbitalQuickActio
   showClinicalDocumentsAction,
   showExamRequestAction,
   showImagingRequestAction,
+  showMedicalIndicationsAction,
   onViewClinicalDocuments,
   onViewExamRequest,
   onViewImagingRequest,
+  onViewMedicalIndications,
 }) => {
   const { isOpen, menuRef, toggle, close } = useDropdownMenu();
 
@@ -40,8 +43,14 @@ export const PatientRowOrbitalQuickActions: React.FC<PatientRowOrbitalQuickActio
       showClinicalDocumentsAction,
       showExamRequestAction,
       showImagingRequestAction,
+      showMedicalIndicationsAction,
     }),
-    [showClinicalDocumentsAction, showExamRequestAction, showImagingRequestAction]
+    [
+      showClinicalDocumentsAction,
+      showExamRequestAction,
+      showImagingRequestAction,
+      showMedicalIndicationsAction,
+    ]
   );
 
   const orbitalItems = React.useMemo(
@@ -63,8 +72,10 @@ export const PatientRowOrbitalQuickActions: React.FC<PatientRowOrbitalQuickActio
       onViewClinicalDocuments?.();
     } else if (itemId === 'exam-request') {
       onViewExamRequest?.();
-    } else {
+    } else if (itemId === 'imaging-request') {
       onViewImagingRequest?.();
+    } else {
+      onViewMedicalIndications?.();
     }
     close();
   };

@@ -15,7 +15,9 @@ export const PatientMainRowActionCell: React.FC<PatientMainRowActionCellProps> =
   onViewClinicalDocuments,
   onViewExamRequest,
   onViewImagingRequest,
+  onViewMedicalIndications,
   onViewHistory,
+  medicalIndicationsPatient,
 }) => (
   <td className="p-0 text-center border-r border-slate-200 relative w-10 overflow-visible print:hidden">
     <PatientActionMenu
@@ -25,6 +27,7 @@ export const PatientMainRowActionCell: React.FC<PatientMainRowActionCellProps> =
       onViewClinicalDocuments={onViewClinicalDocuments}
       onViewExamRequest={onViewExamRequest}
       onViewImagingRequest={onViewImagingRequest}
+      onViewMedicalIndications={onViewMedicalIndications}
       onViewHistory={onViewHistory}
       readOnly={readOnly}
       accessProfile={accessProfile}
@@ -32,6 +35,7 @@ export const PatientMainRowActionCell: React.FC<PatientMainRowActionCellProps> =
       showCmaAction={showCmaAction}
       hasClinicalDocument={hasClinicalDocument}
       isNewAdmission={isNewAdmission}
+      medicalIndicationsPatient={medicalIndicationsPatient}
     />
   </td>
 );

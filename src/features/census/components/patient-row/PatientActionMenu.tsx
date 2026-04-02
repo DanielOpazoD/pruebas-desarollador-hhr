@@ -3,6 +3,8 @@ import { FileText, MoreHorizontal, User } from 'lucide-react';
 import { MedicalButton } from '@/components/ui/base/MedicalButton';
 import type { CensusAccessProfile } from '@/features/census/types/censusAccessProfile';
 import { PatientRowOrbitalQuickActions } from '@/features/census/components/patient-row/PatientRowOrbitalQuickActions';
+import { BaseModal } from '@/components/shared/BaseModal';
+import { printMedicalIndicationsPdf } from '@/services/pdf/medicalIndicationsPdfService';
 import type {
   PatientActionMenuCallbacks,
   PatientActionMenuIndicators,
@@ -17,6 +19,7 @@ interface PatientActionMenuProps extends PatientActionMenuCallbacks, PatientActi
   align?: RowMenuAlign;
   showCmaAction?: boolean;
   accessProfile?: CensusAccessProfile;
+  medicalIndicationsPatient?: import('@/components/layout/date-strip/MedicalIndicationsQuickAction').MedicalIndicationsPatientOption;
 }
 
 const PatientActionPrimaryIcon: React.FC<{
@@ -50,12 +53,27 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
   onViewClinicalDocuments,
   onViewExamRequest,
   onViewImagingRequest,
+  onViewMedicalIndications,
   onViewHistory,
   readOnly = false,
   align = 'top',
   showCmaAction = true,
   accessProfile = 'default',
+  medicalIndicationsPatient,
 }) => {
+  const [isMedicalIndicationsOpen, setIsMedicalIndicationsOpen] = React.useState(false);
+  const [isPrintingMedicalIndications, setIsPrintingMedicalIndications] = React.useState(false);
+  const [reposo, setReposo] = React.useState('');
+  const [regimen, setRegimen] = React.useState('');
+  const [kineType, setKineType] = React.useState<'motora' | 'respiratoria' | 'ambas' | 'ninguna'>(
+    'ninguna'
+  );
+  const [kineTimes, setKineTimes] = React.useState('');
+  const [treatingDoctor, setTreatingDoctor] = React.useState('');
+  const [pendingNotes, setPendingNotes] = React.useState('');
+  const [indications, setIndications] = React.useState<string[]>(() =>
+    Array.from({ length: 15 }, () => '')
+  );
   const isSpecialistAccess = accessProfile === 'specialist';
   const {
     isOpen,
@@ -69,6 +87,7 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
     handleViewClinicalDocuments,
     handleViewExamRequest,
     handleViewImagingRequest,
+    handleViewMedicalIndications,
   } = usePatientActionMenu({
     isBlocked,
     readOnly,
@@ -84,7 +103,50 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
     onViewClinicalDocuments,
     onViewExamRequest,
     onViewImagingRequest,
+    onViewMedicalIndications,
   });
+
+  React.useEffect(() => {
+    if (!isMedicalIndicationsOpen || !medicalIndicationsPatient) return;
+    setTreatingDoctor(medicalIndicationsPatient.treatingDoctor || '');
+  }, [isMedicalIndicationsOpen, medicalIndicationsPatient]);
+
+  const buildToday = () => {
+    const date = new Date();
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  };
+
+  const handlePrintMedicalIndications = async () => {
+    if (!medicalIndicationsPatient || isPrintingMedicalIndications) return;
+
+    setIsPrintingMedicalIndications(true);
+    try {
+      await printMedicalIndicationsPdf({
+        paciente_nombre: medicalIndicationsPatient.patientName,
+        paciente_rut: medicalIndicationsPatient.rut,
+        paciente_diagnostico: medicalIndicationsPatient.diagnosis,
+        paciente_edad: medicalIndicationsPatient.age,
+        fecha_nacimiento: medicalIndicationsPatient.birthDate,
+        paciente_alergias: medicalIndicationsPatient.allergies,
+        medicotratante: treatingDoctor,
+        fecha_ingreso: medicalIndicationsPatient.admissionDate,
+        fecha_actual: buildToday(),
+        diasEstada: medicalIndicationsPatient.daysOfStay,
+        Reposoindicacion: reposo,
+        Regimenindicacion: regimen,
+        Kinemotora: kineType === 'motora' || kineType === 'ambas' ? 'X' : '',
+        Kinerespiratoria: kineType === 'respiratoria' || kineType === 'ambas' ? 'X' : '',
+        Kinecantidadvecesdia: kineTimes,
+        Pendientes: pendingNotes,
+        indicaciones: indications,
+      });
+    } finally {
+      setIsPrintingMedicalIndications(false);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center gap-0.5 relative py-0.5" ref={menuRef}>
@@ -92,9 +154,14 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
         showClinicalDocumentsAction={binding.availability.showClinicalDocumentsAction}
         showExamRequestAction={binding.availability.showExamRequestAction}
         showImagingRequestAction={binding.availability.showImagingRequestAction}
+        showMedicalIndicationsAction={binding.availability.showMedicalIndicationsAction}
         onViewClinicalDocuments={handleViewClinicalDocuments}
         onViewExamRequest={handleViewExamRequest}
         onViewImagingRequest={handleViewImagingRequest}
+        onViewMedicalIndications={() => {
+          handleViewMedicalIndications();
+          setIsMedicalIndicationsOpen(true);
+        }}
       />
 
       {binding.availability.showDemographicsAction && (
@@ -128,6 +195,116 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
         onAction={handleAction}
         onViewHistory={handleViewHistory}
       />
+
+      <BaseModal
+        isOpen={isMedicalIndicationsOpen}
+        onClose={() => setIsMedicalIndicationsOpen(false)}
+        title="Indicaciones médicas"
+        size="3xl"
+        variant="white"
+      >
+        {!medicalIndicationsPatient ? null : (
+          <>
+            <div className="grid grid-cols-2 gap-3 p-1">
+              <div className="col-span-2 text-xs font-semibold text-slate-600">
+                Paciente hospitalizado
+                <div className="mt-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm font-normal text-slate-700">
+                  {medicalIndicationsPatient.label}
+                </div>
+              </div>
+              <label className="text-xs font-semibold text-slate-600">
+                Médico tratante
+                <input
+                  className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  value={treatingDoctor}
+                  onChange={event => setTreatingDoctor(event.target.value)}
+                />
+              </label>
+              <label className="text-xs font-semibold text-slate-600">
+                Reposo
+                <input
+                  className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  value={reposo}
+                  onChange={event => setReposo(event.target.value)}
+                />
+              </label>
+              <label className="text-xs font-semibold text-slate-600">
+                Régimen
+                <input
+                  className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  value={regimen}
+                  onChange={event => setRegimen(event.target.value)}
+                />
+              </label>
+              <label className="text-xs font-semibold text-slate-600">
+                Kinesiología
+                <select
+                  className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  value={kineType}
+                  onChange={event =>
+                    setKineType(
+                      event.target.value as 'motora' | 'respiratoria' | 'ambas' | 'ninguna'
+                    )
+                  }
+                >
+                  <option value="ninguna">Sin indicación</option>
+                  <option value="motora">Motora</option>
+                  <option value="respiratoria">Respiratoria</option>
+                  <option value="ambas">Motora y respiratoria</option>
+                </select>
+              </label>
+              <label className="text-xs font-semibold text-slate-600">
+                Veces por día
+                <input
+                  className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  value={kineTimes}
+                  onChange={event => setKineTimes(event.target.value)}
+                />
+              </label>
+              <label className="col-span-2 text-xs font-semibold text-slate-600">
+                Pendientes
+                <input
+                  className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  value={pendingNotes}
+                  onChange={event => setPendingNotes(event.target.value)}
+                />
+              </label>
+              <div className="col-span-2 grid grid-cols-1 gap-1.5 max-h-[280px] overflow-y-auto border border-slate-200 rounded-md p-2 bg-slate-50">
+                {indications.map((value, index) => (
+                  <input
+                    key={`indication-${index + 1}`}
+                    className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs bg-white"
+                    value={value}
+                    onChange={event =>
+                      setIndications(current => {
+                        const next = [...current];
+                        next[index] = event.target.value;
+                        return next;
+                      })
+                    }
+                    placeholder={`Indicación ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="mt-3 flex justify-end gap-2">
+              <button
+                onClick={() => setIsMedicalIndicationsOpen(false)}
+                className="px-3 py-1.5 rounded-md border border-slate-300 text-slate-700 text-sm"
+              >
+                Cerrar
+              </button>
+              <button
+                onClick={() => void handlePrintMedicalIndications()}
+                disabled={isPrintingMedicalIndications}
+                className="px-3 py-1.5 rounded-md bg-medical-600 text-white text-sm disabled:opacity-60"
+              >
+                {isPrintingMedicalIndications ? 'Generando PDF...' : 'PDF'}
+              </button>
+            </div>
+          </>
+        )}
+      </BaseModal>
     </div>
   );
 };

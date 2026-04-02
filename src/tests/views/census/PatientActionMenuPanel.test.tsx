@@ -29,6 +29,7 @@ describe('PatientActionMenuPanel', () => {
             showClinicalDocumentsAction: true,
             showExamRequestAction: true,
             showImagingRequestAction: true,
+            showMedicalIndicationsAction: false,
           },
         }}
         utilityActions={[]}
@@ -68,6 +69,7 @@ describe('PatientActionMenuPanel', () => {
             showClinicalDocumentsAction: true,
             showExamRequestAction: true,
             showImagingRequestAction: true,
+            showMedicalIndicationsAction: false,
           },
         }}
         utilityActions={[
@@ -137,6 +139,7 @@ describe('PatientActionMenuPanel', () => {
             showClinicalDocumentsAction: true,
             showExamRequestAction: true,
             showImagingRequestAction: true,
+            showMedicalIndicationsAction: false,
           },
         }}
         utilityActions={[]}
