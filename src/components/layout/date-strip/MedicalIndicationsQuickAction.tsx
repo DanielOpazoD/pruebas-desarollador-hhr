@@ -60,9 +60,13 @@ export const MedicalIndicationsQuickAction: React.FC<MedicalIndicationsQuickActi
   React.useEffect(() => {
     if (!isOpen || !selectedPatient) return;
 
-    setSelectedBedId(selectedPatient.bedId);
+    setSelectedBedId(current => (current ? current : selectedPatient.bedId));
+  }, [isOpen, selectedPatient?.bedId]);
+
+  React.useEffect(() => {
+    if (!isOpen || !selectedPatient) return;
     setTreatingDoctor(selectedPatient.treatingDoctor);
-  }, [isOpen, selectedPatient]);
+  }, [isOpen, selectedPatient?.bedId, selectedPatient?.treatingDoctor]);
 
   if (patients.length === 0) {
     return null;

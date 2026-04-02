@@ -3,11 +3,13 @@ import { openPdfPrintDialog } from '@/services/pdf/pdfBase';
 import {
   MEDICAL_INDICATIONS_LINE_FIELD_NAMES,
   MEDICAL_INDICATIONS_PDF_COORDINATES,
+  MEDICAL_INDICATIONS_PDF_TEMPLATE_FALLBACK_PATHS,
   MEDICAL_INDICATIONS_PDF_TEMPLATE_PATH,
 } from '@/services/pdf/medicalIndicationsPdfCoordinates';
 
 const TEXT_COLOR = rgb(0, 0, 0);
 const FONT_SIZE = 11;
+const PDF_HEADER = '%PDF-';
 
 export interface MedicalIndicationsPdfData {
   paciente_nombre: string;
@@ -51,8 +53,7 @@ const drawFieldText = (
 export const fillMedicalIndicationsPdf = async (
   data: MedicalIndicationsPdfData
 ): Promise<Uint8Array> => {
-  const templateResponse = await fetch(MEDICAL_INDICATIONS_PDF_TEMPLATE_PATH);
-  const templateBytes = await templateResponse.arrayBuffer();
+  const templateBytes = await loadMedicalIndicationsTemplateBytes();
   const pdfDoc = await PDFDocument.load(templateBytes);
   const page = pdfDoc.getPage(0);
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -82,6 +83,31 @@ export const fillMedicalIndicationsPdf = async (
     });
 
   return pdfDoc.save();
+};
+
+const isPdfFile = (bytes: ArrayBuffer): boolean => {
+  const headerBytes = new Uint8Array(bytes.slice(0, PDF_HEADER.length));
+  const header = String.fromCharCode(...headerBytes);
+  return header === PDF_HEADER;
+};
+
+const loadMedicalIndicationsTemplateBytes = async (): Promise<ArrayBuffer> => {
+  const templatePaths = [
+    MEDICAL_INDICATIONS_PDF_TEMPLATE_PATH,
+    ...MEDICAL_INDICATIONS_PDF_TEMPLATE_FALLBACK_PATHS,
+  ];
+
+  for (const templatePath of templatePaths) {
+    const templateResponse = await fetch(templatePath);
+    if (!templateResponse.ok) continue;
+
+    const bytes = await templateResponse.arrayBuffer();
+    if (isPdfFile(bytes)) {
+      return bytes;
+    }
+  }
+
+  throw new Error('No se pudo cargar la plantilla PDF de indicaciones médicas.');
 };
 
 export const printMedicalIndicationsPdf = async (

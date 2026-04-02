@@ -29,7 +29,8 @@ vi.mock('pdf-lib', async () => {
 });
 
 global.fetch = vi.fn().mockResolvedValue({
-  arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(16)),
+  ok: true,
+  arrayBuffer: vi.fn().mockResolvedValue(new TextEncoder().encode('%PDF-1.7').buffer),
 }) as unknown as typeof fetch;
 
 describe('medicalIndicationsPdfService', () => {

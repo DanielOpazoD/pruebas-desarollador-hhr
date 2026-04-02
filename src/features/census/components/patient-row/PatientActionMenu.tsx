@@ -109,7 +109,11 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
   React.useEffect(() => {
     if (!isMedicalIndicationsOpen || !medicalIndicationsPatient) return;
     setTreatingDoctor(medicalIndicationsPatient.treatingDoctor || '');
-  }, [isMedicalIndicationsOpen, medicalIndicationsPatient]);
+  }, [
+    isMedicalIndicationsOpen,
+    medicalIndicationsPatient?.bedId,
+    medicalIndicationsPatient?.treatingDoctor,
+  ]);
 
   const buildToday = () => {
     const date = new Date();
