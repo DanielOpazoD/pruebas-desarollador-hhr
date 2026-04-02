@@ -8,6 +8,7 @@ import type {
 export interface PatientInputSectionSharedProps {
   readonly data: PatientData;
   readonly currentDateString: string;
+  readonly isNewAdmission?: boolean;
   readonly isSubRow: boolean;
   readonly isEmpty: boolean;
   readonly isLocked: boolean;

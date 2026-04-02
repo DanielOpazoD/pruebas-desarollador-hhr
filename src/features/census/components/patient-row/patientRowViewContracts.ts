@@ -22,6 +22,7 @@ import type { PatientMainRowViewState } from '@/features/census/controllers/pati
 export interface PatientInputCellsProps {
   data: PatientData;
   currentDateString: string;
+  isNewAdmission?: boolean;
   isSubRow?: boolean;
   isEmpty?: boolean;
   onChange: PatientInputChangeHandlers;

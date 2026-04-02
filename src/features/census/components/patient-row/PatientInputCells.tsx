@@ -20,6 +20,7 @@ import { isSpecialistCensusAccessProfile } from '@/features/census/types/censusA
 export const PatientInputCells: React.FC<PatientInputCellsProps> = ({
   data,
   currentDateString,
+  isNewAdmission = false,
   isSubRow = false,
   isEmpty = false,
   onChange,
@@ -36,6 +37,7 @@ export const PatientInputCells: React.FC<PatientInputCellsProps> = ({
   const sectionBindings = usePatientInputSectionBindings({
     data,
     currentDateString,
+    isNewAdmission,
     isSubRow,
     isEmpty,
     isLocked,

@@ -7,15 +7,17 @@ import type {
 const buildPatientInputSectionSharedProps = ({
   data,
   currentDateString,
+  isNewAdmission,
   isSubRow,
   isEmpty,
   isLocked,
 }: Pick<
   PatientInputSectionBindingsParams,
-  'data' | 'currentDateString' | 'isSubRow' | 'isEmpty' | 'isLocked'
+  'data' | 'currentDateString' | 'isNewAdmission' | 'isSubRow' | 'isEmpty' | 'isLocked'
 >): PatientInputSectionSharedProps => ({
   data,
   currentDateString,
+  isNewAdmission,
   isSubRow,
   isEmpty,
   isLocked,
@@ -24,6 +26,7 @@ const buildPatientInputSectionSharedProps = ({
 export const buildPatientInputSectionBindings = ({
   data,
   currentDateString,
+  isNewAdmission,
   isSubRow,
   isEmpty,
   isLocked,
@@ -36,6 +39,7 @@ export const buildPatientInputSectionBindings = ({
   const shared = buildPatientInputSectionSharedProps({
     data,
     currentDateString,
+    isNewAdmission,
     isSubRow,
     isEmpty,
     isLocked,

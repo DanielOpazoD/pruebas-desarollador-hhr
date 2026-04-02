@@ -100,6 +100,8 @@ export const PatientInputFlowSection: React.FC<
       isSubRow={shared.isSubRow}
       isEmpty={shared.isEmpty}
       readOnly={shared.isLocked}
+      currentDateString={shared.currentDateString}
+      isNewAdmission={shared.isNewAdmission}
       onChange={handleDebouncedText}
       onMultipleUpdate={onChange.multiple}
     />

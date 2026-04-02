@@ -51,6 +51,7 @@ export const buildPatientMainRowSections = (
   inputCells: {
     data: props.data,
     currentDateString: props.currentDateString,
+    isNewAdmission: props.indicators.isNewAdmission,
     isEmpty: props.isEmpty,
     onChange: props.onChange,
     onDemo: props.onOpenDemographics,

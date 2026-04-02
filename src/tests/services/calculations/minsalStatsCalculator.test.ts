@@ -9,6 +9,7 @@ import {
   filterRecordsByDateRange,
   calculateDailySnapshot,
   calculateMinsalStats,
+  buildSpecialtyTraceability,
   generateDailyTrend,
 } from '@/services/calculations/minsalStatsCalculator';
 import { DailyRecord, PatientData, Specialty, PatientStatus } from '@/types';
@@ -504,6 +505,163 @@ describe('minsalStatsCalculator', () => {
       expect(stats.mortalidadHospitalaria).toBe(50);
       expect(stats.pacientesActuales).toBe(12);
       expect(stats.camasOcupadas).toBe(12);
+    });
+
+    it('should keep specialty bed-days aligned with global occupied bed-days when a nested clinical crib exists', () => {
+      const record = createMockRecord('2026-01-01', 1);
+      const bedId = BEDS[0].id;
+
+      record.beds[bedId].clinicalCrib = {
+        bedId,
+        isBlocked: false,
+        patientName: 'RN Clínico',
+        rut: '99.999.999-9',
+        pathology: 'Control neonatal',
+        specialty: Specialty.MEDICINA,
+        status: PatientStatus.ESTABLE,
+        admissionDate: '2026-01-01',
+        admissionTime: '11:00',
+        age: '0',
+        bedMode: 'Cuna',
+        hasCompanionCrib: false,
+        hasWristband: true,
+        devices: [],
+        surgicalComplication: false,
+        isUPC: false,
+      };
+
+      const stats = calculateMinsalStats([record], '2026-01-01', '2026-01-01');
+      const medicina = stats.porEspecialidad.find(item => item.specialty === Specialty.MEDICINA);
+
+      expect(stats.diasCamaOcupados).toBe(1);
+      expect(medicina?.diasOcupados).toBe(1);
+      expect(medicina?.pacientesActuales).toBe(1);
+      expect(medicina?.diasOcupadosList).toHaveLength(1);
+
+      const traceability = buildSpecialtyTraceability([record], Specialty.MEDICINA, 'dias-cama');
+      expect(traceability).toHaveLength(1);
+      expect(traceability[0]?.name).toBe('Patient 1');
+    });
+
+    it('should calculate specialty stay average using all discharge modes', () => {
+      const record = createMockRecord('2026-01-01', 4);
+      record.discharges = [
+        {
+          id: '1',
+          patientName: 'Alta 1',
+          status: 'Vivo',
+          bedName: '',
+          bedId: '',
+          bedType: '',
+          rut: '',
+          diagnosis: '',
+          time: '',
+          originalData: {
+            specialty: Specialty.MEDICINA,
+            admissionDate: '2025-12-29',
+          } as never,
+        },
+      ];
+      record.transfers = [
+        {
+          id: '2',
+          patientName: 'Traslado 1',
+          receivingCenter: 'Hospital X',
+          bedName: '',
+          bedId: '',
+          bedType: '',
+          rut: '',
+          diagnosis: '',
+          time: '',
+          evacuationMethod: '',
+          originalData: {
+            specialty: Specialty.MEDICINA,
+            admissionDate: '2025-12-30',
+          } as never,
+        },
+      ];
+
+      const stats = calculateMinsalStats([record], '2026-01-01', '2026-01-01');
+      const medicina = stats.porEspecialidad.find(item => item.specialty === Specialty.MEDICINA);
+
+      expect(medicina?.diasOcupados).toBe(4);
+      expect(medicina?.egresos).toBe(1);
+      expect(medicina?.traslados).toBe(1);
+      expect(medicina?.promedioDiasEstada).toBe(2);
+      expect(medicina?.promedioDiasEstadaMinima).toBe(3);
+      expect(medicina?.promedioDiasEstadaMaxima).toBe(4);
+      expect(stats.promedioDiasEstadaMinima).toBe(3);
+      expect(stats.promedioDiasEstadaMaxima).toBe(4);
+    });
+
+    it('should keep stay range tied to the raw admission and discharge dates', () => {
+      const record = createMockRecord('2026-03-31', 2);
+      record.discharges = [
+        {
+          id: '1',
+          patientName: 'Alta larga',
+          status: 'Vivo',
+          bedName: '',
+          bedId: '',
+          bedType: '',
+          rut: '',
+          diagnosis: '',
+          time: '',
+          originalData: {
+            specialty: Specialty.CIRUGIA,
+            admissionDate: '2025-01-01',
+          } as never,
+        },
+      ];
+
+      const stats = calculateMinsalStats([record], '2026-01-01', '2026-03-31');
+      const cirugia = stats.porEspecialidad.find(item => item.specialty === Specialty.CIRUGIA);
+
+      expect(cirugia?.promedioDiasEstadaMinima).toBeGreaterThan(90);
+      expect(cirugia?.promedioDiasEstadaMaxima).toBeGreaterThan(90);
+      expect(stats.promedioDiasEstadaMinima).toBeGreaterThan(90);
+      expect(stats.promedioDiasEstadaMaxima).toBeGreaterThan(90);
+    });
+
+    it('should measure stay range from the raw admission and discharge dates', () => {
+      const day1 = createMockRecord('2026-01-01', 1);
+      const day2 = createMockRecord('2026-01-02', 1);
+      const day3 = createMockRecord('2026-01-03', 1);
+
+      const bedId = BEDS[0].id;
+      const basePatient = {
+        ...day1.beds[bedId],
+        patientName: 'Paciente Cambio',
+        rut: '9.999.999-9',
+        admissionDate: '2026-01-01',
+      } as PatientData;
+
+      day1.beds[bedId] = { ...basePatient, specialty: Specialty.MEDICINA };
+      day2.beds[bedId] = { ...basePatient, specialty: Specialty.CIRUGIA };
+      day3.beds[bedId] = { ...basePatient, specialty: Specialty.CIRUGIA };
+      day3.discharges = [
+        {
+          id: 'x1',
+          patientName: 'Paciente Cambio',
+          status: 'Vivo',
+          bedName: '',
+          bedId,
+          bedType: '',
+          rut: '9.999.999-9',
+          diagnosis: '',
+          time: '',
+          originalData: {
+            specialty: Specialty.CIRUGIA,
+            admissionDate: '2026-01-01',
+          } as never,
+        },
+      ];
+
+      const stats = calculateMinsalStats([day1, day2, day3], '2026-01-01', '2026-01-03');
+      const cirugia = stats.porEspecialidad.find(item => item.specialty === Specialty.CIRUGIA);
+
+      expect(cirugia?.promedioDiasEstadaMinima).toBe(3);
+      expect(cirugia?.promedioDiasEstadaMaxima).toBe(3);
     });
   });
 

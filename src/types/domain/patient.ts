@@ -92,6 +92,8 @@ export interface PatientData {
   surgicalComplication: boolean;
   isUPC: boolean;
   location?: string;
+  /** Optional first day the patient was observed in census; used for admission audits. */
+  firstSeenDate?: string;
 
   // CUDYR Data
   cudyr?: CudyrScore;

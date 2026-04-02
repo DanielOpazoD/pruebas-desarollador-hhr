@@ -25,6 +25,8 @@ describe('minsalExcelExporter', () => {
       diasCamaOcupados: 434,
       tasaOcupacion: 70,
       promedioDiasEstada: 5.6,
+      promedioDiasEstadaMinima: 2,
+      promedioDiasEstadaMaxima: 10,
       egresosTotal: 38,
       egresosVivos: 34,
       egresosFallecidos: 2,
@@ -50,6 +52,8 @@ describe('minsalExcelExporter', () => {
           contribucionRelativa: 28,
           tasaMortalidad: 8.3,
           promedioDiasEstada: 6.2,
+          promedioDiasEstadaMinima: 2,
+          promedioDiasEstadaMaxima: 10,
         },
       ],
     };
@@ -87,6 +91,22 @@ describe('minsalExcelExporter', () => {
       'Contribución (%)',
       'Mortalidad del período (%)',
       'Estada media del período (días)',
+      'Rango estada',
+    ]);
+
+    const lastRow = specialtySheet?.getRow((specialtySheet?.rowCount ?? 0) as number).values as
+      | unknown[]
+      | undefined;
+    expect(lastRow?.slice(1)).toEqual([
+      'Total',
+      14,
+      36,
+      2,
+      434,
+      '100.0',
+      '5.3',
+      '5.6',
+      '2.0 - 10.0 días',
     ]);
   });
 });

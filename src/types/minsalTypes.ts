@@ -58,14 +58,18 @@ export interface SpecialtyStats {
   aerocardal: number;
   /** Transfers in the period via FACH */
   fach: number;
-  /** Total occupied bed-days accumulated across the selected period */
+  /** Total occupied bed-days accumulated across the selected period using main-bed occupancy */
   diasOcupados: number;
   /** Relative contribution to total occupied bed-days in the selected period (percentage) */
   contribucionRelativa: number;
   /** Mortality rate for this specialty over period discharges (percentage) */
   tasaMortalidad: number;
-  /** Average length of stay in days across the selected period */
+  /** Average length of stay in days across the selected period, using all discharge modes */
   promedioDiasEstada: number;
+  /** Minimum observed stay among exit events in the selected period, capped at period start when admission was earlier */
+  promedioDiasEstadaMinima?: number;
+  /** Maximum observed stay among exit events in the selected period, capped at period start when admission was earlier */
+  promedioDiasEstadaMaxima?: number;
 
   // ===== Traceability Lists =====
   /** List of patient-days that contributed to diasOcupados */
@@ -125,6 +129,10 @@ export interface MinsalStatistics {
    * Formula: Días Ocupados / Total Egresos
    */
   promedioDiasEstada: number;
+  /** Minimum observed stay among exit events in the selected period, capped at period start when admission was earlier */
+  promedioDiasEstadaMinima?: number;
+  /** Maximum observed stay among exit events in the selected period, capped at period start when admission was earlier */
+  promedioDiasEstadaMaxima?: number;
 
   // ===== Discharge Statistics =====
   /** Total discharges (alive + deceased + transfers) */
@@ -146,7 +154,7 @@ export interface MinsalStatistics {
   /**
    * Índice de Rotación
    * Bed turnover rate
-   * Formula: Egresos / Camas Disponibles
+   * Formula: (Egresos Totales × 30) / Días Cama Disponibles
    */
   indiceRotacion: number;
 
@@ -198,7 +206,8 @@ export type SpecialtyTraceabilityType =
   | 'fallecidos'
   | 'traslados'
   | 'aerocardal'
-  | 'fach';
+  | 'fach'
+  | 'estada';
 
 /**
  * Configuration for date range selection

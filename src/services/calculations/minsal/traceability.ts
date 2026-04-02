@@ -54,21 +54,6 @@ export function buildSpecialtyTraceability(
             dischargeDate: dischargeDates.get(patient.rut),
           });
         }
-
-        if (
-          patient.clinicalCrib?.patientName?.trim() &&
-          normalizeSpecialty(patient.clinicalCrib.specialty) === normalizedSpecialty
-        ) {
-          traceability.push({
-            name: patient.clinicalCrib.patientName,
-            rut: patient.clinicalCrib.rut,
-            diagnosis: resolveTraceabilityDiagnosis(patient.clinicalCrib.pathology),
-            date: record.date,
-            bedName: patient.clinicalCrib.bedName ?? patient.bedName,
-            admissionDate: patient.clinicalCrib.admissionDate,
-            dischargeDate: dischargeDates.get(patient.clinicalCrib.rut),
-          });
-        }
       });
       return;
     }
@@ -87,6 +72,7 @@ export function buildSpecialtyTraceability(
           date: record.date,
           bedName: discharge.bedName,
           admissionDate: discharge.originalData?.admissionDate,
+          dischargeDate: record.date,
         });
       });
       return;
@@ -107,6 +93,7 @@ export function buildSpecialtyTraceability(
         date: record.date,
         bedName: transfer.bedName,
         admissionDate: transfer.originalData?.admissionDate,
+        dischargeDate: record.date,
       });
     });
   });

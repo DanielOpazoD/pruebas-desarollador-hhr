@@ -87,6 +87,7 @@ export async function exportMinsalToExcel(
     'Contribución (%)',
     'Mortalidad del período (%)',
     'Estada media del período (días)',
+    'Rango estada',
   ];
 
   const headerRow = specialtySheet.addRow(specialtyHeaders);
@@ -111,8 +112,25 @@ export async function exportMinsalToExcel(
       spec.contribucionRelativa.toFixed(1),
       spec.tasaMortalidad.toFixed(1),
       spec.promedioDiasEstada.toFixed(1),
+      spec.promedioDiasEstadaMinima !== undefined && spec.promedioDiasEstadaMaxima !== undefined
+        ? `${spec.promedioDiasEstadaMinima.toFixed(1)} - ${spec.promedioDiasEstadaMaxima.toFixed(1)} días`
+        : '—',
     ]);
   });
+
+  specialtySheet.addRow([
+    'Total',
+    stats.pacientesActuales,
+    stats.egresosVivos + stats.egresosFallecidos,
+    stats.egresosFallecidos,
+    stats.diasCamaOcupados,
+    '100.0',
+    stats.mortalidadHospitalaria.toFixed(1),
+    stats.promedioDiasEstada.toFixed(1),
+    stats.promedioDiasEstadaMinima !== undefined && stats.promedioDiasEstadaMaxima !== undefined
+      ? `${stats.promedioDiasEstadaMinima.toFixed(1)} - ${stats.promedioDiasEstadaMaxima.toFixed(1)} días`
+      : '—',
+  ]);
 
   // Column widths
   specialtySheet.columns = [
@@ -124,6 +142,7 @@ export async function exportMinsalToExcel(
     { width: 15 },
     { width: 15 },
     { width: 18 },
+    { width: 22 },
   ];
 
   // ===== Sheet 3: Serie Temporal =====

@@ -11,11 +11,14 @@ import { BaseCellProps, DebouncedTextHandler } from './inputCellTypes';
 import { PatientEmptyCell } from './PatientEmptyCell';
 import {
   resolveAdmissionDateChange,
+  resolveAdmissionDateAudit,
   resolveAdmissionDateMax,
   resolveIsCriticalAdmissionEmpty,
 } from '@/features/census/controllers/admissionInputController';
 
 interface AdmissionInputProps extends BaseCellProps {
+  currentDateString: string;
+  isNewAdmission?: boolean;
   onChange: DebouncedTextHandler;
   onMultipleUpdate?: (fields: Partial<PatientData>) => void;
 }
@@ -25,12 +28,21 @@ export const AdmissionInput: React.FC<AdmissionInputProps> = ({
   isSubRow = false,
   isEmpty = false,
   readOnly = false,
+  currentDateString,
+  isNewAdmission = false,
   onChange,
   onMultipleUpdate,
 }) => {
   const [showTime, setShowTime] = useState(false);
   const admissionDateInputId = useId();
   const isCriticalEmpty = resolveIsCriticalAdmissionEmpty(data.patientName, data.admissionDate);
+  const audit = resolveAdmissionDateAudit({
+    recordDate: currentDateString,
+    admissionDate: data.admissionDate,
+    admissionTime: data.admissionTime,
+    firstSeenDate: data.firstSeenDate,
+  });
+  const isAdmissionDateSuspicious = isNewAdmission && audit.isSuspicious && !isCriticalEmpty;
 
   if (isEmpty && !isSubRow) {
     return <PatientEmptyCell tdClassName="py-0.5 px-1 border-r border-slate-200 w-32" />;
@@ -69,6 +81,27 @@ export const AdmissionInput: React.FC<AdmissionInputProps> = ({
     }
   };
 
+  const handleApplySuggestedDate = () => {
+    if (!audit.suggestedAdmissionDate) {
+      return;
+    }
+
+    const resolution = resolveAdmissionDateChange({
+      nextDate: audit.suggestedAdmissionDate,
+      currentAdmissionTime: data.admissionTime,
+    });
+
+    if (resolution.shouldPatchMultiple && onMultipleUpdate) {
+      onMultipleUpdate({
+        admissionDate: resolution.admissionDate,
+        admissionTime: resolution.admissionTime,
+      });
+      return;
+    }
+
+    onChange('admissionDate')(resolution.admissionDate);
+  };
+
   return (
     <td className="py-0.5 px-1 border-r border-slate-200 w-32">
       <div
@@ -90,14 +123,22 @@ export const AdmissionInput: React.FC<AdmissionInputProps> = ({
             'hide-calendar-icon',
             isCriticalEmpty
               ? 'border-red-400 border-2 bg-red-50 focus:ring-red-200 focus:border-red-500'
-              : 'border-slate-300 focus:ring-medical-500',
+              : isAdmissionDateSuspicious
+                ? 'border-amber-400 border-2 bg-amber-50 focus:ring-amber-200 focus:border-amber-500'
+                : 'border-slate-300 focus:ring-medical-500',
             isSubRow && 'h-6'
           )}
           value={data.admissionDate || ''}
           onChange={handleDateChange}
           onClick={() => setShowTime(true)}
           disabled={readOnly}
-          title={isCriticalEmpty ? 'Campo crítico requerido para entrega' : undefined}
+          title={
+            isCriticalEmpty
+              ? 'Campo crítico requerido para entrega'
+              : isAdmissionDateSuspicious
+                ? `${audit.message || 'Fecha sospechosa'} Sugerida: ${audit.suggestedAdmissionDate}`
+                : undefined
+          }
         />
         <button
           type="button"
@@ -109,6 +150,21 @@ export const AdmissionInput: React.FC<AdmissionInputProps> = ({
         >
           <Pencil size={11} />
         </button>
+        {isAdmissionDateSuspicious && (
+          <button
+            type="button"
+            onClick={handleApplySuggestedDate}
+            className={clsx(
+              'absolute -right-1 -top-1 w-3 h-3 rounded-full flex items-center justify-center z-20 shadow-sm',
+              readOnly ? 'bg-amber-300' : 'bg-amber-500 hover:bg-amber-600'
+            )}
+            title={`${audit.message || 'Fecha sugerida'} ${audit.suggestedAdmissionDate ? `Aplicar ${audit.suggestedAdmissionDate}` : ''}`.trim()}
+            aria-label="Corregir fecha de ingreso sugerida"
+            disabled={readOnly || !audit.suggestedAdmissionDate}
+          >
+            <AlertCircle size={8} className="text-white" />
+          </button>
+        )}
         {/* Critical field warning icon */}
         {isCriticalEmpty && (
           <div

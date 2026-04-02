@@ -14,8 +14,25 @@ interface TraceabilityModalProps {
   onClose: () => void;
   title: string;
   patients: PatientTraceability[];
-  type: 'dias-cama' | 'egresos' | 'fallecidos' | 'traslados' | 'aerocardal' | 'fach';
+  type: 'dias-cama' | 'egresos' | 'fallecidos' | 'traslados' | 'aerocardal' | 'fach' | 'estada';
 }
+
+const getStayDays = (patient: PatientTraceability): number | null => {
+  if (!patient.admissionDate || !patient.dischargeDate) return null;
+
+  try {
+    const admission = patient.admissionDate.split('T')[0];
+    const discharge = patient.dischargeDate.split('T')[0];
+    const [aYear, aMonth, aDay] = admission.split('-').map(Number);
+    const [dYear, dMonth, dDay] = discharge.split('-').map(Number);
+    const start = Date.UTC(aYear, aMonth - 1, aDay, 12, 0, 0);
+    const end = Date.UTC(dYear, dMonth - 1, dDay, 12, 0, 0);
+    const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays < 1 ? 1 : diffDays;
+  } catch {
+    return null;
+  }
+};
 
 export const TraceabilityModal: React.FC<TraceabilityModalProps> = ({
   isOpen,
@@ -24,12 +41,22 @@ export const TraceabilityModal: React.FC<TraceabilityModalProps> = ({
   patients,
   type,
 }) => {
-  // Sort by date (descending)
-  const sortedPatients = [...patients].sort((a, b) => b.date.localeCompare(a.date));
+  const isGroupedView = type === 'dias-cama';
+  const isStayView = type === 'estada';
 
-  // Grouping logic for 'dias-cama'
+  const sortedPatients = React.useMemo(() => {
+    const list = [...patients];
+    if (isStayView) {
+      return list.sort((a, b) => {
+        const diff = (getStayDays(b) || 0) - (getStayDays(a) || 0);
+        return diff || b.date.localeCompare(a.date);
+      });
+    }
+    return list.sort((a, b) => b.date.localeCompare(a.date));
+  }, [patients, isStayView]);
+
   const uniquePatients = React.useMemo(() => {
-    if (type !== 'dias-cama') return [];
+    if (!isGroupedView) return [];
 
     const map = new Map<
       string,
@@ -41,14 +68,13 @@ export const TraceabilityModal: React.FC<TraceabilityModalProps> = ({
     >();
 
     patients.forEach(p => {
-      const key = p.rut; // Group by RUT
+      const key = p.rut;
       const existing = map.get(key);
       if (existing) {
         existing.daysCount++;
         existing.dates.push(p.date);
-        // Keep the record with admissionDate if available
         if (!existing.patient.admissionDate && p.admissionDate) {
-          existing.patient = p; // Update reference to have admission date
+          existing.patient = p;
         }
       } else {
         map.set(key, {
@@ -60,13 +86,16 @@ export const TraceabilityModal: React.FC<TraceabilityModalProps> = ({
     });
 
     return Array.from(map.values()).sort(
-      (a, b) =>
-        // Sort by days count desc, then name
-        b.daysCount - a.daysCount || a.patient.name.localeCompare(b.patient.name)
+      (a, b) => b.daysCount - a.daysCount || a.patient.name.localeCompare(b.patient.name)
     );
-  }, [patients, type]);
+  }, [patients, isGroupedView]);
 
-  const isGroupedView = type === 'dias-cama';
+  const stayStats = React.useMemo(() => {
+    if (!isStayView) return { min: 0, max: 0 };
+    const days = patients.map(getStayDays).filter((value): value is number => value !== null);
+    if (days.length === 0) return { min: 0, max: 0 };
+    return { min: Math.min(...days), max: Math.max(...days) };
+  }, [patients, isStayView]);
 
   return (
     <BaseModal
@@ -77,89 +106,157 @@ export const TraceabilityModal: React.FC<TraceabilityModalProps> = ({
       size="2xl"
       bodyClassName="p-0 space-y-0"
     >
-      <>
-        {patients.length === 0 ? (
-          <div className="text-center py-12 text-slate-400">
-            No hay registros detallados disponibles.
-          </div>
-        ) : (
-          <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 sticky top-0 z-10 shadow-sm">
-              <tr>
-                {isGroupedView ? (
-                  <>
-                    <th className="pl-8 pr-4 py-3 font-medium text-slate-600 border-b">Paciente</th>
-                    <th className="px-4 py-3 font-medium text-slate-600 border-b">RUT</th>
-                    <th className="px-4 py-3 font-medium text-slate-600 border-b">Diagnóstico</th>
-                    <th className="px-4 py-3 font-medium text-slate-600 border-b">Ingreso</th>
-                    <th className="px-4 py-3 font-medium text-slate-600 border-b">Egreso</th>
-                    <th className="pl-4 pr-8 py-3 font-medium text-slate-600 border-b text-center">
-                      Días en Periodo
-                    </th>
-                  </>
-                ) : (
-                  <>
-                    <th className="pl-8 pr-4 py-3 font-medium text-slate-600 border-b">
-                      Fecha Evento
-                    </th>
-                    <th className="px-4 py-3 font-medium text-slate-600 border-b">Paciente</th>
-                    <th className="px-4 py-3 font-medium text-slate-600 border-b">RUT</th>
-                    <th className="px-4 py-3 font-medium text-slate-600 border-b">Diagnóstico</th>
-                    <th className="pl-4 pr-8 py-3 font-medium text-slate-600 border-b">
-                      Ubicación
-                    </th>
-                  </>
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {isGroupedView
-                ? // GROUPED VIEW (Unique Patients)
-                  uniquePatients.map((item, idx) => (
-                    <tr
-                      key={`${item.patient.rut}-${idx}`}
-                      className="hover:bg-slate-50 transition-colors"
-                    >
-                      <td className="pl-8 pr-4 py-2.5 font-medium text-slate-800 align-top">
-                        {item.patient.name}
-                      </td>
-                      <td className="px-4 py-2.5 text-slate-500 font-mono text-xs align-top">
-                        {item.patient.rut}
-                      </td>
-                      <td className="px-4 py-2.5 text-slate-600 align-top">
-                        {item.patient.diagnosis ? (
-                          <span className="break-words">{item.patient.diagnosis}</span>
+      {patients.length === 0 ? (
+        <div className="text-center py-12 text-slate-400">
+          No hay registros detallados disponibles.
+        </div>
+      ) : (
+        <table className="w-full text-sm text-left">
+          <thead className="bg-slate-50 sticky top-0 z-10 shadow-sm">
+            <tr>
+              {isGroupedView ? (
+                <>
+                  <th className="pl-8 pr-4 py-3 font-medium text-slate-600 border-b">Paciente</th>
+                  <th className="px-4 py-3 font-medium text-slate-600 border-b">RUT</th>
+                  <th className="px-4 py-3 font-medium text-slate-600 border-b">Diagnóstico</th>
+                  <th className="px-4 py-3 font-medium text-slate-600 border-b">Ingreso</th>
+                  <th className="px-4 py-3 font-medium text-slate-600 border-b">Egreso</th>
+                  <th className="pl-4 pr-8 py-3 font-medium text-slate-600 border-b text-center">
+                    Días en Periodo
+                  </th>
+                </>
+              ) : isStayView ? (
+                <>
+                  <th className="pl-8 pr-4 py-3 font-medium text-slate-600 border-b">Paciente</th>
+                  <th className="px-4 py-3 font-medium text-slate-600 border-b">RUT</th>
+                  <th className="px-4 py-3 font-medium text-slate-600 border-b">Ingreso</th>
+                  <th className="px-4 py-3 font-medium text-slate-600 border-b">Egreso</th>
+                  <th className="px-4 py-3 font-medium text-slate-600 border-b text-center">
+                    Días estada
+                  </th>
+                  <th className="pl-4 pr-8 py-3 font-medium text-slate-600 border-b">
+                    Diagnóstico
+                  </th>
+                </>
+              ) : (
+                <>
+                  <th className="pl-8 pr-4 py-3 font-medium text-slate-600 border-b">
+                    Fecha Evento
+                  </th>
+                  <th className="px-4 py-3 font-medium text-slate-600 border-b">Paciente</th>
+                  <th className="px-4 py-3 font-medium text-slate-600 border-b">RUT</th>
+                  <th className="px-4 py-3 font-medium text-slate-600 border-b">Diagnóstico</th>
+                  <th className="pl-4 pr-8 py-3 font-medium text-slate-600 border-b">Ubicación</th>
+                </>
+              )}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {isGroupedView
+              ? uniquePatients.map((item, idx) => (
+                  <tr
+                    key={`${item.patient.rut}-${idx}`}
+                    className="hover:bg-slate-50 transition-colors"
+                  >
+                    <td className="pl-8 pr-4 py-2.5 font-medium text-slate-800 align-top">
+                      {item.patient.name}
+                    </td>
+                    <td className="px-4 py-2.5 text-slate-500 font-mono text-xs align-top">
+                      {item.patient.rut}
+                    </td>
+                    <td className="px-4 py-2.5 text-slate-600 align-top">
+                      {item.patient.diagnosis ? (
+                        <span className="break-words">{item.patient.diagnosis}</span>
+                      ) : (
+                        <span className="text-slate-400 italic">--</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-slate-600 whitespace-nowrap align-top">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={14} className="text-slate-400" />
+                        {item.patient.admissionDate ? (
+                          formatDateDDMMYYYY(item.patient.admissionDate)
                         ) : (
                           <span className="text-slate-400 italic">--</span>
                         )}
-                      </td>
-                      <td className="px-4 py-2.5 text-slate-600 whitespace-nowrap align-top">
+                      </div>
+                    </td>
+                    <td className="px-4 py-2.5 text-slate-600 whitespace-nowrap align-top">
+                      {item.patient.dischargeDate ? (
                         <div className="flex items-center gap-2">
                           <Calendar size={14} className="text-slate-400" />
-                          {item.patient.admissionDate ? (
-                            formatDateDDMMYYYY(item.patient.admissionDate)
+                          {formatDateDDMMYYYY(item.patient.dischargeDate)}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 italic">--</span>
+                      )}
+                    </td>
+                    <td className="pl-4 pr-8 py-2.5 text-center font-semibold text-sky-700 align-top">
+                      {item.daysCount}
+                    </td>
+                  </tr>
+                ))
+              : isStayView
+                ? sortedPatients.map((p, idx) => {
+                    const stayDays = getStayDays(p);
+                    const isMin = stayDays !== null && stayDays === stayStats.min;
+                    const isMax = stayDays !== null && stayDays === stayStats.max;
+
+                    return (
+                      <tr
+                        key={`${p.rut}-${p.date}-${idx}`}
+                        className="hover:bg-slate-50 transition-colors"
+                      >
+                        <td className="pl-8 pr-4 py-2.5 font-medium text-slate-800 align-top">
+                          {p.name}
+                        </td>
+                        <td className="px-4 py-2.5 text-slate-500 font-mono text-xs align-top">
+                          {p.rut}
+                        </td>
+                        <td className="px-4 py-2.5 text-slate-600 whitespace-nowrap align-top">
+                          <div className="flex items-center gap-2">
+                            <Calendar size={14} className="text-slate-400" />
+                            {p.admissionDate ? (
+                              formatDateDDMMYYYY(p.admissionDate)
+                            ) : (
+                              <span className="text-slate-400 italic">--</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-2.5 text-slate-600 whitespace-nowrap align-top">
+                          <div className="flex items-center gap-2">
+                            <Calendar size={14} className="text-slate-400" />
+                            {p.dischargeDate ? (
+                              formatDateDDMMYYYY(p.dischargeDate)
+                            ) : (
+                              <span className="text-slate-400 italic">--</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-2.5 text-center font-semibold text-sky-700 align-top">
+                          {stayDays ?? '--'}
+                          {isMin ? (
+                            <span className="ml-2 text-[10px] uppercase tracking-wide text-emerald-600">
+                              Mínimo
+                            </span>
+                          ) : null}
+                          {isMax ? (
+                            <span className="ml-2 text-[10px] uppercase tracking-wide text-rose-600">
+                              Máximo
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="pl-4 pr-8 py-2.5 text-slate-600 align-top">
+                          {p.diagnosis ? (
+                            <span className="break-words">{p.diagnosis}</span>
                           ) : (
                             <span className="text-slate-400 italic">--</span>
                           )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-2.5 text-slate-600 whitespace-nowrap align-top">
-                        {item.patient.dischargeDate ? (
-                          <div className="flex items-center gap-2">
-                            <Calendar size={14} className="text-slate-400" />
-                            {formatDateDDMMYYYY(item.patient.dischargeDate)}
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 italic">--</span>
-                        )}
-                      </td>
-                      <td className="pl-4 pr-8 py-2.5 text-center font-semibold text-sky-700 align-top">
-                        {item.daysCount}
-                      </td>
-                    </tr>
-                  ))
-                : // STANDARD VIEW (Event List)
-                  sortedPatients.map((p, idx) => (
+                        </td>
+                      </tr>
+                    );
+                  })
+                : sortedPatients.map((p, idx) => (
                     <tr
                       key={`${p.rut}-${p.date}-${idx}`}
                       className="hover:bg-slate-50 transition-colors"
@@ -193,10 +290,11 @@ export const TraceabilityModal: React.FC<TraceabilityModalProps> = ({
                       </td>
                     </tr>
                   ))}
-            </tbody>
-          </table>
-        )}
-      </>
+          </tbody>
+        </table>
+      )}
     </BaseModal>
   );
 };
+
+export default TraceabilityModal;

@@ -184,7 +184,11 @@ export const AnalyticsView: React.FC = () => {
       {/* Specialty Breakdown */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
         <h3 className="font-bold text-slate-700 mb-4">Desglose por especialidad del período</h3>
-        <SpecialtyBreakdownTable data={stats.porEspecialidad || []} records={allRecords} />
+        <SpecialtyBreakdownTable
+          data={stats.porEspecialidad || []}
+          records={allRecords}
+          summary={stats}
+        />
       </div>
 
       {/* Footer Info */}

@@ -1,9 +1,18 @@
-import { getTodayISO } from '@/utils/dateUtils';
+import { getNextDay, getTodayISO, normalizeDateOnly } from '@/utils/dateUtils';
+import { resolveMovementDateForRecordShift } from './clinicalShiftCalendarController';
 
 export interface AdmissionDateChangeResolution {
   admissionDate: string;
   admissionTime?: string;
   shouldPatchMultiple: boolean;
+}
+
+export interface AdmissionDateAuditResolution {
+  baseDate: string;
+  candidateDates: string[];
+  suggestedAdmissionDate: string;
+  isSuspicious: boolean;
+  message?: string;
 }
 
 const formatTimeHHMM = (date: Date): string => {
@@ -39,5 +48,56 @@ export const resolveAdmissionDateChange = ({
   return {
     admissionDate: nextDate,
     shouldPatchMultiple: false,
+  };
+};
+
+export const resolveAdmissionDateAudit = ({
+  recordDate,
+  admissionDate,
+  admissionTime,
+  firstSeenDate,
+}: {
+  recordDate: string;
+  admissionDate?: string;
+  admissionTime?: string;
+  firstSeenDate?: string;
+}): AdmissionDateAuditResolution => {
+  const baseDate = normalizeDateOnly(firstSeenDate) ?? normalizeDateOnly(recordDate) ?? '';
+  if (!baseDate) {
+    return {
+      baseDate: '',
+      candidateDates: [],
+      suggestedAdmissionDate: '',
+      isSuspicious: false,
+    };
+  }
+
+  const candidateDates = Array.from(new Set([baseDate, getNextDay(baseDate)]));
+  const suggestedAdmissionDate =
+    resolveMovementDateForRecordShift(baseDate, undefined, admissionTime) || baseDate;
+  const normalizedAdmissionDate = normalizeDateOnly(admissionDate);
+  const isSuspicious =
+    normalizedAdmissionDate !== undefined && !candidateDates.includes(normalizedAdmissionDate);
+
+  if (!isSuspicious) {
+    return {
+      baseDate,
+      candidateDates,
+      suggestedAdmissionDate,
+      isSuspicious: false,
+    };
+  }
+
+  const allowedDatesLabel = candidateDates.join(' / ');
+  const message = firstSeenDate
+    ? `La fecha no coincide con la primera aparición observada. Revisa ${allowedDatesLabel}.`
+    : `La fecha no coincide con la ventana esperada para ingreso nuevo (${allowedDatesLabel}).`;
+
+  return {
+    baseDate,
+    candidateDates,
+    suggestedAdmissionDate,
+    isSuspicious: true,
+    message,
   };
 };

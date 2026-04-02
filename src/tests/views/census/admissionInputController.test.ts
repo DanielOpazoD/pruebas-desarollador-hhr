@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   resolveAdmissionDateChange,
+  resolveAdmissionDateAudit,
   resolveAdmissionDateMax,
   resolveIsCriticalAdmissionEmpty,
 } from '@/features/census/controllers/admissionInputController';
@@ -38,5 +39,29 @@ describe('admissionInputController', () => {
 
   it('returns provided max date fallback', () => {
     expect(resolveAdmissionDateMax('2026-02-15')).toBe('2026-02-15');
+  });
+
+  it('suggests the current clinical day window for suspicious admissions', () => {
+    const audit = resolveAdmissionDateAudit({
+      recordDate: '2026-03-10',
+      admissionDate: '2024-01-01',
+      admissionTime: '10:30',
+    });
+
+    expect(audit.isSuspicious).toBe(true);
+    expect(audit.candidateDates).toEqual(['2026-03-10', '2026-03-11']);
+    expect(audit.suggestedAdmissionDate).toBe('2026-03-10');
+    expect(audit.message).toContain('ventana esperada');
+  });
+
+  it('accepts the next day for madrugada admissions', () => {
+    const audit = resolveAdmissionDateAudit({
+      recordDate: '2026-03-10',
+      admissionDate: '2026-03-11',
+      admissionTime: '02:15',
+    });
+
+    expect(audit.isSuspicious).toBe(false);
+    expect(audit.suggestedAdmissionDate).toBe('2026-03-11');
   });
 });

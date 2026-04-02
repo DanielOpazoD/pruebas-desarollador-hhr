@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { SpecialtyStats } from '@/types/minsalTypes';
+import { MinsalStatistics, SpecialtyStats } from '@/types/minsalTypes';
 import { DailyRecord } from '@/features/analytics/contracts/analyticsDailyRecordContracts';
 import {
   buildSpecialtyTraceability,
@@ -15,11 +15,16 @@ import { TraceabilityModal } from './TraceabilityModal';
 interface SpecialtyBreakdownTableProps {
   data: SpecialtyStats[];
   records?: DailyRecord[];
+  summary?: MinsalStatistics;
 }
+
+const formatRange = (min?: number, max?: number): string =>
+  min !== undefined && max !== undefined ? `${min.toFixed(1)} - ${max.toFixed(1)} días` : '—';
 
 export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = ({
   data = [],
   records = [],
+  summary,
 }) => {
   const [modalConfig, setModalConfig] = React.useState<{
     isOpen: boolean;
@@ -69,6 +74,9 @@ export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = (
       case 'fach':
         titleType = 'FACH';
         break;
+      case 'estada':
+        titleType = 'Estada';
+        break;
     }
 
     setModalConfig({
@@ -78,6 +86,26 @@ export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = (
       type,
     });
   };
+
+  const totalEgresos = data.reduce((sum, row) => sum + (row.egresos ?? 0), 0);
+  const totalFallecidos = data.reduce((sum, row) => sum + (row.fallecidos ?? 0), 0);
+  const totalTraslados = data.reduce((sum, row) => sum + (row.traslados ?? 0), 0);
+  const totalAerocardal = data.reduce((sum, row) => sum + (row.aerocardal ?? 0), 0);
+  const totalFach = data.reduce((sum, row) => sum + (row.fach ?? 0), 0);
+  const totalDiasOcupados = data.reduce((sum, row) => sum + (row.diasOcupados ?? 0), 0);
+  const totalPacientesActuales =
+    summary?.pacientesActuales ?? data.reduce((sum, row) => sum + (row.pacientesActuales ?? 0), 0);
+  const totalEgresosConTraslados = totalEgresos + totalTraslados;
+  const totalPromedioDiasEstada =
+    summary?.promedioDiasEstada ??
+    (totalEgresosConTraslados > 0 ? totalDiasOcupados / totalEgresosConTraslados : 0);
+  const totalMortalidad =
+    summary?.mortalidadHospitalaria ??
+    (totalEgresosConTraslados > 0 ? (totalFallecidos / totalEgresosConTraslados) * 100 : 0);
+  const totalRange = formatRange(
+    summary?.promedioDiasEstadaMinima,
+    summary?.promedioDiasEstadaMaxima
+  );
 
   return (
     <div className="overflow-x-auto">
@@ -109,8 +137,11 @@ export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = (
             <th className="text-center px-4 py-3 font-semibold text-slate-700">
               Mortalidad del período
             </th>
-            <th className="text-center px-4 py-3 font-semibold text-slate-700 rounded-tr-lg">
+            <th className="text-center px-4 py-3 font-semibold text-slate-700">
               Estada media del período
+            </th>
+            <th className="text-center px-4 py-3 font-semibold text-slate-700 rounded-tr-lg">
+              Rango estada
             </th>
           </tr>
         </thead>
@@ -250,9 +281,37 @@ export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = (
                 <td className="px-4 py-3 text-center text-slate-600">
                   {row.promedioDiasEstada.toFixed(1)} días
                 </td>
+                <td className="px-4 py-3 text-center text-slate-600">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleOpenTraceability(String(row.specialty), 'estada', row.egresosList)
+                    }
+                    className="hover:underline cursor-pointer"
+                    aria-label={`Ver casos de estada de ${row.specialty || 'Sin Especialidad'}`}
+                    title="Ver casos que componen el rango de estada"
+                  >
+                    {formatRange(row.promedioDiasEstadaMinima, row.promedioDiasEstadaMaxima)}
+                  </button>
+                </td>
               </tr>
             );
           })}
+          <tr className="border-t-2 border-slate-200 bg-slate-50 font-semibold">
+            <td className="px-4 py-3 text-left text-slate-800">Total</td>
+            <td className="px-4 py-3 text-center text-slate-800">{totalPacientesActuales}</td>
+            <td className="px-4 py-3 text-center text-slate-800">{totalEgresos}</td>
+            <td className="px-4 py-3 text-center text-slate-800">{totalFallecidos}</td>
+            <td className="px-4 py-3 text-center text-slate-800">{totalTraslados}</td>
+            <td className="px-4 py-3 text-center text-slate-800">{totalAerocardal}</td>
+            <td className="px-4 py-3 text-center text-slate-800">{totalFach}</td>
+            <td className="px-4 py-3 text-center text-slate-800">100.0%</td>
+            <td className="px-4 py-3 text-center text-slate-800">{totalMortalidad.toFixed(1)}%</td>
+            <td className="px-4 py-3 text-center text-slate-800">
+              {totalPromedioDiasEstada.toFixed(1)} días
+            </td>
+            <td className="px-4 py-3 text-center text-slate-800">{totalRange}</td>
+          </tr>
         </tbody>
       </table>
 
