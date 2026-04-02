@@ -104,6 +104,11 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 }) => {
   // Refs for focus management
   const modalRef = React.useRef<HTMLDivElement>(null);
+  const onCloseRef = React.useRef(onClose);
+
+  React.useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   // Unified scroll lock - MUST BE BEFORE EARLY RETURN
   useScrollLock(isOpen);
@@ -111,7 +116,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   // Handle ESC key & Focus Management
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current();
 
       // Focus trap logic
       if (e.key === 'Tab' && modalRef.current) {
@@ -166,7 +171,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, initialFocusRef, onClose]); // Stable trigger
+  }, [isOpen, initialFocusRef]); // Stable trigger
 
   // Don't render if not open
   if (!isOpen) return null;
