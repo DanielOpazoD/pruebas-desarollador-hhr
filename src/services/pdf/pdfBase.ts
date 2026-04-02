@@ -123,6 +123,7 @@ export const openPdfPrintDialog = async (
   const blob = new Blob([finalBytes as unknown as BlobPart], { type: 'application/pdf' });
   const url = URL.createObjectURL(blob);
   const iframe = createHiddenPrintFrame();
+  let hasResolvedFallback = false;
 
   const removeIframe = () => {
     iframe.remove();
@@ -157,6 +158,7 @@ export const openPdfPrintDialog = async (
     }
 
     const fallbackTimeout = window.setTimeout(() => {
+      hasResolvedFallback = true;
       removeIframe();
       scheduleDownloadFallback(finalBytes as Uint8Array, fallbackName, url);
     }, IFRAME_FALLBACK_TIMEOUT_MS);
@@ -165,11 +167,20 @@ export const openPdfPrintDialog = async (
       'load',
       () => {
         window.clearTimeout(fallbackTimeout);
-        const frameWindow = iframe.contentWindow;
+        try {
+          const frameWindow = iframe.contentWindow;
 
-        if (frameWindow && typeof frameWindow.print === 'function') {
-          frameWindow.focus();
-          window.setTimeout(() => frameWindow.print(), IFRAME_PRINT_DELAY_MS);
+          if (frameWindow && typeof frameWindow.print === 'function') {
+            frameWindow.focus();
+            window.setTimeout(() => frameWindow.print(), IFRAME_PRINT_DELAY_MS);
+          }
+        } catch {
+          if (!hasResolvedFallback) {
+            hasResolvedFallback = true;
+            removeIframe();
+            scheduleDownloadFallback(finalBytes as Uint8Array, fallbackName, url);
+            return;
+          }
         }
 
         window.setTimeout(cleanup, PDF_OBJECT_URL_TTL_MS);
