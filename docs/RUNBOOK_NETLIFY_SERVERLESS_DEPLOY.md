@@ -42,6 +42,27 @@ Diagnosticar rápido fallos de build, bundling y runtime en `netlify/functions`.
 2. Revisar imports cruzados desde `functions/lib/**` hacia `netlify/functions/**`.
 3. Confirmar que los helpers compartidos no dependan de `firebase-functions/v1`.
 
+### 4. Falla instalación de dependencias en `/.netlify/plugins` (`ENOTFOUND`)
+
+Síntoma típico en log:
+
+- `Error while installing dependencies in /opt/build/repo/.netlify/plugins/`
+- `npm error code ENOTFOUND`
+- `request to https://<host>.netlify.app/packages/<plugin>.tgz failed`
+
+Diagnóstico:
+
+1. Este error ocurre **antes** del build de la app y normalmente no está causado por cambios en `src/**`.
+2. Netlify está intentando instalar un Build Plugin remoto (generalmente configurado a nivel de sitio/UI), y el host del paquete no resuelve DNS.
+3. Si `netlify.toml` no tiene `[[plugins]]`, el origen probable es la configuración del sitio en Netlify (no del repositorio).
+
+Acciones:
+
+1. Ir a **Site configuration → Build & deploy → Build plugins** y quitar/desactivar el plugin que apunta a `https://<host>.netlify.app/packages/*.tgz`.
+2. Si ese plugin es requerido, publicar su paquete en un host estable (npm registry o URL interna válida) y actualizar la referencia.
+3. Reintentar deploy con **Clear cache and deploy site**.
+4. Si persiste, validar resolución DNS del host del plugin desde un entorno externo y revisar estado de Netlify.
+
 ## Variables y contratos
 
 - Variables de runtime Netlify: revisar `docs/SERVERLESS_SENSITIVE_CONTRACTS.md`.
