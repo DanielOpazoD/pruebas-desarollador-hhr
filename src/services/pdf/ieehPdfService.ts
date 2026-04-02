@@ -117,6 +117,77 @@ const drawOptionalText = (
   drawText(text, coords, options);
 };
 
+const measureTextWidth = (
+  text: string,
+  font: { widthOfTextAtSize: (text: string, size: number) => number },
+  fontSize: number
+): number => {
+  if (!text) return 0;
+  let width = 0;
+  for (const [index, char] of [...text].entries()) {
+    width += font.widthOfTextAtSize(char, fontSize);
+    if (index < text.length - 1) {
+      width += CHAR_SPACING;
+    }
+  }
+  return width;
+};
+
+const wrapTextByWidth = (
+  text: string,
+  maxWidth: number,
+  font: { widthOfTextAtSize: (text: string, size: number) => number },
+  fontSize: number
+): string[] => {
+  const normalized = text.trim().replace(/\s+/g, ' ');
+  if (!normalized) return [];
+
+  const words = normalized.split(' ');
+  const lines: string[] = [];
+  let currentLine = '';
+
+  const pushLine = () => {
+    if (currentLine) {
+      lines.push(currentLine);
+      currentLine = '';
+    }
+  };
+
+  for (const word of words) {
+    const candidate = currentLine ? `${currentLine} ${word}` : word;
+    if (measureTextWidth(candidate, font, fontSize) <= maxWidth) {
+      currentLine = candidate;
+      continue;
+    }
+
+    if (currentLine) {
+      pushLine();
+    }
+
+    if (measureTextWidth(word, font, fontSize) <= maxWidth) {
+      currentLine = word;
+      continue;
+    }
+
+    let fragment = '';
+    for (const char of word) {
+      const nextFragment = `${fragment}${char}`;
+      if (measureTextWidth(nextFragment, font, fontSize) <= maxWidth) {
+        fragment = nextFragment;
+      } else {
+        if (fragment) {
+          lines.push(fragment);
+        }
+        fragment = char;
+      }
+    }
+    currentLine = fragment;
+  }
+
+  pushLine();
+  return lines;
+};
+
 /**
  * Calculate days between two dates
  */
@@ -189,6 +260,25 @@ export const fillIEEHForm = async (
       });
       xOffset += f.widthOfTextAtSize(char, fontSize) + CHAR_SPACING;
     }
+  };
+
+  const drawMultilineText = (
+    text: string,
+    coords: { x: number; y: number; maxWidth: number },
+    options: { fontSize?: number; bold?: boolean; lineHeight?: number; maxLines?: number } = {}
+  ) => {
+    if (!text) return;
+    const fontSize = options.fontSize ?? FONT_SIZE;
+    const f = options.bold ? fontBold : font;
+    const lineHeight = options.lineHeight ?? fontSize + 2;
+    const maxLines = options.maxLines ?? 3;
+    const displayText = text.toUpperCase();
+    const wrapped = wrapTextByWidth(displayText, coords.maxWidth, f, fontSize);
+    const linesToDraw = wrapped.slice(0, maxLines);
+
+    linesToDraw.forEach((line, lineIndex) => {
+      drawText(line, { ...coords, y: coords.y - lineIndex * lineHeight }, options);
+    });
   };
 
   // ── Fill fields ──
@@ -282,7 +372,7 @@ export const fillIEEHForm = async (
   // #33: DIAGNÓSTICO PRINCIPAL + CIE-10
   // Dialog overrides take priority over patient data
   const { diagnostico, cie10 } = resolveDischargeDiagnosis(patient, discharge);
-  drawText(diagnostico, FIELD_COORDS.diagnosticoPrincipal);
+  drawMultilineText(diagnostico, FIELD_COORDS.diagnosticoPrincipal);
   if (cie10) {
     drawText(cie10, FIELD_COORDS.codigoCIE10, { bold: true });
   }
