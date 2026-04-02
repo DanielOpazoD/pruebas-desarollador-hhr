@@ -66,9 +66,9 @@ export interface SpecialtyStats {
   tasaMortalidad: number;
   /** Average length of stay in days across the selected period, using all discharge modes */
   promedioDiasEstada: number;
-  /** Minimum observed stay among exit events in the selected period, capped at period start when admission was earlier */
+  /** Minimum observed stay among exit events in the selected period, resolved from the shared episode timeline */
   promedioDiasEstadaMinima?: number;
-  /** Maximum observed stay among exit events in the selected period, capped at period start when admission was earlier */
+  /** Maximum observed stay among exit events in the selected period, resolved from the shared episode timeline */
   promedioDiasEstadaMaxima?: number;
 
   // ===== Traceability Lists =====
@@ -129,9 +129,9 @@ export interface MinsalStatistics {
    * Formula: Días Ocupados / Total Egresos
    */
   promedioDiasEstada: number;
-  /** Minimum observed stay among exit events in the selected period, capped at period start when admission was earlier */
+  /** Minimum observed stay among exit events in the selected period, resolved from the shared episode timeline */
   promedioDiasEstadaMinima?: number;
-  /** Maximum observed stay among exit events in the selected period, capped at period start when admission was earlier */
+  /** Maximum observed stay among exit events in the selected period, resolved from the shared episode timeline */
   promedioDiasEstadaMaxima?: number;
 
   // ===== Discharge Statistics =====

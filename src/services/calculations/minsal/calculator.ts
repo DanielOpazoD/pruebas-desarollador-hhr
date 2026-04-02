@@ -6,6 +6,7 @@ import { normalizeSpecialty, isFachEvacuationMethod } from './normalization';
 import { countOccupiedBeds, countBlockedBeds, calculateDailySnapshot } from './snapshot';
 import { getPatientsBySpecialty } from './specialty';
 import { calculateHospitalizedDays } from '@/utils/dateUtils';
+import { createEpisodeAdmissionTracker } from './episodeTracker';
 import type { MinsalDailyRecord } from './minsalRecordContracts';
 
 const resolveTraceabilityDiagnosis = (value: unknown): string | undefined => {
@@ -30,50 +31,6 @@ const buildStaySummary = (durations: number[]): StaySummary => {
   };
 };
 
-const normalizeIsoDate = (value?: string): string | undefined => {
-  if (!value) return undefined;
-  const datePart = value.split('T')[0].trim();
-  return /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? datePart : undefined;
-};
-
-const resolveAdmissionDateForEvent = (
-  patientRut: string | undefined,
-  fallbackAdmissionDate: string | undefined,
-  admissionDatesByRut: Map<string, string>
-): string | undefined => {
-  const normalizedRut = patientRut?.trim();
-  if (normalizedRut) {
-    const resolvedAdmissionDate = admissionDatesByRut.get(normalizedRut);
-    if (resolvedAdmissionDate) {
-      return resolvedAdmissionDate;
-    }
-  }
-
-  return normalizeIsoDate(fallbackAdmissionDate);
-};
-
-const mergeAdmissionDatesFromRecord = (
-  record: MinsalDailyRecord,
-  admissionDatesByRut: Map<string, string>
-): void => {
-  Object.values(record.beds || {}).forEach(bed => {
-    if (!bed || bed.isBlocked || !bed.patientName?.trim()) return;
-
-    const primaryRut = bed.rut?.trim();
-    const admissionDate = normalizeIsoDate(bed.admissionDate);
-    if (primaryRut && admissionDate) {
-      admissionDatesByRut.set(primaryRut, admissionDate);
-    }
-
-    const crib = bed.clinicalCrib;
-    const cribRut = crib?.rut?.trim();
-    const cribAdmissionDate = normalizeIsoDate(crib?.admissionDate);
-    if (cribRut && cribAdmissionDate) {
-      admissionDatesByRut.set(cribRut, cribAdmissionDate);
-    }
-  });
-};
-
 /**
  * Filter records by date range
  */
@@ -96,7 +53,7 @@ export function calculateMinsalStats(
   // Filter records in range
   const filteredRecords = filterRecordsByDateRange(records, startDate, endDate);
   const orderedRecords = [...filteredRecords].sort((a, b) => a.date.localeCompare(b.date));
-  const admissionDatesByRut = new Map<string, string>();
+  const episodeTracker = createEpisodeAdmissionTracker();
 
   // Calculate period days
   const start = new Date(startDate);
@@ -159,7 +116,10 @@ export function calculateMinsalStats(
   });
 
   orderedRecords.forEach(record => {
-    mergeAdmissionDatesFromRecord(record, admissionDatesByRut);
+    Object.values(record.beds || {}).forEach(bed => {
+      episodeTracker.observeBed(bed, record.date);
+    });
+    const closedRuts = new Set<string>();
 
     const bloqueadas = countBlockedBeds(record.beds);
     const disponibles = HOSPITAL_CAPACITY - bloqueadas;
@@ -187,7 +147,7 @@ export function calculateMinsalStats(
           diagnosis: resolveTraceabilityDiagnosis(p.pathology),
           date: record.date,
           bedName: p.bedName,
-          admissionDate: p.admissionDate,
+          admissionDate: episodeTracker.resolveAdmissionDate(p.rut, p.admissionDate),
           dischargeDate: dischargeDates.get(p.rut),
         });
       });
@@ -199,10 +159,9 @@ export function calculateMinsalStats(
       const existing = specialtyData.get(specialty) || createSpecialtyBucket();
       existing.egresos++;
 
-      const resolvedAdmissionDate = resolveAdmissionDateForEvent(
+      const resolvedAdmissionDate = episodeTracker.resolveAdmissionDate(
         d.rut,
-        d.originalData?.admissionDate,
-        admissionDatesByRut
+        d.originalData?.admissionDate
       );
       const stayDays = calculateHospitalizedDays(resolvedAdmissionDate, record.date);
       if (stayDays !== null) {
@@ -225,6 +184,9 @@ export function calculateMinsalStats(
         existing.fallecidos++;
         existing.fallecidosList.push(traceData);
       }
+      if (d.rut) {
+        closedRuts.add(d.rut);
+      }
       specialtyData.set(specialty, existing);
     });
 
@@ -233,10 +195,9 @@ export function calculateMinsalStats(
       const existing = specialtyData.get(specialty) || createSpecialtyBucket();
       existing.traslados++;
 
-      const resolvedAdmissionDate = resolveAdmissionDateForEvent(
+      const resolvedAdmissionDate = episodeTracker.resolveAdmissionDate(
         t.rut,
-        t.originalData?.admissionDate,
-        admissionDatesByRut
+        t.originalData?.admissionDate
       );
       const stayDays = calculateHospitalizedDays(resolvedAdmissionDate, record.date);
       if (stayDays !== null) {
@@ -264,8 +225,13 @@ export function calculateMinsalStats(
         existing.fach++;
         existing.fachList.push(traceData);
       }
+      if (t.rut) {
+        closedRuts.add(t.rut);
+      }
       specialtyData.set(specialty, existing);
     });
+
+    closedRuts.forEach(rut => episodeTracker.closeEpisode(rut));
   });
 
   const egresosTotal = totalEgresosVivos + totalEgresosFallecidos + totalEgresosTraslados;

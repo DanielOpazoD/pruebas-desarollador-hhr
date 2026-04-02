@@ -683,6 +683,81 @@ describe('minsalStatsCalculator', () => {
       expect(cirugia?.promedioDiasEstadaMinima).toBe(3);
       expect(cirugia?.promedioDiasEstadaMaxima).toBe(3);
     });
+
+    it('should close one episode and reopen a new one when the same RUT re-enters after discharge', () => {
+      const bedId = BEDS[0].id;
+      const day1 = createMockRecord('2026-03-01', 1);
+      const day2 = createMockRecord('2026-03-02', 1);
+      const day3 = createMockRecord('2026-03-03', 0);
+      const day4 = createMockRecord('2026-03-04', 1);
+      const day5 = createMockRecord('2026-03-05', 0);
+
+      const firstEpisodePatient = {
+        ...day1.beds[bedId],
+        patientName: 'Paciente Reingreso',
+        rut: '9.999.999-9',
+        specialty: Specialty.CIRUGIA,
+        status: PatientStatus.ESTABLE,
+        admissionDate: '2026-03-01',
+        admissionTime: '08:00',
+      } as PatientData;
+
+      const secondEpisodePatient = {
+        ...firstEpisodePatient,
+        admissionDate: '2026-03-04',
+      } as PatientData;
+
+      day1.beds[bedId] = firstEpisodePatient;
+      day2.beds[bedId] = firstEpisodePatient;
+      day3.discharges = [
+        {
+          id: 'd1',
+          patientName: 'Paciente Reingreso',
+          status: 'Vivo',
+          bedName: '',
+          bedId,
+          bedType: '',
+          rut: '9.999.999-9',
+          diagnosis: '',
+          time: '',
+          originalData: {
+            specialty: Specialty.CIRUGIA,
+            admissionDate: '2025-01-01',
+          } as never,
+        },
+      ];
+      day4.beds[bedId] = secondEpisodePatient;
+      day5.discharges = [
+        {
+          id: 'd2',
+          patientName: 'Paciente Reingreso',
+          status: 'Vivo',
+          bedName: '',
+          bedId,
+          bedType: '',
+          rut: '9.999.999-9',
+          diagnosis: '',
+          time: '',
+          originalData: {
+            specialty: Specialty.CIRUGIA,
+            admissionDate: '2025-01-01',
+          } as never,
+        },
+      ];
+
+      const stats = calculateMinsalStats(
+        [day1, day2, day3, day4, day5],
+        '2026-03-01',
+        '2026-03-05'
+      );
+      const cirugia = stats.porEspecialidad.find(item => item.specialty === Specialty.CIRUGIA);
+
+      expect(cirugia?.egresos).toBe(2);
+      expect(cirugia?.promedioDiasEstadaMinima).toBe(2);
+      expect(cirugia?.promedioDiasEstadaMaxima).toBe(3);
+      expect(cirugia?.egresosList?.[0]?.admissionDate).toBe('2026-03-01');
+      expect(cirugia?.egresosList?.[1]?.admissionDate).toBe('2026-03-04');
+    });
   });
 
   describe('generateDailyTrend', () => {
