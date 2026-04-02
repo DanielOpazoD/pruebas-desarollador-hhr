@@ -127,4 +127,86 @@ describe('functions minsalStatsCalculator', () => {
     expect(result.porEspecialidad[0].promedioDiasEstadaMaxima).toBe(3);
     expect(result.porEspecialidad[0].egresosList?.[0]?.admissionDate).toBe('2026-03-01');
   });
+
+  it('keeps separate episodes for the same RUT when rehospitalized later in the same month', () => {
+    const result = calculateMinsalStatistics({
+      hospitalCapacity: 10,
+      startDate: '2026-03-01',
+      endDate: '2026-03-31',
+      records: [
+        {
+          date: '2026-03-01',
+          beds: {
+            b1: {
+              patientName: 'Paciente',
+              rut: '11.111.111-1',
+              pathology: 'Diagnóstico',
+              specialty: 'Cirugía',
+              admissionDate: '2026-03-01',
+            },
+          },
+        },
+        {
+          date: '2026-03-02',
+          beds: {
+            b1: {
+              patientName: 'Paciente',
+              rut: '11.111.111-1',
+              pathology: 'Diagnóstico',
+              specialty: 'Cirugía',
+              admissionDate: '2026-03-01',
+            },
+          },
+        },
+        {
+          date: '2026-03-03',
+          beds: {
+            b1: { patientName: '', rut: '', pathology: '', specialty: '' },
+          },
+          discharges: [
+            {
+              patientName: 'Paciente',
+              rut: '11.111.111-1',
+              diagnosis: 'Diagnóstico egreso',
+              status: 'Vivo',
+              originalData: { specialty: 'Cirugía', admissionDate: '2025-01-01' },
+            },
+          ],
+        },
+        {
+          date: '2026-03-18',
+          beds: {
+            b1: {
+              patientName: 'Paciente',
+              rut: '11.111.111-1',
+              pathology: 'Diagnóstico',
+              specialty: 'Cirugía',
+              admissionDate: '2026-03-18',
+            },
+          },
+        },
+        {
+          date: '2026-03-19',
+          beds: {
+            b1: { patientName: '', rut: '', pathology: '', specialty: '' },
+          },
+          discharges: [
+            {
+              patientName: 'Paciente',
+              rut: '11.111.111-1',
+              diagnosis: 'Diagnóstico egreso',
+              status: 'Vivo',
+              originalData: { specialty: 'Cirugía', admissionDate: '2025-01-01' },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(result.egresosTotal).toBe(2);
+    expect(result.porEspecialidad[0].promedioDiasEstadaMinima).toBe(2);
+    expect(result.porEspecialidad[0].promedioDiasEstadaMaxima).toBe(3);
+    expect(result.porEspecialidad[0].egresosList?.[0]?.admissionDate).toBe('2026-03-01');
+    expect(result.porEspecialidad[0].egresosList?.[1]?.admissionDate).toBe('2026-03-18');
+  });
 });
