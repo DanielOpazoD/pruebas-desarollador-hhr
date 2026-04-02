@@ -1,3 +1,5 @@
+import medicalIndicationsTemplateUrl from '../../../Formularios/indicaciones medicas y plan de enfermreia.pdf?url';
+
 export interface MedicalIndicationPdfFieldCoordinate {
   variableName: string;
   page: number;
@@ -7,8 +9,11 @@ export interface MedicalIndicationPdfFieldCoordinate {
   height: number;
 }
 
-export const MEDICAL_INDICATIONS_PDF_TEMPLATE_PATH =
-  '/Formularios/indicaciones medicas y plan de enfermreia.pdf';
+export const MEDICAL_INDICATIONS_PDF_TEMPLATE_PATH = medicalIndicationsTemplateUrl;
+
+export const MEDICAL_INDICATIONS_PDF_TEMPLATE_FALLBACK_PATHS = [
+  '/Formularios/indicaciones medicas y plan de enfermreia.pdf',
+] as const;
 
 export const MEDICAL_INDICATIONS_PDF_COORDINATES: Record<
   string,
