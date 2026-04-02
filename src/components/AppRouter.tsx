@@ -76,6 +76,8 @@ interface AppRouterProps {
   showBedManagerModal: boolean;
   /** Callback to close bed manager modal */
   onCloseBedManagerModal: () => void;
+  /** Callback to open the daily census at a specific date */
+  onOpenCensusDate?: (date: string) => void;
 }
 
 /**
@@ -93,6 +95,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
   isSignatureMode,
   showBedManagerModal,
   onCloseBedManagerModal,
+  onOpenCensusDate,
 }) => {
   const censusAccessProfile: CensusAccessProfile = resolveSpecialistCensusAccessProfile(role);
   const visibleModules = getVisibleAppModules(role);
@@ -116,6 +119,7 @@ export const AppRouter: React.FC<AppRouterProps> = ({
                   currentDateString={currentDateString}
                   showBedManagerModal={showBedManagerModal}
                   onCloseBedManagerModal={onCloseBedManagerModal}
+                  onOpenCensusDate={onOpenCensusDate}
                   readOnly={!canEditAppModule(role, 'CENSUS') && !e2eEditableOverride}
                   allowAdminCopyOverride={canForceCreateDayCopyOverride(role)}
                   localViewMode={ui.censusLocalViewMode}

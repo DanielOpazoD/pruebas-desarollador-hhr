@@ -30,6 +30,50 @@ const buildStaySummary = (durations: number[]): StaySummary => {
   };
 };
 
+const normalizeIsoDate = (value?: string): string | undefined => {
+  if (!value) return undefined;
+  const datePart = value.split('T')[0].trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? datePart : undefined;
+};
+
+const resolveAdmissionDateForEvent = (
+  patientRut: string | undefined,
+  fallbackAdmissionDate: string | undefined,
+  admissionDatesByRut: Map<string, string>
+): string | undefined => {
+  const normalizedRut = patientRut?.trim();
+  if (normalizedRut) {
+    const resolvedAdmissionDate = admissionDatesByRut.get(normalizedRut);
+    if (resolvedAdmissionDate) {
+      return resolvedAdmissionDate;
+    }
+  }
+
+  return normalizeIsoDate(fallbackAdmissionDate);
+};
+
+const mergeAdmissionDatesFromRecord = (
+  record: MinsalDailyRecord,
+  admissionDatesByRut: Map<string, string>
+): void => {
+  Object.values(record.beds || {}).forEach(bed => {
+    if (!bed || bed.isBlocked || !bed.patientName?.trim()) return;
+
+    const primaryRut = bed.rut?.trim();
+    const admissionDate = normalizeIsoDate(bed.admissionDate);
+    if (primaryRut && admissionDate) {
+      admissionDatesByRut.set(primaryRut, admissionDate);
+    }
+
+    const crib = bed.clinicalCrib;
+    const cribRut = crib?.rut?.trim();
+    const cribAdmissionDate = normalizeIsoDate(crib?.admissionDate);
+    if (cribRut && cribAdmissionDate) {
+      admissionDatesByRut.set(cribRut, cribAdmissionDate);
+    }
+  });
+};
+
 /**
  * Filter records by date range
  */
@@ -51,6 +95,8 @@ export function calculateMinsalStats(
 ): MinsalStatistics {
   // Filter records in range
   const filteredRecords = filterRecordsByDateRange(records, startDate, endDate);
+  const orderedRecords = [...filteredRecords].sort((a, b) => a.date.localeCompare(b.date));
+  const admissionDatesByRut = new Map<string, string>();
 
   // Calculate period days
   const start = new Date(startDate);
@@ -107,12 +153,14 @@ export function calculateMinsalStats(
 
   // Pre-calculate discharge/transfer dates
   const dischargeDates = new Map<string, string>();
-  filteredRecords.forEach(r => {
+  orderedRecords.forEach(r => {
     r.discharges?.forEach(d => dischargeDates.set(d.rut, r.date));
     r.transfers?.forEach(t => dischargeDates.set(t.rut, r.date));
   });
 
-  filteredRecords.forEach(record => {
+  orderedRecords.forEach(record => {
+    mergeAdmissionDatesFromRecord(record, admissionDatesByRut);
+
     const bloqueadas = countBlockedBeds(record.beds);
     const disponibles = HOSPITAL_CAPACITY - bloqueadas;
     const ocupadas = countOccupiedBeds(record.beds);
@@ -151,7 +199,12 @@ export function calculateMinsalStats(
       const existing = specialtyData.get(specialty) || createSpecialtyBucket();
       existing.egresos++;
 
-      const stayDays = calculateHospitalizedDays(d.originalData?.admissionDate, record.date);
+      const resolvedAdmissionDate = resolveAdmissionDateForEvent(
+        d.rut,
+        d.originalData?.admissionDate,
+        admissionDatesByRut
+      );
+      const stayDays = calculateHospitalizedDays(resolvedAdmissionDate, record.date);
       if (stayDays !== null) {
         existing.stayDurations.push(stayDays);
         totalStayDurations.push(stayDays);
@@ -163,7 +216,7 @@ export function calculateMinsalStats(
         diagnosis: resolveTraceabilityDiagnosis(d.diagnosis || d.originalData?.pathology),
         date: record.date,
         bedName: d.bedName,
-        admissionDate: d.originalData?.admissionDate,
+        admissionDate: resolvedAdmissionDate,
         dischargeDate: record.date,
       };
 
@@ -180,7 +233,12 @@ export function calculateMinsalStats(
       const existing = specialtyData.get(specialty) || createSpecialtyBucket();
       existing.traslados++;
 
-      const stayDays = calculateHospitalizedDays(t.originalData?.admissionDate, record.date);
+      const resolvedAdmissionDate = resolveAdmissionDateForEvent(
+        t.rut,
+        t.originalData?.admissionDate,
+        admissionDatesByRut
+      );
+      const stayDays = calculateHospitalizedDays(resolvedAdmissionDate, record.date);
       if (stayDays !== null) {
         existing.stayDurations.push(stayDays);
         totalStayDurations.push(stayDays);
@@ -192,7 +250,7 @@ export function calculateMinsalStats(
         diagnosis: resolveTraceabilityDiagnosis(t.diagnosis || t.originalData?.pathology),
         date: record.date,
         bedName: t.bedName,
-        admissionDate: t.originalData?.admissionDate,
+        admissionDate: resolvedAdmissionDate,
         dischargeDate: record.date,
       };
 

@@ -10,6 +10,34 @@ const resolveTraceabilityDiagnosis = (value: unknown): string | undefined => {
   return diagnosis || undefined;
 };
 
+const normalizeIsoDate = (value?: string): string | undefined => {
+  if (!value) return undefined;
+  const datePart = value.split('T')[0].trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? datePart : undefined;
+};
+
+const mergeAdmissionDatesFromRecord = (
+  record: MinsalDailyRecord,
+  admissionDatesByRut: Map<string, string>
+): void => {
+  Object.values(record.beds || {}).forEach(bed => {
+    if (!bed || bed.isBlocked || !bed.patientName?.trim()) return;
+
+    const primaryRut = bed.rut?.trim();
+    const admissionDate = normalizeIsoDate(bed.admissionDate);
+    if (primaryRut && admissionDate) {
+      admissionDatesByRut.set(primaryRut, admissionDate);
+    }
+
+    const crib = bed.clinicalCrib;
+    const cribRut = crib?.rut?.trim();
+    const cribAdmissionDate = normalizeIsoDate(crib?.admissionDate);
+    if (cribRut && cribAdmissionDate) {
+      admissionDatesByRut.set(cribRut, cribAdmissionDate);
+    }
+  });
+};
+
 /**
  * Build traceability list lazily for a specialty + indicator type.
  */
@@ -21,9 +49,13 @@ export function buildSpecialtyTraceability(
   if (records.length === 0) return [];
 
   const normalizedSpecialty = normalizeSpecialty(specialty);
+  const orderedRecords = records.slice().sort((a, b) => a.date.localeCompare(b.date));
+  const admissionDatesByRut = new Map<string, string>();
   const dischargeDates = new Map<string, string>();
 
-  records.forEach(record => {
+  orderedRecords.forEach(record => {
+    mergeAdmissionDatesFromRecord(record, admissionDatesByRut);
+
     record.discharges?.forEach(discharge => {
       dischargeDates.set(discharge.rut, record.date);
     });
@@ -34,7 +66,7 @@ export function buildSpecialtyTraceability(
 
   const traceability: PatientTraceability[] = [];
 
-  records.forEach(record => {
+  orderedRecords.forEach(record => {
     if (type === 'dias-cama') {
       BEDS.forEach(bed => {
         const patient = record.beds[bed.id];
@@ -63,6 +95,10 @@ export function buildSpecialtyTraceability(
         if (normalizeSpecialty(discharge.originalData?.specialty) !== normalizedSpecialty) return;
         if (type === 'fallecidos' && discharge.status !== 'Fallecido') return;
 
+        const admissionDate =
+          (discharge.rut && admissionDatesByRut.get(discharge.rut.trim())) ||
+          normalizeIsoDate(discharge.originalData?.admissionDate);
+
         traceability.push({
           name: discharge.patientName,
           rut: discharge.rut,
@@ -71,7 +107,7 @@ export function buildSpecialtyTraceability(
           ),
           date: record.date,
           bedName: discharge.bedName,
-          admissionDate: discharge.originalData?.admissionDate,
+          admissionDate,
           dischargeDate: record.date,
         });
       });
@@ -84,6 +120,10 @@ export function buildSpecialtyTraceability(
         return;
       if (type === 'fach' && !isFachEvacuationMethod(transfer.evacuationMethod)) return;
 
+      const admissionDate =
+        (transfer.rut && admissionDatesByRut.get(transfer.rut.trim())) ||
+        normalizeIsoDate(transfer.originalData?.admissionDate);
+
       traceability.push({
         name: transfer.patientName,
         rut: transfer.rut,
@@ -92,7 +132,7 @@ export function buildSpecialtyTraceability(
         ),
         date: record.date,
         bedName: transfer.bedName,
-        admissionDate: transfer.originalData?.admissionDate,
+        admissionDate,
         dischargeDate: record.date,
       });
     });

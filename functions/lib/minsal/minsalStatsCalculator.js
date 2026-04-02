@@ -6,6 +6,45 @@ const resolveTraceabilityDiagnosis = value => {
   return diagnosis || undefined;
 };
 
+const normalizeIsoDate = value => {
+  if (!value || typeof value !== 'string') return undefined;
+  const datePart = value.split('T')[0].trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? datePart : undefined;
+};
+
+const resolveAdmissionDateForEvent = (patientRut, fallbackAdmissionDate, admissionDatesByRut) => {
+  const normalizedRut = patientRut ? patientRut.trim() : '';
+  if (normalizedRut && admissionDatesByRut.has(normalizedRut)) {
+    return admissionDatesByRut.get(normalizedRut);
+  }
+
+  return normalizeIsoDate(fallbackAdmissionDate);
+};
+
+const calculateHospitalizedDays = (admissionDate, dischargeDate) => {
+  const admission = normalizeIsoDate(admissionDate);
+  const discharge = normalizeIsoDate(dischargeDate);
+  if (!admission || !discharge) return null;
+
+  const [aYear, aMonth, aDay] = admission.split('-').map(Number);
+  const [dYear, dMonth, dDay] = discharge.split('-').map(Number);
+  const start = Date.UTC(aYear, aMonth - 1, aDay, 12, 0, 0);
+  const end = Date.UTC(dYear, dMonth - 1, dDay, 12, 0, 0);
+  const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+  return diffDays < 1 ? 1 : diffDays;
+};
+
+const buildStaySummary = durations => {
+  if (!durations || durations.length === 0) {
+    return { minimum: 0, maximum: 0 };
+  }
+
+  return {
+    minimum: Math.min(...durations),
+    maximum: Math.max(...durations),
+  };
+};
+
 const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDate }) => {
   if (!records || records.length === 0) {
     return {
@@ -29,19 +68,44 @@ const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDa
       camasLibres: hospitalCapacity,
       tasaOcupacionActual: 0,
       porEspecialidad: [],
+      promedioDiasEstadaMinima: 0,
+      promedioDiasEstadaMaxima: 0,
       message: 'No records found for the given range.',
     };
   }
+
+  const orderedRecords = [...records].sort((a, b) => a.date.localeCompare(b.date));
+  const admissionDatesByRut = new Map();
 
   let totalDiasCamaDisponibles = 0;
   let totalDiasCamaOcupados = 0;
   let totalEgresosVivos = 0;
   let totalEgresosFallecidos = 0;
   let totalEgresosTraslados = 0;
+  const totalStayDurations = [];
 
   const specialtyData = new Map();
 
-  records.forEach(record => {
+  orderedRecords.forEach(record => {
+    Object.values(record.beds || {}).forEach(bed => {
+      if (!bed || bed.isBlocked || !(bed.patientName && bed.patientName.trim())) {
+        return;
+      }
+
+      const primaryRut = (bed.rut || '').trim();
+      const admissionDate = normalizeIsoDate(bed.admissionDate);
+      if (primaryRut && admissionDate) {
+        admissionDatesByRut.set(primaryRut, admissionDate);
+      }
+
+      const crib = bed.clinicalCrib;
+      const cribRut = crib && crib.rut ? crib.rut.trim() : '';
+      const cribAdmissionDate = normalizeIsoDate(crib && crib.admissionDate);
+      if (cribRut && cribAdmissionDate) {
+        admissionDatesByRut.set(cribRut, cribAdmissionDate);
+      }
+    });
+
     const beds = record.beds || {};
     let ocupadas = 0;
     let bloqueadas = 0;
@@ -95,6 +159,17 @@ const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDa
         const specialty = normalizeSpecialty(discharge.originalData?.specialty);
         const existing = specialtyData.get(specialty) || createEmptySpecialtyBucket();
         existing.egresos++;
+        const resolvedAdmissionDate = resolveAdmissionDateForEvent(
+          discharge.rut,
+          discharge.originalData && discharge.originalData.admissionDate,
+          admissionDatesByRut
+        );
+        const stayDays = calculateHospitalizedDays(resolvedAdmissionDate, record.date);
+        if (stayDays !== null) {
+          existing.stayDurations.push(stayDays);
+          totalStayDurations.push(stayDays);
+        }
+
         const traceData = {
           name: discharge.patientName,
           rut: discharge.rut,
@@ -103,6 +178,7 @@ const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDa
           ),
           date: record.date,
           bedName: discharge.bedName,
+          admissionDate: resolvedAdmissionDate,
         };
         existing.egresosList.push(traceData);
         if (discharge.status === 'Fallecido') {
@@ -122,6 +198,17 @@ const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDa
         const specialty = normalizeSpecialty(transfer.originalData?.specialty);
         const existing = specialtyData.get(specialty) || createEmptySpecialtyBucket();
         existing.traslados++;
+        const resolvedAdmissionDate = resolveAdmissionDateForEvent(
+          transfer.rut,
+          transfer.originalData && transfer.originalData.admissionDate,
+          admissionDatesByRut
+        );
+        const stayDays = calculateHospitalizedDays(resolvedAdmissionDate, record.date);
+        if (stayDays !== null) {
+          existing.stayDurations.push(stayDays);
+          totalStayDurations.push(stayDays);
+        }
+
         existing.trasladosList.push({
           name: transfer.patientName,
           rut: transfer.rut,
@@ -130,6 +217,7 @@ const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDa
           ),
           date: record.date,
           bedName: transfer.bedName,
+          admissionDate: resolvedAdmissionDate,
         });
         specialtyData.set(specialty, existing);
       });
@@ -151,6 +239,7 @@ const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDa
   const porEspecialidad = Array.from(specialtyData.entries())
     .map(([specialty, bucket]) => {
       const egresosEsp = bucket.egresos || 0;
+      const staySummary = buildStaySummary(bucket.stayDurations);
       return {
         specialty,
         egresos: bucket.egresos,
@@ -165,9 +254,13 @@ const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDa
           totalDiasCamaOcupados > 0 ? (bucket.diasOcupados / totalDiasCamaOcupados) * 100 : 0,
         tasaMortalidad: egresosEsp > 0 ? (bucket.fallecidos / egresosEsp) * 100 : 0,
         promedioDiasEstada: egresosEsp > 0 ? bucket.diasOcupados / egresosEsp : 0,
+        promedioDiasEstadaMinima: staySummary.minimum,
+        promedioDiasEstadaMaxima: staySummary.maximum,
       };
     })
     .sort((a, b) => b.diasOcupados - a.diasOcupados);
+
+  const totalStaySummary = buildStaySummary(totalStayDurations);
 
   return {
     periodStart: startDate,
@@ -186,6 +279,8 @@ const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDa
     indiceRotacion: Math.round(indiceRotacion * 10) / 10,
     pacientesActuales: 0,
     camasLibres: 0,
+    promedioDiasEstadaMinima: totalStaySummary.minimum,
+    promedioDiasEstadaMaxima: totalStaySummary.maximum,
     porEspecialidad,
   };
 };

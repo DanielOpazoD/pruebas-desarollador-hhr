@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { SpecialtyBreakdownTable } from '@/features/analytics/components/components/SpecialtyBreakdownTable';
 import type { MinsalStatistics } from '@/types/minsalTypes';
@@ -123,6 +123,8 @@ describe('SpecialtyBreakdownTable', () => {
   });
 
   it('opens the stay range modal with admission and discharge dates', () => {
+    const onOpenCensusDate = vi.fn();
+
     render(
       <SpecialtyBreakdownTable
         data={[
@@ -160,6 +162,7 @@ describe('SpecialtyBreakdownTable', () => {
         ]}
         records={[]}
         summary={summary}
+        onOpenCensusDate={onOpenCensusDate}
       />
     );
 
@@ -173,5 +176,9 @@ describe('SpecialtyBreakdownTable', () => {
     expect(screen.getByText('10-03-2026')).toBeInTheDocument();
     expect(screen.getByText('Mínimo')).toBeInTheDocument();
     expect(screen.getByText('Máximo')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir censo' }));
+
+    expect(onOpenCensusDate).toHaveBeenCalledWith('2026-03-01');
   });
 });

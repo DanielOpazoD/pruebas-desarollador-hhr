@@ -33,6 +33,11 @@ describe('patientMovementCreationController', () => {
     record.beds.R1 = DataFactory.createMockPatient('R1', {
       patientName: 'Madre A',
       rut: '11-1',
+      admissionDate: '2024-12-31',
+      admissionTime: '23:10',
+      devices: ['VVP'],
+      handoffNoteDayShift: 'Nota anterior',
+      medicalHandoffNote: 'Evolución previa',
       clinicalCrib: DataFactory.createMockPatient('R1', {
         patientName: 'RN A',
         rut: '22-2',
@@ -60,6 +65,11 @@ describe('patientMovementCreationController', () => {
     if (result.ok) {
       expect(result.value.updatedRecord.discharges).toHaveLength(2);
       expect(result.value.updatedRecord.beds.R1.patientName).toBe('');
+      expect(result.value.updatedRecord.beds.R1.admissionDate).toBe('');
+      expect(result.value.updatedRecord.beds.R1.admissionTime).toBe('');
+      expect(result.value.updatedRecord.beds.R1.devices).toEqual([]);
+      expect(result.value.updatedRecord.beds.R1.handoffNoteDayShift).toBeUndefined();
+      expect(result.value.updatedRecord.beds.R1.medicalHandoffNote).toBeUndefined();
       expect(result.value.auditEntries).toHaveLength(2);
     }
   });
@@ -97,6 +107,11 @@ describe('patientMovementCreationController', () => {
     record.beds.R1 = DataFactory.createMockPatient('R1', {
       patientName: 'Madre A',
       rut: '11-1',
+      admissionDate: '2024-12-31',
+      admissionTime: '23:10',
+      devices: ['CVC'],
+      handoffNoteNightShift: 'Nota antigua',
+      medicalHandoffNote: 'Evolución previa',
       clinicalCrib: DataFactory.createMockPatient('R1', {
         patientName: 'RN A',
         rut: '22-2',
@@ -125,6 +140,11 @@ describe('patientMovementCreationController', () => {
     if (result.ok) {
       expect(result.value.updatedRecord.transfers).toHaveLength(2);
       expect(result.value.updatedRecord.beds.R1.patientName).toBe('');
+      expect(result.value.updatedRecord.beds.R1.admissionDate).toBe('');
+      expect(result.value.updatedRecord.beds.R1.admissionTime).toBe('');
+      expect(result.value.updatedRecord.beds.R1.devices).toEqual([]);
+      expect(result.value.updatedRecord.beds.R1.handoffNoteNightShift).toBeUndefined();
+      expect(result.value.updatedRecord.beds.R1.medicalHandoffNote).toBeUndefined();
       expect(result.value.auditEntry.patientName).toBe('Madre A');
     }
   });

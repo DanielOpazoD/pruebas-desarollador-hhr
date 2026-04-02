@@ -16,6 +16,7 @@ interface SpecialtyBreakdownTableProps {
   data: SpecialtyStats[];
   records?: DailyRecord[];
   summary?: MinsalStatistics;
+  onOpenCensusDate?: (date: string) => void;
 }
 
 const formatRange = (min?: number, max?: number): string =>
@@ -25,6 +26,7 @@ export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = (
   data = [],
   records = [],
   summary,
+  onOpenCensusDate,
 }) => {
   const [modalConfig, setModalConfig] = React.useState<{
     isOpen: boolean;
@@ -322,6 +324,7 @@ export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = (
         title={modalConfig.title}
         patients={modalConfig.patients}
         type={modalConfig.type}
+        onOpenCensusDate={onOpenCensusDate}
       />
     </div>
   );

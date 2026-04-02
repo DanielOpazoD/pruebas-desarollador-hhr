@@ -14,7 +14,11 @@ import { resolveAnalyticsPresentationCopy } from '@/features/analytics/controlle
 import { formatDateDDMMYYYY } from '@/utils/dateUtils';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 
-export const AnalyticsView: React.FC = () => {
+interface AnalyticsViewProps {
+  onOpenCensusDate?: (date: string) => void;
+}
+
+export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onOpenCensusDate }) => {
   const copy = resolveAnalyticsPresentationCopy();
   const {
     stats,
@@ -188,6 +192,7 @@ export const AnalyticsView: React.FC = () => {
           data={stats.porEspecialidad || []}
           records={allRecords}
           summary={stats}
+          onOpenCensusDate={onOpenCensusDate}
         />
       </div>
 

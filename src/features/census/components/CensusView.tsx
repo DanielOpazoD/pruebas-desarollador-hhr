@@ -26,6 +26,7 @@ interface CensusViewProps {
   currentDateString: string;
   showBedManagerModal: boolean;
   onCloseBedManagerModal: () => void;
+  onOpenCensusDate?: (date: string) => void;
   readOnly?: boolean;
   allowAdminCopyOverride?: boolean;
   localViewMode?: 'TABLE' | '3D';
@@ -39,6 +40,7 @@ const CensusViewContent: React.FC<CensusViewProps> = ({
   currentDateString,
   showBedManagerModal,
   onCloseBedManagerModal,
+  onOpenCensusDate,
   readOnly = false,
   allowAdminCopyOverride = false,
   localViewMode = 'TABLE',
@@ -66,7 +68,7 @@ const CensusViewContent: React.FC<CensusViewProps> = ({
   if (branch === 'analytics') {
     return (
       <SectionErrorBoundary sectionName="Estadísticas">
-        <AnalyticsView />
+        <AnalyticsView onOpenCensusDate={onOpenCensusDate} />
       </SectionErrorBoundary>
     );
   }

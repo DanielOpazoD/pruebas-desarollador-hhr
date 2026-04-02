@@ -15,7 +15,14 @@ interface TraceabilityModalProps {
   title: string;
   patients: PatientTraceability[];
   type: 'dias-cama' | 'egresos' | 'fallecidos' | 'traslados' | 'aerocardal' | 'fach' | 'estada';
+  onOpenCensusDate?: (date: string) => void;
 }
+
+const resolveAdmissionDate = (dateValue?: string): string | null => {
+  if (!dateValue) return null;
+  const datePart = dateValue.split('T')[0];
+  return /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? datePart : null;
+};
 
 const getStayDays = (patient: PatientTraceability): number | null => {
   if (!patient.admissionDate || !patient.dischargeDate) return null;
@@ -40,9 +47,23 @@ export const TraceabilityModal: React.FC<TraceabilityModalProps> = ({
   title,
   patients,
   type,
+  onOpenCensusDate,
 }) => {
   const isGroupedView = type === 'dias-cama';
   const isStayView = type === 'estada';
+
+  const handleOpenAdmissionCensus = React.useCallback(
+    (patient: PatientTraceability) => {
+      const admissionDate = resolveAdmissionDate(patient.admissionDate);
+      if (!admissionDate || !onOpenCensusDate) {
+        return;
+      }
+
+      onOpenCensusDate(admissionDate);
+      onClose();
+    },
+    [onClose, onOpenCensusDate]
+  );
 
   const sortedPatients = React.useMemo(() => {
     const list = [...patients];
@@ -133,6 +154,9 @@ export const TraceabilityModal: React.FC<TraceabilityModalProps> = ({
                   <th className="px-4 py-3 font-medium text-slate-600 border-b">Egreso</th>
                   <th className="px-4 py-3 font-medium text-slate-600 border-b text-center">
                     Días estada
+                  </th>
+                  <th className="px-4 py-3 font-medium text-slate-600 border-b text-center">
+                    Censo
                   </th>
                   <th className="pl-4 pr-8 py-3 font-medium text-slate-600 border-b">
                     Diagnóstico
@@ -245,6 +269,20 @@ export const TraceabilityModal: React.FC<TraceabilityModalProps> = ({
                               Máximo
                             </span>
                           ) : null}
+                        </td>
+                        <td className="px-4 py-2.5 text-center align-top">
+                          {p.admissionDate && onOpenCensusDate ? (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenAdmissionCensus(p)}
+                              className="inline-flex items-center justify-center rounded-lg border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 transition-colors hover:bg-sky-100 hover:border-sky-300"
+                              title="Abrir el censo diario en la fecha de ingreso"
+                            >
+                              Abrir censo
+                            </button>
+                          ) : (
+                            <span className="text-slate-400 italic">--</span>
+                          )}
                         </td>
                         <td className="pl-4 pr-8 py-2.5 text-slate-600 align-top">
                           {p.diagnosis ? (

@@ -19,6 +19,33 @@ export const AppContentChrome: React.FC<AppContentChromeProps> = ({ ui, runtime 
   const { auth, dateNav, censusEmail, fileOps, syncStatus, lastSyncTime, exportManager } = runtime;
   const { isSignatureMode, currentDateString } = dateNav;
 
+  const openCensusDate = React.useCallback(
+    (isoDate: string) => {
+      const datePart = isoDate.split('T')[0];
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+        return;
+      }
+
+      const [year, month, day] = datePart.split('-').map(Number);
+      const parsed = new Date(year, month - 1, day, 12, 0, 0, 0);
+      if (
+        Number.isNaN(parsed.getTime()) ||
+        parsed.getFullYear() !== year ||
+        parsed.getMonth() !== month - 1 ||
+        parsed.getDate() !== day
+      ) {
+        return;
+      }
+
+      ui.setCurrentModule('CENSUS');
+      ui.setCensusViewMode('REGISTER');
+      dateNav.setSelectedYear(year);
+      dateNav.setSelectedMonth(month - 1);
+      dateNav.setSelectedDay(day);
+    },
+    [dateNav, ui]
+  );
+
   return (
     <>
       {!isSignatureMode && (
@@ -115,6 +142,7 @@ export const AppContentChrome: React.FC<AppContentChromeProps> = ({ ui, runtime 
           isSignatureMode={isSignatureMode}
           showBedManagerModal={ui.bedManagerModal.isOpen}
           onCloseBedManagerModal={ui.bedManagerModal.close}
+          onOpenCensusDate={openCensusDate}
         />
       </main>
     </>

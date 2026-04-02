@@ -12,6 +12,7 @@ const createEmptySpecialtyBucket = () => ({
   fallecidos: 0,
   traslados: 0,
   diasOcupados: 0,
+  stayDurations: [],
   diasOcupadosList: [],
   egresosList: [],
   trasladosList: [],

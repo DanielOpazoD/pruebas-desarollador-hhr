@@ -594,17 +594,36 @@ describe('minsalStatsCalculator', () => {
       expect(stats.promedioDiasEstadaMaxima).toBe(4);
     });
 
-    it('should keep stay range tied to the raw admission and discharge dates', () => {
-      const record = createMockRecord('2026-03-31', 2);
-      record.discharges = [
+    it('should prefer the corrected admission date observed in the census over stale discharge data', () => {
+      const bedId = BEDS[0].id;
+      const day1 = createMockRecord('2026-03-01', 0);
+      const day2 = createMockRecord('2026-03-02', 0);
+      const day3 = createMockRecord('2026-03-03', 0);
+
+      const basePatient = {
+        ...day1.beds[bedId],
+        patientName: 'Paciente Cambio',
+        rut: '9.999.999-9',
+        specialty: Specialty.CIRUGIA,
+        status: PatientStatus.ESTABLE,
+        admissionDate: '2025-01-01',
+        admissionTime: '08:00',
+      } as PatientData;
+
+      day1.beds[bedId] = basePatient;
+      day2.beds[bedId] = {
+        ...basePatient,
+        admissionDate: '2026-03-01',
+      };
+      day3.discharges = [
         {
           id: '1',
-          patientName: 'Alta larga',
+          patientName: 'Paciente Cambio',
           status: 'Vivo',
           bedName: '',
-          bedId: '',
+          bedId,
           bedType: '',
-          rut: '',
+          rut: '9.999.999-9',
           diagnosis: '',
           time: '',
           originalData: {
@@ -614,16 +633,17 @@ describe('minsalStatsCalculator', () => {
         },
       ];
 
-      const stats = calculateMinsalStats([record], '2026-01-01', '2026-03-31');
+      const stats = calculateMinsalStats([day1, day2, day3], '2026-03-01', '2026-03-03');
       const cirugia = stats.porEspecialidad.find(item => item.specialty === Specialty.CIRUGIA);
 
-      expect(cirugia?.promedioDiasEstadaMinima).toBeGreaterThan(90);
-      expect(cirugia?.promedioDiasEstadaMaxima).toBeGreaterThan(90);
-      expect(stats.promedioDiasEstadaMinima).toBeGreaterThan(90);
-      expect(stats.promedioDiasEstadaMaxima).toBeGreaterThan(90);
+      expect(cirugia?.promedioDiasEstadaMinima).toBe(3);
+      expect(cirugia?.promedioDiasEstadaMaxima).toBe(3);
+      expect(stats.promedioDiasEstadaMinima).toBe(3);
+      expect(stats.promedioDiasEstadaMaxima).toBe(3);
+      expect(cirugia?.egresosList?.[0]?.admissionDate).toBe('2026-03-01');
     });
 
-    it('should measure stay range from the raw admission and discharge dates', () => {
+    it('should measure stay range from a consistent admission snapshot when no correction is needed', () => {
       const day1 = createMockRecord('2026-01-01', 1);
       const day2 = createMockRecord('2026-01-02', 1);
       const day3 = createMockRecord('2026-01-03', 1);
