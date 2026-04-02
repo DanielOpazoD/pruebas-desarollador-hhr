@@ -14,8 +14,16 @@ import {
   resolveAdmissionDateAudit,
   resolveAdmissionDateSuggestion,
 } from '@/application/patient-flow/admissionDatePolicy';
+import { createEpisodeAdmissionTracker } from '@/services/calculations/minsal/episodeTracker';
 import { dataMaintenanceLogger } from '@/services/admin/adminLoggers';
 
+/**
+ * Historical correction service for admission dates.
+ *
+ * It reuses the shared episode registry so the correction is anchored to the
+ * first observed day of the episode, while still preserving separate episodes
+ * for the same RUT whenever a discharge or transfer closes the prior one.
+ */
 type AdmissionDateBackfillScope = 'bed' | 'clinicalCrib' | 'discharge' | 'transfer';
 
 export interface AdmissionDateBackfillSample {
@@ -40,12 +48,6 @@ export interface AdmissionDateBackfillResult {
   outcome: 'clean' | 'repaired' | 'partial' | 'blocked';
   samples: AdmissionDateBackfillSample[];
   userSafeMessage: string;
-}
-
-interface EpisodeState {
-  startDate: string;
-  lastSeenDate: string;
-  open: boolean;
 }
 
 interface BackfillTarget {
@@ -180,14 +182,12 @@ const buildBackfillPlan = async (): Promise<{
 }> => {
   const dates = (await getAvailableDates()).slice().sort();
   const records: RecordPlan[] = [];
-  const episodeStateByRut = new Map<string, EpisodeState>();
+  const episodeTracker = createEpisodeAdmissionTracker();
   let reviewedEntries = 0;
-  let previousDate = '';
 
   for (const date of dates) {
     const record = await getForDate(date);
     if (!record) {
-      previousDate = date;
       continue;
     }
 
@@ -195,56 +195,30 @@ const buildBackfillPlan = async (): Promise<{
     const corrections: AdmissionDateBackfillSample[] = [];
     const targets = collectTargetsFromRecord(clonedRecord);
 
+    Object.values(clonedRecord.beds || {}).forEach(bed => {
+      episodeTracker.observeBed(bed, date);
+    });
+
     for (const target of targets) {
       const rutKey = normalizeRutKey(target.patient.rut);
       if (!rutKey) continue;
 
       reviewedEntries += 1;
 
-      const currentState = episodeStateByRut.get(rutKey);
-      const isSameDayContinuation = currentState?.lastSeenDate === date;
-      const isYesterdayContinuation = currentState?.lastSeenDate === previousDate;
-
-      if (
-        !currentState ||
-        !currentState.open ||
-        (!isSameDayContinuation && !isYesterdayContinuation)
-      ) {
-        episodeStateByRut.set(rutKey, {
-          startDate: date,
-          lastSeenDate: date,
-          open: true,
-        });
-      } else {
-        currentState.lastSeenDate = date;
-        currentState.open = true;
-      }
-
-      const episodeState = episodeStateByRut.get(rutKey);
-      if (!episodeState) continue;
-
-      const correction = applyAdmissionDateCorrection(target, episodeState.startDate);
+      const firstSeenDate =
+        episodeTracker.resolveEpisodeStartDate(target.patient.rut, target.date) || target.date;
+      const correction = applyAdmissionDateCorrection(target, firstSeenDate);
       if (correction) {
         corrections.push(correction);
       }
     }
 
     record.discharges?.forEach(discharge => {
-      const rutKey = normalizeRutKey(discharge.rut);
-      if (!rutKey) return;
-      const state = episodeStateByRut.get(rutKey);
-      if (state) {
-        state.open = false;
-      }
+      episodeTracker.closeEpisode(discharge.rut);
     });
 
     record.transfers?.forEach(transfer => {
-      const rutKey = normalizeRutKey(transfer.rut);
-      if (!rutKey) return;
-      const state = episodeStateByRut.get(rutKey);
-      if (state) {
-        state.open = false;
-      }
+      episodeTracker.closeEpisode(transfer.rut);
     });
 
     if (corrections.length > 0) {
@@ -253,8 +227,6 @@ const buildBackfillPlan = async (): Promise<{
         corrections,
       });
     }
-
-    previousDate = date;
   }
 
   return {

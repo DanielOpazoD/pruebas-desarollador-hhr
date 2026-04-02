@@ -4,27 +4,37 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { DailyRecord, PatientData, DischargeData, TransferData, CMAData, Specialty, PatientStatus } from '@/types';
+import {
+  DailyRecord,
+  PatientData,
+  DischargeData,
+  TransferData,
+  CMAData,
+  Specialty,
+  PatientStatus,
+} from '@/types';
 import { DataFactory } from '@/tests/factories/DataFactory';
+import { createEmptyPatient } from '@/services/factories/patientFactory';
 
 // Helper to create a complete mock record
 const createMockRecord = (): DailyRecord => ({
-    date: '2024-12-23',
-    beds: {
-        'R1': createPatient('Juan Pérez', 'R1'),
-        'R2': createPatient('María García', 'R2'),
-        'R3': createEmptyBed('R3'),
-        'R4': createEmptyBed('R4'),
-    },
-    discharges: [],
-    transfers: [],
-    cma: [],
-    lastUpdated: '2024-12-23T00:00:00.000Z',
-    nurses: ['Enfermera 1', 'Enfermera 2'],
-    activeExtraBeds: [],
+  date: '2024-12-23',
+  beds: {
+    R1: createPatient('Juan Pérez', 'R1'),
+    R2: createPatient('María García', 'R2'),
+    R3: createEmptyBed('R3'),
+    R4: createEmptyBed('R4'),
+  },
+  discharges: [],
+  transfers: [],
+  cma: [],
+  lastUpdated: '2024-12-23T00:00:00.000Z',
+  nurses: ['Enfermera 1', 'Enfermera 2'],
+  activeExtraBeds: [],
 });
 
-const createPatient = (name: string, bedId: string): PatientData => ({
+const createPatient = (name: string, bedId: string): PatientData =>
+  ({
     bedId,
     patientName: name,
     rut: '12345678-9',
@@ -43,268 +53,307 @@ const createPatient = (name: string, bedId: string): PatientData => ({
     hasWristband: true,
     surgicalComplication: false,
     isUPC: false,
-} as PatientData);
+  }) as PatientData;
 
-const createEmptyBed = (bedId: string): PatientData => ({
+const createEmptyBed = (bedId: string): PatientData =>
+  ({
     bedId,
     patientName: '',
     bedMode: 'Cama',
     hasCompanionCrib: false,
     isBlocked: false,
-} as unknown as PatientData);
+  }) as unknown as PatientData;
 
 describe('Census Operations Integration', () => {
-    describe('Patient Admission Flow', () => {
-        it('should admit patient to empty bed', () => {
-            const record = createMockRecord();
-            const bedId = 'R3';
+  describe('Patient Admission Flow', () => {
+    it('should admit patient to empty bed', () => {
+      const record = createMockRecord();
+      const bedId = 'R3';
 
-            // Initially empty
-            expect(record.beds[bedId].patientName).toBe('');
+      // Initially empty
+      expect(record.beds[bedId].patientName).toBe('');
 
-            // Admit patient
-            record.beds[bedId] = {
-                ...record.beds[bedId],
-                patientName: 'Nuevo Paciente',
-                rut: '11111111-1',
-                pathology: 'Neumonía',
-                admissionDate: '2024-12-23',
-            } as PatientData;
+      // Admit patient
+      record.beds[bedId] = {
+        ...record.beds[bedId],
+        patientName: 'Nuevo Paciente',
+        rut: '11111111-1',
+        pathology: 'Neumonía',
+        admissionDate: '2024-12-23',
+      } as PatientData;
 
-            expect(record.beds[bedId].patientName).toBe('Nuevo Paciente');
-            expect(record.beds[bedId].admissionDate).toBe('2024-12-23');
-        });
-
-        it('should count occupied beds after admission', () => {
-            const record = createMockRecord();
-
-            const occupiedBefore = Object.values(record.beds)
-                .filter(b => b.patientName).length;
-            expect(occupiedBefore).toBe(2);
-
-            // Admit to R3
-            record.beds['R3'].patientName = 'Nuevo';
-
-            const occupiedAfter = Object.values(record.beds)
-                .filter(b => b.patientName).length;
-            expect(occupiedAfter).toBe(3);
-        });
+      expect(record.beds[bedId].patientName).toBe('Nuevo Paciente');
+      expect(record.beds[bedId].admissionDate).toBe('2024-12-23');
     });
 
-    describe('Discharge Flow', () => {
-        it('should add discharge and clear bed', () => {
-            const record = createMockRecord();
-            const patient = record.beds['R1'];
+    it('should count occupied beds after admission', () => {
+      const record = createMockRecord();
 
-            // Create discharge
-            const discharge: DischargeData = {
-                id: crypto.randomUUID(),
-                bedId: 'R1',
-                bedName: 'Cama R1',
-                bedType: 'Adulto',
-                patientName: patient.patientName,
-                rut: patient.rut,
-                diagnosis: patient.pathology,
-                status: 'Vivo',
-                dischargeType: 'Domicilio (Habitual)',
-                time: '10:30',
-                isNested: false,
-                originalData: { ...patient },
-            };
+      const occupiedBefore = Object.values(record.beds).filter(b => b.patientName).length;
+      expect(occupiedBefore).toBe(2);
 
-            record.discharges.push(discharge);
-            record.beds['R1'].patientName = '';
+      // Admit to R3
+      record.beds['R3'].patientName = 'Nuevo';
 
-            expect(record.discharges.length).toBe(1);
-            expect(record.beds['R1'].patientName).toBe('');
-            expect(record.discharges[0].patientName).toBe('Juan Pérez');
-        });
+      const occupiedAfter = Object.values(record.beds).filter(b => b.patientName).length;
+      expect(occupiedAfter).toBe(3);
+    });
+  });
 
-        it('should decrement occupied count after discharge', () => {
-            const record = createMockRecord();
+  describe('Discharge Flow', () => {
+    it('should add discharge and clear bed', () => {
+      const record = createMockRecord();
+      const patient = record.beds['R1'];
 
-            const occupiedBefore = Object.values(record.beds)
-                .filter(b => b.patientName).length;
+      // Create discharge
+      const discharge: DischargeData = {
+        id: crypto.randomUUID(),
+        bedId: 'R1',
+        bedName: 'Cama R1',
+        bedType: 'Adulto',
+        patientName: patient.patientName,
+        rut: patient.rut,
+        diagnosis: patient.pathology,
+        status: 'Vivo',
+        dischargeType: 'Domicilio (Habitual)',
+        time: '10:30',
+        isNested: false,
+        originalData: { ...patient },
+      };
 
-            // Discharge R1
-            record.beds['R1'].patientName = '';
+      record.discharges.push(discharge);
+      record.beds['R1'].patientName = '';
 
-            const occupiedAfter = Object.values(record.beds)
-                .filter(b => b.patientName).length;
-
-            expect(occupiedAfter).toBe(occupiedBefore - 1);
-        });
-
-        it('should undo discharge and restore patient', () => {
-            const record = createMockRecord();
-            const originalPatient = { ...record.beds['R1'] };
-
-            // Discharge
-            const discharge: DischargeData = {
-                id: 'discharge-1',
-                bedId: 'R1',
-                bedName: 'Cama R1',
-                bedType: 'Adulto',
-                patientName: originalPatient.patientName,
-                status: 'Vivo',
-                isNested: false,
-                originalData: originalPatient,
-            } as DischargeData;
-
-            record.discharges.push(discharge);
-            record.beds['R1'] = createEmptyBed('R1');
-
-            expect(record.beds['R1'].patientName).toBe('');
-
-            // Undo
-            record.beds['R1'] = originalPatient;
-            record.discharges = record.discharges.filter(d => d.id !== 'discharge-1');
-
-            expect(record.beds['R1'].patientName).toBe('Juan Pérez');
-            expect(record.discharges.length).toBe(0);
-        });
+      expect(record.discharges.length).toBe(1);
+      expect(record.beds['R1'].patientName).toBe('');
+      expect(record.discharges[0].patientName).toBe('Juan Pérez');
     });
 
-    describe('Transfer Flow', () => {
-        it('should add transfer and clear bed', () => {
-            const record = createMockRecord();
-            const patient = record.beds['R2'];
+    it('should leave the bed reusable without carrying prior clinical data', () => {
+      const record = createMockRecord();
+      const sourcePatient = DataFactory.createMockPatient('R1', {
+        patientName: 'Paciente con datos',
+        devices: ['VVP'],
+        handoffNoteDayShift: 'Nota previa',
+        handoffNoteNightShift: 'Nota previa noche',
+        medicalHandoffNote: 'Evolución previa',
+        admissionDate: '2024-12-20',
+        firstSeenDate: '2024-12-20',
+      });
+      record.beds['R1'] = sourcePatient;
 
-            const transfer: TransferData = {
-                id: crypto.randomUUID(),
-                bedId: 'R2',
-                bedName: 'Cama R2',
-                bedType: 'Adulto',
-                patientName: patient.patientName,
-                rut: patient.rut,
-                diagnosis: patient.pathology,
-                evacuationMethod: 'Avión Comercial',
-                receivingCenter: 'Hospital Sótero del Río',
-                time: '14:00',
-                isNested: false,
-                originalData: { ...patient },
-            };
+      const discharge: DischargeData = {
+        id: crypto.randomUUID(),
+        bedId: 'R1',
+        bedName: 'Cama R1',
+        bedType: 'Adulto',
+        patientName: sourcePatient.patientName,
+        rut: sourcePatient.rut,
+        diagnosis: sourcePatient.pathology,
+        status: 'Vivo',
+        dischargeType: 'Domicilio (Habitual)',
+        time: '10:30',
+        isNested: false,
+        originalData: { ...sourcePatient },
+      };
 
-            record.transfers.push(transfer);
-            record.beds['R2'].patientName = '';
+      record.discharges.push(discharge);
+      record.beds['R1'] = createEmptyPatient('R1');
 
-            expect(record.transfers.length).toBe(1);
-            expect(record.transfers[0].receivingCenter).toBe('Hospital Sótero del Río');
-        });
-
-        it('should track transfer method', () => {
-            const transfer: TransferData = {
-                id: '1',
-                bedId: 'R1',
-                bedName: 'Cama R1',
-                patientName: 'Test',
-                evacuationMethod: 'FACH',
-                receivingCenter: 'Hospital Regional',
-                isNested: false,
-            } as TransferData;
-
-            expect(transfer.evacuationMethod).toBe('FACH');
-        });
+      expect(record.beds['R1'].patientName).toBe('');
+      expect(record.beds['R1'].rut).toBe('');
+      expect(record.beds['R1'].admissionDate).toBe('');
+      expect(record.beds['R1'].admissionTime).toBe('');
+      expect(record.beds['R1'].devices).toEqual([]);
+      expect(record.beds['R1'].hasCompanionCrib).toBe(false);
+      expect(record.beds['R1'].clinicalCrib).toBeUndefined();
+      expect(record.beds['R1'].handoffNoteDayShift).toBeUndefined();
+      expect(record.beds['R1'].handoffNoteNightShift).toBeUndefined();
+      expect(record.beds['R1'].medicalHandoffNote).toBeUndefined();
+      expect(record.beds['R1'].firstSeenDate).toBeUndefined();
+      expect(record.beds['R1'].location).toBe(sourcePatient.location);
     });
 
-    describe('CMA (Day Hospital) Flow', () => {
-        it('should add CMA entry', () => {
-            const record = createMockRecord();
+    it('should decrement occupied count after discharge', () => {
+      const record = createMockRecord();
 
-            const cma: CMAData = {
-                id: crypto.randomUUID(),
-                bedName: 'Sala 1',
-                patientName: 'Paciente CMA',
-                rut: '99999999-9',
-                age: '35',
-                diagnosis: 'Biopsia',
-                specialty: 'Cirugía',
-                interventionType: 'Cirugía Mayor Ambulatoria',
-            };
+      const occupiedBefore = Object.values(record.beds).filter(b => b.patientName).length;
 
-            record.cma.push(cma);
+      // Discharge R1
+      record.beds['R1'].patientName = '';
 
-            expect(record.cma.length).toBe(1);
-            expect(record.cma[0].diagnosis).toBe('Biopsia');
-        });
+      const occupiedAfter = Object.values(record.beds).filter(b => b.patientName).length;
 
-        it('should count total movements', () => {
-            const record = createMockRecord();
-
-            // Add one of each
-            record.discharges.push({ id: '1' } as DischargeData);
-            record.discharges.push({ id: '2' } as DischargeData);
-            record.transfers.push({ id: '1' } as TransferData);
-            record.cma.push({ id: '1' } as CMAData);
-            record.cma.push({ id: '2' } as CMAData);
-            record.cma.push({ id: '3' } as CMAData);
-
-            const totalMovements =
-                record.discharges.length +
-                record.transfers.length +
-                record.cma.length;
-
-            expect(totalMovements).toBe(6);
-        });
+      expect(occupiedAfter).toBe(occupiedBefore - 1);
     });
 
-    describe('Bed Blocking Flow', () => {
-        it('should block empty bed', () => {
-            const record = createMockRecord();
+    it('should undo discharge and restore patient', () => {
+      const record = createMockRecord();
+      const originalPatient = { ...record.beds['R1'] };
 
-            expect(record.beds['R3'].isBlocked).toBe(false);
-            record.beds['R3'].isBlocked = true;
-            expect(record.beds['R3'].isBlocked).toBe(true);
-        });
+      // Discharge
+      const discharge: DischargeData = {
+        id: 'discharge-1',
+        bedId: 'R1',
+        bedName: 'Cama R1',
+        bedType: 'Adulto',
+        patientName: originalPatient.patientName,
+        status: 'Vivo',
+        isNested: false,
+        originalData: originalPatient,
+      } as DischargeData;
 
-        it('should affect available capacity', () => {
-            const record = createMockRecord();
+      record.discharges.push(discharge);
+      record.beds['R1'] = createEmptyBed('R1');
 
-            const countAvailable = () => Object.values(record.beds)
-                .filter(b => !b.patientName && !b.isBlocked).length;
+      expect(record.beds['R1'].patientName).toBe('');
 
-            const availableBefore = countAvailable();
-            expect(availableBefore).toBe(2); // R3 and R4
+      // Undo
+      record.beds['R1'] = originalPatient;
+      record.discharges = record.discharges.filter(d => d.id !== 'discharge-1');
 
-            record.beds['R3'].isBlocked = true;
+      expect(record.beds['R1'].patientName).toBe('Juan Pérez');
+      expect(record.discharges.length).toBe(0);
+    });
+  });
 
-            const availableAfter = countAvailable();
-            expect(availableAfter).toBe(1); // Only R4
-        });
+  describe('Transfer Flow', () => {
+    it('should add transfer and clear bed', () => {
+      const record = createMockRecord();
+      const patient = record.beds['R2'];
+
+      const transfer: TransferData = {
+        id: crypto.randomUUID(),
+        bedId: 'R2',
+        bedName: 'Cama R2',
+        bedType: 'Adulto',
+        patientName: patient.patientName,
+        rut: patient.rut,
+        diagnosis: patient.pathology,
+        evacuationMethod: 'Avión Comercial',
+        receivingCenter: 'Hospital Sótero del Río',
+        time: '14:00',
+        isNested: false,
+        originalData: { ...patient },
+      };
+
+      record.transfers.push(transfer);
+      record.beds['R2'].patientName = '';
+
+      expect(record.transfers.length).toBe(1);
+      expect(record.transfers[0].receivingCenter).toBe('Hospital Sótero del Río');
     });
 
-    describe('Clinical Crib Flow', () => {
-        it('should add clinical crib to patient bed', () => {
-            const record = createMockRecord();
+    it('should track transfer method', () => {
+      const transfer: TransferData = {
+        id: '1',
+        bedId: 'R1',
+        bedName: 'Cama R1',
+        patientName: 'Test',
+        evacuationMethod: 'FACH',
+        receivingCenter: 'Hospital Regional',
+        isNested: false,
+      } as TransferData;
 
-            record.beds['R1'].clinicalCrib = {
-                ...DataFactory.createMockPatient('R1-crib'),
-                patientName: 'Recién Nacido',
-                rut: '11111111-1',
-                pathology: 'RN Sano',
-                age: '1 día',
-            };
-
-            expect(record.beds['R1'].clinicalCrib?.patientName).toBe('Recién Nacido');
-        });
-
-        it('should count total hospitalized including cribs', () => {
-            const record = createMockRecord();
-
-            // Add crib to R1
-            record.beds['R1'].clinicalCrib = {
-                ...DataFactory.createMockPatient('R1-crib'),
-                patientName: 'RN',
-            };
-
-            const mainPatients = Object.values(record.beds)
-                .filter(b => b.patientName).length;
-
-            const cribPatients = Object.values(record.beds)
-                .filter(b => b.clinicalCrib?.patientName).length;
-
-            const total = mainPatients + cribPatients;
-            expect(total).toBe(3); // Juan, María, RN
-        });
+      expect(transfer.evacuationMethod).toBe('FACH');
     });
+  });
+
+  describe('CMA (Day Hospital) Flow', () => {
+    it('should add CMA entry', () => {
+      const record = createMockRecord();
+
+      const cma: CMAData = {
+        id: crypto.randomUUID(),
+        bedName: 'Sala 1',
+        patientName: 'Paciente CMA',
+        rut: '99999999-9',
+        age: '35',
+        diagnosis: 'Biopsia',
+        specialty: 'Cirugía',
+        interventionType: 'Cirugía Mayor Ambulatoria',
+      };
+
+      record.cma.push(cma);
+
+      expect(record.cma.length).toBe(1);
+      expect(record.cma[0].diagnosis).toBe('Biopsia');
+    });
+
+    it('should count total movements', () => {
+      const record = createMockRecord();
+
+      // Add one of each
+      record.discharges.push({ id: '1' } as DischargeData);
+      record.discharges.push({ id: '2' } as DischargeData);
+      record.transfers.push({ id: '1' } as TransferData);
+      record.cma.push({ id: '1' } as CMAData);
+      record.cma.push({ id: '2' } as CMAData);
+      record.cma.push({ id: '3' } as CMAData);
+
+      const totalMovements = record.discharges.length + record.transfers.length + record.cma.length;
+
+      expect(totalMovements).toBe(6);
+    });
+  });
+
+  describe('Bed Blocking Flow', () => {
+    it('should block empty bed', () => {
+      const record = createMockRecord();
+
+      expect(record.beds['R3'].isBlocked).toBe(false);
+      record.beds['R3'].isBlocked = true;
+      expect(record.beds['R3'].isBlocked).toBe(true);
+    });
+
+    it('should affect available capacity', () => {
+      const record = createMockRecord();
+
+      const countAvailable = () =>
+        Object.values(record.beds).filter(b => !b.patientName && !b.isBlocked).length;
+
+      const availableBefore = countAvailable();
+      expect(availableBefore).toBe(2); // R3 and R4
+
+      record.beds['R3'].isBlocked = true;
+
+      const availableAfter = countAvailable();
+      expect(availableAfter).toBe(1); // Only R4
+    });
+  });
+
+  describe('Clinical Crib Flow', () => {
+    it('should add clinical crib to patient bed', () => {
+      const record = createMockRecord();
+
+      record.beds['R1'].clinicalCrib = {
+        ...DataFactory.createMockPatient('R1-crib'),
+        patientName: 'Recién Nacido',
+        rut: '11111111-1',
+        pathology: 'RN Sano',
+        age: '1 día',
+      };
+
+      expect(record.beds['R1'].clinicalCrib?.patientName).toBe('Recién Nacido');
+    });
+
+    it('should count total hospitalized including cribs', () => {
+      const record = createMockRecord();
+
+      // Add crib to R1
+      record.beds['R1'].clinicalCrib = {
+        ...DataFactory.createMockPatient('R1-crib'),
+        patientName: 'RN',
+      };
+
+      const mainPatients = Object.values(record.beds).filter(b => b.patientName).length;
+
+      const cribPatients = Object.values(record.beds).filter(
+        b => b.clinicalCrib?.patientName
+      ).length;
+
+      const total = mainPatients + cribPatients;
+      expect(total).toBe(3); // Juan, María, RN
+    });
+  });
 });

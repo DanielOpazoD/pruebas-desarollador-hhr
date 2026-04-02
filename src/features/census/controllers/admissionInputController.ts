@@ -32,6 +32,7 @@ export const resolveAdmissionDateIsEditable = ({
   firstSeenDate?: string;
   isNewAdmission: boolean;
 }): boolean => {
+  // Admission stays editable only on the first observed census day of the episode.
   const normalizedRecordDate = normalizeDateOnly(recordDate);
   const normalizedFirstSeenDate = normalizeDateOnly(firstSeenDate);
 

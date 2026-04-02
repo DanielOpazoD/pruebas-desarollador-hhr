@@ -7,6 +7,7 @@ import { getBedTypeForRecord } from '@/utils/bedTypeUtils';
 import { deepClone } from '@/utils/deepClone';
 
 export const buildClearedPatient = (record: DailyRecord, bedId: string): PatientData => {
+  // Reuse the same empty-bed contract after discharge, transfer, or manual clear.
   const cleanPatient = createEmptyPatient(bedId);
   cleanPatient.location = record.beds[bedId]?.location;
   cleanPatient.clinicalCrib = undefined;

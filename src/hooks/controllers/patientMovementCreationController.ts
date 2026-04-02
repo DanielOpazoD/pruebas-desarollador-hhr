@@ -63,6 +63,7 @@ const buildClearedMovementPatient = (
   bedId: string,
   createEmptyPatient: (bedId: string) => PatientData
 ): PatientData => {
+  // A discharge or transfer must leave a reusable empty bed with no clinical residue.
   const cleanPatient = createEmptyPatient(bedId);
   cleanPatient.location = record.beds[bedId].location;
   return cleanPatient;

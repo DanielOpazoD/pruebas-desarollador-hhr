@@ -1,5 +1,15 @@
 import { normalizeDateOnly } from '@/utils/dateUtils';
 
+/**
+ * Shared episode registry for census, statistics, and historical backfill.
+ *
+ * Business rule:
+ * - A discharge or transfer closes the current episode for that RUT.
+ * - While an episode is open, the first observed census day anchors the episode.
+ * - Statistics, traceability, and backfill all read that same anchored day.
+ * - A later correction may update the stored admission date on the first day of
+ *   the episode, but not the episode boundary itself.
+ */
 type EpisodeObservedPatient = {
   patientName?: string;
   rut?: string;
@@ -9,6 +19,7 @@ type EpisodeObservedPatient = {
 };
 
 interface EpisodeState {
+  firstSeenDate: string;
   admissionDate: string;
   open: boolean;
 }
@@ -16,6 +27,7 @@ interface EpisodeState {
 export interface EpisodeAdmissionTracker {
   observeBed: (bed: EpisodeObservedPatient | undefined, recordDate: string) => void;
   resolveAdmissionDate: (rut?: string, fallbackAdmissionDate?: string) => string | undefined;
+  resolveEpisodeStartDate: (rut?: string, fallbackAdmissionDate?: string) => string | undefined;
   closeEpisode: (rut?: string) => void;
 }
 
@@ -28,8 +40,8 @@ const normalizeRutKey = (rut?: string): string =>
 const hasPatientIdentity = (patient?: EpisodeObservedPatient): patient is EpisodeObservedPatient =>
   Boolean(patient && !patient.isBlocked && patient.patientName?.trim() && patient.rut?.trim());
 
-const resolveAdmissionDateValue = (admissionDate?: string, recordDate?: string): string => {
-  return normalizeDateOnly(admissionDate) ?? normalizeDateOnly(recordDate) ?? '';
+const resolveEpisodeAnchorDate = (recordDate?: string, admissionDate?: string): string => {
+  return normalizeDateOnly(recordDate) ?? normalizeDateOnly(admissionDate) ?? '';
 };
 
 export const createEpisodeAdmissionTracker = (): EpisodeAdmissionTracker => {
@@ -44,19 +56,16 @@ export const createEpisodeAdmissionTracker = (): EpisodeAdmissionTracker => {
     const rutKey = normalizeRutKey(patient.rut);
     if (!rutKey) return;
 
-    const nextAdmissionDate = resolveAdmissionDateValue(patient.admissionDate, recordDate);
+    const nextAdmissionDate = resolveEpisodeAnchorDate(recordDate, patient.admissionDate);
     const currentState = statesByRut.get(rutKey);
 
     if (!currentState || !currentState.open) {
       statesByRut.set(rutKey, {
+        firstSeenDate: nextAdmissionDate,
         admissionDate: nextAdmissionDate,
         open: true,
       });
       return;
-    }
-
-    if (nextAdmissionDate) {
-      currentState.admissionDate = nextAdmissionDate;
     }
   };
 
@@ -81,6 +90,21 @@ export const createEpisodeAdmissionTracker = (): EpisodeAdmissionTracker => {
     return normalizeDateOnly(fallbackAdmissionDate);
   };
 
+  const resolveEpisodeStartDate = (
+    rut?: string,
+    fallbackAdmissionDate?: string
+  ): string | undefined => {
+    const rutKey = normalizeRutKey(rut);
+    if (rutKey) {
+      const admissionDate = statesByRut.get(rutKey)?.firstSeenDate;
+      if (admissionDate) {
+        return admissionDate;
+      }
+    }
+
+    return normalizeDateOnly(fallbackAdmissionDate);
+  };
+
   const closeEpisode = (rut?: string): void => {
     const rutKey = normalizeRutKey(rut);
     if (!rutKey) return;
@@ -94,6 +118,7 @@ export const createEpisodeAdmissionTracker = (): EpisodeAdmissionTracker => {
   return {
     observeBed,
     resolveAdmissionDate,
+    resolveEpisodeStartDate,
     closeEpisode,
   };
 };

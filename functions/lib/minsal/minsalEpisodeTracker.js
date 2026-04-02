@@ -20,9 +20,19 @@ const hasPatientIdentity = patient =>
     patient.rut.trim()
   );
 
-const resolveAdmissionDateValue = (admissionDate, recordDate) =>
-  normalizeDateOnly(admissionDate) || normalizeDateOnly(recordDate) || '';
+const resolveEpisodeAnchorDate = (recordDate, admissionDate) =>
+  normalizeDateOnly(recordDate) || normalizeDateOnly(admissionDate) || '';
 
+/**
+ * Shared episode registry for census, statistics, and historical backfill.
+ *
+ * Business rule:
+ * - A discharge or transfer closes the current episode for that RUT.
+ * - While an episode is open, the first observed census day anchors the episode.
+ * - Statistics, traceability, and backfill all read that same anchored day.
+ * - A later correction may update the stored admission date on the first day of
+ *   the episode, but not the episode boundary itself.
+ */
 const createEpisodeAdmissionTracker = () => {
   const statesByRut = new Map();
 
@@ -32,19 +42,16 @@ const createEpisodeAdmissionTracker = () => {
     const rutKey = normalizeRutKey(patient.rut);
     if (!rutKey) return;
 
-    const nextAdmissionDate = resolveAdmissionDateValue(patient.admissionDate, recordDate);
+    const nextAdmissionDate = resolveEpisodeAnchorDate(recordDate, patient.admissionDate);
     const currentState = statesByRut.get(rutKey);
 
     if (!currentState || !currentState.open) {
       statesByRut.set(rutKey, {
+        firstSeenDate: nextAdmissionDate,
         admissionDate: nextAdmissionDate,
         open: true,
       });
       return;
-    }
-
-    if (nextAdmissionDate) {
-      currentState.admissionDate = nextAdmissionDate;
     }
   };
 
@@ -64,6 +71,16 @@ const createEpisodeAdmissionTracker = () => {
     return normalizeDateOnly(fallbackAdmissionDate);
   };
 
+  const resolveEpisodeStartDate = (rut, fallbackAdmissionDate) => {
+    const rutKey = normalizeRutKey(rut);
+    if (rutKey) {
+      const admissionDate = statesByRut.get(rutKey)?.firstSeenDate;
+      if (admissionDate) return admissionDate;
+    }
+
+    return normalizeDateOnly(fallbackAdmissionDate);
+  };
+
   const closeEpisode = rut => {
     const rutKey = normalizeRutKey(rut);
     if (!rutKey) return;
@@ -77,6 +94,7 @@ const createEpisodeAdmissionTracker = () => {
   return {
     observeBed,
     resolveAdmissionDate,
+    resolveEpisodeStartDate,
     closeEpisode,
   };
 };
