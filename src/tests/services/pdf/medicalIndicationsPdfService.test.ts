@@ -9,7 +9,9 @@ const { mockDrawText, mockGetPage, mockEmbedFont, mockSave } = vi.hoisted(() => 
   return {
     mockDrawText,
     mockGetPage: vi.fn().mockReturnValue({ drawText: mockDrawText }),
-    mockEmbedFont: vi.fn().mockResolvedValue({}),
+    mockEmbedFont: vi.fn().mockResolvedValue({
+      widthOfTextAtSize: (text: string, size: number) => text.length * (size * 0.52),
+    }),
     mockSave: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3])),
   };
 });
@@ -47,7 +49,7 @@ describe('medicalIndicationsPdfService', () => {
       fecha_nacimiento: '01-01-1954',
       paciente_alergias: 'PENICILINA',
       medicotratante: 'DR TEST',
-      fecha_ingreso: '01-03-2026',
+      fecha_ingreso: '2026-03-01',
       fecha_actual: '02-04-2026',
       diasEstada: '4',
       Reposoindicacion: 'ABSOLUTO',
@@ -67,7 +69,42 @@ describe('medicalIndicationsPdfService', () => {
       expect.objectContaining({ x: 98.33 })
     );
     expect(mockDrawText).toHaveBeenCalledWith('ABSOLUTO', expect.objectContaining({ x: 22.33 }));
-    expect(mockDrawText).toHaveBeenCalledWith('IND 1', expect.objectContaining({ x: 23 }));
-    expect(mockDrawText).toHaveBeenCalledWith('IND 2', expect.objectContaining({ x: 24.33 }));
+    expect(mockDrawText).toHaveBeenCalledWith('#1 IND 1', expect.objectContaining({ x: 23 }));
+    expect(mockDrawText).toHaveBeenCalledWith('#2 IND 2', expect.objectContaining({ x: 24.33 }));
+    expect(mockDrawText).toHaveBeenCalledWith('01-03-2026', expect.objectContaining({ x: 506.33 }));
+  });
+
+  it('spills long indications into following indication rows', async () => {
+    const longIndication = 'A'.repeat(350);
+    const data: MedicalIndicationsPdfData = {
+      paciente_nombre: '',
+      paciente_rut: '',
+      paciente_diagnostico: '',
+      paciente_edad: '',
+      fecha_nacimiento: '',
+      paciente_alergias: '',
+      medicotratante: '',
+      fecha_ingreso: '',
+      fecha_actual: '',
+      diasEstada: '',
+      Reposoindicacion: '',
+      Regimenindicacion: '',
+      Kinemotora: '',
+      Kinerespiratoria: '',
+      Kinecantidadvecesdia: '',
+      Pendientes: '',
+      indicaciones: [longIndication],
+    };
+
+    await fillMedicalIndicationsPdf(data);
+
+    const drawnTexts = mockDrawText.mock.calls.map(call => call[0]);
+    const indicationLines = drawnTexts.filter(
+      text => typeof text === 'string' && text.includes('#1')
+    );
+    expect(indicationLines.length).toBeGreaterThan(0);
+    expect(drawnTexts.some(text => typeof text === 'string' && text.includes('AAAAAAAA'))).toBe(
+      true
+    );
   });
 });
