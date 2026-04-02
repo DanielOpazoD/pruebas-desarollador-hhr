@@ -110,7 +110,7 @@ const drawIndications = (
     .map(item => item.trim())
     .filter(Boolean)
     .forEach((indication, index) => {
-      let remainingText = `#${index + 1} ${indication}`.trim();
+      let remainingText = `${index + 1}. ${indication}`.trim();
       while (remainingText && lineCursor < printableLines.length) {
         const fieldName = MEDICAL_INDICATIONS_LINE_FIELD_NAMES[lineCursor];
         const maxWidth = MEDICAL_INDICATIONS_PDF_COORDINATES[fieldName].width;
