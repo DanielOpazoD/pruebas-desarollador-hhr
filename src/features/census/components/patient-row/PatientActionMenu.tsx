@@ -22,6 +22,26 @@ interface PatientActionMenuProps extends PatientActionMenuCallbacks, PatientActi
   medicalIndicationsPatient?: import('@/components/layout/date-strip/MedicalIndicationsQuickAction').MedicalIndicationsPatientOption;
 }
 
+const INDICATIONS_LINES = 15;
+
+const formatBirthDate = (rawDate: string) => {
+  if (!rawDate) return '';
+
+  const isoMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch;
+    return `${day}-${month}-${year}`;
+  }
+
+  const slashMatch = rawDate.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (slashMatch) {
+    const [, day, month, year] = slashMatch;
+    return `${day}-${month}-${year}`;
+  }
+
+  return rawDate;
+};
+
 const PatientActionPrimaryIcon: React.FC<{
   indicators: Required<PatientActionMenuIndicators>;
 }> = ({ indicators }) => (
@@ -71,8 +91,9 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
   const [kineTimes, setKineTimes] = React.useState('');
   const [treatingDoctor, setTreatingDoctor] = React.useState('');
   const [pendingNotes, setPendingNotes] = React.useState('');
+  const [indicationDraft, setIndicationDraft] = React.useState('');
   const [indications, setIndications] = React.useState<string[]>(() =>
-    Array.from({ length: 15 }, () => '')
+    Array.from({ length: INDICATIONS_LINES }, () => '')
   );
   const isSpecialistAccess = accessProfile === 'specialist';
   const {
@@ -109,11 +130,7 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
   React.useEffect(() => {
     if (!isMedicalIndicationsOpen || !medicalIndicationsPatient) return;
     setTreatingDoctor(medicalIndicationsPatient.treatingDoctor || '');
-  }, [
-    isMedicalIndicationsOpen,
-    medicalIndicationsPatient?.bedId,
-    medicalIndicationsPatient?.treatingDoctor,
-  ]);
+  }, [isMedicalIndicationsOpen, medicalIndicationsPatient]);
 
   const buildToday = () => {
     const date = new Date();
@@ -133,7 +150,7 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
         paciente_rut: medicalIndicationsPatient.rut,
         paciente_diagnostico: medicalIndicationsPatient.diagnosis,
         paciente_edad: medicalIndicationsPatient.age,
-        fecha_nacimiento: medicalIndicationsPatient.birthDate,
+        fecha_nacimiento: formatBirthDate(medicalIndicationsPatient.birthDate),
         paciente_alergias: medicalIndicationsPatient.allergies,
         medicotratante: treatingDoctor,
         fecha_ingreso: medicalIndicationsPatient.admissionDate,
@@ -150,6 +167,33 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
     } finally {
       setIsPrintingMedicalIndications(false);
     }
+  };
+
+  const activeIndications = React.useMemo(
+    () => indications.map(text => text.trim()).filter(Boolean),
+    [indications]
+  );
+
+  const addIndication = () => {
+    const trimmed = indicationDraft.trim();
+    if (!trimmed) return;
+
+    setIndications(current => {
+      const next = [...current];
+      const firstEmptyIndex = next.findIndex(item => !item.trim());
+      if (firstEmptyIndex === -1) return next;
+      next[firstEmptyIndex] = trimmed;
+      return next;
+    });
+    setIndicationDraft('');
+  };
+
+  const removeIndication = (targetIndex: number) => {
+    setIndications(current => {
+      const next = current.map(text => text.trim()).filter(Boolean);
+      next.splice(targetIndex, 1);
+      return [...next, ...Array.from({ length: INDICATIONS_LINES - next.length }, () => '')];
+    });
   };
 
   return (
@@ -209,13 +253,21 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
       >
         {!medicalIndicationsPatient ? null : (
           <>
-            <div className="grid grid-cols-2 gap-3 p-1">
+            <div className="grid grid-cols-2 gap-4 p-1">
               <div className="col-span-2 text-xs font-semibold text-slate-600">
                 Paciente hospitalizado
                 <div className="mt-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm font-normal text-slate-700">
                   {medicalIndicationsPatient.label}
                 </div>
               </div>
+              <label className="text-xs font-semibold text-slate-600">
+                Fecha de nacimiento
+                <input
+                  className="mt-1 w-full rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm text-slate-600"
+                  value={formatBirthDate(medicalIndicationsPatient.birthDate)}
+                  readOnly
+                />
+              </label>
               <label className="text-xs font-semibold text-slate-600">
                 Médico tratante
                 <input
@@ -273,22 +325,56 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
                   onChange={event => setPendingNotes(event.target.value)}
                 />
               </label>
-              <div className="col-span-2 grid grid-cols-1 gap-1.5 max-h-[280px] overflow-y-auto border border-slate-200 rounded-md p-2 bg-slate-50">
-                {indications.map((value, index) => (
+              <div className="col-span-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                <p className="text-xs font-semibold text-slate-700">Indicaciones clínicas</p>
+                <div className="mt-2 flex gap-2">
                   <input
-                    key={`indication-${index + 1}`}
-                    className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs bg-white"
-                    value={value}
-                    onChange={event =>
-                      setIndications(current => {
-                        const next = [...current];
-                        next[index] = event.target.value;
-                        return next;
-                      })
-                    }
-                    placeholder={`Indicación ${index + 1}`}
+                    className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm bg-white"
+                    value={indicationDraft}
+                    onChange={event => setIndicationDraft(event.target.value)}
+                    onKeyDown={event => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        addIndication();
+                      }
+                    }}
+                    placeholder="Escribe una indicación y presiona Enter"
                   />
-                ))}
+                  <button
+                    type="button"
+                    onClick={addIndication}
+                    disabled={
+                      !indicationDraft.trim() || activeIndications.length >= INDICATIONS_LINES
+                    }
+                    className="px-3 py-2 rounded-md bg-medical-600 text-white text-sm disabled:opacity-50"
+                  >
+                    Agregar
+                  </button>
+                </div>
+                <div className="mt-3 grid gap-2 max-h-[220px] overflow-y-auto pr-1">
+                  {activeIndications.length === 0 ? (
+                    <p className="text-xs text-slate-500">Aún no hay indicaciones agregadas.</p>
+                  ) : (
+                    activeIndications.map((item, index) => (
+                      <div
+                        key={`${item}-${index}`}
+                        className="flex items-start justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
+                      >
+                        <p className="text-sm text-slate-700">
+                          <span className="font-semibold text-medical-700">{`Indicacion${index + 1}: `}</span>
+                          {item}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => removeIndication(index)}
+                          className="text-xs text-rose-600 hover:text-rose-700"
+                        >
+                          Quitar
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
             <div className="mt-3 flex justify-end gap-2">
