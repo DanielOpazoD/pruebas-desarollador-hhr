@@ -44,6 +44,7 @@ vi.mock('@/services/auth/authAccessResolution', () => ({
 import {
   getCurrentAuthSessionState,
   onAuthSessionStateChange,
+  resolveCurrentAuthSessionState,
   signOut,
 } from '@/services/auth/authSession';
 import { ensureUserRoleClaim } from '@/services/auth/authClaimSyncService';
@@ -231,5 +232,32 @@ describe('authSession', () => {
         },
       }).status
     ).toBe('unauthenticated');
+  });
+
+  it('resolves the current firebase session without waiting for the auth observer', async () => {
+    mockResolveFirebaseUserRole.mockResolvedValueOnce('admin');
+
+    const sessionState = await resolveCurrentAuthSessionState({
+      authRuntime: {
+        ready: Promise.resolve(),
+        auth: mockAuth as never,
+        getCurrentUser: () =>
+          createFirebaseUserMock({
+            uid: 'current-1',
+            email: 'current@hospital.cl',
+            displayName: 'Current User',
+          }) as never,
+      },
+    });
+
+    expect(sessionState).toEqual(
+      expect.objectContaining({
+        status: 'authorized',
+        user: expect.objectContaining({
+          uid: 'current-1',
+          role: 'admin',
+        }),
+      })
+    );
   });
 });

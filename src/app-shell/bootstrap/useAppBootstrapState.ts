@@ -2,7 +2,10 @@ import React from 'react';
 import { useDateNavigation, useSignatureMode, useVersionCheck } from '@/hooks';
 import type { UseDateNavigationReturn } from '@/hooks/useDateNavigation';
 import { useStorageMigration } from '@/hooks/useStorageMigration';
-import { setFirestoreEnabled } from '@/services/repositories/repositoryConfig';
+import {
+  setFirestoreSyncState,
+  type FirestoreSyncState,
+} from '@/services/repositories/repositoryConfig';
 import { createScopedLogger } from '@/services/utils/loggerScope';
 import { useAuth, type AuthContextType } from '@/context';
 
@@ -37,17 +40,38 @@ const isIgnorableWorkerShutdownImportError = (error: unknown): boolean => {
 
 const appLogger = createScopedLogger('App');
 
-const useSyncFirestoreStatus = (isFirebaseConnected: boolean) => {
+const resolveFirestoreSyncState = (auth: AuthContextType): FirestoreSyncState => {
+  if (auth.isLoading) {
+    return {
+      mode: 'bootstrapping',
+      reason: 'auth_loading',
+    };
+  }
+
+  if (auth.isFirebaseConnected) {
+    return {
+      mode: 'enabled',
+      reason: 'ready',
+    };
+  }
+
+  return {
+    mode: 'local_only',
+    reason: 'auth_unavailable',
+  };
+};
+
+const useSyncFirestoreStatus = (auth: AuthContextType) => {
   React.useEffect(() => {
     try {
-      setFirestoreEnabled(isFirebaseConnected);
+      setFirestoreSyncState(resolveFirestoreSyncState(auth));
     } catch (error) {
       if (isIgnorableWorkerShutdownImportError(error)) {
         return;
       }
       appLogger.error('Failed to sync Firestore status', error);
     }
-  }, [isFirebaseConnected]);
+  }, [auth.isFirebaseConnected, auth.isLoading]);
 };
 
 export const useAppBootstrapState = (): AppBootstrapState => {
@@ -55,7 +79,7 @@ export const useAppBootstrapState = (): AppBootstrapState => {
 
   useStorageMigration({ enabled: !auth.isLoading && auth.isAuthenticated });
   useVersionCheck();
-  useSyncFirestoreStatus(auth.isFirebaseConnected);
+  useSyncFirestoreStatus(auth);
 
   const dateNav = useDateNavigation();
   const { isSignatureMode, currentDateString } = useSignatureMode(

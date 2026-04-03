@@ -5,6 +5,7 @@ import {
   getStorageFallbackNotice,
   getStorageFallbackUiCopy,
   markStorageAutoRecoveryAttempted,
+  markStoragePersistentFallbackObserved,
   shouldAttemptStorageAutoRecovery,
   shouldShowStorageFallbackUi,
 } from '@/services/storage/runtime';
@@ -35,8 +36,13 @@ const StorageStatusBadge: React.FC = () => {
     if (shouldAttemptStorageAutoRecovery(isFallback)) {
       markStorageAutoRecoveryAttempted();
       defaultBrowserWindowRuntime.reload();
+      return;
     }
-  }, [isFallback]);
+
+    if (!shouldShowBanner) {
+      markStoragePersistentFallbackObserved();
+    }
+  }, [isFallback, shouldShowBanner]);
 
   if (!isFallback || !isVisible || !shouldShowBanner) return null;
 

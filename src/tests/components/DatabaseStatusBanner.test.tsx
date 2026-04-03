@@ -1,7 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import { getStorageAutoRecoveryKey } from '@/services/storage/runtime';
+import {
+  getStorageAutoRecoveryKey,
+  getStoragePersistentFallbackCountKey,
+} from '@/services/storage/runtime';
 
 const mockReload = vi.fn();
 
@@ -32,6 +35,7 @@ describe('DatabaseStatusBanner', () => {
 
   it('triggers runtime reload when clicking recover button', () => {
     window.sessionStorage.setItem(getStorageAutoRecoveryKey(), 'true');
+    window.sessionStorage.setItem(getStoragePersistentFallbackCountKey(), '1');
     vi.mocked(isDatabaseInFallbackMode).mockReturnValue(true);
     render(<DatabaseStatusBanner />);
     fireEvent.click(screen.getByRole('button', { name: /Volver a intentar/i }));
@@ -39,6 +43,13 @@ describe('DatabaseStatusBanner', () => {
   });
 
   it('stays hidden before the automatic recovery attempt has completed', () => {
+    vi.mocked(isDatabaseInFallbackMode).mockReturnValue(true);
+    render(<DatabaseStatusBanner />);
+    expect(screen.queryByText('Guardado local limitado')).not.toBeInTheDocument();
+  });
+
+  it('stays hidden on the first persistent fallback right after auto-recovery', () => {
+    window.sessionStorage.setItem(getStorageAutoRecoveryKey(), 'true');
     vi.mocked(isDatabaseInFallbackMode).mockReturnValue(true);
     render(<DatabaseStatusBanner />);
     expect(screen.queryByText('Guardado local limitado')).not.toBeInTheDocument();

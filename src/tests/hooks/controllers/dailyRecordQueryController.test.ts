@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
 import { DataFactory } from '@/tests/factories/DataFactory';
+import { setFirestoreSyncState } from '@/services/repositories/repositoryConfig';
 import {
   applyOptimisticDailyRecordPatch,
   buildPreviousDayDate,
@@ -20,6 +21,20 @@ vi.mock('@/services/repositories/dailyRecordOperationalTelemetry', () => ({
 }));
 
 describe('dailyRecordQueryController', () => {
+  it('keeps realtime sync disabled while Firestore runtime is bootstrapping', () => {
+    setFirestoreSyncState({
+      mode: 'bootstrapping',
+      reason: 'auth_loading',
+    });
+
+    expect(shouldUseDailyRecordRealtimeSync('2025-01-08', false, true)).toBe(false);
+
+    setFirestoreSyncState({
+      mode: 'enabled',
+      reason: 'ready',
+    });
+  });
+
   it('builds query functions and cache keys consistently', async () => {
     const record = DataFactory.createMockDailyRecord('2025-01-08');
     const repository = { getForDate: vi.fn().mockResolvedValue(record) };

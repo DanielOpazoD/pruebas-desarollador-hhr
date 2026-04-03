@@ -152,17 +152,39 @@ export const getAuthBootstrapTimeoutMs = (): number => {
 
 export const subscribeToResolvedAuthState = async ({
   resolveRedirectAuthSessionOutcome,
+  resolveCurrentAuthSessionOutcome,
   onAuthSessionStateChange,
   setSessionState,
   setAuthLoading,
 }: {
   resolveRedirectAuthSessionOutcome: () => Promise<ApplicationOutcome<AuthSessionState | null>>;
+  resolveCurrentAuthSessionOutcome: () => Promise<ApplicationOutcome<AuthSessionState | null>>;
   onAuthSessionStateChange: (
     callback: (sessionState: AuthSessionState) => void | Promise<void>
   ) => () => void;
   setSessionState: (sessionState: AuthSessionState) => void;
   setAuthLoading: (value: boolean) => void;
 }): Promise<() => void> => {
+  const applyResolvedBootstrapSession = (sessionState: AuthSessionState): void => {
+    if (isAuthBootstrapPending()) {
+      restoreAuthBootstrapReturnTo();
+    }
+    if (isAuthenticatedAuthSessionState(sessionState)) {
+      clearRecentManualLogout();
+      if (
+        sessionState.user.email &&
+        typeof sessionStorage !== 'undefined' &&
+        !sessionStorage.getItem('hhr_logged_this_session')
+      ) {
+        void defaultAuditPort.logUserLogin(sessionState.user.email);
+        sessionStorage.setItem('hhr_logged_this_session', 'true');
+      }
+    }
+    setSessionState(sessionState);
+    setAuthLoading(false);
+    clearAuthBootstrapPending();
+  };
+
   try {
     const redirectOutcome = await resolveRedirectAuthSessionOutcome();
     recordOperationalOutcome('auth', 'redirect_resolution', redirectOutcome, {
@@ -170,20 +192,15 @@ export const subscribeToResolvedAuthState = async ({
     });
     const redirectSessionState = redirectOutcome.data;
     if (redirectSessionState) {
-      restoreAuthBootstrapReturnTo();
-      clearRecentManualLogout();
-      if (
-        isAuthenticatedAuthSessionState(redirectSessionState) &&
-        redirectSessionState.user.email &&
-        typeof sessionStorage !== 'undefined' &&
-        !sessionStorage.getItem('hhr_logged_this_session')
-      ) {
-        void defaultAuditPort.logUserLogin(redirectSessionState.user.email);
-        sessionStorage.setItem('hhr_logged_this_session', 'true');
+      applyResolvedBootstrapSession(redirectSessionState);
+    } else {
+      const currentSessionOutcome = await resolveCurrentAuthSessionOutcome();
+      recordOperationalOutcome('auth', 'current_session_resolution', currentSessionOutcome, {
+        allowSuccess: true,
+      });
+      if (currentSessionOutcome.status === 'success' && currentSessionOutcome.data) {
+        applyResolvedBootstrapSession(currentSessionOutcome.data);
       }
-      setSessionState(redirectSessionState);
-      setAuthLoading(false);
-      clearAuthBootstrapPending();
     }
   } catch (error) {
     authStateLogger.warn('Redirect result check error', error);
@@ -254,12 +271,14 @@ export const subscribeToResolvedAuthState = async ({
 export const useResolvedAuthBootstrap = ({
   e2eBootstrapUser,
   resolveRedirectAuthSessionOutcome,
+  resolveCurrentAuthSessionOutcome,
   onAuthSessionStateChange,
   setSessionState,
   setAuthLoading,
 }: {
   e2eBootstrapUser: AuthUser | null;
   resolveRedirectAuthSessionOutcome: () => Promise<ApplicationOutcome<AuthSessionState | null>>;
+  resolveCurrentAuthSessionOutcome: () => Promise<ApplicationOutcome<AuthSessionState | null>>;
   onAuthSessionStateChange: (
     callback: (sessionState: AuthSessionState) => void | Promise<void>
   ) => () => void;
@@ -328,6 +347,7 @@ export const useResolvedAuthBootstrap = ({
 
     subscribeToResolvedAuthState({
       resolveRedirectAuthSessionOutcome,
+      resolveCurrentAuthSessionOutcome,
       onAuthSessionStateChange,
       setSessionState,
       setAuthLoading: setResolvedAuthLoading,
@@ -342,6 +362,7 @@ export const useResolvedAuthBootstrap = ({
   }, [
     e2eBootstrapUser,
     resolveRedirectAuthSessionOutcome,
+    resolveCurrentAuthSessionOutcome,
     onAuthSessionStateChange,
     setAuthLoading,
     setSessionState,

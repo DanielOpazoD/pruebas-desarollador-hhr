@@ -80,6 +80,10 @@ Chequeo operativo adicional:
 3. verificar que Netlify esté sirviendo un frontend con el flujo nuevo;
 4. verificar que `/.netlify/functions/firebase-config` responda `200` con `apiKey`, `projectId` y `appId`;
 5. si la consola muestra `SW-Kill` o hay registro histórico de `/sw.js`, confirmar que el cliente recargó una vez para retirar el Service Worker legacy.
+6. si incógnito funciona pero una sesión vieja tarda en autenticarse, revisar telemetría y consola para confirmar que el bootstrap alcanzó:
+   - `redirect_resolution`
+   - `current_session_resolution`
+     antes de depender del observer continuo de auth.
 
 ## Señales esperadas del sistema sano
 

@@ -7,14 +7,14 @@ const {
   mockUseSignatureMode,
   mockUseStorageMigration,
   mockUseVersionCheck,
-  mockSetFirestoreEnabled,
+  mockSetFirestoreSyncState,
 } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
   mockUseDateNavigation: vi.fn(),
   mockUseSignatureMode: vi.fn(),
   mockUseStorageMigration: vi.fn(),
   mockUseVersionCheck: vi.fn(),
-  mockSetFirestoreEnabled: vi.fn(),
+  mockSetFirestoreSyncState: vi.fn(),
 }));
 
 vi.mock('@/context', () => ({
@@ -32,7 +32,7 @@ vi.mock('@/hooks/useStorageMigration', () => ({
 }));
 
 vi.mock('@/services/repositories/repositoryConfig', () => ({
-  setFirestoreEnabled: (...args: unknown[]) => mockSetFirestoreEnabled(...args),
+  setFirestoreSyncState: (...args: unknown[]) => mockSetFirestoreSyncState(...args),
 }));
 
 import { useAppBootstrapState } from '@/app-shell/bootstrap/useAppBootstrapState';
@@ -96,7 +96,10 @@ describe('useAppBootstrapState', () => {
     expect(mockUseVersionCheck).toHaveBeenCalledTimes(1);
     expect(mockUseSignatureMode).toHaveBeenCalledWith('2026-03-27', null, true);
     await waitFor(() => {
-      expect(mockSetFirestoreEnabled).toHaveBeenCalledWith(true);
+      expect(mockSetFirestoreSyncState).toHaveBeenCalledWith({
+        mode: 'bootstrapping',
+        reason: 'auth_loading',
+      });
     });
   });
 
@@ -122,6 +125,10 @@ describe('useAppBootstrapState', () => {
     const { result } = renderHook(() => useAppBootstrapState());
 
     expect(result.current.status).toBe('unauthenticated');
+    expect(mockSetFirestoreSyncState).toHaveBeenCalledWith({
+      mode: 'local_only',
+      reason: 'auth_unavailable',
+    });
   });
 
   it('returns authenticated with the resolved app date navigation', () => {
@@ -158,5 +165,9 @@ describe('useAppBootstrapState', () => {
     }
     expect(mockUseStorageMigration).toHaveBeenCalledWith({ enabled: true });
     expect(mockUseSignatureMode).toHaveBeenCalledWith('2026-03-27', currentUser, false);
+    expect(mockSetFirestoreSyncState).toHaveBeenCalledWith({
+      mode: 'enabled',
+      reason: 'ready',
+    });
   });
 });

@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import { onAuthSessionStateChange, signOut, hasActiveFirebaseSession } from '@/services/auth';
-import { executeRedirectAuthResolution } from '@/application/auth';
+import {
+  executeRedirectAuthResolution,
+  executeResolvedCurrentAuthSessionState,
+} from '@/application/auth';
 import { AuthSessionState, AuthUser, UserRole } from '@/types/auth';
 export type { AuthSessionState, UserRole };
 import { canEditAnyAppModule } from '@/shared/access/operationalAccessPolicy';
@@ -101,6 +104,7 @@ export const useAuthState = (): UseAuthStateReturn => {
   useResolvedAuthBootstrap({
     e2eBootstrapUser,
     resolveRedirectAuthSessionOutcome: executeRedirectAuthResolution,
+    resolveCurrentAuthSessionOutcome: executeResolvedCurrentAuthSessionState,
     onAuthSessionStateChange,
     setSessionState,
     setAuthLoading,

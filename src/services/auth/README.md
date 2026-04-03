@@ -25,6 +25,8 @@ Resolver autenticacion, bootstrap de sesion, claims, roles y degradacion operati
 - La UI debe consumir estado de sesion, no inferir auth por `user/null`.
 - La UI y los reporters deben preferir `authRuntimeSnapshot` cuando necesiten razonamiento operativo
   (`budgetProfile`, `pendingAgeMs`, `runtimeState`) en vez de reconstruirlo con flags ad hoc.
+- El bootstrap debe intentar resolver primero el resultado de redirect y luego rehidratar la sesion
+  actual de Firebase antes de depender del observer continuo de `onAuthStateChanged`.
 - El rol canonico del producto viene de `config/roles`; custom claims complementan recursos que lo requieren.
 - Los fallos de claims o redirect no deben romper la carga de la app; deben degradar a estado controlado.
 

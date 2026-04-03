@@ -6,6 +6,7 @@ export * from '@/services/auth/authPolicy';
 export {
   signOut,
   onAuthSessionStateChange,
+  resolveCurrentAuthSessionState,
   getCurrentAuthSessionState,
 } from '@/services/auth/authSession';
 export {

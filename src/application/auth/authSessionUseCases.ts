@@ -8,6 +8,7 @@ import type { AuthSessionState } from '@/types/auth';
 import {
   getCurrentAuthSessionState,
   handleSignInRedirectResult,
+  resolveCurrentAuthSessionState,
   signIn,
   signInWithGoogle,
 } from '@/services/auth';
@@ -132,3 +133,40 @@ export const executeRedirectAuthResolution = async (): Promise<
 
 export const executeCurrentAuthSessionState = (): ApplicationOutcome<AuthSessionState> =>
   createApplicationSuccess(getCurrentAuthSessionState());
+
+export const executeResolvedCurrentAuthSessionState = async (): Promise<
+  ApplicationOutcome<AuthSessionState | null>
+> => {
+  const sessionState = await resolveCurrentAuthSessionState();
+  if (sessionState.status === 'unauthenticated') {
+    return createApplicationSuccess(null);
+  }
+
+  if (sessionState.status === 'auth_error') {
+    return createApplicationFailed(
+      sessionState,
+      [
+        {
+          kind: 'unknown',
+          code: sessionState.error.code,
+          message: sessionState.error.message,
+          userSafeMessage: sessionState.error.userSafeMessage,
+          retryable: sessionState.error.retryable,
+          severity: sessionState.error.severity === 'warning' ? 'warning' : 'error',
+          technicalContext: sessionState.error.technicalContext,
+          telemetryTags: sessionState.error.telemetryTags,
+        },
+      ],
+      {
+        reason: sessionState.error.code,
+        userSafeMessage: sessionState.error.userSafeMessage,
+        retryable: sessionState.error.retryable,
+        severity: sessionState.error.severity === 'warning' ? 'warning' : 'error',
+        technicalContext: sessionState.error.technicalContext,
+        telemetryTags: sessionState.error.telemetryTags,
+      }
+    );
+  }
+
+  return createApplicationSuccess(sessionState);
+};

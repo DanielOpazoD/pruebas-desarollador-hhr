@@ -6,6 +6,7 @@ const mockSignIn = vi.fn();
 const mockSignInWithGoogle = vi.fn();
 const mockHandleSignInRedirectResult = vi.fn();
 const mockGetCurrentAuthSessionState = vi.fn();
+const mockResolveCurrentAuthSessionState = vi.fn();
 const mockIsPopupRecoverableAuthError = vi.fn();
 const mockResolveAuthErrorCode = vi.fn();
 
@@ -14,6 +15,8 @@ vi.mock('@/services/auth/authService', () => ({
   signInWithGoogle: (...args: unknown[]) => mockSignInWithGoogle(...args),
   handleSignInRedirectResult: (...args: unknown[]) => mockHandleSignInRedirectResult(...args),
   getCurrentAuthSessionState: (...args: unknown[]) => mockGetCurrentAuthSessionState(...args),
+  resolveCurrentAuthSessionState: (...args: unknown[]) =>
+    mockResolveCurrentAuthSessionState(...args),
 }));
 
 vi.mock('@/services/auth/authErrorPolicy', () => ({
@@ -25,6 +28,7 @@ import {
   executeCredentialSignIn,
   executeCurrentAuthSessionState,
   executeGoogleSignIn,
+  executeResolvedCurrentAuthSessionState,
   executeRedirectAuthResolution,
 } from '@/application/auth';
 
@@ -117,5 +121,29 @@ describe('authSessionUseCases', () => {
 
     expect(outcome.status).toBe('success');
     expect(outcome.data.status).toBe('anonymous_signature');
+  });
+
+  it('returns resolved current auth session state when a persisted firebase session already exists', async () => {
+    mockResolveCurrentAuthSessionState.mockResolvedValue({
+      status: 'authorized',
+      user: {
+        uid: 'existing-1',
+        email: 'existing@hospital.cl',
+        displayName: 'Existing User',
+        role: 'admin',
+      },
+    });
+
+    const outcome = await executeResolvedCurrentAuthSessionState();
+
+    expect(outcome.status).toBe('success');
+    expect(outcome.data).toEqual(
+      expect.objectContaining({
+        status: 'authorized',
+        user: expect.objectContaining({
+          uid: 'existing-1',
+        }),
+      })
+    );
   });
 });

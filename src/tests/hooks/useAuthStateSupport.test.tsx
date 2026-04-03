@@ -94,6 +94,9 @@ describe('useResolvedAuthBootstrap', () => {
       useResolvedAuthBootstrap({
         e2eBootstrapUser: null,
         resolveRedirectAuthSessionOutcome,
+        resolveCurrentAuthSessionOutcome: vi
+          .fn()
+          .mockResolvedValue({ status: 'success', data: null, issues: [] }),
         onAuthSessionStateChange,
         setSessionState,
         setAuthLoading,
@@ -130,6 +133,9 @@ describe('useResolvedAuthBootstrap', () => {
     const resolveRedirectAuthSessionOutcome = vi
       .fn()
       .mockResolvedValue({ status: 'success', data: null, issues: [] });
+    const resolveCurrentAuthSessionOutcome = vi
+      .fn()
+      .mockResolvedValue({ status: 'success', data: null, issues: [] });
 
     const { result } = renderHook(() => {
       const [sessionState, setSessionState] = useState<AuthSessionState>({
@@ -141,6 +147,7 @@ describe('useResolvedAuthBootstrap', () => {
       useResolvedAuthBootstrap({
         e2eBootstrapUser: null,
         resolveRedirectAuthSessionOutcome,
+        resolveCurrentAuthSessionOutcome,
         onAuthSessionStateChange,
         setSessionState,
         setAuthLoading,
@@ -169,6 +176,65 @@ describe('useResolvedAuthBootstrap', () => {
           pendingAgeMs: 0,
         }),
       })
+    );
+  });
+
+  it('hydrates the current firebase session before the auth observer resolves', async () => {
+    const onAuthSessionStateChange = vi.fn(() => () => {});
+    const resolveRedirectAuthSessionOutcome = vi
+      .fn()
+      .mockResolvedValue({ status: 'success', data: null, issues: [] });
+    const resolveCurrentAuthSessionOutcome = vi.fn().mockResolvedValue({
+      status: 'success',
+      data: {
+        status: 'authorized',
+        user: {
+          uid: 'existing-1',
+          email: 'existing@hospital.cl',
+          displayName: 'Existing Session',
+          role: 'admin',
+        },
+      },
+      issues: [],
+    });
+
+    const { result } = renderHook(() => {
+      const [sessionState, setSessionState] = useState<AuthSessionState>({
+        status: 'unauthenticated',
+        user: null,
+      });
+      const [authLoading, setAuthLoading] = useState(true);
+
+      useResolvedAuthBootstrap({
+        e2eBootstrapUser: null,
+        resolveRedirectAuthSessionOutcome,
+        resolveCurrentAuthSessionOutcome,
+        onAuthSessionStateChange,
+        setSessionState,
+        setAuthLoading,
+      });
+
+      return { sessionState, authLoading };
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.authLoading).toBe(false);
+    expect(result.current.sessionState).toEqual(
+      expect.objectContaining({
+        status: 'authorized',
+        user: expect.objectContaining({
+          uid: 'existing-1',
+        }),
+      })
+    );
+    expect(mockRecordOperationalOutcome).toHaveBeenCalledWith(
+      'auth',
+      'current_session_resolution',
+      expect.objectContaining({ status: 'success' }),
+      expect.objectContaining({ allowSuccess: true })
     );
   });
 });

@@ -21,7 +21,10 @@ vi.mock('@/shared/runtime/browserWindowRuntime', () => ({
 
 import { resetLocalDatabase } from '@/services/storage/core';
 import StorageStatusBadge from '@/components/layout/StorageStatusBadge';
-import { getStorageAutoRecoveryKey } from '@/services/storage/runtime';
+import {
+  getStorageAutoRecoveryKey,
+  getStoragePersistentFallbackCountKey,
+} from '@/services/storage/runtime';
 
 describe('StorageStatusBadge', () => {
   beforeEach(() => {
@@ -37,6 +40,7 @@ describe('StorageStatusBadge', () => {
 
   it('uses runtime reload on retry and reset on hard cleanup', () => {
     window.sessionStorage.setItem(getStorageAutoRecoveryKey(), 'true');
+    window.sessionStorage.setItem(getStoragePersistentFallbackCountKey(), '1');
     mockUseDatabaseFallbackStatus.mockReturnValue(true);
     render(<StorageStatusBadge />);
 
@@ -59,5 +63,15 @@ describe('StorageStatusBadge', () => {
     expect(mockReload).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('Guardado local limitado')).not.toBeInTheDocument();
     expect(window.sessionStorage.getItem(getStorageAutoRecoveryKey())).toBe('true');
+  });
+
+  it('keeps the first persistent fallback silent after the automatic recovery', () => {
+    window.sessionStorage.setItem(getStorageAutoRecoveryKey(), 'true');
+    mockUseDatabaseFallbackStatus.mockReturnValue(true);
+
+    render(<StorageStatusBadge />);
+
+    expect(screen.queryByText('Guardado local limitado')).not.toBeInTheDocument();
+    expect(window.sessionStorage.getItem(getStoragePersistentFallbackCountKey())).toBe('1');
   });
 });

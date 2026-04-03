@@ -478,6 +478,10 @@ const mockAuthService = {
     return () => {};
   }),
   getCurrentUser: vi.fn(() => null),
+  resolveCurrentAuthSessionState: vi.fn().mockResolvedValue({
+    status: 'unauthenticated',
+    user: null,
+  }),
   isCurrentUserAuthorizedForGeneralLogin: vi.fn().mockResolvedValue(true),
   createUser: vi.fn(),
   hasActiveFirebaseSession: vi.fn().mockReturnValue(false),
@@ -492,6 +496,11 @@ vi.mock('@/application/auth', () => ({
   executeGoogleSignIn: vi.fn(),
   executeCredentialSignIn: vi.fn(),
   executeRedirectAuthResolution: vi.fn().mockResolvedValue({
+    status: 'success',
+    data: null,
+    issues: [],
+  }),
+  executeResolvedCurrentAuthSessionState: vi.fn().mockResolvedValue({
     status: 'success',
     data: null,
     issues: [],

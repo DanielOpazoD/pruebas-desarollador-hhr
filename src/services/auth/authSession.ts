@@ -135,6 +135,57 @@ export const onAuthSessionStateChange = (
   };
 };
 
+export const resolveCurrentAuthSessionState = async (
+  options?: AuthRuntimeOptions
+): Promise<AuthSessionState> => {
+  const authRuntime = resolveAuthRuntime(options);
+  await authRuntime.ready;
+  const firebaseUser = authRuntime.getCurrentUser();
+
+  if (!firebaseUser) {
+    return createUnauthenticatedAuthSessionState();
+  }
+
+  if (firebaseUser.isAnonymous) {
+    return toAnonymousSignatureAuthSessionState({
+      uid: firebaseUser.uid,
+      email: null,
+      displayName: 'Anonymous Doctor',
+      role: 'viewer',
+    });
+  }
+
+  try {
+    const sessionState = await resolveAuthSessionState(firebaseUser, {
+      signOutUnauthorizedUser: () => firebaseSignOut(authRuntime.auth),
+      resolveFirebaseUserRole,
+    });
+    if (sessionState.status === 'authorized' && sessionState.user.role) {
+      void ensureUserRoleClaim(firebaseUser, sessionState.user.role);
+    }
+    return sessionState;
+  } catch (error) {
+    const operationalError = recordAuthOperationalError(
+      'resolve_current_auth_session_state',
+      error,
+      {
+        code: 'auth_session_state_resolution_failed',
+        message: 'Failed to resolve the current authentication session state.',
+        severity: 'warning',
+        userSafeMessage: 'No se pudo resolver la sesion actual.',
+      }
+    );
+    return createAuthErrorSessionState({
+      code: operationalError.code,
+      message: operationalError.message,
+      userSafeMessage: operationalError.userSafeMessage,
+      severity: operationalError.severity === 'error' ? 'error' : 'warning',
+      technicalContext: operationalError.context,
+      telemetryTags: ['auth', 'session_state'],
+    });
+  }
+};
+
 export const getCurrentAuthSessionState = (options?: AuthRuntimeOptions): AuthSessionState => {
   const authRuntime = resolveAuthRuntime(options);
   const user = authRuntime.getCurrentUser();

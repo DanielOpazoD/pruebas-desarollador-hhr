@@ -9,6 +9,10 @@ import {
   type DailyRecordQueryRuntime,
   type DailyRecordReadResult,
 } from '@/services/repositories/contracts/dailyRecordQueries';
+import {
+  getFirestoreSyncState,
+  type FirestoreSyncState,
+} from '@/services/repositories/repositoryConfig';
 import { dailyRecordObservability } from '@/services/repositories/dailyRecordOperationalTelemetry';
 import type { SyncDailyRecordResult } from '@/services/repositories/contracts/dailyRecordResults';
 
@@ -104,8 +108,10 @@ export const createDailyRecordQueryFn =
 export const shouldUseDailyRecordRealtimeSync = (
   date: string,
   isOfflineMode: boolean,
-  isFirebaseConnected: boolean
-) => Boolean(date) && !isOfflineMode && isFirebaseConnected;
+  isFirebaseConnected: boolean,
+  firestoreSyncState: FirestoreSyncState = getFirestoreSyncState()
+) =>
+  Boolean(date) && !isOfflineMode && isFirebaseConnected && firestoreSyncState.mode === 'enabled';
 
 export const createDailyRecordSubscription = (
   dailyRecord: DailyRecordReader,

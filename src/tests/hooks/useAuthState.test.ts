@@ -17,6 +17,7 @@ vi.mock('@/services/auth/authService', () => ({
 
 vi.mock('@/application/auth', () => ({
   executeRedirectAuthResolution: vi.fn(),
+  executeResolvedCurrentAuthSessionState: vi.fn(),
 }));
 
 vi.mock('@/services/admin/auditService', () => ({
@@ -52,6 +53,11 @@ describe('useAuthState baseline', () => {
     );
 
     vi.mocked(authUseCases.executeRedirectAuthResolution).mockResolvedValue({
+      status: 'success',
+      data: null,
+      issues: [],
+    });
+    vi.mocked(authUseCases.executeResolvedCurrentAuthSessionState).mockResolvedValue({
       status: 'success',
       data: null,
       issues: [],
@@ -257,6 +263,32 @@ describe('useAuthState baseline', () => {
 
     expect(result.current.user?.uid).toBe('redirect-1');
     expect(result.current.role).toBe('viewer');
+  });
+
+  it('hydrates user from the current firebase session before auth observer resolves', async () => {
+    const existingUser: AuthUser = {
+      uid: 'existing-1',
+      email: 'existing@hhr.cl',
+      role: 'admin',
+      displayName: 'Existing User',
+    };
+
+    vi.mocked(authUseCases.executeResolvedCurrentAuthSessionState).mockResolvedValueOnce({
+      status: 'success',
+      data: {
+        status: 'authorized',
+        user: existingUser,
+      },
+      issues: [],
+    });
+    vi.mocked(authService.onAuthSessionStateChange).mockImplementation(() => () => {});
+
+    const { result } = renderHook(() => useAuthState());
+
+    await waitFor(() => expect(result.current.authLoading).toBe(false));
+
+    expect(result.current.user?.uid).toBe('existing-1');
+    expect(result.current.role).toBe('admin');
   });
 
   it('should keep anonymous signature-mode users when Firebase returns one', async () => {

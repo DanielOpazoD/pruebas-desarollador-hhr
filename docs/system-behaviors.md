@@ -17,6 +17,7 @@ El sistema detecta automáticamente cuando hay una nueva versión desplegada y a
    - Se eliminan los Service Workers legacy o desalineados
    - Se limpian los cachés del Service Worker
    - Se invalida la caché local de configuración Firebase
+   - En el siguiente arranque, auth intenta rehidratar una sesión Firebase ya existente antes de depender del observer continuo
    - La página se recarga automáticamente
 3. El usuario ve la nueva versión sin necesidad de "borrar datos del sitio"
 
@@ -57,6 +58,15 @@ Al abrir la aplicación, el sistema sincroniza automáticamente los datos del d�
 
 - Si no hay conexión a internet, solo se usan datos locales
 - No hay errores visibles, el sistema funciona silenciosamente
+
+### Comportamiento Esperado de Login al Iniciar
+
+1. El bootstrap del cliente reconcilia deploy, Service Worker y config runtime.
+2. Auth revisa primero el retorno pendiente de Google redirect.
+3. Si no hay redirect, intenta rehidratar una sesión Firebase ya persistida.
+4. Recién después queda suscripto al observer continuo de `onAuthStateChanged`.
+
+Esto reduce los casos donde una sesión válida tarda en materializarse después de un deploy nuevo.
 
 ### Archivos Relacionados
 
