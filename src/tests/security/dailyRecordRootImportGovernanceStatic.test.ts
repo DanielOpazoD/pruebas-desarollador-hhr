@@ -12,7 +12,6 @@ const ALLOWED_ROOT_DAILY_RECORD_IMPORTS = [
   'src/schemas/zodSafeParsers.ts',
   'src/schemas/zodValidationHelpers.ts',
   'src/services/contracts/dailyRecordServiceContracts.ts',
-  'src/services/repositories/DailyRecordRepository.ts',
   'src/services/repositories/conflictResolutionMatrix.ts',
   'src/services/repositories/contracts/dailyRecordCommands.ts',
   'src/services/repositories/contracts/dailyRecordQueries.ts',

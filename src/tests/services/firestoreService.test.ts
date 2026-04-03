@@ -16,7 +16,7 @@ import {
   subscribeToTensCatalog,
   isFirestoreAvailable,
   ConcurrencyError,
-} from '@/services/storage/firestoreService';
+} from '@/services/storage/firestore';
 import * as firestore from 'firebase/firestore';
 import type { DailyRecord } from '@/types/domain/dailyRecord';
 import { DocumentSnapshot, QuerySnapshot, Timestamp, DocumentData } from 'firebase/firestore';

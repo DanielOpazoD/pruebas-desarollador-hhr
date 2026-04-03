@@ -26,12 +26,10 @@ Capa de datos e integración: repositorios, persistencia, exportadores, integrac
 
 ## Archivos raíz relevantes
 
-| Archivo                  | Propósito                                          |
-| ------------------------ | -------------------------------------------------- |
-| `RepositoryContext.tsx`  | Inyección de repositorios en runtime               |
-| `dataService.ts`         | Bridge legacy mínimo para compatibilidad histórica |
-| `ExcelParsingService.ts` | Parsing Excel de soporte                           |
-| `index.ts`               | Barrel de compatibilidad mínimo                    |
+| Archivo                  | Propósito                            |
+| ------------------------ | ------------------------------------ |
+| `RepositoryContext.tsx`  | Inyección de repositorios en runtime |
+| `ExcelParsingService.ts` | Parsing Excel de soporte             |
 
 ## Patrones clave
 
@@ -72,9 +70,7 @@ await saveDetailed(record);
 
 - No importar componentes ni hooks de UI desde `services`.
 - Mantener contratos de entrada/salida tipados (preferir `types`/`schemas`).
-- `src/services/repositories/index.ts` es una surface curada; código nuevo debe preferir imports directos al módulo dueño cuando no exista un entrypoint público explícito.
-- `dataService.ts` y `DailyRecordRepository.ts` permanecen solo como compatibilidad transicional;
-  código nuevo debe entrar por servicios o ports explícitos.
+- `src/services/repositories/index.ts` fue retirado; código nuevo debe entrar por módulos dueños o ports explícitos.
 - En integraciones externas complejas, usar una fachada pública pequeña y mover auth, payload builders y folder/file helpers a módulos internos específicos.
 - Mantener `authService.ts` como fachada pública; evitar que la UI importe módulos internos de `auth/` directamente.
 - Mantener `authPolicy.ts` y `authService.ts` estables aunque la resolución de roles se siga particionando internamente.

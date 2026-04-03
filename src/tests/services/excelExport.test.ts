@@ -18,12 +18,7 @@ vi.mock('file-saver', () => ({
   saveAs: vi.fn(),
 }));
 
-// Mock dataService
-vi.mock('../../services/dataService', () => ({
-  getRecordForDate: vi.fn(),
-}));
-
-vi.mock('@/services/repositories/DailyRecordRepository', () => ({
+vi.mock('@/services/repositories/dailyRecordRepositoryReadService', () => ({
   getForDate: vi.fn(),
 }));
 
@@ -193,7 +188,8 @@ describe('reportService', () => {
     it('should use file-saver to download file', async () => {
       const { saveAs } = await import('file-saver');
       const { generateCensusDailyRaw } = await import('@/services/exporters/reportService');
-      const dailyRecordRepository = await import('@/services/repositories/DailyRecordRepository');
+      const dailyRecordRepository =
+        await import('@/services/repositories/dailyRecordRepositoryReadService');
 
       // Mock getRecordForDate to return a valid record
       vi.mocked(dailyRecordRepository.getForDate).mockResolvedValue({
@@ -220,7 +216,8 @@ describe('reportService', () => {
     it('should generate formatted daily report when record exists', async () => {
       const { saveAs } = await import('file-saver');
       const { generateCensusDailyFormatted } = await import('@/services/exporters/reportService');
-      const dailyRecordRepository = await import('@/services/repositories/DailyRecordRepository');
+      const dailyRecordRepository =
+        await import('@/services/repositories/dailyRecordRepositoryReadService');
 
       vi.mocked(dailyRecordRepository.getForDate).mockResolvedValue({
         date: '2025-12-25',
@@ -294,7 +291,8 @@ describe('reportService', () => {
     it('should export the daily CUDYR workbook with an explicit daily filename', async () => {
       const { saveAs } = await import('file-saver');
       const reportService = await import('@/services/exporters/reportService');
-      const dailyRecordRepository = await import('@/services/repositories/DailyRecordRepository');
+      const dailyRecordRepository =
+        await import('@/services/repositories/dailyRecordRepositoryReadService');
 
       vi.mocked(dailyRecordRepository.getForDate).mockResolvedValue(
         toDailyRecord({

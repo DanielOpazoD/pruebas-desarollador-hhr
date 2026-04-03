@@ -144,12 +144,12 @@ Date navigation / module load
 
 ### Fuentes de datos
 
-| Nivel          | Implementación                                               | Rol                                              |
-| -------------- | ------------------------------------------------------------ | ------------------------------------------------ |
-| Repositorio    | `src/services/repositories/DailyRecordRepository.ts`         | API unificada para lectura/escritura/suscripción |
-| Local primario | IndexedDB (`src/services/storage/indexedDBService.ts`)       | Offline-first                                    |
-| Local fallback | localStorage (`src/services/storage/localStorageService.ts`) | Degradación controlada                           |
-| Remoto         | Firestore services                                           | Sincronización multi-dispositivo                 |
+| Nivel          | Implementación                                               | Rol                                             |
+| -------------- | ------------------------------------------------------------ | ----------------------------------------------- |
+| Repositorio    | `src/services/repositories/dailyRecordRepository*Service.ts` | Split canónico de lectura/escritura/suscripción |
+| Local primario | IndexedDB (`src/services/storage/indexedDBService.ts`)       | Offline-first                                   |
+| Local fallback | localStorage (`src/services/storage/localStorageService.ts`) | Degradación controlada                          |
+| Remoto         | Firestore services                                           | Sincronización multi-dispositivo                |
 
 ### Características
 

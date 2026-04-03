@@ -23,8 +23,6 @@ const ALLOWED_IMPORTERS = new Set([
   'src/services/storage/firestore/index.ts',
   'src/services/storage/sync/index.ts',
   'src/services/storage/migration/legacyFirestoreBridge.ts',
-  'src/services/storage/firestoreService.ts',
-  'src/services/storage/syncQueueService.ts',
   'src/services/storage/legacyFirebaseService.ts',
 ]);
 

@@ -53,13 +53,6 @@ const { mockDailyRecordRepositoryPort } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('@/services/repositories/DailyRecordRepository', () => {
-  return {
-    ...mockDailyRecordRepositoryPort,
-    DailyRecordRepository: mockDailyRecordRepositoryPort,
-  };
-});
-
 vi.mock('@/application/ports/dailyRecordPort', () => ({
   defaultDailyRecordReadPort: mockDailyRecordRepositoryPort,
   defaultDailyRecordWritePort: {

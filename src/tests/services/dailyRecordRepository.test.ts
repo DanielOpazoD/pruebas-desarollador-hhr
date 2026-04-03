@@ -4,15 +4,12 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  getForDate,
-  save,
-  setFirestoreEnabled,
-  updatePartial,
-  initializeDay,
-  deleteDay,
-  syncWithFirestore,
-} from '@/services/repositories/DailyRecordRepository';
+import { getForDate } from '@/services/repositories/dailyRecordRepositoryReadService';
+import { initializeDay } from '@/services/repositories/dailyRecordRepositoryInitializationService';
+import { save, updatePartial } from '@/services/repositories/dailyRecordRepositoryWriteService';
+import { syncWithFirestore } from '@/services/repositories/dailyRecordRepositorySyncService';
+import { deleteDailyRecordAcrossStores as deleteDay } from '@/services/repositories/dailyRecordRepositoryFacadeSupport';
+import { setFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { ensureMonthIntegrity } from '@/services/repositories/monthIntegrity';
 import {
   saveNurses,
@@ -24,8 +21,10 @@ import type { DailyRecord } from '@/types/domain/dailyRecord';
 import type { PatientData } from '@/types/domain/patient';
 import { clearAllRecords } from '@/services/storage/indexedDBService';
 
-vi.unmock('../../services/repositories/DailyRecordRepository');
-vi.unmock('@/services/repositories/DailyRecordRepository');
+vi.unmock('@/services/repositories/dailyRecordRepositoryReadService');
+vi.unmock('@/services/repositories/dailyRecordRepositoryWriteService');
+vi.unmock('@/services/repositories/dailyRecordRepositoryInitializationService');
+vi.unmock('@/services/repositories/dailyRecordRepositorySyncService');
 vi.unmock('@/services/repositories/CatalogRepository');
 
 const { firestoreMock } = vi.hoisted(() => ({
@@ -67,11 +66,6 @@ vi.mock('firebase/firestore', async importOriginal => {
 });
 
 // Mock Firestore Service
-vi.mock('../../services/storage/firestoreService', () => ({
-  ...firestoreMock,
-  saveHistorySnapshot: vi.fn(),
-}));
-
 vi.mock('@/services/storage/firestore', () => ({
   getRecordFromFirestore: firestoreMock.getRecordFromFirestore,
   saveRecordToFirestore: firestoreMock.saveRecordToFirestore,

@@ -15,35 +15,32 @@ Capa de persistencia concreta: IndexedDB, localStorage, Firestore bridge y sincr
 | `storage/runtime`                         | bootstrap/bindings y política visible de fallback           |
 | `storage/migration/legacyFirestoreBridge` | compatibilidad histórica explícita y controlada             |
 
-Las fachadas `firestoreService.ts`, `syncQueueService.ts`, `index.ts` y `legacyFirebaseService.ts`
-se mantienen solo como compatibilidad temporal.
+Las fachadas `index.ts` y `legacyFirebaseService.ts` se mantienen solo como compatibilidad temporal.
 
 ## Mapa
 
-| Path/Archivo                                  | Propósito                                                      |
-| --------------------------------------------- | -------------------------------------------------------------- |
-| `indexedDBService.ts`                         | API de alto nivel para IndexedDB                               |
-| `localStorageService.ts`                      | Gateway legacy mínimo para records/nurses/maintenance          |
-| `unifiedLocalService.ts`                      | Facade de compatibilidad local no-demo                         |
-| `firestoreService.ts`                         | Fachada deprecated de compatibilidad hacia `storage/firestore` |
-| `syncQueueService.ts`                         | Fachada deprecated de compatibilidad hacia `storage/sync`      |
-| `syncQueueTypes.ts`                           | Tipos de cola de sincronización                                |
-| `sync/`                                       | Engine, runtime, transport y store del outbox                  |
-| `core/`                                       | Entry point público de disponibilidad y mantenimiento          |
-| `records/`                                    | Entry point público del record store local                     |
-| `runtime/`                                    | Entry point público de bootstrap y fallback UI                 |
-| `migration/legacyFirestoreBridge.ts`          | Bridge canónico de migración Firestore legacy                  |
-| `tableConfigService.ts`                       | Persistencia de configuración de tablas                        |
-| `uiSettingsService.ts`                        | Persistencia de preferencias UI                                |
-| `localpersistence/localPersistenceService.ts` | Fallback local unificado (records/settings)                    |
-| `index.ts`                                    | Exports de storage                                             |
-| `indexeddb/` / `localstorage/` / `firestore/` | Implementaciones más finas por backend                         |
+| Path/Archivo                                  | Propósito                                             |
+| --------------------------------------------- | ----------------------------------------------------- |
+| `indexedDBService.ts`                         | API de alto nivel para IndexedDB                      |
+| `localStorageService.ts`                      | Gateway legacy mínimo para records/nurses/maintenance |
+| `unifiedLocalService.ts`                      | Facade de compatibilidad local no-demo                |
+| `syncQueueTypes.ts`                           | Tipos de cola de sincronización                       |
+| `sync/`                                       | Engine, runtime, transport y store del outbox         |
+| `core/`                                       | Entry point público de disponibilidad y mantenimiento |
+| `records/`                                    | Entry point público del record store local            |
+| `runtime/`                                    | Entry point público de bootstrap y fallback UI        |
+| `migration/legacyFirestoreBridge.ts`          | Bridge canónico de migración Firestore legacy         |
+| `tableConfigService.ts`                       | Persistencia de configuración de tablas               |
+| `uiSettingsService.ts`                        | Persistencia de preferencias UI                       |
+| `localpersistence/localPersistenceService.ts` | Fallback local unificado (records/settings)           |
+| `index.ts`                                    | Exports de storage                                    |
+| `indexeddb/` / `localstorage/` / `firestore/` | Implementaciones más finas por backend                |
 
-`storage/firestore` es el entrypoint remoto soportado; `firestoreService.ts` queda como bridge deprecated.
+`storage/firestore` es el entrypoint remoto soportado.
 La construcción de rangos mensuales y helpers de escritura sigue viviendo en
 `firestore/firestoreQuerySupport.ts` y `firestore/firestoreWriteSupport.ts`.
 `storage/sync` es la fuente soportada para telemetría (`getSyncQueueTelemetry()`), stats (`getSyncQueueStats()`) y operaciones recientes (`listRecentSyncQueueOperations()`).
-La fachada pública vive en `sync/publicSyncQueue.ts`; `syncQueueService.ts` queda solo como compatibilidad deprecated.
+La fachada pública vive en `sync/publicSyncQueue.ts`.
 El outbox ahora se arma sobre un engine con puertos (`sync/syncQueueEngine.ts`, `sync/syncQueuePorts.ts`) para separar runtime navegador, store Dexie y transporte Firestore.
 `sync/syncDomainPolicy.ts` clasifica tareas por contexto (`clinical`, `staffing`, `movements`, `handoff`, `metadata`) para aplicar budgets de retry y métricas de conflicto más específicas.
 `getSyncQueueTelemetry()` puede devolver `readState = unavailable` cuando la cola no puede inspeccionarse;
@@ -101,8 +98,7 @@ Cambios en esta capa requieren:
   para que nuevos servicios entren por ese adaptador y no por singletons globales.
 - `storage/sync` es el único punto de acceso soportado para telemetría, stats
   y operaciones recientes; la UI no debe leer Dexie directo para esta información.
-- `sync/publicSyncQueue.ts` es la implementación canónica del outbox; `syncQueueService.ts`
-  no debe recuperar lógica nueva.
+- `sync/publicSyncQueue.ts` es la implementación canónica del outbox.
 - `storage/core` es el único punto de acceso soportado para fallback/reset desde UI y hooks.
 - `storage/runtime` es el punto de acceso soportado para copy/UI de degradación y bootstrap IndexedDB.
 - Si cambia la policy domain-aware de sync, deben actualizarse en conjunto:

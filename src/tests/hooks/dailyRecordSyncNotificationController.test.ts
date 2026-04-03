@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ConcurrencyError } from '@/services/storage/firestoreService';
+import { ConcurrencyError } from '@/services/storage/firestore';
 import { DataRegressionError, VersionMismatchError } from '@/utils/integrityGuard';
 import { resolveSaveErrorFeedback } from '@/hooks/controllers/dailyRecordSyncNotificationController';
 

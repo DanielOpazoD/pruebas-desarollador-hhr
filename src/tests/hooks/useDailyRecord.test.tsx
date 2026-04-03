@@ -1,7 +1,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useDailyRecord } from '@/hooks/useDailyRecord';
-import * as DailyRecordRepository from '@/services/repositories/DailyRecordRepository';
+import { defaultDailyRecordRepositoryPort } from '@/application/ports/dailyRecordPort';
 import type { DailyRecord } from '@/types/domain/dailyRecord';
 import { UIProvider } from '@/context/UIContext';
 import { applyPatches } from '@/utils/patchUtils';
@@ -69,13 +69,6 @@ const { mockDailyRecordPorts } = vi.hoisted(() => ({
 }));
 
 // Mock dependencies
-vi.mock('@/services/repositories/DailyRecordRepository', () => {
-  return {
-    DailyRecordRepository: mockDailyRecordPorts,
-    ...mockDailyRecordPorts,
-  };
-});
-
 vi.mock('@/application/ports/dailyRecordPort', () => ({
   defaultDailyRecordReadPort: {
     getForDate: mockDailyRecordPorts.getForDate,
@@ -138,7 +131,7 @@ describe('useDailyRecord', () => {
       [mockDate]: DataFactory.createMockDailyRecord(mockDate),
     };
 
-    const repo = DailyRecordRepository.DailyRecordRepository;
+    const repo = mockDailyRecordPorts;
     const repoWithMeta = repo as typeof repo & {
       getForDateWithMeta: (date: string) => Promise<{
         date: string;
@@ -247,7 +240,7 @@ describe('useDailyRecord', () => {
       expect(result.current.record).not.toBeNull();
       expect(result.current.record?.date).toBe(mockDate);
     });
-    expect(DailyRecordRepository.DailyRecordRepository.getForDateWithMeta).toHaveBeenCalledWith(
+    expect(defaultDailyRecordRepositoryPort.getForDateWithMeta).toHaveBeenCalledWith(
       mockDate,
       true
     );
@@ -299,9 +292,10 @@ describe('useDailyRecord', () => {
       await result.current.createDay(true, mockDate);
     });
 
-    expect(
-      DailyRecordRepository.DailyRecordRepository.initializeDayDetailed
-    ).not.toHaveBeenCalledWith(futureDate, mockDate);
+    expect(mockDailyRecordPorts.initializeDayDetailed).not.toHaveBeenCalledWith(
+      futureDate,
+      mockDate
+    );
 
     vi.useRealTimers();
   });
@@ -319,7 +313,7 @@ describe('useDailyRecord', () => {
       await result.current.createDay(true, sourceDate);
     });
 
-    expect(DailyRecordRepository.DailyRecordRepository.initializeDay).toHaveBeenCalledWith(
+    expect(defaultDailyRecordRepositoryPort.initializeDay).toHaveBeenCalledWith(
       targetDate,
       sourceDate
     );
@@ -343,7 +337,7 @@ describe('useDailyRecord', () => {
     });
 
     // Should NOT call updatePartial/save because source was empty
-    expect(DailyRecordRepository.DailyRecordRepository.updatePartial).not.toHaveBeenCalled();
+    expect(defaultDailyRecordRepositoryPort.updatePartial).not.toHaveBeenCalled();
   });
 
   it('should not update admissionDate to a future date', async () => {
@@ -356,7 +350,7 @@ describe('useDailyRecord', () => {
       result.current.updatePatient('R1', 'admissionDate', futureDateStr);
     });
 
-    expect(DailyRecordRepository.DailyRecordRepository.updatePartial).not.toHaveBeenCalled();
+    expect(defaultDailyRecordRepositoryPort.updatePartial).not.toHaveBeenCalled();
   });
 
   it('should not create clinical crib in empty bed', async () => {
@@ -373,7 +367,7 @@ describe('useDailyRecord', () => {
       result.current.updateClinicalCrib('R1', 'create');
     });
 
-    expect(DailyRecordRepository.DailyRecordRepository.updatePartial).not.toHaveBeenCalled();
+    expect(defaultDailyRecordRepositoryPort.updatePartial).not.toHaveBeenCalled();
   });
 
   it('should not update crib admissionDate to a future date', async () => {
@@ -398,7 +392,7 @@ describe('useDailyRecord', () => {
       result.current.updateClinicalCrib('R1', 'admissionDate', futureDateStr);
     });
 
-    expect(DailyRecordRepository.DailyRecordRepository.updatePartial).not.toHaveBeenCalled();
+    expect(defaultDailyRecordRepositoryPort.updatePartial).not.toHaveBeenCalled();
   });
 
   describe('copyPatientToDate', () => {
@@ -427,9 +421,12 @@ describe('useDailyRecord', () => {
       });
 
       // Verify copyPatientToDate called with correct arguments
-      expect(
-        DailyRecordRepository.DailyRecordRepository.copyPatientToDateDetailed
-      ).toHaveBeenCalledWith(mockDate, 'R1', targetDate, 'R2');
+      expect(defaultDailyRecordRepositoryPort.copyPatientToDateDetailed).toHaveBeenCalledWith(
+        mockDate,
+        'R1',
+        targetDate,
+        'R2'
+      );
     });
   });
 });

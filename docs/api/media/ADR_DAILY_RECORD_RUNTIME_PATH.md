@@ -21,7 +21,10 @@ The most fragile boundary in the app is the intersection of TanStack Query cache
 
 ## Source Of Truth
 
-- Public read/write/sync entrypoint: `src/services/repositories/DailyRecordRepository.ts`
+- Public read/write/sync surfaces:
+  - `src/services/repositories/dailyRecordRepositoryReadService.ts`
+  - `src/services/repositories/dailyRecordRepositoryWriteService.ts`
+  - `src/services/repositories/dailyRecordRepositorySyncService.ts`
 - Read path and typed outcomes: `src/services/repositories/contracts/dailyRecordQueries.ts`
 - Canonical local/remote precedence: `src/services/repositories/dailyRecordPersistenceGoldenPath.ts`
 - Subscription and reconciliation: `src/services/repositories/dailyRecordRepositorySyncService.ts`

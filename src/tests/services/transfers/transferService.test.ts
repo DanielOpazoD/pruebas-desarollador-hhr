@@ -21,17 +21,6 @@ import * as firestore from 'firebase/firestore';
 import { setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { TransferRequest } from '@/types/transfers';
 
-// Mock repositories using a more robust Vitest pattern
-vi.mock('@/services/repositories/DailyRecordRepository', () => {
-  return {
-    DailyRecordRepository: {
-      getAllDates: vi.fn(),
-      getForDate: vi.fn(),
-      updatePartial: vi.fn(),
-    },
-  };
-});
-
 vi.mock('@/services/repositories/PatientMasterRepository', () => {
   return {
     PatientMasterRepository: {

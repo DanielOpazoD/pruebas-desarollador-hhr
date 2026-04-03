@@ -18,6 +18,7 @@ import {
   DailyRecordInitializationSeed,
   shouldReturnSeedRecord,
 } from '@/services/repositories/dailyRecordInitializationSeed';
+import { createCopyPatientToDateCommand } from '@/services/repositories/contracts/dailyRecordLifecycleCommands';
 import { measureRepositoryOperation } from '@/services/repositories/repositoryPerformance';
 import { migrateLegacyDataWithReport } from '@/services/repositories/dataMigration';
 import {
@@ -231,30 +232,31 @@ export const copyPatientToDateDetailed = async (
   targetDate: string,
   targetBedId: string
 ): Promise<CopyPatientToDateResult> => {
-  const sourceResult = await getForDateWithMeta(sourceDate);
+  const command = createCopyPatientToDateCommand(sourceDate, sourceBedId, targetDate, targetBedId);
+  const sourceResult = await getForDateWithMeta(command.sourceDate);
   const sourceRecord = sourceResult.record;
-  if (!sourceRecord) throw new Error(`Source record for ${sourceDate} not found`);
+  if (!sourceRecord) throw new Error(`Source record for ${command.sourceDate} not found`);
 
-  const sourcePatient = sourceRecord.beds[sourceBedId];
+  const sourcePatient = sourceRecord.beds[command.sourceBedId];
   if (!sourcePatient || !sourcePatient.patientName) {
-    throw new Error(`No patient found in bed ${sourceBedId} on ${sourceDate}`);
+    throw new Error(`No patient found in bed ${command.sourceBedId} on ${command.sourceDate}`);
   }
 
-  const targetRecord = await resolveTargetRecordForCopy(targetDate);
-  await save(assignCarriedPatientToRecord(targetRecord, targetBedId, sourcePatient));
+  const targetRecord = await resolveTargetRecordForCopy(command.targetDate);
+  await save(assignCarriedPatientToRecord(targetRecord, command.targetBedId, sourcePatient));
 
   return {
     ...createCopyPatientResult({
-      sourceDate,
-      targetDate,
+      sourceDate: command.sourceDate,
+      targetDate: command.targetDate,
       outcome:
         sourceResult.compatibilityIntensity !== 'none' &&
         sourceResult.migrationRulesApplied.length > 0
           ? 'repaired'
           : 'clean',
     }),
-    sourceBedId,
-    targetBedId,
+    sourceBedId: command.sourceBedId,
+    targetBedId: command.targetBedId,
     sourceCompatibilityIntensity: sourceResult.compatibilityIntensity,
     sourceMigrationRulesApplied: sourceResult.migrationRulesApplied,
   };

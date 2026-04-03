@@ -6,7 +6,7 @@
 - `@/services/storage/sync` es la fachada pública; este directorio no debe ser importado desde UI.
 - Los errores de sync deben salir tipados por politica/runtime, no como strings ad hoc.
 - `publicSyncQueue.ts` es la fuente canónica del singleton y de la telemetría pública.
-- `@/services/storage/syncQueueService` existe solo como facade deprecated de compatibilidad.
+- El surface público canónico del outbox está en `@/services/storage/sync`.
 
 ## Límites
 

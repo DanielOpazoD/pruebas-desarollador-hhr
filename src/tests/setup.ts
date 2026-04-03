@@ -315,64 +315,22 @@ const mockAuditFactory = () => mockAuditService;
 vi.mock('@/services/admin/auditService', () => mockAuditFactory());
 vi.mock('../services/admin/auditService', () => mockAuditFactory());
 
-vi.mock('@/services/repositories/DailyRecordRepository', () => ({
-  CatalogRepository: {
-    getNurses: vi.fn().mockResolvedValue(['Enfermero/a 1', 'Enfermero/a 2', 'Test Nurse']),
-    saveNurses: vi.fn().mockResolvedValue(undefined),
-    subscribeNurses: vi.fn(cb => {
-      cb(['Enfermero/a 1', 'Enfermero/a 2', 'Test Nurse']);
-      return () => {};
-    }),
-    getTens: vi.fn().mockResolvedValue(['TENS 1', 'TENS 2']),
-    saveTens: vi.fn().mockResolvedValue(undefined),
-    subscribeTens: vi.fn(cb => {
-      cb(['TENS 1', 'TENS 2']);
-      return () => {};
-    }),
-  },
-  DailyRecordRepository: {
-    getForDate: vi.fn().mockResolvedValue(null),
-    getPreviousDay: vi.fn(),
-    getPreviousDayWithMeta: vi.fn(),
-    save: vi.fn(),
-    saveDetailed: vi.fn().mockResolvedValue({
-      date: '2026-01-01',
-      outcome: 'clean',
-      savedLocally: true,
-      savedRemotely: true,
-      queuedForRetry: false,
-      autoMerged: false,
-    }),
-    subscribe: vi.fn(() => () => {}),
-    initializeDay: vi.fn(),
-    initializeDayDetailed: vi.fn(),
-    deleteDay: vi.fn(),
-    copyPatientToDate: vi.fn().mockResolvedValue(true),
-    copyPatientToDateDetailed: vi.fn().mockResolvedValue({
-      sourceDate: '2026-01-01',
-      targetDate: '2026-01-02',
-      outcome: 'clean',
-      sourceBedId: 'R1',
-      targetBedId: 'R2',
-      sourceCompatibilityIntensity: 'none',
-      sourceMigrationRulesApplied: [],
-    }),
-    updatePartial: vi.fn().mockResolvedValue(undefined),
-    updatePartialDetailed: vi.fn().mockResolvedValue({
-      date: '2026-01-01',
-      outcome: 'clean',
-      savedLocally: true,
-      updatedRemotely: true,
-      queuedForRetry: false,
-      autoMerged: false,
-      patchedFields: 1,
-    }),
-    syncWithFirestoreDetailed: vi.fn().mockResolvedValue({
-      date: '2026-01-01',
-      outcome: 'clean',
-      record: null,
-    }),
-  },
+const globalCatalogRepositoryMock = {
+  getNurses: vi.fn().mockResolvedValue(['Enfermero/a 1', 'Enfermero/a 2', 'Test Nurse']),
+  saveNurses: vi.fn().mockResolvedValue(undefined),
+  subscribeNurses: vi.fn(cb => {
+    cb(['Enfermero/a 1', 'Enfermero/a 2', 'Test Nurse']);
+    return () => {};
+  }),
+  getTens: vi.fn().mockResolvedValue(['TENS 1', 'TENS 2']),
+  saveTens: vi.fn().mockResolvedValue(undefined),
+  subscribeTens: vi.fn(cb => {
+    cb(['TENS 1', 'TENS 2']);
+    return () => {};
+  }),
+};
+
+const globalDailyRecordRepositoryPortMock = {
   getForDate: vi.fn().mockResolvedValue(null),
   getPreviousDay: vi.fn(),
   getPreviousDayWithMeta: vi.fn(),
@@ -386,12 +344,13 @@ vi.mock('@/services/repositories/DailyRecordRepository', () => ({
     autoMerged: false,
   }),
   subscribe: vi.fn(() => () => {}),
+  subscribeDetailed: vi.fn(() => () => {}),
   initializeDay: vi.fn(),
   initializeDayDetailed: vi.fn(),
   deleteDay: vi.fn(),
   getAllDates: vi.fn().mockResolvedValue([]),
   getAvailableDates: vi.fn().mockResolvedValue([]),
-  setFirestoreEnabled: vi.fn(),
+  getMonthRecords: vi.fn().mockResolvedValue([]),
   copyPatientToDate: vi.fn().mockResolvedValue(true),
   copyPatientToDateDetailed: vi.fn().mockResolvedValue({
     sourceDate: '2026-01-01',
@@ -402,6 +361,7 @@ vi.mock('@/services/repositories/DailyRecordRepository', () => ({
     sourceCompatibilityIntensity: 'none',
     sourceMigrationRulesApplied: [],
   }),
+  updatePartial: vi.fn().mockResolvedValue(undefined),
   updatePartialDetailed: vi.fn().mockResolvedValue({
     date: '2026-01-01',
     outcome: 'clean',
@@ -416,6 +376,24 @@ vi.mock('@/services/repositories/DailyRecordRepository', () => ({
     outcome: 'clean',
     record: null,
   }),
+};
+
+vi.mock('@/services/repositories/CatalogRepository', () => ({
+  CatalogRepository: globalCatalogRepositoryMock,
+  ...globalCatalogRepositoryMock,
+}));
+
+vi.mock('@/application/ports/dailyRecordPort', () => ({
+  defaultDailyRecordReadPort: globalDailyRecordRepositoryPortMock,
+  defaultDailyRecordWritePort: {
+    updatePartial: globalDailyRecordRepositoryPortMock.updatePartialDetailed,
+    save: globalDailyRecordRepositoryPortMock.saveDetailed,
+    delete: globalDailyRecordRepositoryPortMock.deleteDay,
+  },
+  defaultDailyRecordSyncPort: {
+    syncWithFirestoreDetailed: globalDailyRecordRepositoryPortMock.syncWithFirestoreDetailed,
+  },
+  defaultDailyRecordRepositoryPort: globalDailyRecordRepositoryPortMock,
 }));
 
 // DailyRecordContext is no longer mocked globally to allow customRender to provide real context

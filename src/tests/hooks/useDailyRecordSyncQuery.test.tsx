@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useDailyRecordSyncQuery } from '@/hooks/useDailyRecordSyncQuery';
-import * as DailyRecordRepository from '@/services/repositories/DailyRecordRepository';
+import { defaultDailyRecordRepositoryPort } from '@/application/ports/dailyRecordPort';
 import { createSyncDailyRecordResult } from '@/services/repositories/contracts/dailyRecordResults';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
 import type { DailyRecord } from '@/types/domain/dailyRecord';
@@ -52,14 +52,6 @@ vi.mock('@/utils/dateUtils', async () => {
   return {
     ...actual,
     getTodayISO: () => '2025-12-27',
-  };
-});
-
-// Mock Repository
-vi.mock('@/services/repositories/DailyRecordRepository', () => {
-  return {
-    ...mockDailyRecordRepositoryPort,
-    DailyRecordRepository: mockDailyRecordRepositoryPort,
   };
 });
 
@@ -128,7 +120,7 @@ describe('useDailyRecordSyncQuery', () => {
   });
 
   it('should fetch the record on mount', async () => {
-    vi.mocked(DailyRecordRepository.getForDateWithMeta).mockResolvedValue(
+    vi.mocked(defaultDailyRecordRepositoryPort.getForDateWithMeta).mockResolvedValue(
       buildReadResult(mockRecord)
     );
 
@@ -140,11 +132,14 @@ describe('useDailyRecordSyncQuery', () => {
       expect(result.current.record).toEqual(mockRecord);
     });
 
-    expect(DailyRecordRepository.getForDateWithMeta).toHaveBeenCalledWith(mockDate, true);
+    expect(defaultDailyRecordRepositoryPort.getForDateWithMeta).toHaveBeenCalledWith(
+      mockDate,
+      true
+    );
   });
 
   it('should handle updates via saveAndUpdate', async () => {
-    vi.mocked(DailyRecordRepository.getForDateWithMeta).mockResolvedValue(
+    vi.mocked(defaultDailyRecordRepositoryPort.getForDateWithMeta).mockResolvedValue(
       buildReadResult(mockRecord)
     );
 
@@ -157,11 +152,11 @@ describe('useDailyRecordSyncQuery', () => {
     const updatedRecord = { ...mockRecord, lastUpdated: 'new-date' };
     await result.current.saveAndUpdate(updatedRecord);
 
-    expect(DailyRecordRepository.saveDetailed).toHaveBeenCalledWith(updatedRecord);
+    expect(defaultDailyRecordRepositoryPort.saveDetailed).toHaveBeenCalledWith(updatedRecord);
   });
 
   it('refreshes through detailed sync before refetching', async () => {
-    vi.mocked(DailyRecordRepository.getForDateWithMeta).mockResolvedValue(
+    vi.mocked(defaultDailyRecordRepositoryPort.getForDateWithMeta).mockResolvedValue(
       buildReadResult(mockRecord)
     );
 
@@ -174,19 +169,21 @@ describe('useDailyRecordSyncQuery', () => {
     result.current.refresh();
 
     await waitFor(() => {
-      expect(DailyRecordRepository.syncWithFirestoreDetailed).toHaveBeenCalledWith(mockDate);
+      expect(defaultDailyRecordRepositoryPort.syncWithFirestoreDetailed).toHaveBeenCalledWith(
+        mockDate
+      );
     });
   });
 
   it('keeps the newest refresh result when an older sync resolves later', async () => {
-    vi.mocked(DailyRecordRepository.getForDateWithMeta).mockResolvedValue(
+    vi.mocked(defaultDailyRecordRepositoryPort.getForDateWithMeta).mockResolvedValue(
       buildReadResult(mockRecord)
     );
 
     const firstRefresh = createDeferred<ReturnType<typeof createSyncDailyRecordResult>>();
     const secondRefresh = createDeferred<ReturnType<typeof createSyncDailyRecordResult>>();
 
-    vi.mocked(DailyRecordRepository.syncWithFirestoreDetailed)
+    vi.mocked(defaultDailyRecordRepositoryPort.syncWithFirestoreDetailed)
       .mockImplementationOnce(() => firstRefresh.promise)
       .mockImplementationOnce(() => secondRefresh.promise);
 
@@ -195,14 +192,14 @@ describe('useDailyRecordSyncQuery', () => {
     });
 
     await waitFor(() => expect(result.current.record).not.toBeNull());
-    vi.mocked(DailyRecordRepository.syncWithFirestoreDetailed).mockClear();
-    vi.mocked(DailyRecordRepository.getForDateWithMeta).mockClear();
+    vi.mocked(defaultDailyRecordRepositoryPort.syncWithFirestoreDetailed).mockClear();
+    vi.mocked(defaultDailyRecordRepositoryPort.getForDateWithMeta).mockClear();
 
     result.current.refresh();
     result.current.refresh();
 
     await waitFor(() => {
-      expect(DailyRecordRepository.syncWithFirestoreDetailed).toHaveBeenCalledTimes(2);
+      expect(defaultDailyRecordRepositoryPort.syncWithFirestoreDetailed).toHaveBeenCalledTimes(2);
     });
 
     secondRefresh.resolve(
@@ -214,7 +211,7 @@ describe('useDailyRecordSyncQuery', () => {
     );
 
     await waitFor(() => {
-      expect(DailyRecordRepository.getForDateWithMeta).toHaveBeenCalledTimes(1);
+      expect(defaultDailyRecordRepositoryPort.getForDateWithMeta).toHaveBeenCalledTimes(1);
     });
 
     firstRefresh.resolve(
@@ -226,19 +223,23 @@ describe('useDailyRecordSyncQuery', () => {
     );
 
     await waitFor(() => {
-      expect(DailyRecordRepository.getForDateWithMeta).toHaveBeenCalledTimes(1);
+      expect(defaultDailyRecordRepositoryPort.getForDateWithMeta).toHaveBeenCalledTimes(1);
     });
   });
 
   it('forces a recovery sync once when today loads as empty', async () => {
-    vi.mocked(DailyRecordRepository.getForDateWithMeta).mockResolvedValue(buildReadResult(null));
+    vi.mocked(defaultDailyRecordRepositoryPort.getForDateWithMeta).mockResolvedValue(
+      buildReadResult(null)
+    );
 
     renderHook(() => useDailyRecordSyncQuery(mockDate), {
       wrapper: createWrapper(),
     });
 
     await waitFor(() => {
-      expect(DailyRecordRepository.syncWithFirestoreDetailed).toHaveBeenCalledWith(mockDate);
+      expect(defaultDailyRecordRepositoryPort.syncWithFirestoreDetailed).toHaveBeenCalledWith(
+        mockDate
+      );
     });
   });
 });

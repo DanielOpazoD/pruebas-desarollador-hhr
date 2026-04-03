@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useDailyRecordSyncQuery } from '@/hooks/useDailyRecordSyncQuery';
-import { ConcurrencyError } from '@/services/storage/firestoreService';
+import { ConcurrencyError } from '@/services/storage/firestore';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
 import type { DailyRecord } from '@/types/domain/dailyRecord';
 
@@ -32,13 +32,6 @@ const { mockDailyRecordRepositoryPort } = vi.hoisted(() => ({
     syncWithFirestoreDetailed: vi.fn(),
   },
 }));
-
-vi.mock('@/services/repositories/DailyRecordRepository', () => {
-  return {
-    ...mockDailyRecordRepositoryPort,
-    DailyRecordRepository: mockDailyRecordRepositoryPort,
-  };
-});
 
 vi.mock('@/application/ports/dailyRecordPort', () => ({
   defaultDailyRecordReadPort: mockDailyRecordRepositoryPort,

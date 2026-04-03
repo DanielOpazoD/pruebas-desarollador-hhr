@@ -1,18 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  save as saveRecord,
-  getForDate,
-  setFirestoreEnabled,
-  DailyRecordRepository,
-} from '@/services/repositories/DailyRecordRepository';
+import { getForDate } from '@/services/repositories/dailyRecordRepositoryReadService';
+import { initializeDay } from '@/services/repositories/dailyRecordRepositoryInitializationService';
+import { save as saveRecord } from '@/services/repositories/dailyRecordRepositoryWriteService';
+import { setFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import type { DailyRecord } from '@/types/domain/dailyRecord';
-import * as firestoreService from '@/services/storage/firestoreService';
+import * as firestoreService from '@/services/storage/firestore';
 // We want real implementation for integration test, but mocked firestore
-vi.unmock('../../services/repositories/DailyRecordRepository');
-vi.unmock('@/services/repositories/DailyRecordRepository');
+vi.unmock('@/services/repositories/dailyRecordRepositoryReadService');
+vi.unmock('@/services/repositories/dailyRecordRepositoryInitializationService');
+vi.unmock('@/services/repositories/dailyRecordRepositoryWriteService');
 
 // Mock Firestore service
-vi.mock('../../services/storage/firestoreService', () => ({
+vi.mock('@/services/storage/firestore', () => ({
   saveRecordToFirestore: vi.fn(),
   subscribeToRecord: vi.fn(() => vi.fn()),
   getRecordFromFirestore: vi.fn(),
@@ -74,7 +73,7 @@ describe('Offline Persistence Integration', () => {
     // Mock Firestore failure for GET
     vi.mocked(firestoreService.getRecordFromFirestore).mockRejectedValue(new Error('Timeout'));
 
-    const newRecord = await DailyRecordRepository.initializeDay('2024-12-25', prevDate);
+    const newRecord = await initializeDay('2024-12-25', prevDate);
 
     expect(newRecord.date).toBe('2024-12-25');
     expect(await getForDate('2024-12-25')).not.toBeNull();

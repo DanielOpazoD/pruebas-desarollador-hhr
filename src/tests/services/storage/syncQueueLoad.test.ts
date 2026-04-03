@@ -6,7 +6,7 @@ import {
   listRecentSyncQueueOperations,
   processSyncQueue,
   queueSyncTask,
-} from '@/services/storage/syncQueueService';
+} from '@/services/storage/sync';
 import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 vi.mock('firebase/firestore', async importOriginal => {

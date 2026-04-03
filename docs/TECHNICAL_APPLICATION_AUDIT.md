@@ -44,7 +44,7 @@ Hay evidencia concreta de diseño sano en piezas representativas del runtime y d
 
 - `src/app-shell/bootstrap/useAppBootstrapState.ts`: bootstrap claro, estados discriminados y sincronización de capacidades runtime sin mezclar UI compleja.
 - `src/application/handoff/medicalPatientHandoffUseCases.ts`: use-cases explícitos, outcomes homogéneos y manejo diferenciado de validación, no-efecto y error desconocido.
-- `src/services/repositories/DailyRecordRepository.ts`: la propia fachada se declara `@deprecated` y se protege como compatibilidad controlada; esto es buena gobernanza, pero también evidencia que la transición aún no terminó.
+- `src/application/ports/dailyRecordPort.ts`: el acceso público quedó gobernado por ports explícitos y los servicios `read/write/sync`, reduciendo compatibilidad residual en el camino caliente.
 
 ## Fortalezas principales
 

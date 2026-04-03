@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { initializeDay } from '@/services/repositories/DailyRecordRepository';
+import { initializeDay } from '@/services/repositories/dailyRecordRepositoryInitializationService';
 import type { DailyRecord } from '@/types/domain/dailyRecord';
 import type { PatientData } from '@/types/domain/patient';
 import { Specialty, PatientStatus } from '@/types/domain/patientClassification';
@@ -8,7 +8,7 @@ import * as FirestoreService from '@/services/storage/firestore';
 import { vi } from 'vitest';
 
 // Unmock the repository so we test the REAL logic
-vi.unmock('../../services/repositories/DailyRecordRepository');
+vi.unmock('@/services/repositories/dailyRecordRepositoryInitializationService');
 
 // Mock services
 vi.mock('../../services/storage/indexeddb/indexedDbRecordService');

@@ -13,11 +13,8 @@ const RESTRICTED_IMPORTS = new Set([
 ]);
 
 const ALLOWED_IMPORTERS = new Set([
-  'src/services/repositories/DailyRecordRepository.ts',
   'src/services/storage/indexedDBService.ts',
-  'src/services/repositories/index.ts',
   'src/services/storage/index.ts',
-  'src/services/dataService.ts',
   'src/services/RepositoryContext.tsx',
   'src/services/admin/dataMaintenanceService.ts',
   'src/hooks/useStorageMigration.ts',

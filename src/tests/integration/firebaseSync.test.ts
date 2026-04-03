@@ -70,7 +70,7 @@ describe('Firebase Sync Integration', () => {
   describe('DailyRecord Sync', () => {
     it('should include nurse and TENS fields when saving record', async () => {
       const { setDoc } = await import('firebase/firestore');
-      const { saveRecordToFirestore } = await import('@/services/storage/firestoreService');
+      const { saveRecordToFirestore } = await import('@/services/storage/firestore');
 
       const record = createMockRecord('2025-12-13');
 

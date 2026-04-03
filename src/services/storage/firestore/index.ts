@@ -1,8 +1,7 @@
 /**
  * Canonical Firestore storage entrypoint.
  *
- * New product code should import from this module instead of
- * `@/services/storage/firestoreService`.
+ * This is the canonical Firestore storage surface.
  */
 
 export {

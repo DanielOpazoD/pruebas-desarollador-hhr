@@ -26,16 +26,14 @@ Capa de datos e integración: repositorios, persistencia, exportadores, integrac
 
 ## Archivos raíz relevantes
 
-| Archivo                  | Propósito                                           |
-| ------------------------ | --------------------------------------------------- |
-| `RepositoryContext.tsx`  | Inyección de repositorios en runtime                |
-| `dataService.ts`         | Servicio de datos consolidado legacy/compatibilidad |
-| `ExcelParsingService.ts` | Parsing Excel de soporte                            |
-| `index.ts`               | Barrel de compatibilidad mínimo                     |
+| Archivo                  | Propósito                            |
+| ------------------------ | ------------------------------------ |
+| `RepositoryContext.tsx`  | Inyección de repositorios en runtime |
+| `ExcelParsingService.ts` | Parsing Excel de soporte             |
 
 ## Patrones clave
 
-- **Repository Pattern** (`DailyRecordRepository`, `CatalogRepository`, etc.).
+- **Repository Pattern** con entrypoints concretos (`dailyRecordRepositoryReadService`, `dailyRecordRepositoryWriteService`, `CatalogRepository`, etc.).
 - **Service split por responsabilidad** (`read/write/sync/init` en repositorio diario).
 - **Storage abstraction** con estrategia offline-first y fallback.
 - **Domain observability**:
@@ -61,16 +59,18 @@ Capa de datos e integración: repositorios, persistencia, exportadores, integrac
 ## Ejemplo
 
 ```ts
-import { DailyRecordRepository } from '@/services/repositories/DailyRecordRepository';
+import { getForDate } from '@/services/repositories/dailyRecordRepositoryReadService';
+import { saveDetailed } from '@/services/repositories/dailyRecordRepositoryWriteService';
 
-await DailyRecordRepository.save(record);
+const record = await getForDate(date);
+await saveDetailed(record);
 ```
 
 ## Convención de capa
 
 - No importar componentes ni hooks de UI desde `services`.
 - Mantener contratos de entrada/salida tipados (preferir `types`/`schemas`).
-- `src/services/repositories/index.ts` es una surface curada; código nuevo debe preferir imports directos al módulo dueño cuando no exista un entrypoint público explícito.
+- `src/services/repositories/index.ts` fue retirado; código nuevo debe preferir imports directos al módulo dueño cuando no exista un entrypoint público explícito.
 - En integraciones externas complejas, usar una fachada pública pequeña y mover auth, payload builders y folder/file helpers a módulos internos específicos.
 - Mantener `authService.ts` como fachada pública; evitar que la UI importe módulos internos de `auth/` directamente.
 - Mantener `authPolicy.ts` y `authService.ts` estables aunque la resolución de roles se siga particionando internamente.

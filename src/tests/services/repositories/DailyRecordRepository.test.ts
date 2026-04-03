@@ -1,13 +1,33 @@
 // Unmock the repository so we can test the real thing
 // (it is mocked globally in tests/setup.ts)
-vi.unmock('@/services/repositories/DailyRecordRepository');
+vi.unmock('@/services/repositories/dailyRecordRepositoryReadService');
+vi.unmock('@/services/repositories/dailyRecordRepositoryWriteService');
+vi.unmock('@/services/repositories/dailyRecordRepositoryInitializationService');
+vi.unmock('@/services/repositories/dailyRecordRepositorySyncService');
 vi.unmock('@/services/repositories/CatalogRepository');
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as Repository from '@/services/repositories/DailyRecordRepository';
 import { CatalogRepository } from '@/services/repositories/CatalogRepository';
+import {
+  bridgeLegacyRecordForDate,
+  getAvailableDates,
+  getForDate,
+  getForDateWithMeta,
+  getPreviousDay,
+  getPreviousDayWithMeta,
+} from '@/services/repositories/dailyRecordRepositoryReadService';
+import {
+  copyPatientToDate,
+  copyPatientToDateDetailed,
+  initializeDay,
+  initializeDayDetailed,
+} from '@/services/repositories/dailyRecordRepositoryInitializationService';
+import { deleteDailyRecordAcrossStores as deleteDay } from '@/services/repositories/dailyRecordRepositoryFacadeSupport';
+import { isFirestoreEnabled, setFirestoreEnabled } from '@/services/repositories/repositoryConfig';
+import { save, updatePartial } from '@/services/repositories/dailyRecordRepositoryWriteService';
+import { syncWithFirestore } from '@/services/repositories/dailyRecordRepositorySyncService';
 import * as idbService from '@/services/storage/indexedDBService';
-import * as firestoreService from '@/services/storage/firestoreService';
+import * as firestoreService from '@/services/storage/firestore';
 import * as legacyFirebaseService from '@/services/storage/legacyFirebaseService';
 import type { CudyrScore } from '@/types/domain/cudyr';
 import type { DailyRecord } from '@/types/domain/dailyRecord';
@@ -97,8 +117,26 @@ vi.mock('@/services/storage/indexeddb/indexedDbCatalogService', () => ({
   saveCatalogValues: indexedDbFacadeMock.saveCatalogValues,
 }));
 
-vi.mock('@/services/storage/firestoreService', () => firestoreMock);
 vi.mock('@/services/storage/firestore', () => firestoreMock);
+
+const Repository = {
+  bridgeLegacyRecord: bridgeLegacyRecordForDate,
+  copyPatientToDate,
+  copyPatientToDateDetailed,
+  deleteDay,
+  getAvailableDates,
+  getForDate,
+  getForDateWithMeta,
+  getPreviousDay,
+  getPreviousDayWithMeta,
+  initializeDay,
+  initializeDayDetailed,
+  isFirestoreEnabled,
+  save,
+  setFirestoreEnabled,
+  syncWithFirestore,
+  updatePartial,
+};
 
 describe('DailyRecordRepository', () => {
   const mockDate = '2025-01-01';

@@ -65,7 +65,7 @@ Al abrir la aplicación, el sistema sincroniza automáticamente los datos del d�
 
 ### Archivos Relacionados
 
-- `services/repositories/DailyRecordRepository.ts` - Función `getForDate()`
+- `services/repositories/dailyRecordRepositoryReadService.ts` - Función `getForDate()`
 - `hooks/useDailyRecordQuery.ts` - Prefetch del día anterior
 
 ---

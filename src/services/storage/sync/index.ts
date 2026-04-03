@@ -1,8 +1,7 @@
 /**
  * Canonical sync queue entrypoint.
  *
- * New product code should import from this module instead of
- * `@/services/storage/syncQueueService`.
+ * This is the canonical sync queue surface.
  */
 
 export {

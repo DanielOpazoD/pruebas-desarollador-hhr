@@ -28,7 +28,7 @@ const checks = [
       'sync/syncQueueEngine.ts',
       'firestore/firestoreQuerySupport.ts',
       'firestore/firestoreWriteSupport.ts',
-      'syncQueueService.ts',
+      'storage/sync',
       'docs/RUNBOOK_OPERATIONAL_BUDGETS.md',
       'check:operational-runbooks',
       'reports/operational-health.md',
