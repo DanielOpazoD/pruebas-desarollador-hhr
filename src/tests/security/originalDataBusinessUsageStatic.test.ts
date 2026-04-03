@@ -1,0 +1,39 @@
+import { describe, expect, it } from 'vitest';
+import { execSync } from 'node:child_process';
+import path from 'node:path';
+
+const ROOT = path.resolve(__dirname, '../../../');
+
+const ALLOWED_ORIGINAL_DATA_REFERENCES = [
+  'src/schemas/zod/movements.ts',
+  'src/types/domain/movements.ts',
+  'src/hooks/controllers/patientMovementCreationController.ts',
+  'src/hooks/controllers/patientMovementSelectionController.ts',
+  'src/hooks/controllers/patientMovementUndoController.ts',
+  'src/hooks/usePatientMovementUndoExecutor.ts',
+  'src/hooks/controllers/censusExcelSheetController.ts',
+  'src/features/census/components/DischargeRowView.tsx',
+  'src/features/census/components/TransferRowView.tsx',
+  'src/features/census/controllers/patientMovementDischargeMutationController.ts',
+  'src/features/census/controllers/patientMovementTransferMutationController.ts',
+  'src/features/census/controllers/patientMovementSelectionController.ts',
+  'src/features/census/controllers/patientMovementUndoController.ts',
+  'src/features/census/hooks/usePatientMovementUndoExecutor.ts',
+  'src/features/census/controllers/censusCmaController.ts',
+  'src/domain/CensusManager.ts',
+  'src/services/admin/admissionDateBackfillService.ts',
+];
+
+describe('originalData business governance', () => {
+  it('limits originalData usage to undo, audit, compatibility and historical maintenance surfaces', () => {
+    const command = 'rg -l "originalData" src --glob "!src/tests/**" --glob "!src/**/*.md"';
+    const rawOutput = execSync(command, { cwd: ROOT, encoding: 'utf8' });
+    const referencedFiles = rawOutput
+      .split('\n')
+      .map(line => line.trim())
+      .filter(Boolean)
+      .sort();
+
+    expect(referencedFiles).toEqual(ALLOWED_ORIGINAL_DATA_REFERENCES.sort());
+  });
+});

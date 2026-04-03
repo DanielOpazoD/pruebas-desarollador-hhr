@@ -9,7 +9,7 @@ export interface DailyRecordRecoveryDecision {
   consistencyState: DailyRecordWriteConsistencyState;
   retryability: DailyRecordRetryability;
   recoveryAction: DailyRecordRecoveryAction;
-  blockingReason?: 'regression' | 'version_mismatch';
+  blockingReason?: 'regression' | 'version_mismatch' | 'validation';
   conflictSummary: DailyRecordConflictSummary | null;
   observabilityTags: string[];
   userSafeMessage?: string;
@@ -42,13 +42,17 @@ export const createAutoMergeDecision = (
 });
 
 export const createBlockedDecision = (
-  blockingReason: 'regression' | 'version_mismatch',
+  blockingReason: 'regression' | 'version_mismatch' | 'validation',
   conflictSummary: DailyRecordConflictSummary | null,
   observabilityTags: string[],
   userSafeMessage: string
 ): DailyRecordRecoveryDecision => ({
   consistencyState:
-    blockingReason === 'regression' ? 'blocked_regression' : 'blocked_version_mismatch',
+    blockingReason === 'regression'
+      ? 'blocked_regression'
+      : blockingReason === 'version_mismatch'
+        ? 'blocked_version_mismatch'
+        : 'blocked_validation',
   retryability: 'blocked',
   recoveryAction: 'block_and_surface',
   blockingReason,

@@ -20,6 +20,39 @@ export interface AdmissionDateAuditResolution {
   message?: string;
 }
 
+export interface AdmissionDateValidationPatient {
+  patientName?: string;
+  rut?: string;
+  admissionDate?: string;
+  admissionTime?: string;
+  firstSeenDate?: string;
+}
+
+export interface AdmissionDatePersistenceViolation {
+  path: string;
+  patientName: string;
+  rut: string;
+  message: string;
+  currentAdmissionDate?: string;
+  attemptedAdmissionDate?: string;
+  firstSeenDate?: string;
+}
+
+export class AdmissionDatePolicyViolationError extends Error {
+  readonly violations: AdmissionDatePersistenceViolation[];
+
+  constructor(message: string, violations: AdmissionDatePersistenceViolation[]) {
+    super(message);
+    this.name = 'AdmissionDatePolicyViolationError';
+    this.violations = violations;
+  }
+}
+
+const hasIdentity = (
+  patient?: AdmissionDateValidationPatient
+): patient is Required<Pick<AdmissionDateValidationPatient, 'patientName' | 'rut'>> &
+  AdmissionDateValidationPatient => Boolean(patient?.patientName?.trim() && patient?.rut?.trim());
+
 export const resolveAdmissionDateSuggestion = (
   baseDate?: string,
   admissionTime?: string
@@ -79,5 +112,81 @@ export const resolveAdmissionDateAudit = ({
     suggestedAdmissionDate,
     isSuspicious: true,
     message,
+  };
+};
+
+export const resolveAdmissionDateWindowViolation = ({
+  recordDate,
+  path,
+  patient,
+}: {
+  recordDate: string;
+  path: string;
+  patient?: AdmissionDateValidationPatient;
+}): AdmissionDatePersistenceViolation | null => {
+  if (!hasIdentity(patient) || !normalizeDateOnly(patient.firstSeenDate)) {
+    return null;
+  }
+
+  const audit = resolveAdmissionDateAudit({
+    recordDate,
+    admissionDate: patient.admissionDate,
+    admissionTime: patient.admissionTime,
+    firstSeenDate: patient.firstSeenDate,
+  });
+
+  if (!audit.isSuspicious) {
+    return null;
+  }
+
+  return {
+    path,
+    patientName: patient.patientName.trim(),
+    rut: patient.rut.trim(),
+    message: audit.message || 'La fecha de ingreso no coincide con la ventana permitida.',
+    currentAdmissionDate: normalizeDateOnly(patient.admissionDate),
+    attemptedAdmissionDate: normalizeDateOnly(patient.admissionDate),
+    firstSeenDate: normalizeDateOnly(patient.firstSeenDate),
+  };
+};
+
+export const resolveAdmissionDateMutationViolation = ({
+  recordDate,
+  path,
+  currentPatient,
+  nextPatient,
+}: {
+  recordDate: string;
+  path: string;
+  currentPatient?: AdmissionDateValidationPatient;
+  nextPatient?: AdmissionDateValidationPatient;
+}): AdmissionDatePersistenceViolation | null => {
+  if (!hasIdentity(currentPatient) || !hasIdentity(nextPatient)) {
+    return null;
+  }
+
+  const firstSeenDate = normalizeDateOnly(
+    nextPatient.firstSeenDate || currentPatient.firstSeenDate
+  );
+  if (!firstSeenDate || normalizeDateOnly(recordDate) === firstSeenDate) {
+    return null;
+  }
+
+  const currentAdmissionDate = normalizeDateOnly(currentPatient.admissionDate);
+  const nextAdmissionDate = normalizeDateOnly(nextPatient.admissionDate);
+
+  if (!currentAdmissionDate || !nextAdmissionDate || currentAdmissionDate === nextAdmissionDate) {
+    return null;
+  }
+
+  return {
+    path,
+    patientName: nextPatient.patientName.trim(),
+    rut: nextPatient.rut.trim(),
+    message:
+      'La fecha de ingreso solo puede modificarse durante el primer día observado del episodio.',
+    currentAdmissionDate,
+    attemptedAdmissionDate: nextAdmissionDate,
+    firstSeenDate,
   };
 };

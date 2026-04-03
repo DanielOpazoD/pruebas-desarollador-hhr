@@ -1,6 +1,7 @@
 import { ConcurrencyError } from '@/services/storage/firestore';
 import { DataRegressionError, VersionMismatchError } from '@/utils/integrityGuard';
 import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
+import { AdmissionDatePolicyViolationError } from '@/application/patient-flow/admissionDatePolicy';
 import type {
   SaveDailyRecordResult,
   UpdatePartialDailyRecordResult,
@@ -47,6 +48,15 @@ export const resolveSaveErrorFeedback = (error: unknown): SaveErrorFeedback | nu
       refetchDelayMs: 5000,
       shouldLog: true,
       logLabel: '[Sync] Version mismatch blocked save:',
+    };
+  }
+
+  if (error instanceof AdmissionDatePolicyViolationError) {
+    return {
+      title: 'Fecha de Ingreso Bloqueada',
+      message: error.message,
+      shouldLog: true,
+      logLabel: '[Sync] Admission date policy blocked save:',
     };
   }
 
@@ -116,7 +126,9 @@ export const resolveSaveOutcomeFeedback = (
     return createSyncBlocked(
       result.consistencyState === 'blocked_regression'
         ? 'Protección de Datos'
-        : 'Versión de Datos Antigua',
+        : result.consistencyState === 'blocked_version_mismatch'
+          ? 'Versión de Datos Antigua'
+          : 'Fecha de Ingreso Bloqueada',
       resolveSyncConsistencyMessage(
         result,
         'La operación quedó bloqueada por una validación de consistencia remota.'
@@ -169,7 +181,9 @@ export const resolvePatchOutcomeFeedback = (
     return createSyncBlocked(
       result.consistencyState === 'blocked_regression'
         ? 'Protección de Datos'
-        : 'Versión de Datos Antigua',
+        : result.consistencyState === 'blocked_version_mismatch'
+          ? 'Versión de Datos Antigua'
+          : 'Fecha de Ingreso Bloqueada',
       resolveSyncConsistencyMessage(
         result,
         'La actualización quedó bloqueada por una validación de consistencia remota.'

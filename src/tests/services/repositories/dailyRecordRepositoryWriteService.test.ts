@@ -123,6 +123,24 @@ describe('dailyRecordRepositoryWriteService outbox fallback', () => {
     expect(result.queuedForRetry).toBe(true);
   });
 
+  it('blocks full save when admissionDate falls outside the first-seen window', async () => {
+    const record = buildRecord('2026-03-05');
+    record.beds = {
+      R1: {
+        ...buildPatient('R1', 'Paciente Invalido'),
+        firstSeenDate: '2026-03-01',
+        admissionDate: '2026-02-15',
+      },
+    };
+
+    const result = await saveDetailed(record);
+
+    expect(result.outcome).toBe('blocked');
+    expect(result.consistencyState).toBe('blocked_validation');
+    expect(result.blockingReason).toBe('validation');
+    expect(saveToIndexedDB).not.toHaveBeenCalled();
+  });
+
   it('queues merged record when partial update fails with retryable error', async () => {
     const existing = buildRecord('2026-02-18');
     existing.beds = {
@@ -163,6 +181,29 @@ describe('dailyRecordRepositoryWriteService outbox fallback', () => {
 
     expect(result.outcome).toBe('blocked');
     expect(result.savedLocally).toBe(false);
+  });
+
+  it('blocks partial admissionDate edits after the first observed day', async () => {
+    const current = buildRecord('2026-03-05');
+    current.beds = {
+      R1: {
+        ...buildPatient('R1', 'Paciente Persistido'),
+        firstSeenDate: '2026-03-01',
+        admissionDate: '2026-03-01',
+      },
+    };
+
+    vi.mocked(getRecordFromIndexedDB).mockResolvedValueOnce(current);
+
+    const result = await updatePartialDetailed('2026-03-05', {
+      'beds.R1.admissionDate': '2026-03-02',
+    });
+
+    expect(result.outcome).toBe('blocked');
+    expect(result.consistencyState).toBe('blocked_validation');
+    expect(result.blockingReason).toBe('validation');
+    expect(saveToIndexedDB).not.toHaveBeenCalled();
+    expect(updateRecordPartialToFirestore).not.toHaveBeenCalled();
   });
 
   it('does not queue task when Firestore error is non-retryable', async () => {

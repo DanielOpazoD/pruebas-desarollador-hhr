@@ -3,7 +3,6 @@ import {
   getRecordForDate as getRecordFromIndexedDB,
   getPreviousDayRecord as getPreviousDayFromIndexedDB,
   getAllDates as getAllDatesFromIndexedDB,
-  saveRecord as saveToIndexedDB,
 } from '@/services/storage/indexeddb/indexedDbRecordService';
 import { getAvailableDatesFromFirestore } from '@/services/storage/firestore';
 import { logLegacyInfo } from '@/services/storage/legacyfirebase/legacyFirebaseLogger';
@@ -11,6 +10,7 @@ import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { migrateLegacyDataWithReport } from '@/services/repositories/dataMigration';
 import { loadRemoteRecordWithFallback } from '@/services/repositories/dailyRecordRemoteLoader';
 import { bridgeLegacyRecord } from '@/services/repositories/legacyRecordBridgeService';
+import { persistHydratedRecordToLocalCache } from '@/services/repositories/dailyRecordLocalCachePersistence';
 import {
   createDailyRecordReadResult,
   DailyRecordReadResult,
@@ -22,6 +22,7 @@ import { measureRepositoryOperation } from '@/services/repositories/repositoryPe
 import { dailyRecordReadLogger } from '@/services/repositories/repositoryLoggers';
 import { resolveDailyRecordReadConsistency } from '@/services/repositories/dailyRecordConsistencyPolicy';
 import { resolveDailyRecordPersistenceGoldenPath } from '@/services/repositories/dailyRecordPersistenceGoldenPath';
+import { AdmissionDatePolicyViolationError } from '@/application/patient-flow/admissionDatePolicy';
 
 const isRepositoryDebugEnabled = () =>
   import.meta.env.DEV &&
@@ -152,7 +153,22 @@ export const getForDateWithMeta = async (
           });
 
           if (goldenPath.shouldHydrateLocal && remoteReadResult.record) {
-            await saveToIndexedDB(remoteReadResult.record);
+            try {
+              await persistHydratedRecordToLocalCache(
+                remoteReadResult.record,
+                query.date,
+                localCandidate?.record || null
+              );
+            } catch (error) {
+              if (error instanceof AdmissionDatePolicyViolationError) {
+                dailyRecordReadLogger.warn(
+                  `Skipped local hydration for ${query.date} due to admissionDate validation`,
+                  error
+                );
+              } else {
+                throw error;
+              }
+            }
           }
 
           if (goldenPath.selectedStore === 'remote' && remoteReadResult.record) {

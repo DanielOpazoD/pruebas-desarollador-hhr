@@ -4,6 +4,7 @@ import { PatientTraceability, SpecialtyTraceabilityType } from '@/types/minsalTy
 import { normalizeSpecialty, isFachEvacuationMethod } from './normalization';
 import { createEpisodeAdmissionTracker } from './episodeTracker';
 import type { MinsalDailyRecord } from './minsalRecordContracts';
+import { normalizeMovementReportingSnapshot } from './movementCompatibility';
 
 const resolveTraceabilityDiagnosis = (value: unknown): string | undefined => {
   if (typeof value !== 'string') return undefined;
@@ -11,29 +12,19 @@ const resolveTraceabilityDiagnosis = (value: unknown): string | undefined => {
   return diagnosis || undefined;
 };
 
-const resolveMovementSpecialty = (movement: {
-  specialty?: string;
-  originalData?: { specialty?: string };
-}): string => normalizeSpecialty(movement.specialty || movement.originalData?.specialty);
+const resolveMovementSpecialty = (movement: { specialty?: string }): string =>
+  normalizeSpecialty(movement.specialty);
 
 const resolveMovementAdmissionDate = (
   movement: {
     rut?: string;
     admissionDate?: string;
-    originalData?: { admissionDate?: string };
   },
   episodeTracker: ReturnType<typeof createEpisodeAdmissionTracker>
-): string | undefined =>
-  episodeTracker.resolveAdmissionDate(
-    movement.rut,
-    movement.admissionDate || movement.originalData?.admissionDate
-  );
+): string | undefined => episodeTracker.resolveAdmissionDate(movement.rut, movement.admissionDate);
 
-const resolveMovementDiagnosis = (movement: {
-  diagnosis?: string;
-  originalData?: { pathology?: string };
-}): string | undefined =>
-  resolveTraceabilityDiagnosis(movement.diagnosis || movement.originalData?.pathology);
+const resolveMovementDiagnosis = (movement: { diagnosis?: string }): string | undefined =>
+  resolveTraceabilityDiagnosis(movement.diagnosis);
 
 /**
  * Build traceability list lazily for a specialty + indicator type.
@@ -83,15 +74,16 @@ export function buildSpecialtyTraceability(
 
     if (type === 'egresos' || type === 'fallecidos') {
       record.discharges?.forEach(discharge => {
-        if (resolveMovementSpecialty(discharge) !== normalizedSpecialty) return;
+        const normalizedDischarge = normalizeMovementReportingSnapshot(discharge);
+        if (resolveMovementSpecialty(normalizedDischarge) !== normalizedSpecialty) return;
         if (type === 'fallecidos' && discharge.status !== 'Fallecido') return;
 
-        const admissionDate = resolveMovementAdmissionDate(discharge, episodeTracker);
+        const admissionDate = resolveMovementAdmissionDate(normalizedDischarge, episodeTracker);
 
         traceability.push({
           name: discharge.patientName,
           rut: discharge.rut,
-          diagnosis: resolveMovementDiagnosis(discharge),
+          diagnosis: resolveMovementDiagnosis(normalizedDischarge),
           date: record.date,
           bedName: discharge.bedName,
           admissionDate,
@@ -104,17 +96,18 @@ export function buildSpecialtyTraceability(
     }
 
     record.transfers?.forEach(transfer => {
-      if (resolveMovementSpecialty(transfer) !== normalizedSpecialty) return;
+      const normalizedTransfer = normalizeMovementReportingSnapshot(transfer);
+      if (resolveMovementSpecialty(normalizedTransfer) !== normalizedSpecialty) return;
       if (type === 'aerocardal' && transfer.evacuationMethod !== EVACUATION_METHOD_AEROCARDAL)
         return;
       if (type === 'fach' && !isFachEvacuationMethod(transfer.evacuationMethod)) return;
 
-      const admissionDate = resolveMovementAdmissionDate(transfer, episodeTracker);
+      const admissionDate = resolveMovementAdmissionDate(normalizedTransfer, episodeTracker);
 
       traceability.push({
         name: transfer.patientName,
         rut: transfer.rut,
-        diagnosis: resolveMovementDiagnosis(transfer),
+        diagnosis: resolveMovementDiagnosis(normalizedTransfer),
         date: record.date,
         bedName: transfer.bedName,
         admissionDate,

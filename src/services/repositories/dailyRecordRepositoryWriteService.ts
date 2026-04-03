@@ -28,6 +28,7 @@ import { dailyRecordWriteLogger } from '@/services/repositories/repositoryLogger
 import type { DailyRecordRecoveryDecision } from '@/services/repositories/dailyRecordRecoveryPolicy';
 import { DataRegressionError, VersionMismatchError } from '@/utils/integrityGuard';
 import type { DailyRecordRetryability } from '@/services/repositories/contracts/dailyRecordConsistency';
+import { AdmissionDatePolicyViolationError } from '@/application/patient-flow/admissionDatePolicy';
 
 interface RemoteWriteState {
   savedRemotely: boolean;
@@ -40,6 +41,7 @@ interface RemoteWriteState {
     | 'auto_merged'
     | 'blocked_regression'
     | 'blocked_version_mismatch'
+    | 'blocked_validation'
     | 'unrecoverable';
   retryability: DailyRecordRetryability;
   recoveryAction:
@@ -51,7 +53,7 @@ interface RemoteWriteState {
   conflictSummary: DailyRecordRecoveryDecision['conflictSummary'];
   observabilityTags: string[];
   userSafeMessage?: string;
-  blockingReason?: 'regression' | 'version_mismatch';
+  blockingReason?: 'regression' | 'version_mismatch' | 'validation';
   blockingError?: Error;
 }
 
@@ -191,28 +193,56 @@ const applyRemoteRecovery = async (
 export const saveDetailed = async (record: DailyRecord, expectedLastUpdated?: string) => {
   const command = createSaveDailyRecordCommand(record, expectedLastUpdated);
   const remoteState = createRemoteWriteState();
-  const validatedRecord = prepareDailyRecordForPersistence(command.record, command.date);
+  let validatedRecord: DailyRecord;
   try {
+    const currentLocalRecord = await getRecordFromIndexedDB(command.date);
+    validatedRecord = prepareDailyRecordForPersistence(
+      command.record,
+      command.date,
+      currentLocalRecord
+    );
     await runRemoteSaveIntegrityCheck(command.date, validatedRecord);
   } catch (err) {
-    if (err instanceof DataRegressionError || err instanceof VersionMismatchError) {
+    if (
+      err instanceof DataRegressionError ||
+      err instanceof VersionMismatchError ||
+      err instanceof AdmissionDatePolicyViolationError
+    ) {
       applyRecoveryDecisionToState(
         remoteState,
         {
           consistencyState:
-            err instanceof DataRegressionError ? 'blocked_regression' : 'blocked_version_mismatch',
+            err instanceof DataRegressionError
+              ? 'blocked_regression'
+              : err instanceof VersionMismatchError
+                ? 'blocked_version_mismatch'
+                : 'blocked_validation',
           retryability: 'blocked',
           recoveryAction: 'block_and_surface',
-          blockingReason: err instanceof DataRegressionError ? 'regression' : 'version_mismatch',
+          blockingReason:
+            err instanceof DataRegressionError
+              ? 'regression'
+              : err instanceof VersionMismatchError
+                ? 'version_mismatch'
+                : 'validation',
           conflictSummary: {
-            kind: err instanceof DataRegressionError ? 'regression_blocked' : 'version_mismatch',
+            kind:
+              err instanceof DataRegressionError
+                ? 'regression_blocked'
+                : err instanceof VersionMismatchError
+                  ? 'version_mismatch'
+                  : 'validation_blocked',
             sourceOfTruth: 'none',
             message: err.message,
           },
           observabilityTags: [
             'daily_record',
             'write',
-            err instanceof DataRegressionError ? 'regression_blocked' : 'version_mismatch',
+            err instanceof DataRegressionError
+              ? 'regression_blocked'
+              : err instanceof VersionMismatchError
+                ? 'version_mismatch'
+                : 'validation_blocked',
           ],
           userSafeMessage: err.message,
         },
@@ -310,11 +340,56 @@ export const updatePartialDetailed = async (date: string, partialData: DailyReco
     });
   }
 
-  const { record: validatedRecord, mergedPatches } = preparePatchedRecordForPersistence(
-    current,
-    command.date,
-    command.patch
-  );
+  let validatedRecord: DailyRecord;
+  let mergedPatches: DailyRecordPatch;
+  try {
+    ({ record: validatedRecord, mergedPatches } = preparePatchedRecordForPersistence(
+      current,
+      command.date,
+      command.patch
+    ));
+  } catch (err) {
+    if (err instanceof AdmissionDatePolicyViolationError) {
+      applyRecoveryDecisionToState(
+        remoteState,
+        {
+          consistencyState: 'blocked_validation',
+          retryability: 'blocked',
+          recoveryAction: 'block_and_surface',
+          blockingReason: 'validation',
+          conflictSummary: {
+            kind: 'validation_blocked',
+            sourceOfTruth: 'none',
+            changedPaths: Object.keys(command.patch),
+            message: err.message,
+          },
+          observabilityTags: ['daily_record', 'write', 'validation_blocked'],
+          userSafeMessage: err.message,
+        },
+        err
+      );
+      return createUpdatePartialDailyRecordResult({
+        date: command.date,
+        outcome: 'blocked',
+        savedLocally: false,
+        updatedRemotely: false,
+        queuedForRetry: false,
+        autoMerged: false,
+        patchedFields: Object.keys(command.patch).length,
+        consistencyState: remoteState.consistencyState,
+        sourceOfTruth: 'none',
+        retryability: remoteState.retryability,
+        recoveryAction: remoteState.recoveryAction,
+        conflictSummary: remoteState.conflictSummary,
+        observabilityTags: remoteState.observabilityTags,
+        userSafeMessage: remoteState.userSafeMessage,
+        blockingReason: remoteState.blockingReason,
+        repairApplied: false,
+        blockingError: remoteState.blockingError,
+      });
+    }
+    throw err;
+  }
   const patchedFields = Object.keys(mergedPatches).length;
 
   await saveToIndexedDB(validatedRecord);

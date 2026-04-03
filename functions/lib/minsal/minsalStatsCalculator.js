@@ -1,5 +1,6 @@
 const { createEmptySpecialtyBucket, normalizeSpecialty } = require('./minsalSpecialty');
 const { createEpisodeAdmissionTracker } = require('./minsalEpisodeTracker');
+const { normalizeMovementReportingSnapshot } = require('./sharedMovementCompatibility');
 
 const resolveTraceabilityDiagnosis = value => {
   if (typeof value !== 'string') return undefined;
@@ -10,20 +11,17 @@ const resolveTraceabilityDiagnosis = value => {
 const resolveAdmissionDateForEvent = (tracker, patientRut, fallbackAdmissionDate) =>
   tracker.resolveAdmissionDate(patientRut, fallbackAdmissionDate);
 
-const resolveMovementSpecialty = movement =>
-  normalizeSpecialty((movement && movement.specialty) || movement?.originalData?.specialty);
+const resolveMovementSpecialty = movement => normalizeSpecialty(movement && movement.specialty);
 
 const resolveMovementAdmissionDate = (tracker, movement) =>
   resolveAdmissionDateForEvent(
     tracker,
     movement && movement.rut,
-    (movement && movement.admissionDate) || movement?.originalData?.admissionDate
+    movement && movement.admissionDate
   );
 
 const resolveMovementDiagnosis = movement =>
-  resolveTraceabilityDiagnosis(
-    (movement && movement.diagnosis) || movement?.originalData?.pathology
-  );
+  resolveTraceabilityDiagnosis(movement && movement.diagnosis);
 
 const normalizeIsoDate = value => {
   if (!value || typeof value !== 'string') return undefined;
@@ -156,10 +154,14 @@ const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDa
 
     if (record.discharges) {
       record.discharges.forEach(discharge => {
-        const specialty = resolveMovementSpecialty(discharge);
+        const normalizedDischarge = normalizeMovementReportingSnapshot(discharge);
+        const specialty = resolveMovementSpecialty(normalizedDischarge);
         const existing = specialtyData.get(specialty) || createEmptySpecialtyBucket();
         existing.egresos++;
-        const resolvedAdmissionDate = resolveMovementAdmissionDate(episodeTracker, discharge);
+        const resolvedAdmissionDate = resolveMovementAdmissionDate(
+          episodeTracker,
+          normalizedDischarge
+        );
         const stayDays = calculateHospitalizedDays(resolvedAdmissionDate, record.date);
         if (stayDays !== null) {
           existing.stayDurations.push(stayDays);
@@ -169,7 +171,7 @@ const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDa
         const traceData = {
           name: discharge.patientName,
           rut: discharge.rut,
-          diagnosis: resolveMovementDiagnosis(discharge),
+          diagnosis: resolveMovementDiagnosis(normalizedDischarge),
           date: record.date,
           bedName: discharge.bedName,
           admissionDate: resolvedAdmissionDate,
@@ -192,10 +194,14 @@ const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDa
     if (record.transfers) {
       totalEgresosTraslados += record.transfers.length;
       record.transfers.forEach(transfer => {
-        const specialty = resolveMovementSpecialty(transfer);
+        const normalizedTransfer = normalizeMovementReportingSnapshot(transfer);
+        const specialty = resolveMovementSpecialty(normalizedTransfer);
         const existing = specialtyData.get(specialty) || createEmptySpecialtyBucket();
         existing.traslados++;
-        const resolvedAdmissionDate = resolveMovementAdmissionDate(episodeTracker, transfer);
+        const resolvedAdmissionDate = resolveMovementAdmissionDate(
+          episodeTracker,
+          normalizedTransfer
+        );
         const stayDays = calculateHospitalizedDays(resolvedAdmissionDate, record.date);
         if (stayDays !== null) {
           existing.stayDurations.push(stayDays);
@@ -205,7 +211,7 @@ const calculateMinsalStatistics = ({ records, hospitalCapacity, startDate, endDa
         existing.trasladosList.push({
           name: transfer.patientName,
           rut: transfer.rut,
-          diagnosis: resolveMovementDiagnosis(transfer),
+          diagnosis: resolveMovementDiagnosis(normalizedTransfer),
           date: record.date,
           bedName: transfer.bedName,
           admissionDate: resolvedAdmissionDate,

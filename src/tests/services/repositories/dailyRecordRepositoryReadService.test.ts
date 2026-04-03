@@ -98,7 +98,12 @@ describe('dailyRecordRepositoryReadService', () => {
     expect(result.source).toBe('firestore');
     expect(result.record?.lastUpdated).toBe(remote.lastUpdated);
     expect(result.consistencyState).toBe('remote_authoritative');
-    expect(saveToIndexedDB).toHaveBeenCalledWith(remote);
+    expect(saveToIndexedDB).toHaveBeenCalledWith(
+      expect.objectContaining({
+        date: remote.date,
+        lastUpdated: remote.lastUpdated,
+      })
+    );
   });
 
   it('falls back to local with recoverable metadata when remote fetch fails', async () => {

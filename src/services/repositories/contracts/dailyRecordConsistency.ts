@@ -29,6 +29,7 @@ export type DailyRecordWriteConsistencyState =
   | 'auto_merged'
   | 'blocked_regression'
   | 'blocked_version_mismatch'
+  | 'blocked_validation'
   | 'unrecoverable';
 
 export type DailyRecordSyncConsistencyState =
@@ -46,6 +47,7 @@ export type DailyRecordConflictKind =
   | 'concurrency'
   | 'regression_blocked'
   | 'version_mismatch'
+  | 'validation_blocked'
   | 'hydrated_from_remote'
   | 'repair_applied';
 

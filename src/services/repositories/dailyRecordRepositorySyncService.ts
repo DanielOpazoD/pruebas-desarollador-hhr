@@ -1,8 +1,5 @@
 import { DailyRecord } from '@/types/domain/dailyRecord';
-import {
-  getRecordForDate as getRecordFromIndexedDB,
-  saveRecord as saveToIndexedDB,
-} from '@/services/storage/indexeddb/indexedDbRecordService';
+import { getRecordForDate as getRecordFromIndexedDB } from '@/services/storage/indexeddb/indexedDbRecordService';
 import { subscribeToRecord } from '@/services/storage/firestore';
 import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { migrateLegacyData } from '@/services/repositories/dataMigration';
@@ -12,6 +9,8 @@ import { createSyncDailyRecordResult } from '@/services/repositories/contracts/d
 import { dailyRecordSyncLogger } from '@/services/repositories/repositoryLoggers';
 import { resolveDailyRecordSyncConsistency } from '@/services/repositories/dailyRecordConsistencyPolicy';
 import { resolveDailyRecordPersistenceGoldenPath } from '@/services/repositories/dailyRecordPersistenceGoldenPath';
+import { persistHydratedRecordToLocalCache } from '@/services/repositories/dailyRecordLocalCachePersistence';
+import { AdmissionDatePolicyViolationError } from '@/application/patient-flow/admissionDatePolicy';
 import type { SyncDailyRecordResult } from '@/services/repositories/contracts/dailyRecordResults';
 
 const resolveSubscriptionResult = async (
@@ -26,7 +25,18 @@ const resolveSubscriptionResult = async (
     remoteAvailability,
   });
   if (goldenPath.shouldHydrateLocal && remoteRecord) {
-    await saveToIndexedDB(remoteRecord);
+    try {
+      await persistHydratedRecordToLocalCache(remoteRecord, date, localRecord);
+    } catch (error) {
+      if (error instanceof AdmissionDatePolicyViolationError) {
+        dailyRecordSyncLogger.warn(
+          `Skipped local hydration for ${date} due to admissionDate validation`,
+          error
+        );
+      } else {
+        throw error;
+      }
+    }
   }
   const record = goldenPath.selectedRecord;
   const consistency = resolveDailyRecordSyncConsistency({
@@ -116,7 +126,18 @@ export const syncWithFirestoreDetailed = async (date: string) => {
           remoteAvailability: remoteResult.record ? 'resolved' : 'missing',
         });
         if (goldenPath.shouldHydrateLocal && remoteResult.record) {
-          await saveToIndexedDB(remoteResult.record);
+          try {
+            await persistHydratedRecordToLocalCache(remoteResult.record, date, localRecord);
+          } catch (error) {
+            if (error instanceof AdmissionDatePolicyViolationError) {
+              dailyRecordSyncLogger.warn(
+                `Skipped local hydration for ${date} due to admissionDate validation`,
+                error
+              );
+            } else {
+              throw error;
+            }
+          }
         }
         const record = goldenPath.selectedRecord;
         const consistency = resolveDailyRecordSyncConsistency({

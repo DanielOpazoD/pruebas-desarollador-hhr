@@ -1,4 +1,3 @@
-import { saveRecord as saveToIndexedDB } from '@/services/storage/records';
 import {
   getLegacyRecord,
   getLegacyRecordsRange,
@@ -18,6 +17,8 @@ import type { LegacyBridgeLoadResult } from '@/services/repositories/ports/repos
 import { measureRepositoryOperation } from '@/services/repositories/repositoryPerformance';
 import { getLegacyFirebasePathSnapshot } from '@/services/storage/legacyfirebase/legacyFirebasePathPolicy';
 import type { DailyRecord } from '@/types/domain/dailyRecord';
+import { persistHydratedRecordToLocalCache } from '@/services/repositories/dailyRecordLocalCachePersistence';
+import { AdmissionDatePolicyViolationError } from '@/application/patient-flow/admissionDatePolicy';
 
 const createLegacyBridgeResult = (
   result: Partial<LegacyBridgeLoadResult> & Pick<LegacyBridgeLoadResult, 'source' | 'record'>
@@ -44,7 +45,7 @@ const createLegacyBridgeResult = (
 
 const cacheMigratedLegacyRecord = async (record: DailyRecord, date: string) => {
   const migrated = migrateLegacyDataWithReport(record, date);
-  await saveToIndexedDB(migrated.record);
+  await persistHydratedRecordToLocalCache(migrated.record, date);
   return migrated;
 };
 
@@ -82,7 +83,29 @@ export const bridgeLegacyRecord = async (date: string): Promise<LegacyBridgeLoad
         );
       }
 
-      const migrated = await cacheMigratedLegacyRecord(legacyRecord, date);
+      let migrated;
+      try {
+        migrated = await cacheMigratedLegacyRecord(legacyRecord, date);
+      } catch (error) {
+        if (error instanceof AdmissionDatePolicyViolationError) {
+          const repaired = migrateLegacyDataWithReport(legacyRecord, date);
+          const legacyPaths = getLegacyFirebasePathSnapshot(date);
+          return finalizeLegacyBridgeResult(
+            createLegacyBridgeResult({
+              source: 'legacy_bridge',
+              record: repaired.record,
+              compatibilityIntensity: repaired.compatibilityIntensity,
+              migrationRulesApplied: repaired.appliedRules,
+              recoveredIssues: repaired.recoveredIssues,
+              cachedLocally: false,
+              candidatePaths: legacyPaths.recordDocPaths,
+            }),
+            date,
+            1
+          );
+        }
+        throw error;
+      }
       const legacyPaths = getLegacyFirebasePathSnapshot(date);
       return finalizeLegacyBridgeResult(
         createLegacyBridgeResult({
@@ -116,22 +139,44 @@ export const bridgeLegacyRecordsRange = async (
       const legacyRecords = await getLegacyRecordsRange(startDate, endDate);
       const results = await Promise.all(
         legacyRecords.map(async record => {
-          const migrated = await cacheMigratedLegacyRecord(record, record.date);
-          const legacyPaths = getLegacyFirebasePathSnapshot(record.date);
-          return finalizeLegacyBridgeResult(
-            createLegacyBridgeResult({
-              source: 'legacy_bridge',
-              scope: 'range',
-              record: migrated.record,
-              compatibilityIntensity: migrated.compatibilityIntensity,
-              migrationRulesApplied: migrated.appliedRules,
-              recoveredIssues: migrated.recoveredIssues,
-              cachedLocally: true,
-              candidatePaths: legacyPaths.recordDocPaths,
-            }),
-            `${startDate}:${endDate}`,
-            legacyRecords.length
-          );
+          try {
+            const migrated = await cacheMigratedLegacyRecord(record, record.date);
+            const legacyPaths = getLegacyFirebasePathSnapshot(record.date);
+            return finalizeLegacyBridgeResult(
+              createLegacyBridgeResult({
+                source: 'legacy_bridge',
+                scope: 'range',
+                record: migrated.record,
+                compatibilityIntensity: migrated.compatibilityIntensity,
+                migrationRulesApplied: migrated.appliedRules,
+                recoveredIssues: migrated.recoveredIssues,
+                cachedLocally: true,
+                candidatePaths: legacyPaths.recordDocPaths,
+              }),
+              `${startDate}:${endDate}`,
+              legacyRecords.length
+            );
+          } catch (error) {
+            if (!(error instanceof AdmissionDatePolicyViolationError)) {
+              throw error;
+            }
+            const migrated = migrateLegacyDataWithReport(record, record.date);
+            const legacyPaths = getLegacyFirebasePathSnapshot(record.date);
+            return finalizeLegacyBridgeResult(
+              createLegacyBridgeResult({
+                source: 'legacy_bridge',
+                scope: 'range',
+                record: migrated.record,
+                compatibilityIntensity: migrated.compatibilityIntensity,
+                migrationRulesApplied: migrated.appliedRules,
+                recoveredIssues: migrated.recoveredIssues,
+                cachedLocally: false,
+                candidatePaths: legacyPaths.recordDocPaths,
+              }),
+              `${startDate}:${endDate}`,
+              legacyRecords.length
+            );
+          }
         })
       );
 

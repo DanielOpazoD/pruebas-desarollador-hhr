@@ -8,6 +8,7 @@ import { getPatientsBySpecialty } from './specialty';
 import { calculateHospitalizedDays } from '@/utils/dateUtils';
 import { createEpisodeAdmissionTracker } from './episodeTracker';
 import type { MinsalDailyRecord } from './minsalRecordContracts';
+import { normalizeMovementReportingSnapshot } from './movementCompatibility';
 
 const resolveTraceabilityDiagnosis = (value: unknown): string | undefined => {
   if (typeof value !== 'string') return undefined;
@@ -15,29 +16,19 @@ const resolveTraceabilityDiagnosis = (value: unknown): string | undefined => {
   return diagnosis || undefined;
 };
 
-const resolveMovementSpecialty = (movement: {
-  specialty?: string;
-  originalData?: { specialty?: string };
-}): string => normalizeSpecialty(movement.specialty || movement.originalData?.specialty);
+const resolveMovementSpecialty = (movement: { specialty?: string }): string =>
+  normalizeSpecialty(movement.specialty);
 
 const resolveMovementAdmissionDate = (
   movement: {
     rut?: string;
     admissionDate?: string;
-    originalData?: { admissionDate?: string };
   },
   episodeTracker: ReturnType<typeof createEpisodeAdmissionTracker>
-): string | undefined =>
-  episodeTracker.resolveAdmissionDate(
-    movement.rut,
-    movement.admissionDate || movement.originalData?.admissionDate
-  );
+): string | undefined => episodeTracker.resolveAdmissionDate(movement.rut, movement.admissionDate);
 
-const resolveMovementDiagnosis = (movement: {
-  diagnosis?: string;
-  originalData?: { pathology?: string };
-}): string | undefined =>
-  resolveTraceabilityDiagnosis(movement.diagnosis || movement.originalData?.pathology);
+const resolveMovementDiagnosis = (movement: { diagnosis?: string }): string | undefined =>
+  resolveTraceabilityDiagnosis(movement.diagnosis);
 
 type StaySummary = {
   minimum: number;
@@ -179,11 +170,12 @@ export function calculateMinsalStats(
     });
 
     record.discharges?.forEach(d => {
-      const specialty = resolveMovementSpecialty(d);
+      const discharge = normalizeMovementReportingSnapshot(d);
+      const specialty = resolveMovementSpecialty(discharge);
       const existing = specialtyData.get(specialty) || createSpecialtyBucket();
       existing.egresos++;
 
-      const resolvedAdmissionDate = resolveMovementAdmissionDate(d, episodeTracker);
+      const resolvedAdmissionDate = resolveMovementAdmissionDate(discharge, episodeTracker);
       const stayDays = calculateHospitalizedDays(resolvedAdmissionDate, record.date);
       if (stayDays !== null) {
         existing.stayDurations.push(stayDays);
@@ -193,7 +185,7 @@ export function calculateMinsalStats(
       const traceData = {
         name: d.patientName,
         rut: d.rut,
-        diagnosis: resolveMovementDiagnosis(d),
+        diagnosis: resolveMovementDiagnosis(discharge),
         date: record.date,
         bedName: d.bedName,
         admissionDate: resolvedAdmissionDate,
@@ -212,11 +204,12 @@ export function calculateMinsalStats(
     });
 
     record.transfers?.forEach(t => {
-      const specialty = resolveMovementSpecialty(t);
+      const transfer = normalizeMovementReportingSnapshot(t);
+      const specialty = resolveMovementSpecialty(transfer);
       const existing = specialtyData.get(specialty) || createSpecialtyBucket();
       existing.traslados++;
 
-      const resolvedAdmissionDate = resolveMovementAdmissionDate(t, episodeTracker);
+      const resolvedAdmissionDate = resolveMovementAdmissionDate(transfer, episodeTracker);
       const stayDays = calculateHospitalizedDays(resolvedAdmissionDate, record.date);
       if (stayDays !== null) {
         existing.stayDurations.push(stayDays);
@@ -226,7 +219,7 @@ export function calculateMinsalStats(
       const traceData = {
         name: t.patientName,
         rut: t.rut,
-        diagnosis: resolveMovementDiagnosis(t),
+        diagnosis: resolveMovementDiagnosis(transfer),
         date: record.date,
         bedName: t.bedName,
         admissionDate: resolvedAdmissionDate,

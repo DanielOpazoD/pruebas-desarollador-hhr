@@ -34,12 +34,10 @@ describe('FugaNotificationModal', () => {
     rut: '11.111.111-1',
     diagnosis: 'Diagnóstico Test',
     bedName: 'Cama 1',
+    specialty: 'Cirugía',
     dischargeType: 'Fuga',
     movementDate: '2026-03-31',
     time: '14:30',
-    originalData: {
-      specialty: 'Cirugía',
-    },
   } as any;
 
   beforeEach(() => {
@@ -117,7 +115,7 @@ describe('FugaNotificationModal', () => {
         onClose={vi.fn()}
         dischargeItem={{
           ...baseDischarge,
-          originalData: { specialty: 'Psiquiatría' },
+          specialty: 'Psiquiatría',
         }}
         recordDate="2026-03-31"
       />

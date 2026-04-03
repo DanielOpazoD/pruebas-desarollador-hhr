@@ -1,5 +1,4 @@
 import { DailyRecord } from '@/types/domain/dailyRecord';
-import { saveRecord as saveToIndexedDB } from '@/services/storage/indexeddb/indexedDbRecordService';
 import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import {
   getForDate,
@@ -26,6 +25,8 @@ import {
   createInitializeDayResult,
 } from '@/services/repositories/contracts/dailyRecordResults';
 import { dailyRecordInitializationLogger } from '@/services/repositories/repositoryLoggers';
+import { persistHydratedRecordToLocalCache } from '@/services/repositories/dailyRecordLocalCachePersistence';
+import { AdmissionDatePolicyViolationError } from '@/application/patient-flow/admissionDatePolicy';
 
 export interface DailyRecordInitializationResult {
   record: DailyRecord;
@@ -91,7 +92,18 @@ const cacheInitializationRecordIfNeeded = async (
     return;
   }
 
-  await saveToIndexedDB(record);
+  try {
+    await persistHydratedRecordToLocalCache(record, record.date);
+  } catch (error) {
+    if (error instanceof AdmissionDatePolicyViolationError) {
+      dailyRecordInitializationLogger.warn(
+        `Skipped initialization cache write for ${record.date} due to admissionDate validation`,
+        error
+      );
+      return;
+    }
+    throw error;
+  }
 };
 
 const loadRemoteInitializationSeed = async (

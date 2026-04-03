@@ -12,15 +12,15 @@ vi.mock('@/services/storage/migration/legacyFirestoreBridge', () => ({
   getLegacyRecordsRange: vi.fn(),
 }));
 
-vi.mock('@/services/storage/records', () => ({
-  saveRecord: vi.fn(),
+vi.mock('@/services/repositories/dailyRecordLocalCachePersistence', () => ({
+  persistHydratedRecordToLocalCache: vi.fn(),
 }));
 
 import {
   getLegacyRecord,
   getLegacyRecordsRange,
 } from '@/services/storage/migration/legacyFirestoreBridge';
-import { saveRecord } from '@/services/storage/records';
+import { persistHydratedRecordToLocalCache } from '@/services/repositories/dailyRecordLocalCachePersistence';
 
 describe('legacyRecordBridgeService', () => {
   beforeEach(() => {
@@ -42,7 +42,7 @@ describe('legacyRecordBridgeService', () => {
     expect(result.retirementPhase).toBe('restrict');
     expect(result.candidatePaths?.[0]).toContain('hospitals/hanga_roa/dailyRecords/2025-01-01');
     expect(result.recoveredIssues).toEqual(expect.any(Array));
-    expect(saveRecord).toHaveBeenCalled();
+    expect(persistHydratedRecordToLocalCache).toHaveBeenCalled();
     expect(getLegacyBridgeUsageSummary().bridgedOperations).toBeGreaterThan(0);
   });
 

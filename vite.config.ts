@@ -6,6 +6,7 @@ import tailwindcss from '@tailwindcss/vite';
 import viteCompression from 'vite-plugin-compression';
 import { VitePWA } from 'vite-plugin-pwa';
 import { chunkForModule } from './scripts/config/chunkingPolicy';
+import { minsalSharedInteropPlugin } from './scripts/config/minsalSharedInteropPlugin';
 
 /**
  * Generate version.json directly in the build output so the repo does not
@@ -78,6 +79,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       versionPlugin(),
       excelJsRuntimeAssetPlugin(),
+      minsalSharedInteropPlugin(__dirname),
       react(),
       tailwindcss(),
       // PWA plugin configuration
@@ -141,6 +143,9 @@ export default defineConfig(({ mode }) => {
     build: {
       modulePreload: {
         polyfill: false,
+      },
+      commonjsOptions: {
+        include: [/node_modules/, /functions\/lib\/minsal\/.*\.js$/],
       },
       rollupOptions: {
         output: {

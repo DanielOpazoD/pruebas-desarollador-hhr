@@ -30,7 +30,7 @@ export interface SaveDailyRecordResult {
   conflictSummary: DailyRecordConflictSummary | null;
   observabilityTags: string[];
   userSafeMessage?: string;
-  blockingReason?: 'regression' | 'version_mismatch';
+  blockingReason?: 'regression' | 'version_mismatch' | 'validation';
   repairApplied: boolean;
   blockingError?: Error;
 }
@@ -61,7 +61,7 @@ export interface UpdatePartialDailyRecordResult {
   conflictSummary: DailyRecordConflictSummary | null;
   observabilityTags: string[];
   userSafeMessage?: string;
-  blockingReason?: 'regression' | 'version_mismatch';
+  blockingReason?: 'regression' | 'version_mismatch' | 'validation';
   repairApplied: boolean;
   blockingError?: Error;
 }
@@ -139,7 +139,7 @@ export const createSaveDailyRecordResult = (
           : input.outcome === 'unrecoverable'
             ? 'unrecoverable'
             : input.outcome === 'blocked'
-              ? 'blocked_regression'
+              ? 'blocked_validation'
               : input.savedRemotely
                 ? 'persisted_and_synced'
                 : 'persisted_local_only'),
@@ -194,7 +194,7 @@ export const createUpdatePartialDailyRecordResult = (
           : input.outcome === 'unrecoverable'
             ? 'unrecoverable'
             : input.outcome === 'blocked'
-              ? 'blocked_regression'
+              ? 'blocked_validation'
               : input.updatedRemotely
                 ? 'persisted_and_synced'
                 : 'persisted_local_only'),
@@ -274,5 +274,6 @@ export const isDailyRecordWriteBlockedResult = (
   Boolean(
     result &&
     (result.consistencyState === 'blocked_regression' ||
-      result.consistencyState === 'blocked_version_mismatch')
+      result.consistencyState === 'blocked_version_mismatch' ||
+      result.consistencyState === 'blocked_validation')
   );

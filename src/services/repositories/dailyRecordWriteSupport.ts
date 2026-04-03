@@ -1,6 +1,7 @@
 import { CURRENT_SCHEMA_VERSION } from '@/constants/version';
 import type { DailyRecord } from '@/types/domain/dailyRecord';
 import type { DailyRecordPatch } from '@/types/domain/dailyRecordPatch';
+import type { PatientData } from '@/types/domain/patient';
 import { getRecordFromFirestore } from '@/services/storage/firestore';
 import { isRetryableSyncError, queueSyncTask } from '@/services/storage/sync';
 import { saveRecord as saveToIndexedDB } from '@/services/storage/indexeddb/indexedDbRecordService';
@@ -35,6 +36,11 @@ import {
   touchDailyRecordLastUpdated,
 } from '@/services/repositories/dailyRecordDomainServices';
 import { dailyRecordWriteSupportLogger } from '@/services/repositories/repositoryLoggers';
+import {
+  AdmissionDatePolicyViolationError,
+  resolveAdmissionDateMutationViolation,
+  resolveAdmissionDateWindowViolation,
+} from '@/application/patient-flow/admissionDatePolicy';
 
 export interface ConflictAutoMergeRecoveryResult {
   status: 'auto_merged' | 'not_possible';
@@ -51,11 +57,100 @@ export interface RemoteWriteRecoveryResult {
 const isConcurrencyError = (error: unknown): boolean =>
   error instanceof Error && error.name === 'ConcurrencyError';
 
+interface RecordPatientEntry {
+  path: string;
+  patient: PatientData;
+}
+
+const normalizeRutKey = (rut?: string): string =>
+  (rut || '')
+    .replace(/[.\-\s]/g, '')
+    .trim()
+    .toUpperCase();
+
+const hasPatientIdentity = (patient?: PatientData): patient is PatientData =>
+  Boolean(patient?.patientName?.trim() && patient?.rut?.trim());
+
+const collectRecordPatients = (record: DailyRecord): RecordPatientEntry[] => {
+  const entries: RecordPatientEntry[] = [];
+
+  Object.entries(record.beds || {}).forEach(([bedId, patient]) => {
+    if (hasPatientIdentity(patient)) {
+      entries.push({
+        path: `beds.${bedId}`,
+        patient,
+      });
+    }
+
+    if (hasPatientIdentity(patient.clinicalCrib)) {
+      entries.push({
+        path: `beds.${bedId}.clinicalCrib`,
+        patient: patient.clinicalCrib,
+      });
+    }
+  });
+
+  return entries;
+};
+
+const assertAdmissionDatePersistencePolicy = (
+  date: string,
+  nextRecord: DailyRecord,
+  previousRecord?: DailyRecord | null
+): void => {
+  const nextEntries = collectRecordPatients(nextRecord);
+  const violations = nextEntries
+    .map(entry =>
+      resolveAdmissionDateWindowViolation({
+        recordDate: date,
+        path: entry.path,
+        patient: entry.patient,
+      })
+    )
+    .filter((violation): violation is NonNullable<typeof violation> => Boolean(violation));
+
+  if (previousRecord) {
+    const previousByRut = new Map<string, RecordPatientEntry>();
+    collectRecordPatients(previousRecord).forEach(entry => {
+      const rutKey = normalizeRutKey(entry.patient.rut);
+      if (rutKey && !previousByRut.has(rutKey)) {
+        previousByRut.set(rutKey, entry);
+      }
+    });
+
+    nextEntries.forEach(entry => {
+      const rutKey = normalizeRutKey(entry.patient.rut);
+      const currentEntry = rutKey ? previousByRut.get(rutKey) : undefined;
+      const mutationViolation = resolveAdmissionDateMutationViolation({
+        recordDate: date,
+        path: entry.path,
+        currentPatient: currentEntry?.patient,
+        nextPatient: entry.patient,
+      });
+      if (mutationViolation) {
+        violations.push(mutationViolation);
+      }
+    });
+  }
+
+  if (violations.length === 0) {
+    return;
+  }
+
+  const [firstViolation] = violations;
+  throw new AdmissionDatePolicyViolationError(
+    `${firstViolation.message} (${firstViolation.patientName} · ${firstViolation.rut})`,
+    violations
+  );
+};
+
 export const prepareDailyRecordForPersistence = (
   record: DailyRecord,
-  date: string
+  date: string,
+  previousRecord?: DailyRecord | null
 ): DailyRecord => {
   const recordWithSchemaDefaults = validateAndSalvageRecord(record, date);
+  assertAdmissionDatePersistencePolicy(date, recordWithSchemaDefaults, previousRecord);
   ensureDailyRecordDateTimestamp(recordWithSchemaDefaults);
 
   const normalized = normalizeDailyRecordInvariants(recordWithSchemaDefaults);
@@ -78,6 +173,7 @@ export const preparePatchedRecordForPersistence = (
   patch: DailyRecordPatch
 ): { record: DailyRecord; mergedPatches: DailyRecordPatch } => {
   const updatedForInvariants = applyPatches(current, patch);
+  assertAdmissionDatePersistencePolicy(date, updatedForInvariants, current);
   const mergedPatches: DailyRecordPatch = { ...patch };
   ensureDailyRecordDateTimestamp(updatedForInvariants);
 

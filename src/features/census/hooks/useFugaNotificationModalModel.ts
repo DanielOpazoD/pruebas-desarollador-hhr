@@ -33,7 +33,7 @@ export const useFugaNotificationModalModel = ({
     () => resolveShiftNurseSignature(staffRecord || undefined, 'night'),
     [staffRecord]
   );
-  const specialty = String(dischargeItem.originalData?.specialty || '');
+  const specialty = String(dischargeItem.specialty || '');
   const isAdminUser = role === 'admin';
   const [manualRecipients, setManualRecipients] = useState('');
   const [testMode, setTestMode] = useState(false);
