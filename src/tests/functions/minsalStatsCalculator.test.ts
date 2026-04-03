@@ -209,4 +209,49 @@ describe('functions minsalStatsCalculator', () => {
     expect(result.porEspecialidad[0].egresosList?.[0]?.admissionDate).toBe('2026-03-01');
     expect(result.porEspecialidad[0].egresosList?.[1]?.admissionDate).toBe('2026-03-18');
   });
+
+  it('prefers movement specialty and admissionDate snapshots over stale originalData fields', () => {
+    const result = calculateMinsalStatistics({
+      hospitalCapacity: 10,
+      startDate: '2026-03-01',
+      endDate: '2026-03-02',
+      records: [
+        {
+          date: '2026-03-01',
+          beds: {
+            b1: {
+              patientName: 'Paciente Movimiento',
+              rut: '8.888.888-8',
+              pathology: 'Diagnóstico actual',
+              specialty: 'Cirugía',
+              admissionDate: '2026-03-01',
+            },
+          },
+        },
+        {
+          date: '2026-03-02',
+          beds: {
+            b1: { patientName: '', rut: '', pathology: '', specialty: '' },
+          },
+          discharges: [
+            {
+              patientName: 'Paciente Movimiento',
+              rut: '8.888.888-8',
+              diagnosis: 'Diagnóstico actual',
+              status: 'Vivo',
+              specialty: 'Cirugía',
+              admissionDate: '2026-03-01',
+              originalData: { specialty: 'Medicina', admissionDate: '2025-01-01' },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(result.porEspecialidad[0]).toMatchObject({
+      specialty: 'Cirugía',
+    });
+    expect(result.porEspecialidad[0].egresosList?.[0]?.admissionDate).toBe('2026-03-01');
+    expect(result.porEspecialidad[0].egresosList?.[0]?.diagnosis).toBe('Diagnóstico actual');
+  });
 });

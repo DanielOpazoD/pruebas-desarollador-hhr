@@ -3,7 +3,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { useDailyRecordSyncQuery } from '@/hooks/useDailyRecordSyncQuery';
 import { ConcurrencyError } from '@/services/storage/firestoreService';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types';
 
 const mockSubscribe = vi.fn();
 const mockGetForDate = vi.fn();
@@ -11,33 +11,47 @@ const mockSave = vi.fn();
 const mockUpdatePartial = vi.fn();
 
 const mockNotifyError = vi.fn();
-
-vi.mock('@/services/repositories/DailyRecordRepository', () => {
-  const mockImpl = {
-    getForDate: (date: string) => mockGetForDate(date),
-    save: (record: DailyRecord) => mockSave(record),
-    updatePartial: (date: string, partial: Record<string, unknown>) =>
-      mockUpdatePartial(date, partial),
-    subscribe: (
-      date: string,
-      cb: (record: DailyRecord | null, hasPendingWrites: boolean) => void
-    ) => {
-      mockSubscribe(date, cb);
-      return () => {};
-    },
+const { mockDailyRecordRepositoryPort } = vi.hoisted(() => ({
+  mockDailyRecordRepositoryPort: {
+    getForDate: vi.fn(),
+    getForDateWithMeta: vi.fn(),
+    save: vi.fn(),
+    saveDetailed: vi.fn(),
+    updatePartial: vi.fn(),
+    updatePartialDetailed: vi.fn(),
+    subscribe: vi.fn(() => {}),
+    subscribeDetailed: undefined,
     initializeDay: vi.fn(),
     deleteDay: vi.fn(),
     getPreviousDay: vi.fn(),
-    getAllDates: vi.fn(),
-    copyPatientToDate: vi.fn(),
+    getPreviousDayWithMeta: vi.fn(),
+    getAvailableDates: vi.fn(),
+    getMonthRecords: vi.fn(),
+    copyPatientToDateDetailed: vi.fn(),
     syncWithFirestore: vi.fn(),
-  };
+    syncWithFirestoreDetailed: vi.fn(),
+  },
+}));
 
+vi.mock('@/services/repositories/DailyRecordRepository', () => {
   return {
-    ...mockImpl,
-    DailyRecordRepository: mockImpl,
+    ...mockDailyRecordRepositoryPort,
+    DailyRecordRepository: mockDailyRecordRepositoryPort,
   };
 });
+
+vi.mock('@/application/ports/dailyRecordPort', () => ({
+  defaultDailyRecordReadPort: mockDailyRecordRepositoryPort,
+  defaultDailyRecordWritePort: {
+    updatePartial: mockDailyRecordRepositoryPort.updatePartialDetailed,
+    save: mockDailyRecordRepositoryPort.saveDetailed,
+    delete: mockDailyRecordRepositoryPort.deleteDay,
+  },
+  defaultDailyRecordSyncPort: {
+    syncWithFirestoreDetailed: mockDailyRecordRepositoryPort.syncWithFirestoreDetailed,
+  },
+  defaultDailyRecordRepositoryPort: mockDailyRecordRepositoryPort,
+}));
 
 vi.mock('@/context/UIContext', () => ({
   useNotification: () => ({
@@ -85,11 +99,53 @@ const buildRecord = (date: string, name: string): DailyRecord =>
 
 describe('Sync UI Resilience Integration', () => {
   const date = '2026-02-19';
+  const buildReadResult = (record: DailyRecord | null) => ({
+    date,
+    record,
+    source: record ? ('indexeddb' as const) : ('not_found' as const),
+    compatibilityTier: 'none' as const,
+    compatibilityIntensity: 'none' as const,
+    migrationRulesApplied: [],
+    consistencyState: record ? ('local_only' as const) : ('missing' as const),
+    sourceOfTruth: record ? ('local' as const) : ('none' as const),
+    retryability: 'not_applicable' as const,
+    recoveryAction: 'none' as const,
+    conflictSummary: null,
+    observabilityTags: ['daily_record', 'read'],
+    repairApplied: false,
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockSave.mockResolvedValue(undefined);
     mockUpdatePartial.mockResolvedValue(undefined);
+    mockDailyRecordRepositoryPort.getForDate.mockImplementation((requestDate: string) =>
+      mockGetForDate(requestDate)
+    );
+    mockDailyRecordRepositoryPort.getForDateWithMeta.mockImplementation(async requestDate =>
+      buildReadResult((await mockGetForDate(requestDate)) ?? null)
+    );
+    mockDailyRecordRepositoryPort.save.mockImplementation((record: DailyRecord) =>
+      mockSave(record)
+    );
+    mockDailyRecordRepositoryPort.saveDetailed.mockImplementation((record: DailyRecord) =>
+      mockSave(record)
+    );
+    mockDailyRecordRepositoryPort.updatePartial.mockImplementation((requestDate, partial) =>
+      mockUpdatePartial(requestDate, partial)
+    );
+    mockDailyRecordRepositoryPort.updatePartialDetailed.mockImplementation((requestDate, partial) =>
+      mockUpdatePartial(requestDate, partial)
+    );
+    (mockDailyRecordRepositoryPort.subscribe as ReturnType<typeof vi.fn>).mockImplementation(
+      (
+        requestDate: string,
+        callback: (record: DailyRecord | null, hasPendingWrites: boolean) => void
+      ) => {
+        mockSubscribe(requestDate, callback);
+        return () => {};
+      }
+    );
   });
 
   it('ignores remote echo updates while hasPendingWrites is true', async () => {
@@ -138,9 +194,12 @@ describe('Sync UI Resilience Integration', () => {
 
     mockGetForDate.mockClear();
 
-    await waitFor(() => {
-      expect(mockGetForDate).toHaveBeenCalledWith(date);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(mockGetForDate).toHaveBeenCalledWith(date);
+      },
+      { timeout: 3000 }
+    );
   });
 
   it('rolls back optimistic patch when update fails with permission-denied', async () => {

@@ -19,32 +19,58 @@ import { UIProvider } from '@/context/UIContext';
 import { AuditProvider } from '@/context/AuditContext';
 import { DailyRecord, PatientStatus, Specialty } from '@/types';
 import { DataFactory } from '../factories/DataFactory';
-import * as DailyRecordRepository from '@/services/repositories/DailyRecordRepository';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
 import { wireStatefulDailyRecordRepoMock } from '@/tests/utils/dailyRecordRepositoryMockUtils';
-import { deepClone } from '@/utils/deepClone';
 
 // ============================================================================
 // MOCKS (Repository Layer)
 // ============================================================================
 
-vi.mock('@/services/repositories/DailyRecordRepository', () => {
-  const mockRepo = {
+const { mockDailyRecordRepositoryPort } = vi.hoisted(() => ({
+  mockDailyRecordRepositoryPort: {
     getForDate: vi.fn(),
+    getForDateWithMeta: vi.fn(),
     save: vi.fn(),
+    saveDetailed: vi.fn(),
     updatePartial: vi.fn(),
+    updatePartialDetailed: vi.fn(),
     subscribe: vi.fn(() => {
       return () => {};
     }),
+    subscribeDetailed: vi.fn(() => {
+      return () => {};
+    }),
     syncWithFirestore: vi.fn().mockResolvedValue(null),
+    syncWithFirestoreDetailed: vi.fn().mockResolvedValue(null),
     getPreviousDay: vi.fn(),
+    getPreviousDayWithMeta: vi.fn(),
     initializeDay: vi.fn(),
-  };
+    deleteDay: vi.fn(),
+    getAvailableDates: vi.fn(),
+    getMonthRecords: vi.fn(),
+    copyPatientToDateDetailed: vi.fn(),
+  },
+}));
+
+vi.mock('@/services/repositories/DailyRecordRepository', () => {
   return {
-    ...mockRepo,
-    DailyRecordRepository: mockRepo,
+    ...mockDailyRecordRepositoryPort,
+    DailyRecordRepository: mockDailyRecordRepositoryPort,
   };
 });
+
+vi.mock('@/application/ports/dailyRecordPort', () => ({
+  defaultDailyRecordReadPort: mockDailyRecordRepositoryPort,
+  defaultDailyRecordWritePort: {
+    updatePartial: mockDailyRecordRepositoryPort.updatePartialDetailed,
+    save: mockDailyRecordRepositoryPort.saveDetailed,
+    delete: mockDailyRecordRepositoryPort.deleteDay,
+  },
+  defaultDailyRecordSyncPort: {
+    syncWithFirestoreDetailed: mockDailyRecordRepositoryPort.syncWithFirestoreDetailed,
+  },
+  defaultDailyRecordRepositoryPort: mockDailyRecordRepositoryPort,
+}));
 
 vi.mock('@/firebaseConfig', () => ({
   auth: {
@@ -150,9 +176,7 @@ describe('Critical Integration Paths', () => {
       },
     });
 
-    const mockRepo = DailyRecordRepository.DailyRecordRepository;
-
-    wireStatefulDailyRecordRepoMock(mockRepo, {
+    wireStatefulDailyRecordRepoMock(mockDailyRecordRepositoryPort, {
       getCurrentRecord: () => currentRecord,
       setCurrentRecord: record => {
         currentRecord = record;
@@ -165,10 +189,11 @@ describe('Critical Integration Paths', () => {
       wrapper: createIntegrationWrapper(),
     });
 
-    // Wait for load
-    await waitFor(() => {
-      expect(result.current.record).not.toBeNull();
+    await act(async () => {
+      await result.current.createDay(false);
     });
+
+    await waitFor(() => expect(result.current.record).not.toBeNull());
 
     // 1. Simulate Input: Admit Patient to Bed 1
     await act(async () => {
@@ -191,27 +216,25 @@ describe('Critical Integration Paths', () => {
     });
 
     // 3. Verify Repository Update (Persistence)
-    const mockRepo = DailyRecordRepository.DailyRecordRepository;
-    expect(mockRepo.updatePartial).toHaveBeenCalled();
+    expect(mockDailyRecordRepositoryPort.updatePartialDetailed).toHaveBeenCalled();
   });
 
   it('FLOW 2: Patient Discharge (Alta)', async () => {
-    // Pre-load with a patient
-    const initialRecord = DataFactory.createMockDailyRecord(mockDate, {
-      beds: {
-        'bed-1': DataFactory.createMockPatient('bed-1', {
-          patientName: 'Maria Silva',
-          rut: '11.111.111-1',
-        }),
-      },
-    });
-    // Ensure stateful mock is also initialized!
-    currentRecord = deepClone(initialRecord);
-    // mocked getForDate will use currentRecord automatically
-
     const { result } = renderHook(() => useDailyRecord(mockDate), {
       wrapper: createIntegrationWrapper(),
     });
+
+    await act(async () => {
+      await result.current.createDay(false);
+    });
+
+    await act(async () => {
+      result.current.updatePatientMultiple('bed-1', {
+        patientName: 'Maria Silva',
+        rut: '11.111.111-1',
+      });
+    });
+
     await waitFor(() =>
       expect(result.current.record?.beds['bed-1'].patientName).toBe('Maria Silva')
     );
@@ -238,13 +261,15 @@ describe('Critical Integration Paths', () => {
     expect(result.current.record?.discharges[0].patientName).toBe('Maria Silva');
 
     // 4. Verify Persistence
-    const mockRepo = DailyRecordRepository.DailyRecordRepository;
-    expect(mockRepo.save).toHaveBeenCalled();
+    expect(mockDailyRecordRepositoryPort.saveDetailed).toHaveBeenCalled();
   });
 
   it('FLOW 3: Census Modify & Save', async () => {
     const { result } = renderHook(() => useDailyRecord(mockDate), {
       wrapper: createIntegrationWrapper(),
+    });
+    await act(async () => {
+      await result.current.createDay(false);
     });
     await waitFor(() => expect(result.current.record).not.toBeNull());
 
@@ -259,13 +284,15 @@ describe('Critical Integration Paths', () => {
     });
 
     // 3. Expect Partial Update
-    const mockRepo = DailyRecordRepository.DailyRecordRepository;
-    expect(mockRepo.updatePartial).toHaveBeenCalled();
+    expect(mockDailyRecordRepositoryPort.updatePartialDetailed).toHaveBeenCalled();
   });
 
   it('FLOW 4: Medical Handoff Signature', async () => {
     const { result } = renderHook(() => useDailyRecord(mockDate), {
       wrapper: createIntegrationWrapper(),
+    });
+    await act(async () => {
+      await result.current.createDay(false);
     });
     await waitFor(() => expect(result.current.record).not.toBeNull());
 
@@ -280,7 +307,6 @@ describe('Critical Integration Paths', () => {
     });
 
     // 3. Verify Async Persistence
-    const mockRepo = DailyRecordRepository.DailyRecordRepository;
-    expect(mockRepo.save).toHaveBeenCalled();
+    expect(mockDailyRecordRepositoryPort.saveDetailed).toHaveBeenCalled();
   });
 });

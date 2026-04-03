@@ -5,6 +5,7 @@ import { deepClone } from '@/utils/deepClone';
 
 interface DailyRecordRepositoryMockLike {
   getForDate: (date: string) => Promise<DailyRecord | null>;
+  getForDateWithMeta?: (date: string, syncFromRemote?: boolean) => Promise<unknown>;
   save: (record: DailyRecord) => Promise<void>;
   saveDetailed?: (record: DailyRecord) => Promise<unknown>;
   updatePartial: (date: string, partial: DailyRecordPatch) => Promise<void>;
@@ -26,6 +27,27 @@ export const wireStatefulDailyRecordRepoMock = (
   options: StatefulWireOptions
 ): void => {
   vi.mocked(repo.getForDate).mockImplementation(async () => options.getCurrentRecord());
+
+  if (repo.getForDateWithMeta) {
+    vi.mocked(repo.getForDateWithMeta).mockImplementation(async (date: string) => {
+      const record = options.getCurrentRecord();
+      return {
+        date,
+        record,
+        source: record ? 'indexeddb' : 'not_found',
+        compatibilityTier: 'none',
+        compatibilityIntensity: 'none',
+        migrationRulesApplied: [],
+        consistencyState: record ? 'local_only' : 'missing',
+        sourceOfTruth: record ? 'local' : 'none',
+        retryability: 'not_applicable',
+        recoveryAction: 'none',
+        conflictSummary: null,
+        observabilityTags: ['daily_record', 'read'],
+        repairApplied: false,
+      };
+    });
+  }
 
   vi.mocked(repo.save).mockImplementation(async (record: DailyRecord) => {
     options.setCurrentRecord(cloneRecord(record));

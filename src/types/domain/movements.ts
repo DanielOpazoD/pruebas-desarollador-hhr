@@ -19,12 +19,14 @@ export interface IeehData {
 export interface DischargeData {
   id: string;
   movementDate?: string; // YYYY-MM-DD
+  admissionDate?: string; // Explicit episode admission date for reporting
   bedName: string;
   bedId: string; // Needed for undo
   bedType: string;
   patientName: string;
   rut: string;
   diagnosis: string;
+  specialty?: string;
   time: string;
   status: 'Vivo' | 'Fallecido';
   dischargeType?: DischargeType; // Sub-classification for 'Vivo'
@@ -41,12 +43,14 @@ export interface DischargeData {
 export interface TransferData {
   id: string;
   movementDate?: string; // YYYY-MM-DD
+  admissionDate?: string; // Explicit episode admission date for reporting
   bedName: string;
   bedId: string; // Needed for undo
   bedType: string;
   patientName: string;
   rut: string;
   diagnosis: string;
+  specialty?: string;
   time: string;
   evacuationMethod: string;
   evacuationMethodOther?: string;

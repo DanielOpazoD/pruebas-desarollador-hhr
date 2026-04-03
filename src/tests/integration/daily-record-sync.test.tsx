@@ -8,7 +8,8 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import React from 'react';
 import { useDailyRecordSyncQuery } from '@/hooks/useDailyRecordSyncQuery';
 import { UIProvider } from '@/context/UIContext';
-import { DailyRecord, PatientStatus, Specialty } from '@/types';
+import { PatientStatus, Specialty } from '@/types';
+import type { DailyRecord } from '@/types';
 import type { DailyRecordPatch } from '@/hooks/useDailyRecordTypes';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
 import { DataFactory } from '@/tests/factories/DataFactory';
@@ -24,23 +25,47 @@ const mockSave = vi.fn();
 const mockUpdatePartial = vi.fn();
 const mockGetForDate = vi.fn();
 type SubscribeCallback = (record: DailyRecord, hasPendingWrites: boolean) => void;
+const { mockDailyRecordRepositoryPort } = vi.hoisted(() => ({
+  mockDailyRecordRepositoryPort: {
+    getForDate: vi.fn(),
+    getForDateWithMeta: vi.fn(),
+    save: vi.fn(),
+    saveDetailed: vi.fn(),
+    updatePartial: vi.fn(),
+    updatePartialDetailed: vi.fn(),
+    subscribe: vi.fn(),
+    subscribeDetailed: undefined,
+    syncWithFirestore: vi.fn(),
+    syncWithFirestoreDetailed: vi.fn(),
+    initializeDay: vi.fn(),
+    deleteDay: vi.fn(),
+    getPreviousDay: vi.fn(),
+    getPreviousDayWithMeta: vi.fn(),
+    getAvailableDates: vi.fn(),
+    getMonthRecords: vi.fn(),
+    copyPatientToDateDetailed: vi.fn(),
+  },
+}));
 
 vi.mock('../../services/repositories/DailyRecordRepository', () => {
-  const mockImpl = {
-    getForDate: (date: string) => mockGetForDate(date),
-    save: (record: DailyRecord) => mockSave(record),
-    updatePartial: (date: string, partial: DailyRecordPatch) => mockUpdatePartial(date, partial),
-    subscribe: (date: string, cb: SubscribeCallback) => {
-      mockSubscribe(date, cb);
-      return () => {}; // Unsubscribe
-    },
-    syncWithFirestore: (date: string) => mockSyncWithFirestore(date),
-  };
   return {
-    ...mockImpl,
-    DailyRecordRepository: mockImpl,
+    ...mockDailyRecordRepositoryPort,
+    DailyRecordRepository: mockDailyRecordRepositoryPort,
   };
 });
+
+vi.mock('@/application/ports/dailyRecordPort', () => ({
+  defaultDailyRecordReadPort: mockDailyRecordRepositoryPort,
+  defaultDailyRecordWritePort: {
+    updatePartial: mockDailyRecordRepositoryPort.updatePartialDetailed,
+    save: mockDailyRecordRepositoryPort.saveDetailed,
+    delete: mockDailyRecordRepositoryPort.deleteDay,
+  },
+  defaultDailyRecordSyncPort: {
+    syncWithFirestoreDetailed: mockDailyRecordRepositoryPort.syncWithFirestoreDetailed,
+  },
+  defaultDailyRecordRepositoryPort: mockDailyRecordRepositoryPort,
+}));
 
 // Mock Firebase Auth
 vi.mock('../../firebaseConfig', () => ({
@@ -97,12 +122,55 @@ const createWrapper = () => {
 };
 
 describe('DailyRecord Sync Integration', () => {
+  const buildReadResult = (date: string, record: DailyRecord | null) => ({
+    date,
+    record,
+    source: record ? ('indexeddb' as const) : ('not_found' as const),
+    compatibilityTier: 'none' as const,
+    compatibilityIntensity: 'none' as const,
+    migrationRulesApplied: [],
+    consistencyState: record ? ('local_only' as const) : ('missing' as const),
+    sourceOfTruth: record ? ('local' as const) : ('none' as const),
+    retryability: 'not_applicable' as const,
+    recoveryAction: 'none' as const,
+    conflictSummary: null,
+    observabilityTags: ['daily_record', 'read'],
+    repairApplied: false,
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetForDate.mockReturnValue(null);
     mockSyncWithFirestore.mockResolvedValue(null);
     mockSave.mockResolvedValue(undefined);
     mockUpdatePartial.mockResolvedValue(undefined);
+    mockDailyRecordRepositoryPort.getForDate.mockImplementation((date: string) =>
+      mockGetForDate(date)
+    );
+    mockDailyRecordRepositoryPort.getForDateWithMeta.mockImplementation(async (date: string) =>
+      buildReadResult(date, (await mockGetForDate(date)) ?? null)
+    );
+    mockDailyRecordRepositoryPort.save.mockImplementation((record: DailyRecord) =>
+      mockSave(record)
+    );
+    mockDailyRecordRepositoryPort.saveDetailed.mockImplementation((record: DailyRecord) =>
+      mockSave(record)
+    );
+    mockDailyRecordRepositoryPort.updatePartial.mockImplementation(
+      (date: string, partial: DailyRecordPatch) => mockUpdatePartial(date, partial)
+    );
+    mockDailyRecordRepositoryPort.updatePartialDetailed.mockImplementation(
+      (date: string, partial: DailyRecordPatch) => mockUpdatePartial(date, partial)
+    );
+    mockDailyRecordRepositoryPort.subscribe.mockImplementation(
+      (date: string, cb: SubscribeCallback) => {
+        mockSubscribe(date, cb);
+        return () => {};
+      }
+    );
+    mockDailyRecordRepositoryPort.syncWithFirestoreDetailed.mockImplementation((date: string) =>
+      mockSyncWithFirestore(date)
+    );
   });
 
   it('should load local record on mount', async () => {
@@ -116,7 +184,10 @@ describe('DailyRecord Sync Integration', () => {
     await waitFor(() => {
       expect(result.current.record).toEqual(localRecord);
     });
-    expect(mockGetForDate).toHaveBeenCalledWith('2024-12-28');
+    expect(mockDailyRecordRepositoryPort.getForDateWithMeta).toHaveBeenCalledWith(
+      '2024-12-28',
+      true
+    );
   });
 
   it('should subscribe to remote changes on mount', async () => {
@@ -322,7 +393,10 @@ describe('DailyRecord Sync Integration', () => {
     });
 
     await waitFor(() => {
-      expect(mockGetForDate).toHaveBeenCalledWith('2024-12-28');
+      expect(mockDailyRecordRepositoryPort.getForDateWithMeta).toHaveBeenCalledWith(
+        '2024-12-28',
+        true
+      );
     });
   });
 });

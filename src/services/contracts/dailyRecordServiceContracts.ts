@@ -5,6 +5,13 @@ import type {
   MedicalSpecialty as RootMedicalSpecialty,
 } from '@/types/domain/dailyRecordMedicalHandoff';
 
+/**
+ * Service-layer daily record contracts.
+ *
+ * Non-repository services should depend on this entrypoint instead of importing
+ * the persistence root contract directly. That keeps service code insulated from
+ * future slicing of the `DailyRecord` shape.
+ */
 export type DailyRecord = RootDailyRecord;
 export type DailyRecordPatch = RootDailyRecordPatch;
 export type MedicalHandoffActor = RootMedicalHandoffActor;

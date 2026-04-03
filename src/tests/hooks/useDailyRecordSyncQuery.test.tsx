@@ -7,17 +7,8 @@ import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils
 import type { DailyRecord } from '@/types';
 import { DataFactory } from '@/tests/factories/DataFactory';
 
-vi.mock('@/utils/dateUtils', async () => {
-  const actual = await vi.importActual('@/utils/dateUtils');
-  return {
-    ...actual,
-    getTodayISO: () => '2025-12-27',
-  };
-});
-
-// Mock Repository
-vi.mock('@/services/repositories/DailyRecordRepository', () => {
-  const mockImpl = {
+const { mockDailyRecordRepositoryPort } = vi.hoisted(() => ({
+  mockDailyRecordRepositoryPort: {
     getForDate: vi.fn(),
     getForDateWithMeta: vi.fn(),
     save: vi.fn().mockResolvedValue(undefined),
@@ -30,6 +21,7 @@ vi.mock('@/services/repositories/DailyRecordRepository', () => {
       autoMerged: false,
     }),
     subscribe: vi.fn(() => vi.fn()),
+    subscribeDetailed: vi.fn(() => vi.fn()),
     updatePartial: vi.fn().mockResolvedValue(undefined),
     updatePartialDetailed: vi.fn().mockResolvedValue({
       date: '2025-12-27',
@@ -45,12 +37,44 @@ vi.mock('@/services/repositories/DailyRecordRepository', () => {
       outcome: 'clean',
       record: null,
     }),
-  };
+    initializeDay: vi.fn(),
+    deleteDay: vi.fn(),
+    getPreviousDay: vi.fn(),
+    getPreviousDayWithMeta: vi.fn(),
+    getAvailableDates: vi.fn(),
+    getMonthRecords: vi.fn(),
+    copyPatientToDateDetailed: vi.fn(),
+  },
+}));
+
+vi.mock('@/utils/dateUtils', async () => {
+  const actual = await vi.importActual('@/utils/dateUtils');
   return {
-    ...mockImpl,
-    DailyRecordRepository: mockImpl,
+    ...actual,
+    getTodayISO: () => '2025-12-27',
   };
 });
+
+// Mock Repository
+vi.mock('@/services/repositories/DailyRecordRepository', () => {
+  return {
+    ...mockDailyRecordRepositoryPort,
+    DailyRecordRepository: mockDailyRecordRepositoryPort,
+  };
+});
+
+vi.mock('@/application/ports/dailyRecordPort', () => ({
+  defaultDailyRecordReadPort: mockDailyRecordRepositoryPort,
+  defaultDailyRecordWritePort: {
+    updatePartial: mockDailyRecordRepositoryPort.updatePartialDetailed,
+    save: mockDailyRecordRepositoryPort.saveDetailed,
+    delete: mockDailyRecordRepositoryPort.deleteDay,
+  },
+  defaultDailyRecordSyncPort: {
+    syncWithFirestoreDetailed: mockDailyRecordRepositoryPort.syncWithFirestoreDetailed,
+  },
+  defaultDailyRecordRepositoryPort: mockDailyRecordRepositoryPort,
+}));
 
 import { UIProvider } from '@/context/UIContext';
 

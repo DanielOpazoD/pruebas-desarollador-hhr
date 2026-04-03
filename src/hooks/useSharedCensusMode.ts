@@ -16,7 +16,6 @@ export interface SharedCensusModeResult {
 }
 
 const SHARED_CENSUS_ALLOWED_AUTH_ROLES = new Set([
-  'viewer_census',
   'admin',
   'nurse_hospital',
   'doctor_urgency',

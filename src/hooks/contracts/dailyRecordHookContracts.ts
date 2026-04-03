@@ -5,6 +5,12 @@ import type {
   MedicalSpecialty as RootMedicalSpecialty,
 } from '@/types/domain/dailyRecordMedicalHandoff';
 
+/**
+ * Hook/runtime-facing daily record contracts.
+ *
+ * Hooks should prefer this file over the root persistence contract so the UI
+ * layer does not keep widening the direct dependency surface of `DailyRecord`.
+ */
 export type DailyRecord = RootDailyRecord;
 export type DailyRecordPatch = RootDailyRecordPatch;
 export type MedicalHandoffActor = RootMedicalHandoffActor;

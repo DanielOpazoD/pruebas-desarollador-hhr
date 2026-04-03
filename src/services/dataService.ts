@@ -9,7 +9,9 @@
  * - storage/unifiedLocalService
  * - factories/patientFactory
  * - calculations/statsCalculator
- * - repositories/DailyRecordRepository
+ * - repositories/dailyRecordRepositoryReadService
+ * - repositories/dailyRecordRepositoryWriteService
+ * - repositories/dailyRecordRepositoryInitializationService
  * - utils/dateUtils
  *
  * Retirement is tracked in `reports/compatibility-governance.md`.
@@ -33,4 +35,3 @@ export {
 export { save as saveRecord } from './repositories/dailyRecordRepositoryWriteService';
 export { initializeDay } from './repositories/dailyRecordRepositoryInitializationService';
 export { setFirestoreEnabled, isFirestoreEnabled } from './repositories/repositoryConfig';
-export { DailyRecordRepository } from './repositories/DailyRecordRepository';

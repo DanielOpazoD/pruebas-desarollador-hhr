@@ -11,6 +11,8 @@ export interface MedicalHandoffValidityViewModel {
   canRefreshAsCurrent: boolean;
   isActiveToday: boolean;
   isMuted: boolean;
+  tooltipLabel: string;
+  canConfirm: boolean;
 }
 
 export interface MedicalEntryMetadataViewModel {
@@ -56,12 +58,18 @@ export const resolveMedicalHandoffValidityViewModel = (
   reportDate: string
 ): MedicalHandoffValidityViewModel => {
   const wasUpdatedToday = Boolean(entry.updatedAt) && entry.updatedAt?.slice(0, 10) === reportDate;
+  const statusLabel = wasUpdatedToday
+    ? 'Nota actual: actualizada hoy'
+    : 'Nota actual: pendiente hoy';
+  const canRefreshAsCurrent = Boolean(entry.note.trim());
 
   return {
-    statusLabel: wasUpdatedToday ? 'Nota actual: actualizada hoy' : 'Nota actual: pendiente hoy',
-    canRefreshAsCurrent: Boolean(entry.note.trim()),
+    statusLabel,
+    canRefreshAsCurrent,
     isActiveToday: wasUpdatedToday,
     isMuted: !wasUpdatedToday,
+    tooltipLabel: statusLabel,
+    canConfirm: canRefreshAsCurrent,
   };
 };
 

@@ -7,26 +7,16 @@ import { UIProvider } from '@/context/UIContext';
 import { applyPatches } from '@/utils/patchUtils';
 import { DataFactory } from '../factories/DataFactory';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
+import {
+  createSaveDailyRecordResult,
+  createUpdatePartialDailyRecordResult,
+} from '@/services/repositories/contracts/dailyRecordResults';
 
 const { mockDailyRecordPorts } = vi.hoisted(() => ({
   mockDailyRecordPorts: {
+    getForDate: vi.fn(),
     getForDateWithMeta: vi.fn(),
     getPreviousDayWithMeta: vi.fn(),
-    delete: vi.fn().mockResolvedValue(undefined),
-  },
-}));
-
-// Mock dependencies
-vi.mock('@/services/repositories/DailyRecordRepository', () => {
-  const repo = {
-    getForDate: vi.fn(),
-    getForDateWithMeta: vi.fn().mockResolvedValue({
-      record: null,
-      source: 'not_found',
-      compatibilityTier: 'none',
-      compatibilityIntensity: 'none',
-      migrationRulesApplied: [],
-    }),
     subscribe: vi.fn(() => vi.fn()),
     save: vi.fn().mockResolvedValue(undefined),
     saveDetailed: vi.fn().mockResolvedValue({
@@ -47,7 +37,7 @@ vi.mock('@/services/repositories/DailyRecordRepository', () => {
       autoMerged: false,
       patchedFields: 1,
     }),
-    initializeDay: vi.fn().mockResolvedValue(null), // Changed to null to force init
+    initializeDay: vi.fn().mockResolvedValue(null),
     initializeDayDetailed: vi.fn().mockResolvedValue({
       record: null,
       outcome: 'clean',
@@ -55,21 +45,15 @@ vi.mock('@/services/repositories/DailyRecordRepository', () => {
       sourceMigrationRulesApplied: [],
     }),
     deleteDay: vi.fn().mockResolvedValue(undefined),
-    getPreviousDay: vi.fn().mockResolvedValue(null),
-    getPreviousDayWithMeta: vi.fn().mockResolvedValue({
-      date: '2025-01-01',
-      record: null,
-      source: 'not_found',
-      compatibilityTier: 'none',
-      compatibilityIntensity: 'none',
-      migrationRulesApplied: [],
-    }),
-    syncWithFirestore: vi.fn().mockResolvedValue(null),
     syncWithFirestoreDetailed: vi.fn().mockResolvedValue({
       date: '2025-01-01',
       outcome: 'clean',
       record: null,
     }),
+    syncWithFirestore: vi.fn().mockResolvedValue(null),
+    getPreviousDay: vi.fn().mockResolvedValue(null),
+    getAvailableDates: vi.fn().mockResolvedValue([]),
+    getMonthRecords: vi.fn().mockResolvedValue([]),
     copyPatientToDate: vi.fn().mockResolvedValue(undefined),
     copyPatientToDateDetailed: vi.fn().mockResolvedValue({
       sourceDate: '2025-01-01',
@@ -80,20 +64,51 @@ vi.mock('@/services/repositories/DailyRecordRepository', () => {
       sourceCompatibilityIntensity: 'none',
       sourceMigrationRulesApplied: [],
     }),
-  };
+    delete: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
+// Mock dependencies
+vi.mock('@/services/repositories/DailyRecordRepository', () => {
   return {
-    DailyRecordRepository: repo,
-    ...repo,
+    DailyRecordRepository: mockDailyRecordPorts,
+    ...mockDailyRecordPorts,
   };
 });
 
 vi.mock('@/application/ports/dailyRecordPort', () => ({
   defaultDailyRecordReadPort: {
+    getForDate: mockDailyRecordPorts.getForDate,
     getForDateWithMeta: mockDailyRecordPorts.getForDateWithMeta,
     getPreviousDayWithMeta: mockDailyRecordPorts.getPreviousDayWithMeta,
+    getPreviousDay: mockDailyRecordPorts.getPreviousDay,
+    getAvailableDates: mockDailyRecordPorts.getAvailableDates,
+    getMonthRecords: mockDailyRecordPorts.getMonthRecords,
+    initializeDay: mockDailyRecordPorts.initializeDay,
   },
   defaultDailyRecordWritePort: {
     delete: mockDailyRecordPorts.delete,
+  },
+  defaultDailyRecordSyncPort: {
+    syncWithFirestoreDetailed: mockDailyRecordPorts.syncWithFirestoreDetailed,
+  },
+  defaultDailyRecordRepositoryPort: {
+    getForDate: mockDailyRecordPorts.getForDate,
+    getForDateWithMeta: mockDailyRecordPorts.getForDateWithMeta,
+    getPreviousDay: mockDailyRecordPorts.getPreviousDay,
+    getPreviousDayWithMeta: mockDailyRecordPorts.getPreviousDayWithMeta,
+    getAvailableDates: mockDailyRecordPorts.getAvailableDates,
+    getMonthRecords: mockDailyRecordPorts.getMonthRecords,
+    initializeDay: mockDailyRecordPorts.initializeDay,
+    save: mockDailyRecordPorts.save,
+    saveDetailed: mockDailyRecordPorts.saveDetailed,
+    updatePartial: mockDailyRecordPorts.updatePartial,
+    updatePartialDetailed: mockDailyRecordPorts.updatePartialDetailed,
+    subscribe: mockDailyRecordPorts.subscribe,
+    subscribeDetailed: vi.fn(() => vi.fn()),
+    syncWithFirestoreDetailed: mockDailyRecordPorts.syncWithFirestoreDetailed,
+    deleteDay: mockDailyRecordPorts.delete,
+    copyPatientToDateDetailed: mockDailyRecordPorts.copyPatientToDateDetailed,
   },
 }));
 
@@ -169,8 +184,35 @@ describe('useDailyRecord', () => {
       }
     });
 
+    vi.mocked(repo.updatePartialDetailed).mockImplementation(async (date, partial) => {
+      if (recordsMap[date]) {
+        recordsMap[date] = applyPatches(recordsMap[date], partial);
+      }
+      return createUpdatePartialDailyRecordResult({
+        date,
+        outcome: 'clean',
+        savedLocally: true,
+        updatedRemotely: true,
+        queuedForRetry: false,
+        autoMerged: false,
+        patchedFields: Object.keys(partial).length,
+      });
+    });
+
     vi.mocked(repo.save).mockImplementation(async record => {
       recordsMap[record.date] = record;
+    });
+
+    vi.mocked(repo.saveDetailed).mockImplementation(async record => {
+      recordsMap[record.date] = record;
+      return createSaveDailyRecordResult({
+        date: record.date,
+        outcome: 'clean',
+        savedLocally: true,
+        savedRemotely: true,
+        queuedForRetry: false,
+        autoMerged: false,
+      });
     });
 
     mockDailyRecordPorts.getForDateWithMeta.mockImplementation(async (date: string) => ({

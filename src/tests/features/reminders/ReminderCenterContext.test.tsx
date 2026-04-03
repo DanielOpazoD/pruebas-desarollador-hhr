@@ -69,7 +69,7 @@ const reminder = {
   targetRoles: ['nurse_hospital'],
   targetShifts: ['day'],
   startDate: '2026-03-01',
-  endDate: '2026-03-31',
+  endDate: '2099-12-31',
   priority: 3,
   isActive: true,
   createdBy: 'admin-1',

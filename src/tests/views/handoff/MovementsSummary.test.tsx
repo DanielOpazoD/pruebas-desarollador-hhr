@@ -59,18 +59,22 @@ describe('MovementsSummary', () => {
   it('renders print footer counts for day shift', () => {
     render(<MovementsSummary record={buildRecord()} selectedShift="day" />);
 
-    expect(screen.getByText('Conteo del turno:')).toBeInTheDocument();
-    expect(screen.getByText('Altas: 1')).toBeInTheDocument();
-    expect(screen.getByText('Traslados: 1')).toBeInTheDocument();
-    expect(screen.getByText('CMA: 1')).toBeInTheDocument();
+    expect(screen.getByTestId('movements-summary-footer').textContent).toContain(
+      'Conteo del turno:'
+    );
+    expect(screen.getByTestId('movements-summary-footer').textContent).toContain('Altas: 1');
+    expect(screen.getByTestId('movements-summary-footer').textContent).toContain('Traslados: 1');
+    expect(screen.getByTestId('movements-summary-footer').textContent).toContain('CMA: 1');
   });
 
   it('omits CMA count from the footer in night shift', () => {
     render(<MovementsSummary record={buildRecord()} selectedShift="night" />);
 
-    expect(screen.getByText('Conteo del turno:')).toBeInTheDocument();
-    expect(screen.getByText('Altas: 1')).toBeInTheDocument();
-    expect(screen.getByText('Traslados: 0')).toBeInTheDocument();
-    expect(screen.queryByText('CMA: 0')).not.toBeInTheDocument();
+    expect(screen.getByTestId('movements-summary-footer').textContent).toContain(
+      'Conteo del turno:'
+    );
+    expect(screen.getByTestId('movements-summary-footer').textContent).toContain('Altas: 1');
+    expect(screen.getByTestId('movements-summary-footer').textContent).toContain('Traslados: 0');
+    expect(screen.getByTestId('movements-summary-footer').textContent).not.toContain('CMA: 0');
   });
 });

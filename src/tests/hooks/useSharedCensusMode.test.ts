@@ -19,7 +19,7 @@ const mockUserBase = {
 };
 
 let mockAuthLoading = false;
-let mockAuthRole: UserRole = 'viewer_census';
+let mockAuthRole: UserRole = 'viewer';
 let mockAuthUser: {
   uid: string;
   email: string | null;
@@ -56,7 +56,7 @@ describe('useSharedCensusMode', () => {
     vi.clearAllMocks();
     mockLocation.pathname = '/';
     mockAuthLoading = false;
-    mockAuthRole = 'viewer_census';
+    mockAuthRole = 'viewer';
     mockAuthUser = { ...mockUserBase };
   });
 

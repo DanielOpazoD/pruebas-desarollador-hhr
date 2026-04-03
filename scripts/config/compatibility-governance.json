@@ -119,6 +119,17 @@
       "allowedImporters": []
     },
     {
+      "path": "src/services/repositories/DailyRecordRepository.ts",
+      "owner": "persistence",
+      "kind": "compatibility_facade",
+      "reason": "Mantener una fachada minima mientras consumidores historicos migran a read/write/sync ports y servicios duenios.",
+      "remainingConsumers": "tests legacy puntuales y adaptadores de compatibilidad controlados",
+      "retirementCriteria": "Source productivo sin imports al facade y dependencias resueltas via ports o modulos especificos.",
+      "target": "2026-Q3",
+      "importPolicy": "restricted",
+      "allowedImporters": []
+    },
+    {
       "path": "src/services/storage/index.ts",
       "owner": "storage",
       "kind": "compatibility_barrel",

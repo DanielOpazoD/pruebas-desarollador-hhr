@@ -6,6 +6,13 @@ import type {
   MedicalSpecialtyHandoffNote as RootMedicalSpecialtyHandoffNote,
 } from '@/types/domain/dailyRecordMedicalHandoff';
 
+/**
+ * Application-facing daily record contracts.
+ *
+ * Keep application and UI-adjacent code importing from here instead of the root
+ * `types/domain/dailyRecord` contract so the persistence shape can keep
+ * shrinking behind contextual contracts over time.
+ */
 export type DailyRecord = RootDailyRecord;
 export type DailyRecordPatch = RootDailyRecordPatch;
 export type MedicalHandoffActor = RootMedicalHandoffActor;

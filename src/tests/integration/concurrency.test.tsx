@@ -3,25 +3,51 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { useDailyRecordSyncQuery } from '@/hooks/useDailyRecordSyncQuery';
 import { ConcurrencyError } from '@/services/storage/firestoreService';
 import { DataFactory } from '../factories/DataFactory';
-import * as DailyRecordRepository from '@/services/repositories/DailyRecordRepository';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
 
 // Mocks
 const mockNotificationError = vi.fn();
+const { mockDailyRecordRepositoryPort } = vi.hoisted(() => ({
+  mockDailyRecordRepositoryPort: {
+    getForDate: vi.fn(),
+    getForDateWithMeta: vi.fn(),
+    save: vi.fn(),
+    saveDetailed: vi.fn(),
+    subscribe: vi.fn(() => () => {}),
+    subscribeDetailed: vi.fn(() => () => {}),
+    syncWithFirestore: vi.fn().mockResolvedValue(null),
+    syncWithFirestoreDetailed: vi.fn().mockResolvedValue(null),
+    updatePartial: vi.fn(),
+    updatePartialDetailed: vi.fn(),
+    initializeDay: vi.fn(),
+    deleteDay: vi.fn(),
+    getPreviousDay: vi.fn(),
+    getPreviousDayWithMeta: vi.fn(),
+    getAvailableDates: vi.fn(),
+    getMonthRecords: vi.fn(),
+    copyPatientToDateDetailed: vi.fn(),
+  },
+}));
 
 vi.mock('@/services/repositories/DailyRecordRepository', () => {
-  const mockRepo = {
-    getForDate: vi.fn(),
-    save: vi.fn(),
-    subscribe: vi.fn(() => () => {}),
-    syncWithFirestore: vi.fn().mockResolvedValue(null),
-    updatePartial: vi.fn(),
-  };
   return {
-    ...mockRepo,
-    DailyRecordRepository: mockRepo,
+    ...mockDailyRecordRepositoryPort,
+    DailyRecordRepository: mockDailyRecordRepositoryPort,
   };
 });
+
+vi.mock('@/application/ports/dailyRecordPort', () => ({
+  defaultDailyRecordReadPort: mockDailyRecordRepositoryPort,
+  defaultDailyRecordWritePort: {
+    updatePartial: mockDailyRecordRepositoryPort.updatePartialDetailed,
+    save: mockDailyRecordRepositoryPort.saveDetailed,
+    delete: mockDailyRecordRepositoryPort.deleteDay,
+  },
+  defaultDailyRecordSyncPort: {
+    syncWithFirestoreDetailed: mockDailyRecordRepositoryPort.syncWithFirestoreDetailed,
+  },
+  defaultDailyRecordRepositoryPort: mockDailyRecordRepositoryPort,
+}));
 
 vi.mock('../../context/UIContext', () => ({
   useNotification: () => ({
@@ -48,14 +74,30 @@ const createWrapper = () => {
 describe('Concurrency Handling Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const mockRepo = DailyRecordRepository.DailyRecordRepository;
-    vi.mocked(mockRepo.getForDate).mockResolvedValue(DataFactory.createMockDailyRecord(mockDate));
+    const record = DataFactory.createMockDailyRecord(mockDate);
+    vi.mocked(mockDailyRecordRepositoryPort.getForDate).mockResolvedValue(record);
+    vi.mocked(mockDailyRecordRepositoryPort.getForDateWithMeta).mockResolvedValue({
+      date: mockDate,
+      record,
+      source: 'indexeddb',
+      compatibilityTier: 'none',
+      compatibilityIntensity: 'none',
+      migrationRulesApplied: [],
+      consistencyState: 'local_only',
+      sourceOfTruth: 'local',
+      retryability: 'not_applicable',
+      recoveryAction: 'none',
+      conflictSummary: null,
+      observabilityTags: ['daily_record', 'read'],
+      repairApplied: false,
+    });
   });
 
   it('should handle ConcurrencyError correctly', async () => {
     // Setup: Repository throws ConcurrencyError on save
-    const mockRepo = DailyRecordRepository.DailyRecordRepository;
-    vi.mocked(mockRepo.save).mockRejectedValue(new ConcurrencyError('Remote is newer'));
+    vi.mocked(mockDailyRecordRepositoryPort.saveDetailed).mockRejectedValue(
+      new ConcurrencyError('Remote is newer')
+    );
 
     const { result } = renderHook(() => useDailyRecordSyncQuery(mockDate), {
       wrapper: createWrapper(),
@@ -81,10 +123,16 @@ describe('Concurrency Handling Integration', () => {
 
     // Verify Refresh Logic
     // The hook sets a timeout of 2000ms to refresh
-    vi.mocked(mockRepo.getForDate).mockClear(); // Clear initial load call
+    vi.mocked(mockDailyRecordRepositoryPort.getForDateWithMeta).mockClear();
 
-    await waitFor(() => {
-      expect(mockRepo.getForDate).toHaveBeenCalledWith(mockDate);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(mockDailyRecordRepositoryPort.getForDateWithMeta).toHaveBeenCalledWith(
+          mockDate,
+          true
+        );
+      },
+      { timeout: 3000 }
+    );
   });
 });

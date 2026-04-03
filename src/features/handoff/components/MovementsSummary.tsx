@@ -187,6 +187,17 @@ export const MovementsSummary: React.FC<MovementsSummaryProps> = ({
           </table>
         )}
       </div>
+
+      <div
+        data-testid="movements-summary-footer"
+        className="text-sm text-slate-600 print:text-[10px]"
+      >
+        <span>Conteo del turno:</span>{' '}
+        <span>
+          Altas: {filteredDischarges.length} · Traslados: {filteredTransfers.length}
+          {selectedShift === 'day' ? ` · CMA: ${filteredCMA.length}` : ''}
+        </span>
+      </div>
     </div>
   );
 };

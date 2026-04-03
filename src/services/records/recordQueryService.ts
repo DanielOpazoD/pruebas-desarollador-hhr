@@ -1,4 +1,4 @@
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 import { PatientData } from '@/services/contracts/patientServiceContracts';
 import {
   getAllRecordsSorted,

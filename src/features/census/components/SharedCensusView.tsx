@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { useSharedCensusFiles } from '@/hooks/useSharedCensusFiles';
+import type { StoredCensusFile } from '@/types/backupArtifacts';
 import { CensusAccessUser } from '@/types/censusAccess';
 import {
   resolveSharedCensusAccessDisplayName,
@@ -81,7 +82,7 @@ export const SharedCensusView: React.FC<SharedCensusViewProps> = ({ accessUser, 
         <SharedCensusEmptyState hasSearchTerm={hasSearchTerm} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-          {filteredFiles.map(file => (
+          {filteredFiles.map((file: StoredCensusFile) => (
             <SharedCensusFileCard
               key={file.fullPath}
               file={file}

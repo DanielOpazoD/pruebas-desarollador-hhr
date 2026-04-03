@@ -1,15 +1,15 @@
 import { createContext, useContext } from 'react';
 import {
-  IDailyRecordRepository,
-  DailyRecordRepository,
-} from './repositories/DailyRecordRepository';
+  defaultDailyRecordRepositoryPort,
+  type DailyRecordRepositoryPort,
+} from '@/application/ports/dailyRecordPort';
 import { ICatalogRepository, CatalogRepository } from './repositories/CatalogRepository';
 
 /**
  * Interface defining the set of repositories available in the application.
  */
 export interface IRepositoryContainer {
-  dailyRecord: IDailyRecordRepository;
+  dailyRecord: DailyRecordRepositoryPort;
   catalog: ICatalogRepository;
 }
 
@@ -17,7 +17,7 @@ export interface IRepositoryContainer {
  * Default container using concrete implementations.
  */
 export const defaultRepositories: IRepositoryContainer = {
-  dailyRecord: DailyRecordRepository,
+  dailyRecord: defaultDailyRecordRepositoryPort,
   catalog: CatalogRepository,
 };
 

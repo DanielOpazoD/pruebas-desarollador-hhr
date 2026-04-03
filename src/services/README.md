@@ -26,16 +26,16 @@ Capa de datos e integración: repositorios, persistencia, exportadores, integrac
 
 ## Archivos raíz relevantes
 
-| Archivo                  | Propósito                                           |
-| ------------------------ | --------------------------------------------------- |
-| `RepositoryContext.tsx`  | Inyección de repositorios en runtime                |
-| `dataService.ts`         | Servicio de datos consolidado legacy/compatibilidad |
-| `ExcelParsingService.ts` | Parsing Excel de soporte                            |
-| `index.ts`               | Barrel de compatibilidad mínimo                     |
+| Archivo                  | Propósito                                          |
+| ------------------------ | -------------------------------------------------- |
+| `RepositoryContext.tsx`  | Inyección de repositorios en runtime               |
+| `dataService.ts`         | Bridge legacy mínimo para compatibilidad histórica |
+| `ExcelParsingService.ts` | Parsing Excel de soporte                           |
+| `index.ts`               | Barrel de compatibilidad mínimo                    |
 
 ## Patrones clave
 
-- **Repository Pattern** (`DailyRecordRepository`, `CatalogRepository`, etc.).
+- **Repository Pattern** con entrypoints concretos (`dailyRecordRepositoryReadService`, `dailyRecordRepositoryWriteService`, `CatalogRepository`, etc.).
 - **Service split por responsabilidad** (`read/write/sync/init` en repositorio diario).
 - **Storage abstraction** con estrategia offline-first y fallback.
 - **Domain observability**:
@@ -61,9 +61,11 @@ Capa de datos e integración: repositorios, persistencia, exportadores, integrac
 ## Ejemplo
 
 ```ts
-import { DailyRecordRepository } from '@/services/repositories/DailyRecordRepository';
+import { getForDate } from '@/services/repositories/dailyRecordRepositoryReadService';
+import { saveDetailed } from '@/services/repositories/dailyRecordRepositoryWriteService';
 
-await DailyRecordRepository.save(record);
+const record = await getForDate(date);
+await saveDetailed(record);
 ```
 
 ## Convención de capa
@@ -72,6 +74,8 @@ await DailyRecordRepository.save(record);
 - Mantener contratos de entrada/salida tipados (preferir `types`/`schemas`).
 - `src/services/index.ts`, `src/services/storage/index.ts` y `src/services/repositories/index.ts`
   son barrels de compatibilidad curados; código nuevo debe preferir imports directos al módulo dueño.
+- `dataService.ts` y `DailyRecordRepository.ts` permanecen solo como compatibilidad transicional;
+  código nuevo debe entrar por servicios o ports explícitos.
 - En integraciones externas complejas, usar una fachada pública pequeña y mover auth, payload builders y folder/file helpers a módulos internos específicos.
 - Mantener `authService.ts` como fachada pública; evitar que la UI importe módulos internos de `auth/` directamente.
 - Mantener `authPolicy.ts` y `authService.ts` estables aunque la resolución de roles se siga particionando internamente.

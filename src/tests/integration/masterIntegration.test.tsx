@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useDailyRecord } from '@/hooks/useDailyRecord';
-import * as DailyRecordRepository from '@/services/repositories/DailyRecordRepository';
 import { UIProvider } from '@/context/UIContext';
 import type { DailyRecord } from '@/types';
 import React from 'react';
@@ -11,19 +10,44 @@ import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils
 import { wireStatefulDailyRecordRepoMock } from '@/tests/utils/dailyRecordRepositoryMockUtils';
 
 // Mock Repositories and Services
-vi.mock('@/services/repositories/DailyRecordRepository', () => {
-  const mockRepo = {
+const { mockDailyRecordRepositoryPort } = vi.hoisted(() => ({
+  mockDailyRecordRepositoryPort: {
     getPreviousDay: vi.fn(),
+    getPreviousDayWithMeta: vi.fn(),
     initializeDay: vi.fn(),
     save: vi.fn(),
+    saveDetailed: vi.fn(),
     deleteDay: vi.fn(),
     getForDate: vi.fn(),
+    getForDateWithMeta: vi.fn(),
     subscribe: vi.fn(() => vi.fn()),
+    subscribeDetailed: undefined,
     updatePartial: vi.fn().mockResolvedValue(undefined),
+    updatePartialDetailed: vi.fn().mockResolvedValue(undefined),
     syncWithFirestore: vi.fn().mockResolvedValue(null),
-  };
-  return { ...mockRepo, DailyRecordRepository: mockRepo };
+    syncWithFirestoreDetailed: vi.fn().mockResolvedValue(null),
+    getAvailableDates: vi.fn(),
+    getMonthRecords: vi.fn(),
+    copyPatientToDateDetailed: vi.fn(),
+  },
+}));
+
+vi.mock('@/services/repositories/DailyRecordRepository', () => {
+  return { ...mockDailyRecordRepositoryPort, DailyRecordRepository: mockDailyRecordRepositoryPort };
 });
+
+vi.mock('@/application/ports/dailyRecordPort', () => ({
+  defaultDailyRecordReadPort: mockDailyRecordRepositoryPort,
+  defaultDailyRecordWritePort: {
+    updatePartial: mockDailyRecordRepositoryPort.updatePartialDetailed,
+    save: mockDailyRecordRepositoryPort.saveDetailed,
+    delete: mockDailyRecordRepositoryPort.deleteDay,
+  },
+  defaultDailyRecordSyncPort: {
+    syncWithFirestoreDetailed: mockDailyRecordRepositoryPort.syncWithFirestoreDetailed,
+  },
+  defaultDailyRecordRepositoryPort: mockDailyRecordRepositoryPort,
+}));
 
 vi.mock('@/services/storage/unifiedLocalService', () => ({
   saveRecordLocal: vi.fn(),
@@ -65,15 +89,13 @@ describe('Master Integration Suite', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     currentRecord = null;
-    const mockRepo = DailyRecordRepository.DailyRecordRepository;
-
-    vi.mocked(mockRepo.initializeDay).mockImplementation(async date => {
+    vi.mocked(mockDailyRecordRepositoryPort.initializeDay).mockImplementation(async date => {
       currentRecord = DataFactory.createMockDailyRecord(date, {
         beds: { R1: DataFactory.createMockPatient('R1', { patientName: 'INITIAL' }) },
       });
       return currentRecord;
     });
-    wireStatefulDailyRecordRepoMock(mockRepo, {
+    wireStatefulDailyRecordRepoMock(mockDailyRecordRepositoryPort, {
       getCurrentRecord: () => currentRecord,
       setCurrentRecord: record => {
         currentRecord = record;
