@@ -3,7 +3,7 @@ import {
   buildPatientFieldUpdater,
   buildPatientMultipleUpdater,
 } from '@/features/census/controllers/patientRowInputUpdateController';
-import { PatientStatus } from '@/types';
+import { PatientStatus } from '@/types/domain/patientClassification';
 
 describe('patientRowInputUpdateController', () => {
   it('buildPatientFieldUpdater binds bed id for single field updates', () => {

@@ -7,7 +7,7 @@ import { usePatientRowBedConfigActions } from '@/features/census/components/pati
 import { usePatientRowDependencies } from '@/features/census/components/patient-row/usePatientRowDependencies';
 import { usePatientRowHandlersModel } from '@/features/census/components/patient-row/usePatientRowHandlersModel';
 import { DataFactory } from '@/tests/factories/DataFactory';
-import { BedType } from '@/types';
+import { BedType } from '@/types/domain/beds';
 import type { BuildPatientRowChangeHandlersResult } from '@/features/census/controllers/patientRowChangeHandlersController';
 
 vi.mock('@/features/census/components/patient-row/usePatientRowDependencies', () => ({

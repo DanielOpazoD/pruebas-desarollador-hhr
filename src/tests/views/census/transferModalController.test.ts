@@ -5,7 +5,7 @@ import {
   EVACUATION_METHOD_COMMERCIAL,
   EVACUATION_METHOD_OTHER,
   RECEIVING_CENTER_OTHER,
-} from '@/constants';
+} from '@/constants/clinical';
 import {
   buildTransferValidationErrors,
   hasTransferValidationErrors,

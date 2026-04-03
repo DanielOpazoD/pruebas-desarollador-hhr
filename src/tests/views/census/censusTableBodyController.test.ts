@@ -6,7 +6,7 @@ import {
 } from '@/features/census/controllers/censusTableBodyController';
 import { DataFactory } from '@/tests/factories/DataFactory';
 import type { OccupiedBedRow } from '@/features/census/types/censusTableTypes';
-import { BedType } from '@/types';
+import { BedType } from '@/types/domain/beds';
 
 describe('censusTableBodyController', () => {
   it('builds resolved occupied rows with menu alignment and indicators', () => {

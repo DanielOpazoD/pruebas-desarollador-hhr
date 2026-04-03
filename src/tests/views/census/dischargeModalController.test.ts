@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_DISCHARGE_TYPE } from '@/constants';
+import { DEFAULT_DISCHARGE_TYPE } from '@/constants/clinical';
 import {
   buildDischargeConfirmPayload,
   buildInitialDischargeFormState,

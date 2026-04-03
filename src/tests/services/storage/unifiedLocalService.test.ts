@@ -12,7 +12,7 @@ import {
   saveRecordLocal,
   saveStoredNurses,
 } from '@/services/storage/unifiedLocalService';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 const buildRecord = (date: string): DailyRecord => ({
   date,

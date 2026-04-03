@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { useExportManager } from '@/hooks/useExportManager';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import * as backupExportUseCases from '@/application/backup-export/backupExportUseCases';
 import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 import type { LookupBackupArchiveStatusOutput } from '@/application/backup-export/backupExportStorageUseCases';

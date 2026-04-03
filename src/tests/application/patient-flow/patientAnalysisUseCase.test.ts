@@ -4,7 +4,7 @@ import {
   executeMigratePatients,
   executeResolvePatientConflict,
 } from '@/application/patient-flow/patientAnalysisUseCase';
-import type { MasterPatient } from '@/types';
+import type { MasterPatient } from '@/types/domain/patientMaster';
 
 describe('patientAnalysisUseCase', () => {
   it('builds analysis from repository records', async () => {

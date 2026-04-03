@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { initializeDay } from '@/services/repositories/DailyRecordRepository';
-import { DailyRecord, PatientData, Specialty, PatientStatus } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { PatientData } from '@/types/domain/patient';
+import { Specialty, PatientStatus } from '@/types/domain/patientClassification';
 import * as IndexedDBService from '@/services/storage/indexeddb/indexedDbRecordService';
 import * as FirestoreService from '@/services/storage/firestore';
 import { vi } from 'vitest';

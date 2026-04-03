@@ -6,7 +6,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
 import { useDailyRecordSyncQuery } from '@/hooks/useDailyRecordSyncQuery';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import { clearAllRecords, getRecordForDate } from '@/services/storage/indexedDBService';
 import { setFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 

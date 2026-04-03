@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { calculateStats } from '@/services/calculations/statsCalculator';
-import { PatientData, PatientStatus, Specialty } from '@/types';
-import { HOSPITAL_CAPACITY } from '@/constants';
+import type { PatientData } from '@/types/domain/patient';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
+import { HOSPITAL_CAPACITY } from '@/constants/beds';
 
 describe('statsCalculator', () => {
   type BedValue = PatientData;

@@ -72,8 +72,7 @@ await saveDetailed(record);
 
 - No importar componentes ni hooks de UI desde `services`.
 - Mantener contratos de entrada/salida tipados (preferir `types`/`schemas`).
-- `src/services/index.ts`, `src/services/storage/index.ts` y `src/services/repositories/index.ts`
-  son barrels de compatibilidad curados; código nuevo debe preferir imports directos al módulo dueño.
+- `src/services/repositories/index.ts` es una surface curada; código nuevo debe preferir imports directos al módulo dueño cuando no exista un entrypoint público explícito.
 - `dataService.ts` y `DailyRecordRepository.ts` permanecen solo como compatibilidad transicional;
   código nuevo debe entrar por servicios o ports explícitos.
 - En integraciones externas complejas, usar una fachada pública pequeña y mover auth, payload builders y folder/file helpers a módulos internos específicos.

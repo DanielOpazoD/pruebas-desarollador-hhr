@@ -6,7 +6,7 @@ import {
   normalizePatientSearchTerm,
   sanitizePatientQueryLimit,
 } from '@/services/repositories/contracts/patientMasterContracts';
-import { MasterPatient } from '@/types';
+import type { MasterPatient } from '@/types/domain/patientMaster';
 
 const buildPatient = (rut: string, fullName: string): MasterPatient => ({
   rut,

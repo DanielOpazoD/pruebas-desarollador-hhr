@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
-import type { BedDefinition } from '@/types';
-import { BedType } from '@/types';
+import type { BedDefinition } from '@/types/domain/beds';
+import { BedType } from '@/types/domain/beds';
 import { HospitalFloorMap } from '@/features/census/components/3d/HospitalFloorMap';
 
 vi.mock('@react-three/fiber', () => ({

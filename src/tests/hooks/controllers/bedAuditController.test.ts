@@ -4,13 +4,10 @@ import {
   buildCudyrAuditDetails,
   resolvePatientChangeAudit,
 } from '@/hooks/controllers/bedAuditController';
-import {
-  PatientStatus,
-  Specialty,
-  type CudyrScore,
-  type DailyRecord,
-  type PatientData,
-} from '@/types';
+import type { CudyrScore } from '@/types/domain/cudyr';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { PatientData } from '@/types/domain/patient';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 
 const buildCudyr = (overrides: Partial<CudyrScore> = {}): CudyrScore => ({
   changeClothes: 0,

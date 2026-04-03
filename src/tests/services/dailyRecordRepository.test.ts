@@ -20,7 +20,8 @@ import {
   saveTens,
   getTens,
 } from '@/services/repositories/CatalogRepository';
-import { DailyRecord, PatientData } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { PatientData } from '@/types/domain/patient';
 import { clearAllRecords } from '@/services/storage/indexedDBService';
 
 vi.unmock('../../services/repositories/DailyRecordRepository');

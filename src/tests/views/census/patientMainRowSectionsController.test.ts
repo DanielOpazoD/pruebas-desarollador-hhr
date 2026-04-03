@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { BEDS } from '@/constants';
+import { BEDS } from '@/constants/beds';
 import { buildPatientActionSectionBinding } from '@/features/census/controllers/patientRowActionSectionBindingsController';
 import { buildPatientMainRowSections } from '@/features/census/controllers/patientMainRowSectionsController';
 import { DataFactory } from '@/tests/factories/DataFactory';

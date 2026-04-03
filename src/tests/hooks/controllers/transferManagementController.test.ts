@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { PatientData } from '@/types';
+import type { PatientData } from '@/types/domain/patient';
 import type { TransferRequest } from '@/types/transfers';
 import {
   buildTransferNote,

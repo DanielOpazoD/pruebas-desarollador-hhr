@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { BEDS } from '@/constants';
+import { BEDS } from '@/constants/beds';
 import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domain/entities';
 import {
   buildActiveClinicalDocumentEpisodeKeys,

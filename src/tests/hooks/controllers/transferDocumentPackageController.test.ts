@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import type { TransferRequest } from '@/types/transfers';
 import type { GeneratedDocument, QuestionnaireResponse } from '@/types/transferDocuments';
 import {

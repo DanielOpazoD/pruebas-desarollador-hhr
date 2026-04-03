@@ -4,7 +4,7 @@ import { RulesTestEnvironment, initializeTestEnvironment } from '@firebase/rules
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { getDoc } from 'firebase/firestore';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 const runEmulatorTests =
   process.env.RUN_FIRESTORE_EMULATOR_TESTS === '1' ||

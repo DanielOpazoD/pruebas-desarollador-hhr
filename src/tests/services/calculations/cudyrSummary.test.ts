@@ -4,7 +4,7 @@ import {
   buildDailyCudyrSummary,
   getCudyrMonthlyTotals,
 } from '@/services/cudyr/cudyrSummary';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 // Mock BEDS
 vi.mock('@/constants/beds', () => ({

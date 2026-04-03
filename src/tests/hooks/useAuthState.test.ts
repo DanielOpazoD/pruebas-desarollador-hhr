@@ -7,7 +7,7 @@ import { useAuthState } from '@/hooks/useAuthState';
 import * as authService from '@/services/auth/authService';
 import * as authUseCases from '@/application/auth';
 import * as auditService from '@/services/admin/auditService';
-import { AuthSessionState, AuthUser, UserRole } from '@/types';
+import type { AuthSessionState, AuthUser, UserRole } from '@/types/auth';
 
 vi.mock('@/services/auth/authService', () => ({
   onAuthSessionStateChange: vi.fn(),

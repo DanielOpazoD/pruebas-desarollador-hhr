@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { addCudyrTable } from '@/services/pdf/handoffPdfCudyrSection';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 const createDocMock = () =>
   ({

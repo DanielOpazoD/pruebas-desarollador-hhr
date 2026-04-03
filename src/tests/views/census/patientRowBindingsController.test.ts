@@ -8,7 +8,7 @@ import {
 } from '@/features/census/controllers/patientRowBindingsController';
 import type { PatientRowRuntime } from '@/features/census/components/patient-row/patientRowRuntimeContracts';
 import { DataFactory } from '@/tests/factories/DataFactory';
-import { BedType } from '@/types';
+import { BedType } from '@/types/domain/beds';
 
 const asRuntime = (value: Partial<PatientRowRuntime>): PatientRowRuntime =>
   value as unknown as PatientRowRuntime;

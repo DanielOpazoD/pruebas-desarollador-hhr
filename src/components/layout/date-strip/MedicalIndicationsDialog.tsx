@@ -1,20 +1,12 @@
 import React from 'react';
-import {
-  Activity,
-  ArrowDown,
-  ArrowUp,
-  ClipboardList,
-  Pencil,
-  Stethoscope,
-  Trash2,
-  UserRound,
-} from 'lucide-react';
+import { Activity, ClipboardList, Printer, Stethoscope, UserRound } from 'lucide-react';
 import { BaseModal } from '@/components/shared/BaseModal';
 import { printMedicalIndicationsPdf } from '@/services/pdf/medicalIndicationsPdfService';
 import {
   formatMedicalIndicationsDate,
   type MedicalIndicationsPatientOption,
 } from '@/shared/contracts/medicalIndications';
+import { MedicalIndicationsListSection } from './MedicalIndicationsListSection';
 import { useMedicalIndicationsEditor } from './useMedicalIndicationsEditor';
 
 interface MedicalIndicationsDialogProps {
@@ -72,23 +64,37 @@ export const MedicalIndicationsDialog: React.FC<MedicalIndicationsDialogProps> =
     }
   };
 
+  const remainingSlots = editor.maxIndications - editor.activeIndications.length;
+
   return (
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
       title={
-        editor.selectedPatient
-          ? `Indicaciones médicas · ${editor.selectedPatient.patientName}`
-          : 'Indicaciones médicas'
+        <span className="flex items-center gap-2.5">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-medical-500 to-medical-700 text-white shadow-md shadow-medical-500/20">
+            <ClipboardList size={16} />
+          </span>
+          <span className="flex flex-col leading-tight">
+            <span className="text-[15px] font-bold tracking-tight text-slate-800">
+              Indicaciones Médicas
+            </span>
+            {editor.selectedPatient && (
+              <span className="text-[11px] font-medium text-slate-400">
+                {editor.selectedPatient.patientName}
+              </span>
+            )}
+          </span>
+        </span>
       }
       size="3xl"
       variant="white"
-      className="max-w-[78vw]"
-      bodyClassName="max-h-[84vh] overflow-y-auto px-4 py-3"
+      className="max-w-[78vw] !rounded-2xl ring-1 ring-black/[0.03]"
+      bodyClassName="max-h-[84vh] overflow-y-auto px-5 py-4"
       headerActions={
         patients.length > 1 ? (
           <select
-            className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700"
+            className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 focus:border-medical-400 focus:outline-none focus:ring-2 focus:ring-medical-500/10"
             value={editor.selectedPatient?.bedId || editor.selectedBedId}
             onChange={event => editor.setSelectedBedId(event.target.value)}
             aria-label="Seleccionar paciente"
@@ -102,47 +108,93 @@ export const MedicalIndicationsDialog: React.FC<MedicalIndicationsDialogProps> =
         ) : null
       }
     >
-      <div className="grid grid-cols-2 gap-3 p-0.5 text-[13px]">
-        <label className="text-[11px] font-semibold text-slate-600">
-          <span className="inline-flex items-center gap-1">
-            <UserRound size={12} className="text-slate-400" />
+      {editor.selectedPatient && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-medical-100 bg-gradient-to-r from-medical-50/80 via-medical-50/40 to-transparent px-4 py-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-medical-100 text-medical-600">
+            <UserRound size={16} />
+          </div>
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 text-[12px]">
+            <span className="font-semibold text-slate-700">
+              {editor.selectedPatient.patientName}
+            </span>
+            <span className="text-slate-400">|</span>
+            <span className="text-slate-500">{editor.selectedPatient.rut}</span>
+            {editor.selectedPatient.diagnosis && (
+              <>
+                <span className="text-slate-400">|</span>
+                <span
+                  className="max-w-[200px] truncate text-slate-500"
+                  title={editor.selectedPatient.diagnosis}
+                >
+                  {editor.selectedPatient.diagnosis}
+                </span>
+              </>
+            )}
+            {editor.selectedPatient.daysOfStay && (
+              <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-medical-100/80 px-2.5 py-0.5 text-[11px] font-semibold text-medical-700">
+                {editor.selectedPatient.daysOfStay} días
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="group relative">
+          <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <UserRound size={11} className="text-slate-300" />
             Médico tratante
-          </span>
+          </label>
           <input
-            className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
             value={editor.treatingDoctor}
             onChange={event => editor.setTreatingDoctor(event.target.value)}
           />
-        </label>
+        </div>
 
-        <label className="text-[11px] font-semibold text-slate-600">
-          Reposo
+        <div className="group relative">
+          <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            Reposo
+          </label>
           <input
-            className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
             value={editor.reposo}
             onChange={event => editor.setReposo(event.target.value)}
             placeholder="Ej: absoluto"
           />
-        </label>
+        </div>
 
-        <label className="text-[11px] font-semibold text-slate-600">
-          Régimen
+        <div className="group relative">
+          <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            Régimen
+          </label>
           <input
-            className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
             value={editor.regimen}
             onChange={event => editor.setRegimen(event.target.value)}
             placeholder="Ej: liviano"
           />
-        </label>
+        </div>
 
-        <div className="col-span-2 grid grid-cols-1 gap-3 md:grid-cols-2">
-          <label className="text-[11px] font-semibold text-slate-600">
-            <span className="inline-flex items-center gap-1">
-              <Activity size={12} className="text-slate-400" />
+        <div className="group relative">
+          <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            Pendientes
+          </label>
+          <input
+            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
+            value={editor.pendingNotes}
+            onChange={event => editor.setPendingNotes(event.target.value)}
+          />
+        </div>
+
+        <div className="col-span-1 grid grid-cols-1 gap-4 sm:col-span-2 sm:grid-cols-2">
+          <div className="group relative">
+            <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              <Activity size={11} className="text-slate-300" />
               Kinesiología
-            </span>
+            </label>
             <select
-              className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
+              className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-700 shadow-sm transition-all focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
               value={editor.kineType}
               onChange={event =>
                 editor.setKineType(
@@ -155,192 +207,65 @@ export const MedicalIndicationsDialog: React.FC<MedicalIndicationsDialogProps> =
               <option value="respiratoria">Respiratoria</option>
               <option value="ambas">Motora y respiratoria</option>
             </select>
-          </label>
+          </div>
 
-          <label className="text-[11px] font-semibold text-slate-600">
-            <span className="inline-flex items-center gap-1">
-              <Stethoscope size={12} className="text-slate-400" />
+          <div className="group relative">
+            <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              <Stethoscope size={11} className="text-slate-300" />
               Frecuencia de atención
-            </span>
+            </label>
             <input
-              className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
               value={editor.kineTimes}
               onChange={event => editor.setKineTimes(event.target.value)}
               placeholder="Ej: 2 veces/día"
             />
-          </label>
-        </div>
-
-        <label className="col-span-2 text-[11px] font-semibold text-slate-600">
-          Pendientes
-          <input
-            className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
-            value={editor.pendingNotes}
-            onChange={event => editor.setPendingNotes(event.target.value)}
-          />
-        </label>
-
-        <div className="col-span-2 rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-medical-50/40 p-3 shadow-sm">
-          <div className="flex items-center justify-between gap-2">
-            <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
-              <ClipboardList size={12} className="text-slate-500" />
-              Indicaciones clínicas
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${editor.isOrderingIndications ? 'border-medical-500 bg-medical-50 text-medical-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
-                onClick={() => editor.setIsOrderingIndications(current => !current)}
-              >
-                <ArrowUp size={12} />
-                <ArrowDown size={12} />
-                Cambiar orden
-              </button>
-              <button
-                type="button"
-                className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${editor.isEditingIndications ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
-                onClick={() => {
-                  editor.setIsEditingIndications(current => !current);
-                  editor.resetEditing();
-                }}
-              >
-                <Pencil size={12} />
-                {editor.isEditingIndications ? 'Edición activa' : 'Modificar indicaciones'}
-              </button>
-            </div>
-          </div>
-          <div className="mt-1.5 flex gap-2">
-            <input
-              className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-[13px]"
-              value={editor.indicationDraft}
-              disabled={!editor.isEditingIndications}
-              onChange={event => editor.setIndicationDraft(event.target.value)}
-              onKeyDown={event => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  editor.addIndication();
-                }
-              }}
-              placeholder="Escribe una indicación y presiona Enter"
-            />
-            <button
-              type="button"
-              onClick={editor.addIndication}
-              disabled={
-                !editor.isEditingIndications ||
-                !editor.indicationDraft.trim() ||
-                editor.activeIndications.length >= editor.maxIndications
-              }
-              className="rounded-md bg-medical-600 px-3 py-2 text-sm text-white disabled:opacity-50"
-            >
-              Agregar
-            </button>
-          </div>
-          <div className="mt-2 grid gap-1.5">
-            {editor.activeIndications.length === 0 ? (
-              <p className="text-xs text-slate-500">Aún no hay indicaciones agregadas.</p>
-            ) : (
-              editor.activeIndications.map((item, index) => (
-                <div
-                  key={`${item}-${index}`}
-                  className="flex items-start justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
-                >
-                  <div className="min-w-0 flex-1">
-                    {editor.editingIndex === index ? (
-                      <div className="space-y-2">
-                        <input
-                          className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-                          value={editor.editingValue}
-                          onChange={event => editor.setEditingValue(event.target.value)}
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={editor.saveEditedIndication}
-                            className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
-                          >
-                            Guardar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={editor.resetEditing}
-                            className="text-xs text-slate-500 hover:text-slate-600"
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-sm leading-5 text-slate-700">
-                        <span className="font-semibold text-medical-700">{`#${index + 1} `}</span>
-                        {item}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    {editor.isOrderingIndications && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => editor.moveIndication(index, 'up')}
-                          className="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                          aria-label={`Subir indicación #${index + 1}`}
-                        >
-                          <ArrowUp size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => editor.moveIndication(index, 'down')}
-                          className="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                          aria-label={`Bajar indicación #${index + 1}`}
-                        >
-                          <ArrowDown size={14} />
-                        </button>
-                      </>
-                    )}
-                    {editor.isEditingIndications && editor.editingIndex !== index && (
-                      <button
-                        type="button"
-                        onClick={() => editor.startEditing(index, item)}
-                        className="rounded p-1 text-medical-600 hover:bg-medical-50 hover:text-medical-700"
-                        aria-label={`Editar indicación #${index + 1}`}
-                        title={`Editar indicación #${index + 1}`}
-                      >
-                        <Pencil size={14} />
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => editor.removeIndication(index)}
-                      disabled={!editor.isEditingIndications}
-                      className="rounded p-1 text-rose-600 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-40"
-                      aria-label={`Quitar indicación #${index + 1}`}
-                      title={`Quitar indicación #${index + 1}`}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
           </div>
         </div>
       </div>
 
-      <div className="mt-3 flex justify-end gap-2">
-        <button
-          onClick={onClose}
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700"
-        >
-          Cerrar
-        </button>
-        <button
-          onClick={() => void handlePrint()}
-          disabled={editor.isPrinting || !editor.selectedPatient}
-          className="rounded-md bg-medical-600 px-3 py-1.5 text-sm text-white disabled:opacity-60"
-        >
-          {editor.isPrinting ? 'Generando PDF...' : 'PDF'}
-        </button>
+      <MedicalIndicationsListSection
+        remainingSlots={remainingSlots}
+        activeIndications={editor.activeIndications}
+        maxIndications={editor.maxIndications}
+        isOrderingIndications={editor.isOrderingIndications}
+        setIsOrderingIndications={editor.setIsOrderingIndications}
+        isEditingIndications={editor.isEditingIndications}
+        setIsEditingIndications={editor.setIsEditingIndications}
+        resetEditing={editor.resetEditing}
+        indicationDraft={editor.indicationDraft}
+        setIndicationDraft={editor.setIndicationDraft}
+        addIndication={editor.addIndication}
+        editingIndex={editor.editingIndex}
+        editingValue={editor.editingValue}
+        setEditingValue={editor.setEditingValue}
+        saveEditedIndication={editor.saveEditedIndication}
+        startEditing={editor.startEditing}
+        removeIndication={editor.removeIndication}
+        moveIndication={editor.moveIndication}
+      />
+
+      <div className="mt-5 flex items-center justify-between">
+        <p className="text-[11px] text-slate-300">
+          {editor.activeIndications.length > 0 &&
+            `${editor.activeIndications.length} indicaci${editor.activeIndications.length === 1 ? 'ón' : 'ones'}`}
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-[13px] font-medium text-slate-500 shadow-sm transition-all hover:border-slate-300 hover:text-slate-700 active:scale-[0.98]"
+          >
+            Cerrar
+          </button>
+          <button
+            onClick={() => void handlePrint()}
+            disabled={editor.isPrinting || !editor.selectedPatient}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-medical-500 to-medical-600 px-5 py-2 text-[13px] font-semibold text-white shadow-md shadow-medical-600/25 transition-all hover:from-medical-600 hover:to-medical-700 hover:shadow-lg hover:shadow-medical-600/30 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+          >
+            <Printer size={14} />
+            {editor.isPrinting ? 'Generando...' : 'Imprimir PDF'}
+          </button>
+        </div>
       </div>
     </BaseModal>
   );

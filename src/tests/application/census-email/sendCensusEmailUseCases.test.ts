@@ -3,7 +3,7 @@ import {
   buildSendCensusConfirmationMessage,
   executeSendCensusEmail,
 } from '@/application/census-email/sendCensusEmailUseCases';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 const buildCensusMasterBinaryMock = vi.fn().mockResolvedValue(new Uint8Array());
 

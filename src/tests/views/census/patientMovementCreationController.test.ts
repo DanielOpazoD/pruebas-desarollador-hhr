@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DataFactory } from '@/tests/factories/DataFactory';
-import { BEDS } from '@/constants';
+import { BEDS } from '@/constants/beds';
 import { createEmptyPatient } from '@/services/factories/patientFactory';
 import {
   resolveAddDischargeMovement,

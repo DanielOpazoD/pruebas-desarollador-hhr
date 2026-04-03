@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { DailyRecordPatch, PatientData, PatientStatus, Specialty } from '@/types';
+import type { DailyRecordPatch } from '@/types/domain/dailyRecordPatch';
+import type { PatientData } from '@/types/domain/patient';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 import {
   addClinicalFhirPatchesForTouchedBeds,
   preparePatientForCarryover,

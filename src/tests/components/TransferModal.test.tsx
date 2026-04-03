@@ -5,7 +5,7 @@ import {
   EVACUATION_METHOD_AEROCARDAL,
   DEFAULT_RECEIVING_CENTER,
   EVACUATION_METHOD_COMMERCIAL,
-} from '@/constants';
+} from '@/constants/clinical';
 import { TransferModal } from '@/components/modals/actions/TransferModal';
 
 describe('TransferModal', () => {

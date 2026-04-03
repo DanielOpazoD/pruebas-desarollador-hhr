@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Specialty, type MedicalHandoffAuditActor, type PatientData } from '@/types';
+import type { MedicalHandoffAuditActor, PatientData } from '@/types/domain/patient';
+import { Specialty } from '@/types/domain/patientClassification';
 import {
   buildMedicalEntryAddFields,
   buildMedicalEntryContinuityFields,

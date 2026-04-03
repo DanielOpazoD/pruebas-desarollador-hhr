@@ -41,7 +41,9 @@ vi.mock('@/hooks/useAuthState', () => ({
 }));
 
 // Types
-import { DailyRecord, Specialty, PatientStatus, PatientData } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { PatientData } from '@/types/domain/patient';
+import { Specialty, PatientStatus } from '@/types/domain/patientClassification';
 import { DailyRecordContextType } from '@/hooks/useDailyRecordTypes';
 
 // Providers

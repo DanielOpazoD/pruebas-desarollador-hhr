@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { PatientHistoryModal } from '@/components/modals/PatientHistoryModal';
 import type { PatientData } from '@/types/domain/patient';
-import { PatientStatus, Specialty } from '@/types/core';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 import type { PatientHistoryResult } from '@/services/patient/patientHistoryService';
 import { getPatientMovementHistory } from '@/services/patient/patientHistoryService';
 

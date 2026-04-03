@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { DailyRecord, PatientData } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { PatientData } from '@/types/domain/patient';
 import {
   resolveBlockedReasonUpdate,
   resolveMoveOrCopyOperation,

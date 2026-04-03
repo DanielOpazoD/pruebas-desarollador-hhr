@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useDailyRecord } from '@/hooks/useDailyRecord';
 import { UIProvider } from '@/context/UIContext';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import React from 'react';
 import { DataFactory } from '../factories/DataFactory';
 import { calculateStats } from '@/services/calculations/statsCalculator';

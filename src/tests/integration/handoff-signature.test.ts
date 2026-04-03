@@ -6,7 +6,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useHandoffManagement } from '@/hooks/useHandoffManagement';
-import { DailyRecord, Specialty, PatientStatus } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import { Specialty, PatientStatus } from '@/types/domain/patientClassification';
 import * as whatsappService from '@/services/integrations/whatsapp/whatsappService';
 import { defaultDailyRecordReadPort } from '@/application/ports/dailyRecordPort';
 
@@ -45,7 +46,7 @@ Object.defineProperty(window, 'location', {
   value: { ...originalLocation, origin: 'https://test.app' },
 });
 
-import { BEDS } from '@/constants';
+import { BEDS } from '@/constants/beds';
 
 // ============================================================================
 // Helper Data

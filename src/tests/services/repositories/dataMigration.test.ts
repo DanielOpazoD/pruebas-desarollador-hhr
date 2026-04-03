@@ -3,7 +3,7 @@ import {
   migrateLegacyData,
   migrateLegacyDataWithReport,
 } from '@/services/repositories/dataMigration';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import { DataFactory } from '@/tests/factories/DataFactory';
 
 type LegacyDailyRecord = DailyRecord & {

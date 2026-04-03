@@ -5,7 +5,7 @@ import { fireEvent, screen } from '@testing-library/react';
 import React from 'react';
 import { HandoffRow } from '@/features/handoff/components/HandoffRow';
 import { render, createMockPatient } from '../../integration/setup';
-import { PatientStatus, Specialty } from '@/types';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 
 describe('HandoffRow', () => {
   const mockPatient = createMockPatient({

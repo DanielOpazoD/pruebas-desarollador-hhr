@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { BedType } from '@/types';
+import { BedType } from '@/types/domain/beds';
 import { PatientMainRowBedTypeCell } from '@/features/census/components/patient-row/PatientMainRowBedTypeCell';
 
 const mockUseBedActiveTransferQuery = vi.fn();

@@ -5,7 +5,7 @@ import {
   buildPatientRowBedTypeToggles,
   buildPatientRowRuntime,
 } from '@/features/census/controllers/patientRowRuntimeController';
-import { PatientData } from '@/types';
+import type { PatientData } from '@/types/domain/patient';
 
 const mockPatient = {
   bedId: 'R1',

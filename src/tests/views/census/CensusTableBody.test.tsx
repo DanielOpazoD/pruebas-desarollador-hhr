@@ -4,8 +4,8 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { CensusTableBody } from '@/features/census/components/CensusTableBody';
 import { DataFactory } from '@/tests/factories/DataFactory';
 import type { OccupiedBedRow } from '@/features/census/types/censusTableTypes';
-import type { BedDefinition } from '@/types';
-import { BedType } from '@/types';
+import type { BedDefinition } from '@/types/domain/beds';
+import { BedType } from '@/types/domain/beds';
 import type { TableColumnConfig } from '@/context/TableConfigContext';
 
 const patientRowSpy = vi.fn();

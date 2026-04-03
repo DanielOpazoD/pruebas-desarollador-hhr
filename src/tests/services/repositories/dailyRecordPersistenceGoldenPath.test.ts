@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { DailyRecord } from '@/types/core';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import { resolveDailyRecordPersistenceGoldenPath } from '@/services/repositories/dailyRecordPersistenceGoldenPath';
 
 const buildRecord = (date: string, lastUpdated: string): DailyRecord =>

@@ -7,7 +7,7 @@ import {
   useCensusActions,
   useCensusActionState,
 } from '@/features/census/components/CensusActionsContext';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import { DataFactory } from '@/tests/factories/DataFactory';
 
 const mockedUseDailyRecordData = vi.fn();

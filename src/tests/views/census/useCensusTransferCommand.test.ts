@@ -1,14 +1,14 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { DailyRecord } from '@/types';
-import { PatientStatus, Specialty } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 import type { CensusActionNotification } from '@/features/census/controllers/censusActionNotificationController';
 import { useCensusTransferCommand } from '@/features/census/hooks/useCensusTransferCommand';
 import {
   DEFAULT_EVACUATION_METHOD,
   DEFAULT_RECEIVING_CENTER,
   DEFAULT_TRANSFER_ESCORT,
-} from '@/constants';
+} from '@/constants/clinical';
 
 const {
   mockGetLatestOpenTransferRequestByBedId,

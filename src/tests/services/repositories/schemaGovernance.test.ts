@@ -9,7 +9,7 @@ import {
   resolveSchemaVersion,
 } from '@/services/repositories/schemaGovernance';
 import { assessRuntimeCompatibility } from '@/services/repositories/runtimeCompatibilityPolicy';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 const makeRecord = (schemaVersion?: number): DailyRecord => ({
   date: '2025-01-01',

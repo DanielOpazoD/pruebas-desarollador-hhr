@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { runDischargeWithTransferGuard } from '@/features/census/controllers/censusDischargeTransferGuardController';
-import type { DailyRecord } from '@/types';
-import { PatientStatus, Specialty } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 
 const createRecord = (): DailyRecord => ({
   date: '2026-03-03',

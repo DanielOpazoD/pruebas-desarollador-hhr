@@ -3,7 +3,7 @@ import {
   resolveDailyRecordConflict,
   resolveDailyRecordConflictWithTrace,
 } from '@/services/repositories/conflictResolutionMatrix';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 const makeRecord = (date: string, lastUpdated: string): DailyRecord => ({
   date,

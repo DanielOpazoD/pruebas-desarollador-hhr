@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { buildHandoffPdfContent } from '@/services/backup/pdfContentBuilder';
-import { ShiftType } from '@/types';
+import type { ShiftType } from '@/types/domain/shift';
 
 describe('pdfContentBuilder', () => {
   type HandoffRecord = Parameters<typeof buildHandoffPdfContent>[1];

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { BEDS } from '@/constants';
+import { BEDS } from '@/constants/beds';
 import {
   resolveBlockedBedsGridItems,
   resolveExtraBedsGridItems,
 } from '@/features/census/controllers/bedManagerGridItemsController';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import { DataFactory } from '@/tests/factories/DataFactory';
 
 describe('bedManagerGridItemsController', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import {
   executeConfirmMedicalSpecialtyNoChanges,
   executeEnsureMedicalHandoffSignatureLink,

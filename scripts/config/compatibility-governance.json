@@ -66,48 +66,6 @@
       ]
     },
     {
-      "path": "src/services/index.ts",
-      "owner": "platform",
-      "kind": "compatibility_barrel",
-      "reason": "Sostener imports legacy mientras el repo converge a imports por contexto.",
-      "remainingConsumers": "imports legacy transversales",
-      "retirementCriteria": "Imports profundos legacy removidos y surface del barrel reducida al minimo.",
-      "target": "2026-Q3",
-      "importPolicy": "restricted",
-      "allowedImporters": []
-    },
-    {
-      "path": "src/types/index.ts",
-      "owner": "types",
-      "kind": "compatibility_barrel",
-      "reason": "Mantener una surface estable para tipados legacy mientras el source converge a imports por contexto dueño.",
-      "remainingConsumers": "tipados globales, tests legacy puntuales y comentarios/documentacion de compatibilidad",
-      "retirementCriteria": "Imports productivos directos ausentes y compatibilidad reducida a tests o definiciones globales controladas.",
-      "target": "2026-Q3"
-    },
-    {
-      "path": "src/types/core.ts",
-      "owner": "types",
-      "kind": "compatibility_facade",
-      "reason": "Mantener compatibilidad temporal mientras el source converge a imports por dominio en `types/domain/*`.",
-      "remainingConsumers": "tests legacy puntuales y barrels de compatibilidad",
-      "retirementCriteria": "Source productivo sin imports a `@/types/core` y facade reducida a compatibilidad residual gobernada por check estático.",
-      "target": "2026-Q3",
-      "importPolicy": "restricted",
-      "allowedImporters": []
-    },
-    {
-      "path": "src/constants/index.ts",
-      "owner": "constants",
-      "kind": "compatibility_barrel",
-      "reason": "Sostener imports legacy mientras el source converge a constants dueños por contexto.",
-      "remainingConsumers": "tests legacy puntuales y compatibilidad transicional inventariada",
-      "retirementCriteria": "Source productivo sin imports a `@/constants` y barrel reducido a compatibilidad residual gobernada por check estático.",
-      "target": "2026-Q3",
-      "importPolicy": "restricted",
-      "allowedImporters": []
-    },
-    {
       "path": "src/services/dataService.ts",
       "owner": "platform",
       "kind": "legacy_bridge",
@@ -125,17 +83,6 @@
       "reason": "Mantener una fachada minima mientras consumidores historicos migran a read/write/sync ports y servicios duenios.",
       "remainingConsumers": "tests legacy puntuales y adaptadores de compatibilidad controlados",
       "retirementCriteria": "Source productivo sin imports al facade y dependencias resueltas via ports o modulos especificos.",
-      "target": "2026-Q3",
-      "importPolicy": "restricted",
-      "allowedImporters": []
-    },
-    {
-      "path": "src/services/storage/index.ts",
-      "owner": "storage",
-      "kind": "compatibility_barrel",
-      "reason": "Exponer una surface curada mientras persisten dependencias legacy de storage.",
-      "remainingConsumers": "tests legacy puntuales y compatibilidad controlada",
-      "retirementCriteria": "Consumidores residuales movidos a `storage/firestore|sync|core|records|runtime` sin imports nuevos al barrel.",
       "target": "2026-Q3",
       "importPolicy": "restricted",
       "allowedImporters": []

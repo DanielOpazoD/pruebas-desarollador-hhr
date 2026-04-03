@@ -3,7 +3,7 @@ import {
   createPartialUpdateDailyRecordCommand,
   createSaveDailyRecordCommand,
 } from '@/services/repositories/contracts/dailyRecordCommands';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 const makeRecord = (date: string): DailyRecord =>
   ({

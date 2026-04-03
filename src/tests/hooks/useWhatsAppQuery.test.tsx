@@ -8,7 +8,7 @@ import {
 } from '@/hooks/useWhatsAppQuery';
 import * as whatsappService from '@/services/integrations/whatsapp/whatsappService';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
-import { WhatsAppConfig } from '@/types';
+import type { WhatsAppConfig } from '@/types/whatsapp';
 
 // Mock dependencies
 vi.mock('@/services/integrations/whatsapp/whatsappService');

@@ -4,7 +4,9 @@ import {
   getMissingFieldsLabel,
   hasCriticalIssues,
 } from '@/services/validation/criticalFieldsValidator';
-import { DailyRecord, PatientData, PatientStatus, Specialty } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { PatientData } from '@/types/domain/patient';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 
 // Mock BEDS
 vi.mock('@/constants/beds', () => ({

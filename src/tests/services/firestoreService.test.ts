@@ -18,7 +18,7 @@ import {
   ConcurrencyError,
 } from '@/services/storage/firestoreService';
 import * as firestore from 'firebase/firestore';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import { DocumentSnapshot, QuerySnapshot, Timestamp, DocumentData } from 'firebase/firestore';
 
 // Mock the modular Firestore SDK

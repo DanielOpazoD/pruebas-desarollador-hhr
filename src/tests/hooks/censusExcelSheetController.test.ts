@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import { DataFactory } from '@/tests/factories/DataFactory';
-import { BEDS } from '@/constants';
+import { BEDS } from '@/constants/beds';
 import {
   buildCensusWorkbookPlan,
   buildCensusWorkbookSheetDescriptors,

@@ -2,7 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useMovements } from '@/hooks/useMovements';
 import { DataFactory } from '@/tests/factories/DataFactory';
-import { DailyRecord, TransferData, PatientData } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { TransferData } from '@/types/domain/movements';
+import type { PatientData } from '@/types/domain/patient';
 
 describe('useMovements', () => {
   type BedPatient = DailyRecord['beds'][string];

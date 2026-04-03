@@ -7,7 +7,7 @@ vi.mock('@/services/integrations/whatsapp/whatsappService', () => ({
 
 import { executeSendMedicalHandoff } from '@/application/handoff/sendMedicalHandoffUseCase';
 import { DataFactory } from '@/tests/factories/DataFactory';
-import { Specialty, PatientStatus } from '@/types';
+import { Specialty, PatientStatus } from '@/types/domain/patientClassification';
 import { sendWhatsAppMessage } from '@/services/integrations/whatsapp/whatsappService';
 
 describe('sendMedicalHandoffUseCase', () => {

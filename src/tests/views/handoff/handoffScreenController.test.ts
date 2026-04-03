@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { BedDefinition, DailyRecord } from '@/types';
-import { Specialty } from '@/types';
+import type { BedDefinition } from '@/types/domain/beds';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import { Specialty } from '@/types/domain/patientClassification';
 import { resolveHandoffMedicalScreenState } from '@/application/handoff';
 
 const BEDS: BedDefinition[] = [

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getForDateWithMeta } from '@/services/repositories/dailyRecordRepositoryReadService';
-import type { DailyRecord } from '@/types/core';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 vi.mock('@/services/storage/indexeddb/indexedDbRecordService', () => ({
   getRecordForDate: vi.fn(),

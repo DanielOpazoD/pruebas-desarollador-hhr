@@ -1,7 +1,8 @@
 import { doc, getDoc, collection, query, where, getDocs, type Firestore } from 'firebase/firestore';
 import { getFirebaseServer } from './lib/firebase-server';
 import { mapMasterPatientToFhir, mapEncounterToFhir } from '../../src/services/utils/fhirMappers';
-import { MasterPatient, DailyRecord } from '../../src/types';
+import type { DailyRecord } from '../../src/types/domain/dailyRecord';
+import type { MasterPatient } from '../../src/types/domain/patientMaster';
 import {
   FhirCapabilityStatementSchema,
   FhirOperationOutcomeSchema,

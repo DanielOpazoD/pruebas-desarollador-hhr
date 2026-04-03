@@ -5,7 +5,8 @@ import {
   resolveMedicalObservationEntries,
   shouldRenderClinicalEventsPanel,
 } from '@/features/handoff/controllers/handoffRowCellsController';
-import { PatientStatus, Specialty, type PatientData } from '@/types';
+import type { PatientData } from '@/types/domain/patient';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 
 const buildPatient = (overrides: Partial<PatientData> = {}): PatientData =>
   ({

@@ -3,7 +3,8 @@ import { screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { PatientRow } from '@/features/census/components/PatientRow';
-import { Specialty, PatientStatus, BedType } from '@/types';
+import { BedType } from '@/types/domain/beds';
+import { Specialty, PatientStatus } from '@/types/domain/patientClassification';
 import { render } from '../integration/setup';
 import { DataFactory } from '../factories/DataFactory';
 

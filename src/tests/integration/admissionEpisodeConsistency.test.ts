@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DailyRecord } from '@/types/domain/dailyRecord';
 import type { DischargeData } from '@/types/domain/movements';
 import type { PatientData } from '@/types/domain/patient';
-import { PatientStatus, Specialty } from '@/types';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 import { calculateMinsalStats } from '@/services/calculations/minsalStatsCalculator';
 import { resolveAdmissionDateIsEditable } from '@/features/census/controllers/admissionInputController';
 

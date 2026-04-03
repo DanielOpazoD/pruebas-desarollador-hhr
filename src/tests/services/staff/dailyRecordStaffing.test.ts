@@ -7,7 +7,7 @@ import {
   resolvePrimaryDayShiftNurse,
   resolveShiftNurseSignature,
 } from '@/services/staff/dailyRecordStaffing';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 const buildRecord = (overrides: Partial<DailyRecord> = {}): DailyRecord =>
   ({

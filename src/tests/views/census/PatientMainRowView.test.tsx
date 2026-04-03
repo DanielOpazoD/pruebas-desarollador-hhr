@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { PatientMainRowView } from '@/features/census/components/patient-row/PatientMainRowView';
 import { DataFactory } from '@/tests/factories/DataFactory';
-import { BEDS } from '@/constants';
+import { BEDS } from '@/constants/beds';
 
 vi.mock('@/features/census/components/patient-row/PatientMainRowActionCell', () => ({
   PatientMainRowActionCell: (props: {

@@ -6,7 +6,7 @@ import {
   useDailyRecordBedActions,
   useDailyRecordHandoffActions,
 } from '@/context/useDailyRecordScopedActions';
-import { Specialty, PatientStatus } from '@/types';
+import { Specialty, PatientStatus } from '@/types/domain/patientClassification';
 import * as dateUtils from '@/utils/dateUtils';
 import { DEFAULT_NO_CHANGES_COMMENT } from '@/features/handoff/controllers';
 const mockAuthContext = {

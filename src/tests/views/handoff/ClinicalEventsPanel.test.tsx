@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { ClinicalEventsPanel } from '@/features/handoff/components/ClinicalEventsPanel';
-import { ClinicalEvent } from '@/types';
+import type { ClinicalEvent } from '@/types/domain/clinicalEvents';
 
 describe('ClinicalEventsPanel', () => {
   const mockEvents: ClinicalEvent[] = [

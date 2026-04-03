@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useMoveCopyTargetRecord } from '@/features/census/hooks/useMoveCopyTargetRecord';
 import { DataFactory } from '@/tests/factories/DataFactory';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 type Deferred<T> = {
   promise: Promise<T>;

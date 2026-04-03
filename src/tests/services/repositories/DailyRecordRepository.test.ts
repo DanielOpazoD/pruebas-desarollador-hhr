@@ -9,14 +9,11 @@ import { CatalogRepository } from '@/services/repositories/CatalogRepository';
 import * as idbService from '@/services/storage/indexedDBService';
 import * as firestoreService from '@/services/storage/firestoreService';
 import * as legacyFirebaseService from '@/services/storage/legacyFirebaseService';
-import {
-  DailyRecord,
-  DailyRecordPatch,
-  PatientData,
-  PatientStatus,
-  Specialty,
-  type CudyrScore,
-} from '@/types';
+import type { CudyrScore } from '@/types/domain/cudyr';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecordPatch } from '@/types/domain/dailyRecordPatch';
+import type { PatientData } from '@/types/domain/patient';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 import { logError } from '@/services/utils/errorService';
 
 vi.mock('@/services/utils/errorService', () => ({

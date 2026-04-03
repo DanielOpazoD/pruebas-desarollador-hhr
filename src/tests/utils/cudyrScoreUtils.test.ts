@@ -8,7 +8,7 @@ import {
   getCategorization,
   EMPTY_CUDYR_SCORE,
 } from '@/services/cudyr/CudyrScoreUtils';
-import { CudyrScore } from '@/types';
+import type { CudyrScore } from '@/types/domain/cudyr';
 
 describe('CudyrScoreUtils', () => {
   describe('getDepScore', () => {

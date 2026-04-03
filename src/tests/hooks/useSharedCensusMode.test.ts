@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useSharedCensusMode } from '@/hooks/useSharedCensusMode';
-import type { UserRole } from '@/types';
+import type { UserRole } from '@/types/auth';
 
 const mockLocation = {
   pathname: '/',

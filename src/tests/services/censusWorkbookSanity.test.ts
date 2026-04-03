@@ -2,9 +2,11 @@ import ExcelJS from 'exceljs';
 import PizZip from 'pizzip';
 import { describe, expect, it } from 'vitest';
 
-import { BEDS } from '@/constants';
+import { BEDS } from '@/constants/beds';
 import { buildCensusMasterBinary } from '@/services/exporters/censusMasterWorkbook';
-import { PatientStatus, Specialty, type DailyRecord, type PatientData } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { PatientData } from '@/types/domain/patient';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 
 const buildPatient = (bedId: string, overrides: Partial<PatientData> = {}): PatientData => ({
   bedId,

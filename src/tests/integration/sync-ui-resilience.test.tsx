@@ -3,7 +3,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { useDailyRecordSyncQuery } from '@/hooks/useDailyRecordSyncQuery';
 import { ConcurrencyError } from '@/services/storage/firestoreService';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 const mockSubscribe = vi.fn();
 const mockGetForDate = vi.fn();

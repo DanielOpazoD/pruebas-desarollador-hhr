@@ -5,7 +5,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { beforeEach, describe, it, expect, vi } from 'vitest';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 const FIXED_ISO_TIMESTAMP = '2026-01-15T10:30:00.000Z';
 

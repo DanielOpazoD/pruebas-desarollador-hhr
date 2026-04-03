@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fillIEEHForm } from '../../../services/pdf/ieehPdfService';
-import type { PatientData } from '../../../types';
-import { PatientStatus, Specialty } from '../../../types/core';
+import type { PatientData } from '../../../types/domain/patient';
+import { PatientStatus, Specialty } from '../../../types/domain/patientClassification';
 
 // Use vi.hoisted to define mock objects that are used in vi.mock
 const { mockDrawText, mockGetPage, mockEmbedFont, mockSave } = vi.hoisted(() => {

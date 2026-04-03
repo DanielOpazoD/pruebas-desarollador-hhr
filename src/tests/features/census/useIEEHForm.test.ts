@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useIEEHForm } from '@/features/census/hooks/useIEEHForm';
 import { printIEEHForm } from '@/services/pdf/ieehPdfService';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
-import { PatientStatus, Specialty } from '@/types/core';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 
 vi.mock('@/services/pdf/ieehPdfService', () => ({
   printIEEHForm: vi.fn(),

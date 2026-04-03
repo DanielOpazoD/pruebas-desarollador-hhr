@@ -7,8 +7,9 @@ import {
   resolveHandoffMedicalBindings,
 } from '@/features/handoff/controllers/handoffViewBindingsController';
 import type { MedicalHandoffCapabilities } from '@/features/handoff/controllers/medicalHandoffAccessController';
-import type { BedDefinition, DailyRecord } from '@/types';
-import { Specialty } from '@/types';
+import type { BedDefinition } from '@/types/domain/beds';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import { Specialty } from '@/types/domain/patientClassification';
 
 const buildCapabilities = (
   overrides: Partial<MedicalHandoffCapabilities> = {}

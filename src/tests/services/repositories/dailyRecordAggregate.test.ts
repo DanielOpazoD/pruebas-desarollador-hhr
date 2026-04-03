@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createDailyRecordAggregate } from '@/services/repositories/dailyRecordAggregate';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 const buildRecord = (overrides: Partial<DailyRecord> = {}): DailyRecord =>
   ({

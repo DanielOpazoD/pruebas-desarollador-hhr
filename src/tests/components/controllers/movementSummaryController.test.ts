@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildMovementSummaryModel } from '@/components/layout/controllers/movementSummaryController';
-import type { DischargeData, TransferData } from '@/types';
+import type { DischargeData, TransferData } from '@/types/domain/movements';
 
 describe('movementSummaryController', () => {
   it('aggregates movement counts for UI consumption', () => {

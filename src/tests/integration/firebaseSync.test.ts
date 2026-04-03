@@ -8,7 +8,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { DailyRecord, Specialty, PatientStatus } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import { Specialty, PatientStatus } from '@/types/domain/patientClassification';
 
 // Mock Firebase modules
 // Create a proper Timestamp mock class for instanceof checks

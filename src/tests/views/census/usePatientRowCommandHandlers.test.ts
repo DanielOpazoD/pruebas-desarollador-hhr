@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { ChangeEvent } from 'react';
-import type { DeviceInstance } from '@/types';
+import type { DeviceInstance } from '@/types/domain/devices';
 import { usePatientRowCommandHandlers } from '@/features/census/components/patient-row/usePatientRowCommandHandlers';
 
 describe('usePatientRowCommandHandlers', () => {

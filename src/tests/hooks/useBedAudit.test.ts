@@ -3,13 +3,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useBedAudit } from '@/hooks/useBedAudit';
 import { useAuditContext } from '@/context/AuditContext';
 import { getAttributedAuthors } from '@/services/admin/attributionService';
-import {
-  PatientStatus,
-  Specialty,
-  type CudyrScore,
-  type DailyRecord,
-  type PatientData,
-} from '@/types';
+import type { CudyrScore } from '@/types/domain/cudyr';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { PatientData } from '@/types/domain/patient';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 
 vi.mock('../../context/AuditContext', () => ({
   useAuditContext: vi.fn(),

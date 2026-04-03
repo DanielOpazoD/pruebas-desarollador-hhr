@@ -8,7 +8,8 @@ import {
   CombinedSummaryCard,
   SummaryCard,
 } from '@/components/layout/SummaryCard';
-import { DischargeData, Statistics, TransferData } from '@/types';
+import type { DischargeData, TransferData } from '@/types/domain/movements';
+import type { Statistics } from '@/types/domain/statistics';
 
 describe('SummaryCard Components', () => {
   const asDischarge = (partial: Partial<DischargeData>): DischargeData => partial as DischargeData;

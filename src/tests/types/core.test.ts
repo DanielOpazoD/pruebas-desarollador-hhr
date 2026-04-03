@@ -4,16 +4,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  Specialty,
-  PatientStatus,
-  PatientData,
-  DischargeData,
-  TransferData,
-  CMAData,
-  DailyRecord,
-  Statistics,
-} from '@/types/core';
+import type { PatientData } from '@/types/domain/patient';
+import { Specialty, PatientStatus } from '@/types/domain/patientClassification';
+import type { DischargeData, TransferData, CMAData } from '@/types/domain/movements';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { Statistics } from '@/types/domain/statistics';
 
 describe('core contracts', () => {
   describe('PatientData interface structure', () => {

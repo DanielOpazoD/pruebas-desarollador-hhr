@@ -4,7 +4,7 @@ import {
   buildModalSaveResult,
   buildSelectionChangeResult,
 } from '@/features/census/controllers/devicesCellController';
-import { DeviceInstance } from '@/types';
+import type { DeviceInstance } from '@/types/domain/devices';
 
 describe('devicesCellController', () => {
   it('builds selection result and produces history when a device is removed', () => {

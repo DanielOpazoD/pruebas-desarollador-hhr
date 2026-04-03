@@ -4,7 +4,7 @@ import {
   createGetDailyRecordQuery,
   createGetPreviousDayQuery,
 } from '@/services/repositories/contracts/dailyRecordQueries';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 const createMockRecord = (date: string): DailyRecord => ({
   date,

@@ -70,8 +70,7 @@ await DailyRecordRepository.save(record);
 
 - No importar componentes ni hooks de UI desde `services`.
 - Mantener contratos de entrada/salida tipados (preferir `types`/`schemas`).
-- `src/services/index.ts`, `src/services/storage/index.ts` y `src/services/repositories/index.ts`
-  son barrels de compatibilidad curados; código nuevo debe preferir imports directos al módulo dueño.
+- `src/services/repositories/index.ts` es una surface curada; código nuevo debe preferir imports directos al módulo dueño cuando no exista un entrypoint público explícito.
 - En integraciones externas complejas, usar una fachada pública pequeña y mover auth, payload builders y folder/file helpers a módulos internos específicos.
 - Mantener `authService.ts` como fachada pública; evitar que la UI importe módulos internos de `auth/` directamente.
 - Mantener `authPolicy.ts` y `authService.ts` estables aunque la resolución de roles se siga particionando internamente.

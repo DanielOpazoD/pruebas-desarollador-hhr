@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useClinicalCrib } from '@/hooks/useClinicalCrib';
-import { DailyRecord, PatientData, Specialty, PatientStatus } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { PatientData } from '@/types/domain/patient';
+import { Specialty, PatientStatus } from '@/types/domain/patientClassification';
 
 describe('useClinicalCrib', () => {
   const mockSaveAndUpdate = vi.fn();

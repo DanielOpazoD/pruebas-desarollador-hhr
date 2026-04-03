@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as idbService from '@/services/storage/indexedDBService';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import { AuditLogEntry } from '@/types/audit';
 import { ErrorLog } from '@/services/utils/errorService';
 

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { BEDS } from '@/constants';
+import { BEDS } from '@/constants/beds';
 import { PatientRow } from '@/features/census/components/PatientRow';
 import { usePatientRowBindingsModel } from '@/features/census/components/patient-row/usePatientRowBindingsModel';
 import { DataFactory } from '@/tests/factories/DataFactory';

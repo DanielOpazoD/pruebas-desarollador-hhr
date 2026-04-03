@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useCensusEmail } from '@/hooks/useCensusEmail';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import { DataFactory } from '@/tests/factories/DataFactory';
 
 // ============================================================================
@@ -16,17 +16,6 @@ import { DataFactory } from '@/tests/factories/DataFactory';
 // Mock global fetch
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
-
-// Mock Services
-vi.mock('../../services', async importOriginal => {
-  const actual = (await importOriginal()) as typeof import('../../services');
-  return {
-    ...actual,
-    initializeDay: vi.fn(() => Promise.resolve()),
-    getMonthRecordsFromFirestore: vi.fn(() => Promise.resolve([])),
-    // We don't mock triggerCensusEmail here because we want to test the real one (mapping to fetch)
-  };
-});
 
 // Mock UI Context
 vi.mock('../../context/UIContext', () => ({

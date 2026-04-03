@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { User } from 'firebase/auth';
-import type { AuditLogEntry } from '@/types';
+import type { AuditLogEntry } from '@/types/audit';
 
 // Unmock auditService to test the REAL logic
 vi.unmock('../../services/admin/auditService');

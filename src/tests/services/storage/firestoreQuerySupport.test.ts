@@ -4,7 +4,7 @@ import {
   mapFirestoreRecords,
   toFirestoreRecordMap,
 } from '@/services/storage/firestore/firestoreQuerySupport';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 describe('firestoreQuerySupport', () => {
   it('builds month date range for zero-based month indexes', () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { resolveHandoffMedicalScreenState } from '@/application/handoff';
-import type { BedDefinition } from '@/types';
-import { Specialty } from '@/types';
+import type { BedDefinition } from '@/types/domain/beds';
+import { Specialty } from '@/types/domain/patientClassification';
 
 const BEDS: BedDefinition[] = [
   { id: 'R1', name: '101', type: 'MEDIA', isCuna: false },

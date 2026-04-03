@@ -5,8 +5,8 @@ import type {
   BedManagementValidationPort,
 } from '@/hooks/controllers/bedManagementDispatchController';
 import type { BedAction } from '@/hooks/useBedManagementReducer';
-import type { DailyRecord } from '@/types';
-import { PatientStatus, Specialty } from '@/types/core';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 
 const buildRecord = (): DailyRecord => ({
   date: '2026-03-06',

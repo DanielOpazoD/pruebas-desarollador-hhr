@@ -4,7 +4,7 @@ import {
   buildCensusTableLayoutBindings,
   resolveCensusTableStyle,
 } from '@/features/census/controllers/censusTableLayoutController';
-import { BedType } from '@/types';
+import { BedType } from '@/types/domain/beds';
 
 describe('censusTableLayoutController', () => {
   it('builds header/body bindings with consistent forwarding', () => {

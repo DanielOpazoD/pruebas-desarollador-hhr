@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { DailyRecord, PatientData, PatientStatus, Specialty } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { PatientData } from '@/types/domain/patient';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 import {
   buildInitializedDayRecord,
   preparePatientForCarryover,

@@ -11,7 +11,9 @@ import {
   importDataCSVWithResult,
 } from '@/services/exporters/exportService';
 import * as recordStorage from '@/services/storage/records';
-import { DailyRecord, PatientData, DischargeData, TransferData } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DischargeData, TransferData } from '@/types/domain/movements';
+import type { PatientData } from '@/types/domain/patient';
 
 // Mock dependencies
 vi.mock('@/services/storage/records', async importOriginal => {

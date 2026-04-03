@@ -5,8 +5,8 @@ import { screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { HandoffPatientTable } from '@/features/handoff/components/HandoffPatientTable';
 import { render } from '../../integration/setup';
-import { BEDS } from '@/constants';
-import type { DailyRecord } from '@/types';
+import { BEDS } from '@/constants/beds';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import { DataFactory } from '@/tests/factories/DataFactory';
 
 describe('HandoffPatientTable', () => {

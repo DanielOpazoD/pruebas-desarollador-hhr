@@ -12,7 +12,7 @@ import {
   validateExcelFilename,
   MIN_EXCEL_SIZE,
 } from '../../src/services/exporters/excelValidation';
-import type { DailyRecord } from '../../src/types';
+import type { DailyRecord } from '../../src/types/domain/dailyRecord';
 import {
   buildCorsHeaders,
   buildJsonResponse,

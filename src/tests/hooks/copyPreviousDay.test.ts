@@ -4,7 +4,9 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { DailyRecord, PatientData, Specialty, PatientStatus } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { PatientData } from '@/types/domain/patient';
+import { Specialty, PatientStatus } from '@/types/domain/patientClassification';
 import { DataFactory } from '@/tests/factories/DataFactory';
 import { deepClone } from '@/utils/deepClone';
 

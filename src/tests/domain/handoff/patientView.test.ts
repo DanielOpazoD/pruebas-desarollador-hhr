@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { MedicalHandoffEntry, PatientData } from '@/types';
-import { PatientStatus, Specialty } from '@/types';
+import type { MedicalHandoffEntry, PatientData } from '@/types/domain/patient';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 import {
   resolveMedicalEntryMetadataViewModel,
   resolveMedicalHandoffValidityViewModel,

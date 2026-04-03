@@ -12,8 +12,10 @@ import {
   buildSpecialtyTraceability,
   generateDailyTrend,
 } from '@/services/calculations/minsalStatsCalculator';
-import { DailyRecord, PatientData, Specialty, PatientStatus } from '@/types';
-import { BEDS } from '@/constants';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { PatientData } from '@/types/domain/patient';
+import { Specialty, PatientStatus } from '@/types/domain/patientClassification';
+import { BEDS } from '@/constants/beds';
 
 const parseIsoDateLocal = (iso: string): Date => {
   const [year, month, day] = iso.split('-').map(Number);

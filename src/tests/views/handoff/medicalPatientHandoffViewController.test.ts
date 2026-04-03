@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { Specialty, type BedDefinition, type DailyRecord } from '@/types';
+import type { BedDefinition } from '@/types/domain/beds';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import { Specialty } from '@/types/domain/patientClassification';
 import {
   buildMedicalHandoffDeepLink,
   buildMedicalSpecialtyLink,

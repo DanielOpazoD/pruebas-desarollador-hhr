@@ -49,7 +49,8 @@ vi.mock('@/context', () => ({
 }));
 
 import { useHandoffManagement } from '@/hooks/useHandoffManagement';
-import { DailyRecord, DailyRecordPatch } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DailyRecordPatch } from '@/types/domain/dailyRecordPatch';
 import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 import {
   recordOperationalOutcome,

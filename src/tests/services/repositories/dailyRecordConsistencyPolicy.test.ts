@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { DailyRecord } from '@/types/core';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import {
   resolveDailyRecordReadConsistency,
   resolveDailyRecordSyncConsistency,

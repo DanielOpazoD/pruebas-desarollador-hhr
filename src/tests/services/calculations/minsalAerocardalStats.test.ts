@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { calculateMinsalStats } from '@/services/calculations/minsalStatsCalculator';
-import { Specialty, PatientStatus, type DailyRecord, type PatientData } from '@/types';
-import { BEDS } from '@/constants';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { PatientData } from '@/types/domain/patient';
+import { Specialty, PatientStatus } from '@/types/domain/patientClassification';
+import { BEDS } from '@/constants/beds';
 
 const createBeds = (): Record<string, PatientData> => {
   const beds: Record<string, PatientData> = {};

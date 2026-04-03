@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import {
   createRecordDateTimestamp,
   ensureDailyRecordDateTimestamp,

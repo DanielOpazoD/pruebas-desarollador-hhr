@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { CMAData, DischargeData, TransferData } from '@/types';
+import type { CMAData, DischargeData, TransferData } from '@/types/domain/movements';
 import {
   filterCmaByShift,
   filterDischargesByShift,

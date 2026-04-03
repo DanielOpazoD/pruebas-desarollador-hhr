@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { BedDefinition, DailyRecord } from '@/types';
+import type { BedDefinition } from '@/types/domain/beds';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import {
   buildMedicalPrintSectionModel,
   countScopedPatients,

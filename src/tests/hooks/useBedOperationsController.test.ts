@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildClearPatientPatch } from '@/hooks/useBedOperationsController';
-import type { DailyRecord, PatientData } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { PatientData } from '@/types/domain/patient';
 
 describe('useBedOperationsController', () => {
   it('builds a clear-patient patch preserving bed location', () => {

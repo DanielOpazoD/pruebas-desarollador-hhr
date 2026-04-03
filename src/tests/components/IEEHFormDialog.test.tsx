@@ -3,8 +3,8 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { IEEHFormDialog } from '../../features/census/components/IEEHFormDialog';
 import { printIEEHForm } from '../../services/pdf/ieehPdfService';
-import { PatientStatus, Specialty } from '../../types/core';
-import type { PatientData } from '../../types';
+import type { PatientData } from '../../types/domain/patient';
+import { PatientStatus, Specialty } from '../../types/domain/patientClassification';
 import type { DischargeFormData } from '../../services/pdf/ieehPdfService';
 
 // Mock services

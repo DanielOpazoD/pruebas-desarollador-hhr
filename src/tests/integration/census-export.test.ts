@@ -6,15 +6,10 @@
  */
 
 import { beforeEach, describe, it, expect } from 'vitest';
-import {
-  DailyRecord,
-  PatientData,
-  DischargeData,
-  TransferData,
-  CMAData,
-  Specialty,
-  PatientStatus,
-} from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { DischargeData, TransferData, CMAData } from '@/types/domain/movements';
+import type { PatientData } from '@/types/domain/patient';
+import { Specialty, PatientStatus } from '@/types/domain/patientClassification';
 import {
   buildCensusMasterWorkbook,
   getCensusMasterFilename,

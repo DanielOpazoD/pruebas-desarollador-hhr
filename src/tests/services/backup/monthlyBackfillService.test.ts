@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import type { BaseStoredFile } from '@/services/backup/baseStorageService';
 import type { StoredPdfFile } from '@/services/backup/pdfStorageService';
 import { __testing } from '@/services/backup/monthlyBackfillService';

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { localPersistence } from '@/services/storage/localpersistence/localPersistenceService';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 const makeRecord = (date: string): DailyRecord => ({
   date,

@@ -17,7 +17,7 @@ import {
   buildUpdatedMedicalHandoffDoctorRecord,
   buildUpdatedHandoffStaffRecord,
 } from '@/hooks/controllers/handoffManagementPersistenceController';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 const baseRecord = (): DailyRecord =>
   ({

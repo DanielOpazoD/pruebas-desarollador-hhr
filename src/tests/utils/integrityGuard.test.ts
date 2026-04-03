@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { calculateDensity, checkRegression } from '@/utils/integrityGuard';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 describe('IntegrityGuard', () => {
   type BedValue = DailyRecord['beds'][string];

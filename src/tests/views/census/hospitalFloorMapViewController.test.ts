@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { BedType, type BedDefinition } from '@/types';
+import { BedType } from '@/types/domain/beds';
+import type { BedDefinition } from '@/types/domain/beds';
 import {
   createDefaultSavedLayout,
   DEFAULT_HOSPITAL_FLOOR_LAYOUT,

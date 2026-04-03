@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { buildPatientTableBody } from '@/services/pdf/handoffPdfPatientTableSection';
 import { buildMovementsSummaryTables } from '@/services/pdf/handoffPdfMovementsSummarySection';
 import { resolveStatusTextStyles } from '@/services/pdf/handoffPdfTableFormattingController';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 const baseRecord: DailyRecord = {
   date: '2026-03-10',

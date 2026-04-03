@@ -5,7 +5,8 @@ import type {
   HospitalFloorMapRuntime,
   SavedLayout,
 } from '@/features/census/controllers/hospitalFloorMapRuntimeController';
-import { BedType, type BedDefinition } from '@/types';
+import { BedType } from '@/types/domain/beds';
+import type { BedDefinition } from '@/types/domain/beds';
 
 const buildRuntime = (
   overrides: Partial<HospitalFloorMapRuntime> = {}

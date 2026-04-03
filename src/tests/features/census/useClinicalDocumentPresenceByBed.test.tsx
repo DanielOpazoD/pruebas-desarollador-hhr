@@ -4,7 +4,7 @@ import type { OccupiedBedRow } from '@/features/census/types/censusTableTypes';
 import { useClinicalDocumentPresenceByBed } from '@/features/census/hooks/useClinicalDocumentPresenceByBed';
 import { executeListClinicalDocumentsByEpisodeKeys } from '@/application/clinical-documents/clinicalDocumentUseCases';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
-import { BedType } from '@/types';
+import { BedType } from '@/types/domain/beds';
 
 const warnMock = vi.hoisted(() => vi.fn());
 

@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useMinsalStats } from '@/hooks/useMinsalStats';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import type { MinsalStatistics } from '@/types/minsalTypes';
 
 const mockFetchRecordsRangeSorted = vi.fn();

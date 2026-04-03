@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { usePatientTransfers } from '@/hooks/usePatientTransfers';
-import { DailyRecord, PatientData } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { PatientData } from '@/types/domain/patient';
 import * as auditService from '@/services/admin/auditService';
 
 // Mock dependencies

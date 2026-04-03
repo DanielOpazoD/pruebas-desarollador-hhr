@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import { softDeleteDailyRecordRemote } from '@/services/repositories/dailyRecordRepositoryLifecycleSupport';
 
 const buildRecord = (date: string): DailyRecord =>

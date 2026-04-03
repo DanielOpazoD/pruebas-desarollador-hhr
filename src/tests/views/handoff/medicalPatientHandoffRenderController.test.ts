@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { MedicalHandoffEntry } from '@/types';
+import type { MedicalHandoffEntry } from '@/types/domain/patient';
 import {
   resolveMedicalEntryMetadataViewModel,
   resolveMedicalHandoffValidityViewModel,

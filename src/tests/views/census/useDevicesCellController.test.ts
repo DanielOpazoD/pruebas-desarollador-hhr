@@ -1,7 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useDevicesCellController } from '@/features/census/components/patient-row/useDevicesCellController';
-import { DeviceInstance, PatientData } from '@/types';
+import type { DeviceInstance } from '@/types/domain/devices';
+import type { PatientData } from '@/types/domain/patient';
 
 const buildData = (overrides: Partial<PatientData> = {}): PatientData =>
   ({

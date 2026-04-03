@@ -6,7 +6,9 @@ import {
   buildUpcPatients,
 } from '@/services/exporters/excel/censusHiddenSheetsAggregation';
 import type { CensusWorkbookSnapshotSheet } from '@/services/exporters/excel/censusHiddenSheetsContracts';
-import { Specialty, PatientStatus, type DailyRecord, type PatientData } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import type { PatientData } from '@/types/domain/patient';
+import { Specialty, PatientStatus } from '@/types/domain/patientClassification';
 
 const buildPatient = (bedId: string, overrides: Partial<PatientData> = {}): PatientData =>
   ({

@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 
 import { useHandoffCommunication } from '@/hooks/useHandoffCommunication';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import type { MessageTemplate } from '@/services/integrations/whatsapp/whatsappService';
 import { DataFactory } from '@/tests/factories/DataFactory';
 

@@ -3,7 +3,7 @@ import { CatalogRepository } from '@/services/repositories/CatalogRepository';
 import * as catalogService from '@/services/storage/indexeddb/indexedDbCatalogService';
 import * as firestoreService from '@/services/storage/firestore';
 import * as legacyBridge from '@/services/storage/migration/legacyFirestoreBridge';
-import { ProfessionalCatalogItem } from '@/types';
+import type { ProfessionalCatalogItem } from '@/types/domain/professionals';
 
 vi.mock('@/services/storage/indexeddb/indexedDbCatalogService', () => ({
   getCatalog: vi.fn(),

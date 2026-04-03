@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { calculateHospitalizedDays, getHandoffStaffInfo } from '@/services/pdf/handoffPdfUtils';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 
 // Use a simplified mock of DailyRecord for testing
 const mockRecord = {

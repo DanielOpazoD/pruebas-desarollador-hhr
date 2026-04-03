@@ -4,7 +4,7 @@ import { useDailyRecordSyncQuery } from '@/hooks/useDailyRecordSyncQuery';
 import * as DailyRecordRepository from '@/services/repositories/DailyRecordRepository';
 import { createSyncDailyRecordResult } from '@/services/repositories/contracts/dailyRecordResults';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
-import type { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import { DataFactory } from '@/tests/factories/DataFactory';
 
 const { mockDailyRecordRepositoryPort } = vi.hoisted(() => ({

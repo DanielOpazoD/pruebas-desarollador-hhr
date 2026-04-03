@@ -4,7 +4,8 @@ import React from 'react';
 import { CensusView } from '@/features/census/components/CensusView';
 import { useCensusViewModel } from '@/features/census/hooks/useCensusViewModel';
 import { useCensusMigrationBootstrap } from '@/features/census/hooks/useCensusMigrationBootstrap';
-import { BedType, type BedDefinition } from '@/types';
+import { BedType } from '@/types/domain/beds';
+import type { BedDefinition } from '@/types/domain/beds';
 
 vi.mock('@/features/census/hooks/useCensusViewModel', () => ({
   useCensusViewModel: vi.fn(),

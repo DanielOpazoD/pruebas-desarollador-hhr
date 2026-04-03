@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DeviceDetails, DeviceInstance } from '@/types';
+import type { DeviceDetails, DeviceInstance } from '@/types/domain/devices';
 import {
   buildDeviceHistoryTimestamp,
   buildInitialDeviceHistory,

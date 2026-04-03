@@ -13,8 +13,8 @@ import type { ExportClinicalDocumentPdfOutput } from '@/application/clinical-doc
 import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 import { ClinicalDocumentRepository } from '@/services/repositories/ClinicalDocumentRepository';
 import { ClinicalDocumentTemplateRepository } from '@/services/repositories/ClinicalDocumentTemplateRepository';
-import type { PatientData } from '@/types';
-import { PatientStatus, Specialty } from '@/types/core';
+import type { PatientData } from '@/types/domain/patient';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 
 const { openClinicalDocumentBrowserPrintPreview } = vi.hoisted(() => ({
   openClinicalDocumentBrowserPrintPreview: vi.fn(async () => true),

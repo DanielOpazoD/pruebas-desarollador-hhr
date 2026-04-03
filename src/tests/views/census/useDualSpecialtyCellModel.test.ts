@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type React from 'react';
 import { useDualSpecialtyCellModel } from '@/features/census/components/patient-row/useDualSpecialtyCellModel';
 import { DataFactory } from '@/tests/factories/DataFactory';
-import { Specialty } from '@/types';
+import { Specialty } from '@/types/domain/patientClassification';
 
 describe('useDualSpecialtyCellModel', () => {
   it('exposes derived labels/state and add/remove handlers', () => {

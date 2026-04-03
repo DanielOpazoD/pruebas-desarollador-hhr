@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import type { DailyRecord } from '@/types';
-import { PatientStatus, Specialty } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 import type { CensusActionNotification } from '@/features/census/controllers/censusActionNotificationController';
 import { useCensusDischargeCommand } from '@/features/census/hooks/useCensusDischargeCommand';
 

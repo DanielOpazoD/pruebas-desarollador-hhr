@@ -3,7 +3,7 @@ import {
   removeDeviceHistoryRecord,
   updateDeviceHistoryRecord,
 } from '@/features/census/controllers/deviceHistoryModalController';
-import { DeviceInstance } from '@/types';
+import type { DeviceInstance } from '@/types/domain/devices';
 
 const BASE_HISTORY: DeviceInstance[] = [
   {

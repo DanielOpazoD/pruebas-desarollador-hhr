@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useTransferViewStates } from '@/hooks/useTransferViewStates';
-import { DailyRecord } from '@/types';
+import type { DailyRecord } from '@/types/domain/dailyRecord';
 import { TransferRequest } from '@/types/transfers';
 
 // Mock dependencies
