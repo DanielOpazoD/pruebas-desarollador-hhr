@@ -1,10 +1,8 @@
 import React from 'react';
 import { Box, LayoutGrid, Lock } from 'lucide-react';
 import clsx from 'clsx';
-import {
-  MedicalIndicationsQuickAction,
-  type MedicalIndicationsPatientOption,
-} from '@/components/layout/date-strip/MedicalIndicationsQuickAction';
+import { MedicalIndicationsQuickAction } from '@/components/layout/date-strip/MedicalIndicationsQuickAction';
+import type { MedicalIndicationsPatientOption } from '@/shared/contracts/medicalIndications';
 
 interface DateStripQuickActionsProps {
   onOpenBedManager?: () => void;

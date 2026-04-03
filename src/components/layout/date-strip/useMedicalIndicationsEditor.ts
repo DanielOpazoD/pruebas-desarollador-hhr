@@ -1,0 +1,146 @@
+import React from 'react';
+import type { MedicalIndicationsPatientOption } from '@/shared/contracts/medicalIndications';
+
+const INDICATIONS_LINES = 15;
+
+const defaultSelectedPatient = (patients: MedicalIndicationsPatientOption[]) => patients[0] ?? null;
+
+export const useMedicalIndicationsEditor = ({
+  isOpen,
+  patients,
+}: {
+  isOpen: boolean;
+  patients: MedicalIndicationsPatientOption[];
+}) => {
+  const [selectedBedId, setSelectedBedId] = React.useState('');
+  const [reposo, setReposo] = React.useState('');
+  const [regimen, setRegimen] = React.useState('');
+  const [kineType, setKineType] = React.useState<'motora' | 'respiratoria' | 'ambas' | 'ninguna'>(
+    'ninguna'
+  );
+  const [kineTimes, setKineTimes] = React.useState('');
+  const [treatingDoctor, setTreatingDoctor] = React.useState('');
+  const [pendingNotes, setPendingNotes] = React.useState('');
+  const [indicationDraft, setIndicationDraft] = React.useState('');
+  const [indications, setIndications] = React.useState<string[]>(() =>
+    Array.from({ length: INDICATIONS_LINES }, () => '')
+  );
+  const [isEditingIndications, setIsEditingIndications] = React.useState(true);
+  const [isOrderingIndications, setIsOrderingIndications] = React.useState(false);
+  const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
+  const [editingValue, setEditingValue] = React.useState('');
+  const [isPrinting, setIsPrinting] = React.useState(false);
+
+  const selectedPatient = React.useMemo(() => {
+    const fallbackPatient = defaultSelectedPatient(patients);
+    if (!selectedBedId) return fallbackPatient;
+    return patients.find(patient => patient.bedId === selectedBedId) ?? fallbackPatient;
+  }, [patients, selectedBedId]);
+
+  React.useEffect(() => {
+    if (!isOpen || !selectedPatient) return;
+    setSelectedBedId(current => (current ? current : selectedPatient.bedId));
+  }, [isOpen, selectedPatient]);
+
+  React.useEffect(() => {
+    if (!isOpen || !selectedPatient) return;
+    setTreatingDoctor(selectedPatient.treatingDoctor);
+  }, [isOpen, selectedPatient]);
+
+  const activeIndications = React.useMemo(
+    () => indications.map(text => text.trim()).filter(Boolean),
+    [indications]
+  );
+
+  const addIndication = () => {
+    const trimmed = indicationDraft.trim();
+    if (!trimmed) return;
+
+    setIndications(current => {
+      const next = [...current];
+      const firstEmptyIndex = next.findIndex(item => !item.trim());
+      if (firstEmptyIndex === -1) return next;
+      next[firstEmptyIndex] = trimmed;
+      return next;
+    });
+    setIndicationDraft('');
+  };
+
+  const removeIndication = (targetIndex: number) => {
+    setIndications(current => {
+      const next = current.map(text => text.trim()).filter(Boolean);
+      next.splice(targetIndex, 1);
+      return [...next, ...Array.from({ length: INDICATIONS_LINES - next.length }, () => '')];
+    });
+  };
+
+  const moveIndication = (targetIndex: number, direction: 'up' | 'down') => {
+    setIndications(current => {
+      const active = current.map(text => text.trim()).filter(Boolean);
+      const destination = direction === 'up' ? targetIndex - 1 : targetIndex + 1;
+      if (destination < 0 || destination >= active.length) return current;
+      [active[targetIndex], active[destination]] = [active[destination], active[targetIndex]];
+      return [...active, ...Array.from({ length: INDICATIONS_LINES - active.length }, () => '')];
+    });
+  };
+
+  const startEditing = (index: number, text: string) => {
+    setEditingIndex(index);
+    setEditingValue(text);
+  };
+
+  const resetEditing = () => {
+    setEditingIndex(null);
+    setEditingValue('');
+  };
+
+  const saveEditedIndication = () => {
+    if (editingIndex === null) return;
+    const trimmed = editingValue.trim();
+    if (!trimmed) return;
+    setIndications(current => {
+      const active = current.map(text => text.trim()).filter(Boolean);
+      active[editingIndex] = trimmed;
+      return [...active, ...Array.from({ length: INDICATIONS_LINES - active.length }, () => '')];
+    });
+    resetEditing();
+  };
+
+  return {
+    selectedBedId,
+    setSelectedBedId,
+    selectedPatient,
+    reposo,
+    setReposo,
+    regimen,
+    setRegimen,
+    kineType,
+    setKineType,
+    kineTimes,
+    setKineTimes,
+    treatingDoctor,
+    setTreatingDoctor,
+    pendingNotes,
+    setPendingNotes,
+    indicationDraft,
+    setIndicationDraft,
+    indications,
+    activeIndications,
+    isEditingIndications,
+    setIsEditingIndications,
+    isOrderingIndications,
+    setIsOrderingIndications,
+    editingIndex,
+    editingValue,
+    setEditingValue,
+    isPrinting,
+    setIsPrinting,
+    addIndication,
+    removeIndication,
+    moveIndication,
+    startEditing,
+    resetEditing,
+    saveEditedIndication,
+    maxIndications: INDICATIONS_LINES,
+  };
+};

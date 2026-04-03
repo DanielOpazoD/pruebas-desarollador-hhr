@@ -10,7 +10,7 @@ import {
 } from '@/components/layout/app-content/appContentVisibilityController';
 import type { UseUIStateReturn } from '@/hooks/useUIState';
 import type { AppContentRuntime } from '@/components/layout/app-content/useAppContentRuntime';
-import type { MedicalIndicationsPatientOption } from '@/components/layout/date-strip/MedicalIndicationsQuickAction';
+import type { MedicalIndicationsPatientOption } from '@/shared/contracts/medicalIndications';
 import { formatDateToCL } from '@/utils/clinicalUtils';
 
 export interface AppContentChromeProps {

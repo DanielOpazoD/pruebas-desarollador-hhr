@@ -1,7 +1,7 @@
 import type { PatientMainRowViewProps } from '@/features/census/components/patient-row/patientRowViewContracts';
 import type { PatientMainRowActionCellProps } from '@/features/census/components/patient-row/patientRowViewContracts';
 import { calculateHospitalizedDays } from '@/features/census/controllers/patientBedConfigViewController';
-import type { MedicalIndicationsPatientOption } from '@/components/layout/date-strip/MedicalIndicationsQuickAction';
+import type { MedicalIndicationsPatientOption } from '@/shared/contracts/medicalIndications';
 
 export type PatientActionSectionBinding = PatientMainRowActionCellProps;
 

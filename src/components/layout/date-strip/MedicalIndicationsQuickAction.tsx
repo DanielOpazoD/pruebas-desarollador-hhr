@@ -5,7 +5,10 @@ import {
   ArrowUp,
   ClipboardList,
   FilePlus2,
+  GripVertical,
   Pencil,
+  Plus,
+  Printer,
   Stethoscope,
   Trash2,
   UserRound,
@@ -172,6 +175,8 @@ export const MedicalIndicationsQuickAction: React.FC<MedicalIndicationsQuickActi
     setEditingValue('');
   };
 
+  const remainingSlots = INDICATIONS_LINES - activeIndications.length;
+
   return (
     <>
       <button
@@ -187,18 +192,28 @@ export const MedicalIndicationsQuickAction: React.FC<MedicalIndicationsQuickActi
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         title={
-          selectedPatient
-            ? `Indicaciones médicas · ${selectedPatient.patientName}`
-            : 'Indicaciones médicas'
+          <span className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-medical-500 to-medical-700 text-white shadow-md shadow-medical-500/20">
+              <ClipboardList size={16} />
+            </span>
+            <span className="flex flex-col leading-tight">
+              <span className="text-[15px] font-bold tracking-tight text-slate-800">Claude</span>
+              {selectedPatient && (
+                <span className="text-[11px] font-medium text-slate-400">
+                  {selectedPatient.patientName}
+                </span>
+              )}
+            </span>
+          </span>
         }
         size="3xl"
         variant="white"
-        className="max-w-[78vw]"
-        bodyClassName="max-h-[84vh] overflow-y-auto px-4 py-3"
+        className="max-w-[78vw] !rounded-2xl ring-1 ring-black/[0.03]"
+        bodyClassName="max-h-[84vh] overflow-y-auto px-5 py-4"
         headerActions={
           patients.length > 1 ? (
             <select
-              className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 focus:border-medical-400 focus:outline-none focus:ring-2 focus:ring-medical-500/10"
               value={selectedPatient?.bedId || ''}
               onChange={event => setSelectedBedId(event.target.value)}
               aria-label="Seleccionar paciente"
@@ -212,47 +227,98 @@ export const MedicalIndicationsQuickAction: React.FC<MedicalIndicationsQuickActi
           ) : null
         }
       >
-        <div className="grid grid-cols-2 gap-3 p-0.5 text-[13px]">
-          <label className="text-[11px] font-semibold text-slate-600">
-            <span className="inline-flex items-center gap-1">
-              <UserRound size={12} className="text-slate-400" />
+        {/* Patient info banner */}
+        {selectedPatient && (
+          <div className="mb-4 flex items-center gap-3 rounded-xl border border-medical-100 bg-gradient-to-r from-medical-50/80 via-medical-50/40 to-transparent px-4 py-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-medical-100 text-medical-600">
+              <UserRound size={16} />
+            </div>
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 text-[12px]">
+              <span className="font-semibold text-slate-700">{selectedPatient.patientName}</span>
+              <span className="text-slate-400">|</span>
+              <span className="text-slate-500">{selectedPatient.rut}</span>
+              {selectedPatient.diagnosis && (
+                <>
+                  <span className="text-slate-400">|</span>
+                  <span
+                    className="text-slate-500 truncate max-w-[200px]"
+                    title={selectedPatient.diagnosis}
+                  >
+                    {selectedPatient.diagnosis}
+                  </span>
+                </>
+              )}
+              {selectedPatient.daysOfStay && (
+                <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-medical-100/80 px-2.5 py-0.5 text-[11px] font-semibold text-medical-700">
+                  {selectedPatient.daysOfStay} días
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Form fields */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Médico tratante */}
+          <div className="group relative">
+            <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              <UserRound size={11} className="text-slate-300" />
               Médico tratante
-            </span>
+            </label>
             <input
-              className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
               value={treatingDoctor}
               onChange={event => setTreatingDoctor(event.target.value)}
             />
-          </label>
+          </div>
 
-          <label className="text-[11px] font-semibold text-slate-600">
-            Reposo
+          {/* Reposo */}
+          <div className="group relative">
+            <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              Reposo
+            </label>
             <input
-              className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
               value={reposo}
               onChange={event => setReposo(event.target.value)}
               placeholder="Ej: absoluto"
             />
-          </label>
+          </div>
 
-          <label className="text-[11px] font-semibold text-slate-600">
-            Régimen
+          {/* Régimen */}
+          <div className="group relative">
+            <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              Régimen
+            </label>
             <input
-              className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
               value={regimen}
               onChange={event => setRegimen(event.target.value)}
               placeholder="Ej: liviano"
             />
-          </label>
+          </div>
 
-          <div className="col-span-2 grid grid-cols-1 gap-3 md:grid-cols-2">
-            <label className="text-[11px] font-semibold text-slate-600">
-              <span className="inline-flex items-center gap-1">
-                <Activity size={12} className="text-slate-400" />
+          {/* Pendientes */}
+          <div className="group relative">
+            <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              Pendientes
+            </label>
+            <input
+              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
+              value={pendingNotes}
+              onChange={event => setPendingNotes(event.target.value)}
+            />
+          </div>
+
+          {/* Kinesiología & Frecuencia — full width row */}
+          <div className="col-span-1 grid grid-cols-1 gap-4 sm:col-span-2 sm:grid-cols-2">
+            <div className="group relative">
+              <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                <Activity size={11} className="text-slate-300" />
                 Kinesiología
-              </span>
+              </label>
               <select
-                className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
+                className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-700 shadow-sm transition-all focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
                 value={kineType}
                 onChange={event =>
                   setKineType(event.target.value as 'motora' | 'respiratoria' | 'ambas' | 'ninguna')
@@ -263,75 +329,94 @@ export const MedicalIndicationsQuickAction: React.FC<MedicalIndicationsQuickActi
                 <option value="respiratoria">Respiratoria</option>
                 <option value="ambas">Motora y respiratoria</option>
               </select>
-            </label>
+            </div>
 
-            <label className="text-[11px] font-semibold text-slate-600">
-              <span className="inline-flex items-center gap-1">
-                <Stethoscope size={12} className="text-slate-400" />
+            <div className="group relative">
+              <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                <Stethoscope size={11} className="text-slate-300" />
                 Frecuencia de atención
-              </span>
+              </label>
               <input
-                className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
                 value={kineTimes}
                 onChange={event => setKineTimes(event.target.value)}
                 placeholder="Ej: 2 veces/día"
               />
-            </label>
+            </div>
           </div>
+        </div>
 
-          <label className="col-span-2 text-[11px] font-semibold text-slate-600">
-            Pendientes
-            <input
-              className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
-              value={pendingNotes}
-              onChange={event => setPendingNotes(event.target.value)}
-            />
-          </label>
-
-          <div className="col-span-2 rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-medical-50/40 p-3 shadow-sm">
-            <div className="flex items-center justify-between gap-2">
-              <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
-                <ClipboardList size={12} className="text-slate-500" />
-                Indicaciones clínicas
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${isOrderingIndications ? 'border-medical-500 bg-medical-50 text-medical-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
-                  onClick={() => setIsOrderingIndications(current => !current)}
-                >
-                  <ArrowUp size={12} />
-                  <ArrowDown size={12} />
-                  Cambiar orden
-                </button>
-                <button
-                  type="button"
-                  className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${isEditingIndications ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
-                  onClick={() => {
-                    setIsEditingIndications(current => !current);
-                    setEditingIndex(null);
-                    setEditingValue('');
-                  }}
-                >
-                  {isEditingIndications ? <Pencil size={12} /> : <Pencil size={12} />}
-                  {isEditingIndications ? 'Edición activa' : 'Modificar indicaciones'}
-                </button>
+        {/* Clinical indications section */}
+        <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-b from-slate-50/80 to-white shadow-sm">
+          {/* Section header */}
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-medical-100 text-medical-600">
+                <ClipboardList size={14} />
+              </span>
+              <div>
+                <p className="text-[13px] font-bold text-slate-700">Indicaciones clínicas</p>
+                <p className="text-[11px] text-slate-400">
+                  {activeIndications.length} de {INDICATIONS_LINES}
+                  {remainingSlots > 0 && ` \u00B7 ${remainingSlots} disponibles`}
+                </p>
               </div>
             </div>
-            <div className="mt-1.5 flex gap-2">
-              <input
-                className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-[13px] bg-white"
-                value={indicationDraft}
-                disabled={!isEditingIndications}
-                onChange={event => setIndicationDraft(event.target.value)}
-                onKeyDown={event => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    addIndication();
-                  }
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
+                  isOrderingIndications
+                    ? 'bg-medical-600 text-white shadow-sm shadow-medical-600/20'
+                    : 'border border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700'
+                }`}
+                onClick={() => setIsOrderingIndications(current => !current)}
+              >
+                <GripVertical size={12} />
+                Ordenar
+              </button>
+              <button
+                type="button"
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
+                  isEditingIndications
+                    ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/20'
+                    : 'border border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700'
+                }`}
+                onClick={() => {
+                  setIsEditingIndications(current => !current);
+                  setEditingIndex(null);
+                  setEditingValue('');
                 }}
-                placeholder="Escribe una indicación y presiona Enter"
-              />
+              >
+                <Pencil size={11} />
+                {isEditingIndications ? 'Editando' : 'Editar'}
+              </button>
+            </div>
+          </div>
+
+          {/* Add new indication input */}
+          <div className="border-b border-slate-100 bg-white px-4 py-3">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 pr-10 text-[13px] text-slate-700 transition-all placeholder:text-slate-300 focus:border-medical-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-medical-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={indicationDraft}
+                  disabled={!isEditingIndications}
+                  onChange={event => setIndicationDraft(event.target.value)}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      addIndication();
+                    }
+                  }}
+                  placeholder="Escribe una indicación y presiona Enter..."
+                />
+                {indicationDraft.trim() && (
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-400">
+                    Enter
+                  </span>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={addIndication}
@@ -340,119 +425,156 @@ export const MedicalIndicationsQuickAction: React.FC<MedicalIndicationsQuickActi
                   !indicationDraft.trim() ||
                   activeIndications.length >= INDICATIONS_LINES
                 }
-                className="px-3 py-2 rounded-md bg-medical-600 text-white text-sm disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-medical-600 px-4 py-2.5 text-[12px] font-semibold text-white shadow-sm shadow-medical-600/20 transition-all hover:bg-medical-700 hover:shadow-md hover:shadow-medical-600/25 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40 disabled:shadow-none"
               >
+                <Plus size={14} />
                 Agregar
               </button>
             </div>
-            <div className="mt-2 grid gap-1.5">
-              {activeIndications.length === 0 ? (
-                <p className="text-xs text-slate-500">Aún no hay indicaciones agregadas.</p>
-              ) : (
-                activeIndications.map((item, index) => (
-                  <div
-                    key={`${item}-${index}`}
-                    className="flex items-start justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
-                  >
-                    <div className="min-w-0 flex-1">
-                      {editingIndex === index ? (
-                        <div className="space-y-2">
-                          <input
-                            className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-                            value={editingValue}
-                            onChange={event => setEditingValue(event.target.value)}
-                          />
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={saveEditedIndication}
-                              className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
-                            >
-                              Guardar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingIndex(null);
-                                setEditingValue('');
-                              }}
-                              className="text-xs text-slate-500 hover:text-slate-600"
-                            >
-                              Cancelar
-                            </button>
-                          </div>
+          </div>
+
+          {/* Indications list */}
+          <div className="divide-y divide-slate-100/80">
+            {activeIndications.length === 0 ? (
+              <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+                <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-300">
+                  <ClipboardList size={22} />
+                </span>
+                <p className="text-[13px] font-medium text-slate-400">Sin indicaciones</p>
+                <p className="mt-0.5 text-[11px] text-slate-300">
+                  Escribe arriba para agregar la primera indicación
+                </p>
+              </div>
+            ) : (
+              activeIndications.map((item, index) => (
+                <div
+                  key={`${item}-${index}`}
+                  className="group/row flex items-start gap-3 px-4 py-3 transition-colors hover:bg-slate-50/60"
+                >
+                  {/* Number badge */}
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-medical-100/70 text-[11px] font-bold text-medical-600">
+                    {index + 1}
+                  </span>
+
+                  {/* Content */}
+                  <div className="min-w-0 flex-1">
+                    {editingIndex === index ? (
+                      <div className="space-y-2">
+                        <input
+                          className="w-full rounded-xl border border-medical-200 bg-white px-3.5 py-2 text-[13px] text-slate-700 shadow-sm focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
+                          value={editingValue}
+                          onChange={event => setEditingValue(event.target.value)}
+                          onKeyDown={event => {
+                            if (event.key === 'Enter') {
+                              event.preventDefault();
+                              saveEditedIndication();
+                            }
+                            if (event.key === 'Escape') {
+                              setEditingIndex(null);
+                              setEditingValue('');
+                            }
+                          }}
+                          autoFocus
+                        />
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={saveEditedIndication}
+                            className="inline-flex items-center gap-1 rounded-lg bg-emerald-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm transition-all hover:bg-emerald-600 active:scale-[0.98]"
+                          >
+                            Guardar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingIndex(null);
+                              setEditingValue('');
+                            }}
+                            className="rounded-lg px-2.5 py-1 text-[11px] font-medium text-slate-400 transition-colors hover:text-slate-600"
+                          >
+                            Cancelar
+                          </button>
                         </div>
-                      ) : (
-                        <p className="text-sm leading-5 text-slate-700">
-                          <span className="font-semibold text-medical-700">{`#${index + 1} `}</span>
-                          {item}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      {isOrderingIndications && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => moveIndication(index, 'up')}
-                            className="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                            aria-label={`Subir indicación #${index + 1}`}
-                          >
-                            <ArrowUp size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveIndication(index, 'down')}
-                            className="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                            aria-label={`Bajar indicación #${index + 1}`}
-                          >
-                            <ArrowDown size={14} />
-                          </button>
-                        </>
-                      )}
-                      {isEditingIndications && editingIndex !== index && (
+                      </div>
+                    ) : (
+                      <p className="text-[13px] leading-relaxed text-slate-600">{item}</p>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/row:opacity-100">
+                    {isOrderingIndications && (
+                      <>
                         <button
                           type="button"
-                          onClick={() => startEditing(index, item)}
-                          className="rounded p-1 text-medical-600 hover:bg-medical-50 hover:text-medical-700"
-                          aria-label={`Editar indicación #${index + 1}`}
-                          title={`Editar indicación #${index + 1}`}
+                          onClick={() => moveIndication(index, 'up')}
+                          disabled={index === 0}
+                          className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30"
+                          aria-label={`Subir indicación #${index + 1}`}
                         >
-                          <Pencil size={14} />
+                          <ArrowUp size={13} />
                         </button>
-                      )}
+                        <button
+                          type="button"
+                          onClick={() => moveIndication(index, 'down')}
+                          disabled={index === activeIndications.length - 1}
+                          className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30"
+                          aria-label={`Bajar indicación #${index + 1}`}
+                        >
+                          <ArrowDown size={13} />
+                        </button>
+                      </>
+                    )}
+                    {isEditingIndications && editingIndex !== index && (
                       <button
                         type="button"
-                        onClick={() => removeIndication(index)}
-                        disabled={!isEditingIndications}
-                        className="rounded p-1 text-rose-600 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-40"
-                        aria-label={`Quitar indicación #${index + 1}`}
-                        title={`Quitar indicación #${index + 1}`}
+                        onClick={() => startEditing(index, item)}
+                        className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-medical-50 hover:text-medical-600"
+                        aria-label={`Editar indicación #${index + 1}`}
+                        title={`Editar indicación #${index + 1}`}
                       >
-                        <Trash2 size={14} />
+                        <Pencil size={13} />
                       </button>
-                    </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeIndication(index)}
+                      disabled={!isEditingIndications}
+                      className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-500 disabled:pointer-events-none disabled:opacity-30"
+                      aria-label={`Quitar indicación #${index + 1}`}
+                      title={`Quitar indicación #${index + 1}`}
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
-                ))
-              )}
-            </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
-        <div className="mt-3 flex justify-end gap-2">
-          <button
-            onClick={() => setIsOpen(false)}
-            className="px-3 py-1.5 rounded-md border border-slate-300 text-slate-700 text-sm"
-          >
-            Cerrar
-          </button>
-          <button
-            onClick={() => void handlePrint()}
-            disabled={isPrinting || !selectedPatient}
-            className="px-3 py-1.5 rounded-md bg-medical-600 text-white text-sm disabled:opacity-60"
-          >
-            {isPrinting ? 'Generando PDF...' : 'PDF'}
-          </button>
+        {/* Footer actions */}
+        <div className="mt-5 flex items-center justify-between">
+          <p className="text-[11px] text-slate-300">
+            {activeIndications.length > 0 &&
+              `${activeIndications.length} indicaci${activeIndications.length === 1 ? 'ón' : 'ones'}`}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setIsOpen(false)}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-[13px] font-medium text-slate-500 shadow-sm transition-all hover:border-slate-300 hover:text-slate-700 active:scale-[0.98]"
+            >
+              Cerrar
+            </button>
+            <button
+              onClick={() => void handlePrint()}
+              disabled={isPrinting || !selectedPatient}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-medical-500 to-medical-600 px-5 py-2 text-[13px] font-semibold text-white shadow-md shadow-medical-600/25 transition-all hover:from-medical-600 hover:to-medical-700 hover:shadow-lg hover:shadow-medical-600/30 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+            >
+              <Printer size={14} />
+              {isPrinting ? 'Generando...' : 'Imprimir PDF'}
+            </button>
+          </div>
         </div>
       </BaseModal>
     </>

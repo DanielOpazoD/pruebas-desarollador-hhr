@@ -1,22 +1,8 @@
 import React from 'react';
-import {
-  Activity,
-  ArrowDown,
-  ArrowUp,
-  ClipboardList,
-  FileText,
-  MoreHorizontal,
-  Pencil,
-  Stethoscope,
-  Trash2,
-  User,
-  UserRound,
-} from 'lucide-react';
+import { FileText, MoreHorizontal, User } from 'lucide-react';
 import { MedicalButton } from '@/components/ui/base/MedicalButton';
 import type { CensusAccessProfile } from '@/features/census/types/censusAccessProfile';
 import { PatientRowOrbitalQuickActions } from '@/features/census/components/patient-row/PatientRowOrbitalQuickActions';
-import { BaseModal } from '@/components/shared/BaseModal';
-import { printMedicalIndicationsPdf } from '@/services/pdf/medicalIndicationsPdfService';
 import type {
   PatientActionMenuCallbacks,
   PatientActionMenuIndicators,
@@ -24,7 +10,8 @@ import type {
 import type { RowMenuAlign } from './patientRowUiContracts';
 import { usePatientActionMenu } from './usePatientActionMenu';
 import { PatientActionMenuPanel } from '@/features/census/components/patient-row/PatientActionMenuPanel';
-import { formatDateToDDMMYYYY } from '@/components/layout/date-strip/medicalIndicationsUtils';
+import type { MedicalIndicationsPatientOption } from '@/shared/contracts/medicalIndications';
+import { MedicalIndicationsDialog } from '@/components/layout/date-strip/MedicalIndicationsDialog';
 
 interface PatientActionMenuProps extends PatientActionMenuCallbacks, PatientActionMenuIndicators {
   isBlocked: boolean;
@@ -32,10 +19,8 @@ interface PatientActionMenuProps extends PatientActionMenuCallbacks, PatientActi
   align?: RowMenuAlign;
   showCmaAction?: boolean;
   accessProfile?: CensusAccessProfile;
-  medicalIndicationsPatient?: import('@/components/layout/date-strip/MedicalIndicationsQuickAction').MedicalIndicationsPatientOption;
+  medicalIndicationsPatient?: MedicalIndicationsPatientOption;
 }
-
-const INDICATIONS_LINES = 15;
 
 const PatientActionPrimaryIcon: React.FC<{
   indicators: Required<PatientActionMenuIndicators>;
@@ -77,23 +62,6 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
   medicalIndicationsPatient,
 }) => {
   const [isMedicalIndicationsOpen, setIsMedicalIndicationsOpen] = React.useState(false);
-  const [isPrintingMedicalIndications, setIsPrintingMedicalIndications] = React.useState(false);
-  const [reposo, setReposo] = React.useState('');
-  const [regimen, setRegimen] = React.useState('');
-  const [kineType, setKineType] = React.useState<'motora' | 'respiratoria' | 'ambas' | 'ninguna'>(
-    'ninguna'
-  );
-  const [kineTimes, setKineTimes] = React.useState('');
-  const [treatingDoctor, setTreatingDoctor] = React.useState('');
-  const [pendingNotes, setPendingNotes] = React.useState('');
-  const [indicationDraft, setIndicationDraft] = React.useState('');
-  const [indications, setIndications] = React.useState<string[]>(() =>
-    Array.from({ length: INDICATIONS_LINES }, () => '')
-  );
-  const [isEditingIndications, setIsEditingIndications] = React.useState(true);
-  const [isOrderingIndications, setIsOrderingIndications] = React.useState(false);
-  const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
-  const [editingValue, setEditingValue] = React.useState('');
   const isSpecialistAccess = accessProfile === 'specialist';
   const {
     isOpen,
@@ -125,103 +93,6 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
     onViewImagingRequest,
     onViewMedicalIndications,
   });
-
-  React.useEffect(() => {
-    if (!isMedicalIndicationsOpen || !medicalIndicationsPatient) return;
-    setTreatingDoctor(medicalIndicationsPatient.treatingDoctor || '');
-  }, [isMedicalIndicationsOpen, medicalIndicationsPatient]);
-
-  const buildToday = () => {
-    const date = new Date();
-    const dd = String(date.getDate()).padStart(2, '0');
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const yyyy = date.getFullYear();
-    return `${dd}-${mm}-${yyyy}`;
-  };
-
-  const handlePrintMedicalIndications = async () => {
-    if (!medicalIndicationsPatient || isPrintingMedicalIndications) return;
-
-    setIsPrintingMedicalIndications(true);
-    try {
-      await printMedicalIndicationsPdf({
-        paciente_nombre: medicalIndicationsPatient.patientName,
-        paciente_rut: medicalIndicationsPatient.rut,
-        paciente_diagnostico: medicalIndicationsPatient.diagnosis,
-        paciente_edad: medicalIndicationsPatient.age,
-        fecha_nacimiento: formatDateToDDMMYYYY(medicalIndicationsPatient.birthDate),
-        paciente_alergias: medicalIndicationsPatient.allergies,
-        medicotratante: treatingDoctor,
-        fecha_ingreso: formatDateToDDMMYYYY(medicalIndicationsPatient.admissionDate),
-        fecha_actual: buildToday(),
-        diasEstada: medicalIndicationsPatient.daysOfStay,
-        Reposoindicacion: reposo,
-        Regimenindicacion: regimen,
-        Kinemotora: kineType === 'motora' || kineType === 'ambas' ? 'X' : '',
-        Kinerespiratoria: kineType === 'respiratoria' || kineType === 'ambas' ? 'X' : '',
-        Kinecantidadvecesdia: kineTimes,
-        Pendientes: pendingNotes,
-        indicaciones: indications,
-      });
-    } finally {
-      setIsPrintingMedicalIndications(false);
-    }
-  };
-
-  const activeIndications = React.useMemo(
-    () => indications.map(text => text.trim()).filter(Boolean),
-    [indications]
-  );
-
-  const addIndication = () => {
-    const trimmed = indicationDraft.trim();
-    if (!trimmed) return;
-
-    setIndications(current => {
-      const next = [...current];
-      const firstEmptyIndex = next.findIndex(item => !item.trim());
-      if (firstEmptyIndex === -1) return next;
-      next[firstEmptyIndex] = trimmed;
-      return next;
-    });
-    setIndicationDraft('');
-  };
-
-  const removeIndication = (targetIndex: number) => {
-    setIndications(current => {
-      const next = current.map(text => text.trim()).filter(Boolean);
-      next.splice(targetIndex, 1);
-      return [...next, ...Array.from({ length: INDICATIONS_LINES - next.length }, () => '')];
-    });
-  };
-
-  const moveIndication = (targetIndex: number, direction: 'up' | 'down') => {
-    setIndications(current => {
-      const active = current.map(text => text.trim()).filter(Boolean);
-      const destination = direction === 'up' ? targetIndex - 1 : targetIndex + 1;
-      if (destination < 0 || destination >= active.length) return current;
-      [active[targetIndex], active[destination]] = [active[destination], active[targetIndex]];
-      return [...active, ...Array.from({ length: INDICATIONS_LINES - active.length }, () => '')];
-    });
-  };
-
-  const startEditing = (index: number, text: string) => {
-    setEditingIndex(index);
-    setEditingValue(text);
-  };
-
-  const saveEditedIndication = () => {
-    if (editingIndex === null) return;
-    const trimmed = editingValue.trim();
-    if (!trimmed) return;
-    setIndications(current => {
-      const active = current.map(text => text.trim()).filter(Boolean);
-      active[editingIndex] = trimmed;
-      return [...active, ...Array.from({ length: INDICATIONS_LINES - active.length }, () => '')];
-    });
-    setEditingIndex(null);
-    setEditingValue('');
-  };
 
   return (
     <div className="flex flex-col items-center gap-0.5 relative py-0.5" ref={menuRef}>
@@ -270,259 +141,11 @@ export const PatientActionMenu: React.FC<PatientActionMenuProps> = ({
         onAction={handleAction}
         onViewHistory={handleViewHistory}
       />
-
-      <BaseModal
+      <MedicalIndicationsDialog
         isOpen={isMedicalIndicationsOpen}
         onClose={() => setIsMedicalIndicationsOpen(false)}
-        title={
-          medicalIndicationsPatient
-            ? `Indicaciones médicas · ${medicalIndicationsPatient.patientName}`
-            : 'Indicaciones médicas'
-        }
-        size="3xl"
-        variant="white"
-        className="max-w-[78vw]"
-        bodyClassName="max-h-[84vh] overflow-y-auto px-4 py-3"
-      >
-        {!medicalIndicationsPatient ? null : (
-          <>
-            <div className="grid grid-cols-2 gap-3 p-0.5 text-[13px]">
-              <label className="text-[11px] font-semibold text-slate-600">
-                <span className="inline-flex items-center gap-1">
-                  <UserRound size={12} className="text-slate-400" />
-                  Médico tratante
-                </span>
-                <input
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
-                  value={treatingDoctor}
-                  onChange={event => setTreatingDoctor(event.target.value)}
-                />
-              </label>
-              <label className="text-[11px] font-semibold text-slate-600">
-                Reposo
-                <input
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
-                  value={reposo}
-                  onChange={event => setReposo(event.target.value)}
-                />
-              </label>
-              <label className="text-[11px] font-semibold text-slate-600">
-                Régimen
-                <input
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
-                  value={regimen}
-                  onChange={event => setRegimen(event.target.value)}
-                />
-              </label>
-              <div className="col-span-2 grid grid-cols-1 gap-3 md:grid-cols-2">
-                <label className="text-[11px] font-semibold text-slate-600">
-                  <span className="inline-flex items-center gap-1">
-                    <Activity size={12} className="text-slate-400" />
-                    Kinesiología
-                  </span>
-                  <select
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
-                    value={kineType}
-                    onChange={event =>
-                      setKineType(
-                        event.target.value as 'motora' | 'respiratoria' | 'ambas' | 'ninguna'
-                      )
-                    }
-                  >
-                    <option value="ninguna">Sin indicación</option>
-                    <option value="motora">Motora</option>
-                    <option value="respiratoria">Respiratoria</option>
-                    <option value="ambas">Motora y respiratoria</option>
-                  </select>
-                </label>
-                <label className="text-[11px] font-semibold text-slate-600">
-                  <span className="inline-flex items-center gap-1">
-                    <Stethoscope size={12} className="text-slate-400" />
-                    Frecuencia de atención
-                  </span>
-                  <input
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
-                    value={kineTimes}
-                    onChange={event => setKineTimes(event.target.value)}
-                  />
-                </label>
-              </div>
-              <label className="col-span-2 text-[11px] font-semibold text-slate-600">
-                Pendientes
-                <input
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] shadow-sm"
-                  value={pendingNotes}
-                  onChange={event => setPendingNotes(event.target.value)}
-                />
-              </label>
-              <div className="col-span-2 rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-medical-50/40 p-3 shadow-sm">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
-                    <ClipboardList size={12} className="text-slate-500" />
-                    Indicaciones clínicas
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${isOrderingIndications ? 'border-medical-500 bg-medical-50 text-medical-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
-                      onClick={() => setIsOrderingIndications(current => !current)}
-                    >
-                      <ArrowUp size={12} />
-                      <ArrowDown size={12} />
-                      Cambiar orden
-                    </button>
-                    <button
-                      type="button"
-                      className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${isEditingIndications ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
-                      onClick={() => {
-                        setIsEditingIndications(current => !current);
-                        setEditingIndex(null);
-                        setEditingValue('');
-                      }}
-                    >
-                      <Pencil size={12} />
-                      {isEditingIndications ? 'Edición activa' : 'Modificar indicaciones'}
-                    </button>
-                  </div>
-                </div>
-                <div className="mt-1.5 flex gap-2">
-                  <input
-                    className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-[13px] bg-white"
-                    value={indicationDraft}
-                    disabled={!isEditingIndications}
-                    onChange={event => setIndicationDraft(event.target.value)}
-                    onKeyDown={event => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                        addIndication();
-                      }
-                    }}
-                    placeholder="Escribe una indicación y presiona Enter"
-                  />
-                  <button
-                    type="button"
-                    onClick={addIndication}
-                    disabled={
-                      !isEditingIndications ||
-                      !indicationDraft.trim() ||
-                      activeIndications.length >= INDICATIONS_LINES
-                    }
-                    className="px-3 py-2 rounded-md bg-medical-600 text-white text-sm disabled:opacity-50"
-                  >
-                    Agregar
-                  </button>
-                </div>
-                <div className="mt-2 grid gap-1.5">
-                  {activeIndications.length === 0 ? (
-                    <p className="text-xs text-slate-500">Aún no hay indicaciones agregadas.</p>
-                  ) : (
-                    activeIndications.map((item, index) => (
-                      <div
-                        key={`${item}-${index}`}
-                        className="flex items-start justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
-                      >
-                        <div className="min-w-0 flex-1">
-                          {editingIndex === index ? (
-                            <div className="space-y-2">
-                              <input
-                                className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-                                value={editingValue}
-                                onChange={event => setEditingValue(event.target.value)}
-                              />
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={saveEditedIndication}
-                                  className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
-                                >
-                                  Guardar
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setEditingIndex(null);
-                                    setEditingValue('');
-                                  }}
-                                  className="text-xs text-slate-500 hover:text-slate-600"
-                                >
-                                  Cancelar
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <p className="text-sm leading-5 text-slate-700">
-                              <span className="font-semibold text-medical-700">{`#${index + 1} `}</span>
-                              {item}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          {isOrderingIndications && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => moveIndication(index, 'up')}
-                                className="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                                aria-label={`Subir indicación #${index + 1}`}
-                              >
-                                <ArrowUp size={14} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => moveIndication(index, 'down')}
-                                className="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                                aria-label={`Bajar indicación #${index + 1}`}
-                              >
-                                <ArrowDown size={14} />
-                              </button>
-                            </>
-                          )}
-                          {isEditingIndications && editingIndex !== index && (
-                            <button
-                              type="button"
-                              onClick={() => startEditing(index, item)}
-                              className="rounded p-1 text-medical-600 hover:bg-medical-50 hover:text-medical-700"
-                              aria-label={`Editar indicación #${index + 1}`}
-                              title={`Editar indicación #${index + 1}`}
-                            >
-                              <Pencil size={14} />
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => removeIndication(index)}
-                            disabled={!isEditingIndications}
-                            className="rounded p-1 text-rose-600 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-40"
-                            aria-label={`Quitar indicación #${index + 1}`}
-                            title={`Quitar indicación #${index + 1}`}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="mt-3 flex justify-end gap-2">
-              <button
-                onClick={() => setIsMedicalIndicationsOpen(false)}
-                className="px-3 py-1.5 rounded-md border border-slate-300 text-slate-700 text-sm"
-              >
-                Cerrar
-              </button>
-              <button
-                onClick={() => void handlePrintMedicalIndications()}
-                disabled={isPrintingMedicalIndications}
-                className="px-3 py-1.5 rounded-md bg-medical-600 text-white text-sm disabled:opacity-60"
-              >
-                {isPrintingMedicalIndications ? 'Generando PDF...' : 'PDF'}
-              </button>
-            </div>
-          </>
-        )}
-      </BaseModal>
+        patients={medicalIndicationsPatient ? [medicalIndicationsPatient] : []}
+      />
     </div>
   );
 };

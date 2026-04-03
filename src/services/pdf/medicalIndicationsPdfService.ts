@@ -6,7 +6,7 @@ import {
   MEDICAL_INDICATIONS_PDF_TEMPLATE_FALLBACK_PATHS,
   MEDICAL_INDICATIONS_PDF_TEMPLATE_PATH,
 } from '@/services/pdf/medicalIndicationsPdfCoordinates';
-import { formatDateToDDMMYYYY } from '@/components/layout/date-strip/medicalIndicationsUtils';
+import { formatMedicalIndicationsDate } from '@/shared/contracts/medicalIndications';
 
 const TEXT_COLOR = rgb(0, 0, 0);
 const FONT_SIZE = 11;
@@ -142,7 +142,7 @@ export const fillMedicalIndicationsPdf = async (
   drawFieldText(page, font, 'fecha_nacimiento', data.fecha_nacimiento);
   drawFieldText(page, font, 'paciente_alergias', data.paciente_alergias);
   drawFieldText(page, font, 'medicotratante', data.medicotratante);
-  drawFieldText(page, font, 'fecha_ingreso', formatDateToDDMMYYYY(data.fecha_ingreso));
+  drawFieldText(page, font, 'fecha_ingreso', formatMedicalIndicationsDate(data.fecha_ingreso));
   drawFieldText(page, font, 'fecha_actual', data.fecha_actual);
   drawFieldText(page, font, 'diasEstada', data.diasEstada);
   drawFieldText(page, font, 'Reposoindicacion', data.Reposoindicacion);

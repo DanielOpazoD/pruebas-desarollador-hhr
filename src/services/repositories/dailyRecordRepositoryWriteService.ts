@@ -24,132 +24,16 @@ import {
   preparePatchedRecordForPersistence,
   syncPatientsToMasterInBackground,
 } from '@/services/repositories/dailyRecordWriteSupport';
+import {
+  applyRecoveryDecisionToState,
+  buildPartialUpdateResult,
+  buildSaveResult,
+  createRemoteWriteState,
+  type RemoteWriteState,
+} from '@/services/repositories/dailyRecordWriteState';
 import { dailyRecordWriteLogger } from '@/services/repositories/repositoryLoggers';
-import type { DailyRecordRecoveryDecision } from '@/services/repositories/dailyRecordRecoveryPolicy';
 import { DataRegressionError, VersionMismatchError } from '@/utils/integrityGuard';
-import type { DailyRecordRetryability } from '@/services/repositories/contracts/dailyRecordConsistency';
 import { AdmissionDatePolicyViolationError } from '@/application/patient-flow/admissionDatePolicy';
-
-interface RemoteWriteState {
-  savedRemotely: boolean;
-  queuedForRetry: boolean;
-  autoMerged: boolean;
-  consistencyState:
-    | 'persisted_local_only'
-    | 'persisted_and_synced'
-    | 'queued_for_retry'
-    | 'auto_merged'
-    | 'blocked_regression'
-    | 'blocked_version_mismatch'
-    | 'blocked_validation'
-    | 'unrecoverable';
-  retryability: DailyRecordRetryability;
-  recoveryAction:
-    | 'none'
-    | 'defer_remote_sync'
-    | 'queue_retry'
-    | 'auto_merge_and_queue'
-    | 'block_and_surface';
-  conflictSummary: DailyRecordRecoveryDecision['conflictSummary'];
-  observabilityTags: string[];
-  userSafeMessage?: string;
-  blockingReason?: 'regression' | 'version_mismatch' | 'validation';
-  blockingError?: Error;
-}
-
-const createRemoteWriteState = (): RemoteWriteState => ({
-  savedRemotely: false,
-  queuedForRetry: false,
-  autoMerged: false,
-  consistencyState: isFirestoreEnabled() ? 'persisted_local_only' : 'persisted_local_only',
-  retryability: 'not_applicable',
-  recoveryAction: isFirestoreEnabled() ? 'defer_remote_sync' : 'none',
-  conflictSummary: null,
-  observabilityTags: ['daily_record', 'write', isFirestoreEnabled() ? 'local_only' : 'local_only'],
-});
-
-const resolveWriteOutcome = (state: RemoteWriteState): 'clean' | 'queued' | 'auto_merged' => {
-  if (state.autoMerged) {
-    return 'auto_merged';
-  }
-  if (state.queuedForRetry) {
-    return 'queued';
-  }
-  return 'clean';
-};
-
-const resolveCompatibilityOutcome = (
-  state: RemoteWriteState
-): 'clean' | 'queued' | 'auto_merged' | 'blocked' | 'unrecoverable' => {
-  if (
-    state.consistencyState === 'blocked_regression' ||
-    state.consistencyState === 'blocked_version_mismatch'
-  ) {
-    return 'blocked';
-  }
-
-  if (state.consistencyState === 'unrecoverable') {
-    return 'unrecoverable';
-  }
-
-  return resolveWriteOutcome(state);
-};
-
-const applyRecoveryDecisionToState = (
-  state: RemoteWriteState,
-  decision: DailyRecordRecoveryDecision,
-  blockingError?: Error
-): void => {
-  state.consistencyState = decision.consistencyState;
-  state.retryability = decision.retryability;
-  state.recoveryAction = decision.recoveryAction;
-  state.conflictSummary = decision.conflictSummary;
-  state.observabilityTags = decision.observabilityTags;
-  state.userSafeMessage = decision.userSafeMessage;
-  state.blockingReason = decision.blockingReason;
-  state.blockingError = blockingError;
-};
-
-const buildSaveResult = (date: string, state: RemoteWriteState) =>
-  createSaveDailyRecordResult({
-    date,
-    outcome: resolveCompatibilityOutcome(state),
-    savedLocally: true,
-    savedRemotely: state.savedRemotely,
-    queuedForRetry: state.queuedForRetry,
-    autoMerged: state.autoMerged,
-    consistencyState: state.consistencyState,
-    sourceOfTruth: state.savedRemotely ? 'remote' : 'local',
-    retryability: state.retryability,
-    recoveryAction: state.recoveryAction,
-    conflictSummary: state.conflictSummary,
-    observabilityTags: state.observabilityTags,
-    userSafeMessage: state.userSafeMessage,
-    blockingReason: state.blockingReason,
-    repairApplied: false,
-    blockingError: state.blockingError,
-  });
-
-const buildPartialUpdateResult = (date: string, state: RemoteWriteState, patchedFields: number) =>
-  createUpdatePartialDailyRecordResult({
-    date,
-    outcome: resolveCompatibilityOutcome(state),
-    savedLocally: true,
-    updatedRemotely: state.savedRemotely,
-    queuedForRetry: state.queuedForRetry,
-    autoMerged: state.autoMerged,
-    patchedFields,
-    consistencyState: state.consistencyState,
-    sourceOfTruth: state.savedRemotely ? 'remote' : 'local',
-    retryability: state.retryability,
-    recoveryAction: state.recoveryAction,
-    conflictSummary: state.conflictSummary,
-    observabilityTags: state.observabilityTags,
-    userSafeMessage: state.userSafeMessage,
-    blockingReason: state.blockingReason,
-    repairApplied: false,
-    blockingError: state.blockingError,
-  });
 
 const runRemoteSaveIntegrityCheck = async (date: string, record: DailyRecord): Promise<void> => {
   if (!isFirestoreEnabled()) return;

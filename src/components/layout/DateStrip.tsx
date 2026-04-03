@@ -11,7 +11,7 @@ import { DateStripQuickActions } from '@/components/layout/date-strip/DateStripQ
 import { DateStripBookmarkToggle } from '@/components/layout/date-strip/DateStripBookmarkToggle';
 import { DateStripYearNavigator } from '@/components/layout/date-strip/DateStripYearNavigator';
 import { DateStripMonthNavigator } from '@/components/layout/date-strip/DateStripMonthNavigator';
-import type { MedicalIndicationsPatientOption } from '@/components/layout/date-strip/MedicalIndicationsQuickAction';
+import type { MedicalIndicationsPatientOption } from '@/shared/contracts/medicalIndications';
 import { useDateStripWheelNavigation } from '@/components/layout/date-strip/useDateStripWheelNavigation';
 import type { CensusAccessProfile } from '@/shared/access/censusAccessProfile';
 import { isSpecialistCensusAccessProfile } from '@/shared/access/censusAccessProfile';
