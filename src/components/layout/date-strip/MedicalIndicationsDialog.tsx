@@ -108,8 +108,9 @@ export const MedicalIndicationsDialog: React.FC<MedicalIndicationsDialogProps> =
         ) : null
       }
     >
+      {/* Patient banner */}
       {editor.selectedPatient && (
-        <div className="mb-4 flex items-center gap-3 rounded-xl border border-medical-100 bg-gradient-to-r from-medical-50/80 via-medical-50/40 to-transparent px-4 py-3">
+        <div className="mb-3 flex items-center gap-3 rounded-xl border border-medical-100 bg-gradient-to-r from-medical-50/80 via-medical-50/40 to-transparent px-4 py-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-medical-100 text-medical-600">
             <UserRound size={16} />
           </div>
@@ -139,25 +140,14 @@ export const MedicalIndicationsDialog: React.FC<MedicalIndicationsDialogProps> =
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* Compact metadata fields */}
+      <div className="mb-3 grid grid-cols-3 gap-x-2.5 gap-y-2 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2.5">
         <div className="group relative">
-          <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-            <UserRound size={11} className="text-slate-300" />
-            Médico tratante
-          </label>
-          <input
-            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
-            value={editor.treatingDoctor}
-            onChange={event => editor.setTreatingDoctor(event.target.value)}
-          />
-        </div>
-
-        <div className="group relative">
-          <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          <label className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
             Reposo
           </label>
           <input
-            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
+            className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[12px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-2 focus:ring-medical-500/10"
             value={editor.reposo}
             onChange={event => editor.setReposo(event.target.value)}
             placeholder="Ej: absoluto"
@@ -165,11 +155,11 @@ export const MedicalIndicationsDialog: React.FC<MedicalIndicationsDialogProps> =
         </div>
 
         <div className="group relative">
-          <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          <label className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
             Régimen
           </label>
           <input
-            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
+            className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[12px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-2 focus:ring-medical-500/10"
             value={editor.regimen}
             onChange={event => editor.setRegimen(event.target.value)}
             placeholder="Ej: liviano"
@@ -177,53 +167,52 @@ export const MedicalIndicationsDialog: React.FC<MedicalIndicationsDialogProps> =
         </div>
 
         <div className="group relative">
-          <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          <label className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
             Pendientes
           </label>
           <input
-            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
+            className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[12px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-2 focus:ring-medical-500/10"
             value={editor.pendingNotes}
             onChange={event => editor.setPendingNotes(event.target.value)}
           />
         </div>
 
-        <div className="col-span-1 grid grid-cols-1 gap-4 sm:col-span-2 sm:grid-cols-2">
-          <div className="group relative">
-            <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              <Activity size={11} className="text-slate-300" />
-              Kinesiología
-            </label>
-            <select
-              className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-700 shadow-sm transition-all focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
-              value={editor.kineType}
-              onChange={event =>
-                editor.setKineType(
-                  event.target.value as 'motora' | 'respiratoria' | 'ambas' | 'ninguna'
-                )
-              }
-            >
-              <option value="ninguna">Sin indicación</option>
-              <option value="motora">Motora</option>
-              <option value="respiratoria">Respiratoria</option>
-              <option value="ambas">Motora y respiratoria</option>
-            </select>
-          </div>
+        <div className="group relative">
+          <label className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+            <Activity size={10} className="text-slate-300" />
+            Kinesiología
+          </label>
+          <select
+            className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[12px] text-slate-700 shadow-sm transition-all focus:border-medical-400 focus:outline-none focus:ring-2 focus:ring-medical-500/10"
+            value={editor.kineType}
+            onChange={event =>
+              editor.setKineType(
+                event.target.value as 'motora' | 'respiratoria' | 'ambas' | 'ninguna'
+              )
+            }
+          >
+            <option value="ninguna">Sin indicación</option>
+            <option value="motora">Motora</option>
+            <option value="respiratoria">Respiratoria</option>
+            <option value="ambas">Motora y respiratoria</option>
+          </select>
+        </div>
 
-          <div className="group relative">
-            <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              <Stethoscope size={11} className="text-slate-300" />
-              Frecuencia de atención
-            </label>
-            <input
-              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-4 focus:ring-medical-500/10"
-              value={editor.kineTimes}
-              onChange={event => editor.setKineTimes(event.target.value)}
-              placeholder="Ej: 2 veces/día"
-            />
-          </div>
+        <div className="group relative">
+          <label className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+            <Stethoscope size={10} className="text-slate-300" />
+            Frecuencia
+          </label>
+          <input
+            className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[12px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-2 focus:ring-medical-500/10"
+            value={editor.kineTimes}
+            onChange={event => editor.setKineTimes(event.target.value)}
+            placeholder="Ej: 2 veces/día"
+          />
         </div>
       </div>
 
+      {/* Indications list - primary content */}
       <MedicalIndicationsListSection
         remainingSlots={remainingSlots}
         activeIndications={editor.activeIndications}
@@ -245,24 +234,30 @@ export const MedicalIndicationsDialog: React.FC<MedicalIndicationsDialogProps> =
         moveIndication={editor.moveIndication}
       />
 
-      <div className="mt-5 flex items-center justify-between">
-        <p className="text-[11px] text-slate-300">
-          {editor.activeIndications.length > 0 &&
-            `${editor.activeIndications.length} indicaci${editor.activeIndications.length === 1 ? 'ón' : 'ones'}`}
-        </p>
-        <div className="flex gap-2">
+      {/* Footer — Doctor + actions in one row */}
+      <div className="mt-3 flex items-center gap-2.5">
+        <label className="flex shrink-0 items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+          <UserRound size={10} className="text-slate-300" />
+          Médico tratante
+        </label>
+        <input
+          className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[12px] text-slate-700 shadow-sm transition-all placeholder:text-slate-300 focus:border-medical-400 focus:outline-none focus:ring-2 focus:ring-medical-500/10"
+          value={editor.treatingDoctor}
+          onChange={event => editor.setTreatingDoctor(event.target.value)}
+        />
+        <div className="flex shrink-0 gap-2">
           <button
             onClick={onClose}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-[13px] font-medium text-slate-500 shadow-sm transition-all hover:border-slate-300 hover:text-slate-700 active:scale-[0.98]"
+            className="rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-[12px] font-medium text-slate-500 shadow-sm transition-all hover:border-slate-300 hover:text-slate-700 active:scale-[0.98]"
           >
             Cerrar
           </button>
           <button
             onClick={() => void handlePrint()}
             disabled={editor.isPrinting || !editor.selectedPatient}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-medical-500 to-medical-600 px-5 py-2 text-[13px] font-semibold text-white shadow-md shadow-medical-600/25 transition-all hover:from-medical-600 hover:to-medical-700 hover:shadow-lg hover:shadow-medical-600/30 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-b from-medical-500 to-medical-600 px-4 py-1.5 text-[12px] font-semibold text-white shadow-md shadow-medical-600/25 transition-all hover:from-medical-600 hover:to-medical-700 hover:shadow-lg hover:shadow-medical-600/30 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
           >
-            <Printer size={14} />
+            <Printer size={13} />
             {editor.isPrinting ? 'Generando...' : 'Imprimir PDF'}
           </button>
         </div>

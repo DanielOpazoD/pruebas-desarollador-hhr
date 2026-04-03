@@ -7,7 +7,7 @@ import {
 const HOVER_FINE_MEDIA_QUERY = '(hover: hover) and (pointer: fine)';
 const LAUNCHER_OPEN_EVENT = 'patient-row-orbital-launcher-open-change';
 const LAUNCHER_OWNER_EVENT = 'patient-row-orbital-launcher-owner-change';
-const HOVER_EXIT_GRACE_MS = 220;
+const HOVER_EXIT_GRACE_MS = 120;
 
 interface LauncherPosition {
   left: number;
@@ -93,8 +93,11 @@ const resolveLauncherPosition = (
   }
 
   const rect = row.getBoundingClientRect();
+  const rawLeft = rect.left - launcherOffset - triggerCenterX;
+  const clampedLeft = Math.max(8, Math.min(rawLeft, window.innerWidth - _wrapperWidth - 8));
+
   return {
-    left: Math.max(8, rect.left - launcherOffset - triggerCenterX),
+    left: clampedLeft,
     top: rect.top + rect.height / 2 - triggerCenterY,
   };
 };
@@ -120,6 +123,25 @@ export const usePatientRowOrbitalLauncherRuntime = ({
   const ownerLauncherRowIdRef = React.useRef<string | null>(null);
   const hoverExitTimerRef = React.useRef<number | null>(null);
 
+  // Refs to avoid stale closures in timers
+  const isOpenRef = React.useRef(isOpen);
+  const isLauncherHoveredRef = React.useRef(isLauncherHovered);
+  const isRowHoveredRef = React.useRef(isRowHovered);
+  const rowIdRef = React.useRef(rowId);
+
+  React.useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+  React.useEffect(() => {
+    isLauncherHoveredRef.current = isLauncherHovered;
+  }, [isLauncherHovered]);
+  React.useEffect(() => {
+    isRowHoveredRef.current = isRowHovered;
+  }, [isRowHovered]);
+  React.useEffect(() => {
+    rowIdRef.current = rowId;
+  }, [rowId]);
+
   const clearHoverExitTimer = React.useCallback(() => {
     if (hoverExitTimerRef.current !== null && typeof window !== 'undefined') {
       window.clearTimeout(hoverExitTimerRef.current);
@@ -136,17 +158,42 @@ export const usePatientRowOrbitalLauncherRuntime = ({
     setIsHoverGraceActive(true);
     hoverExitTimerRef.current = window.setTimeout(() => {
       setIsHoverGraceActive(false);
+      // Use refs to read current values, avoiding stale closures
       if (
-        ownerLauncherRowIdRef.current === rowId &&
-        !isOpen &&
-        !isLauncherHovered &&
-        !isRowHovered
+        ownerLauncherRowIdRef.current === rowIdRef.current &&
+        !isOpenRef.current &&
+        !isLauncherHoveredRef.current &&
+        !isRowHoveredRef.current
       ) {
         dispatchLauncherOwnerChange(null);
       }
       hoverExitTimerRef.current = null;
     }, HOVER_EXIT_GRACE_MS);
-  }, [clearHoverExitTimer, isLauncherHovered, isOpen, isRowHovered, rowId]);
+  }, [clearHoverExitTimer]);
+
+  // Reset all hover state when tab goes to background (prevents ghost launchers)
+  React.useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        clearHoverExitTimer();
+        setIsRowHovered(false);
+        setIsLauncherHovered(false);
+        setIsHoverGraceActive(false);
+        if (ownerLauncherRowIdRef.current === rowIdRef.current) {
+          dispatchLauncherOwnerChange(null);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [clearHoverExitTimer]);
 
   React.useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {

@@ -23,8 +23,10 @@ interface LauncherMachineState {
   phase: PatientRowOrbitalLauncherPhase;
 }
 
-const REVEAL_DELAY_MS = 60;
-const CLOSE_RESET_DELAY_MS = 90;
+/** Instant arm — no artificial delay so the trigger appears immediately on hover. */
+const REVEAL_DELAY_MS = 0;
+/** Short reset so closing feels snappy. */
+const CLOSE_RESET_DELAY_MS = 50;
 
 const reducer = (
   state: LauncherMachineState,
@@ -91,10 +93,15 @@ export const usePatientRowOrbitalLauncherMachine = ({
       clearCloseTimer();
       if (phase === 'idle' || phase === 'closing') {
         clearRevealTimer();
-        revealTimerRef.current = window.setTimeout(() => {
+        if (REVEAL_DELAY_MS <= 0) {
+          // Instant arm — no timer needed
           dispatch({ type: 'ARM' });
-          revealTimerRef.current = null;
-        }, REVEAL_DELAY_MS);
+        } else {
+          revealTimerRef.current = window.setTimeout(() => {
+            dispatch({ type: 'ARM' });
+            revealTimerRef.current = null;
+          }, REVEAL_DELAY_MS);
+        }
       }
       return;
     }

@@ -3,12 +3,13 @@
  *
  * Modularized laboratory exam request form with print functionality.
  * Uses extracted components and hooks for better maintainability.
+ * Premium aesthetic matching MedicalIndicationsDialog style.
  *
  * @see /docs/LABORATORY_FORM_GUIDE.md for design specifications
  */
 
 import React from 'react';
-import { Printer, ClipboardList } from 'lucide-react';
+import { Printer, ClipboardList, FlaskConical, UserRound } from 'lucide-react';
 import { PatientData } from '@/types/domain/patient';
 import { BaseModal } from '@/components/shared/BaseModal';
 import { EXAM_CATEGORIES } from '@/constants/examCategories';
@@ -26,12 +27,12 @@ const PRINT_STYLES = `
     @page {
         margin: 0;
     }
-    
+
     html, body {
         height: auto !important;
         overflow: visible !important;
     }
-    
+
     body > * {
         display: none !important;
     }
@@ -77,12 +78,12 @@ const PRINT_STYLES = `
 
     div[role="dialog"] > div > div:first-child,
     #modal-title,
-    div[role="dialog"] h3, 
+    div[role="dialog"] h3,
     div[role="dialog"] button,
     div[role="dialog"] .sticky,
     .modal-header,
-    .print\\:hidden { 
-        display: none !important; 
+    .print\\:hidden {
+        display: none !important;
         height: 0 !important;
         padding: 0 !important;
         margin: 0 !important;
@@ -157,24 +158,61 @@ export const ExamRequestModal: React.FC<ExamRequestModalProps> = ({ isOpen, onCl
       onClose={onClose}
       printable={true}
       title={
-        <div className="flex items-center justify-between w-full pr-8">
-          <div className="flex items-center gap-2">
-            <ClipboardList size={22} className="text-medical-600" />
-            <span id="modal-title-text" className="text-lg font-bold">
-              Solicitud de Exámenes de Laboratorio
+        <span className="flex items-center gap-2.5">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-md shadow-emerald-500/20">
+            <FlaskConical size={16} />
+          </span>
+          <span className="flex flex-col leading-tight">
+            <span className="text-[15px] font-bold tracking-tight text-slate-800">
+              Solicitud de Laboratorio
             </span>
-          </div>
-          <button
-            onClick={handlePrint}
-            className="flex items-center gap-2 bg-medical-600 hover:bg-medical-700 text-white px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-md active:scale-95 group print:hidden ml-4"
-          >
-            <Printer size={18} className="group-hover:rotate-12 transition-transform" />
-            <span>Imprimir Solicitud</span>
-          </button>
-        </div>
+            <span className="text-[11px] font-medium text-slate-400">{patient.patientName}</span>
+          </span>
+        </span>
       }
       size="full"
+      variant="white"
+      className="!rounded-2xl ring-1 ring-black/[0.03]"
+      bodyClassName="max-h-[90vh] overflow-y-auto px-5 py-4"
+      headerActions={
+        <button
+          onClick={handlePrint}
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-emerald-500 to-emerald-600 px-4 py-2 text-[13px] font-semibold text-white shadow-md shadow-emerald-600/25 transition-all hover:from-emerald-600 hover:to-emerald-700 hover:shadow-lg hover:shadow-emerald-600/30 active:scale-[0.98] print:hidden"
+        >
+          <Printer size={14} />
+          Imprimir
+        </button>
+      }
     >
+      {/* Patient info banner */}
+      <div className="mb-4 flex items-center gap-3 rounded-xl border border-emerald-100 bg-gradient-to-r from-emerald-50/80 via-emerald-50/40 to-transparent px-4 py-3 print:hidden">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+          <UserRound size={16} />
+        </div>
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 text-[12px]">
+          <span className="font-semibold text-slate-700">{patient.patientName}</span>
+          {patient.rut && (
+            <>
+              <span className="text-slate-400">|</span>
+              <span className="text-slate-500">{patient.rut}</span>
+            </>
+          )}
+          {patient.pathology && (
+            <>
+              <span className="text-slate-400">|</span>
+              <span className="max-w-[260px] truncate text-slate-500" title={patient.pathology}>
+                {patient.pathology}
+              </span>
+            </>
+          )}
+          {patient.bedName && (
+            <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-emerald-100/80 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
+              {patient.bedName}
+            </span>
+          )}
+        </div>
+      </div>
+
       <div className="flex flex-col gap-4">
         {/* PDF Replica Container */}
         <div
@@ -350,6 +388,29 @@ export const ExamRequestModal: React.FC<ExamRequestModalProps> = ({ isOpen, onCl
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Premium footer with actions */}
+      <div className="mt-5 flex items-center justify-between print:hidden">
+        <p className="text-[11px] text-slate-300">
+          {selectedExams.size > 0 &&
+            `${selectedExams.size} examen${selectedExams.size === 1 ? '' : 'es'} seleccionado${selectedExams.size === 1 ? '' : 's'}`}
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-[13px] font-medium text-slate-500 shadow-sm transition-all hover:border-slate-300 hover:text-slate-700 active:scale-[0.98]"
+          >
+            Cerrar
+          </button>
+          <button
+            onClick={handlePrint}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-emerald-500 to-emerald-600 px-5 py-2 text-[13px] font-semibold text-white shadow-md shadow-emerald-600/25 transition-all hover:from-emerald-600 hover:to-emerald-700 hover:shadow-lg hover:shadow-emerald-600/30 active:scale-[0.98]"
+          >
+            <Printer size={14} />
+            Imprimir Solicitud
+          </button>
         </div>
       </div>
 

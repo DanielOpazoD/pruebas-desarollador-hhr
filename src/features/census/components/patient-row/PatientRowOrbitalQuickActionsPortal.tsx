@@ -99,13 +99,14 @@ export const PatientRowOrbitalQuickActionsPortal: React.FC<
                 className="absolute left-1/2 top-0 z-20 flex -translate-x-1/2 flex-col"
                 style={{
                   top: `${ACTION_STACK_TOP}px`,
-                  width: `${ACTION_ROW_WIDTH}px`,
+                  width: `${ACTION_ROW_WIDTH + 16}px`,
                   gap: `${ACTION_STACK_GAP}px`,
+                  padding: '4px 8px',
                 }}
-                initial={{ opacity: 0, y: -6 }}
+                initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.12, ease: 'easeOut' }}
+                transition={{ duration: 0.1, ease: 'easeOut' }}
               >
                 {orbitalItems.map((item, index) => (
                   <motion.button
@@ -120,34 +121,37 @@ export const PatientRowOrbitalQuickActionsPortal: React.FC<
                       actionButtonRefs.current[index] = node;
                     }}
                     className={clsx(
-                      'flex items-center gap-2.5 rounded-2xl bg-transparent px-2 py-1 transition-transform duration-150 hover:scale-[1.02] hover:bg-white/50 focus-visible:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300'
+                      'pointer-events-auto flex cursor-pointer items-center gap-2.5 rounded-2xl px-2 py-1 transition-colors duration-100',
+                      'bg-white/60 hover:bg-white/90 hover:shadow-sm',
+                      'focus-visible:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300',
+                      'active:scale-[0.97]'
                     )}
                     style={{
                       width: `${ACTION_ROW_WIDTH}px`,
                       height: `${ACTION_ROW_HEIGHT}px`,
                     }}
-                    initial={{ opacity: 0, x: -8 }}
+                    initial={{ opacity: 0, x: -6 }}
                     animate={{
                       opacity: 1,
                       x: 0,
                       transition: {
-                        duration: 0.14,
-                        delay: index * 0.02,
+                        duration: 0.1,
+                        delay: 0,
                         ease: 'easeOut',
                       },
                     }}
                     exit={{
                       opacity: 0,
-                      x: -6,
+                      x: -4,
                       transition: {
-                        duration: 0.08,
-                        delay: (orbitalItems.length - index - 1) * 0.01,
+                        duration: 0.06,
+                        delay: 0,
                       },
                     }}
                   >
                     <span
                       className={clsx(
-                        'flex shrink-0 items-center justify-center rounded-full border-2 border-white shadow-md',
+                        'flex shrink-0 cursor-pointer items-center justify-center rounded-full border-2 border-white shadow-md',
                         item.buttonClassName
                       )}
                       style={{
@@ -160,10 +164,10 @@ export const PatientRowOrbitalQuickActionsPortal: React.FC<
                         alt=""
                         aria-hidden="true"
                         draggable={false}
-                        className="h-7 w-7 object-contain"
+                        className="h-7 w-7 cursor-pointer object-contain"
                       />
                     </span>
-                    <span className="truncate text-[10px] font-medium leading-tight text-slate-700/90">
+                    <span className="cursor-pointer truncate text-[10px] font-medium leading-tight text-slate-700/90">
                       {item.label}
                     </span>
                   </motion.button>
@@ -186,7 +190,7 @@ export const PatientRowOrbitalQuickActionsPortal: React.FC<
             }}
             transition={{ type: 'tween', duration: 0.12, ease: 'easeOut' }}
             className={clsx(
-              'absolute z-10 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center transition-[opacity,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300',
+              'absolute z-10 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center transition-[opacity,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300',
               showTrigger
                 ? 'pointer-events-auto opacity-100'
                 : 'pointer-events-none opacity-0 shadow-none',
@@ -214,7 +218,7 @@ export const PatientRowOrbitalQuickActionsPortal: React.FC<
                 alt=""
                 aria-hidden="true"
                 draggable={false}
-                className="object-contain opacity-95"
+                className="pointer-events-none object-contain opacity-95"
                 style={{
                   width: `${TRIGGER_VISUAL_SIZE}px`,
                   height: `${TRIGGER_VISUAL_SIZE}px`,
