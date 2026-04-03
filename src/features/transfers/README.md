@@ -132,6 +132,14 @@ Si un hospital no tiene configuración documental:
 - `Preparar docs` y `Ver docs` se deshabilitan
 - la tabla muestra el hospital, pero no permite flujo documental
 
+### Modo oculto de paquete documental
+
+- El flujo de paquete documental sigue existiendo en el feature:
+  - [TransferDocumentPackageModal.tsx](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/features/transfers/components/components/TransferDocumentPackageModal.tsx)
+  - `onGenerateDocs` / persistencia de `questionnaireResponses`
+- El botón de tabla `Preparar docs` está oculto intencionalmente del UI público.
+- Si se vuelve a habilitar, debe hacerse reusando la capacidad existente y no recreando otro modal o flujo paralelo.
+
 ## Regla de visualización
 
 - la tabla principal no debe usar scroll lateral
@@ -145,7 +153,7 @@ Si un hospital no tiene configuración documental:
 3. `transferService.ts` no debe volver a mezclar queries, mutaciones, normalización y suscripción en un solo archivo.
 4. La suscripción realtime debe exponer error legible al consumidor, aunque el UI decida no mostrarlo.
 5. Los cambios en documentos de traslado deben mantener el comportamiento:
-   - `Preparar docs` persiste respuestas
+   - el modo oculto de `Preparar docs` persiste respuestas
    - `Ver docs` reutiliza el paquete ya generado dentro de la sesión si la firma no cambió
 6. La fecha de solicitud debe manejarse con fecha local, no UTC.
 7. Si se agregan nuevos hospitales con plantillas, actualizar la configuración documental y los tests del flujo.

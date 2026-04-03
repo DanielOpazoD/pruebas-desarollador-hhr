@@ -5,6 +5,16 @@ import { firebaseConfigLoaderLogger } from '@/services/firebase-runtime/firebase
 
 const CACHED_CONFIG_KEY = 'hhr_firebase_config';
 
+const hasRequiredFirebaseFields = (
+  config: Partial<FirebaseOptions> | null
+): config is FirebaseOptions =>
+  Boolean(
+    config &&
+    String(config.apiKey || '').trim() &&
+    String(config.projectId || '').trim() &&
+    String(config.appId || '').trim()
+  );
+
 const saveCachedConfig = (config: FirebaseOptions) => {
   try {
     if (typeof localStorage === 'undefined') return;
@@ -20,8 +30,11 @@ const getCachedConfig = (): FirebaseOptions | null => {
     const raw = localStorage.getItem(CACHED_CONFIG_KEY);
     if (!raw) return null;
     const parsed = safeJsonParse<FirebaseOptions | null>(raw, null);
-    if (!parsed) return null;
-    return parsed.apiKey ? parsed : null;
+    if (hasRequiredFirebaseFields(parsed)) {
+      return parsed;
+    }
+    localStorage.removeItem(CACHED_CONFIG_KEY);
+    return null;
   } catch (error) {
     firebaseConfigLoaderLogger.warn(
       '[FirebaseConfig] Failed to read cached Firebase config:',
@@ -34,6 +47,7 @@ const getCachedConfig = (): FirebaseOptions | null => {
 const fetchRuntimeConfig = async (): Promise<FirebaseOptions> => {
   const configUrl = `/.netlify/functions/firebase-config?t=${Date.now()}&mode=recovery`;
   const response = await fetch(configUrl, {
+    cache: 'no-store',
     headers: { 'Cache-Control': 'no-cache' },
   });
 
@@ -41,7 +55,11 @@ const fetchRuntimeConfig = async (): Promise<FirebaseOptions> => {
     throw new Error(`Runtime config request failed (${response.status})`);
   }
 
-  const config = await response.json();
+  const config = (await response.json()) as Partial<FirebaseOptions>;
+  if (!hasRequiredFirebaseFields(config)) {
+    throw new Error('Runtime config response is incomplete');
+  }
+
   return config satisfies FirebaseOptions;
 };
 
@@ -78,7 +96,7 @@ export const loadFirebaseConfig = async (): Promise<FirebaseOptions> => {
     saveCachedConfig(config);
     return config;
   } catch (error) {
-    if (cached?.apiKey) {
+    if (hasRequiredFirebaseFields(cached)) {
       firebaseConfigLoaderLogger.warn(
         '[FirebaseConfig] Using cached Firebase config due to network error',
         error

@@ -30,11 +30,9 @@ interface ImportMetaEnv {
   readonly VITE_OPERATIONAL_TELEMETRY_SAMPLE_RATE?: string;
 }
 
-interface _ImportMeta {
-  readonly env: ImportMetaEnv;
-}
-
 declare global {
+  const __APP_BUILD_VERSION__: string;
+
   interface Window {
     __HHR_E2E_OVERRIDE__?: Record<string, import('./types').DailyRecord>;
   }

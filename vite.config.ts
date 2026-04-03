@@ -12,20 +12,13 @@ import { minsalSharedInteropPlugin } from './scripts/config/minsalSharedInteropP
  * Generate version.json directly in the build output so the repo does not
  * accumulate tracked diffs on every build.
  */
-function versionPlugin(): Plugin {
-  let versionInfo: { version: string; buildDate: string } | null = null;
-
+function versionPlugin(versionInfo: { version: string; buildDate: string }): Plugin {
   return {
     name: 'version-plugin',
     buildStart() {
-      versionInfo = {
-        version: Date.now().toString(),
-        buildDate: new Date().toISOString(),
-      };
       console.log(`[versionPlugin] Prepared version.json: ${versionInfo.version}`);
     },
     generateBundle() {
-      if (!versionInfo) return;
       this.emitFile({
         type: 'asset',
         fileName: 'version.json',
@@ -70,6 +63,10 @@ function excelJsRuntimeAssetPlugin(): Plugin {
 
 export default defineConfig(({ mode }) => {
   const isProduction = mode === 'production';
+  const buildVersionInfo = {
+    version: Date.now().toString(),
+    buildDate: new Date().toISOString(),
+  };
 
   return {
     server: {
@@ -77,7 +74,7 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
     },
     plugins: [
-      versionPlugin(),
+      versionPlugin(buildVersionInfo),
       excelJsRuntimeAssetPlugin(),
       minsalSharedInteropPlugin(__dirname),
       react(),
@@ -139,6 +136,7 @@ export default defineConfig(({ mode }) => {
     ].filter(Boolean),
     define: {
       'import.meta.env.VITE_E2E_MODE': JSON.stringify(process.env.VITE_E2E_MODE || 'false'),
+      __APP_BUILD_VERSION__: JSON.stringify(buildVersionInfo.version),
     },
     build: {
       modulePreload: {

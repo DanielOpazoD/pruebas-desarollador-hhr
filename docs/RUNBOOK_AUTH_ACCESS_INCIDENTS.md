@@ -38,6 +38,7 @@ No usar como referencia primaria:
    - error en callable `checkUserRole`;
    - CSP bloqueando Cloud Functions;
    - build viejo en Netlify.
+   - `/.netlify/functions/firebase-config` respondiendo `500` o con campos faltantes (`apiKey`, `projectId`, `appId`).
 5. si en localhost funciona y en Netlify no:
    - redeploy frontend;
    - redeploy functions si cambió backend auth;
@@ -77,7 +78,8 @@ Chequeo operativo adicional:
 1. comparar build/local vs deploy actual;
 2. revisar `netlify.toml` si hay síntomas de CSP o popup Google;
 3. verificar que Netlify esté sirviendo un frontend con el flujo nuevo;
-4. verificar que Firebase Functions del proyecto activo estén desplegadas.
+4. verificar que `/.netlify/functions/firebase-config` responda `200` con `apiKey`, `projectId` y `appId`;
+5. si la consola muestra `SW-Kill` o hay registro histórico de `/sw.js`, confirmar que el cliente recargó una vez para retirar el Service Worker legacy.
 
 ## Señales esperadas del sistema sano
 

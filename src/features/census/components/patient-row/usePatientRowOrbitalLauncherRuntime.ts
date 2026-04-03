@@ -142,7 +142,8 @@ const resolveRowId = (row: HTMLTableRowElement | null): string | null => row?.da
 
 /**
  * CSS selector that identifies the RUT cell inside a patient row.
- * The Honu trigger only appears when the pointer is at or left of this cell.
+ * Inside the table, the Honu trigger only appears when the pointer is at or
+ * left of this cell.
  */
 const RUT_CELL_SELECTOR = 'td.group\\/rut';
 
@@ -165,6 +166,26 @@ const resolveActivationZoneRightEdge = (row: HTMLTableRowElement): number => {
  */
 const isPointerInActivationZone = (pointerX: number, row: HTMLTableRowElement): boolean =>
   pointerX <= resolveActivationZoneRightEdge(row);
+
+const isPointerWithinRowBand = (pointerY: number, row: HTMLTableRowElement): boolean => {
+  const rect = row.getBoundingClientRect();
+  return pointerY >= rect.top && pointerY <= rect.bottom;
+};
+
+/**
+ * Returns true when the pointer is outside the table, somewhere to the left of
+ * the row, but still aligned with the row's vertical band. This is what lets
+ * the launcher appear even if the user moves the mouse all the way to the left
+ * edge of the viewport.
+ */
+const isPointerInExternalLeftActivationBand = (
+  pointerX: number,
+  pointerY: number,
+  row: HTMLTableRowElement
+): boolean => {
+  const rect = row.getBoundingClientRect();
+  return pointerX <= rect.left && isPointerWithinRowBand(pointerY, row);
+};
 
 /**
  * Computes the fixed-position `{ left, top }` for the launcher wrapper
@@ -359,30 +380,52 @@ export const usePatientRowOrbitalLauncherRuntime = ({
      * and including the RUT column). Moving the pointer right of the
      * RUT cell is treated as leaving the activation zone.
      */
+    const activateRowHover = () => {
+      if (!isRowHoveredRef.current) {
+        clearHoverExitTimer();
+        setIsHoverGraceActive(true);
+        setIsRowHovered(true);
+        if (resolvedRowId) {
+          dispatchLauncherOwnerChange(resolvedRowId);
+        }
+        syncPosition();
+      }
+    };
+
+    const deactivateRowHover = () => {
+      if (isRowHoveredRef.current) {
+        setIsRowHovered(false);
+        armHoverGrace();
+      }
+    };
+
     const handleRowMouseMove = (event: MouseEvent) => {
       const inZone = isPointerInActivationZone(event.clientX, row);
 
       if (inZone) {
-        if (!isRowHoveredRef.current) {
-          clearHoverExitTimer();
-          setIsHoverGraceActive(true);
-          setIsRowHovered(true);
-          if (resolvedRowId) {
-            dispatchLauncherOwnerChange(resolvedRowId);
-          }
-          syncPosition();
-        }
+        activateRowHover();
       } else {
-        if (isRowHoveredRef.current) {
-          setIsRowHovered(false);
-          armHoverGrace();
-        }
+        deactivateRowHover();
+      }
+    };
+
+    const handleGlobalMouseMove = (event: MouseEvent) => {
+      const inExternalLeftBand = isPointerInExternalLeftActivationBand(
+        event.clientX,
+        event.clientY,
+        row
+      );
+      const targetInsideRow = event.target instanceof Node && row.contains(event.target);
+
+      if (inExternalLeftBand) {
+        activateRowHover();
+      } else if (!targetInsideRow) {
+        deactivateRowHover();
       }
     };
 
     const handleRowMouseLeave = () => {
-      setIsRowHovered(false);
-      armHoverGrace();
+      deactivateRowHover();
     };
 
     const handleFocusIn = () => {
@@ -409,6 +452,7 @@ export const usePatientRowOrbitalLauncherRuntime = ({
     row.addEventListener('mouseleave', handleRowMouseLeave);
     row.addEventListener('focusin', handleFocusIn);
     row.addEventListener('focusout', handleFocusOut);
+    window.addEventListener('mousemove', handleGlobalMouseMove);
     window.addEventListener('resize', syncPosition);
     window.addEventListener('scroll', syncPosition, true);
 
@@ -423,6 +467,7 @@ export const usePatientRowOrbitalLauncherRuntime = ({
       row.removeEventListener('mouseleave', handleRowMouseLeave);
       row.removeEventListener('focusin', handleFocusIn);
       row.removeEventListener('focusout', handleFocusOut);
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
       window.removeEventListener('resize', syncPosition);
       window.removeEventListener('scroll', syncPosition, true);
       resizeObserver?.disconnect();

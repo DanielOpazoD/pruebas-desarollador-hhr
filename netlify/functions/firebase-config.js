@@ -1,4 +1,4 @@
-const decodeBase64 = (value) => {
+const decodeBase64 = value => {
   if (!value) return '';
   try {
     const normalized = String(value)
@@ -26,16 +26,28 @@ const buildConfig = () => {
     projectId: process.env.VITE_FIREBASE_PROJECT_ID || '',
     storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || '',
     messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-    appId: process.env.VITE_FIREBASE_APP_ID || ''
+    appId: process.env.VITE_FIREBASE_APP_ID || '',
   };
 };
 
+const getMissingFields = config =>
+  ['apiKey', 'projectId', 'appId'].filter(field => !String(config[field] || '').trim());
+
 export const handler = async () => {
   const config = buildConfig();
-  if (!config.apiKey) {
+  const missingFields = getMissingFields(config);
+
+  if (missingFields.length > 0) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Missing Firebase API key. Set VITE_FIREBASE_API_KEY or VITE_FIREBASE_API_KEY_B64.' })
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
+      body: JSON.stringify({
+        message: `Missing Firebase configuration fields: ${missingFields.join(', ')}.`,
+        missingFields,
+      }),
     };
   }
 
@@ -43,8 +55,8 @@ export const handler = async () => {
     statusCode: 200,
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 'no-cache, no-store, must-revalidate'
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
     },
-    body: JSON.stringify(config)
+    body: JSON.stringify(config),
   };
 };

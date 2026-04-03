@@ -5,18 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HHR Hospital Tracker</title>
-    <script>
-        // Service Worker Kill-switch for Development
-        // This ensures stale cached code doesn't interfere during debugging
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function (registrations) {
-                for (let registration of registrations) {
-                    console.log('[SW-Kill] 💀 Unregistering stale Service Worker...');
-                    registration.unregister();
-                }
-            });
-        }
-    </script>
     <!-- PWA -->
     <meta name="theme-color" content="#0284c7">
     <meta name="mobile-web-app-capable" content="yes">

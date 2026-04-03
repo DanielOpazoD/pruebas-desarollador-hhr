@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from '@/App';
 import { firebaseReady, mountConfigWarning } from '@/firebaseConfig';
 import { getFirebaseStartupFailureMessage } from '@/services/auth/firebaseStartupUiPolicy';
+import { prepareClientBootstrap } from '@/services/config/clientBootstrapRecovery';
 import { createScopedLogger } from '@/services/utils/loggerScope';
 
 const rootElement = document.getElementById('root');
@@ -13,28 +14,6 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 const bootLogger = createScopedLogger('Bootstrap');
 
-const clearLocalServiceWorkers = async (): Promise<void> => {
-  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
-    return;
-  }
-
-  const isLocalHost =
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1' ||
-    window.location.hostname === '0.0.0.0';
-
-  if (!isLocalHost) {
-    return;
-  }
-
-  try {
-    const registrations = await navigator.serviceWorker.getRegistrations();
-    await Promise.all(registrations.map(registration => registration.unregister()));
-  } catch (error) {
-    bootLogger.warn('Could not unregister local service workers', error);
-  }
-};
-
 const renderApp = () => {
   bootLogger.info('Rendering application');
   root.render(
@@ -44,8 +23,14 @@ const renderApp = () => {
   );
 };
 
-clearLocalServiceWorkers()
-  .finally(() => firebaseReady.then(renderApp))
+prepareClientBootstrap()
+  .then(shouldContinue => {
+    if (!shouldContinue) {
+      return;
+    }
+
+    return firebaseReady.then(renderApp);
+  })
   .catch(error => {
     bootLogger.error('Firebase initialization failed', error);
     mountConfigWarning(getFirebaseStartupFailureMessage());

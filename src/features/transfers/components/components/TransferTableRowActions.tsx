@@ -4,6 +4,13 @@ import { Archive, Eye, FileDown, Undo2, XCircle } from 'lucide-react';
 import type { TransferRequest } from '@/types/transfers';
 import type { TransferRowActionState } from '../controllers/transferTableController';
 
+/**
+ * The questionnaire/document-package workflow still exists in the feature, but
+ * the public table action to prepare/edit that package is intentionally hidden.
+ * Keep this constant and the README note aligned so the mode is not recreated.
+ */
+const SHOW_PREPARE_TRANSFER_DOCS_ACTION = false;
+
 interface TransferTableRowActionsProps {
   transfer: TransferRequest;
   actionState: TransferRowActionState;
@@ -26,7 +33,7 @@ export const TransferTableRowActions: React.FC<TransferTableRowActionsProps> = (
   onOpenCloseMenu,
 }) => (
   <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
-    {actionState.canPrepareDocuments && (
+    {SHOW_PREPARE_TRANSFER_DOCS_ACTION && actionState.canPrepareDocuments && (
       <button
         onClick={() => onGenerateDocs(transfer)}
         disabled={!hasDocumentSupport}

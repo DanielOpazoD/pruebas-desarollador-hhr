@@ -218,6 +218,49 @@ describe('PatientRowOrbitalQuickActions', () => {
     });
   });
 
+  it('reveals the trigger from the full left gutter when the pointer is aligned with the row', async () => {
+    render(
+      <table>
+        <tbody>
+          <tr className="group/patient-row" data-testid="patient-row">
+            <td className="relative">
+              <PatientRowOrbitalQuickActions
+                showClinicalDocumentsAction={true}
+                showExamRequestAction={true}
+                showImagingRequestAction={true}
+                onViewClinicalDocuments={vi.fn()}
+                onViewExamRequest={vi.fn()}
+                onViewImagingRequest={vi.fn()}
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    );
+
+    const row = screen.getByTestId('patient-row');
+    vi.spyOn(row, 'getBoundingClientRect').mockReturnValue({
+      x: 240,
+      y: 120,
+      top: 120,
+      left: 240,
+      right: 920,
+      bottom: 164,
+      width: 680,
+      height: 44,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    const trigger = screen.getByRole('button', { name: /acciones clínicas rápidas/i });
+    expect(trigger.className).toContain('opacity-0');
+
+    fireEvent.mouseMove(window, { clientX: 4, clientY: 140 });
+
+    await waitFor(() => {
+      expect(trigger.className).toContain('opacity-100');
+    });
+  });
+
   it('uses enlarged hitboxes for trigger and orbital actions', async () => {
     render(
       <table>

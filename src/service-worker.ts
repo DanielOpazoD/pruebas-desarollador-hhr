@@ -73,6 +73,14 @@ const CACHE_VERSION = 'v2.2.0';
 const OFFLINE_PAGE = '/offline.html';
 const serviceWorkerLogger = createScopedLogger('ServiceWorker');
 
+const isClientsClaimRaceError = (error: unknown): boolean => {
+  const message = String(error);
+  return (
+    message.includes('Only the active worker can claim clients') ||
+    message.includes('InvalidStateError')
+  );
+};
+
 // ============================================
 // CACHING STRATEGIES
 // ============================================
@@ -200,6 +208,10 @@ self.addEventListener('activate', (event: Event) => {
   extendableEvent.waitUntil(
     self.clients.claim().catch(error => {
       // During aggressive worker replacement, claim can race before the worker becomes active.
+      if (isClientsClaimRaceError(error)) {
+        serviceWorkerLogger.info('clients.claim deferred until active worker takes control');
+        return;
+      }
       serviceWorkerLogger.warn('clients.claim skipped', error);
     })
   );
