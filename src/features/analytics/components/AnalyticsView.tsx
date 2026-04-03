@@ -13,10 +13,13 @@ import { OccupancyTrendChart } from './components/OccupancyTrendChart';
 import { resolveAnalyticsPresentationCopy } from '@/features/analytics/controllers/minsalAnalyticsPresentationController';
 import { formatDateDDMMYYYY } from '@/utils/dateUtils';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
+import { createScopedLogger } from '@/services/utils/loggerScope';
 
 interface AnalyticsViewProps {
   onOpenCensusDate?: (date: string) => void;
 }
+
+const analyticsViewLogger = createScopedLogger('AnalyticsView');
 
 export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onOpenCensusDate }) => {
   const copy = resolveAnalyticsPresentationCopy();
@@ -39,7 +42,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onOpenCensusDate }
       const { exportMinsalToExcel } = await import('@/services/exporters/minsalExcelExporter');
       await exportMinsalToExcel(stats, trendData);
     } catch (err) {
-      console.error('Error exporting to Excel:', err);
+      analyticsViewLogger.error('Error exporting analytics to Excel', err);
       defaultBrowserWindowRuntime.alert('Error al exportar el archivo Excel');
     }
   };

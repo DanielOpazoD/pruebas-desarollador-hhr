@@ -8,10 +8,13 @@ import {
 import { getHospitalConfigByDestinationName } from '@/constants/hospitalConfigs';
 import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
+import { createScopedLogger } from '@/services/utils/loggerScope';
 import {
   prepareTransferDocumentPackage,
   type TransferDocumentPackageCacheEntry,
 } from '@/hooks/controllers/transferDocumentPackageController';
+
+const transferViewStatesLogger = createScopedLogger('TransferViewStates');
 
 export const useTransferViewStates = (
   record: DailyRecord | null,
@@ -63,7 +66,7 @@ export const useTransferViewStates = (
         }
 
         if (result.kind === 'error') {
-          console.error('Error generating documents:', result.error);
+          transferViewStatesLogger.error('Error generating transfer documents', result.error);
           defaultBrowserWindowRuntime.alert(
             'Error al generar documentos. Por favor intente nuevamente.'
           );

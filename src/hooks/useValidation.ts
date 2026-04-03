@@ -6,6 +6,9 @@ import {
   validateMovePatient,
   validatePatientDischarge,
 } from '@/hooks/controllers/validationController';
+import { createScopedLogger } from '@/services/utils/loggerScope';
+
+const validationLogger = createScopedLogger('Validation');
 
 /**
  * Hook to manage record and clinical validation.
@@ -18,7 +21,7 @@ export const useValidation = () => {
   const validateRecordSchema = useCallback((record: DailyRecord) => {
     const result = DailyRecordSchema.safeParse(record);
     if (!result.success) {
-      console.warn('[Validation] Schema violation:', result.error.issues);
+      validationLogger.warn('Schema violation', result.error.issues);
       return { isValid: false, errors: result.error.issues };
     }
     return { isValid: true, errors: [] };

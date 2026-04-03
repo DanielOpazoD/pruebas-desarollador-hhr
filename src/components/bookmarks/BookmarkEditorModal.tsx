@@ -3,6 +3,7 @@ import { Bookmark, BookmarkInput } from '@/types/bookmarks';
 import { BaseModal } from '@/components/shared/BaseModal';
 import { Bookmark as BookmarkIcon } from 'lucide-react';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
+import { bookmarkLogger } from '@/services/bookmarks/bookmarkLoggers';
 import {
   buildBookmarkInput,
   createBookmarkEditorInitialState,
@@ -64,7 +65,7 @@ export const BookmarkEditorModal: React.FC<BookmarkEditorModalProps> = ({
       await onSave(buildBookmarkInput({ name, url, icon, notes }));
       onClose();
     } catch (error) {
-      console.error('Error saving bookmark:', error);
+      bookmarkLogger.error('Error saving bookmark from editor modal', error);
       defaultBrowserWindowRuntime.alert('No se pudo guardar el marcador. Intente nuevamente.');
     } finally {
       setIsSaving(false);

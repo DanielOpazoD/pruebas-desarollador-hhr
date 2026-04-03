@@ -6,12 +6,15 @@ import {
   printConsentimientoForm,
   CustomMark,
 } from '@/services/pdf/imagingRequestPdfService';
+import { createScopedLogger } from '@/services/utils/loggerScope';
 import { DocumentOption, ActiveTextMark } from './types';
 
 interface UseImagingLogicProps {
   isOpen: boolean;
   patient: PatientData;
 }
+
+const imagingDialogLogger = createScopedLogger('ImagingDialog');
 
 export const useImagingLogic = ({ isOpen, patient }: UseImagingLogicProps) => {
   const [selectedDoc, setSelectedDoc] = useState<DocumentOption>('solicitud');
@@ -51,7 +54,7 @@ export const useImagingLogic = ({ isOpen, patient }: UseImagingLogicProps) => {
         await printConsentimientoForm(patient, debouncedPhysician, marks);
       }
     } catch (err) {
-      console.error('[ImagingDialog] Error printing:', err);
+      imagingDialogLogger.error('Error printing imaging document', err);
     } finally {
       // Re-enable button quickly
       setIsPrinting(false);

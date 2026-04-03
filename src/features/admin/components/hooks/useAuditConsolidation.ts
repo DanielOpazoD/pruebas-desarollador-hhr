@@ -4,10 +4,13 @@ import {
   previewConsolidation,
 } from '@/services/admin/auditConsolidationService';
 import { useNotification, useConfirmDialog } from '@/context/UIContext';
+import { createScopedLogger } from '@/services/utils/loggerScope';
 
 interface UseAuditConsolidationParams {
   onConsolidated?: () => void | Promise<void>;
 }
+
+const auditConsolidationHookLogger = createScopedLogger('AuditConsolidationHook');
 
 export const useAuditConsolidation = ({ onConsolidated }: UseAuditConsolidationParams = {}) => {
   const [isConsolidating, setIsConsolidating] = useState(false);
@@ -52,7 +55,7 @@ export const useAuditConsolidation = ({ onConsolidated }: UseAuditConsolidationP
 
       await onConsolidated?.();
     } catch (consolidationError) {
-      console.error('Consolidation failed:', consolidationError);
+      auditConsolidationHookLogger.error('Consolidation failed', consolidationError);
       error('Error', 'No se pudo consolidar los logs');
     } finally {
       setIsConsolidating(false);

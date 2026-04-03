@@ -12,6 +12,8 @@ import {
 import clsx from 'clsx';
 import { PdfViewerModal } from '@/components/shared/PdfViewerModal';
 import { formatTimeHHMM } from '@/utils/dateUtils';
+import { cudyrExportLogger } from '@/services/cudyr/cudyrLoggers';
+import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 
 const CUDYR_INSTRUMENT_PDF_PATH = '/docs/instrumento-cudyr.pdf';
 
@@ -53,8 +55,10 @@ export const CudyrHeader: React.FC<CudyrHeaderProps> = ({
       const { generateCudyrMonthlyExcel } = await import('@/services/cudyr/cudyrExportService');
       await generateCudyrMonthlyExcel(year, month, currentDate);
     } catch (error) {
-      console.error('Error exporting CUDYR Excel mensual:', error);
-      alert('Error al exportar el resumen mensual CUDYR. Por favor intente nuevamente.');
+      cudyrExportLogger.error('Error exporting monthly CUDYR Excel', error);
+      defaultBrowserWindowRuntime.alert(
+        'Error al exportar el resumen mensual CUDYR. Por favor intente nuevamente.'
+      );
     } finally {
       setIsExporting(false);
     }

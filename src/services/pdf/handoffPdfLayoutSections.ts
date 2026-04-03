@@ -5,8 +5,11 @@ import type {
   HandoffPdfNovedadesRecord,
   HandoffPdfRecord,
 } from '@/services/pdf/contracts/handoffPdfContracts';
+import { createScopedLogger } from '@/services/utils/loggerScope';
 import { formatDateDDMMYYYY } from '@/utils/dateUtils';
 import { getBase64ImageFromURL, getHandoffStaffInfo, Schedule } from './handoffPdfUtils';
+
+const handoffPdfLayoutLogger = createScopedLogger('HandoffPdfLayout');
 
 export const addHandoffHeader = async (
   doc: jsPDF,
@@ -23,7 +26,7 @@ export const addHandoffHeader = async (
     const logoData = await getBase64ImageFromURL('/images/logos/logo_HHR.svg');
     doc.addImage(logoData, 'PNG', margin, margin, logoSize, logoSize);
   } catch (error) {
-    console.warn('Could not load logo for PDF', error);
+    handoffPdfLayoutLogger.warn('Could not load logo for PDF', error);
   }
 
   doc.setFont('helvetica', 'bold');

@@ -11,6 +11,7 @@ import {
   type ClinicalDocumentIndicationsCatalog,
   updateClinicalDocumentIndicationCatalogItem,
 } from '@/features/clinical-documents/services/clinicalDocumentIndicationsCatalogService';
+import { createScopedLogger } from '@/services/utils/loggerScope';
 
 interface UseClinicalDocumentIndicationsCatalogParams {
   hospitalId: string;
@@ -38,6 +39,10 @@ interface UseClinicalDocumentIndicationsCatalogState {
   importCatalog: (catalog: unknown) => Promise<boolean>;
 }
 
+const clinicalDocumentIndicationsCatalogLogger = createScopedLogger(
+  'ClinicalDocumentIndicationsCatalogHook'
+);
+
 export const useClinicalDocumentIndicationsCatalog = ({
   hospitalId,
   isActive,
@@ -60,7 +65,7 @@ export const useClinicalDocumentIndicationsCatalog = ({
       setIndicationsCatalog(nextCatalog);
       return true;
     } catch (error) {
-      console.error(errorMessage, error);
+      clinicalDocumentIndicationsCatalogLogger.error(errorMessage, error);
       setCustomIndicationError('No se pudo guardar la indicación en Firebase.');
       return false;
     } finally {
@@ -80,7 +85,10 @@ export const useClinicalDocumentIndicationsCatalog = ({
 
     if (canEdit) {
       void ensureClinicalDocumentIndicationsCatalog(hospitalId).catch(error => {
-        console.error('Error seeding clinical document indications catalog:', error);
+        clinicalDocumentIndicationsCatalogLogger.error(
+          'Error seeding clinical document indications catalog',
+          error
+        );
       });
     }
 

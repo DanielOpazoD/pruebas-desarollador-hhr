@@ -10,11 +10,14 @@ import {
   getUndoMovementErrorMessage,
   UndoMovementKind,
 } from '@/features/census/controllers/patientMovementUndoErrorPresentation';
+import { createScopedLogger } from '@/services/utils/loggerScope';
 
 interface UndoDescriptor {
   patientName: string;
   bedName: string;
 }
+
+const patientMovementFeedbackLogger = createScopedLogger('PatientMovementFeedback');
 
 export const usePatientMovementFeedback = (runtime: PatientMovementRuntime) => {
   const notifyCreationError = useCallback(
@@ -24,7 +27,7 @@ export const usePatientMovementFeedback = (runtime: PatientMovementRuntime) => {
         runtime.warn(warningMessage);
         return;
       }
-      console.warn(warningMessage);
+      patientMovementFeedbackLogger.warn(warningMessage);
     },
     [runtime]
   );

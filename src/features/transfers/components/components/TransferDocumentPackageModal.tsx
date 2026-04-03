@@ -10,6 +10,7 @@ import clsx from 'clsx';
 import { BaseModal } from '@/components/shared/BaseModal';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 import { useConfirmDialog, useNotification } from '@/context/UIContext';
+import { createScopedLogger } from '@/services/utils/loggerScope';
 
 interface TransferDocumentPackageModalProps {
   isOpen: boolean;
@@ -19,6 +20,8 @@ interface TransferDocumentPackageModalProps {
   documents: GeneratedDocument[];
   onEdit?: (doc: GeneratedDocument) => void;
 }
+
+const transferDocumentPackageLogger = createScopedLogger('TransferDocumentPackageModal');
 
 export const TransferDocumentPackageModal: React.FC<TransferDocumentPackageModalProps> = ({
   isOpen,
@@ -50,7 +53,7 @@ export const TransferDocumentPackageModal: React.FC<TransferDocumentPackageModal
       await makeFilePubliclyEditable(result.fileId);
       defaultBrowserWindowRuntime.open(result.webViewLink, '_blank');
     } catch (error: unknown) {
-      console.error('Error editing document:', error);
+      transferDocumentPackageLogger.error('Error editing transfer document in cloud', error);
       const err = error as Error;
       const msg = err.message || 'Error al conectar con Google Drive';
       if (msg.includes('configured')) {

@@ -14,6 +14,7 @@ import {
   exportTableConfig,
   importTableConfig,
 } from '@/services/storage/tableConfigService';
+import { tableConfigLogger } from '@/services/storage/storageLoggers';
 
 // ============================================================================
 // Context Types
@@ -75,7 +76,9 @@ export const TableConfigProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     saveTimeoutRef.current = setTimeout(() => {
       localUpdateRef.current = true;
-      saveTableConfig(newConfig).catch(console.error);
+      saveTableConfig(newConfig).catch(error => {
+        tableConfigLogger.error('Failed to persist table config from debounce', error);
+      });
     }, 500);
   }, []);
 
@@ -125,7 +128,9 @@ export const TableConfigProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const resetToDefaults = useCallback(() => {
     const newConfig = getDefaultConfig();
     setConfig(newConfig);
-    saveTableConfig(newConfig).catch(console.error);
+    saveTableConfig(newConfig).catch(error => {
+      tableConfigLogger.error('Failed to reset table config to defaults', error);
+    });
   }, []);
 
   // Export current config
@@ -140,7 +145,7 @@ export const TableConfigProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setConfig(importedConfig);
       await saveTableConfig(importedConfig);
     } catch (error) {
-      console.error('Failed to import config:', error);
+      tableConfigLogger.error('Failed to import config', error);
       throw error;
     }
   }, []);

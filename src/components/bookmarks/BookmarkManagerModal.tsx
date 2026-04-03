@@ -4,6 +4,7 @@ import { BaseModal } from '@/components/shared/BaseModal';
 import { ChevronUp, ChevronDown, Trash2, Edit2, GripVertical, Save } from 'lucide-react';
 import { reorderBookmarks, deleteBookmark } from '@/services/bookmarks/bookmarkService';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
+import { bookmarkLogger } from '@/services/bookmarks/bookmarkLoggers';
 
 interface BookmarkManagerModalProps {
   isOpen: boolean;
@@ -50,7 +51,7 @@ export const BookmarkManagerModal: React.FC<BookmarkManagerModalProps> = ({
       setHasChanges(false);
       onClose();
     } catch (error) {
-      console.error('Error saving order:', error);
+      bookmarkLogger.error('Error saving bookmark order', error);
       defaultBrowserWindowRuntime.alert('Error al guardar el orden');
     } finally {
       setIsSaving(false);

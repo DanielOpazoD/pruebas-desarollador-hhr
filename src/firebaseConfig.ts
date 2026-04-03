@@ -53,7 +53,7 @@ const loadValidatedFirebaseConfig = async (): Promise<FirebaseOptions> => {
     warnOnFirebaseAuthConfig(config);
     return config;
   } catch (error) {
-    console.error('Failed to load Firebase config from Netlify function', error);
+    firebaseConfigLogger.error('Failed to load Firebase config from Netlify function', error);
     const diagnostics = buildMissingFirebaseConfigDiagnostics();
     warnWithFirebaseDiagnostics(
       diagnostics,
@@ -93,7 +93,7 @@ export const firebaseReady = (async () => {
     return services;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error('[FirebaseConfig] ❌ Critical initialization error:', message);
+    firebaseConfigLogger.error('Critical initialization error', { message });
     throw err;
   }
 })();

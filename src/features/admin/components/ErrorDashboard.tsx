@@ -14,6 +14,9 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import { formatAuditTimestamp } from '@/services/admin/utils/auditUtils';
+import { createScopedLogger } from '@/services/utils/loggerScope';
+
+const errorDashboardLogger = createScopedLogger('ErrorDashboard');
 
 export const ErrorDashboard: React.FC = () => {
   const [logs, setLogs] = useState<ErrorLog[]>([]);
@@ -26,7 +29,7 @@ export const ErrorDashboard: React.FC = () => {
       const data = await fetchErrorLogs();
       setLogs(data.reverse()); // Newest first
     } catch (error) {
-      console.error('Failed to load logs:', error);
+      errorDashboardLogger.error('Failed to load error dashboard logs', error);
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { AuditLogEntry } from '@/types/audit';
 import { generateAuditPdfHtml } from '@/features/admin/components/components/audit/utils/auditPdfUtils';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
+import { createScopedLogger } from '@/services/utils/loggerScope';
 
 interface UseAuditExportParams {
   filteredLogs: AuditLogEntry[];
@@ -12,6 +13,8 @@ interface UseAuditExportParams {
   startDate?: string;
   endDate?: string;
 }
+
+const auditExportLogger = createScopedLogger('AuditExportHook');
 
 export const useAuditExport = ({
   filteredLogs,
@@ -33,7 +36,7 @@ export const useAuditExport = ({
       const { saveAs } = await import('file-saver');
       saveAs(blob, `auditoria_hospital_${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch (error) {
-      console.error('Excel Export failed:', error);
+      auditExportLogger.error('Excel export failed', error);
     } finally {
       setIsExporting(false);
     }

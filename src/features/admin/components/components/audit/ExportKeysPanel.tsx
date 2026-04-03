@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Key, RefreshCw, Calendar, CheckCircle2 } from 'lucide-react';
 import clsx from 'clsx';
 import { writeClipboardText } from '@/shared/runtime/browserWindowRuntime';
+import { exportPasswordLogger } from '@/services/security/securityLoggers';
 
 export const ExportKeysPanel: React.FC = () => {
   const [passwords, setPasswords] = useState<
@@ -26,7 +27,7 @@ export const ExportKeysPanel: React.FC = () => {
           }))
         );
       } catch (error) {
-        console.error('Failed to load passwords:', error);
+        exportPasswordLogger.error('Failed to load passwords', error);
       } finally {
         setLoading(false);
       }
@@ -58,7 +59,7 @@ export const ExportKeysPanel: React.FC = () => {
     try {
       await writeClipboardText(password);
     } catch (error) {
-      console.error('Failed to copy password to clipboard:', error);
+      exportPasswordLogger.error('Failed to copy password to clipboard', error);
     }
   };
 

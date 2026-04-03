@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { CURRENT_SCHEMA_VERSION } from '@/constants/version';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
+import { createScopedLogger } from '@/services/utils/loggerScope';
 
 interface VersionContextType {
   isOutdated: boolean;
@@ -11,6 +12,7 @@ interface VersionContextType {
 }
 
 const VersionContext = createContext<VersionContextType | undefined>(undefined);
+const versionLogger = createScopedLogger('VersionContext');
 
 export const VersionProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isOutdated, setIsOutdated] = useState(false);
@@ -18,9 +20,10 @@ export const VersionProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const checkVersion = useCallback((remoteVersionValue: number) => {
     if (remoteVersionValue > CURRENT_SCHEMA_VERSION) {
-      console.error(
-        `[Versioning] App version mismatch detected. Local: ${CURRENT_SCHEMA_VERSION}, Remote: ${remoteVersionValue}`
-      );
+      versionLogger.error('App version mismatch detected', {
+        localVersion: CURRENT_SCHEMA_VERSION,
+        remoteVersion: remoteVersionValue,
+      });
       setIsOutdated(true);
       setRemoteVersion(remoteVersionValue);
     }

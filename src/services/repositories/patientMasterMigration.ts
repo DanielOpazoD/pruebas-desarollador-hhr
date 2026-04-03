@@ -1,5 +1,6 @@
 import type { MasterPatient } from '@/types/domain/patientMaster';
 import { formatRut, isValidRut } from '@/utils/rutUtils';
+import { patientMasterRepositoryLogger } from '@/services/repositories/repositoryLoggers';
 import { bulkUpsertPatients } from './PatientMasterRepository';
 import { getAvailableDates, getForDate } from './dailyRecordRepositoryReadService';
 
@@ -59,9 +60,10 @@ export const migrateFromDailyRecords = async (): Promise<{
 
   const patientsList = Array.from(uniquePatients.values());
   if (patientsList.length > 0) {
-    console.warn(
-      `[Migration] Found ${patientsList.length} unique patients across ${dates.length} days. Syncing...`
-    );
+    patientMasterRepositoryLogger.warn('Found patients during migration. Syncing master index', {
+      patientCount: patientsList.length,
+      scannedDays: dates.length,
+    });
     await bulkUpsertPatients(patientsList);
   }
 

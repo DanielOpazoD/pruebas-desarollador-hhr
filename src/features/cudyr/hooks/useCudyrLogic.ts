@@ -12,6 +12,7 @@ import { getCategorization } from '../services/CudyrScoreUtils';
 import { buildDailyCudyrSummary } from '../services/cudyrSummary';
 import { getAttributedAuthors } from '@/services/admin/attributionService';
 import { defaultDailyRecordWritePort } from '@/application/ports/dailyRecordPort';
+import { createScopedLogger } from '@/services/utils/loggerScope';
 
 /**
  * Helper: Check if a patient was admitted after CUDYR was locked.
@@ -35,6 +36,8 @@ const wasAdmittedAfterLock = (
 
   return admissionTs > lockTs;
 };
+
+const cudyrLogicLogger = createScopedLogger('CudyrLogic');
 
 export const useCudyrLogic = (readOnly: boolean) => {
   const { record } = useDailyRecordData();
@@ -75,7 +78,7 @@ export const useCudyrLogic = (readOnly: boolean) => {
       });
       refresh();
     } catch (error) {
-      console.error('Error toggling CUDYR lock:', error);
+      cudyrLogicLogger.error('Error toggling CUDYR lock', error);
     }
   }, [record, canToggleLock, currentUser, userId, refresh]);
 

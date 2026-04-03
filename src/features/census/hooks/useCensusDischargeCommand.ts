@@ -14,6 +14,9 @@ import { useConfirmedMovementAction } from '@/features/census/hooks/useConfirmed
 import type { DischargeExecutionInput } from '@/features/census/domain/movements/contracts';
 import type { DischargeState } from '@/features/census/types/censusActionTypes';
 import { getLatestOpenTransferRequestByBedId } from '@/services/transfers/transferService';
+import { createScopedLogger } from '@/services/utils/loggerScope';
+
+const censusDischargeCommandLogger = createScopedLogger('CensusDischargeCommand');
 
 interface UseCensusDischargeCommandParams extends Pick<
   CensusActionRuntimeRefs,
@@ -78,7 +81,7 @@ export const useCensusDischargeCommand = ({
       executeDischarge,
       runConfirmedMovementAction,
       getLatestOpenTransferRequestByBedId,
-      warn: (message, error) => console.warn(message, error),
+      warn: (message, error) => censusDischargeCommandLogger.warn(message, error),
     });
   });
 };

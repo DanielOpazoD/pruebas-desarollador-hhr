@@ -10,6 +10,7 @@ import {
   getUndoMovementErrorMessage,
   UndoMovementKind,
 } from '@/hooks/controllers/patientMovementUndoErrorPresentation';
+import { patientMovementRuntimeLogger } from '@/hooks/controllers/hookControllerLoggers';
 
 interface UndoDescriptor {
   patientName: string;
@@ -24,7 +25,7 @@ export const usePatientMovementFeedback = (runtime: PatientMovementRuntime) => {
         runtime.warn(warningMessage);
         return;
       }
-      console.warn(warningMessage);
+      patientMovementRuntimeLogger.warn(warningMessage);
     },
     [runtime]
   );

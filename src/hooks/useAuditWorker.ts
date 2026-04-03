@@ -9,6 +9,9 @@ import {
   createAuditWorkerAdapter,
   type AuditWorkerAdapter,
 } from '@/hooks/controllers/auditWorkerAdapter';
+import { createScopedLogger } from '@/services/utils/loggerScope';
+
+const auditWorkerLogger = createScopedLogger('AuditWorkerHook');
 
 export const useAuditWorker = () => {
   const [results, setResults] = useState<AuditWorkerResults>(buildInitialAuditWorkerResults());
@@ -22,7 +25,7 @@ export const useAuditWorker = () => {
         setIsProcessing(false);
       },
       onError(message) {
-        console.error('[AuditWorker Hook] Error:', normalizeAuditWorkerErrorMessage(message));
+        auditWorkerLogger.error('Audit worker error', normalizeAuditWorkerErrorMessage(message));
         setIsProcessing(false);
       },
     });

@@ -17,6 +17,7 @@ import {
   resolveTransferFormState,
   type TransferFormPatientOption,
 } from '../controllers/transferFormController';
+import { createScopedLogger } from '@/services/utils/loggerScope';
 
 interface TransferFormModalProps {
   transfer: TransferRequest | null;
@@ -24,6 +25,8 @@ interface TransferFormModalProps {
   onClose: () => void;
   onSave: (data: TransferFormData) => Promise<void>;
 }
+
+const transferFormModalLogger = createScopedLogger('TransferFormModal');
 
 export const TransferFormModal: React.FC<TransferFormModalProps> = ({
   transfer,
@@ -58,7 +61,7 @@ export const TransferFormModal: React.FC<TransferFormModalProps> = ({
         }
       })
       .catch(error => {
-        console.warn('[TransferFormModal] Failed to load destination hospitals catalog:', error);
+        transferFormModalLogger.warn('Failed to load destination hospitals catalog', error);
       });
 
     return () => {

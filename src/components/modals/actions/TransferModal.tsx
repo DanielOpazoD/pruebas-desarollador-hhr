@@ -12,8 +12,11 @@ import {
 import { useTransferModalForm } from '@/hooks/useTransferModalForm';
 import type { TransferModalProps } from '@/hooks/types/censusActionModalContracts';
 import { getLatestOpenTransferRequestByBedId } from '@/services/transfers/transferService';
+import { createScopedLogger } from '@/services/utils/loggerScope';
 
 export type { TransferUpdateField } from '@/hooks/types/censusActionModalContracts';
+
+const transferModalLogger = createScopedLogger('TransferModal');
 
 export const TransferModal: React.FC<TransferModalProps> = ({
   isOpen,
@@ -72,8 +75,8 @@ export const TransferModal: React.FC<TransferModalProps> = ({
         onUpdate('receivingCenter', RECEIVING_CENTER_OTHER);
         onUpdate('receivingCenterOther', destinationHospital);
       } catch (error) {
-        console.warn(
-          '[TransferModal] Failed to resolve linked transfer destination from management:',
+        transferModalLogger.warn(
+          'Failed to resolve linked transfer destination from management',
           error
         );
         if (active) {

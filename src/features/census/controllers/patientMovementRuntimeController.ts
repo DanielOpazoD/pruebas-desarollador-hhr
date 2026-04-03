@@ -1,4 +1,5 @@
 import { createCensusDialogRuntime } from '@/features/census/controllers/censusBrowserRuntimeAdapter';
+import { patientMovementRuntimeLogger } from '@/hooks/controllers/hookControllerLoggers';
 
 export interface PatientMovementRuntime {
   alert: (message: string) => void;
@@ -12,6 +13,6 @@ export const patientMovementBrowserRuntime: PatientMovementRuntime = {
     censusDialogRuntime.alert(message);
   },
   warn: (message: string) => {
-    console.warn(message);
+    patientMovementRuntimeLogger.warn(message);
   },
 };

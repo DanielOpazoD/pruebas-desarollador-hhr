@@ -21,6 +21,9 @@ import {
   resolveTransferDestinationHospital,
   syncCensusTransferRequest,
 } from '@/features/census/controllers/censusTransferSyncController';
+import { createScopedLogger } from '@/services/utils/loggerScope';
+
+const censusTransferCommandLogger = createScopedLogger('CensusTransferCommand');
 
 interface UseCensusTransferCommandParams extends Pick<
   CensusActionRuntimeRefs,
@@ -83,8 +86,8 @@ export const useCensusTransferCommand = ({
           completeTransferWithResult,
         });
       } catch (syncError) {
-        console.error(
-          '[Transfer Sync] Failed to sync census transfer with transfer management',
+        censusTransferCommandLogger.error(
+          'Failed to sync census transfer with transfer management',
           syncError
         );
         notifyError({

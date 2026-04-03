@@ -11,6 +11,7 @@ import {
   buildIeehPrintDischargeData,
   buildPersistedIeehData,
 } from '@/features/census/controllers/ieehFormDataController';
+import { createScopedLogger } from '@/services/utils/loggerScope';
 
 export interface UseIEEHFormProps {
   isOpen: boolean;
@@ -20,6 +21,8 @@ export interface UseIEEHFormProps {
   savedIeehData?: IeehData;
   onSaveData?: (data: IeehData) => void;
 }
+
+const ieehFormLogger = createScopedLogger('IEEHForm');
 
 export function useIEEHForm({
   isOpen,
@@ -168,7 +171,7 @@ export function useIEEHForm({
       onClose();
     } catch (err) {
       reservedPrintWindow?.close();
-      console.error('[IEEH] Error generando formulario:', err);
+      ieehFormLogger.error('Error generating IEEH form', err);
       setError('Error al generar el PDF. Revise la consola.');
     } finally {
       setIsGenerating(false);

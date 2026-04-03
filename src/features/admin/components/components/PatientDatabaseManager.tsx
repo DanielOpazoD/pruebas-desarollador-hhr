@@ -9,6 +9,9 @@ import { SyncPanel } from './SyncPanel';
 import { ConflictPanel } from './ConflictPanel';
 import { PatientDetailModal } from './PatientDetailModal';
 import clsx from 'clsx';
+import { createScopedLogger } from '@/services/utils/loggerScope';
+
+const patientDatabaseManagerLogger = createScopedLogger('PatientDatabaseManager');
 
 export const PatientDatabaseManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'EXPLORER' | 'SYNC' | 'CONFLICTS'>('EXPLORER');
@@ -52,7 +55,7 @@ export const PatientDatabaseManager: React.FC = () => {
         setLastDoc(nextDoc);
         setHasMore(!!nextDoc);
       } catch (error) {
-        console.error('Failed to fetch master index', error);
+        patientDatabaseManagerLogger.error('Failed to fetch master index', error);
       } finally {
         setIsLoadingIndex(false);
       }

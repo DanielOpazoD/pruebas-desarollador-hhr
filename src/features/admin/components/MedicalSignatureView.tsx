@@ -8,6 +8,7 @@ import { resolveMedicalHandoffScope, resolveScopedMedicalSignature } from '@/fea
 import { createPublicMedicalSignatureContextValue } from '@/features/admin/controllers/publicMedicalSignatureContextController';
 import { usePublicMedicalSignature } from '@/features/admin/hooks/usePublicMedicalSignature';
 import { formatHandoffDateTime } from '@/shared/handoff/handoffPresentation';
+import { createScopedLogger } from '@/services/utils/loggerScope';
 
 const EMPTY_STAFF_CONTEXT: StaffContextType = {
   nursesList: [],
@@ -24,6 +25,8 @@ const EMPTY_STAFF_CONTEXT: StaffContextType = {
   showTensManager: false,
   setShowTensManager: () => {},
 };
+
+const medicalSignatureLogger = createScopedLogger('MedicalSignatureView');
 
 const normalizeSignatureDate = (rawDate: string | null): string | null => {
   if (!rawDate) return null;
@@ -116,7 +119,7 @@ export const MedicalSignatureView: React.FC = () => {
       await sign(doctorName.trim());
       setIsSignedLocal(true);
     } catch (submitError) {
-      console.error('Error signing handoff:', submitError);
+      medicalSignatureLogger.error('Error signing handoff', submitError);
       defaultBrowserWindowRuntime.alert(
         'Error al firmar la entrega. Por favor intente nuevamente.'
       );

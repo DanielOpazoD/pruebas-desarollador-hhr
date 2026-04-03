@@ -9,6 +9,7 @@ import { StaleWhileRevalidate, CacheFirst, NetworkFirst, NetworkOnly } from 'wor
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { BackgroundSyncPlugin } from 'workbox-background-sync';
+import { createScopedLogger } from '@/services/utils/loggerScope';
 
 // Define proper types for Service Worker variables and events
 interface WBManifestEntry {
@@ -70,6 +71,7 @@ cleanupOutdatedCaches();
 
 const CACHE_VERSION = 'v2.2.0';
 const OFFLINE_PAGE = '/offline.html';
+const serviceWorkerLogger = createScopedLogger('ServiceWorker');
 
 // ============================================
 // CACHING STRATEGIES
@@ -147,7 +149,7 @@ try {
     maxRetentionTime: 24 * 60, // Retry for up to 24 hours
   });
 } catch (error) {
-  console.error('[SW] Failed to initialize BackgroundSyncPlugin:', error);
+  serviceWorkerLogger.error('Failed to initialize BackgroundSyncPlugin', error);
 }
 
 registerRoute(
@@ -198,7 +200,7 @@ self.addEventListener('activate', (event: Event) => {
   extendableEvent.waitUntil(
     self.clients.claim().catch(error => {
       // During aggressive worker replacement, claim can race before the worker becomes active.
-      console.warn('[SW] clients.claim skipped', error);
+      serviceWorkerLogger.warn('clients.claim skipped', error);
     })
   );
 });

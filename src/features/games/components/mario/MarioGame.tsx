@@ -1,4 +1,7 @@
 import React, { useRef, useEffect } from 'react';
+import { createScopedLogger } from '@/services/utils/loggerScope';
+
+const marioGameLogger = createScopedLogger('MarioGame');
 
 export const MarioGame: React.FC = () => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -12,7 +15,7 @@ export const MarioGame: React.FC = () => {
 
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'MARIO_LEVEL_WON') {
-        console.warn('Mario HTML5 progress saved:', event.data.data);
+        marioGameLogger.info('Mario HTML5 progress saved', event.data.data);
         // Si futuramente deciden usar Firestore, esta sería la entrada para lanzar el fetch o mutación.
       }
     };
