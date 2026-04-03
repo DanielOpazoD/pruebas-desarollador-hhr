@@ -6,9 +6,7 @@
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { registerRoute, setCatchHandler } from 'workbox-routing';
 import { StaleWhileRevalidate, CacheFirst, NetworkFirst, NetworkOnly } from 'workbox-strategies';
-import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
-import { BackgroundSyncPlugin } from 'workbox-background-sync';
 import { createScopedLogger } from '@/services/utils/loggerScope';
 
 // Define proper types for Service Worker variables and events
@@ -92,10 +90,7 @@ registerRoute(
     (request.destination === 'script' || request.destination === 'style'),
   new StaleWhileRevalidate({
     cacheName: `static-${CACHE_VERSION}`,
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-      new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 24 * 60 * 60 }),
-    ],
+    plugins: [new CacheableResponsePlugin({ statuses: [0, 200] })],
   })
 );
 
@@ -105,10 +100,7 @@ registerRoute(
     url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
   new CacheFirst({
     cacheName: `fonts-${CACHE_VERSION}`,
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-      new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 365 * 24 * 60 * 60 }),
-    ],
+    plugins: [new CacheableResponsePlugin({ statuses: [0, 200] })],
   })
 );
 
@@ -117,10 +109,7 @@ registerRoute(
   ({ request }) => request.destination === 'image',
   new CacheFirst({
     cacheName: `images-${CACHE_VERSION}`,
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 }),
-    ],
+    plugins: [new CacheableResponsePlugin({ statuses: [0, 200] })],
   })
 );
 
@@ -143,28 +132,13 @@ registerRoute(
   new NetworkFirst({
     cacheName: `firebase-${CACHE_VERSION}`,
     networkTimeoutSeconds: 10,
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-      new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 60 * 60 }),
-    ],
+    plugins: [new CacheableResponsePlugin({ statuses: [0, 200] })],
   })
 );
 
-// API calls with background sync for POST
-let bgSyncPlugin: BackgroundSyncPlugin | undefined;
-try {
-  bgSyncPlugin = new BackgroundSyncPlugin('patientSyncQueue', {
-    maxRetentionTime: 24 * 60, // Retry for up to 24 hours
-  });
-} catch (error) {
-  serviceWorkerLogger.error('Failed to initialize BackgroundSyncPlugin', error);
-}
-
 registerRoute(
   ({ url, request }) => url.pathname.startsWith('/api/') && request.method === 'POST',
-  new NetworkOnly({
-    plugins: bgSyncPlugin ? [bgSyncPlugin] : [],
-  }),
+  new NetworkOnly(),
   'POST'
 );
 
@@ -174,10 +148,7 @@ registerRoute(
   new NetworkFirst({
     cacheName: `pages-${CACHE_VERSION}`,
     networkTimeoutSeconds: 5,
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-      new ExpirationPlugin({ maxEntries: 50 }),
-    ],
+    plugins: [new CacheableResponsePlugin({ statuses: [0, 200] })],
   })
 );
 

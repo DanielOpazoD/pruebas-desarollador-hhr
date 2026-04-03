@@ -1,11 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockPrepareClientBootstrap, mockGetFirebaseReady, mockGetStartupFailureMessage } =
-  vi.hoisted(() => ({
-    mockPrepareClientBootstrap: vi.fn(),
-    mockGetFirebaseReady: vi.fn(),
-    mockGetStartupFailureMessage: vi.fn(),
-  }));
+const {
+  mockPrepareClientBootstrap,
+  mockGetFirebaseReady,
+  mockGetStartupFailureMessage,
+  mockPerformClientHardReset,
+} = vi.hoisted(() => ({
+  mockPrepareClientBootstrap: vi.fn(),
+  mockGetFirebaseReady: vi.fn(),
+  mockGetStartupFailureMessage: vi.fn(),
+  mockPerformClientHardReset: vi.fn(),
+}));
 
 vi.mock('@/services/config/clientBootstrapRecovery', () => ({
   prepareClientBootstrap: (...args: unknown[]) => mockPrepareClientBootstrap(...args),
@@ -21,6 +26,10 @@ vi.mock('@/services/auth/firebaseStartupUiPolicy', () => ({
   getFirebaseStartupFailureMessage: (...args: unknown[]) => mockGetStartupFailureMessage(...args),
 }));
 
+vi.mock('@/services/storage/core', () => ({
+  performClientHardReset: (...args: unknown[]) => mockPerformClientHardReset(...args),
+}));
+
 import {
   bootstrapAppRuntime,
   reconcileBootstrapRuntime,
@@ -30,6 +39,7 @@ describe('bootstrapAppRuntime', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetStartupFailureMessage.mockReturnValue('Firebase startup failed');
+    mockPerformClientHardReset.mockResolvedValue(undefined);
   });
 
   it('returns reload when client recovery requires a reload', async () => {
@@ -97,6 +107,30 @@ describe('bootstrapAppRuntime', () => {
       message: 'Firebase startup failed',
     });
     expect(mockGetStartupFailureMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('triggers a hard reset instead of a Firebase warning for IndexedDB backing-store failures', async () => {
+    const failure = {
+      name: 'UnknownError',
+      message: 'Internal error opening backing store for indexedDB.open.',
+    };
+    mockPrepareClientBootstrap.mockResolvedValue({
+      status: 'continue',
+      reason: null,
+    });
+    mockGetFirebaseReady.mockReturnValue(Promise.reject(failure));
+
+    const result = await bootstrapAppRuntime();
+
+    expect(mockPerformClientHardReset).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      status: 'reload',
+      stage: 'firebase_ready',
+      clientRecovery: {
+        status: 'continue',
+        reason: null,
+      },
+    });
   });
 
   it('reuses the same client reconciliation entrypoint for background checks', async () => {

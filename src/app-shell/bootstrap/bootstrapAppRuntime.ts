@@ -4,6 +4,8 @@ import {
   prepareClientBootstrap,
   type ClientBootstrapRecoveryResult,
 } from '@/services/config/clientBootstrapRecovery';
+import { shouldUseStickyIndexedDbFallback } from '@/services/storage/indexeddb/indexedDbRecoveryPolicy';
+import { performClientHardReset } from '@/services/storage/core';
 import { createScopedLogger } from '@/services/utils/loggerScope';
 import type {
   AppBootstrapRuntimeResult,
@@ -11,6 +13,19 @@ import type {
 } from '@/app-shell/bootstrap/bootstrapAppRuntime.types';
 
 const bootstrapRuntimeLogger = createScopedLogger('BootstrapRuntime');
+
+const getErrorMessage = (error: unknown): string =>
+  error && typeof error === 'object' && 'message' in error ? String(error.message) : String(error);
+
+const isIndexedDbBootstrapFailure = (error: unknown): boolean => {
+  const message = getErrorMessage(error).toLowerCase();
+  return (
+    shouldUseStickyIndexedDbFallback(error) ||
+    message.includes('indexeddb.open') ||
+    message.includes('backing store') ||
+    message.includes('internal error opening backing store')
+  );
+};
 
 const resolveBlockedBootstrapResult = (
   clientRecovery: ClientBootstrapRecoveryResult,
@@ -56,6 +71,16 @@ export const bootstrapAppRuntime = async (): Promise<AppBootstrapRuntimeResult> 
       services,
     };
   } catch (error) {
+    if (isIndexedDbBootstrapFailure(error)) {
+      bootstrapRuntimeLogger.warn('Detected IndexedDB corruption during bootstrap; hard reset');
+      await performClientHardReset();
+      return {
+        status: 'reload',
+        stage: 'firebase_ready',
+        clientRecovery,
+      };
+    }
+
     return resolveBlockedBootstrapResult(clientRecovery, error);
   }
 };

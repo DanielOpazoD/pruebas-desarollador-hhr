@@ -5,11 +5,9 @@ import type { FirebaseStorage } from 'firebase/storage';
 import type { Functions } from 'firebase/functions';
 import { loadFirebaseConfig } from '@/services/firebase-runtime/firebaseConfigLoader';
 import {
-  buildMissingFirebaseConfigDiagnostics,
   mountFirebaseConfigWarning,
   validateFirebaseRuntimeConfig,
   warnOnFirebaseAuthConfig,
-  warnWithFirebaseDiagnostics,
 } from '@/services/firebase-runtime/firebaseStartupDiagnostics';
 import {
   connectFirebaseEmulators,
@@ -54,11 +52,6 @@ const loadValidatedFirebaseConfig = async (): Promise<FirebaseOptions> => {
     return config;
   } catch (error) {
     firebaseConfigLogger.error('Failed to load Firebase config from Netlify function', error);
-    const diagnostics = buildMissingFirebaseConfigDiagnostics();
-    warnWithFirebaseDiagnostics(
-      diagnostics,
-      'No se pudo cargar la configuración principal del sistema. Revisa la función de configuración y las variables de Firebase del entorno.'
-    );
     throw error;
   }
 };

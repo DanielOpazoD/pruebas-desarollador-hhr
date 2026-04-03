@@ -90,11 +90,11 @@ export const Navbar: React.FC<NavbarProps> = ({
     <nav
       className={clsx(
         getNavColor(),
-        'text-white shadow-md sticky top-0 z-[60] print:hidden transition-colors duration-300 h-[64px] flex items-center'
+        'text-white shadow-lg shadow-black/10 sticky top-0 z-[60] print:hidden transition-colors duration-300 h-[56px] flex items-center border-b border-white/[0.06] backdrop-blur-md'
       )}
       style={{ transform: 'translateZ(0)' }}
     >
-      <div className="max-w-screen-2xl mx-auto px-4 flex flex-wrap gap-4 justify-between items-center">
+      <div className="w-full max-w-screen-2xl mx-auto px-4 flex flex-wrap gap-4 justify-between items-center">
         {/* Brand with Dropdown Menu */}
         <NavbarMenu
           currentModule={currentModule}

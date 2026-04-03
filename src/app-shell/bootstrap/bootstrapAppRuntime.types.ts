@@ -1,3 +1,4 @@
+import type { FirebaseStartupWarningCopy } from '@/services/auth/firebaseStartupUiPolicy';
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
@@ -18,7 +19,7 @@ export type AppBootstrapRuntimeResult =
     }
   | {
       status: 'reload';
-      stage: 'client_recovery';
+      stage: 'client_recovery' | 'firebase_ready';
       clientRecovery: ClientBootstrapRecoveryResult;
     }
   | {
@@ -27,4 +28,5 @@ export type AppBootstrapRuntimeResult =
       clientRecovery: ClientBootstrapRecoveryResult;
       error: unknown;
       message: string;
+      warningCopy?: FirebaseStartupWarningCopy;
     };

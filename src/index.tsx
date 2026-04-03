@@ -30,7 +30,7 @@ bootstrapAppRuntime()
     }
 
     if (result.status === 'blocked') {
-      mountConfigWarning(result.message);
+      mountConfigWarning(result.message, result.warningCopy);
       return;
     }
 

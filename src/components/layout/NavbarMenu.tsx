@@ -68,20 +68,20 @@ export const NavbarMenu: React.FC<NavbarMenuProps> = ({
         onClick={toggle}
         className={clsx(
           'flex items-center gap-3 py-2 px-3 rounded-xl transition-all duration-200',
-          'hover:bg-white/10'
+          'hover:bg-white/[0.07]'
         )}
       >
-        <div className="bg-white p-1.5 rounded-xl shadow-sm">
+        <div className="bg-white p-1 rounded-lg shadow-sm ring-1 ring-white/10">
           <img src="/images/logos/logo_HHR.svg" alt="HHR" className="w-7 h-7 object-contain" />
         </div>
         <div className="text-left">
-          <h1 className="text-lg font-display font-bold leading-tight tracking-tight">
+          <h1 className="text-base font-display font-bold leading-tight -tracking-[0.01em]">
             Hospital Hanga Roa
           </h1>
         </div>
         <ChevronDown
           size={16}
-          className={clsx('text-white/50 transition-transform ml-1', isOpen && 'rotate-180')}
+          className={clsx('text-white/40 transition-transform ml-1', isOpen && 'rotate-180')}
         />
       </button>
 
@@ -91,7 +91,7 @@ export const NavbarMenu: React.FC<NavbarMenuProps> = ({
           <div className="fixed inset-0 z-40" onClick={close} />
 
           {/* Menu */}
-          <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-slate-200 z-50 overflow-hidden">
+          <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 ring-1 ring-black/[0.04] z-50 overflow-hidden">
             <div className="py-1">
               {systemItems.length > 0 && <div className="h-px bg-slate-200 my-1" />}
               {systemItems.map(item => (
