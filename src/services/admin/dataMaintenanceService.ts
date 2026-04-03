@@ -7,13 +7,8 @@
 
 import type { DailyRecord } from '@/services/contracts/dailyRecordServiceContracts';
 import { saveDetailed as saveDailyRecordDetailed } from '@/services/repositories/dailyRecordRepositoryWriteService';
-import { getRecordsRange, saveRecords } from '@/services/storage/records';
-import * as firestoreService from '../storage/firestore';
 import { logAuditEvent } from './auditService';
 import { getCurrentUserEmail } from './utils/auditUtils';
-import { getTodayISO } from '@/utils/dateUtils';
-import { isFirestoreEnabled } from '@/services/repositories/repositoryConfig';
-import { resolvePreferredDailyRecord } from '@/services/repositories/dailyRecordSyncCompatibility';
 import { parseDailyRecordWithDefaultsReport } from '@/schemas/zodSchemas';
 import { dataMaintenanceLogger } from '@/services/admin/adminLoggers';
 import {
@@ -21,6 +16,14 @@ import {
   createApplicationSuccess,
   type ApplicationOutcome,
 } from '@/application/shared/applicationOutcome';
+import {
+  DATA_MAINTENANCE_MONTH_NAMES,
+  downloadJsonBackup,
+  hydrateRangeRecords,
+  resolveMonthDateRange,
+  resolveYearToDateFileSuffix,
+  resolveYearToDateRange,
+} from '@/services/admin/dataMaintenanceSupport';
 
 export interface MonthBackup {
   version: string;
@@ -79,68 +82,12 @@ const toDataMaintenanceOutcome = (
         }
       );
 
-const monthNames = [
-  'Enero',
-  'Febrero',
-  'Marzo',
-  'Abril',
-  'Mayo',
-  'Junio',
-  'Julio',
-  'Agosto',
-  'Septiembre',
-  'Octubre',
-  'Noviembre',
-  'Diciembre',
-];
-
-const sortRecordsAscending = (records: DailyRecord[]): DailyRecord[] =>
-  [...records].sort((left, right) => left.date.localeCompare(right.date));
-
-const mergeRecordsByDate = (
-  localRecords: DailyRecord[],
-  remoteRecords: DailyRecord[]
-): DailyRecord[] => {
-  const dates = new Set([
-    ...localRecords.map(record => record.date),
-    ...remoteRecords.map(record => record.date),
-  ]);
-  const localMap = new Map(localRecords.map(record => [record.date, record]));
-  const remoteMap = new Map(remoteRecords.map(record => [record.date, record]));
-
-  return sortRecordsAscending(
-    Array.from(dates)
-      .map(date =>
-        resolvePreferredDailyRecord(localMap.get(date) ?? null, remoteMap.get(date) ?? null)
-      )
-      .filter((record): record is DailyRecord => record !== null)
-  );
-};
-
-const hydrateRangeRecords = async (startDate: string, endDate: string): Promise<DailyRecord[]> => {
-  const localRecords = await getRecordsRange(startDate, endDate);
-
-  if (!isFirestoreEnabled()) {
-    return sortRecordsAscending(localRecords);
-  }
-
-  const remoteRecords = await firestoreService.getRecordsRangeFromFirestore(startDate, endDate);
-  const mergedRecords = mergeRecordsByDate(localRecords, remoteRecords);
-
-  if (mergedRecords.length > 0) {
-    await saveRecords(mergedRecords);
-  }
-
-  return mergedRecords;
-};
-
 const exportMonthRecordsInternal = async (
   year: number,
   month: number
 ): Promise<DataMaintenanceExportResult> => {
   try {
-    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-    const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
+    const { startDate, endDate } = resolveMonthDateRange(year, month);
     const records = await hydrateRangeRecords(startDate, endDate);
 
     if (records.length === 0) {
@@ -161,11 +108,9 @@ const exportMonthRecordsInternal = async (
       records,
     };
 
-    const monthName = monthNames[month - 1];
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const monthName = DATA_MAINTENANCE_MONTH_NAMES[month - 1];
     const fileName = `Respaldo HHR ${monthName} ${year}.json`;
-    const { saveAs } = await import('file-saver');
-    saveAs(blob, fileName);
+    await downloadJsonBackup(backup, fileName);
 
     // Audit log
     await logAuditEvent(getCurrentUserEmail(), 'DATA_EXPORTED', 'dailyRecord', `${year}-${month}`, {
@@ -199,9 +144,8 @@ const exportYearToDateRecordsInternal = async (
   year: number = new Date().getFullYear()
 ): Promise<DataMaintenanceExportResult> => {
   try {
-    const currentYear = new Date().getFullYear();
-    const startDate = `${year}-01-01`;
-    const endDate = year === currentYear ? getTodayISO() : `${year}-12-31`;
+    const now = new Date();
+    const { startDate, endDate, isCurrentYear } = resolveYearToDateRange(year, now);
     const records = await hydrateRangeRecords(startDate, endDate);
 
     if (records.length === 0) {
@@ -222,14 +166,9 @@ const exportYearToDateRecordsInternal = async (
       records,
     };
 
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-    const suffix =
-      year === currentYear
-        ? `${monthNames[new Date().getMonth()]}_${String(new Date().getDate()).padStart(2, '0')}`
-        : 'anual_completo';
+    const suffix = resolveYearToDateFileSuffix(year, now);
     const fileName = `Respaldo HHR ${year} hasta ${suffix}.json`;
-    const { saveAs } = await import('file-saver');
-    saveAs(blob, fileName);
+    await downloadJsonBackup(backup, fileName);
 
     await logAuditEvent(getCurrentUserEmail(), 'DATA_EXPORTED', 'dailyRecord', `${year}-YTD`, {
       year,

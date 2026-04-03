@@ -83,102 +83,105 @@ export const getDefaultConfig = (): TableConfig => ({
 const getDocRef = (runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime) =>
   doc(runtime.getDb(), getSettingsDocPath(SETTINGS_DOCS.TABLE_CONFIG));
 
+const mergeWithDefaultConfig = (config: Partial<TableConfig>): TableConfig => ({
+  ...getDefaultConfig(),
+  ...config,
+  columns: {
+    ...DEFAULT_COLUMN_WIDTHS,
+    ...config.columns,
+  },
+  pageMargin: config.pageMargin ?? DEFAULT_PAGE_MARGIN,
+});
+
+export const createTableConfigService = (
+  runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
+) => ({
+  async load(): Promise<TableConfig> {
+    if (!firestoreEnabled) return getDefaultConfig();
+    try {
+      await runtime.ready;
+      const docSnap = await getDoc(getDocRef(runtime));
+      if (docSnap.exists()) {
+        return mergeWithDefaultConfig(docSnap.data() as TableConfig);
+      }
+      return getDefaultConfig();
+    } catch (_error) {
+      tableConfigLogger.error('Error loading table config', _error);
+      return getDefaultConfig();
+    }
+  },
+  async save(config: TableConfig): Promise<void> {
+    if (!firestoreEnabled) return;
+    try {
+      await runtime.ready;
+      await setDoc(getDocRef(runtime), {
+        ...config,
+        lastUpdated: new Date().toISOString(),
+      });
+    } catch (_error) {
+      tableConfigLogger.error('Error saving table config', _error);
+      throw _error;
+    }
+  },
+  subscribe(callback: (config: TableConfig) => void): () => void {
+    if (!firestoreEnabled) {
+      callback(getDefaultConfig());
+      return () => {};
+    }
+    let active = true;
+    let unsubscribeSnapshot = () => {};
+
+    void runtime.ready
+      .then(() => {
+        if (!active) {
+          return;
+        }
+
+        unsubscribeSnapshot = onSnapshot(
+          getDocRef(runtime),
+          docSnap => {
+            if (docSnap.exists()) {
+              callback(mergeWithDefaultConfig(docSnap.data() as TableConfig));
+            } else {
+              callback(getDefaultConfig());
+            }
+          },
+          error => {
+            tableConfigLogger.error('Error subscribing to table config', error);
+            callback(getDefaultConfig());
+          }
+        );
+      })
+      .catch(error => {
+        tableConfigLogger.error('Error preparing table config subscription', error);
+        callback(getDefaultConfig());
+      });
+
+    return () => {
+      active = false;
+      unsubscribeSnapshot();
+    };
+  },
+});
+
+const defaultTableConfigService = createTableConfigService();
+
 /**
  * Load table configuration from Firestore
  */
-export const loadTableConfig = async (): Promise<TableConfig> => {
-  if (!firestoreEnabled) return getDefaultConfig();
-  try {
-    await defaultFirestoreServiceRuntime.ready;
-    const docSnap = await getDoc(getDocRef(defaultFirestoreServiceRuntime));
-    if (docSnap.exists()) {
-      const data = docSnap.data() as TableConfig;
-      // Merge with defaults to handle missing columns
-      return {
-        ...getDefaultConfig(),
-        ...data,
-        columns: {
-          ...DEFAULT_COLUMN_WIDTHS,
-          ...data.columns,
-        },
-        pageMargin: data.pageMargin ?? DEFAULT_PAGE_MARGIN,
-      };
-    }
-    return getDefaultConfig();
-  } catch (_error) {
-    tableConfigLogger.error('Error loading table config', _error);
-    return getDefaultConfig();
-  }
-};
+export const loadTableConfig = async (): Promise<TableConfig> => defaultTableConfigService.load();
 
 /**
  * Save table configuration to Firestore
  */
-export const saveTableConfig = async (config: TableConfig): Promise<void> => {
-  if (!firestoreEnabled) return;
-  try {
-    await defaultFirestoreServiceRuntime.ready;
-    await setDoc(getDocRef(defaultFirestoreServiceRuntime), {
-      ...config,
-      lastUpdated: new Date().toISOString(),
-    });
-  } catch (_error) {
-    tableConfigLogger.error('Error saving table config', _error);
-    throw _error;
-  }
-};
+export const saveTableConfig = async (config: TableConfig): Promise<void> =>
+  defaultTableConfigService.save(config);
 
 /**
  * Subscribe to table configuration changes
  */
-export const subscribeToTableConfig = (callback: (config: TableConfig) => void): (() => void) => {
-  if (!firestoreEnabled) {
-    callback(getDefaultConfig());
-    return () => {};
-  }
-  let active = true;
-  let unsubscribeSnapshot = () => {};
-
-  void defaultFirestoreServiceRuntime.ready
-    .then(() => {
-      if (!active) {
-        return;
-      }
-
-      unsubscribeSnapshot = onSnapshot(
-        getDocRef(defaultFirestoreServiceRuntime),
-        docSnap => {
-          if (docSnap.exists()) {
-            const data = docSnap.data() as TableConfig;
-            callback({
-              ...getDefaultConfig(),
-              ...data,
-              columns: {
-                ...DEFAULT_COLUMN_WIDTHS,
-                ...data.columns,
-              },
-              pageMargin: data.pageMargin ?? DEFAULT_PAGE_MARGIN,
-            });
-          } else {
-            callback(getDefaultConfig());
-          }
-        },
-        error => {
-          tableConfigLogger.error('Error subscribing to table config', error);
-          callback(getDefaultConfig());
-        }
-      );
-    })
-    .catch(error => {
-      tableConfigLogger.error('Error preparing table config subscription', error);
-      callback(getDefaultConfig());
-    });
-
-  return () => {
-    active = false;
-    unsubscribeSnapshot();
-  };
-};
+export const subscribeToTableConfig = (callback: (config: TableConfig) => void): (() => void) =>
+  defaultTableConfigService.subscribe(callback);
 
 // ============================================================================
 // Export / Import

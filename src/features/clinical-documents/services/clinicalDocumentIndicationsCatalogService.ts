@@ -30,7 +30,7 @@ export {
 const SETTINGS_DOC_PATH = (runtime: FirestoreServiceRuntimePort, hospitalId?: string) =>
   doc(runtime.getDb(), getSettingsDocPath(SETTINGS_DOCS.CLINICAL_DOCUMENT_INDICATIONS, hospitalId));
 
-const createClinicalDocumentIndicationsCatalogService = (
+export const createClinicalDocumentIndicationsCatalogService = (
   runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
 ) => ({
   async load(hospitalId?: string): Promise<ClinicalDocumentIndicationsCatalog> {
@@ -89,6 +89,145 @@ const createClinicalDocumentIndicationsCatalogService = (
       }
     );
   },
+  async addItem({
+    hospitalId,
+    specialtyId,
+    text,
+  }: {
+    hospitalId?: string;
+    specialtyId: ClinicalDocumentIndicationSpecialtyId;
+    text: string;
+  }): Promise<ClinicalDocumentIndicationsCatalog> {
+    const trimmedText = text.trim();
+    if (!trimmedText) {
+      return this.load(hospitalId);
+    }
+
+    const currentCatalog = await this.ensure(hospitalId);
+    const specialty = currentCatalog.specialties[specialtyId];
+    const nextTextKey = normalizeClinicalDocumentIndicationTextKey(trimmedText);
+    const alreadyExists = specialty.items.some(
+      item => normalizeClinicalDocumentIndicationTextKey(item.text) === nextTextKey
+    );
+
+    if (alreadyExists) {
+      return currentCatalog;
+    }
+
+    const now = new Date().toISOString();
+    const nextCatalog: ClinicalDocumentIndicationsCatalog = {
+      ...currentCatalog,
+      updatedAt: now,
+      specialties: {
+        ...currentCatalog.specialties,
+        [specialtyId]: {
+          ...specialty,
+          items: [
+            ...specialty.items,
+            {
+              id:
+                buildClinicalDocumentIndicationCatalogItemId(specialtyId, trimmedText) +
+                `-${Math.random().toString(36).slice(2, 8)}`,
+              text: trimmedText,
+              source: 'custom',
+              createdAt: now,
+            },
+          ],
+        },
+      },
+    };
+
+    await setDoc(SETTINGS_DOC_PATH(runtime, hospitalId), nextCatalog);
+    return nextCatalog;
+  },
+  async updateItem({
+    hospitalId,
+    specialtyId,
+    itemId,
+    text,
+  }: {
+    hospitalId?: string;
+    specialtyId: ClinicalDocumentIndicationSpecialtyId;
+    itemId: string;
+    text: string;
+  }): Promise<ClinicalDocumentIndicationsCatalog> {
+    const trimmedText = text.trim();
+    if (!trimmedText) {
+      return this.load(hospitalId);
+    }
+
+    const currentCatalog = await this.ensure(hospitalId);
+    const specialty = currentCatalog.specialties[specialtyId];
+    const duplicateTextKey = normalizeClinicalDocumentIndicationTextKey(trimmedText);
+    const hasDuplicate = specialty.items.some(
+      item =>
+        item.id !== itemId &&
+        normalizeClinicalDocumentIndicationTextKey(item.text) === duplicateTextKey
+    );
+
+    if (hasDuplicate) {
+      return currentCatalog;
+    }
+
+    const nextCatalog: ClinicalDocumentIndicationsCatalog = {
+      ...currentCatalog,
+      updatedAt: new Date().toISOString(),
+      specialties: {
+        ...currentCatalog.specialties,
+        [specialtyId]: {
+          ...specialty,
+          items: specialty.items.map(item =>
+            item.id === itemId ? { ...item, text: trimmedText } : item
+          ),
+        },
+      },
+    };
+
+    await setDoc(SETTINGS_DOC_PATH(runtime, hospitalId), nextCatalog);
+    return nextCatalog;
+  },
+  async deleteItem({
+    hospitalId,
+    specialtyId,
+    itemId,
+  }: {
+    hospitalId?: string;
+    specialtyId: ClinicalDocumentIndicationSpecialtyId;
+    itemId: string;
+  }): Promise<ClinicalDocumentIndicationsCatalog> {
+    const currentCatalog = await this.ensure(hospitalId);
+    const specialty = currentCatalog.specialties[specialtyId];
+    const nextCatalog: ClinicalDocumentIndicationsCatalog = {
+      ...currentCatalog,
+      updatedAt: new Date().toISOString(),
+      specialties: {
+        ...currentCatalog.specialties,
+        [specialtyId]: {
+          ...specialty,
+          items: specialty.items.filter(item => item.id !== itemId),
+        },
+      },
+    };
+
+    await setDoc(SETTINGS_DOC_PATH(runtime, hospitalId), nextCatalog);
+    return nextCatalog;
+  },
+  async replaceCatalog({
+    hospitalId,
+    catalog,
+  }: {
+    hospitalId?: string;
+    catalog: RawClinicalDocumentIndicationsCatalog;
+  }): Promise<ClinicalDocumentIndicationsCatalog> {
+    const nextCatalog = normalizeClinicalDocumentIndicationsCatalog(catalog);
+    const persistedCatalog: ClinicalDocumentIndicationsCatalog = {
+      ...nextCatalog,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await setDoc(SETTINGS_DOC_PATH(runtime, hospitalId), persistedCatalog);
+    return persistedCatalog;
+  },
 });
 
 const defaultClinicalDocumentIndicationsCatalogService =
@@ -117,49 +256,8 @@ export const addClinicalDocumentIndicationCatalogItem = async ({
   hospitalId?: string;
   specialtyId: ClinicalDocumentIndicationSpecialtyId;
   text: string;
-}): Promise<ClinicalDocumentIndicationsCatalog> => {
-  const trimmedText = text.trim();
-  if (!trimmedText) {
-    return loadClinicalDocumentIndicationsCatalog(hospitalId);
-  }
-
-  const currentCatalog = await defaultClinicalDocumentIndicationsCatalogService.ensure(hospitalId);
-  const specialty = currentCatalog.specialties[specialtyId];
-  const nextTextKey = normalizeClinicalDocumentIndicationTextKey(trimmedText);
-  const alreadyExists = specialty.items.some(
-    item => normalizeClinicalDocumentIndicationTextKey(item.text) === nextTextKey
-  );
-
-  if (alreadyExists) {
-    return currentCatalog;
-  }
-
-  const now = new Date().toISOString();
-  const nextCatalog: ClinicalDocumentIndicationsCatalog = {
-    ...currentCatalog,
-    updatedAt: now,
-    specialties: {
-      ...currentCatalog.specialties,
-      [specialtyId]: {
-        ...specialty,
-        items: [
-          ...specialty.items,
-          {
-            id:
-              buildClinicalDocumentIndicationCatalogItemId(specialtyId, trimmedText) +
-              `-${Math.random().toString(36).slice(2, 8)}`,
-            text: trimmedText,
-            source: 'custom',
-            createdAt: now,
-          },
-        ],
-      },
-    },
-  };
-
-  await setDoc(SETTINGS_DOC_PATH(defaultFirestoreServiceRuntime, hospitalId), nextCatalog);
-  return nextCatalog;
-};
+}): Promise<ClinicalDocumentIndicationsCatalog> =>
+  defaultClinicalDocumentIndicationsCatalogService.addItem({ hospitalId, specialtyId, text });
 
 export const updateClinicalDocumentIndicationCatalogItem = async ({
   hospitalId,
@@ -171,42 +269,13 @@ export const updateClinicalDocumentIndicationCatalogItem = async ({
   specialtyId: ClinicalDocumentIndicationSpecialtyId;
   itemId: string;
   text: string;
-}): Promise<ClinicalDocumentIndicationsCatalog> => {
-  const trimmedText = text.trim();
-  if (!trimmedText) {
-    return loadClinicalDocumentIndicationsCatalog(hospitalId);
-  }
-
-  const currentCatalog = await defaultClinicalDocumentIndicationsCatalogService.ensure(hospitalId);
-  const specialty = currentCatalog.specialties[specialtyId];
-  const duplicateTextKey = normalizeClinicalDocumentIndicationTextKey(trimmedText);
-  const hasDuplicate = specialty.items.some(
-    item =>
-      item.id !== itemId &&
-      normalizeClinicalDocumentIndicationTextKey(item.text) === duplicateTextKey
-  );
-
-  if (hasDuplicate) {
-    return currentCatalog;
-  }
-
-  const nextCatalog: ClinicalDocumentIndicationsCatalog = {
-    ...currentCatalog,
-    updatedAt: new Date().toISOString(),
-    specialties: {
-      ...currentCatalog.specialties,
-      [specialtyId]: {
-        ...specialty,
-        items: specialty.items.map(item =>
-          item.id === itemId ? { ...item, text: trimmedText } : item
-        ),
-      },
-    },
-  };
-
-  await setDoc(SETTINGS_DOC_PATH(defaultFirestoreServiceRuntime, hospitalId), nextCatalog);
-  return nextCatalog;
-};
+}): Promise<ClinicalDocumentIndicationsCatalog> =>
+  defaultClinicalDocumentIndicationsCatalogService.updateItem({
+    hospitalId,
+    specialtyId,
+    itemId,
+    text,
+  });
 
 export const deleteClinicalDocumentIndicationCatalogItem = async ({
   hospitalId,
@@ -216,24 +285,8 @@ export const deleteClinicalDocumentIndicationCatalogItem = async ({
   hospitalId?: string;
   specialtyId: ClinicalDocumentIndicationSpecialtyId;
   itemId: string;
-}): Promise<ClinicalDocumentIndicationsCatalog> => {
-  const currentCatalog = await defaultClinicalDocumentIndicationsCatalogService.ensure(hospitalId);
-  const specialty = currentCatalog.specialties[specialtyId];
-  const nextCatalog: ClinicalDocumentIndicationsCatalog = {
-    ...currentCatalog,
-    updatedAt: new Date().toISOString(),
-    specialties: {
-      ...currentCatalog.specialties,
-      [specialtyId]: {
-        ...specialty,
-        items: specialty.items.filter(item => item.id !== itemId),
-      },
-    },
-  };
-
-  await setDoc(SETTINGS_DOC_PATH(defaultFirestoreServiceRuntime, hospitalId), nextCatalog);
-  return nextCatalog;
-};
+}): Promise<ClinicalDocumentIndicationsCatalog> =>
+  defaultClinicalDocumentIndicationsCatalogService.deleteItem({ hospitalId, specialtyId, itemId });
 
 export const replaceClinicalDocumentIndicationsCatalog = async ({
   hospitalId,
@@ -241,13 +294,5 @@ export const replaceClinicalDocumentIndicationsCatalog = async ({
 }: {
   hospitalId?: string;
   catalog: RawClinicalDocumentIndicationsCatalog;
-}): Promise<ClinicalDocumentIndicationsCatalog> => {
-  const nextCatalog = normalizeClinicalDocumentIndicationsCatalog(catalog);
-  const persistedCatalog: ClinicalDocumentIndicationsCatalog = {
-    ...nextCatalog,
-    updatedAt: new Date().toISOString(),
-  };
-
-  await setDoc(SETTINGS_DOC_PATH(defaultFirestoreServiceRuntime, hospitalId), persistedCatalog);
-  return persistedCatalog;
-};
+}): Promise<ClinicalDocumentIndicationsCatalog> =>
+  defaultClinicalDocumentIndicationsCatalogService.replaceCatalog({ hospitalId, catalog });
