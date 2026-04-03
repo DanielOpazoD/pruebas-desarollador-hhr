@@ -15,7 +15,9 @@ export const DateStripBookmarkToggle: React.FC<DateStripBookmarkToggleProps> = (
     onClick={onToggleBookmarks}
     className={clsx(
       'p-1.5 rounded-lg transition-all shrink-0',
-      showBookmarks ? 'text-medical-600 bg-medical-50' : 'text-slate-400 hover:bg-slate-100'
+      showBookmarks
+        ? 'text-medical-600 bg-medical-50'
+        : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
     )}
     title={showBookmarks ? 'Ocultar Marcadores' : 'Mostrar Marcadores'}
   >

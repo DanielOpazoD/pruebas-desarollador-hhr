@@ -10,19 +10,19 @@ export const DateStripYearNavigator: React.FC<DateStripYearNavigatorProps> = ({
   selectedYear,
   setSelectedYear,
 }) => (
-  <div className="flex items-center text-white/80 font-bold shrink-0">
+  <div className="flex items-center shrink-0 rounded-lg bg-slate-50 border border-slate-200/80 px-0.5 py-0.5">
     <button
       onClick={() => setSelectedYear(year => year - 1)}
-      className="p-1 hover:bg-white/[0.08] text-white/40 hover:text-white/70 rounded-lg"
+      className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-white transition-colors"
     >
-      <ChevronLeft size={14} />
+      <ChevronLeft size={13} />
     </button>
-    <span className="mx-1 text-sm font-bold">{selectedYear}</span>
+    <span className="mx-1.5 text-[13px] font-bold text-slate-700 tabular-nums">{selectedYear}</span>
     <button
       onClick={() => setSelectedYear(year => year + 1)}
-      className="p-1 hover:bg-white/[0.08] text-white/40 hover:text-white/70 rounded-lg"
+      className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-white transition-colors"
     >
-      <ChevronRight size={14} />
+      <ChevronRight size={13} />
     </button>
   </div>
 );

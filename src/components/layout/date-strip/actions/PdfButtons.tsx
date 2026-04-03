@@ -11,7 +11,7 @@ export const PdfButtons: React.FC<Pick<ActionButtonsProps, 'onExportPDF'>> = ({ 
     <div className="flex items-center gap-1">
       <button
         onClick={onExportPDF}
-        className="btn btn-secondary bg-teal-700 text-white hover:bg-teal-800 border-none !px-3 !py-1.5 text-[10px]"
+        className="btn btn-secondary bg-teal-600 text-white hover:bg-teal-700 border-none !px-3 !py-1.5 text-[10px] rounded-lg"
         title="Descargar PDF (rápido)"
       >
         <Printer size={14} />

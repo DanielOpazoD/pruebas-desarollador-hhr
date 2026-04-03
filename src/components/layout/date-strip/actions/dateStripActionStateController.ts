@@ -38,7 +38,7 @@ export const resolveSaveButtonUiState = ({
 
   return {
     label: 'Guardar',
-    buttonClassName: 'btn-primary bg-amber-500 hover:bg-amber-600 border-none shadow-sm',
+    buttonClassName: 'btn-primary bg-emerald-500 hover:bg-emerald-600 border-none shadow-sm',
     iconKind: 'default',
   };
 };
@@ -62,7 +62,7 @@ export const resolveEmailButtonUiState = ({
     return {
       label: 'Enviando...',
       title: 'Enviar censo',
-      buttonClassName: 'btn-primary bg-blue-600 hover:bg-blue-700 opacity-70 cursor-not-allowed',
+      buttonClassName: 'btn-primary bg-teal-600 opacity-70 cursor-not-allowed',
     };
   }
 
@@ -70,7 +70,7 @@ export const resolveEmailButtonUiState = ({
     return {
       label: 'Enviado',
       title: 'Enviar censo',
-      buttonClassName: 'bg-blue-700 text-white shadow-inner',
+      buttonClassName: 'bg-teal-700 text-white shadow-inner',
     };
   }
 
@@ -78,13 +78,13 @@ export const resolveEmailButtonUiState = ({
     return {
       label: 'Enviar censo',
       title: errorMessage || 'Ocurrió un error al enviar el correo',
-      buttonClassName: 'btn-primary bg-blue-600 hover:bg-blue-700',
+      buttonClassName: 'btn-primary bg-teal-600 hover:bg-teal-700',
     };
   }
 
   return {
     label: 'Enviar censo',
     title: 'Enviar censo',
-    buttonClassName: 'btn-primary bg-blue-600 hover:bg-blue-700',
+    buttonClassName: 'btn-primary bg-teal-600 hover:bg-teal-700',
   };
 };

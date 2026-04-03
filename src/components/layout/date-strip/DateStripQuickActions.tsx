@@ -23,15 +23,13 @@ export const DateStripQuickActions: React.FC<DateStripQuickActionsProps> = ({
     {onOpenBedManager && (
       <button
         onClick={onOpenBedManager}
-        className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-md border border-slate-200 transition-colors text-[11px] font-semibold"
+        className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg border border-slate-200 transition-colors text-[11px] font-semibold"
         title="Bloqueo de camas"
       >
         <Lock size={14} />
         <span className="hidden sm:inline">Camas</span>
       </button>
     )}
-
-    <MedicalIndicationsQuickAction patients={medicalIndicationsPatients} />
 
     {!hide3DToggle && (
       <button

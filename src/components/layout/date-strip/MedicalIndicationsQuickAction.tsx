@@ -22,7 +22,7 @@ export const MedicalIndicationsQuickAction: React.FC<MedicalIndicationsQuickActi
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-1 px-2.5 py-1.5 bg-medical-50 hover:bg-medical-100 text-medical-700 rounded-md border border-medical-200 transition-colors text-[11px] font-semibold"
+        className="flex items-center gap-1 px-2.5 py-1.5 bg-medical-50 hover:bg-medical-100 text-medical-700 rounded-lg border border-medical-200 transition-colors text-[11px] font-semibold"
         title="Indicaciones médicas"
       >
         <FilePlus2 size={14} />

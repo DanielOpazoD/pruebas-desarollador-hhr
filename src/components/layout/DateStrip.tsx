@@ -132,7 +132,7 @@ export const DateStrip: React.FC<DateStripProps> = ({
 
   return (
     <div
-      className="bg-[#0f1d32]/95 backdrop-blur-xl border-b border-white/[0.06] shadow-lg shadow-black/20 sticky top-[56px] z-40 print:hidden h-[44px] flex items-center"
+      className="bg-white border-b border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.06)] sticky top-[56px] z-40 print:hidden h-[44px] flex items-center"
       style={{ transform: 'translateZ(0)' }}
     >
       <div className="max-w-screen-2xl mx-auto px-3 py-1">
@@ -181,15 +181,15 @@ export const DateStrip: React.FC<DateStripProps> = ({
             />
           )}
 
-          <div className="h-4 w-px bg-white/[0.08]" />
+          <div className="h-4 w-px bg-slate-200/70" />
 
           <DateStripYearNavigator selectedYear={selectedYear} setSelectedYear={setSelectedYear} />
 
-          <div className="h-4 w-px bg-white/[0.08]" />
+          <div className="h-4 w-px bg-slate-200/70" />
 
           <DateStripMonthNavigator selectedMonth={selectedMonth} onChangeMonth={changeMonth} />
 
-          <div className="h-4 w-px bg-white/[0.08]" />
+          <div className="h-4 w-px bg-slate-200/70" />
 
           <div
             ref={daysContainerRef}
@@ -207,7 +207,7 @@ export const DateStrip: React.FC<DateStripProps> = ({
             />
           </div>
 
-          <div className="h-4 w-px bg-white/[0.08]" />
+          <div className="h-4 w-px bg-slate-200/70" />
 
           <DateStripQuickActions
             onOpenBedManager={specialistCensusAccess ? undefined : onOpenBedManager}

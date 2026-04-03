@@ -11,15 +11,21 @@ export const DateStripMonthNavigator: React.FC<DateStripMonthNavigatorProps> = (
   selectedMonth,
   onChangeMonth,
 }) => (
-  <div className="flex items-center text-slate-700 font-bold shrink-0">
-    <button onClick={() => onChangeMonth(-1)} className="p-1 hover:bg-slate-100 rounded">
-      <ChevronLeft size={14} />
+  <div className="flex items-center shrink-0 rounded-lg bg-slate-50 border border-slate-200/80 px-0.5 py-0.5">
+    <button
+      onClick={() => onChangeMonth(-1)}
+      className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-white transition-colors"
+    >
+      <ChevronLeft size={13} />
     </button>
-    <span className="mx-1 uppercase text-xs tracking-wide min-w-[80px] text-center">
+    <span className="mx-1 uppercase text-[11px] font-semibold tracking-wider text-slate-500 min-w-[70px] text-center">
       {MONTH_NAMES[selectedMonth]}
     </span>
-    <button onClick={() => onChangeMonth(1)} className="p-1 hover:bg-slate-100 rounded">
-      <ChevronRight size={14} />
+    <button
+      onClick={() => onChangeMonth(1)}
+      className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-white transition-colors"
+    >
+      <ChevronRight size={13} />
     </button>
   </div>
 );

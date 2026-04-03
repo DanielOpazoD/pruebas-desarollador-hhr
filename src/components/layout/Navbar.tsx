@@ -58,31 +58,31 @@ export const Navbar: React.FC<NavbarProps> = ({
   const getNavColor = () => {
     switch (currentModule) {
       case 'CENSUS':
-        return 'bg-gradient-to-r from-[#0a1628] via-medical-900 to-[#0f172a]';
+        return 'bg-gradient-to-r from-[#0c4a6e] via-[#0369a1] to-[#0c4a6e]';
       case 'NURSING_HANDOFF':
-        return 'bg-sky-600';
+        return 'bg-gradient-to-r from-sky-700 via-sky-600 to-sky-700';
       case 'MEDICAL_HANDOFF':
-        return 'bg-sky-600';
+        return 'bg-gradient-to-r from-sky-700 via-sky-600 to-sky-700';
       case 'AUDIT':
-        return 'bg-slate-800';
+        return 'bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800';
       case 'TRANSFER_MANAGEMENT':
-        return 'bg-sky-700';
+        return 'bg-gradient-to-r from-sky-800 via-sky-700 to-sky-800';
       case 'BACKUP_FILES':
-        return 'bg-slate-600';
+        return 'bg-gradient-to-r from-slate-700 via-slate-600 to-slate-700';
       case 'PATIENT_MASTER_INDEX':
-        return 'bg-blue-600';
+        return 'bg-gradient-to-r from-blue-700 via-blue-600 to-blue-700';
       case 'DATA_MAINTENANCE':
-        return 'bg-emerald-800';
+        return 'bg-gradient-to-r from-emerald-800 via-emerald-700 to-emerald-800';
       case 'DIAGNOSTICS':
-        return 'bg-slate-900';
+        return 'bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900';
       case 'ROLE_MANAGEMENT':
-        return 'bg-indigo-700';
+        return 'bg-gradient-to-r from-indigo-800 via-indigo-700 to-indigo-800';
       case 'REMINDERS':
-        return 'bg-amber-700';
+        return 'bg-gradient-to-r from-amber-800 via-amber-700 to-amber-800';
       case 'ERRORS':
-        return 'bg-rose-900';
+        return 'bg-gradient-to-r from-rose-900 via-rose-800 to-rose-900';
       default:
-        return 'bg-gradient-to-r from-[#0a1628] via-medical-900 to-[#0f172a]';
+        return 'bg-gradient-to-r from-[#0c4a6e] via-[#0369a1] to-[#0c4a6e]';
     }
   };
 
@@ -90,7 +90,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     <nav
       className={clsx(
         getNavColor(),
-        'text-white shadow-none sticky top-0 z-[60] print:hidden transition-colors duration-300 h-[56px] flex items-center'
+        'text-white shadow-md shadow-black/10 sticky top-0 z-[60] print:hidden transition-colors duration-300 h-[56px] flex items-center border-b border-white/[0.08]'
       )}
       style={{ transform: 'translateZ(0)' }}
     >
