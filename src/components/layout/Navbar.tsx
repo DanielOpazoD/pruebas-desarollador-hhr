@@ -58,31 +58,31 @@ export const Navbar: React.FC<NavbarProps> = ({
   const getNavColor = () => {
     switch (currentModule) {
       case 'CENSUS':
-        return 'bg-medical-900 shadow-medical-900/20';
+        return 'bg-gradient-to-r from-[#0a1628] via-medical-900 to-[#0f172a]';
       case 'NURSING_HANDOFF':
-        return 'bg-sky-600 shadow-sky-600/20';
+        return 'bg-sky-600';
       case 'MEDICAL_HANDOFF':
-        return 'bg-sky-600 shadow-sky-600/20';
+        return 'bg-sky-600';
       case 'AUDIT':
-        return 'bg-slate-800 shadow-slate-800/20';
+        return 'bg-slate-800';
       case 'TRANSFER_MANAGEMENT':
-        return 'bg-sky-700 shadow-sky-700/20';
+        return 'bg-sky-700';
       case 'BACKUP_FILES':
-        return 'bg-slate-600 shadow-slate-600/20';
+        return 'bg-slate-600';
       case 'PATIENT_MASTER_INDEX':
-        return 'bg-blue-600 shadow-blue-600/20';
+        return 'bg-blue-600';
       case 'DATA_MAINTENANCE':
-        return 'bg-emerald-800 shadow-emerald-800/20';
+        return 'bg-emerald-800';
       case 'DIAGNOSTICS':
-        return 'bg-slate-900 shadow-slate-900/20';
+        return 'bg-slate-900';
       case 'ROLE_MANAGEMENT':
-        return 'bg-indigo-700 shadow-indigo-700/20';
+        return 'bg-indigo-700';
       case 'REMINDERS':
-        return 'bg-amber-700 shadow-amber-700/20';
+        return 'bg-amber-700';
       case 'ERRORS':
-        return 'bg-rose-900 shadow-rose-900/20';
+        return 'bg-rose-900';
       default:
-        return 'bg-medical-900 shadow-medical-900/20';
+        return 'bg-gradient-to-r from-[#0a1628] via-medical-900 to-[#0f172a]';
     }
   };
 
@@ -90,7 +90,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     <nav
       className={clsx(
         getNavColor(),
-        'text-white shadow-lg shadow-black/10 sticky top-0 z-[60] print:hidden transition-colors duration-300 h-[56px] flex items-center border-b border-white/[0.06] backdrop-blur-md'
+        'text-white shadow-none sticky top-0 z-[60] print:hidden transition-colors duration-300 h-[56px] flex items-center'
       )}
       style={{ transform: 'translateZ(0)' }}
     >

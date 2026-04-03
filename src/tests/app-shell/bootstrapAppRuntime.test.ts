@@ -38,6 +38,7 @@ import {
 describe('bootstrapAppRuntime', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
     mockGetStartupFailureMessage.mockReturnValue('Firebase startup failed');
     mockPerformClientHardReset.mockResolvedValue(undefined);
   });
@@ -130,6 +131,49 @@ describe('bootstrapAppRuntime', () => {
         status: 'continue',
         reason: null,
       },
+    });
+  });
+
+  it('also attempts hard reset once when bootstrap times out in a broken browser session', async () => {
+    const failure = new Error('Firebase initialization timed out');
+    mockPrepareClientBootstrap.mockResolvedValue({
+      status: 'continue',
+      reason: null,
+    });
+    mockGetFirebaseReady.mockReturnValue(Promise.reject(failure));
+
+    const result = await bootstrapAppRuntime();
+
+    expect(mockPerformClientHardReset).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      status: 'reload',
+      stage: 'firebase_ready',
+      clientRecovery: {
+        status: 'continue',
+        reason: null,
+      },
+    });
+  });
+
+  it('shows a local-browser warning after a repair attempt already happened', async () => {
+    sessionStorage.setItem('hhr_bootstrap_storage_repair_v1', '1');
+    const failure = new Error('Firebase initialization timed out');
+    mockPrepareClientBootstrap.mockResolvedValue({
+      status: 'continue',
+      reason: null,
+    });
+    mockGetFirebaseReady.mockReturnValue(Promise.reject(failure));
+
+    const result = await bootstrapAppRuntime();
+
+    expect(mockPerformClientHardReset).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      status: 'blocked',
+      stage: 'firebase_ready',
+      message: 'No se pudo iniciar correctamente por un problema local del navegador.',
+      warningCopy: expect.objectContaining({
+        title: 'Problema local del navegador',
+      }),
     });
   });
 

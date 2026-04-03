@@ -65,16 +65,15 @@ export const DateStripDayButtons: React.FC<DateStripDayButtonsProps> = ({
           className={clsx(
             'flex items-center justify-center w-8 h-8 rounded-lg text-xs font-semibold transition-all shrink-0 relative border',
             isFutureBlocked
-              ? 'bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed'
+              ? 'bg-white/[0.03] text-white/20 border-transparent cursor-not-allowed'
               : isSelected
                 ? isTodayReal
-                  ? 'bg-gradient-to-br from-cyan-500 to-teal-500 text-white border-cyan-600 shadow-lg shadow-cyan-200 scale-110'
-                  : 'bg-slate-700 text-white border-slate-700 shadow-md scale-105'
+                  ? 'bg-gradient-to-br from-cyan-400 to-teal-400 text-slate-900 font-bold border-transparent shadow-lg shadow-cyan-400/25 scale-110'
+                  : 'bg-white/20 text-white font-bold border-white/20 shadow-md scale-105'
                 : [
-                    'hover:bg-slate-100',
                     isTodayReal
-                      ? 'bg-cyan-50 border-cyan-300 text-cyan-700 font-bold'
-                      : 'bg-white border-slate-100 text-slate-500',
+                      ? 'bg-cyan-500/10 border-cyan-400/30 text-cyan-300 font-bold hover:bg-cyan-500/20'
+                      : 'bg-white/[0.06] border-white/[0.08] text-white/50 hover:bg-white/[0.12] hover:text-white/70',
                   ]
           )}
         >
@@ -83,7 +82,7 @@ export const DateStripDayButtons: React.FC<DateStripDayButtonsProps> = ({
             <span
               className={clsx(
                 'absolute -bottom-0.5 w-1 h-1 rounded-full',
-                isFutureBlocked ? 'bg-slate-300' : isSelected ? 'bg-green-400' : 'bg-green-500'
+                isFutureBlocked ? 'bg-white/20' : isSelected ? 'bg-emerald-400' : 'bg-emerald-500'
               )}
             />
           )}

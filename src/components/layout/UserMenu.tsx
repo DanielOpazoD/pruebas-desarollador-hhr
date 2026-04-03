@@ -28,12 +28,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({
     <div className="relative" ref={menuRef}>
       <button
         onClick={toggle}
-        className="relative w-9 h-9 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white font-bold text-sm uppercase shadow-glass transition-transform active:scale-90"
+        className="relative w-9 h-9 rounded-full bg-white/[0.08] backdrop-blur-sm border border-white/[0.12] flex items-center justify-center text-white/90 font-bold text-sm uppercase shadow-glass transition-transform active:scale-90"
         title={userEmail}
       >
         {userEmail.charAt(0)}
         <span
-          className={`absolute right-0.5 top-0.5 h-2.5 w-2.5 rounded-full border border-medical-900 ${isFirebaseConnected ? 'bg-emerald-400' : 'bg-rose-400'}`}
+          className={`absolute right-0.5 top-0.5 h-2.5 w-2.5 rounded-full border border-[#0a1628] ${isFirebaseConnected ? 'bg-emerald-400' : 'bg-rose-400'}`}
           aria-hidden="true"
         />
       </button>

@@ -71,17 +71,17 @@ export const NavbarMenu: React.FC<NavbarMenuProps> = ({
           'hover:bg-white/[0.07]'
         )}
       >
-        <div className="bg-white p-1 rounded-lg shadow-sm ring-1 ring-white/10">
+        <div className="bg-white/[0.1] p-1.5 rounded-xl backdrop-blur-sm ring-1 ring-white/[0.08]">
           <img src="/images/logos/logo_HHR.svg" alt="HHR" className="w-7 h-7 object-contain" />
         </div>
         <div className="text-left">
-          <h1 className="text-base font-display font-bold leading-tight -tracking-[0.01em]">
+          <h1 className="text-[15px] font-display font-bold leading-tight tracking-tight text-white/95">
             Hospital Hanga Roa
           </h1>
         </div>
         <ChevronDown
           size={16}
-          className={clsx('text-white/40 transition-transform ml-1', isOpen && 'rotate-180')}
+          className={clsx('text-white/30 transition-transform ml-1', isOpen && 'rotate-180')}
         />
       </button>
 

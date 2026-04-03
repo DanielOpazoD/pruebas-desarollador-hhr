@@ -1,5 +1,8 @@
 import { firebaseReady } from '@/firebaseConfig';
-import { getFirebaseStartupFailureMessage } from '@/services/auth/firebaseStartupUiPolicy';
+import {
+  getFirebaseStartupFailureMessage,
+  type FirebaseStartupWarningCopy,
+} from '@/services/auth/firebaseStartupUiPolicy';
 import {
   prepareClientBootstrap,
   type ClientBootstrapRecoveryResult,
@@ -13,9 +16,31 @@ import type {
 } from '@/app-shell/bootstrap/bootstrapAppRuntime.types';
 
 const bootstrapRuntimeLogger = createScopedLogger('BootstrapRuntime');
+const BOOTSTRAP_STORAGE_REPAIR_KEY = 'hhr_bootstrap_storage_repair_v1';
 
 const getErrorMessage = (error: unknown): string =>
   error && typeof error === 'object' && 'message' in error ? String(error.message) : String(error);
+
+const canUseSessionStorage = (): boolean => typeof sessionStorage !== 'undefined';
+
+const hasAttemptedStorageRepair = (): boolean =>
+  canUseSessionStorage() && sessionStorage.getItem(BOOTSTRAP_STORAGE_REPAIR_KEY) === '1';
+
+const markStorageRepairAttempt = (): void => {
+  if (!canUseSessionStorage()) {
+    return;
+  }
+
+  sessionStorage.setItem(BOOTSTRAP_STORAGE_REPAIR_KEY, '1');
+};
+
+const clearStorageRepairAttempt = (): void => {
+  if (!canUseSessionStorage()) {
+    return;
+  }
+
+  sessionStorage.removeItem(BOOTSTRAP_STORAGE_REPAIR_KEY);
+};
 
 const isIndexedDbBootstrapFailure = (error: unknown): boolean => {
   const message = getErrorMessage(error).toLowerCase();
@@ -27,11 +52,38 @@ const isIndexedDbBootstrapFailure = (error: unknown): boolean => {
   );
 };
 
+const isLocalStorageBootstrapFailure = (error: unknown): boolean => {
+  const message = getErrorMessage(error).toLowerCase();
+  return (
+    isIndexedDbBootstrapFailure(error) ||
+    message.includes('firebase initialization timed out') ||
+    message.includes('auth persistence') ||
+    message.includes('local storage') ||
+    message.includes('session storage') ||
+    message.includes('quotaexceedederror')
+  );
+};
+
+const getLocalStorageBootstrapWarningCopy = (): FirebaseStartupWarningCopy => ({
+  title: 'Problema local del navegador',
+  summary:
+    'La app no pudo iniciar correctamente por un problema en el almacenamiento local de este navegador. La configuración de Firebase del entorno no parece ser la causa principal.',
+  steps: [
+    'Se recomienda limpiar los datos locales de este sitio y volver a cargar la aplicación.',
+    'Si el problema ocurre solo en una sesión antigua y en incógnito funciona, el origen es casi siempre almacenamiento local dañado o un estado viejo del navegador.',
+    'Si también falla en incógnito o en otros navegadores, recién ahí revisar variables y runtime en Netlify.',
+  ],
+  footnote:
+    'Este aviso apunta a recuperación local del navegador, no a una falta confirmada de variables Firebase.',
+});
+
 const resolveBlockedBootstrapResult = (
   clientRecovery: ClientBootstrapRecoveryResult,
-  error: unknown
+  error: unknown,
+  warningCopy?: FirebaseStartupWarningCopy,
+  messageOverride?: string
 ): AppBootstrapRuntimeResult => {
-  const message = getFirebaseStartupFailureMessage();
+  const message = messageOverride || getFirebaseStartupFailureMessage();
   bootstrapRuntimeLogger.error('Firebase bootstrap failed', error);
   return {
     status: 'blocked',
@@ -39,6 +91,7 @@ const resolveBlockedBootstrapResult = (
     clientRecovery,
     error,
     message,
+    warningCopy,
   };
 };
 
@@ -64,6 +117,7 @@ export const bootstrapAppRuntime = async (): Promise<AppBootstrapRuntimeResult> 
     bootstrapRuntimeLogger.info('Bootstrap runtime ready', {
       recoveryReason: clientRecovery.reason,
     });
+    clearStorageRepairAttempt();
     return {
       status: 'continue',
       stage: 'firebase_ready',
@@ -71,8 +125,11 @@ export const bootstrapAppRuntime = async (): Promise<AppBootstrapRuntimeResult> 
       services,
     };
   } catch (error) {
-    if (isIndexedDbBootstrapFailure(error)) {
-      bootstrapRuntimeLogger.warn('Detected IndexedDB corruption during bootstrap; hard reset');
+    if (isLocalStorageBootstrapFailure(error) && !hasAttemptedStorageRepair()) {
+      markStorageRepairAttempt();
+      bootstrapRuntimeLogger.warn(
+        'Detected local browser storage corruption during bootstrap; hard reset'
+      );
       await performClientHardReset();
       return {
         status: 'reload',
@@ -81,6 +138,13 @@ export const bootstrapAppRuntime = async (): Promise<AppBootstrapRuntimeResult> 
       };
     }
 
-    return resolveBlockedBootstrapResult(clientRecovery, error);
+    return resolveBlockedBootstrapResult(
+      clientRecovery,
+      error,
+      isLocalStorageBootstrapFailure(error) ? getLocalStorageBootstrapWarningCopy() : undefined,
+      isLocalStorageBootstrapFailure(error)
+        ? 'No se pudo iniciar correctamente por un problema local del navegador.'
+        : undefined
+    );
   }
 };

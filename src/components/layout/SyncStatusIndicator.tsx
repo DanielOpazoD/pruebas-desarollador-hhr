@@ -41,10 +41,10 @@ export const SyncStatusIndicator: React.FC = () => {
         return {
           icon: Cloud,
           text: 'Estado',
-          bgColor: 'bg-white/10',
-          borderColor: 'border-white/20',
-          textColor: 'text-white/70',
-          iconColor: 'text-white/50',
+          bgColor: 'bg-white/[0.06]',
+          borderColor: 'border-white/[0.1]',
+          textColor: 'text-white/50',
+          iconColor: 'text-white/40',
           animate: false,
         };
     }

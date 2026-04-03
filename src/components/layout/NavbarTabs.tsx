@@ -26,13 +26,13 @@ const NavTab: React.FC<NavTabProps> = ({ label, icon: Icon, isActive, onClick })
   <button
     onClick={onClick}
     className={clsx(
-      'flex items-center gap-2 px-4 py-3 border-b-2 transition-all duration-300 font-medium text-sm tracking-tight',
+      'flex items-center gap-2 px-4 py-1.5 transition-all duration-200 text-[13px] tracking-tight rounded-full',
       isActive
-        ? 'border-white text-white drop-shadow-sm scale-105'
-        : 'border-transparent text-medical-200 hover:text-white hover:border-medical-400'
+        ? 'text-white font-semibold bg-white/[0.12]'
+        : 'text-white/40 hover:text-white/70 hover:bg-white/[0.05] font-medium'
     )}
   >
-    <Icon size={16} /> {label}
+    <Icon size={15} /> {label}
   </button>
 );
 
@@ -141,10 +141,10 @@ export const NavbarTabs: React.FC<NavbarTabsProps> = ({
           <button
             onClick={toggle}
             className={clsx(
-              'flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200',
+              'flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200',
               isUtilityActive || currentModule === 'CUDYR'
-                ? 'bg-white/20 text-white ring-2 ring-white/30'
-                : 'text-medical-200 hover:bg-white/10 hover:text-white'
+                ? 'bg-white/[0.15] text-white ring-1 ring-white/20'
+                : 'text-white/30 hover:bg-white/[0.06] hover:text-white/60'
             )}
             title="Más módulos"
           >
@@ -153,7 +153,7 @@ export const NavbarTabs: React.FC<NavbarTabsProps> = ({
 
           {/* Dropdown Menu */}
           {isUtilityMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl ring-1 ring-black/[0.04] border border-slate-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="py-1">
                 {utilityItems.map(item => (
                   <DropdownItem
