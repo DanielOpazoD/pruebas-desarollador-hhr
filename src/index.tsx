@@ -1,9 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from '@/App';
-import { firebaseReady, mountConfigWarning } from '@/firebaseConfig';
+import { mountConfigWarning } from '@/firebaseConfig';
+import { bootstrapAppRuntime } from '@/app-shell/bootstrap/bootstrapAppRuntime';
 import { getFirebaseStartupFailureMessage } from '@/services/auth/firebaseStartupUiPolicy';
-import { prepareClientBootstrap } from '@/services/config/clientBootstrapRecovery';
 import { createScopedLogger } from '@/services/utils/loggerScope';
 
 const rootElement = document.getElementById('root');
@@ -23,13 +23,18 @@ const renderApp = () => {
   );
 };
 
-prepareClientBootstrap()
-  .then(shouldContinue => {
-    if (!shouldContinue) {
+bootstrapAppRuntime()
+  .then(result => {
+    if (result.status === 'reload') {
       return;
     }
 
-    return firebaseReady.then(renderApp);
+    if (result.status === 'blocked') {
+      mountConfigWarning(result.message);
+      return;
+    }
+
+    renderApp();
   })
   .catch(error => {
     bootLogger.error('Firebase initialization failed', error);

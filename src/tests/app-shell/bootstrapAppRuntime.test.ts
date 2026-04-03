@@ -1,0 +1,116 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { mockPrepareClientBootstrap, mockGetFirebaseReady, mockGetStartupFailureMessage } =
+  vi.hoisted(() => ({
+    mockPrepareClientBootstrap: vi.fn(),
+    mockGetFirebaseReady: vi.fn(),
+    mockGetStartupFailureMessage: vi.fn(),
+  }));
+
+vi.mock('@/services/config/clientBootstrapRecovery', () => ({
+  prepareClientBootstrap: (...args: unknown[]) => mockPrepareClientBootstrap(...args),
+}));
+
+vi.mock('@/firebaseConfig', () => ({
+  get firebaseReady() {
+    return mockGetFirebaseReady();
+  },
+}));
+
+vi.mock('@/services/auth/firebaseStartupUiPolicy', () => ({
+  getFirebaseStartupFailureMessage: (...args: unknown[]) => mockGetStartupFailureMessage(...args),
+}));
+
+import {
+  bootstrapAppRuntime,
+  reconcileBootstrapRuntime,
+} from '@/app-shell/bootstrap/bootstrapAppRuntime';
+
+describe('bootstrapAppRuntime', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetStartupFailureMessage.mockReturnValue('Firebase startup failed');
+  });
+
+  it('returns reload when client recovery requires a reload', async () => {
+    mockPrepareClientBootstrap.mockResolvedValue({
+      status: 'reload',
+      reason: 'legacy-sw',
+    });
+
+    const result = await bootstrapAppRuntime();
+
+    expect(result).toEqual({
+      status: 'reload',
+      stage: 'client_recovery',
+      clientRecovery: {
+        status: 'reload',
+        reason: 'legacy-sw',
+      },
+    });
+    expect(mockGetFirebaseReady).not.toHaveBeenCalled();
+  });
+
+  it('returns continue when recovery passes and firebase is ready', async () => {
+    const services = {
+      app: { name: 'app' },
+      auth: { name: 'auth' },
+      db: { name: 'db' },
+    };
+    mockPrepareClientBootstrap.mockResolvedValue({
+      status: 'continue',
+      reason: null,
+    });
+    mockGetFirebaseReady.mockReturnValue(Promise.resolve(services));
+
+    const result = await bootstrapAppRuntime();
+
+    expect(result).toEqual({
+      status: 'continue',
+      stage: 'firebase_ready',
+      clientRecovery: {
+        status: 'continue',
+        reason: null,
+      },
+      services,
+    });
+  });
+
+  it('returns blocked when firebase bootstrap fails', async () => {
+    const failure = new Error('boom');
+    mockPrepareClientBootstrap.mockResolvedValue({
+      status: 'continue',
+      reason: 'local-dev',
+    });
+    mockGetFirebaseReady.mockReturnValue(Promise.reject(failure));
+
+    const result = await bootstrapAppRuntime();
+
+    expect(result).toEqual({
+      status: 'blocked',
+      stage: 'firebase_ready',
+      clientRecovery: {
+        status: 'continue',
+        reason: 'local-dev',
+      },
+      error: failure,
+      message: 'Firebase startup failed',
+    });
+    expect(mockGetStartupFailureMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('reuses the same client reconciliation entrypoint for background checks', async () => {
+    mockPrepareClientBootstrap.mockResolvedValue({
+      status: 'continue',
+      reason: null,
+    });
+
+    const result = await reconcileBootstrapRuntime();
+
+    expect(result).toEqual({
+      status: 'continue',
+      reason: null,
+    });
+    expect(mockPrepareClientBootstrap).toHaveBeenCalledTimes(1);
+  });
+});

@@ -6,7 +6,13 @@ const FIREBASE_CONFIG_CACHE_KEY = 'hhr_firebase_config';
 const BOOTSTRAP_RECOVERY_KEY = 'hhr_bootstrap_recovery_v1';
 const VERSION_URL = '/version.json';
 
-type BootstrapRecoveryReason = 'legacy-sw' | 'version-change';
+export type BootstrapRecoveryReason = 'legacy-sw' | 'version-change' | 'local-dev';
+export type ClientBootstrapRecoveryStatus = 'continue' | 'reload';
+
+export interface ClientBootstrapRecoveryResult {
+  status: ClientBootstrapRecoveryStatus;
+  reason: BootstrapRecoveryReason | null;
+}
 
 interface VersionInfo {
   version: string;
@@ -163,24 +169,35 @@ const getFallbackVersionInfo = (): VersionInfo | null => {
   };
 };
 
-const performRecoveryReload = async (reason: BootstrapRecoveryReason): Promise<false> => {
+const performRecoveryReload = async (
+  reason: BootstrapRecoveryReason
+): Promise<ClientBootstrapRecoveryResult> => {
   writeRecoveryAttempt(reason);
   clearBootstrapRuntimeCache();
   await clearBrowserCaches();
   await unregisterServiceWorkers(() => true);
   defaultBrowserWindowRuntime.reload();
-  return false;
+  return {
+    status: 'reload',
+    reason,
+  };
 };
 
-export const prepareClientBootstrap = async (): Promise<boolean> => {
+export const prepareClientBootstrap = async (): Promise<ClientBootstrapRecoveryResult> => {
   if (!canUseBrowser()) {
-    return true;
+    return {
+      status: 'continue',
+      reason: null,
+    };
   }
 
   if (isLocalHost()) {
     await unregisterServiceWorkers(() => true);
     clearRecoveryAttempt();
-    return true;
+    return {
+      status: 'continue',
+      reason: 'local-dev',
+    };
   }
 
   const recoveryAttempt = readRecoveryAttempt();
@@ -201,14 +218,20 @@ export const prepareClientBootstrap = async (): Promise<boolean> => {
     if (legacyWorkerCount === 0) {
       clearRecoveryAttempt();
     }
-    return true;
+    return {
+      status: 'continue',
+      reason: null,
+    };
   }
 
   const localVersion = defaultBrowserWindowRuntime.getLocalStorageItem(VERSION_KEY);
   if (!localVersion) {
     defaultBrowserWindowRuntime.setLocalStorageItem(VERSION_KEY, serverVersion.version);
     clearRecoveryAttempt();
-    return true;
+    return {
+      status: 'continue',
+      reason: null,
+    };
   }
 
   if (localVersion !== serverVersion.version) {
@@ -224,7 +247,10 @@ export const prepareClientBootstrap = async (): Promise<boolean> => {
   }
 
   clearRecoveryAttempt();
-  return true;
+  return {
+    status: 'continue',
+    reason: null,
+  };
 };
 
 export const getClientBootstrapRecoveryConstants = () => ({

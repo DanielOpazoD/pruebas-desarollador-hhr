@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { prepareClientBootstrap } from '@/services/config/clientBootstrapRecovery';
+import { reconcileBootstrapRuntime } from '@/app-shell/bootstrap/bootstrapAppRuntime';
 import { versionCheckLogger } from '@/hooks/hookLoggers';
+
 export const useVersionCheck = (): void => {
   const hasChecked = useRef(false);
 
@@ -11,7 +12,7 @@ export const useVersionCheck = (): void => {
 
     const checkVersion = async () => {
       try {
-        await prepareClientBootstrap();
+        await reconcileBootstrapRuntime();
       } catch (error) {
         versionCheckLogger.warn('Check failed (offline?)', error);
       }

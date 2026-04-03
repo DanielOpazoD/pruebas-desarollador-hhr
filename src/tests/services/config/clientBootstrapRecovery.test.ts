@@ -80,9 +80,9 @@ describe('prepareClientBootstrap', () => {
   it('stores the current version on first bootstrap visit', async () => {
     mockGetLocalStorageItem.mockReturnValue(null);
 
-    const shouldContinue = await prepareClientBootstrap();
+    const result = await prepareClientBootstrap();
 
-    expect(shouldContinue).toBe(true);
+    expect(result).toEqual({ status: 'continue', reason: null });
     expect(mockSetLocalStorageItem).toHaveBeenCalledWith('hhr_app_version', 'deploy-002');
     expect(mockReload).not.toHaveBeenCalled();
   });
@@ -97,9 +97,9 @@ describe('prepareClientBootstrap', () => {
     const { firebaseConfigCacheKey, bootstrapRecoveryKey } = getClientBootstrapRecoveryConstants();
     localStorage.setItem(firebaseConfigCacheKey, JSON.stringify({ apiKey: 'stale' }));
 
-    const shouldContinue = await prepareClientBootstrap();
+    const result = await prepareClientBootstrap();
 
-    expect(shouldContinue).toBe(false);
+    expect(result).toEqual({ status: 'reload', reason: 'legacy-sw' });
     expect(legacyRegistration.unregister).toHaveBeenCalledTimes(2);
     expect(localStorage.getItem(firebaseConfigCacheKey)).toBeNull();
     expect(sessionStorage.getItem(bootstrapRecoveryKey)).toBe('legacy-sw');
@@ -112,9 +112,9 @@ describe('prepareClientBootstrap', () => {
     const { firebaseConfigCacheKey, bootstrapRecoveryKey } = getClientBootstrapRecoveryConstants();
     localStorage.setItem(firebaseConfigCacheKey, JSON.stringify({ apiKey: 'stale' }));
 
-    const shouldContinue = await prepareClientBootstrap();
+    const result = await prepareClientBootstrap();
 
-    expect(shouldContinue).toBe(false);
+    expect(result).toEqual({ status: 'reload', reason: 'version-change' });
     expect(mockSetLocalStorageItem).toHaveBeenCalledWith('hhr_app_version', 'deploy-002');
     expect(localStorage.getItem(firebaseConfigCacheKey)).toBeNull();
     expect(sessionStorage.getItem(bootstrapRecoveryKey)).toBe('version-change');
