@@ -20,9 +20,9 @@ const BaseSummaryCard: React.FC<{
   icon: React.ReactNode;
   children: React.ReactNode;
 }> = ({ title, icon, children }) => (
-  <div className="card px-3 py-2 flex flex-col justify-between gap-2 hover:border-slate-300 transition-colors min-w-[140px] min-h-[88px] animate-fade-in">
+  <div className="rounded-xl border border-slate-200/80 bg-white px-3 py-2 flex flex-col justify-between gap-2 hover:border-slate-300 hover:shadow-sm transition-all min-w-[140px] min-h-[88px] animate-fade-in">
     <div className="flex justify-between items-center pb-1 border-b border-slate-100">
-      <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1">
+      <label className="text-[9px] font-semibold text-slate-400 uppercase tracking-[0.08em] flex items-center gap-1">
         {icon} {title}
       </label>
     </div>
@@ -150,12 +150,12 @@ export const CombinedSummaryCard: React.FC<SummaryCardProps> = ({
   const movementSummary = buildMovementSummaryModel(discharges, transfers, cmaCount, newAdmissions);
 
   return (
-    <div className="card px-2 py-1.5 flex flex-row gap-0 hover:border-slate-300 transition-colors animate-fade-in">
+    <div className="rounded-xl border border-slate-200/80 bg-white px-3 py-2 flex flex-row gap-0 hover:border-slate-300 hover:shadow-sm transition-all animate-fade-in">
       {/* Section 1: Censo Camas */}
       <div className="pr-3 flex flex-col gap-0.5">
         <div className="flex items-center gap-1 pb-0.5 border-b border-slate-100">
           <Bed size={11} className="text-medical-500" />
-          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+          <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-[0.08em]">
             Censo Camas
           </span>
         </div>
@@ -184,13 +184,13 @@ export const CombinedSummaryCard: React.FC<SummaryCardProps> = ({
       </div>
 
       {/* Vertical Separator */}
-      <div className="w-px bg-slate-200 mx-1 self-stretch" />
+      <div className="w-px bg-slate-200/60 mx-2 self-stretch" />
 
       {/* Section 2: Recursos Cuna */}
       <div className="px-3 flex flex-col gap-0.5">
         <div className="flex items-center gap-1 pb-0.5 border-b border-slate-100">
           <Baby size={11} className="text-medical-500" />
-          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+          <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-[0.08em]">
             Recursos Cuna
           </span>
         </div>
@@ -215,13 +215,13 @@ export const CombinedSummaryCard: React.FC<SummaryCardProps> = ({
       </div>
 
       {/* Vertical Separator */}
-      <div className="w-px bg-slate-200 mx-1 self-stretch" />
+      <div className="w-px bg-slate-200/60 mx-2 self-stretch" />
 
       {/* Section 3: Movimientos */}
       <div className="pl-3 flex flex-col gap-0.5">
         <div className="flex items-center gap-1 pb-0.5 border-b border-slate-100">
           <Activity size={11} className="text-medical-500" />
-          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+          <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-[0.08em]">
             Movimientos
           </span>
         </div>

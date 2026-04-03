@@ -19,12 +19,12 @@ export const CensusTableHeader: React.FC<CensusTableHeaderProps> = ({
   onResizeColumn,
 }) => {
   const headerClassName =
-    'sticky top-0 z-20 bg-slate-50 py-1 px-1 border-r border-slate-100 text-center text-slate-500 text-[10px] uppercase tracking-wider font-bold shadow-sm';
+    'sticky top-0 z-20 bg-gradient-to-b from-slate-50 to-slate-100/80 py-1.5 px-1.5 border-r border-slate-200/60 text-center text-slate-400 text-[9px] uppercase tracking-[0.08em] font-semibold';
   const headerCells = buildCensusHeaderCellModels(undefined, accessProfile);
 
   return (
-    <thead className="sticky top-0 z-30 bg-white">
-      <tr className="border-b border-slate-200 print:static">
+    <thead className="sticky top-0 z-30">
+      <tr className="border-b border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.03)] print:static">
         <CensusActionHeaderCell
           width={columns.actions}
           isEditMode={isEditMode}

@@ -103,6 +103,27 @@ describe('useAppBootstrapState', () => {
     });
   });
 
+  it('keeps the app in loading while an authenticated session is still rehydrating', async () => {
+    mockUseAuth.mockReturnValue(
+      createAuthState({
+        sessionState: { status: 'authenticating', user: null },
+        isLoading: false,
+        isAuthenticated: false,
+        isFirebaseConnected: false,
+      })
+    );
+
+    const { result } = renderHook(() => useAppBootstrapState());
+
+    expect(result.current.status).toBe('loading');
+    await waitFor(() => {
+      expect(mockSetFirestoreSyncState).toHaveBeenCalledWith({
+        mode: 'bootstrapping',
+        reason: 'auth_loading',
+      });
+    });
+  });
+
   it('prioritizes signature mode over loading and auth gating', () => {
     mockUseAuth.mockReturnValue(
       createAuthState({
@@ -168,6 +189,35 @@ describe('useAppBootstrapState', () => {
     expect(mockSetFirestoreSyncState).toHaveBeenCalledWith({
       mode: 'enabled',
       reason: 'ready',
+    });
+  });
+
+  it('keeps Firestore in bootstrapping while an authenticated session reconnects Firebase', () => {
+    const currentUser = {
+      uid: 'user-1',
+      email: 'admin@hospital.cl',
+      role: 'admin',
+    };
+    mockUseAuth.mockReturnValue(
+      createAuthState({
+        sessionState: { status: 'authorized', user: currentUser },
+        currentUser,
+        authorizedUser: currentUser,
+        user: currentUser,
+        role: 'admin',
+        isAuthenticated: true,
+        isAuthorizedSession: true,
+        isEditor: true,
+        isViewer: false,
+        isFirebaseConnected: false,
+      })
+    );
+
+    renderHook(() => useAppBootstrapState());
+
+    expect(mockSetFirestoreSyncState).toHaveBeenCalledWith({
+      mode: 'bootstrapping',
+      reason: 'auth_connecting',
     });
   });
 });

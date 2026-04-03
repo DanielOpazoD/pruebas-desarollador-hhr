@@ -7,7 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../config/queryClient';
 import type { DailyRecord, DailyRecordPatch } from '@/hooks/contracts/dailyRecordHookContracts';
 import { useRepositories } from '@/services/RepositoryContext';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   applyOptimisticDailyRecordPatch,
   createDailyRecordQueryFn,
@@ -66,31 +66,67 @@ export const useDailyRecordQuery = (
 ) => {
   const queryClient = useQueryClient();
   const { dailyRecord } = useRepositories();
+  const shouldSyncFromRemote = shouldUseDailyRecordRealtimeSync(
+    date,
+    isOfflineMode,
+    isFirebaseConnected
+  );
+  const remoteHydrationAttemptRef = useRef<string | null>(null);
 
   const queryKey = getDailyRecordQueryKey(date);
   const query = useQuery<DailyRecordQueryResult>({
     queryKey,
-    queryFn: createDailyRecordQueryFn(dailyRecord, date),
+    queryFn: createDailyRecordQueryFn(dailyRecord, date, shouldSyncFromRemote),
     enabled: !!date,
   });
 
+  useEffect(() => {
+    if (!shouldSyncFromRemote) {
+      remoteHydrationAttemptRef.current = null;
+      return;
+    }
+
+    const runtime = query.data?.runtime;
+    const remoteAlreadyResolved =
+      runtime?.sourceOfTruth === 'remote' ||
+      (runtime?.sourceOfTruth === 'none' && runtime?.availabilityState === 'confirmed_missing');
+
+    if (remoteAlreadyResolved) {
+      remoteHydrationAttemptRef.current = date;
+      return;
+    }
+
+    if (remoteHydrationAttemptRef.current === date) {
+      return;
+    }
+
+    remoteHydrationAttemptRef.current = date;
+    void query.refetch();
+  }, [
+    date,
+    query,
+    query.data?.runtime.availabilityState,
+    query.data?.runtime.sourceOfTruth,
+    shouldSyncFromRemote,
+  ]);
+
   // Subscribe to real-time updates
   useEffect(() => {
-    if (!shouldUseDailyRecordRealtimeSync(date, isOfflineMode, isFirebaseConnected)) return;
+    if (!shouldSyncFromRemote) return;
 
     const unsubscribe = createDailyRecordSubscription(dailyRecord, date, queryClient);
     if (!unsubscribe) return;
 
     return () => unsubscribe();
-  }, [date, queryClient, isOfflineMode, isFirebaseConnected, dailyRecord]);
+  }, [date, queryClient, dailyRecord, shouldSyncFromRemote]);
 
   // Prefetch previous day for faster "copy from previous" functionality
   useEffect(() => {
-    if (!shouldUseDailyRecordRealtimeSync(date, isOfflineMode, isFirebaseConnected)) return;
+    if (!shouldSyncFromRemote) return;
     if (import.meta.env.DEV) return;
 
     prefetchPreviousDailyRecord(queryClient, dailyRecord, date);
-  }, [date, queryClient, dailyRecord, isOfflineMode, isFirebaseConnected]);
+  }, [date, queryClient, dailyRecord, shouldSyncFromRemote]);
 
   return {
     ...query,

@@ -13,15 +13,17 @@ interface MedicalBadgeProps {
 }
 
 const variants: Record<MedicalBadgeVariant, string> = {
-  red: 'bg-red-50 text-red-700 border-red-200 print:text-red-800 print:bg-transparent',
+  red: 'bg-red-50 text-red-700 border-red-200/80 shadow-sm shadow-red-100/50 print:text-red-800 print:bg-transparent',
   orange:
-    'bg-orange-50 text-orange-700 border-orange-200 print:text-orange-800 print:bg-transparent',
-  green: 'bg-green-50 text-green-700 border-green-200 print:text-green-800 print:bg-transparent',
-  blue: 'bg-blue-50 text-blue-700 border-blue-200 print:text-blue-800 print:bg-transparent',
-  slate: 'bg-slate-50 text-slate-600 border-slate-200 print:text-slate-700 print:bg-transparent',
-  pink: 'bg-pink-50 text-pink-700 border-pink-200 print:text-pink-800 print:bg-transparent',
+    'bg-orange-50 text-orange-700 border-orange-200/80 shadow-sm shadow-orange-100/50 print:text-orange-800 print:bg-transparent',
+  green:
+    'bg-green-50 text-green-700 border-green-200/80 shadow-sm shadow-green-100/50 print:text-green-800 print:bg-transparent',
+  blue: 'bg-blue-50 text-blue-700 border-blue-200/80 shadow-sm shadow-blue-100/50 print:text-blue-800 print:bg-transparent',
+  slate:
+    'bg-slate-50 text-slate-600 border-slate-200/80 shadow-sm shadow-slate-100/50 print:text-slate-700 print:bg-transparent',
+  pink: 'bg-pink-50 text-pink-700 border-pink-200/80 shadow-sm shadow-pink-100/50 print:text-pink-800 print:bg-transparent',
   purple:
-    'bg-purple-50 text-purple-600 border-purple-200 print:text-purple-700 print:bg-transparent',
+    'bg-purple-50 text-purple-600 border-purple-200/80 shadow-sm shadow-purple-100/50 print:text-purple-700 print:bg-transparent',
 };
 
 const outlineVariants: Record<MedicalBadgeVariant, string> = {

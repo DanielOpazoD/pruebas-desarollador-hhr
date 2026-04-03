@@ -7,6 +7,14 @@ import { useCensusMigrationBootstrap } from '@/features/census/hooks/useCensusMi
 import { BedType } from '@/types/domain/beds';
 import type { BedDefinition } from '@/types/domain/beds';
 
+const { mockUseAuth } = vi.hoisted(() => ({
+  mockUseAuth: vi.fn(),
+}));
+
+vi.mock('@/context', () => ({
+  useAuth: () => mockUseAuth(),
+}));
+
 vi.mock('@/features/census/hooks/useCensusViewModel', () => ({
   useCensusViewModel: vi.fn(),
 }));
@@ -100,6 +108,12 @@ describe('CensusView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useRealTimers();
+    mockUseAuth.mockReturnValue({
+      sessionState: { status: 'authorized', user: { uid: 'user-1' } },
+      isLoading: false,
+      isAuthenticated: true,
+      isFirebaseConnected: true,
+    });
     vi.mocked(useCensusViewModel).mockReturnValue(buildViewModel());
   });
 
@@ -141,6 +155,26 @@ describe('CensusView', () => {
 
     expect(await screen.findByTestId('empty-day-prompt')).toBeInTheDocument();
     expect(screen.queryByTestId('view-loader')).not.toBeInTheDocument();
+  });
+
+  it('keeps showing the loader while remote sync is still bootstrapping for an authenticated session', async () => {
+    vi.useFakeTimers();
+    mockUseAuth.mockReturnValue({
+      sessionState: { status: 'authorized', user: { uid: 'user-1' } },
+      isLoading: false,
+      isAuthenticated: true,
+      isFirebaseConnected: false,
+    });
+    vi.mocked(useCensusViewModel).mockReturnValue(buildViewModel({ beds: null }));
+
+    render(<CensusView {...defaultProps} currentDateString="2025-01-02" />);
+
+    expect(screen.getByTestId('view-loader')).toBeInTheDocument();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+    expect(screen.queryByTestId('empty-day-prompt')).not.toBeInTheDocument();
+    vi.useRealTimers();
   });
 
   it('renders main census sections when record is present', async () => {

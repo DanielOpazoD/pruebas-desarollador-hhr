@@ -6,7 +6,12 @@
 
 export type FirestoreSyncMode = 'enabled' | 'bootstrapping' | 'local_only';
 
-export type FirestoreSyncReason = 'ready' | 'auth_loading' | 'auth_unavailable' | 'manual_override';
+export type FirestoreSyncReason =
+  | 'ready'
+  | 'auth_loading'
+  | 'auth_connecting'
+  | 'auth_unavailable'
+  | 'manual_override';
 
 export interface FirestoreSyncState {
   mode: FirestoreSyncMode;

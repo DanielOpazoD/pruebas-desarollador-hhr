@@ -94,8 +94,9 @@ const createRuntimeFromSyncResult = (
 });
 
 export const createDailyRecordQueryFn =
-  (dailyRecord: DailyRecordReader, date: string) => async (): Promise<DailyRecordQueryResult> => {
-    const query = createGetDailyRecordQuery(date);
+  (dailyRecord: DailyRecordReader, date: string, syncFromRemote: boolean = true) =>
+  async (): Promise<DailyRecordQueryResult> => {
+    const query = createGetDailyRecordQuery(date, syncFromRemote);
     if (typeof dailyRecord.getForDateWithMeta === 'function') {
       const result = await dailyRecord.getForDateWithMeta(query.date, query.syncFromRemote);
       return createDailyRecordQueryResult(result.record, createRuntimeFromReadResult(result));

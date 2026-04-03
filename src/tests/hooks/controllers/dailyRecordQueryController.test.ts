@@ -50,6 +50,38 @@ describe('dailyRecordQueryController', () => {
     expect(getDailyRecordQueryKey('2025-01-08')).toEqual(['dailyRecord', '2025-01-08']);
   });
 
+  it('builds query functions without forcing remote sync before the runtime is ready', async () => {
+    const record = DataFactory.createMockDailyRecord('2025-01-08');
+    const repository = {
+      getForDate: vi.fn(),
+      getForDateWithMeta: vi.fn().mockResolvedValue({
+        date: '2025-01-08',
+        record,
+        source: 'indexeddb',
+        compatibilityTier: 'none',
+        compatibilityIntensity: 'none',
+        migrationRulesApplied: [],
+        consistencyState: 'local_only',
+        sourceOfTruth: 'local',
+        retryability: 'not_applicable',
+        recoveryAction: 'none',
+        conflictSummary: null,
+        observabilityTags: ['daily_record', 'read'],
+        repairApplied: false,
+      }),
+    };
+
+    await expect(
+      createDailyRecordQueryFn(repository, '2025-01-08', false)()
+    ).resolves.toMatchObject({
+      record,
+      runtime: {
+        sourceOfTruth: 'local',
+      },
+    });
+    expect(repository.getForDateWithMeta).toHaveBeenCalledWith('2025-01-08', false);
+  });
+
   it('applies optimistic patches and stamps lastUpdated', () => {
     const previous = DataFactory.createMockDailyRecord('2025-01-08');
     const updated = applyOptimisticDailyRecordPatch(previous, {

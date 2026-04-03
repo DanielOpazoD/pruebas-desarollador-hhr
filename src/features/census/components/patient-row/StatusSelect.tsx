@@ -31,17 +31,17 @@ export const StatusSelect: React.FC<StatusSelectProps> = ({
       <div className="relative">
         <select
           className={clsx(
-            'w-full p-0.5 h-7 border rounded transition-all duration-200 focus:ring-2 focus:outline-none text-xs font-bold uppercase tracking-tighter cursor-pointer',
+            'w-full p-0.5 h-7 border rounded-md shadow-sm transition-all duration-200 focus:ring-2 focus:outline-none text-[10px] font-bold uppercase tracking-tight cursor-pointer',
             // Critical field warning when empty but has patient
             isCriticalEmpty &&
               'border-red-400 border-2 bg-red-50 focus:ring-red-200 focus:border-red-500',
             // Normal status colors
             data.status === 'Grave'
-              ? 'text-red-600 bg-red-50/50 border-slate-200 focus:ring-medical-500/20 focus:border-medical-500'
+              ? 'text-red-700 bg-red-50 border-red-200/80 font-bold focus:ring-medical-500/20 focus:border-medical-500'
               : data.status === 'De cuidado'
-                ? 'text-orange-600 bg-orange-50/50 border-slate-200 focus:ring-medical-500/20 focus:border-medical-500'
+                ? 'text-amber-700 bg-amber-50 border-amber-200/80 font-bold focus:ring-medical-500/20 focus:border-medical-500'
                 : data.status
-                  ? 'text-emerald-700 bg-emerald-50/30 border-slate-200 focus:ring-medical-500/20 focus:border-medical-500'
+                  ? 'text-emerald-700 bg-emerald-50/60 border-emerald-200/80 font-semibold focus:ring-medical-500/20 focus:border-medical-500'
                   : 'border-slate-200 focus:ring-medical-500/20 focus:border-medical-500',
             isSubRow && 'h-6'
           )}

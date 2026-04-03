@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/context';
 import { getTodayISO } from '@/utils/dateUtils';
 import { useCensusMigrationBootstrap } from './useCensusMigrationBootstrap';
 import { useCensusViewRouteModel } from './useCensusViewRouteModel';
@@ -31,6 +32,7 @@ export const useCensusViewScreenModel = ({
   localViewMode,
   accessProfile,
 }: UseCensusViewScreenModelParams) => {
+  const auth = useAuth();
   const routeModel = useCensusViewRouteModel({
     viewMode,
     selectedDay,
@@ -44,8 +46,14 @@ export const useCensusViewScreenModel = ({
     accessProfile,
   });
   const [resolvedTodayEmptyDate, setResolvedTodayEmptyDate] = useState('');
+  const shouldDeferRemoteBootstrapEmptyState =
+    routeModel.branch === 'empty' &&
+    auth.isAuthenticated &&
+    (auth.isLoading || auth.sessionState.status === 'authenticating' || !auth.isFirebaseConnected);
   const shouldDeferTodayEmptyState =
-    routeModel.branch === 'empty' && currentDateString === getTodayISO();
+    routeModel.branch === 'empty' &&
+    (currentDateString === getTodayISO() || shouldDeferRemoteBootstrapEmptyState);
+  const emptyStateDeferMs = shouldDeferRemoteBootstrapEmptyState ? 12_000 : 1_200;
 
   useCensusMigrationBootstrap(routeModel.branch !== 'analytics');
 
@@ -56,10 +64,10 @@ export const useCensusViewScreenModel = ({
 
     const timeoutId = window.setTimeout(() => {
       setResolvedTodayEmptyDate(currentDateString);
-    }, 1200);
+    }, emptyStateDeferMs);
 
     return () => window.clearTimeout(timeoutId);
-  }, [shouldDeferTodayEmptyState, currentDateString]);
+  }, [currentDateString, emptyStateDeferMs, shouldDeferTodayEmptyState]);
 
   return {
     ...routeModel,

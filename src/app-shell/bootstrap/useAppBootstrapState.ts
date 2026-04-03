@@ -41,10 +41,17 @@ const isIgnorableWorkerShutdownImportError = (error: unknown): boolean => {
 const appLogger = createScopedLogger('App');
 
 const resolveFirestoreSyncState = (auth: AuthContextType): FirestoreSyncState => {
-  if (auth.isLoading) {
+  if (auth.isLoading || auth.sessionState.status === 'authenticating') {
     return {
       mode: 'bootstrapping',
       reason: 'auth_loading',
+    };
+  }
+
+  if (auth.isAuthenticated && !auth.isFirebaseConnected) {
+    return {
+      mode: 'bootstrapping',
+      reason: 'auth_connecting',
     };
   }
 
@@ -71,13 +78,14 @@ const useSyncFirestoreStatus = (auth: AuthContextType) => {
       }
       appLogger.error('Failed to sync Firestore status', error);
     }
-  }, [auth.isFirebaseConnected, auth.isLoading]);
+  }, [auth.isAuthenticated, auth.isFirebaseConnected, auth.isLoading, auth.sessionState.status]);
 };
 
 export const useAppBootstrapState = (): AppBootstrapState => {
   const auth = useAuth();
+  const isAuthBootstrapPending = auth.isLoading || auth.sessionState.status === 'authenticating';
 
-  useStorageMigration({ enabled: !auth.isLoading && auth.isAuthenticated });
+  useStorageMigration({ enabled: !isAuthBootstrapPending && auth.isAuthenticated });
   useVersionCheck();
   useSyncFirestoreStatus(auth);
 
@@ -85,7 +93,7 @@ export const useAppBootstrapState = (): AppBootstrapState => {
   const { isSignatureMode, currentDateString } = useSignatureMode(
     dateNav.currentDateString,
     auth.currentUser,
-    auth.isLoading
+    isAuthBootstrapPending
   );
 
   return React.useMemo<AppBootstrapState>(() => {
@@ -96,7 +104,7 @@ export const useAppBootstrapState = (): AppBootstrapState => {
       };
     }
 
-    if (auth.isLoading) {
+    if (isAuthBootstrapPending) {
       return {
         status: 'loading',
         auth,
@@ -119,5 +127,5 @@ export const useAppBootstrapState = (): AppBootstrapState => {
         currentDateString,
       },
     };
-  }, [auth, currentDateString, dateNav, isSignatureMode]);
+  }, [auth, currentDateString, dateNav, isAuthBootstrapPending, isSignatureMode]);
 };
