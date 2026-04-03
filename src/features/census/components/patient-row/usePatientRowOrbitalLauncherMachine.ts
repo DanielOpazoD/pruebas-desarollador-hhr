@@ -1,3 +1,24 @@
+/**
+ * usePatientRowOrbitalLauncherMachine.ts
+ *
+ * A minimal state-machine hook that governs the four visual phases of the
+ * orbital quick-action launcher:
+ *
+ *   idle  -->  armed  -->  open  -->  closing  -->  idle
+ *
+ * Phase semantics:
+ *   - **idle**: trigger is hidden; the launcher is dormant.
+ *   - **armed**: the user's pointer entered the patient row (or touch
+ *     interaction began). The trigger fades in and is clickable.
+ *   - **open**: the user clicked the trigger; the action stack is visible.
+ *   - **closing**: the pointer left and no grace period saved it.
+ *     A brief visual fade plays before resetting to idle.
+ *
+ * Timing constants (`REVEAL_DELAY_MS`, `CLOSE_RESET_DELAY_MS`) control
+ * how quickly transitions happen. They are exported so integration tests
+ * can reference the same values instead of hard-coding magic numbers.
+ */
+
 import React from 'react';
 
 export type PatientRowOrbitalLauncherPhase = 'idle' | 'armed' | 'open' | 'closing';
@@ -23,11 +44,30 @@ interface LauncherMachineState {
   phase: PatientRowOrbitalLauncherPhase;
 }
 
-/** Instant arm — no artificial delay so the trigger appears immediately on hover. */
-const REVEAL_DELAY_MS = 0;
-/** Short reset so closing feels snappy. */
-const CLOSE_RESET_DELAY_MS = 50;
+/**
+ * Delay before transitioning from idle to armed (ms).
+ *
+ * Set to 0 so the trigger appears instantly on hover -- the synchronous
+ * dispatch path avoids a needless `setTimeout(fn, 0)` round-trip that would
+ * cause a visible flicker on fast pointer movements.
+ */
+export const REVEAL_DELAY_MS = 0;
 
+/**
+ * Delay before the closing phase resets back to idle (ms).
+ * Kept short so the launcher feels snappy but still plays its exit animation.
+ */
+export const CLOSE_RESET_DELAY_MS = 50;
+
+/**
+ * Pure reducer for the launcher state machine.
+ *
+ * Transition rules:
+ * - `ARM`         -- moves to `armed` unless already `open` (open takes precedence).
+ * - `OPEN`        -- moves to `open` unconditionally.
+ * - `START_CLOSE` -- moves to `closing` unless already `idle` (no-op guard).
+ * - `RESET`       -- returns to `idle` unconditionally.
+ */
 const reducer = (
   state: LauncherMachineState,
   action: LauncherMachineAction
@@ -53,6 +93,23 @@ const reducer = (
   return { phase: 'idle' };
 };
 
+/**
+ * Drives the launcher phase in response to three external signals:
+ *
+ * - `canRevealTrigger` -- true when the runtime decides the trigger should
+ *   be visible (hover, focus, ownership, etc.).
+ * - `isOpen` -- true when the action stack is expanded.
+ * - `supportsHoverFine` -- false on touch devices; when false the trigger
+ *   is always shown and the phase skips directly to armed/open.
+ *
+ * Internally it manages two timers:
+ *   1. **Reveal timer** -- delays the idle-to-armed transition by
+ *      `REVEAL_DELAY_MS` (currently 0, so the dispatch is synchronous).
+ *   2. **Close timer** -- after entering `closing`, waits
+ *      `CLOSE_RESET_DELAY_MS` before dispatching `RESET`.
+ *
+ * Both timers are cleaned up on unmount.
+ */
 export const usePatientRowOrbitalLauncherMachine = ({
   canRevealTrigger,
   isOpen,
@@ -94,7 +151,9 @@ export const usePatientRowOrbitalLauncherMachine = ({
       if (phase === 'idle' || phase === 'closing') {
         clearRevealTimer();
         if (REVEAL_DELAY_MS <= 0) {
-          // Instant arm — no timer needed
+          // Synchronous dispatch: when the delay is 0 we skip setTimeout
+          // entirely to avoid a microtask gap that would cause a visible
+          // frame where the trigger is absent during fast hover sweeps.
           dispatch({ type: 'ARM' });
         } else {
           revealTimerRef.current = window.setTimeout(() => {

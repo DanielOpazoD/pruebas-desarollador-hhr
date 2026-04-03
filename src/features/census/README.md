@@ -42,15 +42,38 @@ hover/focus fila ocupada
   -> PatientRowOrbitalQuickActions
   -> usePatientRowOrbitalLauncherRuntime
   -> portal fuera de la tabla
-  -> 3 acciones rápidas: documentos / laboratorio / imágenes
+  -> 4 acciones rápidas: documentos / laboratorio / imágenes / indicaciones médicas
 ```
 
 - El launcher orbital vive visualmente fuera del borde izquierdo de la tabla, aunque se ancla a la fila del paciente.
-- Solo expone accesos rápidos clínicos: `Documentos clínicos`, `Solicitud Exámenes` y `Solicitud de Imágenes`.
-- El panel clásico conserva la gestión clínica histórica (`Dar de Alta`, `Trasladar`, `Egreso CMA`) y no debe duplicar estas tres aperturas rápidas.
+- Expone accesos rápidos clínicos: `Documentos clínicos`, `Solicitud Exámenes`, `Solicitud de Imágenes` e `Indicaciones Médicas` (manutara).
+- El panel clásico conserva la gestión clínica histórica (`Dar de Alta`, `Trasladar`, `Egreso CMA`) y no debe duplicar estas aperturas rápidas.
 - En desktop aparece por `hover` de la fila o del área externa del launcher; en touch permanece visible.
 - Solo un launcher puede permanecer activo a la vez para no perder foco visual al recorrer otras filas.
 - La iconografía cultural del launcher se define en `components/patient-row/patientRowOrbitalQuickActionAssets.ts`.
+
+#### Arquitectura de pointer-events
+
+El launcher usa un esquema de capas CSS que evita interceptar clics destinados a la tabla subyacente:
+
+- El **wrapper** del portal se renderiza con `pointer-events-none` para que los clics lo atraviesen hacia la tabla.
+- El **contenedor de acciones** y el **trigger** activan `pointer-events-auto` para capturar solo los clics sobre los botones del launcher.
+- Capas de z-index: backdrop `z-[60]`, wrapper `z-[70]`, acciones `z-[80]`.
+
+#### Fix de stale closures en grace timer
+
+El runtime del launcher usa refs para leer el estado actual dentro del grace timer, evitando closures obsoletos:
+
+- El grace timer que retrasa el cierre del launcher lee el estado desde refs (`useRef`) en lugar de capturar valores por closure.
+- Un listener de `visibilitychange` resetea el estado de hover cuando el tab pasa a background, evitando que el launcher quede abierto al volver.
+
+#### Constantes de timing
+
+| Constante              | Valor  | Propósito                                                        |
+| ---------------------- | ------ | ---------------------------------------------------------------- |
+| `REVEAL_DELAY_MS`      | 0 ms   | Apertura instantánea al hacer hover sobre la fila                |
+| `CLOSE_RESET_DELAY_MS` | 50 ms  | Delay mínimo antes de resetear el estado de cierre               |
+| `HOVER_EXIT_GRACE_MS`  | 120 ms | Gracia antes de cerrar al salir del hover (evita flicker casual) |
 
 ### Acción de fuga por correo
 

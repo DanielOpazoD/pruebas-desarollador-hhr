@@ -1,13 +1,65 @@
+/**
+ * usePatientRowOrbitalLauncherRuntime.ts
+ *
+ * Runtime coordination layer for the orbital quick-action launcher.
+ *
+ * Responsibilities:
+ *
+ * 1. **Position tracking** -- Reads the patient row's bounding rect and
+ *    computes a viewport-clamped `{ left, top }` for the fixed-position
+ *    portal. Re-syncs on scroll, resize, and ResizeObserver changes.
+ *
+ * 2. **Hover coordination** -- Tracks mouseenter/mouseleave on both the
+ *    patient row *and* the launcher portal. A short grace period
+ *    (`HOVER_EXIT_GRACE_MS`) bridges the gap when the pointer travels
+ *    from the row to the floating launcher, preventing flicker.
+ *
+ * 3. **Ownership model** -- Only one launcher can be "owned" (armed or
+ *    open) at a time across the entire census table. Ownership is
+ *    broadcast via two CustomEvents on `window`:
+ *      - `patient-row-orbital-launcher-open-change`  -- which row, if any,
+ *        has its action stack open.
+ *      - `patient-row-orbital-launcher-owner-change` -- which row, if any,
+ *        currently owns the hover/focus state.
+ *    Each launcher instance listens for both events and yields when
+ *    another row takes ownership.
+ *
+ * 4. **visibilitychange safety** -- When the browser tab goes to the
+ *    background, all hover state is flushed and ownership is released.
+ *    This prevents "ghost launchers" that would otherwise persist when
+ *    the user alt-tabs away while hovering a row.
+ *
+ * 5. **Media-query detection** -- Listens to `(hover: hover) and
+ *    (pointer: fine)` to distinguish mouse from touch. On touch devices
+ *    the trigger is always visible and hover logic is bypassed.
+ */
+
 import React from 'react';
 import {
   usePatientRowOrbitalLauncherMachine,
   type PatientRowOrbitalLauncherPhase,
 } from '@/features/census/components/patient-row/usePatientRowOrbitalLauncherMachine';
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
 const HOVER_FINE_MEDIA_QUERY = '(hover: hover) and (pointer: fine)';
 const LAUNCHER_OPEN_EVENT = 'patient-row-orbital-launcher-open-change';
 const LAUNCHER_OWNER_EVENT = 'patient-row-orbital-launcher-owner-change';
-const HOVER_EXIT_GRACE_MS = 120;
+
+/**
+ * Grace period (ms) after the pointer leaves the row or launcher before
+ * ownership is released. Gives the user time to cross the gap between the
+ * table row and the floating portal without losing the trigger.
+ *
+ * Exported so integration tests can reference the same value.
+ */
+export const HOVER_EXIT_GRACE_MS = 120;
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 interface LauncherPosition {
   left: number;
@@ -38,6 +90,10 @@ interface UsePatientRowOrbitalLauncherRuntimeResult {
   handleLauncherMouseLeave: () => void;
 }
 
+// ---------------------------------------------------------------------------
+// Event dispatchers
+// ---------------------------------------------------------------------------
+
 const dispatchLauncherOpenChange = (rowId: string | null): void => {
   if (typeof window === 'undefined') {
     return;
@@ -62,6 +118,10 @@ const dispatchLauncherOwnerChange = (rowId: string | null): void => {
   );
 };
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 const resolveSupportsHoverFine = (): boolean => {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
     return true;
@@ -80,6 +140,49 @@ const resolveRowElement = (anchor: HTMLElement | null): HTMLTableRowElement | nu
 
 const resolveRowId = (row: HTMLTableRowElement | null): string | null => row?.dataset.bedId ?? null;
 
+/**
+ * CSS selector that identifies the RUT cell inside a patient row.
+ * The Honu trigger only appears when the pointer is at or left of this cell.
+ */
+const RUT_CELL_SELECTOR = 'td.group\\/rut';
+
+/**
+ * Returns the right edge (viewport X) of the RUT cell in the given row.
+ * If the cell isn't found, falls back to the full row width (no restriction).
+ */
+const resolveActivationZoneRightEdge = (row: HTMLTableRowElement): number => {
+  const rutCell = row.querySelector(RUT_CELL_SELECTOR);
+  if (rutCell) {
+    return rutCell.getBoundingClientRect().right;
+  }
+  return row.getBoundingClientRect().right;
+};
+
+/**
+ * Returns true when the pointer X coordinate is inside the launcher
+ * activation zone — from the left edge of the viewport to the right
+ * edge of the RUT column.
+ */
+const isPointerInActivationZone = (pointerX: number, row: HTMLTableRowElement): boolean =>
+  pointerX <= resolveActivationZoneRightEdge(row);
+
+/**
+ * Computes the fixed-position `{ left, top }` for the launcher wrapper
+ * relative to the viewport.
+ *
+ * The wrapper is horizontally clamped with an 8 px gutter on each side so
+ * it never overflows the window. Vertically it is centered on the row's
+ * midpoint, offset by `triggerCenterY` so the trigger circle aligns with
+ * the row.
+ *
+ * @param row             The `<tr>` element the launcher belongs to.
+ * @param launcherOffset  Horizontal distance from the row's left edge to
+ *                        the wrapper's left edge.
+ * @param _wrapperWidth   Current wrapper width (used for right-edge clamping).
+ * @param _wrapperHeight  Current wrapper height (reserved for future vertical clamping).
+ * @param triggerCenterX  X offset of the trigger center inside the wrapper.
+ * @param triggerCenterY  Y offset of the trigger center inside the wrapper.
+ */
 const resolveLauncherPosition = (
   row: HTMLTableRowElement | null,
   launcherOffset: number,
@@ -102,6 +205,10 @@ const resolveLauncherPosition = (
   };
 };
 
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
+
 export const usePatientRowOrbitalLauncherRuntime = ({
   hasQuickActions,
   isOpen,
@@ -123,12 +230,13 @@ export const usePatientRowOrbitalLauncherRuntime = ({
   const ownerLauncherRowIdRef = React.useRef<string | null>(null);
   const hoverExitTimerRef = React.useRef<number | null>(null);
 
-  // Refs to avoid stale closures in timers
+  // Refs mirror the latest state values so timer callbacks avoid stale closures.
   const isOpenRef = React.useRef(isOpen);
   const isLauncherHoveredRef = React.useRef(isLauncherHovered);
   const isRowHoveredRef = React.useRef(isRowHovered);
   const rowIdRef = React.useRef(rowId);
 
+  // Keep refs in sync with their corresponding state values.
   React.useEffect(() => {
     isOpenRef.current = isOpen;
   }, [isOpen]);
@@ -141,6 +249,9 @@ export const usePatientRowOrbitalLauncherRuntime = ({
   React.useEffect(() => {
     rowIdRef.current = rowId;
   }, [rowId]);
+  React.useEffect(() => {
+    ownerLauncherRowIdRef.current = ownerLauncherRowId;
+  }, [ownerLauncherRowId]);
 
   const clearHoverExitTimer = React.useCallback(() => {
     if (hoverExitTimerRef.current !== null && typeof window !== 'undefined') {
@@ -149,6 +260,11 @@ export const usePatientRowOrbitalLauncherRuntime = ({
     }
   }, []);
 
+  /**
+   * Starts the hover-exit grace period. After `HOVER_EXIT_GRACE_MS` the
+   * timer checks whether the pointer truly left (via refs to avoid stale
+   * state) and releases ownership if so.
+   */
   const armHoverGrace = React.useCallback(() => {
     if (typeof window === 'undefined') {
       return;
@@ -158,7 +274,8 @@ export const usePatientRowOrbitalLauncherRuntime = ({
     setIsHoverGraceActive(true);
     hoverExitTimerRef.current = window.setTimeout(() => {
       setIsHoverGraceActive(false);
-      // Use refs to read current values, avoiding stale closures
+      // Read current values from refs -- the closure captures the ref
+      // objects (stable) not the state values (potentially stale).
       if (
         ownerLauncherRowIdRef.current === rowIdRef.current &&
         !isOpenRef.current &&
@@ -171,7 +288,7 @@ export const usePatientRowOrbitalLauncherRuntime = ({
     }, HOVER_EXIT_GRACE_MS);
   }, [clearHoverExitTimer]);
 
-  // Reset all hover state when tab goes to background (prevents ghost launchers)
+  // --- visibilitychange: flush hover state when the tab goes to background ---
   React.useEffect(() => {
     if (typeof document === 'undefined') {
       return;
@@ -195,6 +312,7 @@ export const usePatientRowOrbitalLauncherRuntime = ({
     };
   }, [clearHoverExitTimer]);
 
+  // --- Media-query listener: track hover+fine capability changes ---
   React.useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
       return;
@@ -212,6 +330,7 @@ export const usePatientRowOrbitalLauncherRuntime = ({
     };
   }, []);
 
+  // --- Row event listeners: hover, focus, position syncing ---
   React.useEffect(() => {
     const row = resolveRowElement(anchorRef.current);
     if (!row) {
@@ -234,14 +353,31 @@ export const usePatientRowOrbitalLauncherRuntime = ({
       );
     };
 
-    const handleRowMouseEnter = () => {
-      clearHoverExitTimer();
-      setIsHoverGraceActive(true);
-      setIsRowHovered(true);
-      if (resolvedRowId) {
-        dispatchLauncherOwnerChange(resolvedRowId);
+    /**
+     * Instead of simple mouseenter/mouseleave, we use mousemove to
+     * restrict the activation zone to the left side of the row (up to
+     * and including the RUT column). Moving the pointer right of the
+     * RUT cell is treated as leaving the activation zone.
+     */
+    const handleRowMouseMove = (event: MouseEvent) => {
+      const inZone = isPointerInActivationZone(event.clientX, row);
+
+      if (inZone) {
+        if (!isRowHoveredRef.current) {
+          clearHoverExitTimer();
+          setIsHoverGraceActive(true);
+          setIsRowHovered(true);
+          if (resolvedRowId) {
+            dispatchLauncherOwnerChange(resolvedRowId);
+          }
+          syncPosition();
+        }
+      } else {
+        if (isRowHoveredRef.current) {
+          setIsRowHovered(false);
+          armHoverGrace();
+        }
       }
-      syncPosition();
     };
 
     const handleRowMouseLeave = () => {
@@ -269,7 +405,7 @@ export const usePatientRowOrbitalLauncherRuntime = ({
 
     syncPosition();
 
-    row.addEventListener('mouseenter', handleRowMouseEnter);
+    row.addEventListener('mousemove', handleRowMouseMove);
     row.addEventListener('mouseleave', handleRowMouseLeave);
     row.addEventListener('focusin', handleFocusIn);
     row.addEventListener('focusout', handleFocusOut);
@@ -283,7 +419,7 @@ export const usePatientRowOrbitalLauncherRuntime = ({
     }
 
     return () => {
-      row.removeEventListener('mouseenter', handleRowMouseEnter);
+      row.removeEventListener('mousemove', handleRowMouseMove);
       row.removeEventListener('mouseleave', handleRowMouseLeave);
       row.removeEventListener('focusin', handleFocusIn);
       row.removeEventListener('focusout', handleFocusOut);
@@ -302,6 +438,7 @@ export const usePatientRowOrbitalLauncherRuntime = ({
     wrapperWidth,
   ]);
 
+  // --- Global ownership event listeners ---
   React.useEffect(() => {
     if (typeof window === 'undefined') {
       return;
@@ -324,10 +461,7 @@ export const usePatientRowOrbitalLauncherRuntime = ({
     };
   }, []);
 
-  React.useEffect(() => {
-    ownerLauncherRowIdRef.current = ownerLauncherRowId;
-  }, [ownerLauncherRowId]);
-
+  // --- Broadcast open state changes ---
   React.useEffect(() => {
     if (!rowId || !isOpen) {
       return;
@@ -339,6 +473,20 @@ export const usePatientRowOrbitalLauncherRuntime = ({
     };
   }, [isOpen, rowId]);
 
+  // ---------------------------------------------------------------------------
+  // canRevealTrigger -- the compound predicate that gates trigger visibility.
+  //
+  // The trigger is revealed when ALL of the following hold:
+  //   1. The row has quick actions to show (`hasQuickActions`).
+  //   2. No *other* row's launcher is currently open (`!isAnotherLauncherActive`).
+  //   3. At least one of:
+  //      a. The device does not support hover+fine (touch -- always show).
+  //      b. The action stack is open.
+  //      c. The pointer is over the launcher portal itself.
+  //      d. This row currently owns the launcher.
+  //      e. The row is hovered (or grace is active) AND no other row owns
+  //         the launcher.
+  // ---------------------------------------------------------------------------
   const isAnotherLauncherActive = activeLauncherRowId !== null && activeLauncherRowId !== rowId;
   const isOwnedByCurrentRow = rowId !== null && ownerLauncherRowId === rowId;
   const canRevealTrigger =
@@ -350,6 +498,7 @@ export const usePatientRowOrbitalLauncherRuntime = ({
       isOwnedByCurrentRow ||
       ((isRowHovered || isHoverGraceActive) &&
         (ownerLauncherRowId === null || ownerLauncherRowId === rowId)));
+
   const { phase, showTrigger } = usePatientRowOrbitalLauncherMachine({
     canRevealTrigger,
     isOpen,
