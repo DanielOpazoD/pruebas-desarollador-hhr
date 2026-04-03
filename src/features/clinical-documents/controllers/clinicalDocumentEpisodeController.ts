@@ -3,6 +3,7 @@ import type { PatientData } from '@/features/clinical-documents/contracts/clinic
 import {
   buildClinicalEpisodeKey as buildClinicalEpisodeKeyFromApplication,
   resolveClinicalEpisode,
+  resolveClinicalEpisodeAdmissionDate,
 } from '@/application/patient-flow/clinicalEpisode';
 import { calculateAge } from '@/utils/clinicalUtils';
 
@@ -35,7 +36,7 @@ export const buildClinicalDocumentPatientFieldValues = (
   rut: patient.rut || '',
   edad: patient.age || calculateAge(patient.birthDate),
   fecnac: patient.birthDate || '',
-  fing: patient.admissionDate || '',
+  fing: resolveClinicalEpisodeAdmissionDate(patient) || '',
   finf: getCurrentDateValue(),
   hinf: getCurrentTimeValue(),
 });

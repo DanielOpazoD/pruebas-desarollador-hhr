@@ -27,6 +27,14 @@ export interface PatientMovementClassification {
 export const buildClinicalEpisodeKey = (patientRut: string, admissionDate?: string): string =>
   `${patientRut || 'sin-rut'}__${admissionDate || 'sin-ingreso'}`;
 
+/**
+ * Clinical documents and episode snapshots should anchor to the first observed
+ * day of the current episode when the census already resolved it.
+ */
+export const resolveClinicalEpisodeAdmissionDate = (
+  patient: PatientEpisodeContract
+): string | undefined => patient.firstSeenDate || patient.admissionDate;
+
 export const resolveClinicalEpisode = (
   patient: PatientEpisodeContract,
   context?: {
@@ -36,11 +44,14 @@ export const resolveClinicalEpisode = (
 ): ClinicalEpisode => ({
   patientRut: patient.rut || '',
   patientName: patient.patientName || '',
-  admissionDate: patient.admissionDate,
+  admissionDate: resolveClinicalEpisodeAdmissionDate(patient),
   sourceDailyRecordDate: context?.sourceDailyRecordDate,
   sourceBedId: context?.sourceBedId,
   specialty: patient.specialty,
-  episodeKey: buildClinicalEpisodeKey(patient.rut || '', patient.admissionDate),
+  episodeKey: buildClinicalEpisodeKey(
+    patient.rut || '',
+    resolveClinicalEpisodeAdmissionDate(patient)
+  ),
 });
 
 export const buildPatientPresenceSnapshot = (
@@ -48,7 +59,7 @@ export const buildPatientPresenceSnapshot = (
   bedId: string
 ): PatientPresenceSnapshot | null => {
   const patientRut = patient.rut?.trim();
-  const admissionDate = patient.admissionDate?.trim();
+  const admissionDate = resolveClinicalEpisodeAdmissionDate(patient)?.trim();
   if (!patientRut || !admissionDate) {
     return null;
   }

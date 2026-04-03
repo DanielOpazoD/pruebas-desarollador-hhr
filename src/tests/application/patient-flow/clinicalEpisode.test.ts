@@ -4,6 +4,7 @@ import {
   buildPatientPresenceSnapshot,
   classifyPatientMovementForRecord,
   resolveClinicalEpisode,
+  resolveClinicalEpisodeAdmissionDate,
 } from '@/application/patient-flow/clinicalEpisode';
 
 describe('clinicalEpisode application model', () => {
@@ -16,6 +17,7 @@ describe('clinicalEpisode application model', () => {
       patientName: 'Paciente',
       rut: '11.111.111-1',
       admissionDate: '2026-03-05',
+      firstSeenDate: '2026-03-04',
       specialty: 'medicina',
     };
 
@@ -27,9 +29,10 @@ describe('clinicalEpisode application model', () => {
     ).toMatchObject({
       patientRut: '11.111.111-1',
       patientName: 'Paciente',
+      admissionDate: '2026-03-04',
       sourceDailyRecordDate: '2026-03-06',
       sourceBedId: 'R1',
-      episodeKey: '11.111.111-1__2026-03-05',
+      episodeKey: '11.111.111-1__2026-03-04',
     });
   });
 
@@ -38,15 +41,27 @@ describe('clinicalEpisode application model', () => {
       rut: '11.111.111-1',
       patientName: 'Paciente',
       admissionDate: '2026-03-06',
+      firstSeenDate: '2026-03-05',
       admissionTime: '02:00',
     };
 
     expect(buildPatientPresenceSnapshot(patient, 'R1')).toMatchObject({
       bedId: 'R1',
-      episodeKey: '11.111.111-1__2026-03-06',
+      episodeKey: '11.111.111-1__2026-03-05',
     });
     expect(classifyPatientMovementForRecord('2026-03-05', patient).isNewAdmission).toBe(true);
     expect(classifyPatientMovementForRecord('2026-03-06', patient).isNewAdmission).toBe(false);
+  });
+
+  it('prefers the first observed census day for active episode anchors', () => {
+    expect(
+      resolveClinicalEpisodeAdmissionDate({
+        rut: '33.333.333-3',
+        patientName: 'Paciente',
+        admissionDate: '2026-03-09',
+        firstSeenDate: '2026-03-07',
+      })
+    ).toBe('2026-03-07');
   });
 
   it('accepts the minimal episode contract without full patient shape', () => {
