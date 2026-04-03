@@ -6,7 +6,7 @@ import type {
   MedicalHandoffEntry as RootMedicalHandoffEntry,
   PatientData as RootPatientData,
 } from '@/types/domain/patient';
-import type { PatientStatus, Specialty } from '@/types/domain/patientClassification';
+import type { PatientStatus } from '@/types/domain/patientClassification';
 
 export type MedicalHandoffAuditActor = RootMedicalHandoffAuditActor;
 export type MedicalHandoffAudit = RootMedicalHandoffAudit;
@@ -25,8 +25,8 @@ export interface HandoffPatientContract {
   age: string;
   birthDate?: string;
   pathology: string;
-  specialty: Specialty | string;
-  secondarySpecialty?: Specialty | string;
+  specialty: RootPatientData['specialty'];
+  secondarySpecialty?: RootPatientData['secondarySpecialty'];
   status: PatientStatus;
   admissionDate: string;
   admissionTime?: string;

@@ -1,4 +1,3 @@
-import type { DailyRecord as RootDailyRecord } from '@/types/domain/dailyRecord';
 import type { DailyRecordPatch as RootDailyRecordPatch } from '@/types/domain/dailyRecordPatch';
 import type {
   MedicalHandoffActor as RootMedicalHandoffActor,
@@ -8,6 +7,7 @@ import type {
 } from '@/types/domain/dailyRecordMedicalHandoff';
 import type { DischargeData, TransferData, CMAData } from '@/types/domain/movements';
 import type { HandoffPatientContract } from '@/domain/handoff/patientContracts';
+import type { DailyRecord as ApplicationDailyRecord } from '@/application/shared/dailyRecordContracts';
 
 export type MedicalHandoffActor = RootMedicalHandoffActor;
 export type MedicalSpecialty = RootMedicalSpecialty;
@@ -26,8 +26,8 @@ export interface HandoffDailyRecordContract {
   tensDayShift?: string[];
   tensNightShift?: string[];
   activeExtraBeds: string[];
-  handoffDayChecklist?: RootDailyRecord['handoffDayChecklist'];
-  handoffNightChecklist?: RootDailyRecord['handoffNightChecklist'];
+  handoffDayChecklist?: ApplicationDailyRecord['handoffDayChecklist'];
+  handoffNightChecklist?: ApplicationDailyRecord['handoffNightChecklist'];
   handoffNovedadesDayShift?: string;
   handoffNovedadesNightShift?: string;
   handoffNightReceives?: string[];
@@ -35,10 +35,14 @@ export interface HandoffDailyRecordContract {
   medicalHandoffBySpecialty?: MedicalHandoffBySpecialty;
   medicalHandoffDoctor?: string;
   medicalHandoffSentAt?: string;
-  medicalHandoffSentAtByScope?: RootDailyRecord['medicalHandoffSentAtByScope'];
-  medicalSignatureLinkTokenByScope?: RootDailyRecord['medicalSignatureLinkTokenByScope'];
-  medicalSignature?: RootDailyRecord['medicalSignature'];
-  medicalSignatureByScope?: RootDailyRecord['medicalSignatureByScope'];
+  medicalHandoffSentAtByScope?: ApplicationDailyRecord['medicalHandoffSentAtByScope'];
+  medicalSignatureLinkTokenByScope?: ApplicationDailyRecord['medicalSignatureLinkTokenByScope'];
+  medicalSignature?: ApplicationDailyRecord['medicalSignature'];
+  medicalSignatureByScope?: ApplicationDailyRecord['medicalSignatureByScope'];
 }
 
-export type DailyRecord = RootDailyRecord;
+/**
+ * Handoff modules should depend on the narrowed handoff-facing contract rather
+ * than the root persistence shape.
+ */
+export type DailyRecord = HandoffDailyRecordContract;
