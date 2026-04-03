@@ -1,7 +1,13 @@
 import React from 'react';
+import {
+  usePatientRowOrbitalLauncherMachine,
+  type PatientRowOrbitalLauncherPhase,
+} from '@/features/census/components/patient-row/usePatientRowOrbitalLauncherMachine';
 
 const HOVER_FINE_MEDIA_QUERY = '(hover: hover) and (pointer: fine)';
-const LAUNCHER_ACTIVE_EVENT = 'patient-row-orbital-launcher-active-change';
+const LAUNCHER_OPEN_EVENT = 'patient-row-orbital-launcher-open-change';
+const LAUNCHER_OWNER_EVENT = 'patient-row-orbital-launcher-owner-change';
+const HOVER_EXIT_GRACE_MS = 220;
 
 interface LauncherPosition {
   left: number;
@@ -16,24 +22,41 @@ interface UsePatientRowOrbitalLauncherRuntimeParams {
   hasQuickActions: boolean;
   isOpen: boolean;
   launcherOffset: number;
-  wrapperSize: number;
+  wrapperWidth: number;
+  wrapperHeight: number;
+  triggerCenterX: number;
+  triggerCenterY: number;
 }
 
 interface UsePatientRowOrbitalLauncherRuntimeResult {
   anchorRef: React.RefObject<HTMLSpanElement | null>;
   position: LauncherPosition | null;
+  phase: PatientRowOrbitalLauncherPhase;
   showTrigger: boolean;
+  supportsHoverFine: boolean;
   handleLauncherMouseEnter: () => void;
   handleLauncherMouseLeave: () => void;
 }
 
-const dispatchLauncherActiveChange = (rowId: string | null): void => {
+const dispatchLauncherOpenChange = (rowId: string | null): void => {
   if (typeof window === 'undefined') {
     return;
   }
 
   window.dispatchEvent(
-    new CustomEvent<LauncherActiveChangeDetail>(LAUNCHER_ACTIVE_EVENT, {
+    new CustomEvent<LauncherActiveChangeDetail>(LAUNCHER_OPEN_EVENT, {
+      detail: { rowId },
+    })
+  );
+};
+
+const dispatchLauncherOwnerChange = (rowId: string | null): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.dispatchEvent(
+    new CustomEvent<LauncherActiveChangeDetail>(LAUNCHER_OWNER_EVENT, {
       detail: { rowId },
     })
   );
@@ -60,7 +83,10 @@ const resolveRowId = (row: HTMLTableRowElement | null): string | null => row?.da
 const resolveLauncherPosition = (
   row: HTMLTableRowElement | null,
   launcherOffset: number,
-  wrapperSize: number
+  _wrapperWidth: number,
+  _wrapperHeight: number,
+  triggerCenterX: number,
+  triggerCenterY: number
 ): LauncherPosition | null => {
   if (!row) {
     return null;
@@ -68,8 +94,8 @@ const resolveLauncherPosition = (
 
   const rect = row.getBoundingClientRect();
   return {
-    left: Math.max(8, rect.left - launcherOffset),
-    top: rect.top + rect.height / 2 - wrapperSize / 2,
+    left: Math.max(8, rect.left - launcherOffset - triggerCenterX),
+    top: rect.top + rect.height / 2 - triggerCenterY,
   };
 };
 
@@ -77,15 +103,50 @@ export const usePatientRowOrbitalLauncherRuntime = ({
   hasQuickActions,
   isOpen,
   launcherOffset,
-  wrapperSize,
+  wrapperWidth,
+  wrapperHeight,
+  triggerCenterX,
+  triggerCenterY,
 }: UsePatientRowOrbitalLauncherRuntimeParams): UsePatientRowOrbitalLauncherRuntimeResult => {
   const anchorRef = React.useRef<HTMLSpanElement>(null);
   const [supportsHoverFine, setSupportsHoverFine] = React.useState(resolveSupportsHoverFine);
   const [isRowHovered, setIsRowHovered] = React.useState(false);
   const [isLauncherHovered, setIsLauncherHovered] = React.useState(false);
+  const [isHoverGraceActive, setIsHoverGraceActive] = React.useState(false);
   const [position, setPosition] = React.useState<LauncherPosition | null>(null);
   const [rowId, setRowId] = React.useState<string | null>(null);
   const [activeLauncherRowId, setActiveLauncherRowId] = React.useState<string | null>(null);
+  const [ownerLauncherRowId, setOwnerLauncherRowId] = React.useState<string | null>(null);
+  const ownerLauncherRowIdRef = React.useRef<string | null>(null);
+  const hoverExitTimerRef = React.useRef<number | null>(null);
+
+  const clearHoverExitTimer = React.useCallback(() => {
+    if (hoverExitTimerRef.current !== null && typeof window !== 'undefined') {
+      window.clearTimeout(hoverExitTimerRef.current);
+      hoverExitTimerRef.current = null;
+    }
+  }, []);
+
+  const armHoverGrace = React.useCallback(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    clearHoverExitTimer();
+    setIsHoverGraceActive(true);
+    hoverExitTimerRef.current = window.setTimeout(() => {
+      setIsHoverGraceActive(false);
+      if (
+        ownerLauncherRowIdRef.current === rowId &&
+        !isOpen &&
+        !isLauncherHovered &&
+        !isRowHovered
+      ) {
+        dispatchLauncherOwnerChange(null);
+      }
+      hoverExitTimerRef.current = null;
+    }, HOVER_EXIT_GRACE_MS);
+  }, [clearHoverExitTimer, isLauncherHovered, isOpen, isRowHovered, rowId]);
 
   React.useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -114,20 +175,40 @@ export const usePatientRowOrbitalLauncherRuntime = ({
     setRowId(resolvedRowId);
 
     const syncPosition = () => {
-      setPosition(resolveLauncherPosition(row, launcherOffset, wrapperSize));
+      setPosition(
+        resolveLauncherPosition(
+          row,
+          launcherOffset,
+          wrapperWidth,
+          wrapperHeight,
+          triggerCenterX,
+          triggerCenterY
+        )
+      );
     };
 
     const handleRowMouseEnter = () => {
+      clearHoverExitTimer();
+      setIsHoverGraceActive(true);
       setIsRowHovered(true);
+      if (resolvedRowId) {
+        dispatchLauncherOwnerChange(resolvedRowId);
+      }
       syncPosition();
     };
 
     const handleRowMouseLeave = () => {
       setIsRowHovered(false);
+      armHoverGrace();
     };
 
     const handleFocusIn = () => {
+      clearHoverExitTimer();
+      setIsHoverGraceActive(true);
       setIsRowHovered(true);
+      if (resolvedRowId) {
+        dispatchLauncherOwnerChange(resolvedRowId);
+      }
       syncPosition();
     };
 
@@ -136,6 +217,7 @@ export const usePatientRowOrbitalLauncherRuntime = ({
         return;
       }
       setIsRowHovered(false);
+      armHoverGrace();
     };
 
     syncPosition();
@@ -161,51 +243,89 @@ export const usePatientRowOrbitalLauncherRuntime = ({
       window.removeEventListener('resize', syncPosition);
       window.removeEventListener('scroll', syncPosition, true);
       resizeObserver?.disconnect();
+      clearHoverExitTimer();
     };
-  }, [launcherOffset, wrapperSize]);
+  }, [
+    armHoverGrace,
+    clearHoverExitTimer,
+    launcherOffset,
+    triggerCenterX,
+    triggerCenterY,
+    wrapperHeight,
+    wrapperWidth,
+  ]);
 
   React.useEffect(() => {
     if (typeof window === 'undefined') {
       return;
     }
 
-    const handleActiveChange = (event: Event) => {
+    const handleOpenChange = (event: Event) => {
       const detail = (event as CustomEvent<LauncherActiveChangeDetail>).detail;
       setActiveLauncherRowId(detail?.rowId ?? null);
     };
+    const handleOwnerChange = (event: Event) => {
+      const detail = (event as CustomEvent<LauncherActiveChangeDetail>).detail;
+      setOwnerLauncherRowId(detail?.rowId ?? null);
+    };
 
-    window.addEventListener(LAUNCHER_ACTIVE_EVENT, handleActiveChange as EventListener);
+    window.addEventListener(LAUNCHER_OPEN_EVENT, handleOpenChange as EventListener);
+    window.addEventListener(LAUNCHER_OWNER_EVENT, handleOwnerChange as EventListener);
     return () => {
-      window.removeEventListener(LAUNCHER_ACTIVE_EVENT, handleActiveChange as EventListener);
+      window.removeEventListener(LAUNCHER_OPEN_EVENT, handleOpenChange as EventListener);
+      window.removeEventListener(LAUNCHER_OWNER_EVENT, handleOwnerChange as EventListener);
     };
   }, []);
 
   React.useEffect(() => {
-    if (!isOpen || !rowId) {
+    ownerLauncherRowIdRef.current = ownerLauncherRowId;
+  }, [ownerLauncherRowId]);
+
+  React.useEffect(() => {
+    if (!rowId || !isOpen) {
       return;
     }
 
-    dispatchLauncherActiveChange(rowId);
+    dispatchLauncherOpenChange(rowId);
     return () => {
-      dispatchLauncherActiveChange(null);
+      dispatchLauncherOpenChange(null);
     };
   }, [isOpen, rowId]);
 
-  const isAnotherLauncherActive =
-    activeLauncherRowId !== null && rowId !== null && activeLauncherRowId !== rowId;
+  const isAnotherLauncherActive = activeLauncherRowId !== null && activeLauncherRowId !== rowId;
+  const isOwnedByCurrentRow = rowId !== null && ownerLauncherRowId === rowId;
+  const canRevealTrigger =
+    hasQuickActions &&
+    !isAnotherLauncherActive &&
+    (!supportsHoverFine ||
+      isOpen ||
+      isLauncherHovered ||
+      isOwnedByCurrentRow ||
+      ((isRowHovered || isHoverGraceActive) &&
+        (ownerLauncherRowId === null || ownerLauncherRowId === rowId)));
+  const { phase, showTrigger } = usePatientRowOrbitalLauncherMachine({
+    canRevealTrigger,
+    isOpen,
+    supportsHoverFine,
+  });
 
   return {
     anchorRef,
     position,
-    showTrigger:
-      hasQuickActions &&
-      !isAnotherLauncherActive &&
-      (!supportsHoverFine || isOpen || isRowHovered || isLauncherHovered),
+    phase,
+    showTrigger,
+    supportsHoverFine,
     handleLauncherMouseEnter: () => {
+      clearHoverExitTimer();
+      setIsHoverGraceActive(true);
       setIsLauncherHovered(true);
+      if (rowId) {
+        dispatchLauncherOwnerChange(rowId);
+      }
     },
     handleLauncherMouseLeave: () => {
       setIsLauncherHovered(false);
+      armHoverGrace();
     },
   };
 };

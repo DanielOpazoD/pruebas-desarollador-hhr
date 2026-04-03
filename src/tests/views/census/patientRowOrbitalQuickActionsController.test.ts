@@ -5,7 +5,7 @@ import {
 } from '@/features/census/controllers/patientRowOrbitalQuickActionsController';
 
 describe('patientRowOrbitalQuickActionsController', () => {
-  it('builds visible orbital items with trigonometrically derived coordinates', () => {
+  it('builds visible quick action items in the configured display order', () => {
     const items = buildPatientRowOrbitalQuickActionItems({
       showClinicalDocumentsAction: true,
       showExamRequestAction: true,
@@ -18,21 +18,15 @@ describe('patientRowOrbitalQuickActionsController', () => {
       'imaging-request',
     ]);
     expect(items[0]).toMatchObject({
-      angleDeg: -60,
-      x: 25,
-      y: -43.3,
+      label: 'Documentos',
       iconAsset: 'rongorongo',
     });
     expect(items[1]).toMatchObject({
-      angleDeg: 0,
-      x: 50,
-      y: 0,
+      label: 'Laboratorio',
       iconAsset: 'mangai',
     });
     expect(items[2]).toMatchObject({
-      angleDeg: 60,
-      x: 25,
-      y: 43.3,
+      label: 'Imágenes',
       iconAsset: 'ahutepitokura',
     });
   });

@@ -60,6 +60,54 @@ describe('PatientRowOrbitalQuickActions', () => {
     expect(onViewImagingRequest).toHaveBeenCalledTimes(1);
   });
 
+  it('supports keyboard opening and arrow navigation across actions', async () => {
+    render(
+      <table>
+        <tbody>
+          <tr className="group/patient-row" data-testid="patient-row">
+            <td className="relative">
+              <PatientRowOrbitalQuickActions
+                showClinicalDocumentsAction={true}
+                showExamRequestAction={true}
+                showImagingRequestAction={true}
+                showMedicalIndicationsAction={true}
+                onViewClinicalDocuments={vi.fn()}
+                onViewExamRequest={vi.fn()}
+                onViewImagingRequest={vi.fn()}
+                onViewMedicalIndications={vi.fn()}
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    );
+
+    const trigger = screen.getByRole('button', { name: /acciones clínicas rápidas/i });
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' });
+
+    const documentsButton = await screen.findByRole('button', { name: /documentos clínicos/i });
+    await waitFor(() => {
+      expect(documentsButton).toHaveFocus();
+    });
+
+    fireEvent.keyDown(documentsButton, { key: 'ArrowDown' });
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /solicitud exámenes/i })).toHaveFocus();
+    });
+
+    fireEvent.keyDown(screen.getByRole('button', { name: /solicitud exámenes/i }), {
+      key: 'Escape',
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('button', { name: /documentos clínicos/i })
+      ).not.toBeInTheDocument();
+      expect(trigger).toHaveFocus();
+    });
+  });
+
   it('closes when clicking the invisible backdrop', async () => {
     render(
       <table>
@@ -149,6 +197,47 @@ describe('PatientRowOrbitalQuickActions', () => {
     await waitFor(() => {
       expect(trigger.className).toContain('opacity-100');
     });
+
+    expect(trigger).toHaveStyle({
+      width: '48px',
+      height: '48px',
+    });
+  });
+
+  it('uses enlarged hitboxes for trigger and orbital actions', async () => {
+    render(
+      <table>
+        <tbody>
+          <tr className="group/patient-row" data-testid="patient-row">
+            <td className="relative">
+              <PatientRowOrbitalQuickActions
+                showClinicalDocumentsAction={true}
+                showExamRequestAction={true}
+                showImagingRequestAction={true}
+                onViewClinicalDocuments={vi.fn()}
+                onViewExamRequest={vi.fn()}
+                onViewImagingRequest={vi.fn()}
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    );
+
+    fireEvent.mouseEnter(screen.getByTestId('patient-row'));
+    const trigger = screen.getByRole('button', { name: /acciones clínicas rápidas/i });
+    fireEvent.click(trigger);
+
+    const documentsButton = screen.getByRole('button', { name: /documentos clínicos/i });
+
+    expect(trigger).toHaveStyle({
+      width: '48px',
+      height: '48px',
+    });
+    expect(documentsButton).toHaveStyle({
+      width: '136px',
+      height: '48px',
+    });
   });
 
   it('keeps other launchers hidden while one row launcher is open', async () => {
@@ -196,5 +285,152 @@ describe('PatientRowOrbitalQuickActions', () => {
     await waitFor(() => {
       expect(screen.getAllByRole('button', { name: /acciones clínicas rápidas/i })).toHaveLength(1);
     });
+  });
+
+  it('keeps the hovered row active while moving toward the launcher', async () => {
+    render(
+      <table>
+        <tbody>
+          <tr className="group/patient-row" data-testid="patient-row" data-bed-id="R2">
+            <td className="relative">
+              <PatientRowOrbitalQuickActions
+                showClinicalDocumentsAction={true}
+                showExamRequestAction={true}
+                showImagingRequestAction={true}
+                onViewClinicalDocuments={vi.fn()}
+                onViewExamRequest={vi.fn()}
+                onViewImagingRequest={vi.fn()}
+              />
+            </td>
+          </tr>
+          <tr className="group/patient-row" data-testid="patient-row-secondary" data-bed-id="R3">
+            <td className="relative">
+              <PatientRowOrbitalQuickActions
+                showClinicalDocumentsAction={true}
+                showExamRequestAction={true}
+                showImagingRequestAction={true}
+                onViewClinicalDocuments={vi.fn()}
+                onViewExamRequest={vi.fn()}
+                onViewImagingRequest={vi.fn()}
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    );
+
+    fireEvent.mouseEnter(screen.getByTestId('patient-row'));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: /acciones clínicas rápidas/i })).toHaveLength(1);
+    });
+
+    fireEvent.mouseLeave(screen.getByTestId('patient-row'));
+    fireEvent.mouseEnter(screen.getByTestId('patient-row-secondary'));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: /acciones clínicas rápidas/i })).toHaveLength(1);
+    });
+  });
+
+  it('shows only one visible honu while moving quickly across rows', async () => {
+    render(
+      <table>
+        <tbody>
+          <tr className="group/patient-row" data-testid="patient-row" data-bed-id="R2">
+            <td className="relative">
+              <PatientRowOrbitalQuickActions
+                showClinicalDocumentsAction={true}
+                showExamRequestAction={true}
+                showImagingRequestAction={true}
+                onViewClinicalDocuments={vi.fn()}
+                onViewExamRequest={vi.fn()}
+                onViewImagingRequest={vi.fn()}
+              />
+            </td>
+          </tr>
+          <tr className="group/patient-row" data-testid="patient-row-secondary" data-bed-id="R3">
+            <td className="relative">
+              <PatientRowOrbitalQuickActions
+                showClinicalDocumentsAction={true}
+                showExamRequestAction={true}
+                showImagingRequestAction={true}
+                onViewClinicalDocuments={vi.fn()}
+                onViewExamRequest={vi.fn()}
+                onViewImagingRequest={vi.fn()}
+              />
+            </td>
+          </tr>
+          <tr className="group/patient-row" data-testid="patient-row-tertiary" data-bed-id="R4">
+            <td className="relative">
+              <PatientRowOrbitalQuickActions
+                showClinicalDocumentsAction={true}
+                showExamRequestAction={true}
+                showImagingRequestAction={true}
+                onViewClinicalDocuments={vi.fn()}
+                onViewExamRequest={vi.fn()}
+                onViewImagingRequest={vi.fn()}
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    );
+
+    fireEvent.mouseEnter(screen.getByTestId('patient-row'));
+    fireEvent.mouseLeave(screen.getByTestId('patient-row'));
+    fireEvent.mouseEnter(screen.getByTestId('patient-row-secondary'));
+    fireEvent.mouseLeave(screen.getByTestId('patient-row-secondary'));
+    fireEvent.mouseEnter(screen.getByTestId('patient-row-tertiary'));
+
+    await waitFor(() => {
+      const triggers = screen.getAllByRole('button', { name: /acciones clínicas rápidas/i });
+      const visibleTriggers = triggers.filter(trigger => trigger.className.includes('opacity-100'));
+      expect(visibleTriggers).toHaveLength(1);
+    });
+  });
+
+  it('renders the quick actions as a vertical column below the honu', async () => {
+    render(
+      <table>
+        <tbody>
+          <tr className="group/patient-row" data-testid="patient-row">
+            <td className="relative">
+              <PatientRowOrbitalQuickActions
+                showClinicalDocumentsAction={true}
+                showExamRequestAction={true}
+                showImagingRequestAction={true}
+                showMedicalIndicationsAction={true}
+                onViewClinicalDocuments={vi.fn()}
+                onViewExamRequest={vi.fn()}
+                onViewImagingRequest={vi.fn()}
+                onViewMedicalIndications={vi.fn()}
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    );
+
+    fireEvent.mouseEnter(screen.getByTestId('patient-row'));
+    fireEvent.click(screen.getByRole('button', { name: /acciones clínicas rápidas/i }));
+
+    const documentsButton = screen.getByRole('button', { name: /documentos clínicos/i });
+    const laboratoryButton = screen.getByRole('button', { name: /solicitud exámenes/i });
+    const imagingButton = screen.getByRole('button', { name: /solicitud de imágenes/i });
+    const indicationsButton = screen.getByRole('button', { name: /indicaciones médicas/i });
+
+    expect(documentsButton).toHaveTextContent('Documentos');
+    expect(laboratoryButton).toHaveTextContent('Laboratorio');
+    expect(imagingButton).toHaveTextContent('Imágenes');
+    expect(indicationsButton).toHaveTextContent('Indicaciones');
+    const stack = documentsButton.parentElement;
+    expect(stack?.className).toContain('flex-col');
+    expect(Array.from(stack?.children ?? [])).toEqual([
+      documentsButton,
+      laboratoryButton,
+      imagingButton,
+      indicationsButton,
+    ]);
   });
 });
