@@ -187,7 +187,14 @@ export const DateStrip: React.FC<DateStripProps> = ({
 
           <div className="h-4 w-px bg-slate-200/70" />
 
-          <DateStripMonthNavigator selectedMonth={selectedMonth} onChangeMonth={changeMonth} />
+          <DateStripMonthNavigator
+            selectedMonth={selectedMonth}
+            onChangeMonth={changeMonth}
+            onSelectMonth={(month: number) => {
+              setSelectedMonth(month);
+              setSelectedDay(1);
+            }}
+          />
 
           <div className="h-4 w-px bg-slate-200/70" />
 

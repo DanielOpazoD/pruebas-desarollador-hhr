@@ -10,10 +10,13 @@ import {
   getDefaultConfig,
   DEFAULT_COLUMN_WIDTHS,
   saveTableConfig,
+  setFirestoreEnabled as setTableConfigFirestoreEnabled,
   subscribeToTableConfig,
   exportTableConfig,
   importTableConfig,
 } from '@/services/storage/tableConfigService';
+import { useAuthState } from '@/hooks/useAuthState';
+import { resolveRemoteSyncRuntimeStatus } from '@/services/repositories/repositoryConfig';
 import { tableConfigLogger } from '@/services/storage/storageLoggers';
 
 // ============================================================================
@@ -43,9 +46,14 @@ const TableConfigContext = createContext<TableConfigContextType | undefined>(und
 // ============================================================================
 
 export const TableConfigProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { authLoading, isFirebaseConnected } = useAuthState();
   const [config, setConfig] = useState<TableConfig>(getDefaultConfig);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const remoteSyncStatus = resolveRemoteSyncRuntimeStatus({
+    authLoading,
+    isFirebaseConnected,
+  });
 
   // Debounce timer for saves
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -53,7 +61,18 @@ export const TableConfigProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   // Load initial config and subscribe
   useEffect(() => {
-    // isLoading is initialized to true, no need to set it again synchronously
+    setTableConfigFirestoreEnabled(remoteSyncStatus === 'ready');
+
+    if (remoteSyncStatus === 'bootstrapping') {
+      setIsLoading(true);
+      return;
+    }
+
+    if (remoteSyncStatus !== 'ready') {
+      setConfig(getDefaultConfig());
+      setIsLoading(false);
+      return;
+    }
 
     // Subscribe to real-time updates
     const unsubscribe = subscribeToTableConfig(newConfig => {
@@ -66,7 +85,7 @@ export const TableConfigProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [remoteSyncStatus]);
 
   // Debounced save to Firebase
   const debouncedSave = useCallback((newConfig: TableConfig) => {

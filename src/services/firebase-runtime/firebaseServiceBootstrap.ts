@@ -28,7 +28,8 @@ export interface FirebaseBootstrapResult {
   db: Firestore;
 }
 
-const AUTH_PERSISTENCE_TIMEOUT_MS = 1500;
+const AUTH_PERSISTENCE_TIMEOUT_MS = 5_000;
+const AUTH_PERSISTENCE_RETRY_DELAYS_MS = [250, 1_000] as const;
 
 const getErrorMessage = (error: unknown): string =>
   error && typeof error === 'object' && 'message' in error ? String(error.message) : String(error);
@@ -47,6 +48,38 @@ const withPersistenceTimeout = async <T>(operation: Promise<T>, mode: string): P
   return Promise.race([operation, timeoutPromise]);
 };
 
+const applyPersistenceWithRetry = async (
+  auth: Auth,
+  persistence: Parameters<typeof setPersistence>[1],
+  mode: 'local' | 'session' | 'memory'
+): Promise<void> => {
+  const retryDelaysMs = mode === 'memory' ? [] : AUTH_PERSISTENCE_RETRY_DELAYS_MS;
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt <= retryDelaysMs.length; attempt++) {
+    try {
+      await withPersistenceTimeout(setPersistence(auth, persistence), mode);
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt >= retryDelaysMs.length) {
+        break;
+      }
+
+      const delayMs = retryDelaysMs[attempt];
+      firebaseBootstrapLogger.warn('Retrying auth persistence configuration', {
+        mode,
+        attempt: attempt + 1,
+        retryDelayMs: delayMs,
+        message: getErrorMessage(error),
+      });
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+};
+
 const configureAuthPersistence = async (
   auth: Auth
 ): Promise<'local' | 'session' | 'memory' | 'unconfigured'> => {
@@ -58,7 +91,7 @@ const configureAuthPersistence = async (
 
   for (const candidate of persistenceCandidates) {
     try {
-      await withPersistenceTimeout(setPersistence(auth, candidate.persistence), candidate.mode);
+      await applyPersistenceWithRetry(auth, candidate.persistence, candidate.mode);
       firebaseBootstrapLogger.info('Auth persistence configured', {
         persistenceMode: candidate.mode,
       });

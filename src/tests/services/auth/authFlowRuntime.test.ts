@@ -77,6 +77,22 @@ describe('auth runtime injection', () => {
     expect(firebaseAuth.signInWithPopup).toHaveBeenCalledWith(authRuntime.auth, expect.anything());
   });
 
+  it('falls back to redirect auth when popup flow hits a recoverable COOP error', async () => {
+    const authRuntime = createAuthRuntime();
+    vi.mocked(firebaseAuth.signInWithPopup).mockRejectedValue(
+      new Error('INTERNAL ASSERTION FAILED: Cross-Origin-Opener-Policy')
+    );
+
+    await expect(signInWithGoogle({ authRuntime })).rejects.toMatchObject({
+      code: 'auth/popup-coop-blocked',
+    });
+
+    expect(firebaseAuth.signInWithRedirect).toHaveBeenCalledWith(
+      authRuntime.auth,
+      expect.anything()
+    );
+  });
+
   it('uses the injected runtime for email/password sign-in and sign-out fallback', async () => {
     const authRuntime = createAuthRuntime();
     vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue({

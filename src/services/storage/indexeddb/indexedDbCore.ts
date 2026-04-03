@@ -7,6 +7,7 @@ import { ErrorLog } from '@/services/logging/errorLogTypes';
 import { SyncTask } from '../syncQueueTypes';
 import { CatalogRecord } from './indexedDbCatalogContracts';
 import {
+  isIndexedDbBackingStoreError,
   shouldScheduleBackgroundIndexedDbRecovery,
   shouldUseStickyIndexedDbFallback,
 } from './indexedDbRecoveryPolicy';
@@ -139,7 +140,10 @@ const scheduleBackgroundRecoveryRetry = () => {
   }
 
   backgroundRecoveryAttempts++;
-  const scheduledDelayMs = 5000;
+  const scheduledDelayMs =
+    INDEXED_DB_RECOVERY_RETRY_DELAYS_MS[
+      Math.min(backgroundRecoveryAttempts - 1, INDEXED_DB_RECOVERY_RETRY_DELAYS_MS.length - 1)
+    ];
   recoveryRetryTimer = setTimeout(() => {
     recoveryRetryTimer = null;
     void ensureDbReady({ allowRecoveryWhenMock: true });
@@ -290,7 +294,9 @@ export const ensureDbReady = async (options: EnsureDbReadyOptions = {}): Promise
       }
     );
 
-    if (errorName === 'UnknownError' || errorName === 'VersionError') {
+    const isBackingStoreError = isIndexedDbBackingStoreError(error);
+
+    if ((errorName === 'UnknownError' || errorName === 'VersionError') && !isBackingStoreError) {
       try {
         db.close();
 

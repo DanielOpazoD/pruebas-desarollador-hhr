@@ -448,12 +448,16 @@ const mockAuthState = {
     status: 'authorized',
     user: mockUser,
   },
+  currentUser: mockUser,
+  authorizedUser: mockUser,
   user: mockUser,
   role: 'admin' as const,
+  authLoading: false,
   isEditor: true,
   isViewer: false,
   isAuthenticated: true,
   isLoading: false,
+  isFirebaseConnected: true,
 };
 
 vi.mock('@/hooks/useAuthState', () => ({

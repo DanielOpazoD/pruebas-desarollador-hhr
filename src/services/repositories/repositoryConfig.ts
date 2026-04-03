@@ -13,6 +13,14 @@ export interface FirestoreSyncState {
   reason: FirestoreSyncReason;
 }
 
+export type RemoteSyncRuntimeStatus = 'ready' | 'bootstrapping' | 'local_only';
+
+export interface ResolveRemoteSyncRuntimeStatusInput {
+  authLoading: boolean;
+  isFirebaseConnected: boolean;
+  firestoreSyncState?: FirestoreSyncState;
+}
+
 // ============================================================================
 // State
 // ============================================================================
@@ -52,3 +60,22 @@ export const setFirestoreSyncState = (state: FirestoreSyncState): void => {
 };
 
 export const getFirestoreSyncState = (): FirestoreSyncState => firestoreSyncState;
+
+export const resolveRemoteSyncRuntimeStatus = ({
+  authLoading,
+  isFirebaseConnected,
+  firestoreSyncState: state = getFirestoreSyncState(),
+}: ResolveRemoteSyncRuntimeStatusInput): RemoteSyncRuntimeStatus => {
+  if (authLoading || state.mode === 'bootstrapping') {
+    return 'bootstrapping';
+  }
+
+  if (isFirebaseConnected && state.mode === 'enabled') {
+    return 'ready';
+  }
+
+  return 'local_only';
+};
+
+export const shouldUseRemoteSyncRuntime = (input: ResolveRemoteSyncRuntimeStatusInput): boolean =>
+  resolveRemoteSyncRuntimeStatus(input) === 'ready';

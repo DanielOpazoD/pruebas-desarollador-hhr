@@ -1,7 +1,7 @@
-export const INDEXED_DB_OPEN_TIMEOUT_MS = 7_000;
+export const INDEXED_DB_OPEN_TIMEOUT_MS = 12_000;
 export const INDEXED_DB_DELETE_TIMEOUT_MS = 5_000;
-export const INDEXED_DB_RECOVERY_RETRY_DELAYS_MS = [300, 1_000, 3_000] as const;
-export const MAX_BACKGROUND_RECOVERY_ATTEMPTS = 3;
+export const INDEXED_DB_RECOVERY_RETRY_DELAYS_MS = [500, 1_500, 4_000, 8_000] as const;
+export const MAX_BACKGROUND_RECOVERY_ATTEMPTS = 6;
 
 export interface IndexedDbRecoveryBudgetSnapshot {
   openTimeoutMs: number;

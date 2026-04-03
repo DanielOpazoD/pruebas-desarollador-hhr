@@ -38,6 +38,8 @@ Resolver autenticacion, bootstrap de sesion, claims, roles y degradacion operati
 - El login por Google puede devolver errores recuperables de popup durante cambios de sesion
   (`admin -> especialista`, por ejemplo). La UI debe esperar una breve ventana de gracia antes de
   mostrar error si la sesion ya se está resolviendo.
+- Si el popup de Google falla por COOP, `window.closed` o errores internos recuperables del SDK,
+  el flujo debe degradar automaticamente a redirect antes de exponer error al usuario.
 - La sincronizacion de custom claims no debe bloquear la entrega inicial de una sesion autorizada.
 - Los warnings benignos de bootstrap o configuracion incompleta deben resolverse mediante
   `operationalNoticePolicy`; auth no debe inventar severidades o copy inline por pantalla.

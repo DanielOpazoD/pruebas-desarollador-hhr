@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 
 const mockReload = vi.fn();
@@ -29,8 +29,13 @@ import {
 describe('StorageStatusBadge', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
     window.sessionStorage.clear();
     mockUseDatabaseFallbackStatus.mockReturnValue(false);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('does not render when fallback mode is disabled', () => {
@@ -43,6 +48,9 @@ describe('StorageStatusBadge', () => {
     window.sessionStorage.setItem(getStoragePersistentFallbackCountKey(), '1');
     mockUseDatabaseFallbackStatus.mockReturnValue(true);
     render(<StorageStatusBadge />);
+    act(() => {
+      vi.advanceTimersByTime(12_000);
+    });
 
     fireEvent.click(screen.getByRole('button', { name: /Recargar/i }));
     expect(mockReload).toHaveBeenCalled();
@@ -73,5 +81,25 @@ describe('StorageStatusBadge', () => {
 
     expect(screen.queryByText('Guardado local limitado')).not.toBeInTheDocument();
     expect(window.sessionStorage.getItem(getStoragePersistentFallbackCountKey())).toBe('1');
+  });
+
+  it('shows the banner only after the persistent fallback survives the grace delay', () => {
+    window.sessionStorage.setItem(getStorageAutoRecoveryKey(), 'true');
+    window.sessionStorage.setItem(getStoragePersistentFallbackCountKey(), '1');
+    mockUseDatabaseFallbackStatus.mockReturnValue(true);
+
+    render(<StorageStatusBadge />);
+
+    expect(screen.queryByText('Guardado local limitado')).not.toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(11_999);
+    });
+    expect(screen.queryByText('Guardado local limitado')).not.toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(screen.getByText('Guardado local limitado')).toBeInTheDocument();
   });
 });

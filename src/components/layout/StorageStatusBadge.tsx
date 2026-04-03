@@ -3,6 +3,7 @@ import { AlertTriangle, ChevronDown, ChevronUp, Database, RefreshCw } from 'luci
 import { resetLocalDatabase } from '@/services/storage/core';
 import {
   getStorageFallbackNotice,
+  getStorageFallbackUiDelayMs,
   getStorageFallbackUiCopy,
   markStorageAutoRecoveryAttempted,
   markStoragePersistentFallbackObserved,
@@ -22,6 +23,7 @@ const StorageStatusBadge: React.FC = () => {
   const isFallback = useDatabaseFallbackStatus();
   const [isVisible, setIsVisible] = useState(true);
   const [showDetails, setShowDetails] = useState(false);
+  const [allowVisibleNotice, setAllowVisibleNotice] = useState(false);
   const shouldShowBanner = shouldShowStorageFallbackUi(isFallback);
   const copy = getStorageFallbackUiCopy();
   const notice = getStorageFallbackNotice();
@@ -44,7 +46,22 @@ const StorageStatusBadge: React.FC = () => {
     }
   }, [isFallback, shouldShowBanner]);
 
-  if (!isFallback || !isVisible || !shouldShowBanner) return null;
+  useEffect(() => {
+    if (!isFallback || !shouldShowBanner) {
+      setAllowVisibleNotice(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setAllowVisibleNotice(true);
+    }, getStorageFallbackUiDelayMs());
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [isFallback, shouldShowBanner]);
+
+  if (!isFallback || !isVisible || !shouldShowBanner || !allowVisibleNotice) return null;
 
   return (
     <div className="fixed bottom-4 left-4 z-[9999] storage-status-badge-bounce">

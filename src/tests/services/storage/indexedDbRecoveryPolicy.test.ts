@@ -1,26 +1,36 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  isIndexedDbBackingStoreError,
   shouldScheduleBackgroundIndexedDbRecovery,
   shouldLogIndexedDbRuntimeWarning,
   shouldUseStickyIndexedDbFallback,
 } from '@/services/storage/indexeddb/indexedDbRecoveryPolicy';
 
 describe('indexedDbRecoveryPolicy', () => {
-  it('uses sticky fallback for backing-store UnknownError failures', () => {
+  it('recognizes backing-store UnknownError failures', () => {
     expect(
-      shouldUseStickyIndexedDbFallback({
+      isIndexedDbBackingStoreError({
         name: 'UnknownError',
         message: 'Internal error opening backing store for indexedDB.open.',
       })
     ).toBe(true);
   });
 
-  it('does not use sticky fallback for transient non-backing-store failures', () => {
+  it('does not mark transient non-backing-store failures as backing-store errors', () => {
+    expect(
+      isIndexedDbBackingStoreError({
+        name: 'UnknownError',
+        message: 'Temporary open failure',
+      })
+    ).toBe(false);
+  });
+
+  it('keeps backing-store failures recoverable instead of sticky-blocking the session', () => {
     expect(
       shouldUseStickyIndexedDbFallback({
         name: 'UnknownError',
-        message: 'Temporary open failure',
+        message: 'Internal error opening backing store for indexedDB.open.',
       })
     ).toBe(false);
   });

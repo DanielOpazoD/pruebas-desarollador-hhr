@@ -3,7 +3,16 @@ import { useEffect } from 'react';
 import { queryKeys } from '../config/queryClient';
 import { CatalogRepository } from '@/services/repositories/CatalogRepository';
 import { useAuthState } from './useAuthState';
+import { shouldUseRemoteSyncRuntime } from '@/services/repositories/repositoryConfig';
 import type { ProfessionalCatalogItem } from '@/types/domain/professionals';
+
+const useCatalogRealtimeReady = (): boolean => {
+  const { isFirebaseConnected, authLoading } = useAuthState();
+  return shouldUseRemoteSyncRuntime({
+    authLoading,
+    isFirebaseConnected,
+  });
+};
 
 /**
  * Hook to manage the list of nurses.
@@ -11,7 +20,7 @@ import type { ProfessionalCatalogItem } from '@/types/domain/professionals';
  */
 export const useNursesQuery = () => {
   const queryClient = useQueryClient();
-  const { isFirebaseConnected } = useAuthState();
+  const isCatalogRealtimeReady = useCatalogRealtimeReady();
 
   const query = useQuery({
     queryKey: [...queryKeys.staff.all, 'nurses'],
@@ -22,14 +31,14 @@ export const useNursesQuery = () => {
   });
 
   useEffect(() => {
-    if (!isFirebaseConnected) return;
+    if (!isCatalogRealtimeReady) return;
 
     const unsubscribe = CatalogRepository.subscribeNurses(nurses => {
       queryClient.setQueryData([...queryKeys.staff.all, 'nurses'], nurses);
     });
 
     return () => unsubscribe();
-  }, [isFirebaseConnected, queryClient]);
+  }, [isCatalogRealtimeReady, queryClient]);
 
   return query;
 };
@@ -40,7 +49,7 @@ export const useNursesQuery = () => {
  */
 export const useTensQuery = () => {
   const queryClient = useQueryClient();
-  const { isFirebaseConnected } = useAuthState();
+  const isCatalogRealtimeReady = useCatalogRealtimeReady();
 
   const query = useQuery({
     queryKey: [...queryKeys.staff.all, 'tens'],
@@ -51,14 +60,14 @@ export const useTensQuery = () => {
   });
 
   useEffect(() => {
-    if (!isFirebaseConnected) return;
+    if (!isCatalogRealtimeReady) return;
 
     const unsubscribe = CatalogRepository.subscribeTens(tens => {
       queryClient.setQueryData([...queryKeys.staff.all, 'tens'], tens);
     });
 
     return () => unsubscribe();
-  }, [isFirebaseConnected, queryClient]);
+  }, [isCatalogRealtimeReady, queryClient]);
 
   return query;
 };
@@ -68,7 +77,7 @@ export const useTensQuery = () => {
  */
 export const useProfessionalsQuery = () => {
   const queryClient = useQueryClient();
-  const { isFirebaseConnected } = useAuthState();
+  const isCatalogRealtimeReady = useCatalogRealtimeReady();
 
   const query = useQuery({
     queryKey: [...queryKeys.staff.all, 'professionals'],
@@ -79,14 +88,14 @@ export const useProfessionalsQuery = () => {
   });
 
   useEffect(() => {
-    if (!isFirebaseConnected) return;
+    if (!isCatalogRealtimeReady) return;
 
     const unsubscribe = CatalogRepository.subscribeProfessionals(professionals => {
       queryClient.setQueryData([...queryKeys.staff.all, 'professionals'], professionals);
     });
 
     return () => unsubscribe();
-  }, [isFirebaseConnected, queryClient]);
+  }, [isCatalogRealtimeReady, queryClient]);
 
   return query;
 };

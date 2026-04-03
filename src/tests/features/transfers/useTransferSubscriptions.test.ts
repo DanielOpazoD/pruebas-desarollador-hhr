@@ -1,14 +1,32 @@
 import { renderHook, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTransferSubscriptions } from '@/features/transfers/hooks/useTransferSubscriptions';
+import { setFirestoreSyncState } from '@/services/repositories/repositoryConfig';
 
 const subscribeToTransfersMock = vi.fn();
+const useAuthStateMock = vi.fn();
 
 vi.mock('@/services/transfers/transferService', () => ({
   subscribeToTransfers: (...args: unknown[]) => subscribeToTransfersMock(...args),
 }));
 
+vi.mock('@/hooks/useAuthState', () => ({
+  useAuthState: () => useAuthStateMock(),
+}));
+
 describe('useTransferSubscriptions', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setFirestoreSyncState({
+      mode: 'enabled',
+      reason: 'ready',
+    });
+    useAuthStateMock.mockReturnValue({
+      isFirebaseConnected: true,
+      authLoading: false,
+    });
+  });
+
   it('loads transfers from subscription callback', async () => {
     subscribeToTransfersMock.mockImplementation((onData: (value: unknown[]) => void) => {
       onData([{ id: 'TR-1' }]);
@@ -40,5 +58,37 @@ describe('useTransferSubscriptions', () => {
     });
 
     expect(result.current.error).toBe('sync failed');
+  });
+
+  it('keeps subscription paused while remote sync runtime is bootstrapping', () => {
+    setFirestoreSyncState({
+      mode: 'bootstrapping',
+      reason: 'auth_loading',
+    });
+    useAuthStateMock.mockReturnValue({
+      isFirebaseConnected: true,
+      authLoading: true,
+    });
+
+    const { result } = renderHook(() => useTransferSubscriptions());
+
+    expect(subscribeToTransfersMock).not.toHaveBeenCalled();
+    expect(result.current.isLoading).toBe(true);
+  });
+
+  it('stays local-only without subscribing when remote sync is unavailable', async () => {
+    useAuthStateMock.mockReturnValue({
+      isFirebaseConnected: false,
+      authLoading: false,
+    });
+
+    const { result } = renderHook(() => useTransferSubscriptions());
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(subscribeToTransfersMock).not.toHaveBeenCalled();
+    expect(result.current.transfers).toEqual([]);
   });
 });

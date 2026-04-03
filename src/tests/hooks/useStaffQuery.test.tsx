@@ -10,6 +10,7 @@ import {
 } from '@/hooks/useStaffQuery';
 import { CatalogRepository } from '@/services/repositories/CatalogRepository';
 import { useAuthState } from '@/hooks/useAuthState';
+import { setFirestoreSyncState } from '@/services/repositories/repositoryConfig';
 import {
   createQueryClientTestWrapper,
   createTestQueryClient,
@@ -31,7 +32,14 @@ describe('useStaffQuery Hooks', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useAuthState).mockReturnValue({ isFirebaseConnected: true } as AuthStateValue);
+    setFirestoreSyncState({
+      mode: 'enabled',
+      reason: 'ready',
+    });
+    vi.mocked(useAuthState).mockReturnValue({
+      isFirebaseConnected: true,
+      authLoading: false,
+    } as AuthStateValue);
   });
 
   describe('Queries', () => {
@@ -85,6 +93,26 @@ describe('useStaffQuery Hooks', () => {
     it('should not subscribe if firebase is not connected', async () => {
       vi.mocked(useAuthState).mockReturnValue({
         isFirebaseConnected: false,
+        authLoading: false,
+      } as AuthStateValue);
+      const subscribeMock = vi.fn();
+      vi.mocked(CatalogRepository.subscribeNurses).mockImplementation(
+        subscribeMock as unknown as SubscribeNursesFn
+      );
+
+      renderHook(() => useNursesQuery(), { wrapper: createWrapper() });
+
+      expect(subscribeMock).not.toHaveBeenCalled();
+    });
+
+    it('should not subscribe while remote sync runtime is bootstrapping', async () => {
+      setFirestoreSyncState({
+        mode: 'bootstrapping',
+        reason: 'auth_loading',
+      });
+      vi.mocked(useAuthState).mockReturnValue({
+        isFirebaseConnected: true,
+        authLoading: true,
       } as AuthStateValue);
       const subscribeMock = vi.fn();
       vi.mocked(CatalogRepository.subscribeNurses).mockImplementation(

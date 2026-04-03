@@ -9,6 +9,7 @@ export {
   clearStorageAutoRecoveryAttempt,
   getStorageAutoRecoveryKey,
   getStorageFallbackNotice,
+  getStorageFallbackUiDelayMs,
   getStorageFallbackUiCopy,
   getStoragePersistentFallbackCount,
   getStoragePersistentFallbackCountKey,

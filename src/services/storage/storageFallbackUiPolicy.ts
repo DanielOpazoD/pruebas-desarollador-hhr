@@ -5,6 +5,7 @@ import {
 
 const STORAGE_AUTO_RECOVERY_KEY = 'hhr_storage_auto_recovery_attempted_v1';
 const STORAGE_PERSISTENT_FALLBACK_COUNT_KEY = 'hhr_storage_persistent_fallback_count_v1';
+export const STORAGE_FALLBACK_UI_DELAY_MS = 12_000;
 
 export type StorageFallbackUiCopy = {
   title: string;
@@ -17,6 +18,8 @@ export type StorageFallbackUiCopy = {
 export const getStorageAutoRecoveryKey = (): string => STORAGE_AUTO_RECOVERY_KEY;
 export const getStoragePersistentFallbackCountKey = (): string =>
   STORAGE_PERSISTENT_FALLBACK_COUNT_KEY;
+
+export const getStorageFallbackUiDelayMs = (): number => STORAGE_FALLBACK_UI_DELAY_MS;
 
 export const hasAttemptedStorageAutoRecovery = (): boolean => {
   if (typeof window === 'undefined' || !window.sessionStorage) {

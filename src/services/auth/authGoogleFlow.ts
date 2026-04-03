@@ -17,6 +17,7 @@ import {
   emitAuthOperationalEvent,
   recordAuthOperationalError,
 } from '@/services/auth/authOperationalTelemetry';
+import { signInWithGoogleRedirect } from '@/services/auth/authFallback';
 import { type AuthRuntime, defaultAuthRuntime } from '@/services/firebase-runtime/authRuntime';
 
 interface AuthRuntimeOptions {
@@ -109,6 +110,22 @@ export const signInWithGoogle = async (options?: AuthRuntimeOptions): Promise<Au
             errorCode: mappedError.code,
           },
         });
+
+        try {
+          await signInWithGoogleRedirect({ authRuntime });
+        } catch (redirectError) {
+          recordAuthOperationalError('sign_in_google_redirect_fallback', redirectError, {
+            code: mappedError.code,
+            message: mappedError.message,
+            severity: 'warning',
+            runtimeState: 'recoverable',
+            userSafeMessage: mappedError.message,
+            context: {
+              fallbackFlow: 'redirect',
+              originalErrorCode: mappedError.code,
+            },
+          });
+        }
       }
 
       throw mappedError;
