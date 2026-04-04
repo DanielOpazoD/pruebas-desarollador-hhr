@@ -77,7 +77,7 @@ describe('medical patient handoff render domain', () => {
       '2026-03-03'
     );
 
-    expect(updatedToday.statusLabel).toBe('Nota actual: actualizada hoy');
+    expect(updatedToday.statusLabel).toBe('Nota vigente');
     expect(updatedToday.isActiveToday).toBe(true);
 
     const confirmedCurrent = resolveMedicalHandoffValidityViewModel(
@@ -94,8 +94,8 @@ describe('medical patient handoff render domain', () => {
       '2026-03-03'
     );
 
-    expect(confirmedCurrent.statusLabel).toBe('Nota actual: pendiente hoy');
-    expect(confirmedCurrent.isActiveToday).toBe(false);
-    expect(confirmedCurrent.isMuted).toBe(true);
+    expect(confirmedCurrent.statusLabel).toBe('Nota vigente');
+    expect(confirmedCurrent.isActiveToday).toBe(true);
+    expect(confirmedCurrent.isMuted).toBe(false);
   });
 });

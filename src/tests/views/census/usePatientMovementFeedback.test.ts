@@ -20,7 +20,10 @@ describe('usePatientMovementFeedback', () => {
 
     result.current.notifyCreationError('transfer', 'BED_NOT_FOUND', 'R2');
 
-    expect(consoleSpy).toHaveBeenCalledWith('Attempted to transfer unknown bed: R2');
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Attempted to transfer unknown bed: R2'),
+      ''
+    );
     consoleSpy.mockRestore();
   });
 

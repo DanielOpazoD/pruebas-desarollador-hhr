@@ -1,7 +1,6 @@
 import React from 'react';
 import { Box, LayoutGrid, Lock } from 'lucide-react';
 import clsx from 'clsx';
-import { MedicalIndicationsQuickAction } from '@/components/layout/date-strip/MedicalIndicationsQuickAction';
 import type { MedicalIndicationsPatientOption } from '@/shared/contracts/medicalIndications';
 
 interface DateStripQuickActionsProps {
@@ -17,7 +16,7 @@ export const DateStripQuickActions: React.FC<DateStripQuickActionsProps> = ({
   localViewMode,
   setLocalViewMode,
   hide3DToggle = false,
-  medicalIndicationsPatients = [],
+  medicalIndicationsPatients: _medicalIndicationsPatients = [],
 }) => (
   <div className="flex items-center gap-1">
     {onOpenBedManager && (

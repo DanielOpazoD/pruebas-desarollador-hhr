@@ -13,7 +13,7 @@ export const isIndexedDbBackingStoreError = (error: unknown): boolean => {
   return name === 'UnknownError' && message.includes(BACKING_STORE_ERROR_FRAGMENT);
 };
 
-export const shouldUseStickyIndexedDbFallback = (error: unknown): boolean => {
+export const shouldUseStickyIndexedDbFallback = (_error: unknown): boolean => {
   return false;
 };
 

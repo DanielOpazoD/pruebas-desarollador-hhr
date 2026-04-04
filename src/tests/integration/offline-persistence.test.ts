@@ -15,6 +15,7 @@ vi.mock('@/services/storage/firestore', () => ({
   saveRecordToFirestore: vi.fn(),
   subscribeToRecord: vi.fn(() => vi.fn()),
   getRecordFromFirestore: vi.fn(),
+  getRecordFromFirestoreDetailed: vi.fn(),
   deleteRecordFromFirestore: vi.fn(),
   updateRecordPartial: vi.fn(),
 }));
@@ -40,6 +41,14 @@ describe('Offline Persistence Integration', () => {
     vi.resetAllMocks(); // More thorough than clearAllMocks
     localStorage.clear();
     setFirestoreEnabled(true);
+    vi.mocked(firestoreService.getRecordFromFirestoreDetailed).mockImplementation(async date => {
+      try {
+        const record = await firestoreService.getRecordFromFirestore(date);
+        return record ? { status: 'resolved', record } : { status: 'missing', record: null };
+      } catch (error) {
+        return { status: 'failed', record: null, error };
+      }
+    });
   });
 
   it('should save to localStorage even if Firestore fails', async () => {

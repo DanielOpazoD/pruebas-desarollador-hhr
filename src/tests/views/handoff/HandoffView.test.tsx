@@ -197,7 +197,8 @@ describe('HandoffView Component', () => {
 
     expect(screen.getByText(/Entrega Turno Médicos/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Especialidad/i).length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: /Cirugía/i })).toBeInTheDocument();
+    const specialtySelect = screen.getByRole('combobox');
+    expect(within(specialtySelect).getByRole('option', { name: 'Cirugía' })).toBeInTheDocument();
   });
 
   it('shows clinical events controls in the medical diagnosis column', async () => {
@@ -244,7 +245,7 @@ describe('HandoffView Component', () => {
     expect(within(initialTable).getByText('PACIENTE MEDICINA')).toBeInTheDocument();
     expect(within(initialTable).getByText('PACIENTE CIRUGIA')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cirugía' }));
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Cirugía' } });
 
     await waitFor(() => {
       const filteredTable = screen.getAllByRole('table')[0];

@@ -48,7 +48,7 @@ export const TableConfigProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const { remoteSyncStatus } = useAuth();
   const [config, setConfig] = useState<TableConfig>(getDefaultConfig);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [hasRemoteConfigSnapshot, setHasRemoteConfigSnapshot] = useState(false);
 
   // Debounce timer for saves
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -58,14 +58,7 @@ export const TableConfigProvider: React.FC<{ children: React.ReactNode }> = ({ c
   useEffect(() => {
     setTableConfigFirestoreEnabled(remoteSyncStatus === 'ready');
 
-    if (remoteSyncStatus === 'bootstrapping') {
-      setIsLoading(true);
-      return;
-    }
-
     if (remoteSyncStatus !== 'ready') {
-      setConfig(getDefaultConfig());
-      setIsLoading(false);
       return;
     }
 
@@ -76,7 +69,7 @@ export const TableConfigProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setConfig(newConfig);
       }
       localUpdateRef.current = false;
-      setIsLoading(false);
+      setHasRemoteConfigSnapshot(true);
     });
 
     return () => unsubscribe();
@@ -109,10 +102,11 @@ export const TableConfigProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const updateColumnWidth = useCallback(
     (column: keyof TableColumnConfig, width: number) => {
       setConfig(prev => {
+        const baseConfig = remoteSyncStatus === 'ready' ? prev : getDefaultConfig();
         const newConfig = {
-          ...prev,
+          ...baseConfig,
           columns: {
-            ...prev.columns,
+            ...baseConfig.columns,
             [column]: Math.max(24, Math.min(400, width)), // Clamp between 24-400px
           },
         };
@@ -120,22 +114,23 @@ export const TableConfigProvider: React.FC<{ children: React.ReactNode }> = ({ c
         return newConfig;
       });
     },
-    [debouncedSave]
+    [debouncedSave, remoteSyncStatus]
   );
 
   // Update page margin
   const updatePageMargin = useCallback(
     (margin: number) => {
       setConfig(prev => {
+        const baseConfig = remoteSyncStatus === 'ready' ? prev : getDefaultConfig();
         const newConfig = {
-          ...prev,
+          ...baseConfig,
           pageMargin: Math.max(0, Math.min(64, margin)), // Clamp between 0-64px
         };
         debouncedSave(newConfig);
         return newConfig;
       });
     },
-    [debouncedSave]
+    [debouncedSave, remoteSyncStatus]
   );
 
   // Reset to default widths
@@ -169,10 +164,15 @@ export const TableConfigProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setIsEditMode(enabled);
   }, []);
 
+  const visibleConfig = remoteSyncStatus === 'ready' ? config : getDefaultConfig();
+  const isLoading =
+    remoteSyncStatus === 'bootstrapping' ||
+    (remoteSyncStatus === 'ready' && !hasRemoteConfigSnapshot);
+
   return (
     <TableConfigContext.Provider
       value={{
-        config,
+        config: visibleConfig,
         isEditMode,
         isLoading,
         setEditMode,

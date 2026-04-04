@@ -145,7 +145,7 @@ const exportYearToDateRecordsInternal = async (
 ): Promise<DataMaintenanceExportResult> => {
   try {
     const now = new Date();
-    const { startDate, endDate, isCurrentYear } = resolveYearToDateRange(year, now);
+    const { startDate, endDate } = resolveYearToDateRange(year, now);
     const records = await hydrateRangeRecords(startDate, endDate);
 
     if (records.length === 0) {

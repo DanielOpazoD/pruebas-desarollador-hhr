@@ -163,7 +163,7 @@ describe('HandoffRow', () => {
       </table>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Actualizar como nota actual/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Validar nota/i }));
     expect(onMedicalRefreshAsCurrent).toHaveBeenCalledWith('entry-1');
   });
 
@@ -256,17 +256,17 @@ describe('HandoffRow', () => {
 
     expect(screen.getByRole('combobox', { name: /Especialidad 1/i })).toHaveValue('Med Interna');
     expect(screen.queryByText(/Nota actual: actualizada hoy/i)).not.toBeInTheDocument();
-    expect(screen.getAllByText(/Nota base: Dr\. Test/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Admin Test ·/i).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: /Validar nota/i })).not.toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /Actualizar como nota actual/i })
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Ver detalle de nota actual/i })).toBeInTheDocument();
+      screen.queryByRole('button', { name: /Ver detalle de nota actual/i })
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: /Agregar otra especialidad/i })
     ).not.toBeInTheDocument();
   });
 
-  it('shows detail tooltip only when a different user marked the note as current', () => {
+  it('shows inline author metadata when a different user marked the note as current', () => {
     render(
       <table>
         <tbody>
@@ -316,10 +316,10 @@ describe('HandoffRow', () => {
       </table>
     );
 
-    fireEvent.mouseEnter(screen.getByRole('button', { name: /Ver detalle de nota actual/i }));
-
-    expect(screen.getByText(/Nota original: Dr\. Base/i)).toBeInTheDocument();
-    expect(screen.getByText(/Marcada como actual por: Admin Test/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Admin Test ·/i).length).toBeGreaterThan(0);
+    expect(
+      screen.queryByRole('button', { name: /Ver detalle de nota actual/i })
+    ).not.toBeInTheDocument();
   });
 
   it('shows a create button for specialist-style medical access when there is no handoff entry yet', () => {
@@ -345,7 +345,7 @@ describe('HandoffRow', () => {
       </table>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Crear entrega médica/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Crear entrega/i }));
     expect(onCreatePrimaryEntry).toHaveBeenCalledTimes(1);
   });
 

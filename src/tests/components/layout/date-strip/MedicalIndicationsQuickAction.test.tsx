@@ -28,9 +28,9 @@ describe('MedicalIndicationsQuickAction', () => {
 
     fireEvent.click(screen.getByTitle('Indicaciones médicas'));
 
-    expect(screen.getByRole('button', { name: 'Edición activa' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Editando' })).toBeInTheDocument();
 
-    const draftInput = screen.getByPlaceholderText('Escribe una indicación y presiona Enter');
+    const draftInput = screen.getByPlaceholderText('Escribe una indicación y presiona Enter...');
     expect(draftInput).toBeEnabled();
   });
 
@@ -39,7 +39,7 @@ describe('MedicalIndicationsQuickAction', () => {
 
     fireEvent.click(screen.getByTitle('Indicaciones médicas'));
 
-    fireEvent.change(screen.getByPlaceholderText('Escribe una indicación y presiona Enter'), {
+    fireEvent.change(screen.getByPlaceholderText('Escribe una indicación y presiona Enter...'), {
       target: { value: 'Control de signos vitales cada 6 horas' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Agregar' }));

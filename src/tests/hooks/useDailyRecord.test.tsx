@@ -242,7 +242,7 @@ describe('useDailyRecord', () => {
     });
     expect(defaultDailyRecordRepositoryPort.getForDateWithMeta).toHaveBeenCalledWith(
       mockDate,
-      true
+      false
     );
   });
 

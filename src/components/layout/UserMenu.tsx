@@ -39,33 +39,30 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-52 bg-white text-slate-800 rounded-lg shadow-lg border border-slate-200 z-50 overflow-hidden text-sm">
-          <div className="p-3 border-b border-slate-200">
-            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
-              Usuario
-            </p>
-            <p className="mt-1 font-semibold break-words text-slate-800 text-sm leading-snug">
-              {userEmail}
-            </p>
-            <p className="mt-1.5 text-xs text-slate-600">
-              Rol: <span className="font-semibold text-slate-800">{getRoleDisplayLabel(role)}</span>
-            </p>
-            <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-              <span
-                className={`h-2 w-2 rounded-full ${isFirebaseConnected ? 'bg-emerald-500' : 'bg-rose-500'}`}
-              />
-              {isFirebaseConnected ? 'Conectado' : 'Sin conexión'}
+        <div className="absolute right-0 mt-2 w-48 bg-white text-slate-800 rounded-xl shadow-xl border border-slate-200/80 ring-1 ring-black/[0.04] z-50 overflow-hidden">
+          <div className="px-3 py-2.5 border-b border-slate-100">
+            <p className="text-[10px] font-medium text-slate-400 truncate">{userEmail}</p>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="text-[10px] font-semibold text-slate-600">
+                {getRoleDisplayLabel(role)}
+              </span>
+              <span className="flex items-center gap-1 text-[9px] font-medium text-slate-400">
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${isFirebaseConnected ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                />
+                {isFirebaseConnected ? 'Online' : 'Offline'}
+              </span>
             </div>
           </div>
-          <div className="p-2">
+          <div className="p-1">
             <button
               onClick={() => {
                 onLogout();
                 close();
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-[13px] font-semibold text-red-600 hover:bg-red-50 rounded-md transition-colors"
+              className="w-full flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors"
             >
-              <LogOut size={16} />
+              <LogOut size={12} />
               Cerrar sesión
             </button>
           </div>

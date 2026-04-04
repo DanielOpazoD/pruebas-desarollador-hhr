@@ -16,6 +16,7 @@ const ALLOWED_ROOT_DAILY_RECORD_IMPORTS = [
   'src/services/repositories/contracts/dailyRecordCommands.ts',
   'src/services/repositories/contracts/dailyRecordQueries.ts',
   'src/services/repositories/contracts/dailyRecordResults.ts',
+  'src/services/repositories/dailyRecordAdmissionDateWritePolicy.ts',
   'src/services/repositories/dailyRecordAggregate.ts',
   'src/services/repositories/dailyRecordClinicalDomainService.ts',
   'src/services/repositories/dailyRecordConsistencyPolicy.ts',

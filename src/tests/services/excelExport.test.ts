@@ -22,8 +22,8 @@ vi.mock('@/services/repositories/dailyRecordRepositoryReadService', () => ({
   getForDate: vi.fn(),
 }));
 
-// Mock indexedDBService
-vi.mock('../../services/storage/indexedDBService', () => ({
+// Mock range record access
+vi.mock('@/services/storage/records', () => ({
   getAllRecords: vi.fn(),
 }));
 
@@ -241,9 +241,9 @@ describe('reportService', () => {
     it('should generate formatted range report with available records', async () => {
       const { saveAs } = await import('file-saver');
       const { generateCensusRangeFormatted } = await import('@/services/exporters/reportService');
-      const indexedDbService = await import('@/services/storage/indexedDBService');
+      const recordsService = await import('@/services/storage/records');
 
-      vi.mocked(indexedDbService.getAllRecords).mockResolvedValue({
+      vi.mocked(recordsService.getAllRecords).mockResolvedValue({
         '2025-12-24': toDailyRecord({
           date: '2025-12-24',
           beds: {},
@@ -266,9 +266,9 @@ describe('reportService', () => {
     it('should generate raw range report with explicit range filename', async () => {
       const { saveAs } = await import('file-saver');
       const { generateCensusRangeRaw } = await import('@/services/exporters/reportService');
-      const indexedDbService = await import('@/services/storage/indexedDBService');
+      const recordsService = await import('@/services/storage/records');
 
-      vi.mocked(indexedDbService.getAllRecords).mockResolvedValue({
+      vi.mocked(recordsService.getAllRecords).mockResolvedValue({
         '2025-12-24': toDailyRecord({
           date: '2025-12-24',
           beds: {},
@@ -340,9 +340,9 @@ describe('reportWorkbookBuilders', () => {
   it('uses explicit worksheet names for raw and formatted range reports', async () => {
     const { buildRangeRawWorkbookOrNull, buildRangeFormattedWorkbookOrNull } =
       await import('@/services/exporters/reportWorkbookBuilders');
-    const indexedDbService = await import('@/services/storage/indexedDBService');
+    const recordsService = await import('@/services/storage/records');
 
-    vi.mocked(indexedDbService.getAllRecords).mockResolvedValue({
+    vi.mocked(recordsService.getAllRecords).mockResolvedValue({
       '2025-12-24': toDailyRecord({
         date: '2025-12-24',
         beds: {},

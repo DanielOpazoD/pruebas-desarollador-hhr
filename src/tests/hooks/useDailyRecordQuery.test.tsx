@@ -10,7 +10,6 @@ import { setFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { DataFactory } from '@/tests/factories/DataFactory';
 import { createTestQueryClient } from '@/tests/utils/queryClientTestUtils';
 import type { DailyRecord } from '@/types/domain/dailyRecord';
-import type { DailyRecordPatch } from '@/types/domain/dailyRecordPatch';
 
 const buildMockDailyRecordRepository = (): DailyRecordRepositoryPort => ({
   getForDate: vi.fn(),

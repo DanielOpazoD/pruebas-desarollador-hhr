@@ -30,6 +30,7 @@ vi.unmock('@/services/repositories/CatalogRepository');
 const { firestoreMock } = vi.hoisted(() => ({
   firestoreMock: {
     getRecordFromFirestore: vi.fn().mockResolvedValue(null),
+    getRecordFromFirestoreDetailed: vi.fn(),
     saveRecordToFirestore: vi.fn().mockResolvedValue(undefined),
     updateRecordPartial: vi.fn().mockResolvedValue(undefined),
     deleteRecordFromFirestore: vi.fn().mockResolvedValue(undefined),
@@ -68,6 +69,7 @@ vi.mock('firebase/firestore', async importOriginal => {
 // Mock Firestore Service
 vi.mock('@/services/storage/firestore', () => ({
   getRecordFromFirestore: firestoreMock.getRecordFromFirestore,
+  getRecordFromFirestoreDetailed: firestoreMock.getRecordFromFirestoreDetailed,
   saveRecordToFirestore: firestoreMock.saveRecordToFirestore,
   updateRecordPartial: firestoreMock.updateRecordPartial,
   deleteRecordFromFirestore: firestoreMock.deleteRecordFromFirestore,
@@ -151,6 +153,21 @@ describe('DailyRecordRepository (Expanded)', () => {
     await clearAllRecords();
 
     setFirestoreEnabled(true);
+    firestoreMock.getRecordFromFirestoreDetailed.mockImplementation(async (date: string) => {
+      try {
+        const record = await firestoreMock.getRecordFromFirestore(date);
+        return {
+          status: record ? 'resolved' : 'missing',
+          record,
+        };
+      } catch (error) {
+        return {
+          status: 'failed',
+          record: null,
+          error,
+        };
+      }
+    });
   });
 
   describe('updatePartial', () => {

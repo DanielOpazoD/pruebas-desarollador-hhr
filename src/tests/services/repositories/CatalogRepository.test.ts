@@ -1,3 +1,7 @@
+// Unmock the repository so we can test the real thing
+// (it is mocked globally in tests/setup.ts)
+vi.unmock('@/services/repositories/CatalogRepository');
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CatalogRepository } from '@/services/repositories/CatalogRepository';
 import * as catalogService from '@/services/storage/indexeddb/indexedDbCatalogService';

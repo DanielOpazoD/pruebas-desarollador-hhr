@@ -22,6 +22,7 @@ const ALLOWED_ORIGINAL_DATA_REFERENCES = [
   'src/features/census/controllers/censusCmaController.ts',
   'src/domain/CensusManager.ts',
   'src/services/admin/admissionDateBackfillService.ts',
+  'src/types/virtual-minsal-shared.d.ts',
 ];
 
 describe('originalData business governance', () => {

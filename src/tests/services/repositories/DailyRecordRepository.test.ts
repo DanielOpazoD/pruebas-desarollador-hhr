@@ -69,6 +69,7 @@ const { legacyFirebaseMock, indexedDbFacadeMock, firestoreMock } = vi.hoisted(()
     deleteRecordFromFirestore: vi.fn(),
     updateRecordPartial: vi.fn(),
     getRecordFromFirestore: vi.fn(),
+    getRecordFromFirestoreDetailed: vi.fn(),
     getAvailableDatesFromFirestore: vi.fn().mockResolvedValue([]),
     saveNurseCatalogToFirestore: vi.fn(),
     saveTensCatalogToFirestore: vi.fn(),
@@ -213,6 +214,23 @@ describe('DailyRecordRepository', () => {
     // Default mock implementations for common lookups
     vi.mocked(idbService.getRecordForDate).mockResolvedValue(null);
     vi.mocked(firestoreService.getRecordFromFirestore).mockResolvedValue(null);
+    vi.mocked(firestoreService.getRecordFromFirestoreDetailed).mockImplementation(
+      async (date: string) => {
+        try {
+          const record = await vi.mocked(firestoreService.getRecordFromFirestore)(date);
+          return {
+            status: record ? 'resolved' : 'missing',
+            record,
+          };
+        } catch (error) {
+          return {
+            status: 'failed',
+            record: null,
+            error,
+          };
+        }
+      }
+    );
   });
 
   describe('getForDate', () => {

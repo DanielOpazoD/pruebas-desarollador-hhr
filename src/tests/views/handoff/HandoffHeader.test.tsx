@@ -44,30 +44,30 @@ describe('HandoffHeader', () => {
   it('shows action buttons in medical mode when not readOnly', () => {
     render(<HandoffHeader {...defaultProps} isMedical={true} />);
 
-    expect(screen.getByLabelText(/Enviar entrega por WhatsApp/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Generar link para firma del médico/i)).toBeInTheDocument();
+    expect(screen.getByTitle(/Enviar por WhatsApp/i)).toBeInTheDocument();
+    expect(screen.getByTitle(/Links de firma/i)).toBeInTheDocument();
   });
 
   it('calls actions on button clicks', () => {
     render(<HandoffHeader {...defaultProps} isMedical={true} />);
 
-    fireEvent.click(screen.getByLabelText(/Enviar entrega por WhatsApp/i));
+    fireEvent.click(screen.getByTitle(/Enviar por WhatsApp/i));
     expect(defaultProps.onSendWhatsApp).toHaveBeenCalled();
 
-    fireEvent.click(screen.getByLabelText(/Generar link para firma del médico/i));
-    fireEvent.click(screen.getByText(/Copiar link: todos/i));
+    fireEvent.click(screen.getByTitle(/Links de firma/i));
+    fireEvent.click(screen.getByText(/Link: todos/i));
     expect(defaultProps.onShareLink).toHaveBeenCalledWith('all');
   });
 
   it('allows selecting differentiated medical signature links', () => {
     render(<HandoffHeader {...defaultProps} isMedical={true} />);
 
-    fireEvent.click(screen.getByLabelText(/Generar link para firma del médico/i));
-    fireEvent.click(screen.getByText(/Copiar link: UPC/i));
+    fireEvent.click(screen.getByTitle(/Links de firma/i));
+    fireEvent.click(screen.getByText(/Link: UPC/i));
     expect(defaultProps.onShareLink).toHaveBeenCalledWith('upc');
 
-    fireEvent.click(screen.getByLabelText(/Generar link para firma del médico/i));
-    fireEvent.click(screen.getByText(/Copiar link: No UPC/i));
+    fireEvent.click(screen.getByTitle(/Links de firma/i));
+    fireEvent.click(screen.getByText(/Link: No UPC/i));
     expect(defaultProps.onShareLink).toHaveBeenCalledWith('no-upc');
   });
 
@@ -80,14 +80,14 @@ describe('HandoffHeader', () => {
       />
     );
 
-    const wsButton = screen.getByLabelText(/Enviar entrega por WhatsApp/i);
+    const wsButton = screen.getByTitle(/Enviar por WhatsApp/i);
     expect(wsButton).toBeDisabled();
   });
 
   it('hides action buttons in readOnly mode', () => {
     render(<HandoffHeader {...defaultProps} isMedical={true} readOnly={true} />);
 
-    expect(screen.queryByLabelText(/Enviar entrega por WhatsApp/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/Generar link para firma del médico/i)).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/Enviar por WhatsApp/i)).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/Links de firma/i)).not.toBeInTheDocument();
   });
 });

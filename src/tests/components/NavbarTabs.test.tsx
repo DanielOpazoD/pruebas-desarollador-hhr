@@ -96,12 +96,12 @@ describe('NavbarTabs', () => {
   it('applies active style to current module and handles CUDYR alias', () => {
     const { rerender } = render(<NavbarTabs {...defaultProps} currentModule="CENSUS" />);
     const censusButton = screen.getByText('Censo Diario').closest('button');
-    expect(censusButton?.className).toContain('border-white');
+    expect(censusButton?.className).toContain('bg-white/[0.12]');
 
     // Test CUDYR alias for NURSING_HANDOFF
     rerender(<NavbarTabs {...defaultProps} currentModule="CUDYR" />);
     const nursingButton = screen.getByText('Entrega Turno Enfermería').closest('button');
-    expect(nursingButton?.className).toContain('border-white');
+    expect(nursingButton?.className).toContain('bg-white/[0.12]');
   });
 
   it('handles ANALYTICS_TOGGLE from non-CENSUS module', async () => {
@@ -157,9 +157,9 @@ describe('NavbarTabs', () => {
     // Testing the branch for line 135 in NavbarTabs.tsx
     const { rerender } = render(<NavbarTabs {...defaultProps} currentModule="BACKUP_FILES" />);
     const menuBtn = screen.getByTitle('Más módulos');
-    expect(menuBtn.className).toContain('bg-white/20'); // isUtilityActive should be true for BACKUP_FILES
+    expect(menuBtn.className).toContain('bg-white/[0.15]'); // isUtilityActive should be true for BACKUP_FILES
 
     rerender(<NavbarTabs {...defaultProps} currentModule="CUDYR" />);
-    expect(menuBtn.className).toContain('bg-white/20'); // currentModule === 'CUDYR' condition
+    expect(menuBtn.className).toContain('bg-white/[0.15]'); // currentModule === 'CUDYR' condition
   });
 });

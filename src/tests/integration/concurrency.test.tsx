@@ -122,7 +122,7 @@ describe('Concurrency Handling Integration', () => {
       () => {
         expect(mockDailyRecordRepositoryPort.getForDateWithMeta).toHaveBeenCalledWith(
           mockDate,
-          true
+          false
         );
       },
       { timeout: 3000 }

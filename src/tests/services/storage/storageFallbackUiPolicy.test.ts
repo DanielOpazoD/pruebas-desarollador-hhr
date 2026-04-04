@@ -6,6 +6,7 @@ import {
   getStorageFallbackNotice,
   hasAttemptedStorageAutoRecovery,
   markStorageAutoRecoveryAttempted,
+  markStoragePersistentFallbackObserved,
   shouldAttemptStorageAutoRecovery,
   shouldShowStorageFallbackUi,
 } from '@/services/storage/storageFallbackUiPolicy';
@@ -28,6 +29,7 @@ describe('storageFallbackUiPolicy', () => {
     expect(shouldShowStorageFallbackUi(true)).toBe(false);
 
     window.sessionStorage.setItem(getStorageAutoRecoveryKey(), 'true');
+    markStoragePersistentFallbackObserved();
 
     expect(shouldShowStorageFallbackUi(true)).toBe(true);
   });

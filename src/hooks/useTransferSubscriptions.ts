@@ -12,31 +12,24 @@ interface UseTransferSubscriptionsResult {
 export const useTransferSubscriptions = (): UseTransferSubscriptionsResult => {
   const { remoteSyncStatus } = useAuth();
   const [transfers, setTransfers] = useState<TransferRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(remoteSyncStatus === 'bootstrapping');
   const [error, setError] = useState<string | null>(null);
+  const [hasResolvedRemoteSubscription, setHasResolvedRemoteSubscription] = useState(false);
 
   useEffect(() => {
-    if (remoteSyncStatus === 'bootstrapping') {
-      setIsLoading(true);
-      return;
-    }
-
     if (remoteSyncStatus !== 'ready') {
-      setIsLoading(false);
       return;
     }
 
-    setError(null);
-    setIsLoading(true);
     const unsubscribe = subscribeToTransfers(
       data => {
         setTransfers(data);
-        setIsLoading(false);
+        setError(null);
+        setHasResolvedRemoteSubscription(true);
       },
       {
         onError: message => {
           setError(message);
-          setIsLoading(false);
+          setHasResolvedRemoteSubscription(true);
         },
       }
     );
@@ -44,9 +37,13 @@ export const useTransferSubscriptions = (): UseTransferSubscriptionsResult => {
     return () => unsubscribe();
   }, [remoteSyncStatus]);
 
+  const isLoading =
+    remoteSyncStatus === 'bootstrapping' ||
+    (remoteSyncStatus === 'ready' && !hasResolvedRemoteSubscription);
+
   return {
-    transfers,
+    transfers: remoteSyncStatus === 'ready' ? transfers : [],
     isLoading,
-    error,
+    error: remoteSyncStatus === 'ready' ? error : null,
   };
 };

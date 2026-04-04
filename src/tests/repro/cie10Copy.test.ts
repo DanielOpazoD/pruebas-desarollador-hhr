@@ -12,7 +12,11 @@ vi.unmock('@/services/repositories/dailyRecordRepositoryInitializationService');
 
 // Mock services
 vi.mock('../../services/storage/indexeddb/indexedDbRecordService');
-vi.mock('../../services/storage/firestore');
+vi.mock('@/services/storage/firestore', () => ({
+  getRecordFromFirestore: vi.fn(),
+  getRecordFromFirestoreDetailed: vi.fn(),
+  saveRecordToFirestore: vi.fn(),
+}));
 vi.mock('../../services/storage/legacyFirebaseService', () => ({
   getLegacyRecord: vi.fn().mockResolvedValue(null),
   getLegacyNurseCatalog: vi.fn().mockResolvedValue([]),
@@ -67,6 +71,11 @@ describe('CIE-10 Copy Bug Reproduction', () => {
       return null;
     });
     vi.mocked(FirestoreService.getRecordFromFirestore).mockResolvedValue(null);
+    vi.mocked(FirestoreService.getRecordFromFirestoreDetailed).mockResolvedValue({
+      status: 'missing',
+      record: null,
+    });
+    vi.mocked(FirestoreService.saveRecordToFirestore).mockResolvedValue(undefined);
     vi.mocked(IndexedDBService.saveRecord).mockResolvedValue(undefined);
 
     // Execute initialization
@@ -147,6 +156,11 @@ describe('CIE-10 Copy Bug Reproduction', () => {
       return null;
     });
     vi.mocked(FirestoreService.getRecordFromFirestore).mockResolvedValue(null);
+    vi.mocked(FirestoreService.getRecordFromFirestoreDetailed).mockResolvedValue({
+      status: 'missing',
+      record: null,
+    });
+    vi.mocked(FirestoreService.saveRecordToFirestore).mockResolvedValue(undefined);
 
     // Execute initialization
     const newRecord = await initializeDay(nextDate, prevDate);

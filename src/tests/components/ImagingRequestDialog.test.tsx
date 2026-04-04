@@ -44,7 +44,7 @@ describe('ImagingRequestDialog', () => {
     render(<ImagingRequestDialog isOpen={true} onClose={vi.fn()} patient={mockPatient} />);
 
     expect(screen.getByText(/Solicitud de Imágenes/i)).toBeInTheDocument();
-    expect(screen.getByText(/MARCELO VALDES AVILA/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/MARCELO VALDES AVILA/i)).toHaveLength(2);
   });
 
   it('should switch between documents', () => {

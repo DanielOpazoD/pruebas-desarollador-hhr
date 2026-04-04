@@ -33,7 +33,6 @@ export const HandoffHeader: React.FC<HandoffHeaderProps> = ({
 }) => {
   const title = isMedical ? 'Entrega de Turno' : 'Entrega de Turno Enfermería';
   const Icon = isMedical ? Stethoscope : MessageSquare;
-  const headerColor = isMedical ? 'text-sky-600' : 'text-medical-600';
 
   return (
     <header className="bg-white p-3 md:p-4 rounded-2xl shadow-sm border border-slate-200/80 ring-1 ring-black/[0.02] flex flex-col md:flex-row items-center gap-3 print:hidden">

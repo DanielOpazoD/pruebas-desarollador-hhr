@@ -1,5 +1,4 @@
 import React from 'react';
-import { HandoffHeader } from './HandoffHeader';
 import { HandoffChecklistSection } from './HandoffChecklistSection';
 import { HandoffCudyrPrint } from './HandoffCudyrPrint';
 import { HandoffNightCudyrActionButton } from './HandoffNightCudyrActionButton';
