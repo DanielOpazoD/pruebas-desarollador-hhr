@@ -16,38 +16,29 @@ import {
 import {
   isExpectedStorageLookupMiss,
   shouldLogStorageError,
-  classifyStorageError,
   resolveStorageLookupStatus,
   toStorageOperationalError,
 } from './storageErrorPolicy';
 import { isBackupDateValidationError, parseBackupDateParts } from './storageContracts';
 import { measureStorageOperation } from './storageObservability';
 import { assertStorageAvailable } from './storageAvailability';
-import {
-  createStorageLookupResult,
-  type StorageLookupResult,
-  withStorageLookupTimeout,
-} from './storageLookupContracts';
+import { createStorageLookupResult, type StorageLookupResult } from './storageLookupContracts';
 import {
   recordOperationalErrorTelemetry,
   recordOperationalTelemetry,
 } from '@/services/observability/operationalTelemetryService';
+import {
+  createBackupMutationResultFromError,
+  resolveBackupStorage,
+  resolveDeleteMutationStatus,
+  runStorageLookupWithTimeout,
+  type BackupStorageMutationResult,
+} from './backupStorageRuntimeSupport';
 
 // ============= Types =============
 
 export type StoredCensusFile = BaseStoredFile;
 
-export type BackupStorageMutationStatus =
-  | 'success'
-  | 'permission_denied'
-  | 'not_found'
-  | 'invalid_date'
-  | 'timeout'
-  | 'unknown';
-
-export type BackupStorageMutationResult<T = null> =
-  | { status: 'success'; data: T }
-  | { status: BackupStorageMutationStatus; error: unknown; data: null };
 // ============= Constants =============
 
 const STORAGE_ROOT = 'censo-diario';
@@ -100,13 +91,6 @@ interface CensusStorageService {
   deleteCensusFileWithResult: (date: string) => Promise<BackupStorageMutationResult>;
 }
 
-const resolveBackupStorage = async (
-  runtime: Pick<BackupStorageRuntime, 'ready' | 'getStorage'>
-) => {
-  await runtime.ready;
-  return runtime.getStorage();
-};
-
 // ============= Core Functions =============
 
 /**
@@ -142,22 +126,9 @@ export const createCensusStorageService = (
       return { status: 'success', data: downloadUrl };
     } catch (error) {
       if (isBackupDateValidationError(error)) {
-        return { status: 'invalid_date', error, data: null };
+        return createBackupMutationResultFromError<string>(error, { invalidDate: true });
       }
-
-      const category = classifyStorageError(error);
-      return {
-        status:
-          category === 'permission_denied'
-            ? 'permission_denied'
-            : category === 'not_found'
-              ? 'not_found'
-              : category === 'timeout'
-                ? 'timeout'
-                : 'unknown',
-        error,
-        data: null,
-      };
+      return createBackupMutationResultFromError<string>(error);
     }
   };
 
@@ -202,7 +173,7 @@ export const createCensusStorageService = (
       { context: date }
     );
 
-    return withStorageLookupTimeout(checkPromise, TIMEOUT_MS, () => {
+    return runStorageLookupWithTimeout(checkPromise, TIMEOUT_MS, () => {
       recordOperationalTelemetry({
         category: 'backup',
         operation: 'census_exists_timeout',
@@ -220,9 +191,9 @@ export const createCensusStorageService = (
       filePath = generateCensusPath(date);
     } catch (error) {
       if (isBackupDateValidationError(error)) {
-        return { status: 'invalid_date', error, data: null };
+        return createBackupMutationResultFromError(error, { invalidDate: true });
       }
-      return { status: 'unknown', error, data: null };
+      return createBackupMutationResultFromError(error);
     }
     const storageRef = ref(storage, filePath);
     try {
@@ -230,14 +201,13 @@ export const createCensusStorageService = (
       return { status: 'success', data: null };
     } catch (error: unknown) {
       if (isExpectedStorageLookupMiss(error)) {
-        const category = classifyStorageError(error);
         return {
-          status: category === 'permission_denied' ? 'permission_denied' : 'not_found',
+          status: resolveDeleteMutationStatus(error),
           error,
           data: null,
         };
       }
-      return { status: 'unknown', error, data: null };
+      return createBackupMutationResultFromError(error);
     }
   };
 

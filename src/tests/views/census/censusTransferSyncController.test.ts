@@ -79,7 +79,7 @@ describe('censusTransferSyncController', () => {
     expect(completeTransfer).toHaveBeenCalledWith('TR-1', 'test@example.com');
   });
 
-  it('creates a transfer request when there is no linked open transfer', async () => {
+  it('creates and finalizes a transfer request when there is no linked open transfer', async () => {
     const getLatest = vi.fn().mockResolvedValue(null);
     const createTransfer = vi.fn().mockResolvedValue({ id: 'TR-2' });
     const completeTransfer = vi.fn();
@@ -109,6 +109,6 @@ describe('censusTransferSyncController', () => {
         createdBy: 'test@example.com',
       })
     );
-    expect(completeTransfer).not.toHaveBeenCalled();
+    expect(completeTransfer).toHaveBeenCalledWith('TR-2', 'test@example.com');
   });
 });

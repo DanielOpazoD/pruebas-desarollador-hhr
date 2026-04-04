@@ -29,16 +29,16 @@ import {
 import { isBackupDateValidationError, parseBackupDateParts } from './storageContracts';
 import { measureStorageOperation } from './storageObservability';
 import { assertStorageAvailable } from './storageAvailability';
-import {
-  createStorageLookupResult,
-  type StorageLookupResult,
-  withStorageLookupTimeout,
-} from './storageLookupContracts';
+import { createStorageLookupResult, type StorageLookupResult } from './storageLookupContracts';
 import {
   recordOperationalErrorTelemetry,
   recordOperationalTelemetry,
 } from '@/services/observability/operationalTelemetryService';
 import { pdfStorageLogger } from '@/services/backup/backupLoggers';
+import {
+  resolveBackupStorage,
+  runStorageLookupWithTimeout,
+} from '@/services/backup/backupStorageRuntimeSupport';
 
 // ============= Types =============
 
@@ -105,13 +105,6 @@ interface PdfStorageService {
   pdfExistsDetailed: (date: string, shiftType: 'day' | 'night') => Promise<StorageLookupResult>;
 }
 
-const resolveBackupStorage = async (
-  runtime: Pick<BackupStorageRuntime, 'ready' | 'getStorage'>
-) => {
-  await runtime.ready;
-  return runtime.getStorage();
-};
-
 // ============= Core Functions =============
 
 /**
@@ -168,7 +161,7 @@ export const createPdfStorageService = (
       { context: `${date}:${shiftType}` }
     );
 
-    return withStorageLookupTimeout(checkPromise, TIMEOUT_MS, () => {
+    return runStorageLookupWithTimeout(checkPromise, TIMEOUT_MS, () => {
       recordOperationalTelemetry({
         category: 'backup',
         operation: 'pdf_exists_timeout',

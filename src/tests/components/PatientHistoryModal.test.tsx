@@ -64,10 +64,10 @@ describe('PatientHistoryModal', () => {
     expect(screen.getByText(/buscando historial clínico/i)).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText('Días Totales')).toBeInTheDocument();
+      expect(screen.getByText('2d')).toBeInTheDocument();
     });
 
-    expect(screen.getAllByText('Ingreso')).toHaveLength(2);
+    expect(screen.getByText('Ingreso')).toBeInTheDocument();
     expect(screen.queryByText('Alta')).not.toBeInTheDocument();
     expect(screen.queryByText('Movimiento interno')).not.toBeInTheDocument();
     expect(screen.getByText('Traslado')).toBeInTheDocument();

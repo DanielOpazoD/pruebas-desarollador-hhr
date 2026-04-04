@@ -68,6 +68,16 @@
         "branches": 75.0
       }
     },
+    "src/services/backup": {
+      "tests": "src/tests/services/backup",
+      "minTestFileCount": 12,
+      "minTestToSourceRatio": 0.75,
+      "coverageBaseline": {
+        "lines": 78.0,
+        "functions": 80.0,
+        "branches": 63.0
+      }
+    },
     "src/features/reminders/admin": {
       "label": "src/features/reminders/admin",
       "sources": [

@@ -1,4 +1,4 @@
-import { PatientData } from '@/types/domain/patient';
+import type { PatientData } from '@/shared/census/patientContracts';
 import { PatientIdentityStatus } from '@/types/domain/patientIdentity';
 
 export type BiologicalSex = 'Masculino' | 'Femenino' | 'Indeterminado';

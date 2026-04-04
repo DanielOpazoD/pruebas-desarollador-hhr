@@ -1,4 +1,4 @@
-import type { PatientData } from '@/types/domain/patient';
+import type { PatientData } from '@/shared/census/patientContracts';
 import { LucideIcon } from 'lucide-react';
 
 export type DocumentOption = 'solicitud' | 'encuesta' | 'consentimiento';

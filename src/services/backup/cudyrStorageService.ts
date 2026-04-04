@@ -34,12 +34,15 @@ import { assertStorageAvailable } from '@/services/backup/storageAvailability';
 import {
   createStorageLookupResult,
   type StorageLookupResult,
-  withStorageLookupTimeout,
 } from '@/services/backup/storageLookupContracts';
 import {
   recordOperationalErrorTelemetry,
   recordOperationalTelemetry,
 } from '@/services/observability/operationalTelemetryService';
+import {
+  resolveBackupStorage,
+  runStorageLookupWithTimeout,
+} from '@/services/backup/backupStorageRuntimeSupport';
 
 // ============= Types =============
 
@@ -99,13 +102,6 @@ interface CudyrStorageService {
   deleteCudyrFile: (date: string) => Promise<void>;
 }
 
-const resolveBackupStorage = async (
-  runtime: Pick<BackupStorageRuntime, 'ready' | 'getStorage'>
-) => {
-  await runtime.ready;
-  return runtime.getStorage();
-};
-
 // ============= Core Functions =============
 
 /**
@@ -156,7 +152,7 @@ export const createCudyrStorageService = (
       { context: date }
     );
 
-    return withStorageLookupTimeout(checkPromise, TIMEOUT_MS, () => {
+    return runStorageLookupWithTimeout(checkPromise, TIMEOUT_MS, () => {
       recordOperationalTelemetry({
         category: 'backup',
         operation: 'cudyr_exists_timeout',

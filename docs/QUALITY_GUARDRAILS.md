@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Evitar que la deuda estructural vuelva a crecer después de las fases de estabilización de `clinical-documents`, `census` y `transfers`.
+Evitar que la deuda estructural vuelva a crecer después de las fases de estabilización de `clinical-documents`, `census`, `transfers` y `backup/export`.
 
 ## Capas estándar
 
@@ -26,6 +26,7 @@ Evitar que la deuda estructural vuelva a crecer después de las fases de estabil
 7. Los providers de infraestructura obligatorios deben fallar rápido si falta wiring.
 8. Los servicios críticos que dependan de Firebase Functions/Auth/Storage deben preferir `create...Service(...)` o runtime inyectable y conservar singleton por defecto solo por compatibilidad.
 9. Los refactors de backup/exportación deben dejar tests de runtime o fallback; no basta con tests puramente superficiales del consumer.
+10. Si `backup/export` pasa a ser subsistema crítico de release, debe quedar también reflejado en `critical-coverage` y en `technical-ownership-map`, no solo en budgets de flujo.
 
 ## Cómo agregar un guardrail nuevo
 

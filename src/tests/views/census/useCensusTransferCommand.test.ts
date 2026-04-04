@@ -114,7 +114,7 @@ describe('useCensusTransferCommand', () => {
     return { ...hook, addTransfer, updateTransfer, setTransferState, notifyError };
   };
 
-  it('executes transfer and syncs a transfer request when there is no linked open request', async () => {
+  it('executes transfer and syncs a finalized transfer request when there is no linked open request', async () => {
     mockGetLatestOpenTransferRequestByBedId.mockResolvedValue(null);
     mockCreateTransferRequest.mockResolvedValue({ id: 'TR-1' });
     const { result, addTransfer, updateTransfer, setTransferState } = createHook();
@@ -132,7 +132,7 @@ describe('useCensusTransferCommand', () => {
         createdBy: 'doctor@example.com',
       })
     );
-    expect(mockCompleteTransferWithResult).not.toHaveBeenCalled();
+    expect(mockCompleteTransferWithResult).toHaveBeenCalledWith('TR-1', 'doctor@example.com');
   });
 
   it('finalizes the linked transfer request when one already exists for the bed', async () => {

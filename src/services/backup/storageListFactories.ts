@@ -26,14 +26,14 @@ import type {
   MonthInfo,
   StorageListResult,
 } from './storageListSupport';
+import { resolveBackupStorage } from '@/services/backup/backupStorageRuntimeSupport';
 
 export const createListYears = (storageRoot: string) => {
   return async (
     runtime: Pick<BackupStorageRuntime, 'ready' | 'getStorage'> = defaultBackupStorageRuntime
   ): Promise<string[]> => {
     try {
-      await runtime.ready;
-      const storage = await runtime.getStorage();
+      const storage = await resolveBackupStorage(runtime);
 
       const timeoutPromise = new Promise<string[]>(resolve =>
         setTimeout(() => resolve([]), DEFAULT_LIST_TIMEOUT_MS)
@@ -79,8 +79,7 @@ export const createListMonths = (storageRoot: string) => {
     runtime: Pick<BackupStorageRuntime, 'ready' | 'getStorage'> = defaultBackupStorageRuntime
   ): Promise<MonthInfo[]> => {
     try {
-      await runtime.ready;
-      const storage = await runtime.getStorage();
+      const storage = await resolveBackupStorage(runtime);
 
       const timeoutPromise = new Promise<MonthInfo[]>(resolve =>
         setTimeout(() => resolve([]), DEFAULT_LIST_TIMEOUT_MS)
@@ -186,8 +185,12 @@ export const createListFilesInMonth = <
   config: ListFilesConfig<T, TParsed>
 ) => {
   const detailed = createListFilesInMonthWithReport(config);
-  return async (year: string, month: string): Promise<T[]> => {
-    const result = await detailed(year, month);
+  return async (
+    year: string,
+    month: string,
+    runtime: Pick<BackupStorageRuntime, 'ready' | 'getStorage'> = defaultBackupStorageRuntime
+  ): Promise<T[]> => {
+    const result = await detailed(year, month, runtime);
     return result.files;
   };
 };
@@ -207,8 +210,7 @@ export const createListFilesInMonthWithReport = <
     const report = createStorageListReport();
 
     try {
-      await runtime.ready;
-      const storage = await runtime.getStorage();
+      const storage = await resolveBackupStorage(runtime);
 
       const timeoutPromise = new Promise<StorageListResult<T>>(resolve =>
         setTimeout(() => {
