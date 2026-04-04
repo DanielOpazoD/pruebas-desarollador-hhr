@@ -1,5 +1,5 @@
 import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
-import type { MedicalHandoffEntry, PatientData } from '@/types/domain/patient';
+import type { MedicalHandoffEntry, PatientData } from '@/domain/handoff/patientContracts';
 
 type MedicalHandoffRecord = {
   date: string;

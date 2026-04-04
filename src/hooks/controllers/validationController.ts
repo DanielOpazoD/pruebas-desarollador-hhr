@@ -1,4 +1,4 @@
-import type { DailyRecordBedsState } from '@/types/domain/dailyRecordSlices';
+import type { DailyRecordBedsState } from '@/hooks/contracts/dailyRecordHookContracts';
 import type { PatientData } from '@/hooks/contracts/patientHookContracts';
 
 export interface MovePatientValidationResult {

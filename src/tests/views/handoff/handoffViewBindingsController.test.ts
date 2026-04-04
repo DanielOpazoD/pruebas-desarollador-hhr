@@ -6,10 +6,10 @@ import {
   resolveEffectiveSelectedMedicalSpecialty,
   resolveHandoffMedicalBindings,
 } from '@/features/handoff/controllers/handoffViewBindingsController';
+import { Specialty } from '@/domain/handoff/patientContracts';
 import type { MedicalHandoffCapabilities } from '@/features/handoff/controllers/medicalHandoffAccessController';
 import type { BedDefinition } from '@/types/domain/beds';
 import type { DailyRecord } from '@/types/domain/dailyRecord';
-import { Specialty } from '@/types/domain/patientClassification';
 
 const buildCapabilities = (
   overrides: Partial<MedicalHandoffCapabilities> = {}

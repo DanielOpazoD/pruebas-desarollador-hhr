@@ -21,6 +21,30 @@ import {
 } from '@/services/storage/firestore/firestoreWriteSupport';
 import { firestoreWriteLogger } from '@/services/storage/storageLoggers';
 
+const logFirestoreWriteRetry = (
+  operation: 'save' | 'partialUpdate' | 'delete',
+  date: string,
+  attempt: number,
+  error: unknown
+): void => {
+  firestoreWriteLogger.warn(`Firestore write retry: ${operation}`, {
+    attempt,
+    date,
+    error,
+  });
+};
+
+const logFirestoreWriteError = (
+  operation: 'save' | 'partialUpdate' | 'delete' | 'moveToTrash',
+  date: string,
+  error: unknown
+): void => {
+  firestoreWriteLogger.error(`Firestore write failed: ${operation}`, {
+    date,
+    error,
+  });
+};
+
 export { ConcurrencyError } from '@/services/storage/firestore/firestoreWriteSupport';
 
 export const saveRecordToFirestore = async (
@@ -45,10 +69,10 @@ export const saveRecordToFirestore = async (
 
     await withRetry(() => setDoc(docRef, sanitizedRecord as Record<string, unknown>), {
       onRetry: (err: unknown, attempt: number) =>
-        firestoreWriteLogger.warn(`Retry ${attempt} saving record ${record.date}`, err),
+        logFirestoreWriteRetry('save', record.date, attempt, err),
     });
   } catch (error) {
-    firestoreWriteLogger.error(`Failed to save record ${record.date}`, error);
+    logFirestoreWriteError('save', record.date, error);
     throw error;
   }
 };
@@ -81,22 +105,20 @@ export const updateRecordPartial = async (
           updateDoc(docRef, asFirestoreUpdatePayload(sanitizedData) as UpdateData<DocumentData>),
         {
           onRetry: (err: unknown, attempt: number) =>
-            firestoreWriteLogger.warn(`Retry ${attempt} updating record ${date}`, err),
+            logFirestoreWriteRetry('partialUpdate', date, attempt, err),
         }
       );
     } catch (error: unknown) {
       const storageError = error as { code?: string };
       if (storageError?.code === 'not-found') {
-        firestoreWriteLogger.warn(
-          `Document ${date} not found for partial update. Creating with setDoc.`
-        );
+        firestoreWriteLogger.warn('Firestore write fallback: partialUpdateNotFound', { date });
         await withRetry(() => setDoc(docRef, sanitizedData, { merge: true }));
       } else {
         throw error;
       }
     }
   } catch (error) {
-    firestoreWriteLogger.error(`Failed partial update for ${date}`, error);
+    logFirestoreWriteError('partialUpdate', date, error);
     throw error;
   }
 };
@@ -106,10 +128,10 @@ export const deleteRecordFromFirestore = async (date: string): Promise<void> => 
     const docRef = getRecordDocRef(date);
     await withRetry(() => deleteDoc(docRef), {
       onRetry: (err: unknown, attempt: number) =>
-        firestoreWriteLogger.warn(`Retry ${attempt} deleting record ${date}`, err),
+        logFirestoreWriteRetry('delete', date, attempt, err),
     });
   } catch (error) {
-    firestoreWriteLogger.error(`Failed to delete record ${date}`, error);
+    logFirestoreWriteError('delete', date, error);
     throw error;
   }
 };
@@ -126,7 +148,7 @@ export const moveRecordToTrash = async (record: DailyRecord): Promise<void> => {
       })
     );
   } catch (error) {
-    firestoreWriteLogger.error(`Failed to move record ${record.date} to trash`, error);
+    logFirestoreWriteError('moveToTrash', record.date, error);
     throw error;
   }
 };

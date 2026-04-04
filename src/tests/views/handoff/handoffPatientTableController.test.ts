@@ -1,8 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { BedType } from '@/types/domain/beds';
-import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 import type { BedDefinition } from '@/types/domain/beds';
-import type { PatientData } from '@/types/domain/patient';
+import { PatientStatus, Specialty, type PatientData } from '@/domain/handoff/patientContracts';
 import { resolveHandoffPatientRowPlan } from '@/features/handoff/controllers/handoffPatientTableController';
 
 describe('handoffPatientTableController', () => {

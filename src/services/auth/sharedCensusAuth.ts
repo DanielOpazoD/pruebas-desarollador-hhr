@@ -1,9 +1,9 @@
 import { httpsCallable } from 'firebase/functions';
-import { logger } from '@/services/utils/loggerService';
 import { defaultAuthRuntime } from '@/services/firebase-runtime/authRuntime';
 import type { AuthRuntime } from '@/services/firebase-runtime/authRuntime';
 import { defaultFunctionsRuntime } from '@/services/firebase-runtime/functionsRuntime';
 import type { FunctionsRuntime } from '@/services/firebase-runtime/functionsRuntime';
+import { sharedCensusAuthLogger } from '@/services/auth/authLoggers';
 
 type SharedCensusAccessResult = {
   authorized: boolean;
@@ -11,8 +11,6 @@ type SharedCensusAccessResult = {
 };
 
 const SHARED_CENSUS_ROUTE_PREFIXES = ['/censo-compartido', '/censo-publico'] as const;
-const sharedCensusAuthLogger = logger.child('SharedCensusAuth');
-
 const normalizeEmail = (email: string): string => {
   if (!email) return '';
   return String(email).toLowerCase().replace(/\s+/g, '').trim();

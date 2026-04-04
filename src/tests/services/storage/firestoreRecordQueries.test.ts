@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const { firestoreQueryLoggerError } = vi.hoisted(() => ({
+  firestoreQueryLoggerError: vi.fn(),
+}));
+
 vi.mock('firebase/firestore', async () => {
   const actual = await vi.importActual('firebase/firestore');
   return {
@@ -34,6 +38,12 @@ vi.mock('@/services/storage/firestore/firestoreShared', () => ({
   getRecordsCollection: vi.fn(() => 'records-collection'),
 }));
 
+vi.mock('@/services/storage/storageLoggers', () => ({
+  firestoreQueryLogger: {
+    error: firestoreQueryLoggerError,
+  },
+}));
+
 import { getDoc, getDocs, onSnapshot } from 'firebase/firestore';
 import {
   getAllRecordsFromFirestore,
@@ -64,6 +74,12 @@ describe('firestoreRecordQueries', () => {
 
     vi.mocked(getDocs).mockRejectedValueOnce(new Error('offline'));
     await expect(getAvailableDatesFromFirestore()).resolves.toEqual([]);
+    expect(firestoreQueryLoggerError).toHaveBeenCalledWith(
+      'Firestore query failed: getAvailableDates',
+      expect.objectContaining({
+        error: expect.any(Error),
+      })
+    );
   });
 
   it('gets a single record or null when not found / failing', async () => {
@@ -84,6 +100,13 @@ describe('firestoreRecordQueries', () => {
 
     vi.mocked(getDoc).mockRejectedValueOnce(new Error('boom'));
     await expect(getRecordFromFirestore('2026-03-16')).resolves.toBeNull();
+    expect(firestoreQueryLoggerError).toHaveBeenCalledWith(
+      'Firestore query failed: getRecord',
+      expect.objectContaining({
+        date: '2026-03-16',
+        error: expect.any(Error),
+      })
+    );
   });
 
   it('distinguishes missing records from failed record reads', async () => {
@@ -157,6 +180,13 @@ describe('firestoreRecordQueries', () => {
 
     subscribeToRecord('2026-03-15', callback);
     expect(callback).toHaveBeenCalledTimes(1);
+    expect(firestoreQueryLoggerError).toHaveBeenCalledWith(
+      'Firestore query failed: subscribeToRecord',
+      expect.objectContaining({
+        date: '2026-03-15',
+        error: expect.any(Error),
+      })
+    );
   });
 
   it('checks availability via hospital root doc', async () => {

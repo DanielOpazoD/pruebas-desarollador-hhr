@@ -2,7 +2,7 @@ import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
 import type {
   MedicalHandoffActor,
   MedicalSpecialty,
-} from '@/types/domain/dailyRecordMedicalHandoff';
+} from '@/hooks/contracts/dailyRecordHookContracts';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import { getAttributedAuthors } from '@/services/admin/attributionService';
 import {

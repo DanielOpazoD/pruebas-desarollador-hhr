@@ -1,4 +1,4 @@
-import type { DailyRecordMedicalMessagingState } from '@/types/domain/dailyRecordSlices';
+import type { DailyRecordMedicalMessagingState } from '@/hooks/contracts/dailyRecordHookContracts';
 
 interface VisibleBed {
   id: string;

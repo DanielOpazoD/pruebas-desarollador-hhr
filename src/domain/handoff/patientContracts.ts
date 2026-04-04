@@ -6,8 +6,9 @@ import type {
   MedicalHandoffEntry as RootMedicalHandoffEntry,
   PatientData as RootPatientData,
 } from '@/types/domain/patient';
-import type { PatientStatus } from '@/types/domain/patientClassification';
+import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 
+export { PatientStatus, Specialty };
 export type MedicalHandoffAuditActor = RootMedicalHandoffAuditActor;
 export type MedicalHandoffAudit = RootMedicalHandoffAudit;
 export type MedicalHandoffEntry = RootMedicalHandoffEntry;

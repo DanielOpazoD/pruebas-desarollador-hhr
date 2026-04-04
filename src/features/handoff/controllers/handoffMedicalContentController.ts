@@ -1,5 +1,5 @@
 import { buildMedicalHandoffDeepLink } from '@/domain/handoff/view';
-import type { Specialty } from '@/types/domain/patientClassification';
+import type { Specialty } from '@/domain/handoff/patientContracts';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 
 export interface MedicalSpecialtyFilterChip {

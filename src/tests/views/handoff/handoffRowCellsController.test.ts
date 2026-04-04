@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import type { PatientData } from '@/domain/handoff/patientContracts';
+import { PatientStatus, Specialty } from '@/domain/handoff/patientContracts';
 import {
   canToggleClinicalEvents,
   resolveHandoffStatusVariant,
   resolveMedicalObservationEntries,
   shouldRenderClinicalEventsPanel,
 } from '@/features/handoff/controllers/handoffRowCellsController';
-import type { PatientData } from '@/types/domain/patient';
-import { PatientStatus, Specialty } from '@/types/domain/patientClassification';
 
 const buildPatient = (overrides: Partial<PatientData> = {}): PatientData =>
   ({

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Specialty } from '@/types/domain/patientClassification';
+import { Specialty } from '@/domain/handoff/patientContracts';
 import {
   buildMedicalSpecialtyFilterChips,
   resolveMedicalSpecialistLink,

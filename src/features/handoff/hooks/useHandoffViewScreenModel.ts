@@ -20,7 +20,7 @@ import {
   resolveInitialMedicalScopeFromLocation,
   resolveInitialMedicalSpecialtyFromLocation,
 } from '@/features/handoff/controllers/handoffViewController';
-import type { Specialty } from '@/types/domain/patientClassification';
+import type { Specialty } from '@/domain/handoff/patientContracts';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import type {
   HandoffClinicalEventActions,

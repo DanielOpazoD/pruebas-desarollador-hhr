@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const { firestoreWriteLoggerWarn, firestoreWriteLoggerError } = vi.hoisted(() => ({
+  firestoreWriteLoggerWarn: vi.fn(),
+  firestoreWriteLoggerError: vi.fn(),
+}));
+
 vi.mock('firebase/firestore', async () => {
   const actual = await vi.importActual('firebase/firestore');
 
@@ -34,6 +39,13 @@ vi.mock('@/services/storage/firestore/firestoreWriteSupport', () => ({
   assertFirestoreConcurrency: vi.fn(),
   createDeletedRecordRef: vi.fn((date: string) => ({ trashRef: date })),
   saveHistorySnapshot: vi.fn(),
+}));
+
+vi.mock('@/services/storage/storageLoggers', () => ({
+  firestoreWriteLogger: {
+    warn: firestoreWriteLoggerWarn,
+    error: firestoreWriteLoggerError,
+  },
 }));
 
 import { deleteDoc, setDoc, updateDoc } from 'firebase/firestore';
@@ -83,6 +95,10 @@ describe('firestoreRecordWrites', () => {
       expect.objectContaining({ status: 'created' }),
       { merge: true }
     );
+    expect(firestoreWriteLoggerWarn).toHaveBeenCalledWith(
+      'Firestore write fallback: partialUpdateNotFound',
+      expect.objectContaining({ date: '2026-03-15' })
+    );
   });
 
   it('rethrows write failures that are not recoverable', async () => {
@@ -107,6 +123,13 @@ describe('firestoreRecordWrites', () => {
       '2026-03-16T10:00:00.000Z',
       'El registro ha sido modificado por otro usuario. Por favor recarga la página.',
       'save'
+    );
+    expect(firestoreWriteLoggerError).toHaveBeenCalledWith(
+      'Firestore write failed: save',
+      expect.objectContaining({
+        date: '2026-03-17',
+        error: expect.any(Error),
+      })
     );
   });
 
@@ -141,6 +164,13 @@ describe('firestoreRecordWrites', () => {
 
     expect(createDeletedRecordRef).toHaveBeenCalledWith('2026-03-18');
     expect(withRetry).toHaveBeenCalled();
+    expect(firestoreWriteLoggerError).toHaveBeenCalledWith(
+      'Firestore write failed: moveToTrash',
+      expect.objectContaining({
+        date: '2026-03-18',
+        error: expect.any(Error),
+      })
+    );
   });
 
   it('wires retry callbacks for save, partial update and delete operations', async () => {
@@ -164,5 +194,17 @@ describe('firestoreRecordWrites', () => {
     expect(setDoc).toHaveBeenCalled();
     expect(updateDoc).toHaveBeenCalled();
     expect(deleteDoc).toHaveBeenCalled();
+    expect(firestoreWriteLoggerWarn).toHaveBeenCalledWith(
+      'Firestore write retry: save',
+      expect.objectContaining({ attempt: 1, date: '2026-03-19', error: expect.any(Error) })
+    );
+    expect(firestoreWriteLoggerWarn).toHaveBeenCalledWith(
+      'Firestore write retry: partialUpdate',
+      expect.objectContaining({ attempt: 1, date: '2026-03-19', error: expect.any(Error) })
+    );
+    expect(firestoreWriteLoggerWarn).toHaveBeenCalledWith(
+      'Firestore write retry: delete',
+      expect.objectContaining({ attempt: 1, date: '2026-03-19', error: expect.any(Error) })
+    );
   });
 });

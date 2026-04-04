@@ -1,6 +1,6 @@
 import { resolveMedicalObservationEntries } from '@/domain/handoff/patientView';
+import { PatientStatus } from '@/domain/handoff/patientContracts';
 import type { MedicalBadgeVariant } from '@/shared/ui/medicalBadgeContracts';
-import { PatientStatus } from '@/types/domain/patientClassification';
 
 export const resolveHandoffStatusVariant = (
   status: PatientStatus | string | undefined

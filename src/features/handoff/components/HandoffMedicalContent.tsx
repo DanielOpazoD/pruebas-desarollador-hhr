@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { BedDefinition } from '@/types/domain/beds';
-import type { Specialty } from '@/types/domain/patientClassification';
+import type { Specialty } from '@/domain/handoff/patientContracts';
 import type { DailyRecord } from '@/domain/handoff/recordContracts';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import type { HandoffClinicalEventActions, HandoffMedicalActions } from './handoffRowContracts';
