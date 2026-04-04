@@ -2,6 +2,7 @@ import { httpsCallable } from 'firebase/functions';
 import type { ClinicalDocumentType } from '@/features/clinical-documents/domain/entities';
 import { z } from 'zod';
 import { defaultFunctionsRuntime } from '@/services/firebase-runtime/functionsRuntime';
+import type { FunctionsRuntime } from '@/services/firebase-runtime/functionsRuntime';
 
 interface ExportClinicalDocumentPdfPayload {
   documentId: string;
@@ -52,40 +53,48 @@ const blobToBase64 = async (blob: Blob): Promise<string> => {
   return btoa(binary);
 };
 
-export const exportClinicalDocumentPdfViaBackend = async ({
-  documentId,
-  fileName,
-  documentType,
-  patientName,
-  patientRut,
-  episodeKey,
-  pdfBlob,
-}: {
-  documentId: string;
-  fileName: string;
-  documentType: ClinicalDocumentType;
-  patientName: string;
-  patientRut: string;
-  episodeKey: string;
-  pdfBlob: Blob;
-}): Promise<ExportClinicalDocumentPdfResult> => {
-  const functions = await defaultFunctionsRuntime.getFunctions();
-  const callable = httpsCallable<ExportClinicalDocumentPdfPayload, ExportClinicalDocumentPdfResult>(
-    functions,
-    'exportClinicalDocumentPdfToDrive'
-  );
-
-  const contentBase64 = await blobToBase64(pdfBlob);
-  const response = await callable({
+export const createClinicalDocumentBackendExportService = (
+  functionsRuntime: Pick<FunctionsRuntime, 'getFunctions'> = defaultFunctionsRuntime
+) => ({
+  exportClinicalDocumentPdfViaBackend: async ({
     documentId,
     fileName,
     documentType,
     patientName,
     patientRut,
     episodeKey,
-    contentBase64,
-    mimeType: pdfBlob.type || 'application/pdf',
-  });
+    pdfBlob,
+  }: {
+    documentId: string;
+    fileName: string;
+    documentType: ClinicalDocumentType;
+    patientName: string;
+    patientRut: string;
+    episodeKey: string;
+    pdfBlob: Blob;
+  }): Promise<ExportClinicalDocumentPdfResult> => {
+    const functions = await functionsRuntime.getFunctions();
+    const callable = httpsCallable<
+      ExportClinicalDocumentPdfPayload,
+      ExportClinicalDocumentPdfResult
+    >(functions, 'exportClinicalDocumentPdfToDrive');
 
-  return exportClinicalDocumentPdfResultSchema.parse(response.data);
-};
+    const contentBase64 = await blobToBase64(pdfBlob);
+    const response = await callable({
+      documentId,
+      fileName,
+      documentType,
+      patientName,
+      patientRut,
+      episodeKey,
+      contentBase64,
+      mimeType: pdfBlob.type || 'application/pdf',
+    });
+
+    return exportClinicalDocumentPdfResultSchema.parse(response.data);
+  },
+});
+
+const clinicalDocumentBackendExportService = createClinicalDocumentBackendExportService();
+export const exportClinicalDocumentPdfViaBackend =
+  clinicalDocumentBackendExportService.exportClinicalDocumentPdfViaBackend;

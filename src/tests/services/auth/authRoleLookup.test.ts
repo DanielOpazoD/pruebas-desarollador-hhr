@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const getFunctionsInstanceMock = vi.fn();
+const getFunctionsMock = vi.fn();
 const httpsCallableMock = vi.fn();
 
-vi.mock('@/firebaseConfig', () => ({
-  getFunctionsInstance: () => getFunctionsInstanceMock(),
+vi.mock('@/services/firebase-runtime/functionsRuntime', () => ({
+  defaultFunctionsRuntime: {
+    getFunctions: (...args: unknown[]) => getFunctionsMock(...args),
+  },
 }));
 
 vi.mock('firebase/functions', () => ({
@@ -13,6 +15,7 @@ vi.mock('firebase/functions', () => ({
 
 import {
   AUTH_ROLE_LOOKUP_UNAVAILABLE_CODE,
+  createAuthRoleLookupService,
   getBootstrapRoleForEmail,
   getDynamicRoleForEmail,
   resolveCallableRole,
@@ -21,7 +24,7 @@ import {
 describe('authRoleLookup', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getFunctionsInstanceMock.mockResolvedValue({});
+    getFunctionsMock.mockResolvedValue({});
   });
 
   it('returns bootstrap admin for technical recovery emails', () => {
@@ -62,5 +65,17 @@ describe('authRoleLookup', () => {
     await expect(getDynamicRoleForEmail('specialist@hospital.cl')).rejects.toMatchObject({
       code: AUTH_ROLE_LOOKUP_UNAVAILABLE_CODE,
     });
+  });
+
+  it('supports injected functions runtimes', async () => {
+    const checkUserRoleCall = vi.fn().mockResolvedValue({
+      data: { role: 'viewer' },
+    });
+    httpsCallableMock.mockReturnValue(checkUserRoleCall);
+    const service = createAuthRoleLookupService({
+      getFunctions: vi.fn().mockResolvedValue({ custom: true } as never),
+    });
+
+    await expect(service.getDynamicRoleForEmail('viewer@hospital.cl')).resolves.toBe('viewer');
   });
 });

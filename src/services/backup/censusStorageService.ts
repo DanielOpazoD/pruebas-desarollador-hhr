@@ -5,6 +5,7 @@
 
 import { ref, uploadBytes, getDownloadURL, deleteObject, listAll } from 'firebase/storage';
 import { defaultBackupStorageRuntime } from '@/services/firebase-runtime/backupRuntime';
+import type { BackupStorageRuntime } from '@/services/firebase-runtime/backupRuntime';
 import {
   createListYears,
   createListMonths,
@@ -87,172 +88,198 @@ const parseFilePath = (path: string): { date: string } | null => {
   return null;
 };
 
+interface CensusStorageService {
+  uploadCensus: (excelBlob: Blob, date: string) => Promise<string>;
+  uploadCensusWithResult: (
+    excelBlob: Blob,
+    date: string
+  ) => Promise<BackupStorageMutationResult<string>>;
+  checkCensusExists: (date: string) => Promise<boolean>;
+  checkCensusExistsDetailed: (date: string) => Promise<StorageLookupResult>;
+  deleteCensusFile: (date: string) => Promise<void>;
+  deleteCensusFileWithResult: (date: string) => Promise<BackupStorageMutationResult>;
+}
+
+const resolveBackupStorage = async (
+  runtime: Pick<BackupStorageRuntime, 'ready' | 'getStorage'>
+) => {
+  await runtime.ready;
+  return runtime.getStorage();
+};
+
 // ============= Core Functions =============
 
 /**
  * Upload a Census Excel to Firebase Storage
  */
-export const uploadCensus = async (excelBlob: Blob, date: string): Promise<string> => {
-  const result = await uploadCensusWithResult(excelBlob, date);
-  if (result.status !== 'success') {
-    throw result.error;
-  }
-  return result.data as string;
-};
+export const createCensusStorageService = (
+  runtime: BackupStorageRuntime = defaultBackupStorageRuntime
+): CensusStorageService => {
+  const uploadCensusWithResult = async (
+    excelBlob: Blob,
+    date: string
+  ): Promise<BackupStorageMutationResult<string>> => {
+    try {
+      const storage = await resolveBackupStorage(runtime);
+      assertStorageAvailable(storage, 'CensusStorage', 'uploadCensus');
 
-export const uploadCensusWithResult = async (
-  excelBlob: Blob,
-  date: string
-): Promise<BackupStorageMutationResult<string>> => {
-  try {
-    await defaultBackupStorageRuntime.ready;
-    const storage = await defaultBackupStorageRuntime.getStorage();
-    assertStorageAvailable(storage, 'CensusStorage', 'uploadCensus');
+      const filePath = generateCensusPath(date);
+      const storageRef = ref(storage, filePath);
 
-    const filePath = generateCensusPath(date);
-    const storageRef = ref(storage, filePath);
+      const user = runtime.auth.currentUser;
+      const metadata = {
+        contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        customMetadata: {
+          date,
+          uploadedBy: user?.email || 'unknown',
+          uploadedAt: new Date().toISOString(),
+        },
+      };
 
-    const user = defaultBackupStorageRuntime.auth.currentUser;
-    const metadata = {
-      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      customMetadata: {
-        date,
-        uploadedBy: user?.email || 'unknown',
-        uploadedAt: new Date().toISOString(),
-      },
-    };
+      await uploadBytes(storageRef, excelBlob, metadata);
+      const downloadUrl = await getDownloadURL(storageRef);
 
-    await uploadBytes(storageRef, excelBlob, metadata);
-    const downloadUrl = await getDownloadURL(storageRef);
-
-    return { status: 'success', data: downloadUrl };
-  } catch (error) {
-    if (isBackupDateValidationError(error)) {
-      return { status: 'invalid_date', error, data: null };
-    }
-
-    const category = classifyStorageError(error);
-    return {
-      status:
-        category === 'permission_denied'
-          ? 'permission_denied'
-          : category === 'not_found'
-            ? 'not_found'
-            : category === 'timeout'
-              ? 'timeout'
-              : 'unknown',
-      error,
-      data: null,
-    };
-  }
-};
-
-/**
- * Check if a Census file exists for a given date
- */
-export const checkCensusExists = async (date: string): Promise<boolean> => {
-  const result = await checkCensusExistsDetailed(date);
-  return result.exists;
-};
-
-export const checkCensusExistsDetailed = async (date: string): Promise<StorageLookupResult> => {
-  const TIMEOUT_MS = 4000;
-  const checkPromise = measureStorageOperation(
-    'censusExists',
-    async (): Promise<StorageLookupResult> => {
-      try {
-        await defaultBackupStorageRuntime.ready;
-        const storage = await defaultBackupStorageRuntime.getStorage();
-        const monthRef = ref(storage, generateCensusMonthPath(date));
-        const expectedFilename = generateCensusFilename(date);
-        const result = await listAll(monthRef);
-        const exists = result.items.some(item => item.name === expectedFilename);
-        return createStorageLookupResult(exists, exists ? 'available' : 'missing');
-      } catch (error: unknown) {
-        // Expected lookup misses (missing file or blocked access in current auth context).
-        if (isExpectedStorageLookupMiss(error) || isBackupDateValidationError(error)) {
-          return createStorageLookupResult(
-            false,
-            resolveStorageLookupStatus(error, {
-              invalidDate: isBackupDateValidationError(error),
-            })
-          );
-        }
-        if (shouldLogStorageError(error)) {
-          recordOperationalErrorTelemetry(
-            'backup',
-            'census_exists_detailed',
-            error,
-            toStorageOperationalError(error, {
-              code: 'census_exists_lookup_failed',
-              message: `No fue posible verificar el censo ${date}.`,
-              context: { date },
-              userSafeMessage: 'No fue posible verificar la disponibilidad del censo.',
-            }),
-            { context: { date } }
-          );
-        }
-        return createStorageLookupResult(false, resolveStorageLookupStatus(error));
+      return { status: 'success', data: downloadUrl };
+    } catch (error) {
+      if (isBackupDateValidationError(error)) {
+        return { status: 'invalid_date', error, data: null };
       }
-    },
-    { context: date }
-  );
 
-  return withStorageLookupTimeout(checkPromise, TIMEOUT_MS, () => {
-    recordOperationalTelemetry({
-      category: 'backup',
-      operation: 'census_exists_timeout',
-      status: 'degraded',
-      date,
-      issues: ['La verificacion del censo excedio el tiempo esperado.'],
-    });
-  });
-};
-
-/**
- * Delete a Census file from Storage
- */
-export const deleteCensusFile = async (date: string): Promise<void> => {
-  const result = await deleteCensusFileWithResult(date);
-  if (
-    result.status !== 'success' &&
-    result.status !== 'not_found' &&
-    result.status !== 'invalid_date'
-  ) {
-    throw result.error;
-  }
-};
-
-export const deleteCensusFileWithResult = async (
-  date: string
-): Promise<BackupStorageMutationResult> => {
-  await defaultBackupStorageRuntime.ready;
-  const storage = await defaultBackupStorageRuntime.getStorage();
-  let filePath: string;
-  try {
-    filePath = generateCensusPath(date);
-  } catch (error) {
-    if (isBackupDateValidationError(error)) {
-      return { status: 'invalid_date', error, data: null };
-    }
-    return { status: 'unknown', error, data: null };
-  }
-  const storageRef = ref(storage, filePath);
-  try {
-    await deleteObject(storageRef);
-    return { status: 'success', data: null };
-  } catch (error: unknown) {
-    if (isExpectedStorageLookupMiss(error)) {
       const category = classifyStorageError(error);
       return {
-        status: category === 'permission_denied' ? 'permission_denied' : 'not_found',
+        status:
+          category === 'permission_denied'
+            ? 'permission_denied'
+            : category === 'not_found'
+              ? 'not_found'
+              : category === 'timeout'
+                ? 'timeout'
+                : 'unknown',
         error,
         data: null,
       };
     }
-    return { status: 'unknown', error, data: null };
-  }
+  };
+
+  const checkCensusExistsDetailed = async (date: string): Promise<StorageLookupResult> => {
+    const TIMEOUT_MS = 4000;
+    const checkPromise = measureStorageOperation(
+      'censusExists',
+      async (): Promise<StorageLookupResult> => {
+        try {
+          const storage = await resolveBackupStorage(runtime);
+          const monthRef = ref(storage, generateCensusMonthPath(date));
+          const expectedFilename = generateCensusFilename(date);
+          const result = await listAll(monthRef);
+          const exists = result.items.some(item => item.name === expectedFilename);
+          return createStorageLookupResult(exists, exists ? 'available' : 'missing');
+        } catch (error: unknown) {
+          if (isExpectedStorageLookupMiss(error) || isBackupDateValidationError(error)) {
+            return createStorageLookupResult(
+              false,
+              resolveStorageLookupStatus(error, {
+                invalidDate: isBackupDateValidationError(error),
+              })
+            );
+          }
+          if (shouldLogStorageError(error)) {
+            recordOperationalErrorTelemetry(
+              'backup',
+              'census_exists_detailed',
+              error,
+              toStorageOperationalError(error, {
+                code: 'census_exists_lookup_failed',
+                message: `No fue posible verificar el censo ${date}.`,
+                context: { date },
+                userSafeMessage: 'No fue posible verificar la disponibilidad del censo.',
+              }),
+              { context: { date } }
+            );
+          }
+          return createStorageLookupResult(false, resolveStorageLookupStatus(error));
+        }
+      },
+      { context: date }
+    );
+
+    return withStorageLookupTimeout(checkPromise, TIMEOUT_MS, () => {
+      recordOperationalTelemetry({
+        category: 'backup',
+        operation: 'census_exists_timeout',
+        status: 'degraded',
+        date,
+        issues: ['La verificacion del censo excedio el tiempo esperado.'],
+      });
+    });
+  };
+
+  const deleteCensusFileWithResult = async (date: string): Promise<BackupStorageMutationResult> => {
+    const storage = await resolveBackupStorage(runtime);
+    let filePath: string;
+    try {
+      filePath = generateCensusPath(date);
+    } catch (error) {
+      if (isBackupDateValidationError(error)) {
+        return { status: 'invalid_date', error, data: null };
+      }
+      return { status: 'unknown', error, data: null };
+    }
+    const storageRef = ref(storage, filePath);
+    try {
+      await deleteObject(storageRef);
+      return { status: 'success', data: null };
+    } catch (error: unknown) {
+      if (isExpectedStorageLookupMiss(error)) {
+        const category = classifyStorageError(error);
+        return {
+          status: category === 'permission_denied' ? 'permission_denied' : 'not_found',
+          error,
+          data: null,
+        };
+      }
+      return { status: 'unknown', error, data: null };
+    }
+  };
+
+  return {
+    uploadCensus: async (excelBlob, date): Promise<string> => {
+      const result = await uploadCensusWithResult(excelBlob, date);
+      if (result.status !== 'success') {
+        throw result.error;
+      }
+      return result.data as string;
+    },
+    uploadCensusWithResult,
+    checkCensusExists: async (date: string): Promise<boolean> => {
+      const result = await checkCensusExistsDetailed(date);
+      return result.exists;
+    },
+    checkCensusExistsDetailed,
+    deleteCensusFile: async (date: string): Promise<void> => {
+      const result = await deleteCensusFileWithResult(date);
+      if (
+        result.status !== 'success' &&
+        result.status !== 'not_found' &&
+        result.status !== 'invalid_date'
+      ) {
+        throw result.error;
+      }
+    },
+    deleteCensusFileWithResult,
+  };
 };
+
+const censusStorageService = createCensusStorageService();
+export const uploadCensus = censusStorageService.uploadCensus;
+export const uploadCensusWithResult = censusStorageService.uploadCensusWithResult;
+export const checkCensusExists = censusStorageService.checkCensusExists;
+export const checkCensusExistsDetailed = censusStorageService.checkCensusExistsDetailed;
+export const deleteCensusFile = censusStorageService.deleteCensusFile;
+export const deleteCensusFileWithResult = censusStorageService.deleteCensusFileWithResult;
+
+/**
+ * Check if a Census file exists for a given date
+ */
 
 /**
  * List all years with Census files (using base service)

@@ -2,6 +2,7 @@ import type { User } from 'firebase/auth';
 import { httpsCallable } from 'firebase/functions';
 import type { UserRole } from '@/types/auth';
 import { defaultFunctionsRuntime } from '@/services/firebase-runtime/functionsRuntime';
+import type { FunctionsRuntime } from '@/services/firebase-runtime/functionsRuntime';
 import { isGeneralLoginRole } from '@/shared/access/roleAccessMatrix';
 import { authClaimSyncLogger } from '@/services/auth/authLoggers';
 
@@ -15,17 +16,24 @@ export const resolveUserRoleClaim = async (firebaseUser: User): Promise<UserRole
   return isGeneralLoginRole(tokenRole) ? tokenRole : null;
 };
 
-export const syncCurrentUserRoleClaim = async (): Promise<{ role: UserRole | null }> => {
-  const functions = await defaultFunctionsRuntime.getFunctions();
-  const syncUserRoleClaim = httpsCallable<undefined, { role?: UserRole | null }>(
-    functions,
-    'syncCurrentUserRoleClaim'
-  );
-  const result = await syncUserRoleClaim();
-  return {
-    role: result.data?.role ?? null,
-  };
-};
+export const createAuthClaimSyncService = (
+  functionsRuntime: Pick<FunctionsRuntime, 'getFunctions'> = defaultFunctionsRuntime
+) => ({
+  syncCurrentUserRoleClaim: async (): Promise<{ role: UserRole | null }> => {
+    const functions = await functionsRuntime.getFunctions();
+    const syncUserRoleClaim = httpsCallable<undefined, { role?: UserRole | null }>(
+      functions,
+      'syncCurrentUserRoleClaim'
+    );
+    const result = await syncUserRoleClaim();
+    return {
+      role: result.data?.role ?? null,
+    };
+  },
+});
+
+const authClaimSyncService = createAuthClaimSyncService();
+export const syncCurrentUserRoleClaim = authClaimSyncService.syncCurrentUserRoleClaim;
 
 export const ensureUserRoleClaim = async (
   firebaseUser: User,

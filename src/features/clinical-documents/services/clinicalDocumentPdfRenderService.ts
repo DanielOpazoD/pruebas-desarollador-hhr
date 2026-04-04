@@ -10,6 +10,7 @@ import {
   waitForClinicalDocumentSheetAssets,
 } from '@/features/clinical-documents/services/clinicalDocumentPrintSupport';
 import { defaultFunctionsRuntime } from '@/services/firebase-runtime/functionsRuntime';
+import type { FunctionsRuntime } from '@/services/firebase-runtime/functionsRuntime';
 import { clinicalDocumentPdfRenderLogger } from '@/features/clinical-documents/services/clinicalDocumentLoggers';
 
 interface RenderClinicalDocumentPdfPayload {
@@ -150,43 +151,53 @@ const generateDomSnapshotPdfBlob = async (html: string): Promise<Blob> => {
   }
 };
 
-const generateBackendPrintStyledPdfBlob = async (html: string): Promise<Blob> => {
-  const functions = await defaultFunctionsRuntime.getFunctions();
-  const callable = httpsCallable<RenderClinicalDocumentPdfPayload, RenderClinicalDocumentPdfResult>(
-    functions,
-    'renderClinicalDocumentPdfFromHtml'
-  );
+export const createClinicalDocumentPdfRenderService = (
+  functionsRuntime: Pick<FunctionsRuntime, 'getFunctions'> = defaultFunctionsRuntime
+) => {
+  const generateBackendPrintStyledPdfBlob = async (html: string): Promise<Blob> => {
+    const functions = await functionsRuntime.getFunctions();
+    const callable = httpsCallable<
+      RenderClinicalDocumentPdfPayload,
+      RenderClinicalDocumentPdfResult
+    >(functions, 'renderClinicalDocumentPdfFromHtml');
 
-  const response = await callable({ html });
-  const payload = renderClinicalDocumentPdfResultSchema.parse(response.data);
-  return decodeBase64Pdf(payload.contentBase64, payload.mimeType || 'application/pdf');
+    const response = await callable({ html });
+    const payload = renderClinicalDocumentPdfResultSchema.parse(response.data);
+    return decodeBase64Pdf(payload.contentBase64, payload.mimeType || 'application/pdf');
+  };
+
+  return {
+    generateClinicalDocumentPrintStyledPdfBlob: async (
+      record?: ClinicalDocumentRecord
+    ): Promise<Blob | null> => {
+      const html = await buildClinicalDocumentPrintHtml({
+        includeAppStyles: true,
+        documentType: record?.documentType,
+        pageTitle: record?.title,
+      });
+      if (!html) {
+        return null;
+      }
+
+      try {
+        return await generateBackendPrintStyledPdfBlob(html);
+      } catch (error) {
+        clinicalDocumentPdfRenderLogger.warn(
+          'Backend render failed, falling back to client snapshot',
+          error
+        );
+      }
+
+      try {
+        return await generateDomSnapshotPdfBlob(html);
+      } catch (error) {
+        clinicalDocumentPdfRenderLogger.warn('Client snapshot render failed', error);
+        return null;
+      }
+    },
+  };
 };
 
-export const generateClinicalDocumentPrintStyledPdfBlob = async (
-  record?: ClinicalDocumentRecord
-): Promise<Blob | null> => {
-  const html = await buildClinicalDocumentPrintHtml({
-    includeAppStyles: true,
-    documentType: record?.documentType,
-    pageTitle: record?.title,
-  });
-  if (!html) {
-    return null;
-  }
-
-  try {
-    return await generateBackendPrintStyledPdfBlob(html);
-  } catch (error) {
-    clinicalDocumentPdfRenderLogger.warn(
-      'Backend render failed, falling back to client snapshot',
-      error
-    );
-  }
-
-  try {
-    return await generateDomSnapshotPdfBlob(html);
-  } catch (error) {
-    clinicalDocumentPdfRenderLogger.warn('Client snapshot render failed', error);
-    return null;
-  }
-};
+const clinicalDocumentPdfRenderService = createClinicalDocumentPdfRenderService();
+export const generateClinicalDocumentPrintStyledPdfBlob =
+  clinicalDocumentPdfRenderService.generateClinicalDocumentPrintStyledPdfBlob;

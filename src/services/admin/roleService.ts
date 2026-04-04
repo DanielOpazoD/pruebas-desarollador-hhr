@@ -7,7 +7,11 @@ import {
 } from '@/shared/access/roleAccessMatrix';
 import type { UserRole } from '@/types/auth';
 import { roleServiceLogger } from '@/services/admin/adminLoggers';
-import { defaultFunctionsRuntime } from '@/services/firebase-runtime/functionsRuntime';
+import {
+  defaultFunctionsRuntime,
+  type FunctionsRuntime,
+} from '@/services/firebase-runtime/functionsRuntime';
+import type { IDatabaseProvider } from '@/services/infrastructure/db';
 
 const LEGACY_ROLE_ALIASES = {
   viewer_census: 'viewer',
@@ -39,10 +43,25 @@ const normalizeConfiguredRole = (
 /**
  * Service for managing user roles dynamically via Firestore.
  */
-export const roleService = {
+export interface RoleService {
+  getRolesSnapshot: () => Promise<RoleSnapshot>;
+  getRoles: () => Promise<UserRoleMap>;
+  setRole: (email: string, role: string) => Promise<void>;
+  removeRole: (email: string) => Promise<void>;
+  hasNestedProperty: (obj: Record<string, unknown>, key: string) => boolean;
+  forceSyncUser: (
+    email: string,
+    role: ManagedUserRole | 'unauthorized'
+  ) => Promise<{ success?: boolean; message?: string }>;
+}
+
+export const createRoleService = (
+  database: Pick<IDatabaseProvider, 'getDoc' | 'setDoc'> = db,
+  functionsRuntime: Pick<FunctionsRuntime, 'getFunctions'> = defaultFunctionsRuntime
+): RoleService => ({
   async getRolesSnapshot(): Promise<RoleSnapshot> {
     try {
-      const rawRoles = (await db.getDoc<Record<string, unknown>>('config', 'roles')) || {};
+      const rawRoles = (await database.getDoc<Record<string, unknown>>('config', 'roles')) || {};
       const roles: UserRoleMap = {};
       const migratedLegacyEntries: string[] = [];
       const nextRawRoles = { ...rawRoles };
@@ -62,7 +81,7 @@ export const roleService = {
       }
 
       if (migratedLegacyEntries.length > 0) {
-        await db.setDoc('config', 'roles', nextRawRoles);
+        await database.setDoc('config', 'roles', nextRawRoles);
         roleServiceLogger.warn(
           `Normalized legacy role aliases for ${migratedLegacyEntries.length} account(s).`,
           {
@@ -101,7 +120,8 @@ export const roleService = {
 
       // We fetch the entire map, modify it locally, and replace it.
       // This is 100% safe against Firestore dot-notation (splitting emails into nested objects).
-      const currentRoles = (await db.getDoc<Record<string, unknown>>('config', 'roles')) || {};
+      const currentRoles =
+        (await database.getDoc<Record<string, unknown>>('config', 'roles')) || {};
       const updatedRoles = { ...currentRoles, [cleanEmail]: role };
 
       for (const [emailKey, configuredRole] of Object.entries(updatedRoles)) {
@@ -112,7 +132,7 @@ export const roleService = {
         }
       }
 
-      await db.setDoc('config', 'roles', updatedRoles);
+      await database.setDoc('config', 'roles', updatedRoles);
       roleServiceLogger.info(`Successfully updated roles map for ${cleanEmail}`);
     } catch (error) {
       roleServiceLogger.error(`Failed to set role for ${email}`, error);
@@ -127,7 +147,8 @@ export const roleService = {
     try {
       const cleanEmail = email.toLowerCase().trim();
 
-      const currentRoles = (await db.getDoc<Record<string, unknown>>('config', 'roles')) || {};
+      const currentRoles =
+        (await database.getDoc<Record<string, unknown>>('config', 'roles')) || {};
       if (
         currentRoles[cleanEmail] !== undefined ||
         this.hasNestedProperty(currentRoles, cleanEmail)
@@ -147,7 +168,7 @@ export const roleService = {
           }
         }
 
-        await db.setDoc('config', 'roles', updatedRoles);
+        await database.setDoc('config', 'roles', updatedRoles);
         roleServiceLogger.info(`Successfully removed role for ${cleanEmail}`);
       }
     } catch (error) {
@@ -169,9 +190,11 @@ export const roleService = {
     email: string,
     role: ManagedUserRole | 'unauthorized'
   ): Promise<{ success?: boolean; message?: string }> {
-    const functions = await defaultFunctionsRuntime.getFunctions();
+    const functions = await functionsRuntime.getFunctions();
     const setUserRole = httpsCallable(functions, 'setUserRole');
     const result = await setUserRole({ email, role });
     return (result as { data?: { success?: boolean; message?: string } }).data || {};
   },
-};
+});
+
+export const roleService: RoleService = createRoleService();

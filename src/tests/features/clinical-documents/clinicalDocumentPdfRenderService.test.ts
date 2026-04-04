@@ -4,10 +4,12 @@ const callableMock = vi.fn();
 const html2canvasMock = vi.fn();
 const buildHtmlMock = vi.fn();
 const waitForAssetsMock = vi.fn();
-const getFunctionsInstanceMock = vi.fn();
+const getFunctionsMock = vi.fn();
 
-vi.mock('@/firebaseConfig', () => ({
-  getFunctionsInstance: getFunctionsInstanceMock,
+vi.mock('@/services/firebase-runtime/functionsRuntime', () => ({
+  defaultFunctionsRuntime: {
+    getFunctions: (...args: unknown[]) => getFunctionsMock(...args),
+  },
 }));
 
 vi.mock('firebase/functions', () => ({
@@ -57,7 +59,7 @@ vi.mock('@/features/clinical-documents/services/clinicalDocumentLoggers', () => 
 describe('clinicalDocumentPdfRenderService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getFunctionsInstanceMock.mockResolvedValue({});
+    getFunctionsMock.mockResolvedValue({});
     buildHtmlMock.mockResolvedValue('<div id="clinical-document-sheet">Hoja</div>');
     callableMock.mockResolvedValue({
       data: {
@@ -189,5 +191,21 @@ describe('clinicalDocumentPdfRenderService', () => {
     expect(waitForAssetsMock).toHaveBeenCalled();
     expect(html2canvasMock).toHaveBeenCalled();
     expect(result).toBeInstanceOf(Blob);
+  });
+
+  it('supports injected functions runtimes for backend rendering', async () => {
+    const { createClinicalDocumentPdfRenderService } =
+      await import('@/features/clinical-documents/services/clinicalDocumentPdfRenderService');
+
+    const service = createClinicalDocumentPdfRenderService({
+      getFunctions: vi.fn().mockResolvedValue({ custom: true } as never),
+    });
+
+    await service.generateClinicalDocumentPrintStyledPdfBlob();
+
+    expect(getFunctionsMock).not.toHaveBeenCalled();
+    expect(callableMock).toHaveBeenCalledWith({
+      html: '<div id="clinical-document-sheet">Hoja</div>',
+    });
   });
 });

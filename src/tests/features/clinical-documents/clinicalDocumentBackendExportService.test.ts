@@ -1,11 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { exportClinicalDocumentPdfViaBackend } from '@/features/clinical-documents/services/clinicalDocumentBackendExportService';
-import { getFunctionsInstance } from '@/firebaseConfig';
+import {
+  createClinicalDocumentBackendExportService,
+  exportClinicalDocumentPdfViaBackend,
+} from '@/features/clinical-documents/services/clinicalDocumentBackendExportService';
 import { httpsCallable } from 'firebase/functions';
 
-vi.mock('@/firebaseConfig', () => ({
-  getFunctionsInstance: vi.fn(),
+const getFunctionsMock = vi.fn();
+
+vi.mock('@/services/firebase-runtime/functionsRuntime', () => ({
+  defaultFunctionsRuntime: {
+    getFunctions: (...args: unknown[]) => getFunctionsMock(...args),
+  },
 }));
 
 const callableMock = vi.fn();
@@ -17,7 +23,7 @@ vi.mock('firebase/functions', () => ({
 describe('clinicalDocumentBackendExportService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getFunctionsInstance).mockResolvedValue({} as never);
+    getFunctionsMock.mockResolvedValue({} as never);
     callableMock.mockResolvedValue({
       data: {
         fileId: 'file-1',
@@ -87,5 +93,32 @@ describe('clinicalDocumentBackendExportService', () => {
         pdfBlob,
       })
     ).rejects.toThrow();
+  });
+
+  it('supports injected functions runtimes without changing the default export', async () => {
+    const service = createClinicalDocumentBackendExportService({
+      getFunctions: vi.fn().mockResolvedValue({ custom: true } as never),
+    });
+
+    const pdfBlob = {
+      type: 'application/pdf',
+      arrayBuffer: vi.fn().mockResolvedValue(Uint8Array.from([80, 68, 70]).buffer),
+    } as unknown as Blob;
+
+    await service.exportClinicalDocumentPdfViaBackend({
+      documentId: 'doc-1',
+      fileName: 'epicrisis.pdf',
+      documentType: 'epicrisis',
+      patientName: 'Paciente Test',
+      patientRut: '11.111.111-1',
+      episodeKey: '11.111.111-1__2026-03-06',
+      pdfBlob,
+    });
+
+    expect(httpsCallable).toHaveBeenCalledWith(
+      { custom: true },
+      'exportClinicalDocumentPdfToDrive'
+    );
+    expect(exportClinicalDocumentPdfViaBackend).toBeDefined();
   });
 });

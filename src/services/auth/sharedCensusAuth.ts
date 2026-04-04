@@ -1,7 +1,9 @@
 import { httpsCallable } from 'firebase/functions';
 import { logger } from '@/services/utils/loggerService';
 import { defaultAuthRuntime } from '@/services/firebase-runtime/authRuntime';
+import type { AuthRuntime } from '@/services/firebase-runtime/authRuntime';
 import { defaultFunctionsRuntime } from '@/services/firebase-runtime/functionsRuntime';
+import type { FunctionsRuntime } from '@/services/firebase-runtime/functionsRuntime';
 
 type SharedCensusAccessResult = {
   authorized: boolean;
@@ -22,35 +24,43 @@ const isSharedCensusPath = (pathname: string): boolean =>
 export const isSharedCensusMode = (): boolean =>
   typeof window !== 'undefined' && isSharedCensusPath(window.location.pathname);
 
-const resolveSharedCensusEmail = async (email?: string | null): Promise<string> => {
-  await defaultAuthRuntime.ready;
-  return normalizeEmail(email || defaultAuthRuntime.getCurrentUser()?.email || '');
+export const createSharedCensusAuthService = (
+  authRuntime: Pick<AuthRuntime, 'ready' | 'getCurrentUser'> = defaultAuthRuntime,
+  functionsRuntime: Pick<FunctionsRuntime, 'getFunctions'> = defaultFunctionsRuntime
+) => {
+  const resolveSharedCensusEmail = async (email?: string | null): Promise<string> => {
+    await authRuntime.ready;
+    return normalizeEmail(email || authRuntime.getCurrentUser()?.email || '');
+  };
+
+  return {
+    checkSharedCensusAccess: async (email?: string | null): Promise<SharedCensusAccessResult> => {
+      const currentEmail = await resolveSharedCensusEmail(email);
+      if (!currentEmail) {
+        return { authorized: false, role: 'viewer' };
+      }
+      try {
+        const functions = await functionsRuntime.getFunctions();
+        const checkSharedAccess = httpsCallable<Record<string, never>, SharedCensusAccessResult>(
+          functions,
+          'checkSharedCensusAccess'
+        );
+        const response = await checkSharedAccess({});
+
+        if (!response.data?.authorized) {
+          return { authorized: false, role: 'viewer' };
+        }
+        return {
+          authorized: true,
+          role: response.data.role === 'downloader' ? 'downloader' : 'viewer',
+        };
+      } catch (error) {
+        sharedCensusAuthLogger.error('Shared census authorization check failed', error);
+        return { authorized: false, role: 'viewer' };
+      }
+    },
+  };
 };
 
-export const checkSharedCensusAccess = async (
-  email?: string | null
-): Promise<SharedCensusAccessResult> => {
-  const currentEmail = await resolveSharedCensusEmail(email);
-  if (!currentEmail) {
-    return { authorized: false, role: 'viewer' };
-  }
-  try {
-    const functions = await defaultFunctionsRuntime.getFunctions();
-    const checkSharedAccess = httpsCallable<Record<string, never>, SharedCensusAccessResult>(
-      functions,
-      'checkSharedCensusAccess'
-    );
-    const response = await checkSharedAccess({});
-
-    if (!response.data?.authorized) {
-      return { authorized: false, role: 'viewer' };
-    }
-    return {
-      authorized: true,
-      role: response.data.role === 'downloader' ? 'downloader' : 'viewer',
-    };
-  } catch (error) {
-    sharedCensusAuthLogger.error('Shared census authorization check failed', error);
-    return { authorized: false, role: 'viewer' };
-  }
-};
+const sharedCensusAuthService = createSharedCensusAuthService();
+export const checkSharedCensusAccess = sharedCensusAuthService.checkSharedCensusAccess;

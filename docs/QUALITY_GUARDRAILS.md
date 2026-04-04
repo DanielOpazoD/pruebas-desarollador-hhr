@@ -24,6 +24,8 @@ Evitar que la deuda estructural vuelva a crecer después de las fases de estabil
 5. La regla por defecto es extraer controllers/helpers puros antes de mover JSX o cambiar contratos públicos.
 6. `npm run lint` es tolerancia cero; no se aceptan warnings nuevos en `src/`.
 7. Los providers de infraestructura obligatorios deben fallar rápido si falta wiring.
+8. Los servicios críticos que dependan de Firebase Functions/Auth/Storage deben preferir `create...Service(...)` o runtime inyectable y conservar singleton por defecto solo por compatibilidad.
+9. Los refactors de backup/exportación deben dejar tests de runtime o fallback; no basta con tests puramente superficiales del consumer.
 
 ## Cómo agregar un guardrail nuevo
 

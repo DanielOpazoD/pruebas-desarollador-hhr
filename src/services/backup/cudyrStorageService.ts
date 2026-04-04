@@ -11,6 +11,7 @@
 
 import { ref, uploadBytes, getDownloadURL, getMetadata } from 'firebase/storage';
 import { defaultBackupStorageRuntime } from '@/services/firebase-runtime/backupRuntime';
+import type { BackupStorageRuntime } from '@/services/firebase-runtime/backupRuntime';
 import {
   createListYears,
   createListMonths,
@@ -91,144 +92,151 @@ const parseFilePath = (path: string): { date: string; year: string; month: strin
   return null;
 };
 
+interface CudyrStorageService {
+  uploadCudyrExcel: (excelBlob: Blob, date: string) => Promise<string>;
+  cudyrExists: (date: string) => Promise<boolean>;
+  cudyrExistsDetailed: (date: string) => Promise<StorageLookupResult>;
+  deleteCudyrFile: (date: string) => Promise<void>;
+}
+
+const resolveBackupStorage = async (
+  runtime: Pick<BackupStorageRuntime, 'ready' | 'getStorage'>
+) => {
+  await runtime.ready;
+  return runtime.getStorage();
+};
+
 // ============= Core Functions =============
 
 /**
  * Upload a CUDYR Excel to Firebase Storage
  */
-export const uploadCudyrExcel = async (excelBlob: Blob, date: string): Promise<string> => {
-  // console.info(`[CudyrStorage] Starting upload for ${date}...`);
-  await defaultBackupStorageRuntime.ready;
-  const storage = await defaultBackupStorageRuntime.getStorage();
-  assertStorageAvailable(storage, 'CudyrStorage', 'uploadCudyrExcel');
+export const createCudyrStorageService = (
+  runtime: BackupStorageRuntime = defaultBackupStorageRuntime
+): CudyrStorageService => {
+  const cudyrExistsDetailed = async (date: string): Promise<StorageLookupResult> => {
+    const TIMEOUT_MS = 4000;
+    const checkPromise = measureStorageOperation(
+      'cudyrExists',
+      async (): Promise<StorageLookupResult> => {
+        try {
+          const storage = await resolveBackupStorage(runtime);
 
-  const filePath = generateCudyrPath(date);
+          const filePath = generateCudyrPath(date);
+          const storageRef = ref(storage, filePath);
 
-  // Check for and delete legacy file to prevent duplicates (CUDYR_DD-MM-YYYY.xlsx)
-  try {
-    const { year, month, day } = parseBackupDateParts(date, 'CudyrStorage');
-    const legacyFilename = `CUDYR_${day}-${month}-${year}.xlsx`;
-    const legacyPath = `${STORAGE_ROOT}/${year}/${month}/${legacyFilename}`;
-    const legacyRef = ref(storage, legacyPath);
+          await getMetadata(storageRef);
+          return createStorageLookupResult(true, 'available');
+        } catch (error: unknown) {
+          if (isExpectedStorageLookupMiss(error) || isBackupDateValidationError(error)) {
+            return createStorageLookupResult(
+              false,
+              resolveStorageLookupStatus(error, {
+                invalidDate: isBackupDateValidationError(error),
+              })
+            );
+          }
+          if (shouldLogStorageError(error)) {
+            recordOperationalErrorTelemetry(
+              'backup',
+              'cudyr_exists_detailed',
+              error,
+              toStorageOperationalError(error, {
+                code: 'cudyr_exists_lookup_failed',
+                message: `No fue posible verificar el respaldo CUDYR ${date}.`,
+                context: { date },
+                userSafeMessage: 'No fue posible verificar la disponibilidad del respaldo CUDYR.',
+              }),
+              { context: { date } }
+            );
+          }
+          return createStorageLookupResult(false, resolveStorageLookupStatus(error));
+        }
+      },
+      { context: date }
+    );
 
-    // Check if legacy file exists
-    await getMetadata(legacyRef);
-
-    // If found, delete it
-    // console.debug(`[CudyrStorage] Found legacy duplicate: ${legacyPath}, deleting...`);
-    const { deleteObject } = await import('firebase/storage');
-    await deleteObject(legacyRef);
-    // console.debug(`[CudyrStorage] ✅ Legacy duplicate deleted`);
-  } catch (_ignore) {
-    // Legacy file doesn't exist, proceed normally
-  }
-
-  const storageRef = ref(storage, filePath);
-
-  const user = defaultBackupStorageRuntime.auth.currentUser;
-  const metadata = {
-    contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    customMetadata: {
-      date,
-      uploadedBy: user?.email || 'unknown',
-      uploadedAt: new Date().toISOString(),
-    },
+    return withStorageLookupTimeout(checkPromise, TIMEOUT_MS, () => {
+      recordOperationalTelemetry({
+        category: 'backup',
+        operation: 'cudyr_exists_timeout',
+        status: 'degraded',
+        date,
+        issues: ['La verificacion del respaldo CUDYR excedio el tiempo esperado.'],
+      });
+    });
   };
 
-  await uploadBytes(storageRef, excelBlob, metadata);
-  const downloadUrl = await getDownloadURL(storageRef);
+  return {
+    uploadCudyrExcel: async (excelBlob, date): Promise<string> => {
+      const storage = await resolveBackupStorage(runtime);
+      assertStorageAvailable(storage, 'CudyrStorage', 'uploadCudyrExcel');
 
-  // console.info(`✅ [CudyrStorage] Upload complete: ${filePath}`);
-  return downloadUrl;
+      const filePath = generateCudyrPath(date);
+
+      try {
+        const { year, month, day } = parseBackupDateParts(date, 'CudyrStorage');
+        const legacyFilename = `CUDYR_${day}-${month}-${year}.xlsx`;
+        const legacyPath = `${STORAGE_ROOT}/${year}/${month}/${legacyFilename}`;
+        const legacyRef = ref(storage, legacyPath);
+        await getMetadata(legacyRef);
+        const { deleteObject } = await import('firebase/storage');
+        await deleteObject(legacyRef);
+      } catch (_ignore) {
+        // Legacy file doesn't exist, proceed normally
+      }
+
+      const storageRef = ref(storage, filePath);
+      const user = runtime.auth.currentUser;
+      const metadata = {
+        contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        customMetadata: {
+          date,
+          uploadedBy: user?.email || 'unknown',
+          uploadedAt: new Date().toISOString(),
+        },
+      };
+
+      await uploadBytes(storageRef, excelBlob, metadata);
+      return getDownloadURL(storageRef);
+    },
+    cudyrExists: async (date: string): Promise<boolean> => {
+      const result = await cudyrExistsDetailed(date);
+      return result.exists;
+    },
+    cudyrExistsDetailed,
+    deleteCudyrFile: async (date: string): Promise<void> => {
+      const storage = await resolveBackupStorage(runtime);
+      const { deleteObject } = await import('firebase/storage');
+      let filePath: string;
+      try {
+        filePath = generateCudyrPath(date);
+      } catch (error) {
+        if (isBackupDateValidationError(error)) return;
+        throw error;
+      }
+      const storageRef = ref(storage, filePath);
+      try {
+        await deleteObject(storageRef);
+      } catch (error: unknown) {
+        if (isExpectedStorageLookupMiss(error)) {
+          return;
+        }
+        throw error;
+      }
+    },
+  };
 };
+
+const cudyrStorageService = createCudyrStorageService();
+export const uploadCudyrExcel = cudyrStorageService.uploadCudyrExcel;
+export const cudyrExists = cudyrStorageService.cudyrExists;
+export const cudyrExistsDetailed = cudyrStorageService.cudyrExistsDetailed;
+export const deleteCudyrFile = cudyrStorageService.deleteCudyrFile;
 
 /**
  * Check if a CUDYR backup exists for a date
  */
-export const cudyrExists = async (date: string): Promise<boolean> => {
-  const result = await cudyrExistsDetailed(date);
-  return result.exists;
-};
-
-export const cudyrExistsDetailed = async (date: string): Promise<StorageLookupResult> => {
-  const TIMEOUT_MS = 4000;
-  const checkPromise = measureStorageOperation(
-    'cudyrExists',
-    async (): Promise<StorageLookupResult> => {
-      try {
-        await defaultBackupStorageRuntime.ready;
-        const storage = await defaultBackupStorageRuntime.getStorage();
-
-        const filePath = generateCudyrPath(date);
-        const storageRef = ref(storage, filePath);
-
-        await getMetadata(storageRef);
-        return createStorageLookupResult(true, 'available');
-      } catch (error: unknown) {
-        if (isExpectedStorageLookupMiss(error) || isBackupDateValidationError(error)) {
-          return createStorageLookupResult(
-            false,
-            resolveStorageLookupStatus(error, {
-              invalidDate: isBackupDateValidationError(error),
-            })
-          );
-        }
-        if (shouldLogStorageError(error)) {
-          recordOperationalErrorTelemetry(
-            'backup',
-            'cudyr_exists_detailed',
-            error,
-            toStorageOperationalError(error, {
-              code: 'cudyr_exists_lookup_failed',
-              message: `No fue posible verificar el respaldo CUDYR ${date}.`,
-              context: { date },
-              userSafeMessage: 'No fue posible verificar la disponibilidad del respaldo CUDYR.',
-            }),
-            { context: { date } }
-          );
-        }
-        return createStorageLookupResult(false, resolveStorageLookupStatus(error));
-      }
-    },
-    { context: date }
-  );
-
-  return withStorageLookupTimeout(checkPromise, TIMEOUT_MS, () => {
-    recordOperationalTelemetry({
-      category: 'backup',
-      operation: 'cudyr_exists_timeout',
-      status: 'degraded',
-      date,
-      issues: ['La verificacion del respaldo CUDYR excedio el tiempo esperado.'],
-    });
-  });
-};
-
-/**
- * Delete a CUDYR file from Storage
- */
-export const deleteCudyrFile = async (date: string): Promise<void> => {
-  await defaultBackupStorageRuntime.ready;
-  const storage = await defaultBackupStorageRuntime.getStorage();
-  const { deleteObject } = await import('firebase/storage');
-  let filePath: string;
-  try {
-    filePath = generateCudyrPath(date);
-  } catch (error) {
-    if (isBackupDateValidationError(error)) return;
-    throw error;
-  }
-  const storageRef = ref(storage, filePath);
-  try {
-    await deleteObject(storageRef);
-    // console.info(`🗑️ CUDYR deleted: ${filePath}`);
-  } catch (error: unknown) {
-    if (isExpectedStorageLookupMiss(error)) {
-      return;
-    }
-    throw error;
-  }
-};
 
 /**
  * List all years with CUDYR backups

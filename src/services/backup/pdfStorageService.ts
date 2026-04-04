@@ -12,6 +12,7 @@
 
 import { ref, uploadBytes, getDownloadURL, deleteObject, getMetadata } from 'firebase/storage';
 import { defaultBackupStorageRuntime } from '@/services/firebase-runtime/backupRuntime';
+import type { BackupStorageRuntime } from '@/services/firebase-runtime/backupRuntime';
 import {
   createListYears,
   createListMonths,
@@ -96,156 +97,162 @@ const parseFilePath = (path: string): { date: string; shiftType: 'day' | 'night'
   return null;
 };
 
+interface PdfStorageService {
+  uploadPdf: (pdfBlob: Blob, date: string, shiftType: 'day' | 'night') => Promise<string>;
+  deletePdf: (date: string, shiftType: 'day' | 'night') => Promise<void>;
+  getPdfUrl: (date: string, shiftType: 'day' | 'night') => Promise<string | null>;
+  pdfExists: (date: string, shiftType: 'day' | 'night') => Promise<boolean>;
+  pdfExistsDetailed: (date: string, shiftType: 'day' | 'night') => Promise<StorageLookupResult>;
+}
+
+const resolveBackupStorage = async (
+  runtime: Pick<BackupStorageRuntime, 'ready' | 'getStorage'>
+) => {
+  await runtime.ready;
+  return runtime.getStorage();
+};
+
 // ============= Core Functions =============
 
 /**
  * Upload a PDF to Firebase Storage
  */
-export const uploadPdf = async (
-  pdfBlob: Blob,
-  date: string,
-  shiftType: 'day' | 'night'
-): Promise<string> => {
-  pdfStorageLogger.debug(`Starting PDF upload for ${date}`);
-  await defaultBackupStorageRuntime.ready;
-  const storage = await defaultBackupStorageRuntime.getStorage();
-  assertStorageAvailable(storage, 'PdfStorage', 'uploadPdf');
+export const createPdfStorageService = (
+  runtime: BackupStorageRuntime = defaultBackupStorageRuntime
+): PdfStorageService => {
+  const pdfExistsDetailed = async (
+    date: string,
+    shiftType: 'day' | 'night'
+  ): Promise<StorageLookupResult> => {
+    pdfStorageLogger.debug(`Checking PDF existence: ${date} ${shiftType}`);
 
-  const filePath = generatePdfPath(date, shiftType);
-  const storageRef = ref(storage, filePath);
+    const TIMEOUT_MS = 4000;
+    const checkPromise = measureStorageOperation(
+      'pdfExists',
+      async (): Promise<StorageLookupResult> => {
+        try {
+          const storage = await resolveBackupStorage(runtime);
 
-  const user = defaultBackupStorageRuntime.auth.currentUser;
-  const metadata = {
-    contentType: 'application/pdf',
-    customMetadata: {
-      date,
-      shiftType,
-      uploadedBy: user?.email || 'unknown',
-      uploadedAt: new Date().toISOString(),
-    },
+          const filePath = generatePdfPath(date, shiftType);
+          const storageRef = ref(storage, filePath);
+
+          await getMetadata(storageRef);
+          pdfStorageLogger.debug(`Found PDF: ${filePath}`);
+          return createStorageLookupResult(true, 'available');
+        } catch (error: unknown) {
+          if (isExpectedStorageLookupMiss(error) || isBackupDateValidationError(error)) {
+            return createStorageLookupResult(
+              false,
+              resolveStorageLookupStatus(error, {
+                invalidDate: isBackupDateValidationError(error),
+              })
+            );
+          }
+          if (shouldLogStorageError(error)) {
+            recordOperationalErrorTelemetry(
+              'backup',
+              'pdf_exists_detailed',
+              error,
+              toStorageOperationalError(error, {
+                code: 'pdf_exists_lookup_failed',
+                message: `No fue posible verificar el PDF ${date}/${shiftType}.`,
+                context: { date, shiftType },
+                userSafeMessage: 'No fue posible verificar la disponibilidad del PDF.',
+              }),
+              { context: { date, shiftType } }
+            );
+          }
+          return createStorageLookupResult(false, resolveStorageLookupStatus(error));
+        }
+      },
+      { context: `${date}:${shiftType}` }
+    );
+
+    return withStorageLookupTimeout(checkPromise, TIMEOUT_MS, () => {
+      recordOperationalTelemetry({
+        category: 'backup',
+        operation: 'pdf_exists_timeout',
+        status: 'degraded',
+        date,
+        issues: ['La verificacion del PDF excedio el tiempo esperado.'],
+        context: { shiftType },
+      });
+    });
   };
 
-  await uploadBytes(storageRef, pdfBlob, metadata);
-  const downloadUrl = await getDownloadURL(storageRef);
+  return {
+    uploadPdf: async (pdfBlob, date, shiftType): Promise<string> => {
+      pdfStorageLogger.debug(`Starting PDF upload for ${date}`);
+      const storage = await resolveBackupStorage(runtime);
+      assertStorageAvailable(storage, 'PdfStorage', 'uploadPdf');
 
-  pdfStorageLogger.debug(`PDF upload complete: ${filePath}`);
-  return downloadUrl;
-};
+      const filePath = generatePdfPath(date, shiftType);
+      const storageRef = ref(storage, filePath);
 
-/**
- * Delete a PDF from Storage
- */
-export const deletePdf = async (date: string, shiftType: 'day' | 'night'): Promise<void> => {
-  await defaultBackupStorageRuntime.ready;
-  const storage = await defaultBackupStorageRuntime.getStorage();
-  let filePath: string;
-  try {
-    filePath = generatePdfPath(date, shiftType);
-  } catch (error) {
-    if (isBackupDateValidationError(error)) return;
-    throw error;
-  }
-  const storageRef = ref(storage, filePath);
-  try {
-    await deleteObject(storageRef);
-    pdfStorageLogger.debug(`PDF deleted: ${filePath}`);
-  } catch (error: unknown) {
-    if (isExpectedStorageLookupMiss(error)) {
-      return;
-    }
-    throw error;
-  }
-};
+      const user = runtime.auth.currentUser;
+      const metadata = {
+        contentType: 'application/pdf',
+        customMetadata: {
+          date,
+          shiftType,
+          uploadedBy: user?.email || 'unknown',
+          uploadedAt: new Date().toISOString(),
+        },
+      };
 
-/**
- * Get download URL for a PDF
- */
-export const getPdfUrl = async (
-  date: string,
-  shiftType: 'day' | 'night'
-): Promise<string | null> => {
-  await defaultBackupStorageRuntime.ready;
-  const storage = await defaultBackupStorageRuntime.getStorage();
-  try {
-    const filePath = generatePdfPath(date, shiftType);
-    const storageRef = ref(storage, filePath);
-    return await getDownloadURL(storageRef);
-  } catch (error: unknown) {
-    if (isExpectedStorageLookupMiss(error) || isBackupDateValidationError(error)) {
-      return null;
-    }
-    throw error;
-  }
-};
+      await uploadBytes(storageRef, pdfBlob, metadata);
+      const downloadUrl = await getDownloadURL(storageRef);
 
-/**
- * Check if a PDF exists
- */
-export const pdfExists = async (date: string, shiftType: 'day' | 'night'): Promise<boolean> => {
-  const result = await pdfExistsDetailed(date, shiftType);
-  return result.exists;
-};
-
-export const pdfExistsDetailed = async (
-  date: string,
-  shiftType: 'day' | 'night'
-): Promise<StorageLookupResult> => {
-  pdfStorageLogger.debug(`Checking PDF existence: ${date} ${shiftType}`);
-
-  const TIMEOUT_MS = 4000;
-  const checkPromise = measureStorageOperation(
-    'pdfExists',
-    async (): Promise<StorageLookupResult> => {
+      pdfStorageLogger.debug(`PDF upload complete: ${filePath}`);
+      return downloadUrl;
+    },
+    deletePdf: async (date, shiftType): Promise<void> => {
+      const storage = await resolveBackupStorage(runtime);
+      let filePath: string;
       try {
-        await defaultBackupStorageRuntime.ready;
-        const storage = await defaultBackupStorageRuntime.getStorage();
-
-        const filePath = generatePdfPath(date, shiftType);
-        const storageRef = ref(storage, filePath);
-
-        await getMetadata(storageRef);
-        pdfStorageLogger.debug(`Found PDF: ${filePath}`);
-        return createStorageLookupResult(true, 'available');
+        filePath = generatePdfPath(date, shiftType);
+      } catch (error) {
+        if (isBackupDateValidationError(error)) return;
+        throw error;
+      }
+      const storageRef = ref(storage, filePath);
+      try {
+        await deleteObject(storageRef);
+        pdfStorageLogger.debug(`PDF deleted: ${filePath}`);
       } catch (error: unknown) {
-        if (isExpectedStorageLookupMiss(error) || isBackupDateValidationError(error)) {
-          return createStorageLookupResult(
-            false,
-            resolveStorageLookupStatus(error, {
-              invalidDate: isBackupDateValidationError(error),
-            })
-          );
+        if (isExpectedStorageLookupMiss(error)) {
+          return;
         }
-        if (shouldLogStorageError(error)) {
-          recordOperationalErrorTelemetry(
-            'backup',
-            'pdf_exists_detailed',
-            error,
-            toStorageOperationalError(error, {
-              code: 'pdf_exists_lookup_failed',
-              message: `No fue posible verificar el PDF ${date}/${shiftType}.`,
-              context: { date, shiftType },
-              userSafeMessage: 'No fue posible verificar la disponibilidad del PDF.',
-            }),
-            { context: { date, shiftType } }
-          );
-        }
-        return createStorageLookupResult(false, resolveStorageLookupStatus(error));
+        throw error;
       }
     },
-    { context: `${date}:${shiftType}` }
-  );
-
-  return withStorageLookupTimeout(checkPromise, TIMEOUT_MS, () => {
-    recordOperationalTelemetry({
-      category: 'backup',
-      operation: 'pdf_exists_timeout',
-      status: 'degraded',
-      date,
-      issues: ['La verificacion del PDF excedio el tiempo esperado.'],
-      context: { shiftType },
-    });
-  });
+    getPdfUrl: async (date, shiftType): Promise<string | null> => {
+      const storage = await resolveBackupStorage(runtime);
+      try {
+        const filePath = generatePdfPath(date, shiftType);
+        const storageRef = ref(storage, filePath);
+        return await getDownloadURL(storageRef);
+      } catch (error: unknown) {
+        if (isExpectedStorageLookupMiss(error) || isBackupDateValidationError(error)) {
+          return null;
+        }
+        throw error;
+      }
+    },
+    pdfExists: async (date, shiftType): Promise<boolean> => {
+      const result = await pdfExistsDetailed(date, shiftType);
+      return result.exists;
+    },
+    pdfExistsDetailed,
+  };
 };
+
+const service = createPdfStorageService();
+export const uploadPdf = service.uploadPdf;
+export const deletePdf = service.deletePdf;
+export const getPdfUrl = service.getPdfUrl;
+export const pdfExists = service.pdfExists;
+export const pdfExistsDetailed = service.pdfExistsDetailed;
 
 /**
  * List all years with PDFs (using base service)
