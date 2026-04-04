@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { createPortal } from 'react-dom';
-import { FileText, Loader2, Monitor, Printer, Radio, Search, UserRound, X } from 'lucide-react';
+import { FileText, Loader2, Monitor, Radio, Search, UserRound } from 'lucide-react';
 import { BaseModal } from '@/components/shared/BaseModal';
 import { searchMMRADExams, type MMRADSearchResult } from '@/services/radiology/mmradService';
 
@@ -29,7 +28,6 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<MMRADSearchResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pdfViewerUrl, setPdfViewerUrl] = useState<string | null>(null);
 
   const selectedPatient = patients.find(p => p.rut === selectedRut);
 
@@ -197,14 +195,15 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {exam.pdf_url && (
-                      <button
-                        type="button"
-                        onClick={() => setPdfViewerUrl(exam.pdf_url)}
+                      <a
+                        href={exam.pdf_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800"
                       >
                         <FileText size={12} />
                         Ver PDF
-                      </button>
+                      </a>
                     )}
                     {exam.dicom_url && (
                       <a
@@ -242,38 +241,6 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
           </div>
         )}
       </BaseModal>
-
-      {/* PDF Viewer — rendered via portal to escape BaseModal stacking context */}
-      {pdfViewerUrl &&
-        createPortal(
-          <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
-            <div className="relative flex h-[90vh] w-[90vw] max-w-5xl flex-col rounded-2xl bg-white shadow-2xl ring-1 ring-black/[0.04] overflow-hidden">
-              <div className="flex items-center justify-between border-b border-slate-200/80 px-4 py-2">
-                <span className="text-[13px] font-semibold text-slate-700">Informe PDF</span>
-                <div className="flex items-center gap-2">
-                  <a
-                    href={pdfViewerUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
-                  >
-                    <Printer size={12} />
-                    Abrir / Imprimir
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => setPdfViewerUrl(null)}
-                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
-              <iframe src={pdfViewerUrl} className="flex-1 w-full" title="Informe PDF" />
-            </div>
-          </div>,
-          document.body
-        )}
     </>
   );
 };
