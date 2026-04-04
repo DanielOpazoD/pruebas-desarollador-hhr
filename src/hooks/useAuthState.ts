@@ -27,6 +27,10 @@ import {
   buildAuthRuntimeSnapshot,
   type AuthRuntimeSnapshot,
 } from '@/services/auth/authRuntimeSnapshot';
+import {
+  resolveRemoteSyncRuntimeStatus,
+  type RemoteSyncRuntimeStatus,
+} from '@/services/repositories/repositoryConfig';
 
 /**
  * Return type for the useAuthState hook.
@@ -45,6 +49,8 @@ export interface UseAuthStateReturn {
   authLoading: boolean;
   /** True if connected to Firebase (either real or anonymous auth) */
   isFirebaseConnected: boolean;
+  /** Estado operativo del runtime remoto para sync y suscripciones */
+  remoteSyncStatus: RemoteSyncRuntimeStatus;
   /** Snapshot operativo de auth bootstrap y sesión */
   authRuntime: AuthRuntimeSnapshot;
   /** Signs out the current user */
@@ -114,6 +120,14 @@ export const useAuthState = (): UseAuthStateReturn => {
   const isEditor = canEditAnyAppModule(role);
   const isViewer = !isEditor;
   const canEdit = isEditor;
+  const remoteSyncStatus = useMemo(
+    () =>
+      resolveRemoteSyncRuntimeStatus({
+        authLoading,
+        isFirebaseConnected,
+      }),
+    [authLoading, isFirebaseConnected]
+  );
   const authRuntime = useMemo(
     () =>
       buildAuthRuntimeSnapshot({
@@ -132,6 +146,7 @@ export const useAuthState = (): UseAuthStateReturn => {
     user: currentUser,
     authLoading,
     isFirebaseConnected,
+    remoteSyncStatus,
     authRuntime,
     handleLogout,
     role,

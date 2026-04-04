@@ -43,6 +43,7 @@ const DailyRecordSyncContext = createContext<
   | {
       syncStatus: SyncStatus;
       lastSyncTime: Date | null;
+      bootstrapPhase: import('@/hooks/controllers/dailyRecordBootstrapController').DailyRecordBootstrapPhase;
     }
   | undefined
 >(undefined);
@@ -141,10 +142,12 @@ export const useDailyRecordSync = () => {
  * Alias intentionally explicit for presentation-layer consumers.
  */
 export const useDailyRecordStatus = () => {
-  const { syncStatus, lastSyncTime } = useDailyRecordSync();
+  const { syncStatus, lastSyncTime, bootstrapPhase } = useDailyRecordSync();
   return {
     syncStatus,
     lastSyncTime,
+    bootstrapPhase,
+    isInitialRemoteHydrationPending: bootstrapPhase === 'remote_record_bootstrapping',
     isSaving: syncStatus === 'saving',
     hasError: syncStatus === 'error',
     isIdle: syncStatus === 'idle',

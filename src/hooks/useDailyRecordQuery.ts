@@ -24,6 +24,7 @@ import type {
 } from '@/services/repositories/contracts/dailyRecordResults';
 import { isDailyRecordWriteBlockedResult } from '@/services/repositories/contracts/dailyRecordResults';
 import type { DailyRecordQueryResult } from '@/services/repositories/contracts/dailyRecordQueries';
+import type { RemoteSyncRuntimeStatus } from '@/services/repositories/repositoryConfig';
 
 const saveDailyRecordWithCompatibility = async (
   dailyRecord: ReturnType<typeof useRepositories>['dailyRecord'],
@@ -56,20 +57,20 @@ const patchDailyRecordWithCompatibility = async (
  *
  * @param date - Date string in YYYY-MM-DD format
  * @param isOfflineMode - Whether the app is forced to offline
- * @param isFirebaseConnected - Whether Firebase Auth is ready
+ * @param remoteSyncStatus - Estado operativo del runtime remoto
  * @returns Query result with data, loading, and error states
  */
 export const useDailyRecordQuery = (
   date: string,
   isOfflineMode: boolean = false,
-  isFirebaseConnected: boolean = false
+  remoteSyncStatus: RemoteSyncRuntimeStatus = 'local_only'
 ) => {
   const queryClient = useQueryClient();
   const { dailyRecord } = useRepositories();
   const shouldSyncFromRemote = shouldUseDailyRecordRealtimeSync(
     date,
     isOfflineMode,
-    isFirebaseConnected
+    remoteSyncStatus
   );
   const remoteHydrationAttemptRef = useRef<string | null>(null);
 

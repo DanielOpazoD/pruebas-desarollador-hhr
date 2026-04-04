@@ -65,6 +65,7 @@ const createAuthState = (overrides: Partial<AuthContextType> = {}): AuthContextT
     isEditor: true,
     isViewer: false,
     isFirebaseConnected: true,
+    remoteSyncStatus: 'ready',
     signOut: vi.fn(),
     ...overrides,
   };
@@ -106,7 +107,7 @@ describe('useAuthenticatedAppRuntime', () => {
     const { result } = renderHook(() => useAuthenticatedAppRuntime({ auth, dateNav }));
 
     expect(mockUseSystemHealthReporter).toHaveBeenCalledTimes(1);
-    expect(mockUseDailyRecord).toHaveBeenCalledWith('2026-03-27', false, true);
+    expect(mockUseDailyRecord).toHaveBeenCalledWith('2026-03-27', false, 'ready');
     expect(mockUseExistingDaysQuery).toHaveBeenCalledWith(2026, 2);
     expect(mockResolveShiftNurseSignature).toHaveBeenCalledWith(
       mockUseDailyRecord.mock.results[0]?.value.record,

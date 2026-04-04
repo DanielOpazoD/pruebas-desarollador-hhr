@@ -124,7 +124,7 @@ describe('useDailyRecordSyncQuery', () => {
       buildReadResult(mockRecord)
     );
 
-    const { result } = renderHook(() => useDailyRecordSyncQuery(mockDate), {
+    const { result } = renderHook(() => useDailyRecordSyncQuery(mockDate, false, 'ready'), {
       wrapper: createWrapper(),
     });
 
@@ -143,7 +143,7 @@ describe('useDailyRecordSyncQuery', () => {
       buildReadResult(mockRecord)
     );
 
-    const { result } = renderHook(() => useDailyRecordSyncQuery(mockDate), {
+    const { result } = renderHook(() => useDailyRecordSyncQuery(mockDate, false, 'ready'), {
       wrapper: createWrapper(),
     });
 
@@ -160,7 +160,7 @@ describe('useDailyRecordSyncQuery', () => {
       buildReadResult(mockRecord)
     );
 
-    const { result } = renderHook(() => useDailyRecordSyncQuery(mockDate), {
+    const { result } = renderHook(() => useDailyRecordSyncQuery(mockDate, false, 'ready'), {
       wrapper: createWrapper(),
     });
 
@@ -187,7 +187,7 @@ describe('useDailyRecordSyncQuery', () => {
       .mockImplementationOnce(() => firstRefresh.promise)
       .mockImplementationOnce(() => secondRefresh.promise);
 
-    const { result } = renderHook(() => useDailyRecordSyncQuery(mockDate), {
+    const { result } = renderHook(() => useDailyRecordSyncQuery(mockDate, false, 'ready'), {
       wrapper: createWrapper(),
     });
 
@@ -232,7 +232,7 @@ describe('useDailyRecordSyncQuery', () => {
       buildReadResult(null)
     );
 
-    renderHook(() => useDailyRecordSyncQuery(mockDate), {
+    renderHook(() => useDailyRecordSyncQuery(mockDate, false, 'ready'), {
       wrapper: createWrapper(),
     });
 

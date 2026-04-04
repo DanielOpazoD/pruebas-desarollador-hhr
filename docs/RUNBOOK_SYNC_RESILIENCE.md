@@ -28,6 +28,25 @@ Umbrales operativos:
 - Snapshot técnico base: `reports/operational-health.md`
 - Budgets completos: `docs/RUNBOOK_OPERATIONAL_BUDGETS.md`
 
+## Fases de bootstrap del registro diario
+
+Cuando el incidente ocurre "solo al abrir" o "tras F5", revisar primero la fase de bootstrap
+del `DailyRecord` antes de asumir pérdida real de datos:
+
+- `remote_runtime_bootstrapping`: auth/runtime remoto aun no termina de rehidratarse.
+- `remote_record_bootstrapping`: el runtime ya está listo, pero la primera lectura remota del día
+  sigue pendiente.
+- `remote_record_timeout`: la primera lectura remota excedió la ventana de gracia; ya no conviene
+  ocultar el estado vacío y hay que revisar latencia o errores de fetch.
+- `confirmed_empty`: el repositorio confirmó ausencia real del registro para esa fecha.
+- `local_only`: el flujo quedó degradado a IndexedDB/local, sin runtime remoto activo.
+- `record_ready`: el registro quedó resuelto para la UI.
+
+Referencia técnica:
+
+- [dailyRecordBootstrapController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/dailyRecordBootstrapController.ts)
+- [useDailyRecordSyncQuery.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/useDailyRecordSyncQuery.ts)
+
 ## Procedimiento 1: IndexedDB bloqueado
 
 Síntomas:

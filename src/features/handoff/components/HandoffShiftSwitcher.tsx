@@ -10,13 +10,13 @@ export const HandoffShiftSwitcher: React.FC<HandoffShiftSwitcherProps> = ({
   selectedShift,
   setSelectedShift,
 }) => (
-  <div className="flex bg-slate-100 p-1 rounded-lg">
+  <div className="flex bg-slate-100/80 p-0.5 rounded-xl border border-slate-200/50">
     <button
       onClick={() => setSelectedShift('day')}
       className={clsx(
-        'p-1.5 rounded-md text-sm font-medium transition-colors cursor-pointer',
+        'px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-200 cursor-pointer',
         selectedShift === 'day'
-          ? 'bg-white text-teal-700 shadow-sm'
+          ? 'bg-white text-teal-700 shadow-sm ring-1 ring-black/[0.04]'
           : 'text-slate-500 hover:text-slate-700'
       )}
       aria-pressed={selectedShift === 'day'}
@@ -26,9 +26,9 @@ export const HandoffShiftSwitcher: React.FC<HandoffShiftSwitcherProps> = ({
     <button
       onClick={() => setSelectedShift('night')}
       className={clsx(
-        'p-1.5 rounded-md text-sm font-medium transition-colors cursor-pointer',
+        'px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-200 cursor-pointer',
         selectedShift === 'night'
-          ? 'bg-white text-indigo-700 shadow-sm'
+          ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-black/[0.04]'
           : 'text-slate-500 hover:text-slate-700'
       )}
       aria-pressed={selectedShift === 'night'}

@@ -151,6 +151,34 @@ export const getAuthBootstrapTimeoutMs = (): number => {
   }).timeoutMs;
 };
 
+const applyResolvedBootstrapSessionState = ({
+  sessionState,
+  setSessionState,
+  setAuthLoading,
+}: {
+  sessionState: AuthSessionState;
+  setSessionState: (sessionState: AuthSessionState) => void;
+  setAuthLoading: (value: boolean) => void;
+}): void => {
+  if (isAuthBootstrapPending()) {
+    restoreAuthBootstrapReturnTo();
+  }
+  if (isAuthenticatedAuthSessionState(sessionState)) {
+    clearRecentManualLogout();
+    if (
+      sessionState.user.email &&
+      typeof sessionStorage !== 'undefined' &&
+      !sessionStorage.getItem('hhr_logged_this_session')
+    ) {
+      void defaultAuditPort.logUserLogin(sessionState.user.email);
+      sessionStorage.setItem('hhr_logged_this_session', 'true');
+    }
+  }
+  setSessionState(sessionState);
+  setAuthLoading(false);
+  clearAuthBootstrapPending();
+};
+
 export const subscribeToResolvedAuthState = async ({
   resolveRedirectAuthSessionOutcome,
   resolveCurrentAuthSessionOutcome,
@@ -168,27 +196,6 @@ export const subscribeToResolvedAuthState = async ({
 }): Promise<() => void> => {
   let isBootstrapLoading = true;
 
-  const applyResolvedBootstrapSession = (sessionState: AuthSessionState): void => {
-    if (isAuthBootstrapPending()) {
-      restoreAuthBootstrapReturnTo();
-    }
-    if (isAuthenticatedAuthSessionState(sessionState)) {
-      clearRecentManualLogout();
-      if (
-        sessionState.user.email &&
-        typeof sessionStorage !== 'undefined' &&
-        !sessionStorage.getItem('hhr_logged_this_session')
-      ) {
-        void defaultAuditPort.logUserLogin(sessionState.user.email);
-        sessionStorage.setItem('hhr_logged_this_session', 'true');
-      }
-    }
-    setSessionState(sessionState);
-    setAuthLoading(false);
-    isBootstrapLoading = false;
-    clearAuthBootstrapPending();
-  };
-
   try {
     const redirectOutcome = await resolveRedirectAuthSessionOutcome();
     recordOperationalOutcome('auth', 'redirect_resolution', redirectOutcome, {
@@ -196,14 +203,24 @@ export const subscribeToResolvedAuthState = async ({
     });
     const redirectSessionState = redirectOutcome.data;
     if (redirectSessionState) {
-      applyResolvedBootstrapSession(redirectSessionState);
+      applyResolvedBootstrapSessionState({
+        sessionState: redirectSessionState,
+        setSessionState,
+        setAuthLoading,
+      });
+      isBootstrapLoading = false;
     } else {
       const currentSessionOutcome = await resolveCurrentAuthSessionOutcome();
       recordOperationalOutcome('auth', 'current_session_resolution', currentSessionOutcome, {
         allowSuccess: true,
       });
       if (currentSessionOutcome.status === 'success' && currentSessionOutcome.data) {
-        applyResolvedBootstrapSession(currentSessionOutcome.data);
+        applyResolvedBootstrapSessionState({
+          sessionState: currentSessionOutcome.data,
+          setSessionState,
+          setAuthLoading,
+        });
+        isBootstrapLoading = false;
       }
     }
   } catch (error) {
@@ -344,6 +361,49 @@ export const useResolvedAuthBootstrap = ({
         },
         issues: ['La inicializacion de autenticacion excedio el tiempo esperado.'],
       });
+
+      if (!hasRecentManualLogout() && hasPersistedFirebaseAuthHint()) {
+        void resolveCurrentAuthSessionOutcome()
+          .then(timeoutRecoveryOutcome => {
+            recordOperationalOutcome(
+              'auth',
+              'timeout_current_session_resolution',
+              timeoutRecoveryOutcome,
+              {
+                allowSuccess: true,
+              }
+            );
+
+            if (isBootstrapResolved) {
+              return;
+            }
+
+            if (timeoutRecoveryOutcome.status === 'success' && timeoutRecoveryOutcome.data) {
+              applyResolvedBootstrapSessionState({
+                sessionState: timeoutRecoveryOutcome.data,
+                setSessionState,
+                setAuthLoading: setResolvedAuthLoading,
+              });
+              return;
+            }
+
+            clearAuthBootstrapPending();
+            setSessionState(createUnauthenticatedAuthSessionState());
+            setResolvedAuthLoading(false);
+          })
+          .catch(error => {
+            if (isBootstrapResolved) {
+              return;
+            }
+
+            authStateLogger.warn('Auth timeout recovery resolution failed', error);
+            clearAuthBootstrapPending();
+            setSessionState(createUnauthenticatedAuthSessionState());
+            setResolvedAuthLoading(false);
+          });
+        return;
+      }
+
       clearAuthBootstrapPending();
       setSessionState(createUnauthenticatedAuthSessionState());
       setResolvedAuthLoading(false);

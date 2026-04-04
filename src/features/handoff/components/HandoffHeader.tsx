@@ -36,13 +36,13 @@ export const HandoffHeader: React.FC<HandoffHeaderProps> = ({
   const headerColor = isMedical ? 'text-sky-600' : 'text-medical-600';
 
   return (
-    <header className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center gap-3 print:hidden">
+    <header className="bg-white p-3 md:p-4 rounded-2xl shadow-sm border border-slate-200/80 ring-1 ring-black/[0.02] flex flex-col md:flex-row items-center gap-3 print:hidden">
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-indigo-50 rounded-lg">
-          <Icon size={24} className={headerColor} />
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-sky-700 text-white shadow-md shadow-sky-500/20">
+          <Icon size={20} className="text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-slate-800">{title}</h2>
+          <h2 className="text-lg font-bold text-slate-800 tracking-tight">{title}</h2>
         </div>
       </div>
 

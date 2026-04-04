@@ -17,6 +17,7 @@ import { PatientFieldValue } from '@/types/valueTypes';
 import type { PatientMovementActions } from '@/types/movements';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
+import type { DailyRecordBootstrapPhase } from '@/hooks/controllers/dailyRecordBootstrapController';
 export type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
 export type { DailyRecordPatch } from '@/hooks/contracts/dailyRecordHookContracts';
 
@@ -44,6 +45,7 @@ export interface UseDailyRecordSyncResult {
   ) => void;
   syncStatus: SyncStatus;
   lastSyncTime: Date | null;
+  bootstrapPhase: DailyRecordBootstrapPhase;
   saveAndUpdate: (updatedRecord: DailyRecord) => Promise<void>;
   patchRecord: (partial: DailyRecordPatch) => Promise<void>;
   markLocalChange: () => void;
@@ -68,6 +70,7 @@ export interface DailyRecordDataContextType {
   record: DailyRecord | null;
   syncStatus: SyncStatus;
   lastSyncTime: Date | null;
+  bootstrapPhase: DailyRecordBootstrapPhase;
   inventory: InventoryStats;
   stabilityRules: import('@/hooks/useStabilityRules').StabilityRules;
 }

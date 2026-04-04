@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context';
+import { useDailyRecordData } from '@/context/DailyRecordContext';
 import { getTodayISO } from '@/utils/dateUtils';
 import { useCensusMigrationBootstrap } from './useCensusMigrationBootstrap';
 import { useCensusViewRouteModel } from './useCensusViewRouteModel';
 import type { CensusAccessProfile } from '../types/censusAccessProfile';
+import { resolveCensusEmptyStatePolicy } from '@/hooks/controllers/dailyRecordBootstrapController';
 
 type ViewMode = 'REGISTER' | 'ANALYTICS';
 
@@ -33,6 +35,7 @@ export const useCensusViewScreenModel = ({
   accessProfile,
 }: UseCensusViewScreenModelParams) => {
   const auth = useAuth();
+  const { bootstrapPhase } = useDailyRecordData();
   const routeModel = useCensusViewRouteModel({
     viewMode,
     selectedDay,
@@ -46,14 +49,15 @@ export const useCensusViewScreenModel = ({
     accessProfile,
   });
   const [resolvedTodayEmptyDate, setResolvedTodayEmptyDate] = useState('');
-  const shouldDeferRemoteBootstrapEmptyState =
-    routeModel.branch === 'empty' &&
-    auth.isAuthenticated &&
-    (auth.isLoading || auth.sessionState.status === 'authenticating' || !auth.isFirebaseConnected);
-  const shouldDeferTodayEmptyState =
-    routeModel.branch === 'empty' &&
-    (currentDateString === getTodayISO() || shouldDeferRemoteBootstrapEmptyState);
-  const emptyStateDeferMs = shouldDeferRemoteBootstrapEmptyState ? 12_000 : 1_200;
+  const { shouldDeferEmptyState: shouldDeferTodayEmptyState, deferMs: emptyStateDeferMs } =
+    resolveCensusEmptyStatePolicy({
+      branch: routeModel.branch,
+      currentDateString,
+      todayDateString: getTodayISO(),
+      isAuthenticated: auth.isAuthenticated,
+      bootstrapPhase:
+        auth.remoteSyncStatus === 'bootstrapping' ? 'remote_runtime_bootstrapping' : bootstrapPhase,
+    });
 
   useCensusMigrationBootstrap(routeModel.branch !== 'analytics');
 

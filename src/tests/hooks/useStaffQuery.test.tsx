@@ -39,6 +39,7 @@ describe('useStaffQuery Hooks', () => {
     vi.mocked(useAuthState).mockReturnValue({
       isFirebaseConnected: true,
       authLoading: false,
+      remoteSyncStatus: 'ready',
     } as AuthStateValue);
   });
 
@@ -94,6 +95,7 @@ describe('useStaffQuery Hooks', () => {
       vi.mocked(useAuthState).mockReturnValue({
         isFirebaseConnected: false,
         authLoading: false,
+        remoteSyncStatus: 'local_only',
       } as AuthStateValue);
       const subscribeMock = vi.fn();
       vi.mocked(CatalogRepository.subscribeNurses).mockImplementation(
@@ -113,6 +115,7 @@ describe('useStaffQuery Hooks', () => {
       vi.mocked(useAuthState).mockReturnValue({
         isFirebaseConnected: true,
         authLoading: true,
+        remoteSyncStatus: 'bootstrapping',
       } as AuthStateValue);
       const subscribeMock = vi.fn();
       vi.mocked(CatalogRepository.subscribeNurses).mockImplementation(

@@ -170,7 +170,7 @@ describe('DailyRecord Sync Integration', () => {
     const localRecord = createMockRecord('2024-12-28');
     mockGetForDate.mockResolvedValue(localRecord);
 
-    const { result } = renderHook(() => useDailyRecordSyncQuery('2024-12-28', false, true), {
+    const { result } = renderHook(() => useDailyRecordSyncQuery('2024-12-28', false, 'ready'), {
       wrapper: createWrapper(),
     });
 
@@ -184,7 +184,7 @@ describe('DailyRecord Sync Integration', () => {
   });
 
   it('should subscribe to remote changes on mount', async () => {
-    renderHook(() => useDailyRecordSyncQuery('2024-12-28', false, true), {
+    renderHook(() => useDailyRecordSyncQuery('2024-12-28', false, 'ready'), {
       wrapper: createWrapper(),
     });
 
@@ -192,7 +192,7 @@ describe('DailyRecord Sync Integration', () => {
   });
 
   it('should update record when remote change is received (no local pending)', async () => {
-    const { result } = renderHook(() => useDailyRecordSyncQuery('2024-12-28', false, true), {
+    const { result } = renderHook(() => useDailyRecordSyncQuery('2024-12-28', false, 'ready'), {
       wrapper: createWrapper(),
     });
 
@@ -240,7 +240,7 @@ describe('DailyRecord Sync Integration', () => {
     };
     mockGetForDate.mockResolvedValue(localRecord);
 
-    const { result } = renderHook(() => useDailyRecordSyncQuery('2024-12-28', false, true), {
+    const { result } = renderHook(() => useDailyRecordSyncQuery('2024-12-28', false, 'ready'), {
       wrapper: createWrapper(),
     });
 
@@ -280,7 +280,7 @@ describe('DailyRecord Sync Integration', () => {
   });
 
   it('should save and update state on saveAndUpdate call', async () => {
-    const { result } = renderHook(() => useDailyRecordSyncQuery('2024-12-28', false, true), {
+    const { result } = renderHook(() => useDailyRecordSyncQuery('2024-12-28', false, 'ready'), {
       wrapper: createWrapper(),
     });
     const newRecord = createMockRecord('2024-12-28');
@@ -306,7 +306,7 @@ describe('DailyRecord Sync Integration', () => {
     const initialRecord = createMockRecord('2024-12-28');
     mockGetForDate.mockReturnValue(initialRecord);
 
-    const { result } = renderHook(() => useDailyRecordSyncQuery('2024-12-28', false, true), {
+    const { result } = renderHook(() => useDailyRecordSyncQuery('2024-12-28', false, 'ready'), {
       wrapper: createWrapper(),
     });
 
@@ -342,7 +342,7 @@ describe('DailyRecord Sync Integration', () => {
 
   it('should handle save errors and update syncStatus', async () => {
     mockSave.mockRejectedValue(new Error('Firebase error'));
-    const { result } = renderHook(() => useDailyRecordSyncQuery('2024-12-28', false, true), {
+    const { result } = renderHook(() => useDailyRecordSyncQuery('2024-12-28', false, 'ready'), {
       wrapper: createWrapper(),
     });
 
@@ -373,7 +373,7 @@ describe('DailyRecord Sync Integration', () => {
     mockGetForDate.mockResolvedValueOnce(currentRecord);
     mockSave.mockRejectedValueOnce(new Error('El registro ha sido modificado por otro usuario.'));
 
-    const { result } = renderHook(() => useDailyRecordSyncQuery('2024-12-28', false, true), {
+    const { result } = renderHook(() => useDailyRecordSyncQuery('2024-12-28', false, 'ready'), {
       wrapper: createWrapper(),
     });
 

@@ -97,21 +97,21 @@ export const HandoffPatientTable: React.FC<HandoffPatientTableProps> = ({
   );
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden print:shadow-none print:border-none print:rounded-none print:overflow-visible">
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 ring-1 ring-black/[0.02] overflow-hidden print:shadow-none print:border-none print:rounded-none print:overflow-visible">
       <div className="overflow-x-auto">
         <table className="w-full table-fixed text-left border-collapse print:[&_th]:p-1 print:[&_td]:p-1 print:[&_th]:text-[10px] print:[&_td]:text-[10px]">
           <thead>
             <tr className={tableHeaderClass}>
-              <th className="p-2 border-r border-slate-200 w-16 print:w-[35px] print:text-[10px] print:p-1">
+              <th className="p-2 border-r border-slate-200/60 w-16 print:w-[35px] print:text-[10px] print:p-1">
                 Cama
               </th>
               <th
-                className="p-2 border-r border-slate-200 w-44 print:w-[20%] print:text-[10px] print:p-1"
+                className="p-2 border-r border-slate-200/60 w-44 print:w-[20%] print:text-[10px] print:p-1"
                 title="Nombre, RUT, Edad, Fecha de Ingreso"
               >
                 Paciente
               </th>
-              <th className="p-2 border-r border-slate-200 w-[220px] print:w-[26%] print:text-[10px] print:p-1">
+              <th className="p-2 border-r border-slate-200/60 w-[220px] print:w-[26%] print:text-[10px] print:p-1">
                 <div className="flex items-center justify-between">
                   <span>Diagnóstico</span>
                   {clinicalEventActions && (
@@ -135,7 +135,7 @@ export const HandoffPatientTable: React.FC<HandoffPatientTableProps> = ({
               </th>
               {!isMedical && (
                 <th
-                  className="p-2 border-r border-slate-200 w-28 print:w-[50px] print:text-[10px] print:p-1"
+                  className="p-2 border-r border-slate-200/60 w-28 print:w-[50px] print:text-[10px] print:p-1"
                   title="Dispositivos médicos invasivos"
                 >
                   DMI

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import type { TransferRequest } from '@/types/transfers';
 import { subscribeToTransfers } from '@/services/transfers/transferService';
 import { useAuthState } from '@/hooks/useAuthState';
-import { resolveRemoteSyncRuntimeStatus } from '@/services/repositories/repositoryConfig';
 
 interface UseTransferSubscriptionsResult {
   transfers: TransferRequest[];
@@ -11,12 +10,8 @@ interface UseTransferSubscriptionsResult {
 }
 
 export const useTransferSubscriptions = (): UseTransferSubscriptionsResult => {
-  const { isFirebaseConnected, authLoading } = useAuthState();
+  const { remoteSyncStatus } = useAuthState();
   const [transfers, setTransfers] = useState<TransferRequest[]>([]);
-  const remoteSyncStatus = resolveRemoteSyncRuntimeStatus({
-    authLoading,
-    isFirebaseConnected,
-  });
   const [isLoading, setIsLoading] = useState(remoteSyncStatus === 'bootstrapping');
   const [error, setError] = useState<string | null>(null);
 

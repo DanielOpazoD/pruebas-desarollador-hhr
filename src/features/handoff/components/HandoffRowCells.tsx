@@ -29,7 +29,7 @@ export const HandoffBedCell: React.FC<HandoffBedCellProps> = ({
   isSubRow,
   daysHospitalized,
 }) => (
-  <td className="p-2 border-r border-slate-200 text-center w-20 align-middle print:w-auto print:text-[10px] print:p-1">
+  <td className="p-2 border-r border-slate-200/60 text-center w-20 align-middle print:w-auto print:text-[10px] print:p-1">
     <div className="font-bold text-slate-700 text-base print:text-[10px] flex flex-col items-center">
       <span>{!isSubRow && bedName}</span>
       {!isSubRow && daysHospitalized !== null && (
@@ -56,7 +56,7 @@ interface HandoffPatientCellProps {
 }
 
 export const HandoffPatientCell: React.FC<HandoffPatientCellProps> = ({ patient, isSubRow }) => (
-  <td className="p-2 border-r border-slate-200 min-w-[150px] align-middle print:min-w-0 print:w-auto print:text-[10px] print:p-1">
+  <td className="p-2 border-r border-slate-200/60 min-w-[150px] align-middle print:min-w-0 print:w-auto print:text-[10px] print:p-1">
     <div className="font-medium text-slate-800 flex flex-col gap-0.5 leading-snug print:leading-none">
       <div className="flex items-center gap-1 flex-wrap">
         {isSubRow && <Baby size={14} className="text-pink-400 print:hidden" />}
@@ -121,7 +121,7 @@ export const HandoffDiagnosisCell: React.FC<HandoffDiagnosisCellProps> = ({
   });
 
   return (
-    <td className="p-1.5 border-r border-slate-200 w-[220px] text-slate-700 align-top relative print:w-20 print:text-[10px] print:leading-tight print:p-1">
+    <td className="p-1.5 border-r border-slate-200/60 w-[220px] text-slate-700 align-top relative print:w-20 print:text-[10px] print:leading-tight print:p-1">
       <div className="flex flex-col gap-1">
         <div className="flex items-start justify-between gap-0">
           <div className="font-medium leading-tight flex-1 pr-6">{patient.pathology}</div>
@@ -178,7 +178,7 @@ interface HandoffDevicesCellProps {
 }
 
 export const HandoffDevicesCell: React.FC<HandoffDevicesCellProps> = ({ patient, reportDate }) => (
-  <td className="p-2 border-r border-slate-200 w-28 text-xs align-middle print:w-auto print:text-[9px] print:p-1">
+  <td className="p-2 border-r border-slate-200/60 w-28 text-xs align-middle print:w-auto print:text-[9px] print:p-1">
     <div className="flex flex-wrap gap-1">
       {patient.devices.length > 0 ? (
         patient.devices.map(d => {

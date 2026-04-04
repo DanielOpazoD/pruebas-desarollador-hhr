@@ -38,7 +38,7 @@ export const CLOSED_WRAPPER_SIZE = 72;
 export const OPEN_WRAPPER_WIDTH = 158;
 
 /** Horizontal offset of the trigger center from the left edge of the wrapper (px). */
-export const TRIGGER_CENTER_OFFSET = 64;
+export const TRIGGER_CENTER_OFFSET = 80;
 
 /** Vertical position of the trigger center when the launcher is open (px from wrapper top). */
 export const TRIGGER_CENTER_Y_OPEN = 36;

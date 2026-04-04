@@ -24,6 +24,7 @@ describe('useTransferSubscriptions', () => {
     useAuthStateMock.mockReturnValue({
       isFirebaseConnected: true,
       authLoading: false,
+      remoteSyncStatus: 'ready',
     });
   });
 
@@ -68,6 +69,7 @@ describe('useTransferSubscriptions', () => {
     useAuthStateMock.mockReturnValue({
       isFirebaseConnected: true,
       authLoading: true,
+      remoteSyncStatus: 'bootstrapping',
     });
 
     const { result } = renderHook(() => useTransferSubscriptions());
@@ -80,6 +82,7 @@ describe('useTransferSubscriptions', () => {
     useAuthStateMock.mockReturnValue({
       isFirebaseConnected: false,
       authLoading: false,
+      remoteSyncStatus: 'local_only',
     });
 
     const { result } = renderHook(() => useTransferSubscriptions());

@@ -12,6 +12,7 @@ import { useNotification } from '@/context/UIContext';
 import { buildDailyRecordContextValue } from '@/hooks/controllers/dailyRecordController';
 import { useDailyRecordDomainModules } from '@/hooks/useDailyRecordDomainModules';
 import { useDailyRecordCopyActions } from '@/hooks/useDailyRecordCopyActions';
+import type { RemoteSyncRuntimeStatus } from '@/services/repositories/repositoryConfig';
 
 // Types
 import { DailyRecordContextType } from './useDailyRecordTypes';
@@ -23,7 +24,7 @@ import { DailyRecordContextType } from './useDailyRecordTypes';
 export const useDailyRecord = (
   currentDateString: string,
   isOfflineMode: boolean = false,
-  isFirebaseConnected: boolean = false
+  remoteSyncStatus: RemoteSyncRuntimeStatus = 'local_only'
 ): DailyRecordContextType => {
   const { dailyRecord } = useRepositories();
   const { warning } = useNotification();
@@ -36,11 +37,12 @@ export const useDailyRecord = (
     setRecord,
     syncStatus,
     lastSyncTime,
+    bootstrapPhase,
     saveAndUpdate,
     markLocalChange,
     refresh,
     patchRecord,
-  } = useDailyRecordSyncQuery(currentDateString, isOfflineMode, isFirebaseConnected);
+  } = useDailyRecordSyncQuery(currentDateString, isOfflineMode, remoteSyncStatus);
 
   // ========================================================================
   // Orchestrated Sub-hooks
@@ -83,6 +85,7 @@ export const useDailyRecord = (
         record,
         syncStatus,
         lastSyncTime,
+        bootstrapPhase,
         inventory,
         stabilityRules,
         createDay,
@@ -134,6 +137,7 @@ export const useDailyRecord = (
       record,
       syncStatus,
       lastSyncTime,
+      bootstrapPhase,
       inventory,
       stabilityRules,
       createDay,

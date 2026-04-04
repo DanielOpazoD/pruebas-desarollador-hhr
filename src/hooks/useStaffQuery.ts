@@ -3,15 +3,11 @@ import { useEffect } from 'react';
 import { queryKeys } from '../config/queryClient';
 import { CatalogRepository } from '@/services/repositories/CatalogRepository';
 import { useAuthState } from './useAuthState';
-import { shouldUseRemoteSyncRuntime } from '@/services/repositories/repositoryConfig';
 import type { ProfessionalCatalogItem } from '@/types/domain/professionals';
 
 const useCatalogRealtimeReady = (): boolean => {
-  const { isFirebaseConnected, authLoading } = useAuthState();
-  return shouldUseRemoteSyncRuntime({
-    authLoading,
-    isFirebaseConnected,
-  });
+  const { remoteSyncStatus } = useAuthState();
+  return remoteSyncStatus === 'ready';
 };
 
 /**

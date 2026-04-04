@@ -146,7 +146,7 @@ describe('Sync UI Resilience Integration', () => {
     const remoteEcho = buildRecord(date, 'Paciente Remoto');
     mockGetForDate.mockResolvedValue(localRecord);
 
-    const { result } = renderHook(() => useDailyRecordSyncQuery(date, false, true), {
+    const { result } = renderHook(() => useDailyRecordSyncQuery(date, false, 'ready'), {
       wrapper: createWrapper(),
     });
 
@@ -168,7 +168,7 @@ describe('Sync UI Resilience Integration', () => {
     mockGetForDate.mockResolvedValue(record);
     mockSave.mockRejectedValueOnce(new ConcurrencyError('Remote is newer'));
 
-    const { result } = renderHook(() => useDailyRecordSyncQuery(date, false, true), {
+    const { result } = renderHook(() => useDailyRecordSyncQuery(date, false, 'ready'), {
       wrapper: createWrapper(),
     });
 
@@ -203,7 +203,7 @@ describe('Sync UI Resilience Integration', () => {
       message: 'Missing or insufficient permissions',
     });
 
-    const { result } = renderHook(() => useDailyRecordSyncQuery(date, false, true), {
+    const { result } = renderHook(() => useDailyRecordSyncQuery(date, false, 'ready'), {
       wrapper: createWrapper(),
     });
 

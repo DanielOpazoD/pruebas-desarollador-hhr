@@ -37,11 +37,7 @@ export const useAuthenticatedAppRuntime = ({
 }: UseAuthenticatedAppRuntimeParams): AuthenticatedAppRuntime => {
   useSystemHealthReporter();
 
-  const dailyRecordHook = useDailyRecord(
-    dateNav.currentDateString,
-    false,
-    auth.isFirebaseConnected
-  );
+  const dailyRecordHook = useDailyRecord(dateNav.currentDateString, false, auth.remoteSyncStatus);
   const { record } = dailyRecordHook;
 
   const { data } = useExistingDaysQuery(dateNav.selectedYear, dateNav.selectedMonth);

@@ -35,6 +35,7 @@ export const createPublicMedicalSignatureContextValue = ({
   record,
   syncStatus: 'saved',
   lastSyncTime: record?.lastUpdated ? new Date(record.lastUpdated) : null,
+  bootstrapPhase: 'record_ready',
   inventory: buildEmptyInventory(),
   stabilityRules: buildEmptyStabilityRules(),
   createDay: noop,

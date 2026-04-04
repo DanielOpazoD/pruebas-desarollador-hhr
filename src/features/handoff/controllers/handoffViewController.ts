@@ -37,8 +37,8 @@ export const resolveHandoffTableHeaderClass = ({
   }
 
   return selectedShift === 'day'
-    ? 'bg-medical-50 text-medical-900 text-xs uppercase tracking-wider font-semibold border-b border-medical-100'
-    : 'bg-slate-100 text-slate-800 text-xs uppercase tracking-wider font-semibold border-b border-slate-200';
+    ? 'bg-gradient-to-b from-sky-50 to-sky-100/60 text-sky-900 text-[10px] uppercase tracking-[0.06em] font-semibold border-b border-sky-200/60'
+    : 'bg-gradient-to-b from-slate-50 to-slate-100/80 text-slate-500 text-[10px] uppercase tracking-[0.06em] font-semibold border-b border-slate-200/60';
 };
 
 interface ResolveHandoffDocumentTitleParams {

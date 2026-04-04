@@ -179,6 +179,70 @@ describe('useResolvedAuthBootstrap', () => {
     );
   });
 
+  it('revalidates the current session on timeout before falling back to unauthenticated', async () => {
+    window.localStorage.setItem('firebase:authUser:test:[DEFAULT]', '{"uid":"persisted"}');
+
+    const onAuthSessionStateChange = vi.fn(() => () => {});
+    const resolveRedirectAuthSessionOutcome = vi
+      .fn()
+      .mockResolvedValue({ status: 'success', data: null, issues: [] });
+    const resolveCurrentAuthSessionOutcome = vi
+      .fn()
+      .mockResolvedValueOnce({ status: 'success', data: null, issues: [] })
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: {
+          status: 'authorized',
+          user: {
+            uid: 'persisted-1',
+            email: 'persisted@hospital.cl',
+            displayName: 'Persisted Session',
+            role: 'admin',
+          },
+        },
+        issues: [],
+      });
+
+    const { result } = renderHook(() => {
+      const [sessionState, setSessionState] = useState<AuthSessionState>({
+        status: 'authenticating',
+        user: null,
+      });
+      const [authLoading, setAuthLoading] = useState(true);
+
+      useResolvedAuthBootstrap({
+        e2eBootstrapUser: null,
+        resolveRedirectAuthSessionOutcome,
+        resolveCurrentAuthSessionOutcome,
+        onAuthSessionStateChange,
+        setSessionState,
+        setAuthLoading,
+      });
+
+      return { sessionState, authLoading };
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(16000);
+      await Promise.resolve();
+    });
+
+    expect(result.current.authLoading).toBe(false);
+    expect(result.current.sessionState).toEqual(
+      expect.objectContaining({
+        status: 'authorized',
+        user: expect.objectContaining({ uid: 'persisted-1' }),
+      })
+    );
+    expect(resolveCurrentAuthSessionOutcome).toHaveBeenCalledTimes(2);
+    expect(mockRecordOperationalOutcome).toHaveBeenCalledWith(
+      'auth',
+      'timeout_current_session_resolution',
+      expect.objectContaining({ status: 'success' }),
+      expect.objectContaining({ allowSuccess: true })
+    );
+  });
+
   it('hydrates the current firebase session before the auth observer resolves', async () => {
     const onAuthSessionStateChange = vi.fn(() => () => {});
     const resolveRedirectAuthSessionOutcome = vi

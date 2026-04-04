@@ -41,24 +41,20 @@ const isIgnorableWorkerShutdownImportError = (error: unknown): boolean => {
 const appLogger = createScopedLogger('App');
 
 const resolveFirestoreSyncState = (auth: AuthContextType): FirestoreSyncState => {
-  if (auth.isLoading || auth.sessionState.status === 'authenticating') {
-    return {
-      mode: 'bootstrapping',
-      reason: 'auth_loading',
-    };
-  }
-
-  if (auth.isAuthenticated && !auth.isFirebaseConnected) {
-    return {
-      mode: 'bootstrapping',
-      reason: 'auth_connecting',
-    };
-  }
-
-  if (auth.isFirebaseConnected) {
+  if (auth.remoteSyncStatus === 'ready') {
     return {
       mode: 'enabled',
       reason: 'ready',
+    };
+  }
+
+  if (auth.remoteSyncStatus === 'bootstrapping') {
+    return {
+      mode: 'bootstrapping',
+      reason:
+        auth.isLoading || auth.sessionState.status === 'authenticating'
+          ? 'auth_loading'
+          : 'auth_connecting',
     };
   }
 
@@ -78,7 +74,13 @@ const useSyncFirestoreStatus = (auth: AuthContextType) => {
       }
       appLogger.error('Failed to sync Firestore status', error);
     }
-  }, [auth.isAuthenticated, auth.isFirebaseConnected, auth.isLoading, auth.sessionState.status]);
+  }, [
+    auth.isAuthenticated,
+    auth.isFirebaseConnected,
+    auth.isLoading,
+    auth.remoteSyncStatus,
+    auth.sessionState.status,
+  ]);
 };
 
 export const useAppBootstrapState = (): AppBootstrapState => {

@@ -27,7 +27,7 @@ describe('dailyRecordQueryController', () => {
       reason: 'auth_loading',
     });
 
-    expect(shouldUseDailyRecordRealtimeSync('2025-01-08', false, true)).toBe(false);
+    expect(shouldUseDailyRecordRealtimeSync('2025-01-08', false, 'ready')).toBe(false);
 
     setFirestoreSyncState({
       mode: 'enabled',
@@ -174,8 +174,8 @@ describe('dailyRecordQueryController', () => {
     });
 
     invalidateDailyRecordQuery(queryClient, '2025-01-08');
-    expect(shouldUseDailyRecordRealtimeSync('2025-01-08', false, true)).toBe(true);
-    expect(shouldUseDailyRecordRealtimeSync('', false, true)).toBe(false);
+    expect(shouldUseDailyRecordRealtimeSync('2025-01-08', false, 'ready')).toBe(true);
+    expect(shouldUseDailyRecordRealtimeSync('', false, 'ready')).toBe(false);
     expect(buildPreviousDayDate('2025-01-08')).toBe('2025-01-07');
   });
 });

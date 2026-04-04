@@ -11,8 +11,14 @@ const { mockUseAuth } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
 }));
 
+const mockUseDailyRecordData = vi.fn();
+
 vi.mock('@/context', () => ({
   useAuth: () => mockUseAuth(),
+}));
+
+vi.mock('@/context/DailyRecordContext', () => ({
+  useDailyRecordData: () => mockUseDailyRecordData(),
 }));
 
 vi.mock('@/features/census/hooks/useCensusViewModel', () => ({
@@ -113,6 +119,10 @@ describe('CensusView', () => {
       isLoading: false,
       isAuthenticated: true,
       isFirebaseConnected: true,
+      remoteSyncStatus: 'ready',
+    });
+    mockUseDailyRecordData.mockReturnValue({
+      bootstrapPhase: 'confirmed_empty',
     });
     vi.mocked(useCensusViewModel).mockReturnValue(buildViewModel());
   });
@@ -164,6 +174,10 @@ describe('CensusView', () => {
       isLoading: false,
       isAuthenticated: true,
       isFirebaseConnected: false,
+      remoteSyncStatus: 'bootstrapping',
+    });
+    mockUseDailyRecordData.mockReturnValue({
+      bootstrapPhase: 'remote_record_bootstrapping',
     });
     vi.mocked(useCensusViewModel).mockReturnValue(buildViewModel({ beds: null }));
 

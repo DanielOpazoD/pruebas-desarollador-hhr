@@ -9,11 +9,13 @@ import type {
 import type { CMAData, DischargeData, TransferData } from '@/types/domain/movements';
 import type { PatientData } from '@/hooks/contracts/patientHookContracts';
 import type { StabilityRules } from '@/hooks/useStabilityRules';
+import type { DailyRecordBootstrapPhase } from '@/hooks/controllers/dailyRecordBootstrapController';
 
 interface UseDailyRecordFragmentedValuesResult {
   syncValue: {
     syncStatus: SyncStatus;
     lastSyncTime: Date | null;
+    bootstrapPhase: DailyRecordBootstrapPhase;
   };
   bedsValue: Record<string, PatientData> | null;
   movementsValue: {
@@ -61,8 +63,9 @@ export const useDailyRecordFragmentedValues = (
     () => ({
       syncStatus: value?.syncStatus || 'idle',
       lastSyncTime: value?.lastSyncTime || null,
+      bootstrapPhase: value?.bootstrapPhase || 'local_only',
     }),
-    [value?.syncStatus, value?.lastSyncTime]
+    [value?.bootstrapPhase, value?.syncStatus, value?.lastSyncTime]
   );
 
   const bedsValue = useMemo(() => value?.record?.beds || null, [value?.record?.beds]);
@@ -101,10 +104,18 @@ export const useDailyRecordFragmentedValues = (
       record: value?.record || null,
       syncStatus: value?.syncStatus || 'idle',
       lastSyncTime: value?.lastSyncTime || null,
+      bootstrapPhase: value?.bootstrapPhase || 'local_only',
       inventory: value?.inventory ?? DEFAULT_INVENTORY,
       stabilityRules: value?.stabilityRules ?? DEFAULT_LOCKED_STABILITY,
     }),
-    [value?.record, value?.syncStatus, value?.lastSyncTime, value?.inventory, value?.stabilityRules]
+    [
+      value?.record,
+      value?.syncStatus,
+      value?.lastSyncTime,
+      value?.bootstrapPhase,
+      value?.inventory,
+      value?.stabilityRules,
+    ]
   );
 
   const actionsValue: DailyRecordActionsContextType = useMemo(

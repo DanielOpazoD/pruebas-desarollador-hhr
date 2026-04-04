@@ -127,6 +127,7 @@ export const createMockDailyRecordContext = (
   record,
   syncStatus: 'idle',
   lastSyncTime: null,
+  bootstrapPhase: record ? 'record_ready' : 'confirmed_empty',
 
   // Stability Rules - Required for PatientInputCells
   stabilityRules: {

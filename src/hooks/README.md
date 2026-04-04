@@ -42,6 +42,7 @@ Cuando una operación necesita coordinar repositorios, clasificar outcomes remot
 - **Controller-backed hooks**: validación/transformación extraída a `controllers`.
 - `useDailyRecordQuery.ts` ahora delega construcción de query/subscription/prefetch a [controllers/dailyRecordQueryController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/dailyRecordQueryController.ts) para concentrar decisiones de cache en un único punto.
 - `useDailyRecordSyncQuery.ts` delega resolución de estado y bootstrap de creación de día a [controllers/dailyRecordSyncController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/dailyRecordSyncController.ts).
+- El bootstrap del registro diario vive en [controllers/dailyRecordBootstrapController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/dailyRecordBootstrapController.ts): allí se nombran las fases `local_only`, `remote_runtime_bootstrapping`, `remote_record_bootstrapping`, `remote_record_timeout`, `record_ready` y `confirmed_empty`.
 - `useDailyRecord.ts` ahora usa [useDailyRecordDomainModules.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/useDailyRecordDomainModules.ts) y [useDailyRecordCopyActions.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/useDailyRecordCopyActions.ts) para bajar carga cognitiva del hook raíz sin cambiar su API.
 - `useCensusEmail.ts` usa [useCensusEmailRecipientLists.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/useCensusEmailRecipientLists.ts) y casos de uso en `src/application/census-email/*` para separar bootstrap/sync/CRUD de listas del estado UI del envío.
 - `useAudit.ts` delega escritura/lectura remota a `src/application/audit/*` y mantiene en el hook solo la fachada de UI + debounce.
@@ -64,13 +65,14 @@ Cuando una operación necesita coordinar repositorios, clasificar outcomes remot
 - `persistence`: save/patch/delete.
 - `query`: lectura reactiva y caché.
 - `compat`: bridge temporal o adapter técnico.
+- `bootstrapPhase`: semántica canonica del primer ciclo de resolución del `DailyRecord`. La UI no debe inventar flags paralelos para decidir spinner, estado vacío o recovery.
 
 Referencia detallada: [docs/hooks-reference.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/hooks-reference.md)
 
 ## Ejemplo
 
 ```ts
-const dailyRecord = useDailyRecord(currentDate, isOfflineMode, isFirebaseConnected);
+const dailyRecord = useDailyRecord(currentDate, isOfflineMode, remoteSyncStatus);
 
 dailyRecord.updatePatient('R1', 'patientName', 'Paciente Demo');
 ```

@@ -16,7 +16,6 @@ import {
   importTableConfig,
 } from '@/services/storage/tableConfigService';
 import { useAuthState } from '@/hooks/useAuthState';
-import { resolveRemoteSyncRuntimeStatus } from '@/services/repositories/repositoryConfig';
 import { tableConfigLogger } from '@/services/storage/storageLoggers';
 
 // ============================================================================
@@ -46,14 +45,10 @@ const TableConfigContext = createContext<TableConfigContextType | undefined>(und
 // ============================================================================
 
 export const TableConfigProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { authLoading, isFirebaseConnected } = useAuthState();
+  const { remoteSyncStatus } = useAuthState();
   const [config, setConfig] = useState<TableConfig>(getDefaultConfig);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const remoteSyncStatus = resolveRemoteSyncRuntimeStatus({
-    authLoading,
-    isFirebaseConnected,
-  });
 
   // Debounce timer for saves
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);

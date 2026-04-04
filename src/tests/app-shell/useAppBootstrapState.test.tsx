@@ -52,6 +52,7 @@ const createAuthState = (overrides: Record<string, unknown> = {}) => ({
   isEditor: false,
   isViewer: true,
   isFirebaseConnected: false,
+  remoteSyncStatus: 'local_only',
   signOut: vi.fn(),
   ...overrides,
 });
@@ -86,6 +87,7 @@ describe('useAppBootstrapState', () => {
       createAuthState({
         isLoading: true,
         isFirebaseConnected: true,
+        remoteSyncStatus: 'bootstrapping',
       })
     );
 
@@ -110,6 +112,7 @@ describe('useAppBootstrapState', () => {
         isLoading: false,
         isAuthenticated: false,
         isFirebaseConnected: false,
+        remoteSyncStatus: 'bootstrapping',
       })
     );
 
@@ -169,6 +172,7 @@ describe('useAppBootstrapState', () => {
         isEditor: true,
         isViewer: false,
         isFirebaseConnected: true,
+        remoteSyncStatus: 'ready',
       })
     );
     mockUseSignatureMode.mockReturnValue({
@@ -210,6 +214,7 @@ describe('useAppBootstrapState', () => {
         isEditor: true,
         isViewer: false,
         isFirebaseConnected: false,
+        remoteSyncStatus: 'bootstrapping',
       })
     );
 

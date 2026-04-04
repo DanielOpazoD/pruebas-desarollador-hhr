@@ -4,10 +4,12 @@ import { HandoffStaffSelector } from './HandoffStaffSelector';
 import { HandoffStaffDisplay } from './HandoffStaffDisplay';
 import { HandoffChecklistDay } from './HandoffChecklistDay';
 import { HandoffChecklistNight } from './HandoffChecklistNight';
+import { HandoffShiftSwitcher } from './HandoffShiftSwitcher';
 
 interface HandoffChecklistSectionProps {
   isMedical: boolean;
   selectedShift: 'day' | 'night';
+  setSelectedShift?: (shift: 'day' | 'night') => void;
   record: DailyRecord;
   deliversList: string[];
   receivesList: string[];
@@ -19,11 +21,14 @@ interface HandoffChecklistSectionProps {
     list: string[]
   ) => void;
   onUpdateChecklist: (shift: 'day' | 'night', field: string, value: boolean | string) => void;
+  /** Optional action rendered at the right of the shift tabs row (e.g. CUDYR button) */
+  extraAction?: React.ReactNode;
 }
 
 export const HandoffChecklistSection: React.FC<HandoffChecklistSectionProps> = ({
   isMedical,
   selectedShift,
+  setSelectedShift,
   record,
   deliversList,
   receivesList,
@@ -31,21 +36,27 @@ export const HandoffChecklistSection: React.FC<HandoffChecklistSectionProps> = (
   readOnly,
   onUpdateStaff,
   onUpdateChecklist,
+  extraAction,
 }) => {
   if (isMedical) return null;
 
-  // Recibe is editable ONLY on night shift as long as not read-only
-  // On day shift (Turno Largo), receiving nurses are automatically pulled from the Census (same day Night shift)
   const isReceivesEditable = !readOnly && selectedShift === 'night';
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-2 print:hidden">
-      {/* Staff Selectors - Compact horizontal layout */}
-      <div className="flex flex-wrap gap-x-6 gap-y-2 items-center mb-2 pb-2 border-b border-slate-100">
-        {/* Entrega - Always read-only (inherited from census) */}
+    <div className="bg-white rounded-xl border border-slate-200/80 p-3 print:hidden ring-1 ring-black/[0.02]">
+      {/* Row 1: Shift tabs + CUDYR action (same line) */}
+      <div className="flex items-center gap-3 mb-2.5 pb-2.5 border-b border-slate-100/80">
+        {setSelectedShift && (
+          <HandoffShiftSwitcher selectedShift={selectedShift} setSelectedShift={setSelectedShift} />
+        )}
+        <div className="flex-1" />
+        {extraAction}
+      </div>
+
+      {/* Row 2: Staff names */}
+      <div className="flex flex-wrap gap-x-6 gap-y-2 items-center mb-2.5 pb-2.5 border-b border-slate-100/80">
         <HandoffStaffDisplay label="Entrega" type="delivers" nurses={deliversList} compact />
 
-        {/* Recibe - Editable ONLY on night shift */}
         {isReceivesEditable ? (
           <HandoffStaffSelector
             label="Recibe"
@@ -61,11 +72,10 @@ export const HandoffChecklistSection: React.FC<HandoffChecklistSectionProps> = (
           <HandoffStaffDisplay label="Recibe" type="receives" nurses={receivesList} compact />
         )}
 
-        {/* Spacer to push toggle to the right if needed */}
         <div className="flex-1" />
       </div>
 
-      {/* Checklist - inline with minimal styling */}
+      {/* Row 3: Checklist */}
       <div>
         {selectedShift === 'day' ? (
           <HandoffChecklistDay
