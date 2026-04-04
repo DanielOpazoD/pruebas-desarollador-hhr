@@ -6,17 +6,12 @@
  * For pure password generation without Firebase deps, use passwordGenerator.ts directly.
  */
 
-import {
-  getFirestore,
-  doc,
-  setDoc,
-  collection,
-  getDocs,
-  query,
-  orderBy,
-  limit,
-} from 'firebase/firestore';
+import { doc, setDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { getExportPasswordsPath } from '@/constants/firestorePaths';
+import {
+  defaultFirestoreRuntime,
+  type FirestoreRuntime,
+} from '@/services/firebase-runtime/firestoreRuntime';
 import { exportPasswordLogger } from '@/services/security/securityLoggers';
 
 // Re-export the pure generator for convenience
@@ -33,6 +28,60 @@ export interface ExportPasswordRecord {
   source?: 'email' | 'manual_download';
 }
 
+interface ExportPasswordPersistenceService {
+  getStoredPasswords: (maxResults?: number) => Promise<ExportPasswordRecord[]>;
+  savePasswordToFirestore: (
+    date: string,
+    password: string,
+    createdBy?: string,
+    source?: 'email' | 'manual_download'
+  ) => Promise<void>;
+}
+
+export const createExportPasswordPersistenceService = (
+  runtime: Pick<FirestoreRuntime, 'db'> = defaultFirestoreRuntime
+): ExportPasswordPersistenceService => ({
+  getStoredPasswords: async (maxResults = 30): Promise<ExportPasswordRecord[]> => {
+    try {
+      const passwordsPath = getExportPasswordsPath();
+      const passwordsRef = collection(runtime.db, passwordsPath);
+      const q = query(passwordsRef, orderBy('date', 'desc'), limit(maxResults));
+
+      const snapshot = await getDocs(q);
+      const records: ExportPasswordRecord[] = [];
+
+      snapshot.forEach(passwordDoc => {
+        records.push(passwordDoc.data() as ExportPasswordRecord);
+      });
+
+      return records;
+    } catch (error) {
+      exportPasswordLogger.error('Failed to get stored passwords', error);
+      return [];
+    }
+  },
+  savePasswordToFirestore: async (date, password, createdBy, source): Promise<void> => {
+    try {
+      const passwordsPath = getExportPasswordsPath();
+      const docRef = doc(runtime.db, passwordsPath, date);
+
+      const record: ExportPasswordRecord = {
+        date,
+        password,
+        createdAt: new Date().toISOString(),
+        createdBy,
+        source,
+      };
+
+      await setDoc(docRef, record, { merge: true });
+    } catch (error) {
+      exportPasswordLogger.error(`Failed to save password for ${date}`, error);
+    }
+  },
+});
+
+const defaultExportPasswordPersistenceService = createExportPasswordPersistenceService();
+
 /**
  * Get all stored passwords (for audit display).
  * Returns passwords from Firestore, ordered by date descending.
@@ -43,25 +92,7 @@ export interface ExportPasswordRecord {
 export const getStoredPasswords = async (
   maxResults: number = 30
 ): Promise<ExportPasswordRecord[]> => {
-  try {
-    const db = getFirestore();
-    const passwordsPath = getExportPasswordsPath();
-    const passwordsRef = collection(db, passwordsPath);
-    const q = query(passwordsRef, orderBy('date', 'desc'), limit(maxResults));
-
-    const snapshot = await getDocs(q);
-    const records: ExportPasswordRecord[] = [];
-
-    snapshot.forEach(doc => {
-      records.push(doc.data() as ExportPasswordRecord);
-    });
-
-    // console.debug(`[ExportPassword] Retrieved ${records.length} stored passwords`);
-    return records;
-  } catch (error) {
-    exportPasswordLogger.error('Failed to get stored passwords', error);
-    return [];
-  }
+  return defaultExportPasswordPersistenceService.getStoredPasswords(maxResults);
 };
 
 /**
@@ -78,22 +109,10 @@ export const savePasswordToFirestore = async (
   createdBy?: string,
   source?: 'email' | 'manual_download'
 ): Promise<void> => {
-  try {
-    const db = getFirestore();
-    const passwordsPath = getExportPasswordsPath();
-    const docRef = doc(db, passwordsPath, date);
-
-    const record: ExportPasswordRecord = {
-      date,
-      password,
-      createdAt: new Date().toISOString(),
-      createdBy,
-      source,
-    };
-
-    await setDoc(docRef, record, { merge: true });
-    // console.info(`[ExportPassword] Saved password for ${date}`);
-  } catch (error) {
-    exportPasswordLogger.error(`Failed to save password for ${date}`, error);
-  }
+  return defaultExportPasswordPersistenceService.savePasswordToFirestore(
+    date,
+    password,
+    createdBy,
+    source
+  );
 };

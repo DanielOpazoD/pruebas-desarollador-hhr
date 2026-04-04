@@ -3,9 +3,9 @@
  * Handles user identification and IP address tracking for audit logs.
  */
 
-import { getAuth } from 'firebase/auth';
 import { Timestamp } from 'firebase/firestore';
 import { auditUtilsLogger } from '@/services/admin/adminLoggers';
+import { defaultAuthRuntime } from '@/services/firebase-runtime/authRuntime';
 
 // ============================================================================
 // User Identification
@@ -13,14 +13,15 @@ import { auditUtilsLogger } from '@/services/admin/adminLoggers';
 
 const USER_EMAIL_CACHE_KEY = 'hhr_audit_user_email_cache';
 
+const resolveCurrentUser = () => defaultAuthRuntime.getCurrentUser();
+
 /**
  * Get current user email with robust fallbacks
  * Priority: auth.email → cached email → displayName → uid → anonymous
  */
 export const getCurrentUserEmail = (): string => {
   try {
-    const auth = getAuth();
-    const user = auth.currentUser;
+    const user = resolveCurrentUser();
 
     if (user?.email) {
       localStorage.setItem(USER_EMAIL_CACHE_KEY, user.email);
@@ -103,7 +104,7 @@ export const formatAuditTimestamp = (timestamp: unknown, locale = 'es-CL'): stri
  */
 export const getCurrentUserDisplayName = (): string | undefined => {
   try {
-    return getAuth().currentUser?.displayName || undefined;
+    return resolveCurrentUser()?.displayName || undefined;
   } catch (_e) {
     return undefined;
   }
@@ -114,7 +115,7 @@ export const getCurrentUserDisplayName = (): string | undefined => {
  */
 export const getCurrentUserUid = (): string | undefined => {
   try {
-    return getAuth().currentUser?.uid || undefined;
+    return resolveCurrentUser()?.uid || undefined;
   } catch (_e) {
     return undefined;
   }

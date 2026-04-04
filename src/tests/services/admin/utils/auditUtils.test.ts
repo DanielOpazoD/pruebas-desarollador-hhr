@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { User } from 'firebase/auth';
 import {
   formatAuditTimestamp,
   getCurrentUserEmail,
@@ -7,18 +8,30 @@ import {
   getCachedIpAddress,
   fetchAndCacheIpAddress,
 } from '@/services/admin/utils/auditUtils';
-import { getAuth } from 'firebase/auth';
 
-// Mock Firebase Auth
-vi.mock('firebase/auth', () => ({
-  getAuth: vi.fn(),
+const authRuntimeMocks = vi.hoisted(() => ({
+  getCurrentUser: vi.fn(),
+}));
+
+const loggerMocks = vi.hoisted(() => ({
+  warn: vi.fn(),
+}));
+
+vi.mock('@/services/firebase-runtime/authRuntime', () => ({
+  defaultAuthRuntime: authRuntimeMocks,
+}));
+
+vi.mock('@/services/admin/adminLoggers', () => ({
+  auditUtilsLogger: loggerMocks,
 }));
 
 // Mock fetch
 global.fetch = vi.fn();
 
 describe('auditUtils', () => {
-  type AuthReturn = ReturnType<typeof getAuth>;
+  const setCurrentUser = (user: Partial<User> | null) => {
+    authRuntimeMocks.getCurrentUser.mockReturnValue(user as User | null);
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -28,17 +41,13 @@ describe('auditUtils', () => {
 
   describe('getCurrentUserEmail', () => {
     it('should return user email when available', () => {
-      vi.mocked(getAuth).mockReturnValue({
-        currentUser: { email: 'test@example.com' },
-      } as unknown as AuthReturn);
+      setCurrentUser({ email: 'test@example.com' });
 
       expect(getCurrentUserEmail()).toBe('test@example.com');
     });
 
     it('should cache email in localStorage', () => {
-      vi.mocked(getAuth).mockReturnValue({
-        currentUser: { email: 'cached@example.com' },
-      } as unknown as AuthReturn);
+      setCurrentUser({ email: 'cached@example.com' });
 
       getCurrentUserEmail();
       expect(localStorage.getItem('hhr_audit_user_email_cache')).toBe('cached@example.com');
@@ -46,68 +55,57 @@ describe('auditUtils', () => {
 
     it('should return cached email if no current user', () => {
       localStorage.setItem('hhr_audit_user_email_cache', 'cached@test.com');
-      vi.mocked(getAuth).mockReturnValue({
-        currentUser: { email: null },
-      } as unknown as AuthReturn);
+      setCurrentUser({ email: null });
 
       expect(getCurrentUserEmail()).toBe('cached@test.com');
     });
 
     it('should return displayName if no email', () => {
-      vi.mocked(getAuth).mockReturnValue({
-        currentUser: { email: null, displayName: 'Test User' },
-      } as unknown as AuthReturn);
+      setCurrentUser({ email: null, displayName: 'Test User' });
 
       expect(getCurrentUserEmail()).toBe('Test User');
     });
 
     it('should return uid as last resort', () => {
-      vi.mocked(getAuth).mockReturnValue({
-        currentUser: { email: null, displayName: null, uid: 'user123' },
-      } as unknown as AuthReturn);
+      setCurrentUser({ email: null, displayName: null, uid: 'user123' });
 
       expect(getCurrentUserEmail()).toBe('user123');
     });
 
     it('should return anonymous_user if no info available', () => {
-      vi.mocked(getAuth).mockReturnValue({
-        currentUser: null,
-      } as unknown as AuthReturn);
+      setCurrentUser(null);
 
       expect(getCurrentUserEmail()).toBe('anonymous_user');
     });
 
     it('should return system_context on error', () => {
-      vi.mocked(getAuth).mockImplementation(() => {
+      authRuntimeMocks.getCurrentUser.mockImplementation(() => {
         throw new Error('Auth error');
       });
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       expect(getCurrentUserEmail()).toBe('system_context');
-      expect(warnSpy).toHaveBeenCalled();
-      warnSpy.mockRestore();
+      expect(loggerMocks.warn).toHaveBeenCalledWith(
+        'Failed to resolve current user info',
+        expect.any(Error)
+      );
     });
   });
 
   describe('getCurrentUserDisplayName', () => {
     it('should return display name', () => {
-      vi.mocked(getAuth).mockReturnValue({
-        currentUser: { displayName: 'John Doe' },
-      } as unknown as AuthReturn);
+      setCurrentUser({ displayName: 'John Doe' });
 
       expect(getCurrentUserDisplayName()).toBe('John Doe');
     });
 
     it('should return undefined if no display name', () => {
-      vi.mocked(getAuth).mockReturnValue({
-        currentUser: { displayName: null },
-      } as unknown as AuthReturn);
+      setCurrentUser({ displayName: null });
 
       expect(getCurrentUserDisplayName()).toBeUndefined();
     });
 
     it('should return undefined on error', () => {
-      vi.mocked(getAuth).mockImplementation(() => {
+      authRuntimeMocks.getCurrentUser.mockImplementation(() => {
         throw new Error('Error');
       });
 
@@ -117,15 +115,13 @@ describe('auditUtils', () => {
 
   describe('getCurrentUserUid', () => {
     it('should return UID', () => {
-      vi.mocked(getAuth).mockReturnValue({
-        currentUser: { uid: 'uid123' },
-      } as unknown as AuthReturn);
+      setCurrentUser({ uid: 'uid123' });
 
       expect(getCurrentUserUid()).toBe('uid123');
     });
 
     it('should return undefined on error', () => {
-      vi.mocked(getAuth).mockImplementation(() => {
+      authRuntimeMocks.getCurrentUser.mockImplementation(() => {
         throw new Error('Error');
       });
 
@@ -165,11 +161,13 @@ describe('auditUtils', () => {
 
     it('should handle fetch errors gracefully', async () => {
       vi.mocked(fetch).mockRejectedValue(new Error('Network error'));
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       const ip = await fetchAndCacheIpAddress();
       expect(ip).toBeUndefined();
-      warnSpy.mockRestore();
+      expect(loggerMocks.warn).toHaveBeenCalledWith(
+        'Failed to fetch IP address',
+        expect.any(Error)
+      );
     });
   });
 

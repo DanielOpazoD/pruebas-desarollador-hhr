@@ -85,17 +85,18 @@ export const syncCensusTransferRequest = async ({
     return;
   }
 
+  // No prior request exists — create one and immediately complete it
+  // so it appears as TRANSFERRED (finalized) in Gestión de Traslados.
   const requestDate = (data?.movementDate || recordDate || new Date().toISOString()).split('T')[0];
 
-  await createTransferRequest({
+  const createdRequest = await createTransferRequest({
     patientId: bedId,
     bedId,
     patientSnapshot: buildTransferPatientSnapshot(patient, recordDate || requestDate),
     destinationHospital,
     transferReason: 'Traslado registrado desde Censo Diario',
     requestingDoctor: '',
-    observations:
-      'Solicitud creada automáticamente desde Censo Diario para completar gestión posterior.',
+    observations: 'Traslado registrado automáticamente desde Censo Diario.',
     customFields: {
       source: 'census_transfer_autocreate',
     },
@@ -103,4 +104,7 @@ export const syncCensusTransferRequest = async ({
     requestDate,
     createdBy: createdByEmail,
   });
+
+  // Complete immediately — patient was already transferred
+  await completeTransferWithResult(createdRequest.id, createdByEmail);
 };
