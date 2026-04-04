@@ -201,10 +201,10 @@ export const MedicalHandoffObservationEntry: React.FC<MedicalHandoffObservationE
                       ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
                       : 'border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100'
                 )}
-                aria-label="Actualizar como nota actual"
-                title="Actualizar como nota actual"
+                aria-label="Actualizar como vigente"
+                title="Actualizar como vigente"
               >
-                Actualizar como nota actual
+                Actualizar como vigente
               </button>
             )}
             {!isFieldReadOnly && onAddEntry && index === entriesCount - 1 && (

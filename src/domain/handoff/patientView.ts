@@ -58,9 +58,7 @@ export const resolveMedicalHandoffValidityViewModel = (
   reportDate: string
 ): MedicalHandoffValidityViewModel => {
   const wasUpdatedToday = Boolean(entry.updatedAt) && entry.updatedAt?.slice(0, 10) === reportDate;
-  const statusLabel = wasUpdatedToday
-    ? 'Nota actual: actualizada hoy'
-    : 'Nota actual: pendiente hoy';
+  const statusLabel = wasUpdatedToday ? 'Nota vigente' : 'Nota: pendiente de actualizar';
   const canRefreshAsCurrent = Boolean(entry.note.trim());
 
   return {

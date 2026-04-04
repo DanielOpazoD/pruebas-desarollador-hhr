@@ -31,6 +31,8 @@ interface MedicalHandoffHeaderProps {
   updateMedicalHandoffDoctor?: (name: string) => void;
   markMedicalHandoffAsSent?: (doctorName: string) => void;
   resetMedicalHandoffState?: () => Promise<void>;
+  /** Share actions (WhatsApp + Links firma) rendered at the end of the doctor row */
+  shareActions?: React.ReactNode;
 }
 
 export const MedicalHandoffHeader: React.FC<MedicalHandoffHeaderProps> = ({
@@ -44,6 +46,7 @@ export const MedicalHandoffHeader: React.FC<MedicalHandoffHeaderProps> = ({
   updateMedicalHandoffDoctor,
   markMedicalHandoffAsSent,
   resetMedicalHandoffState,
+  shareActions,
 }) => {
   const { confirm: showConfirm, alert: showAlert } = useConfirmDialog();
 
@@ -75,7 +78,7 @@ export const MedicalHandoffHeader: React.FC<MedicalHandoffHeaderProps> = ({
   );
 
   return (
-    <div className="mb-4 bg-white p-3 rounded-lg border border-blue-100 shadow-sm print:shadow-none print:border-none print:p-0 print:mb-2">
+    <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm ring-1 ring-black/[0.02] print:shadow-none print:border-none print:p-0 print:mb-2">
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 print:flex-row print:items-start print:gap-6">
         {/* LEFT: Deliver / Receive Info */}
         <div className="flex flex-col gap-4 flex-1">
@@ -172,33 +175,38 @@ export const MedicalHandoffHeader: React.FC<MedicalHandoffHeaderProps> = ({
           </div>
         </div>
 
-        {/* RIGHT: Bed Stats (Compact 2-column grid) */}
-        <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 min-w-[160px] print:min-w-[120px] print:border text-[10px] print:text-[9px] self-start print:p-1.5">
-          <h3 className="font-bold text-slate-700 uppercase border-b border-slate-200 pb-0.5 mb-1 text-center text-[9px] print:text-[8px]">
-            Resumen Camas
-          </h3>
-          <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
-            <div className="flex justify-between items-center">
-              <span className="text-slate-600">Totales:</span>
-              <span className="font-bold text-slate-800 text-xs print:text-[10px]">
-                {totalBeds}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-600">Ocupadas:</span>
-              <span className="font-bold text-blue-600 text-xs print:text-[10px]">
-                {occupiedBeds}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-600">Libres:</span>
-              <span className="font-bold text-green-600 text-xs print:text-[10px]">{freeBeds}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-400">Bloqueadas:</span>
-              <span className="font-bold text-slate-400 text-xs print:text-[10px]">
-                {blockedBeds}
-              </span>
+        {/* RIGHT: Share actions + Bed Stats */}
+        <div className="flex flex-col items-end gap-2 self-start print:items-start">
+          {shareActions && <div className="print:hidden">{shareActions}</div>}
+          <div className="p-2 bg-slate-50 rounded-xl border border-slate-200/80 min-w-[160px] print:min-w-[120px] print:border text-[10px] print:text-[9px] print:p-1.5">
+            <h3 className="font-bold text-slate-700 uppercase border-b border-slate-200 pb-0.5 mb-1 text-center text-[9px] print:text-[8px]">
+              Resumen Camas
+            </h3>
+            <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600">Totales:</span>
+                <span className="font-bold text-slate-800 text-xs print:text-[10px]">
+                  {totalBeds}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600">Ocupadas:</span>
+                <span className="font-bold text-blue-600 text-xs print:text-[10px]">
+                  {occupiedBeds}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600">Libres:</span>
+                <span className="font-bold text-green-600 text-xs print:text-[10px]">
+                  {freeBeds}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">Bloqueadas:</span>
+                <span className="font-bold text-slate-400 text-xs print:text-[10px]">
+                  {blockedBeds}
+                </span>
+              </div>
             </div>
           </div>
         </div>

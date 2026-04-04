@@ -122,6 +122,8 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
     shouldShowPatient,
     scopedMedicalScope: medicalBindings.scopedMedicalScope,
     hasAnyVisiblePatients: medicalBindings.hasAnyVisiblePatients,
+    onSendWhatsApp: handleSendWhatsAppManual,
+    onShareLink: handleShareLink,
   });
   const nursingContentBindings = buildNursingHandoffContentBindings({
     visibleBeds,
@@ -150,19 +152,9 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
         receivesList={receivesList}
         tensList={tensList}
       />
-      {/* Header: only rendered for medical handoff (has share/WhatsApp actions).
-          For nursing, the title is redundant (already in the navbar tab)
-          and the shift switcher is now integrated into the checklist section. */}
-      {isMedical && (
-        <HandoffHeader
-          {...headerBindings}
-          extraAction={
-            medicalCapabilities.canOpenNightCudyr && headerBindings.showNightCudyrAction ? (
-              <HandoffNightCudyrActionButton onClick={handleOpenCudyr} />
-            ) : undefined
-          }
-        />
-      )}
+      {/* Header removed for both nursing and medical:
+          - Nursing: title redundant (already in navbar tab), shift switcher in checklist section
+          - Medical: title redundant, share actions moved to MedicalHandoffHeader */}
       <HandoffChecklistSection
         isMedical={isMedical}
         selectedShift={selectedShift}

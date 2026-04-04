@@ -33,7 +33,7 @@ export const resolveHandoffTableHeaderClass = ({
   selectedShift,
 }: HandoffTitleParams): string => {
   if (isMedical) {
-    return 'bg-sky-100 text-sky-900 text-xs uppercase tracking-wider font-semibold border-b border-sky-100';
+    return 'bg-gradient-to-b from-sky-50 to-sky-100/60 text-sky-800 text-[10px] uppercase tracking-[0.06em] font-semibold border-b border-sky-200/60';
   }
 
   return selectedShift === 'day'
@@ -238,6 +238,8 @@ export interface MedicalHandoffContentBindings {
   shouldShowPatient: (bedId: string) => boolean;
   scopedMedicalScope: MedicalHandoffScope;
   hasAnyVisiblePatients: boolean;
+  onSendWhatsApp?: () => void;
+  onShareLink?: (scope: MedicalHandoffScope) => void;
 }
 
 export const buildMedicalHandoffContentBindings = (
