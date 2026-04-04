@@ -1,4 +1,3 @@
-import { firebaseReady } from '@/firebaseConfig';
 import {
   getFirebaseStartupFailureMessage,
   type FirebaseStartupWarningCopy,
@@ -9,6 +8,7 @@ import {
 } from '@/services/config/clientBootstrapRecovery';
 import { shouldUseStickyIndexedDbFallback } from '@/services/storage/indexeddb/indexedDbRecoveryPolicy';
 import { performClientHardReset } from '@/services/storage/core';
+import { defaultFirebaseConfigRuntimeAdapter } from '@/services/firebase-runtime/firebaseConfigRuntimeAdapter';
 import { createScopedLogger } from '@/services/utils/loggerScope';
 import type {
   AppBootstrapRuntimeResult,
@@ -113,7 +113,7 @@ export const bootstrapAppRuntime = async (): Promise<AppBootstrapRuntimeResult> 
   }
 
   try {
-    const services = (await firebaseReady) as BootstrapRuntimeServices;
+    const services = (await defaultFirebaseConfigRuntimeAdapter.ready) as BootstrapRuntimeServices;
     bootstrapRuntimeLogger.info('Bootstrap runtime ready', {
       recoveryReason: clientRecovery.reason,
     });

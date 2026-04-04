@@ -1,9 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from '@/App';
-import { mountConfigWarning } from '@/firebaseConfig';
 import { bootstrapAppRuntime } from '@/app-shell/bootstrap/bootstrapAppRuntime';
 import { getFirebaseStartupFailureMessage } from '@/services/auth/firebaseStartupUiPolicy';
+import { mountFirebaseConfigWarning } from '@/services/firebase-runtime/firebaseStartupDiagnostics';
 import { createScopedLogger } from '@/services/utils/loggerScope';
 
 const rootElement = document.getElementById('root');
@@ -30,7 +30,7 @@ bootstrapAppRuntime()
     }
 
     if (result.status === 'blocked') {
-      mountConfigWarning(result.message, result.warningCopy);
+      mountFirebaseConfigWarning(result.message, result.warningCopy);
       return;
     }
 
@@ -38,5 +38,5 @@ bootstrapAppRuntime()
   })
   .catch(error => {
     bootLogger.error('Firebase initialization failed', error);
-    mountConfigWarning(getFirebaseStartupFailureMessage());
+    mountFirebaseConfigWarning(getFirebaseStartupFailureMessage());
   });

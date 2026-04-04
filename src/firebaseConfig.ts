@@ -5,7 +5,6 @@ import type { FirebaseStorage } from 'firebase/storage';
 import type { Functions } from 'firebase/functions';
 import { loadFirebaseConfig } from '@/services/firebase-runtime/firebaseConfigLoader';
 import {
-  mountFirebaseConfigWarning,
   validateFirebaseRuntimeConfig,
   warnOnFirebaseAuthConfig,
 } from '@/services/firebase-runtime/firebaseStartupDiagnostics';
@@ -91,5 +90,4 @@ export const firebaseReady = (async () => {
   }
 })();
 
-export { mountFirebaseConfigWarning as mountConfigWarning };
 export default app;

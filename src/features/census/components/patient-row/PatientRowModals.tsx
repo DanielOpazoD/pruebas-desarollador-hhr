@@ -32,12 +32,6 @@ const LazyClinicalDocumentsModal = lazy(() =>
   }))
 );
 
-const LazyClinicalDocumentsPanel = lazy(() =>
-  import('@/features/clinical-documents').then(module => ({
-    default: module.ClinicalDocumentsPanel,
-  }))
-);
-
 export const PatientRowModals: React.FC<PatientRowModalsProps> = ({
   bedId,
   data,
@@ -140,18 +134,6 @@ export const PatientRowModals: React.FC<PatientRowModalsProps> = ({
             onClose={onCloseHistory}
             patientRut={historyPatientRut}
             patientName={historyPatientName}
-            patient={data}
-            currentDateString={currentDateString}
-            bedId={bedId}
-            documentsPanel={
-              <Suspense fallback={null}>
-                <LazyClinicalDocumentsPanel
-                  patient={data}
-                  currentDateString={currentDateString}
-                  bedId={bedId}
-                />
-              </Suspense>
-            }
           />
         </Suspense>
       ) : null}

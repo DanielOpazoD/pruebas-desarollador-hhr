@@ -72,6 +72,7 @@ Evitar que la deuda estructural vuelva a crecer después de las fases de estabil
 - `technical-ownership-map` se mantiene como gobernanza report-only dentro del aggregate: sigue siendo obligatorio para trazabilidad y release readiness, pero ya no bloquea `check:quality` porque los riesgos primarios ya quedan cubiertos por gates, runbooks y release confidence.
 - La política de cambio sostenible vive en `scripts/config/sustainable-change-policy.json` y se valida con `npm run check:sustainable-change-policy`.
 - `sustainable-change-policy` también queda como gobernanza report-only dentro del aggregate: sigue siendo obligatoria para upgrades, excepciones y DoD, pero no bloquea `check:quality` si los gates primarios y las fuentes técnicas siguen verdes.
+- La política para decidir si una mejora técnica vale la pena antes de ejecutarla vive en [docs/ENGINEERING_CHANGE_DECISION_POLICY.md](./ENGINEERING_CHANGE_DECISION_POLICY.md).
 - La definición de terminado vive en [docs/ENGINEERING_DEFINITION_OF_DONE.md](./ENGINEERING_DEFINITION_OF_DONE.md).
 - La deuda priorizada vive en [docs/TECHNICAL_DEBT_REGISTER.md](./TECHNICAL_DEBT_REGISTER.md).
 - Los fallos conocidos no resueltos deben vivir en `scripts/config/test-failure-catalog.json` con owner, clasificación y SLA.

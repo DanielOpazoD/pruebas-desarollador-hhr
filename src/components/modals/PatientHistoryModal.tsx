@@ -15,8 +15,6 @@ import {
   MovementType,
 } from '@/services/patient/patientHistoryService';
 import { createScopedLogger } from '@/services/utils/loggerScope';
-import type { PatientData } from '@/types/domain/patient';
-import type { ReactNode } from 'react';
 import { formatHandoffVerboseDate } from '@/shared/handoff/handoffPresentation';
 
 const patientHistoryLogger = createScopedLogger('PatientHistoryModal');
@@ -26,10 +24,6 @@ interface PatientHistoryModalProps {
   onClose: () => void;
   patientRut: string;
   patientName?: string;
-  patient?: PatientData;
-  currentDateString?: string;
-  bedId?: string;
-  documentsPanel?: ReactNode;
 }
 
 // Movement type styling
@@ -79,66 +73,10 @@ export const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({
   onClose,
   patientRut,
   patientName,
-  patient,
-  currentDateString,
-  bedId,
-  documentsPanel,
 }) => {
   const [history, setHistory] = useState<PatientHistoryResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'history' | 'documents'>('history');
-  const canOpenDocumentsTab = Boolean(patient && currentDateString && bedId);
-  const isDocumentsTabActive = activeTab === 'documents' && canOpenDocumentsTab;
-
-  const documentsPanelWithEpisodeState =
-    patient && history && React.isValidElement(documentsPanel)
-      ? (() => {
-          const lastMovement = history.movements[history.movements.length - 1];
-          const closurePatch =
-            lastMovement?.type === 'discharge'
-              ? {
-                  episodeClosureKind: 'discharge' as const,
-                  episodeClosureDate: lastMovement.date,
-                  dischargeDate: lastMovement.date,
-                }
-              : lastMovement?.type === 'transfer'
-                ? {
-                    episodeClosureKind: 'transfer' as const,
-                    episodeClosureDate: lastMovement.date,
-                    transferDate: lastMovement.date,
-                  }
-                : {
-                    episodeClosureKind: undefined,
-                    episodeClosureDate: undefined,
-                    dischargeDate: undefined,
-                    transferDate: undefined,
-                  };
-
-          return React.cloneElement(
-            documentsPanel as React.ReactElement<{
-              patient: PatientData & {
-                episodeClosureKind?: 'discharge' | 'transfer';
-                episodeClosureDate?: string;
-                dischargeDate?: string;
-                transferDate?: string;
-              };
-            }>,
-            {
-              patient: {
-                ...patient,
-                ...closurePatch,
-              },
-            }
-          );
-        })()
-      : documentsPanel;
-
-  useEffect(() => {
-    if (!isOpen) {
-      setActiveTab('history');
-    }
-  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen && patientRut) {
@@ -190,43 +128,7 @@ export const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({
           </div>
         </div>
 
-        {patient && currentDateString && bedId && (
-          <div className="flex gap-1 p-1 rounded-xl border border-slate-200 bg-white/80 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setActiveTab('history')}
-              className={clsx(
-                'flex-1 rounded-lg px-3 py-2 text-xs font-black uppercase tracking-widest transition-colors',
-                activeTab === 'history'
-                  ? 'bg-slate-900 text-white'
-                  : 'text-slate-600 hover:bg-slate-100'
-              )}
-            >
-              Historial
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('documents')}
-              className={clsx(
-                'flex-1 rounded-lg px-3 py-2 text-xs font-black uppercase tracking-widest transition-colors',
-                activeTab === 'documents'
-                  ? 'bg-medical-600 text-white'
-                  : 'text-slate-600 hover:bg-slate-100'
-              )}
-            >
-              Documentos Clínicos
-            </button>
-          </div>
-        )}
-
-        {isDocumentsTabActive && (isLoading || !history) ? (
-          <div className="flex flex-col items-center justify-center py-8 text-slate-400">
-            <Loader2 size={24} className="animate-spin mb-2 text-blue-500" />
-            <span className="text-xs font-medium">Buscando historial clínico...</span>
-          </div>
-        ) : isDocumentsTabActive ? (
-          documentsPanelWithEpisodeState
-        ) : isLoading ? (
+        {isLoading ? (
           <div className="flex flex-col items-center justify-center py-8 text-slate-400">
             <Loader2 size={24} className="animate-spin mb-2 text-blue-500" />
             <span className="text-xs font-medium">Buscando historial clínico...</span>

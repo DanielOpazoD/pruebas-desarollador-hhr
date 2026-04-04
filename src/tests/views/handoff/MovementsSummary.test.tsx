@@ -56,25 +56,23 @@ const buildRecord = (): DailyRecord =>
   }) as unknown as DailyRecord;
 
 describe('MovementsSummary', () => {
-  it('renders print footer counts for day shift', () => {
+  it('shows only day-shift movements and no footer count', () => {
     render(<MovementsSummary record={buildRecord()} selectedShift="day" />);
 
-    expect(screen.getByTestId('movements-summary-footer').textContent).toContain(
-      'Conteo del turno:'
-    );
-    expect(screen.getByTestId('movements-summary-footer').textContent).toContain('Altas: 1');
-    expect(screen.getByTestId('movements-summary-footer').textContent).toContain('Traslados: 1');
-    expect(screen.getByTestId('movements-summary-footer').textContent).toContain('CMA: 1');
+    expect(screen.getByText('Paciente Día')).toBeInTheDocument();
+    expect(screen.getByText('Traslado Día')).toBeInTheDocument();
+    expect(screen.getByText('Paciente CMA')).toBeInTheDocument();
+    expect(screen.queryByText('Paciente Noche')).not.toBeInTheDocument();
+    expect(screen.queryByText(/conteo del turno/i)).not.toBeInTheDocument();
   });
 
-  it('omits CMA count from the footer in night shift', () => {
+  it('filters night-shift movements and keeps CMA hidden', () => {
     render(<MovementsSummary record={buildRecord()} selectedShift="night" />);
 
-    expect(screen.getByTestId('movements-summary-footer').textContent).toContain(
-      'Conteo del turno:'
-    );
-    expect(screen.getByTestId('movements-summary-footer').textContent).toContain('Altas: 1');
-    expect(screen.getByTestId('movements-summary-footer').textContent).toContain('Traslados: 0');
-    expect(screen.getByTestId('movements-summary-footer').textContent).not.toContain('CMA: 0');
+    expect(screen.getByText('Paciente Noche')).toBeInTheDocument();
+    expect(screen.queryByText('Paciente Día')).not.toBeInTheDocument();
+    expect(screen.queryByText('Traslado Día')).not.toBeInTheDocument();
+    expect(screen.queryByText('Paciente CMA')).not.toBeInTheDocument();
+    expect(screen.queryByText(/conteo del turno/i)).not.toBeInTheDocument();
   });
 });

@@ -189,6 +189,7 @@ import { useDailyRecord } from '@/hooks/useDailyRecord';
 - [Política de cambio sostenible](reports/sustainable-change-policy.md)
 - [Baseline de ejecución técnica](reports/technical-execution-baseline.md)
 - [Checklist de cambio seguro](docs/SAFE_CHANGE_CHECKLIST.md)
+- [Política de decisión para cambios de ingeniería](docs/ENGINEERING_CHANGE_DECISION_POLICY.md)
 - [Definition of Done técnico](docs/ENGINEERING_DEFINITION_OF_DONE.md)
 - [Registro de deuda técnica](docs/TECHNICAL_DEBT_REGISTER.md)
 - [ADR Repository Provider obligatorio](docs/ADR_REPOSITORY_PROVIDER_REQUIRED.md)

@@ -16,9 +16,11 @@ vi.mock('@/services/config/clientBootstrapRecovery', () => ({
   prepareClientBootstrap: (...args: unknown[]) => mockPrepareClientBootstrap(...args),
 }));
 
-vi.mock('@/firebaseConfig', () => ({
-  get firebaseReady() {
-    return mockGetFirebaseReady();
+vi.mock('@/services/firebase-runtime/firebaseConfigRuntimeAdapter', () => ({
+  defaultFirebaseConfigRuntimeAdapter: {
+    get ready() {
+      return mockGetFirebaseReady();
+    },
   },
 }));
 

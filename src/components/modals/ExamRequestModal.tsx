@@ -10,10 +10,10 @@
 
 import React from 'react';
 import { Printer, FlaskConical, UserRound } from 'lucide-react';
-import { PatientData } from '@/types/domain/patient';
 import { BaseModal } from '@/components/shared/BaseModal';
 import { getExamCategoryById } from '@/constants/examCategories';
 import { useExamRequest } from '@/hooks/useExamRequest';
+import type { PatientData } from '@/shared/census/patientContracts';
 import { EXAM_REQUEST_PRINT_STYLES } from '@/components/modals/examRequestPrintStyles';
 import {
   ExamCheckbox,
