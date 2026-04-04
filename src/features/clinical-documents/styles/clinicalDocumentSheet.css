@@ -163,6 +163,11 @@
     background-color 120ms ease;
 }
 
+.clinical-document-section-block:hover > .clinical-document-section-drag-handle {
+  opacity: 0.6;
+  pointer-events: auto;
+}
+
 .clinical-document-section-block.is-title-active .clinical-document-section-drag-handle {
   opacity: 1;
   pointer-events: auto;

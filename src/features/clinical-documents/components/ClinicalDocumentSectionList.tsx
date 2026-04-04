@@ -1,6 +1,14 @@
 import React from 'react';
 import type { DragEvent } from 'react';
-import { AlignJustify, ArrowDown, ArrowUp, GripVertical, Trash2 } from 'lucide-react';
+import {
+  AlignJustify,
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 
 import { ClinicalDocumentIndicationsPanel } from '@/features/clinical-documents/components/ClinicalDocumentIndicationsPanel';
 import { InlineEditableTitle } from '@/features/clinical-documents/components/InlineEditableTitle';
@@ -39,6 +47,7 @@ interface ClinicalDocumentSectionListProps {
   onSetSectionVisibility: (sectionId: string, visible: boolean) => void;
   onMoveSection: (sectionId: string, direction: 'up' | 'down') => void;
   onReorderSection: (sourceSectionId: string, targetSectionId: string) => void;
+  onAddSection: (referenceSectionId: string, position: 'above' | 'below') => void;
   onEditorActivate: (activeSectionId: string, editorApi: ClinicalDocumentSheetEditorApi) => void;
   onEditorDeactivate: (sectionId: string) => void;
   onSetActivePlanSubsectionId: (subsectionId: ClinicalDocumentPlanSubsectionId) => void;
@@ -76,6 +85,7 @@ export const ClinicalDocumentSectionList: React.FC<ClinicalDocumentSectionListPr
   onSetSectionVisibility,
   onMoveSection,
   onReorderSection,
+  onAddSection,
   onEditorActivate,
   onEditorDeactivate,
   onSetActivePlanSubsectionId,
@@ -86,181 +96,224 @@ export const ClinicalDocumentSectionList: React.FC<ClinicalDocumentSectionListPr
   onDeleteIndication,
   onImportIndicationsCatalog,
   dragHandlers,
-}) => (
-  <div className="space-y-3">
-    {visibleSections.map(section => {
-      const planLayout = resolveClinicalDocumentPlanSectionLayout(section);
+}) => {
+  const [insertMenuSectionId, setInsertMenuSectionId] = React.useState<string | null>(null);
 
-      return (
-        <div
-          key={section.id}
-          className={`block clinical-document-section-block${
-            dragOverSectionId === section.id ? ' is-drag-over' : ''
-          }${activeTitleTarget === `section:${section.id}` ? ' is-title-active' : ''}`}
-          onDragOver={event =>
-            dragHandlers.onDragOver(event, section.id, canEdit && !document.isLocked)
-          }
-          onDragLeave={() => dragHandlers.onDragLeave(section.id)}
-          onDrop={event => {
-            if (!canEdit || document.isLocked) return;
-            event.preventDefault();
-            const sourceSectionId = event.dataTransfer.getData('text/plain') || draggedSectionId;
-            if (sourceSectionId && sourceSectionId !== section.id) {
-              onReorderSection(sourceSectionId, section.id);
+  return (
+    <div className="space-y-3">
+      {visibleSections.map(section => {
+        const planLayout = resolveClinicalDocumentPlanSectionLayout(section);
+
+        return (
+          <div
+            key={section.id}
+            className={`block clinical-document-section-block${
+              dragOverSectionId === section.id ? ' is-drag-over' : ''
+            }${activeTitleTarget === `section:${section.id}` ? ' is-title-active' : ''}`}
+            onDragOver={event =>
+              dragHandlers.onDragOver(event, section.id, canEdit && !document.isLocked)
             }
-            dragHandlers.onDragEnd();
-          }}
-        >
-          {canEdit && !document.isLocked && (
-            <button
-              type="button"
-              className="clinical-document-section-drag-handle"
-              draggable
-              onDragStart={event => dragHandlers.onDragStart(event, section.id)}
-              onDragEnd={dragHandlers.onDragEnd}
-              aria-label={`Arrastrar sección ${section.title}`}
-              title="Arrastrar sección"
-            >
-              <GripVertical size={14} />
-            </button>
-          )}
-          <div className="clinical-document-section-layout">
-            <div className="clinical-document-section-main">
-              <div className="clinical-document-field-label-row clinical-document-section-header-row">
-                <InlineEditableTitle
-                  value={section.title}
-                  onChange={title => onPatchSectionTitle(section.id, title)}
-                  onActivate={() => onSetActiveTitleTarget(`section:${section.id}`)}
-                  onDeactivate={() =>
-                    onSetActiveTitleTarget(current =>
-                      current === `section:${section.id}` ? null : current
-                    )
-                  }
-                  disabled={!canEdit || document.isLocked}
-                  className="clinical-document-section-title"
-                />
-                {document.documentType === 'epicrisis' &&
-                  section.id === 'plan' &&
-                  canEdit &&
-                  !document.isLocked && (
-                    <button
-                      type="button"
-                      className="clinical-document-inline-action"
-                      onMouseDown={event => event.preventDefault()}
-                      onClick={() => {
-                        const nextLayout = planLayout === 'unified' ? 'structured' : 'unified';
-                        onSetSectionLayout(section.id, nextLayout);
-                        onPatchSection(
-                          section.id,
-                          nextLayout === 'unified'
-                            ? buildUnifiedClinicalDocumentPlanSectionContent(section.content)
-                            : buildStructuredClinicalDocumentPlanSectionContent(section.content)
-                        );
-                      }}
-                      aria-label={
-                        planLayout === 'unified'
-                          ? 'Volver a indicaciones al alta estructuradas'
-                          : 'Simplificar indicaciones al alta'
-                      }
-                      title={
-                        planLayout === 'unified'
-                          ? 'Volver a indicaciones estructuradas'
-                          : 'Simplificar indicaciones'
-                      }
-                    >
-                      <AlignJustify size={12} />
-                    </button>
-                  )}
-                {document.documentType === 'epicrisis' &&
-                  section.id === 'plan' &&
-                  !document.isLocked && (
-                    <ClinicalDocumentIndicationsPanel
-                      isOpen={isIndicationsPanelOpen}
-                      canEdit={canEdit && !document.isLocked}
-                      activeSpecialtyId={activeIndicationsSpecialtyId}
-                      catalog={indicationsCatalog}
-                      isSavingCustomIndication={isSavingCustomIndication}
-                      customIndicationError={customIndicationError}
-                      onToggle={onToggleIndicationsPanel}
-                      onSelectSpecialty={onSetActiveIndicationsSpecialtyId}
-                      onInsertIndication={text =>
-                        onPatchSection(
-                          section.id,
-                          appendClinicalDocumentPlanSubsectionText(
-                            section.content,
-                            activePlanSubsectionId,
-                            text
+            onDragLeave={() => dragHandlers.onDragLeave(section.id)}
+            onDrop={event => {
+              if (!canEdit || document.isLocked) return;
+              event.preventDefault();
+              const sourceSectionId = event.dataTransfer.getData('text/plain') || draggedSectionId;
+              if (sourceSectionId && sourceSectionId !== section.id) {
+                onReorderSection(sourceSectionId, section.id);
+              }
+              dragHandlers.onDragEnd();
+            }}
+          >
+            {/* Drag handle removed — sections are reordered via arrow buttons */}
+            <div className="clinical-document-section-layout">
+              <div className="clinical-document-section-main">
+                <div className="clinical-document-field-label-row clinical-document-section-header-row relative">
+                  <InlineEditableTitle
+                    value={section.title}
+                    onChange={title => onPatchSectionTitle(section.id, title)}
+                    onActivate={() => onSetActiveTitleTarget(`section:${section.id}`)}
+                    onDeactivate={() =>
+                      onSetActiveTitleTarget(current =>
+                        current === `section:${section.id}` ? null : current
+                      )
+                    }
+                    disabled={!canEdit || document.isLocked}
+                    className="clinical-document-section-title"
+                  />
+                  {document.documentType === 'epicrisis' &&
+                    section.id === 'plan' &&
+                    canEdit &&
+                    !document.isLocked && (
+                      <button
+                        type="button"
+                        className="clinical-document-inline-action"
+                        onMouseDown={event => event.preventDefault()}
+                        onClick={() => {
+                          const nextLayout = planLayout === 'unified' ? 'structured' : 'unified';
+                          onSetSectionLayout(section.id, nextLayout);
+                          onPatchSection(
+                            section.id,
+                            nextLayout === 'unified'
+                              ? buildUnifiedClinicalDocumentPlanSectionContent(section.content)
+                              : buildStructuredClinicalDocumentPlanSectionContent(section.content)
+                          );
+                        }}
+                        aria-label={
+                          planLayout === 'unified'
+                            ? 'Volver a indicaciones al alta estructuradas'
+                            : 'Simplificar indicaciones al alta'
+                        }
+                        title={
+                          planLayout === 'unified'
+                            ? 'Volver a indicaciones estructuradas'
+                            : 'Simplificar indicaciones'
+                        }
+                      >
+                        <AlignJustify size={12} />
+                      </button>
+                    )}
+                  {document.documentType === 'epicrisis' &&
+                    section.id === 'plan' &&
+                    !document.isLocked && (
+                      <ClinicalDocumentIndicationsPanel
+                        isOpen={isIndicationsPanelOpen}
+                        canEdit={canEdit && !document.isLocked}
+                        activeSpecialtyId={activeIndicationsSpecialtyId}
+                        catalog={indicationsCatalog}
+                        isSavingCustomIndication={isSavingCustomIndication}
+                        customIndicationError={customIndicationError}
+                        onToggle={onToggleIndicationsPanel}
+                        onSelectSpecialty={onSetActiveIndicationsSpecialtyId}
+                        onInsertIndication={text =>
+                          onPatchSection(
+                            section.id,
+                            appendClinicalDocumentPlanSubsectionText(
+                              section.content,
+                              activePlanSubsectionId,
+                              text
+                            )
                           )
-                        )
-                      }
-                      onAddCustomIndication={onAddCustomIndication}
-                      onUpdateIndication={onUpdateIndication}
-                      onDeleteIndication={onDeleteIndication}
-                      onImportCatalog={onImportIndicationsCatalog}
-                    />
-                  )}
-                {canEdit && !document.isLocked && activeTitleTarget === `section:${section.id}` && (
-                  <>
-                    <button
-                      type="button"
-                      className="clinical-document-inline-action"
-                      onMouseDown={event => event.preventDefault()}
-                      onClick={() => onMoveSection(section.id, 'up')}
-                      aria-label={`Subir sección ${section.title}`}
-                      title="Subir sección"
-                      disabled={visibleSections[0]?.id === section.id}
-                    >
-                      <ArrowUp size={12} />
-                    </button>
-                    <button
-                      type="button"
-                      className="clinical-document-inline-action"
-                      onMouseDown={event => event.preventDefault()}
-                      onClick={() => onMoveSection(section.id, 'down')}
-                      aria-label={`Bajar sección ${section.title}`}
-                      title="Bajar sección"
-                      disabled={visibleSections[visibleSections.length - 1]?.id === section.id}
-                    >
-                      <ArrowDown size={12} />
-                    </button>
-                    <button
-                      type="button"
-                      className="clinical-document-inline-action clinical-document-inline-action--danger"
-                      onMouseDown={event => event.preventDefault()}
-                      onClick={() => onSetSectionVisibility(section.id, false)}
-                      aria-label={`Eliminar sección ${section.title}`}
-                      title="Eliminar sección"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </>
-                )}
+                        }
+                        onAddCustomIndication={onAddCustomIndication}
+                        onUpdateIndication={onUpdateIndication}
+                        onDeleteIndication={onDeleteIndication}
+                        onImportCatalog={onImportIndicationsCatalog}
+                      />
+                    )}
+                  {canEdit &&
+                    !document.isLocked &&
+                    activeTitleTarget === `section:${section.id}` && (
+                      <>
+                        <button
+                          type="button"
+                          className="clinical-document-inline-action"
+                          onMouseDown={event => event.preventDefault()}
+                          onClick={() =>
+                            setInsertMenuSectionId(
+                              insertMenuSectionId === section.id ? null : section.id
+                            )
+                          }
+                          aria-label="Insertar sección"
+                          title="Insertar sección"
+                        >
+                          <Plus size={12} />
+                        </button>
+                        {insertMenuSectionId === section.id && (
+                          <div
+                            className="absolute top-full left-0 mt-1 z-50 bg-white rounded-lg shadow-xl border border-slate-200 ring-1 ring-black/[0.04] py-1 min-w-[160px]"
+                            onMouseDown={event => event.preventDefault()}
+                          >
+                            <button
+                              type="button"
+                              className="w-full px-3 py-1.5 text-left text-[11px] font-medium text-slate-600 hover:bg-slate-50 flex items-center gap-2"
+                              onClick={() => {
+                                onAddSection(section.id, 'above');
+                                setInsertMenuSectionId(null);
+                              }}
+                            >
+                              <ChevronUp size={12} /> Insertar arriba
+                            </button>
+                            <button
+                              type="button"
+                              className="w-full px-3 py-1.5 text-left text-[11px] font-medium text-slate-600 hover:bg-slate-50 flex items-center gap-2"
+                              onClick={() => {
+                                onAddSection(section.id, 'below');
+                                setInsertMenuSectionId(null);
+                              }}
+                            >
+                              <ChevronDown size={12} /> Insertar abajo
+                            </button>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          className="clinical-document-inline-action"
+                          onMouseDown={event => event.preventDefault()}
+                          onClick={() => {
+                            onMoveSection(section.id, 'up');
+                            // Keep title active after move so buttons remain visible
+                            onSetActiveTitleTarget(`section:${section.id}`);
+                          }}
+                          aria-label={`Subir sección ${section.title}`}
+                          title="Subir sección"
+                          disabled={visibleSections[0]?.id === section.id}
+                        >
+                          <ArrowUp size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          className="clinical-document-inline-action"
+                          onMouseDown={event => event.preventDefault()}
+                          onClick={() => {
+                            onMoveSection(section.id, 'down');
+                            // Keep title active after move so buttons remain visible
+                            onSetActiveTitleTarget(`section:${section.id}`);
+                          }}
+                          aria-label={`Bajar sección ${section.title}`}
+                          title="Bajar sección"
+                          disabled={visibleSections[visibleSections.length - 1]?.id === section.id}
+                        >
+                          <ArrowDown size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          className="clinical-document-inline-action clinical-document-inline-action--danger"
+                          onMouseDown={event => event.preventDefault()}
+                          onClick={() => onSetSectionVisibility(section.id, false)}
+                          aria-label={`Eliminar sección ${section.title}`}
+                          title="Eliminar sección"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </>
+                    )}
+                </div>
+                {renderClinicalDocumentSectionContent({
+                  document,
+                  section,
+                  canEdit,
+                  activePlanSubsectionId,
+                  setActivePlanSubsectionId: onSetActivePlanSubsectionId,
+                  onPatchSection,
+                  onEditorActivate,
+                  onEditorDeactivate,
+                  indicationsCatalog,
+                  isSavingCustomIndication,
+                  customIndicationError,
+                  activeIndicationsSpecialtyId,
+                  setActiveIndicationsSpecialtyId: onSetActiveIndicationsSpecialtyId,
+                  isIndicationsPanelOpen,
+                  onToggleIndicationsPanel,
+                  addCustomIndication: onAddCustomIndication,
+                  updateIndication: onUpdateIndication,
+                  deleteIndication: onDeleteIndication,
+                  importIndicationsCatalog: onImportIndicationsCatalog,
+                })}
               </div>
-              {renderClinicalDocumentSectionContent({
-                document,
-                section,
-                canEdit,
-                activePlanSubsectionId,
-                setActivePlanSubsectionId: onSetActivePlanSubsectionId,
-                onPatchSection,
-                onEditorActivate,
-                onEditorDeactivate,
-                indicationsCatalog,
-                isSavingCustomIndication,
-                customIndicationError,
-                activeIndicationsSpecialtyId,
-                setActiveIndicationsSpecialtyId: onSetActiveIndicationsSpecialtyId,
-                isIndicationsPanelOpen,
-                onToggleIndicationsPanel,
-                addCustomIndication: onAddCustomIndication,
-                updateIndication: onUpdateIndication,
-                deleteIndication: onDeleteIndication,
-                importIndicationsCatalog: onImportIndicationsCatalog,
-              })}
             </div>
           </div>
-        </div>
-      );
-    })}
-  </div>
-);
+        );
+      })}
+    </div>
+  );
+};

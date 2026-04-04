@@ -34,6 +34,9 @@ Capa de datos e integración: repositorios, persistencia, exportadores, integrac
 ## Patrones clave
 
 - **Repository Pattern** con entrypoints concretos (`dailyRecordRepositoryReadService`, `dailyRecordRepositoryWriteService`, `CatalogRepository`, etc.).
+- **Repository provider desacoplado**:
+  - `DefaultRepositoryProvider` compone el wiring por defecto del runtime.
+  - `createRepositoryContainer` y `createTestRepositoryContainer` quedan para composición explícita e inyección en tests.
 - **Service split por responsabilidad** (`read/write/sync/init` en repositorio diario).
 - **Storage abstraction** con estrategia offline-first y fallback.
 - **Domain observability**:

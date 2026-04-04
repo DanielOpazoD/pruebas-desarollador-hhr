@@ -6,8 +6,7 @@ import {
   type DocumentData,
   type UpdateData,
 } from 'firebase/firestore';
-import type { DailyRecord } from '@/types/domain/dailyRecord';
-import type { DailyRecordPatch } from '@/types/domain/dailyRecordPatch';
+import type { DailyRecord, DailyRecordPatch } from '@/services/storage/storageDailyRecordContracts';
 import { withRetry } from '@/utils/networkUtils';
 import {
   flattenObject,

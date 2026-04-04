@@ -1,4 +1,4 @@
-import type { CMAData } from '@/types/domain/movements';
+import type { CMAData } from '@/features/census/contracts/censusMovementContracts';
 import type {
   ActionState,
   DischargeState,

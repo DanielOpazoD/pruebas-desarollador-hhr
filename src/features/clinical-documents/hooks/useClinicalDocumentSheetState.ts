@@ -49,6 +49,8 @@ export const useClinicalDocumentSheetState = (selectedDocument: ClinicalDocument
 
   const activeEditorSectionIdRef = useRef<string | null>(null);
   const activeEditorApiRef = useRef<ClinicalDocumentSheetEditorApi | null>(null);
+  /** Retains the last active editor API so undo/redo work even after blur. */
+  const lastActiveEditorApiRef = useRef<ClinicalDocumentSheetEditorApi | null>(null);
   const currentDocumentScopedState = useMemo(() => {
     const expectedSignature = getDocumentSignature(selectedDocument);
     return documentScopedState.documentSignature === expectedSignature
@@ -82,6 +84,7 @@ export const useClinicalDocumentSheetState = (selectedDocument: ClinicalDocument
   const handleEditorActivate = useCallback(
     (activeSectionId: string, editorApi: ClinicalDocumentSheetEditorApi) => {
       activeEditorApiRef.current = editorApi;
+      lastActiveEditorApiRef.current = editorApi;
       activeEditorSectionIdRef.current = activeSectionId;
       setActiveEditorSectionId(current =>
         current === activeSectionId ? current : activeSectionId
@@ -143,9 +146,15 @@ export const useClinicalDocumentSheetState = (selectedDocument: ClinicalDocument
 
   const applyFormatting = useCallback(
     (command: ClinicalDocumentFormattingCommand, value?: string) => {
-      if (formattingDisabled) return;
-      activeEditorApiRef.current?.element?.focus();
-      activeEditorApiRef.current?.applyCommand(command, value);
+      // Undo/redo use the last active editor (even if deactivated/blurred),
+      // so the user can click undo without re-focusing the text area first.
+      const isHistoryCommand = command === 'undo' || command === 'redo';
+      if (!isHistoryCommand && formattingDisabled) return;
+      const targetApi = isHistoryCommand
+        ? activeEditorApiRef.current || lastActiveEditorApiRef.current
+        : activeEditorApiRef.current;
+      targetApi?.element?.focus();
+      targetApi?.applyCommand(command, value);
     },
     [formattingDisabled]
   );

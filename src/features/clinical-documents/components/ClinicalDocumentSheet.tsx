@@ -35,6 +35,7 @@ export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
   setSectionVisibility,
   moveSection,
   reorderSection,
+  addSection,
   patchFooterLabel,
   patchDocumentMeta,
   indicationsCatalog,
@@ -137,6 +138,7 @@ export const ClinicalDocumentSheet: React.FC<ClinicalDocumentSheetProps> = ({
           onSetSectionVisibility={setSectionVisibility}
           onMoveSection={moveSection}
           onReorderSection={reorderSection}
+          onAddSection={addSection}
           onEditorActivate={onEditorActivate}
           onEditorDeactivate={onEditorDeactivate}
           onSetActivePlanSubsectionId={onSetActivePlanSubsectionId}

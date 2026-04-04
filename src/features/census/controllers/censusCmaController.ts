@@ -1,4 +1,4 @@
-import type { CMAData } from '@/types/domain/movements';
+import type { CMAData } from '@/features/census/contracts/censusMovementContracts';
 import type { PatientData } from '@/features/census/controllers/censusActionPatientContracts';
 import type { ControllerConfirmDescriptor } from '@/shared/contracts/controllers/confirmDescriptor';
 import {

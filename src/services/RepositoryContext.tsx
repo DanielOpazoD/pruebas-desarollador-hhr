@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 import {
   defaultDailyRecordRepositoryPort,
   type DailyRecordRepositoryPort,
@@ -13,10 +13,7 @@ export interface IRepositoryContainer {
   catalog: ICatalogRepository;
 }
 
-/**
- * Default container using concrete implementations.
- */
-export const defaultRepositories: IRepositoryContainer = {
+const defaultRepositoryImplementations: IRepositoryContainer = {
   dailyRecord: defaultDailyRecordRepositoryPort,
   catalog: CatalogRepository,
 };
@@ -24,9 +21,12 @@ export const defaultRepositories: IRepositoryContainer = {
 export const createRepositoryContainer = (
   overrides: Partial<IRepositoryContainer> = {}
 ): IRepositoryContainer => ({
-  ...defaultRepositories,
+  ...defaultRepositoryImplementations,
   ...overrides,
 });
+
+export const createDefaultRepositoryContainer = (): IRepositoryContainer =>
+  createRepositoryContainer();
 
 export const createTestRepositoryContainer = (
   overrides: Partial<IRepositoryContainer> = {}
@@ -47,3 +47,9 @@ export const useRepositories = (): IRepositoryContainer => {
 };
 
 export const RepositoryProvider = RepositoryContext.Provider;
+
+export const DefaultRepositoryProvider = ({ children }: { children: ReactNode }) => {
+  const [repositories] = useState(createDefaultRepositoryContainer);
+
+  return <RepositoryProvider value={repositories}>{children}</RepositoryProvider>;
+};

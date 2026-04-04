@@ -1,4 +1,4 @@
-import type { BedDefinition, BedType } from '@/types/domain/beds';
+import type { BedDefinition, BedType } from '@/features/census/contracts/censusBedContracts';
 import type { PatientData } from '@/features/census/types/censusTablePatientContracts';
 
 export type DiagnosisMode = 'free' | 'cie10';

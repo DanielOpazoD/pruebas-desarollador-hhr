@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { DiagnosisMode } from '@/features/census/types/censusTableTypes';
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';
-import type { BedDefinition, BedType } from '@/types/domain/beds';
+import type { BedDefinition, BedType } from '@/features/census/contracts/censusBedContracts';
 import type { PatientData } from '@/features/census/components/patient-row/patientRowDataContracts';
 import type { MedicalIndicationsPatientOption } from '@/shared/contracts/medicalIndications';
 import type { UserRole } from '@/types/auth';

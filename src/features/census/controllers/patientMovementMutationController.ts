@@ -1,5 +1,5 @@
 import type { DailyRecord } from '@/features/census/contracts/censusRecordContracts';
-import { DischargeType, TransferData } from '@/types/domain/movements';
+import { DischargeType, TransferData } from '@/features/census/contracts/censusMovementContracts';
 
 interface UpdateDischargeMovementInput {
   record: DailyRecord;

@@ -1,4 +1,4 @@
-import type { TransferData } from '@/types/domain/movements';
+import type { TransferData } from '@/features/census/contracts/censusMovementContracts';
 import type { CensusMovementTableHeader } from '@/features/census/types/censusMovementTableTypes';
 import { buildMovementRowActions } from '@/features/census/controllers/censusMovementRowActionsController';
 

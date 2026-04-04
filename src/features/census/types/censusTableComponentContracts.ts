@@ -7,7 +7,7 @@ import type {
 } from '@/features/census/types/censusTableTypes';
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';
 import type { RowMenuAlign } from '@/features/census/components/patient-row/patientRowUiContracts';
-import type { BedDefinition } from '@/types/domain/beds';
+import type { BedDefinition } from '@/features/census/contracts/censusBedContracts';
 import type { PatientData } from '@/features/census/types/censusTablePatientContracts';
 import type { UserRole } from '@/types/auth';
 import type { PatientActionMenuIndicators } from '@/features/census/components/patient-row/patientRowActionContracts';

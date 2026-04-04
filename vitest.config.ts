@@ -1,4 +1,5 @@
 /// <reference types="vitest" />
+import fs from 'node:fs';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
@@ -6,6 +7,13 @@ import { fileURLToPath } from 'node:url';
 import { minsalSharedInteropPlugin } from './scripts/config/minsalSharedInteropPlugin';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
+const unitCoverageThresholdsPath = path.join(
+  dirname,
+  'scripts',
+  'config',
+  'unit-coverage-thresholds.json'
+);
+const unitCoverageThresholds = JSON.parse(fs.readFileSync(unitCoverageThresholdsPath, 'utf8'));
 
 export default defineConfig({
   plugins: [minsalSharedInteropPlugin(dirname), react()],
@@ -30,12 +38,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      thresholds: {
-        lines: 63,
-        functions: 49,
-        branches: 48,
-        statements: 62,
-      },
+      thresholds: unitCoverageThresholds,
       exclude: [
         'node_modules/',
         'dist/',

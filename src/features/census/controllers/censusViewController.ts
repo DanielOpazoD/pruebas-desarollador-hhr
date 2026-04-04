@@ -1,4 +1,4 @@
-import type { BedDefinition } from '@/types/domain/beds';
+import type { BedDefinition } from '@/features/census/contracts/censusBedContracts';
 import type { Statistics } from '@/types/domain/statistics';
 import type { DailyRecord } from '@/features/census/contracts/censusRecordContracts';
 import type { CSSProperties } from 'react';

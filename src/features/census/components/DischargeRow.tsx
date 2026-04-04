@@ -1,6 +1,6 @@
 import React from 'react';
 
-import type { DischargeData } from '@/types/domain/movements';
+import type { DischargeData } from '@/features/census/contracts/censusMovementContracts';
 import { resolveDischargeRowViewModel } from '@/features/census/controllers/dischargeRowViewController';
 import { DischargeRowView } from '@/features/census/components/DischargeRowView';
 

@@ -46,6 +46,8 @@ El outbox ahora se arma sobre un engine con puertos (`sync/syncQueueEngine.ts`, 
 `getSyncQueueTelemetry()` puede devolver `readState = unavailable` cuando la cola no puede inspeccionarse;
 ese caso debe tratarse como degradación operativa real, no como cola vacía.
 `storage/index.ts` queda como barrel de compatibilidad mínima; nuevos imports deben ir a `storage/firestore`, `storage/sync`, `storage/core`, `storage/records` o `storage/runtime`.
+Los adapters de storage que necesiten `DailyRecord` deben importarlo desde
+`storageDailyRecordContracts.ts`, no directo desde `src/types/domain/dailyRecord`.
 
 ## Estrategia
 

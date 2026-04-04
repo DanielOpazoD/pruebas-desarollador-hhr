@@ -64,6 +64,7 @@ export interface ClinicalDocumentSheetProps {
   setSectionVisibility: (sectionId: string, visible: boolean) => void;
   moveSection: (sectionId: string, direction: 'up' | 'down') => void;
   reorderSection: (sourceSectionId: string, targetSectionId: string) => void;
+  addSection: (referenceSectionId: string, position: 'above' | 'below') => void;
   patchFooterLabel: (kind: 'medico' | 'especialidad', title: string) => void;
   patchDocumentMeta: (
     patch: Partial<Pick<ClinicalDocumentRecord, 'medico' | 'especialidad'>>

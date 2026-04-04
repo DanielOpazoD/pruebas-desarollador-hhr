@@ -1,4 +1,4 @@
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/services/storage/storageDailyRecordContracts';
 import { AuditLogEntry } from '@/types/audit';
 import { safeJsonParse } from '@/utils/jsonUtils';
 import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';

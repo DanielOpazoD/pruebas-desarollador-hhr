@@ -1,7 +1,7 @@
 import React from 'react';
 import { Trash2, Undo2 } from 'lucide-react';
 
-import type { CMAData } from '@/types/domain/movements';
+import type { CMAData } from '@/features/census/contracts/censusMovementContracts';
 import { CMA_INTERVENTION_TYPES } from '@/features/census/controllers/censusCmaController';
 import { resolveCmaUndoButtonTitle } from '@/features/census/controllers/censusCmaTableController';
 

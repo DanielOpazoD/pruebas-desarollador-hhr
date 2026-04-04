@@ -53,6 +53,7 @@ export interface ClinicalDocumentWorkspaceDraftState {
   setSectionVisibility: (sectionId: string, visible: boolean) => void;
   moveSection: (sectionId: string, direction: 'up' | 'down') => void;
   reorderSection: (sourceSectionId: string, targetSectionId: string) => void;
+  addSection: (referenceSectionId: string, position: 'above' | 'below') => void;
   patchDocumentTitle: (title: string) => void;
   patchPatientInfoTitle: (title: string) => void;
   patchFooterLabel: (kind: 'medico' | 'especialidad', title: string) => void;
@@ -182,6 +183,8 @@ export const useClinicalDocumentWorkspaceDraft = ({
     moveSection: (sectionId, direction) => dispatch({ type: 'MOVE_SECTION', sectionId, direction }),
     reorderSection: (sourceSectionId, targetSectionId) =>
       dispatch({ type: 'REORDER_SECTION', sourceSectionId, targetSectionId }),
+    addSection: (referenceSectionId, position) =>
+      dispatch({ type: 'INSERT_SECTION', referenceSectionId, position }),
     patchDocumentTitle: title => dispatch({ type: 'PATCH_DOCUMENT_TITLE', title }),
     patchPatientInfoTitle: title => dispatch({ type: 'PATCH_PATIENT_INFO_TITLE', title }),
     patchFooterLabel: (kind, title) => dispatch({ type: 'PATCH_FOOTER_LABEL', kind, title }),

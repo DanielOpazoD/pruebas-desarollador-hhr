@@ -137,6 +137,9 @@ botón IEEH
 
 - Cobertura alta en `src/tests/views/census/**`.
 - Checks de arquitectura y boundaries runtime en CI local (`check:quality`).
+- Los tipos compartidos de camas y movimientos deben entrar por
+  `contracts/censusBedContracts.ts` y `contracts/censusMovementContracts.ts`,
+  no directo desde `src/types/domain/*`.
 
 ## Invariantes
 

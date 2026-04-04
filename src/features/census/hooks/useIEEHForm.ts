@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { PatientData } from '@/features/census/controllers/censusActionPatientContracts';
-import type { IeehData } from '@/types/domain/movements';
+import type { IeehData } from '@/features/census/contracts/censusMovementContracts';
 import type { DischargeFormData } from '@/services/pdf/ieehPdfService';
 import { printIEEHForm } from '@/services/pdf/ieehPdfService';
 import { searchDiagnoses, forceAISearch } from '@/services/terminology/terminologyService';

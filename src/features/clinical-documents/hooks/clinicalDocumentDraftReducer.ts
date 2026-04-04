@@ -2,6 +2,7 @@ import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domai
 import { normalizeClinicalDocumentContentForStorage } from '@/features/clinical-documents/controllers/clinicalDocumentRichTextController';
 import { restoreClinicalDocumentDraftTemplate } from '@/features/clinical-documents/domain/factories';
 import {
+  insertClinicalDocumentSection,
   moveClinicalDocumentVisibleSection,
   reorderClinicalDocumentVisibleSections,
 } from '@/features/clinical-documents/controllers/clinicalDocumentSectionOrderController';
@@ -43,6 +44,7 @@ export type ClinicalDocumentDraftAction =
   | { type: 'SET_SECTION_VISIBILITY'; sectionId: string; visible: boolean }
   | { type: 'MOVE_SECTION'; sectionId: string; direction: 'up' | 'down' }
   | { type: 'REORDER_SECTION'; sourceSectionId: string; targetSectionId: string }
+  | { type: 'INSERT_SECTION'; referenceSectionId: string; position: 'above' | 'below' }
   | { type: 'PATCH_DOCUMENT_TITLE'; title: string }
   | { type: 'PATCH_PATIENT_INFO_TITLE'; title: string }
   | { type: 'PATCH_FOOTER_LABEL'; kind: 'medico' | 'especialidad'; title: string }
@@ -211,6 +213,15 @@ export const clinicalDocumentDraftReducer = (
           draft.sections,
           action.sectionId,
           action.direction
+        ),
+      }));
+    case 'INSERT_SECTION':
+      return patchDraft(state, draft => ({
+        ...draft,
+        sections: insertClinicalDocumentSection(
+          draft.sections,
+          action.referenceSectionId,
+          action.position
         ),
       }));
     case 'PATCH_DOCUMENT_TITLE':

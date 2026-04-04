@@ -1,4 +1,4 @@
-import type { BedDefinition } from '@/types/domain/beds';
+import type { BedDefinition } from '@/features/census/contracts/censusBedContracts';
 import type { PatientData } from '@/features/census/components/patient-row/patientRowDataContracts';
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';
 import { derivePatientRowState } from '../../controllers/patientRowStateController';

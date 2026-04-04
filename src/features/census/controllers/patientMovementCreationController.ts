@@ -1,4 +1,4 @@
-import { BedDefinition } from '@/types/domain/beds';
+import { BedDefinition } from '@/features/census/contracts/censusBedContracts';
 import type { DailyRecord } from '@/features/census/contracts/censusRecordContracts';
 import type { PatientData } from '@/features/census/domain/movements/contracts/patient';
 import type {

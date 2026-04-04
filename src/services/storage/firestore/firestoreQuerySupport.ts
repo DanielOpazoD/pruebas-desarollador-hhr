@@ -1,4 +1,4 @@
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/services/storage/storageDailyRecordContracts';
 
 const padDatePart = (value: number): string => String(value).padStart(2, '0');
 

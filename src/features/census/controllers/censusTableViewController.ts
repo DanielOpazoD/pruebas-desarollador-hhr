@@ -1,4 +1,4 @@
-import { BedDefinition, BedType } from '@/types/domain/beds';
+import { BedDefinition, BedType } from '@/features/census/contracts/censusBedContracts';
 import type { PatientData } from '@/features/census/types/censusTablePatientContracts';
 import {
   BedTypesById,

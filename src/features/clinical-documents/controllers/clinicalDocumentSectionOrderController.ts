@@ -40,6 +40,39 @@ export const reorderClinicalDocumentVisibleSections = (
     .sort((left, right) => left.order - right.order);
 };
 
+export const insertClinicalDocumentSection = (
+  sections: ClinicalDocumentRecord['sections'],
+  referenceSectionId: string,
+  position: 'above' | 'below'
+): ClinicalDocumentRecord['sections'] => {
+  const orderedSections = [...sections].sort((left, right) => left.order - right.order);
+  const visibleSections = orderedSections.filter(section => section.visible !== false);
+  const refIndex = visibleSections.findIndex(section => section.id === referenceSectionId);
+  if (refIndex === -1) return sections;
+
+  const newSection: ClinicalDocumentRecord['sections'][number] = {
+    id: `custom-${Date.now()}`,
+    title: 'Nueva sección',
+    content: '',
+    kind: 'standard',
+    order: 0,
+    visible: true,
+  };
+
+  const insertIndex = position === 'above' ? refIndex : refIndex + 1;
+  const nextVisible = [...visibleSections];
+  nextVisible.splice(insertIndex, 0, newSection);
+
+  const hiddenSections = orderedSections.filter(section => section.visible === false);
+  const reorderedVisible = nextVisible.map((section, index) => ({ ...section, order: index }));
+  const reorderedHidden = hiddenSections.map((section, index) => ({
+    ...section,
+    order: reorderedVisible.length + index,
+  }));
+
+  return [...reorderedVisible, ...reorderedHidden];
+};
+
 export const moveClinicalDocumentVisibleSection = (
   sections: ClinicalDocumentRecord['sections'],
   sectionId: string,

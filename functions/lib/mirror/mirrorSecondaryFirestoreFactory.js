@@ -8,6 +8,14 @@ const readMirrorRuntimeConfig = () => {
   }
 };
 
+const isNonEmptyString = value => typeof value === 'string' && value.trim().length > 0;
+
+const isValidServiceAccountSecret = credentials =>
+  isNonEmptyString(credentials?.project_id) &&
+  isNonEmptyString(credentials?.client_email) &&
+  isNonEmptyString(credentials?.private_key) &&
+  credentials.private_key.includes('BEGIN PRIVATE KEY');
+
 const parseMirrorSecondaryServiceAccount = () => {
   const runtimeConfig = readMirrorRuntimeConfig();
   const rawJson =
@@ -22,7 +30,14 @@ const parseMirrorSecondaryServiceAccount = () => {
 
   try {
     const json = rawJson || Buffer.from(rawB64, 'base64').toString('utf8');
-    return JSON.parse(json);
+    const credentials = JSON.parse(json);
+    if (!isValidServiceAccountSecret(credentials)) {
+      console.error(
+        'BETA service account secret is incomplete. Expected project_id, client_email and private_key.'
+      );
+      return null;
+    }
+    return credentials;
   } catch (error) {
     console.error('BETA service account secret is malformed:', error.message);
     return null;

@@ -15,7 +15,7 @@ import { ViewLoader } from '@/components/ui/ViewLoader';
 import { MedicalSignatureView } from '@/views/LazyViews';
 import { AuditProvider, AuthProvider, UIProvider } from './context';
 import { HospitalProvider } from './context/HospitalContext';
-import { RepositoryProvider, defaultRepositories } from '@/services/RepositoryContext';
+import { DefaultRepositoryProvider } from '@/services/RepositoryContext';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/config/queryClient';
 import {
@@ -92,7 +92,7 @@ export default function ProvidedApp() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <RepositoryProvider value={defaultRepositories}>
+        <DefaultRepositoryProvider>
           <HospitalProvider>
             <UIProvider>
               <AuditProvider userId="anon">
@@ -100,7 +100,7 @@ export default function ProvidedApp() {
               </AuditProvider>
             </UIProvider>
           </HospitalProvider>
-        </RepositoryProvider>
+        </DefaultRepositoryProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

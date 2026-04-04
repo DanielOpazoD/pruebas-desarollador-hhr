@@ -1,4 +1,4 @@
-import { DailyRecord } from '@/types/domain/dailyRecord';
+import { DailyRecord } from '@/services/storage/storageDailyRecordContracts';
 import { localPersistence } from '@/services/storage/localpersistence/localPersistenceService';
 import { buildMonthRecordPrefix } from '@/services/storage/storageDateSupport';
 import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';

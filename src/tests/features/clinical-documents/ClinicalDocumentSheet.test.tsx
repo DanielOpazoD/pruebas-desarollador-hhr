@@ -97,6 +97,7 @@ const defaultHandlers = {
   setSectionVisibility: vi.fn(),
   moveSection: vi.fn(),
   reorderSection: vi.fn(),
+  addSection: vi.fn(),
   patchFooterLabel: vi.fn(),
   patchDocumentMeta: vi.fn(),
   addCustomIndication: vi.fn(async () => true),

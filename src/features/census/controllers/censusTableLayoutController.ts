@@ -5,7 +5,7 @@ import type {
   OccupiedBedRow,
   BedTypesById,
 } from '@/features/census/types/censusTableTypes';
-import type { BedDefinition } from '@/types/domain/beds';
+import type { BedDefinition } from '@/features/census/contracts/censusBedContracts';
 import type { PatientData } from '@/features/census/types/censusTablePatientContracts';
 import type { UserRole } from '@/types/auth';
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';

@@ -1,5 +1,5 @@
-import { BedDefinition } from '@/types/domain/beds';
-import { DischargeData, DischargeType } from '@/types/domain/movements';
+import { BedDefinition } from '@/features/census/contracts/censusBedContracts';
+import { DischargeData, DischargeType } from '@/features/census/contracts/censusMovementContracts';
 import type { PatientData } from '@/features/census/domain/movements/contracts/patient';
 import type { DischargeAddCommandPayload } from '@/features/census/domain/movements/contracts';
 import {

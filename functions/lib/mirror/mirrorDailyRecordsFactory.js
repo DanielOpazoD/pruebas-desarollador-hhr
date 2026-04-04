@@ -12,7 +12,9 @@ const createMirrorDailyRecords = ({ dbBeta, admin }) =>
       const { docId } = context.params;
 
       if (!dbBeta) {
-        console.error('ERROR: dbBeta no está inicializada. Revisa llave-beta.json');
+        console.error(
+          'ERROR: dbBeta no está inicializada. Configura BETA_SERVICE_ACCOUNT_JSON/B64 o functions config mirror.beta_service_account_json/_b64.'
+        );
         return null;
       }
 

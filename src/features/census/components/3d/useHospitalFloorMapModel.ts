@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import type { BedDefinition } from '@/types/domain/beds';
+import type { BedDefinition } from '@/features/census/contracts/censusBedContracts';
 import {
   createHospitalFloorMapRuntime,
   executeResetLayout,

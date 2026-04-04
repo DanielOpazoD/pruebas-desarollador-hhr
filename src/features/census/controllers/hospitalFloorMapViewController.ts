@@ -1,4 +1,4 @@
-import type { BedDefinition } from '@/types/domain/beds';
+import type { BedDefinition } from '@/features/census/contracts/censusBedContracts';
 import type {
   SavedBedTransform,
   SavedLayout,

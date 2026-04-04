@@ -1,4 +1,7 @@
-import type { DischargeData, TransferData } from '@/types/domain/movements';
+import type {
+  DischargeData,
+  TransferData,
+} from '@/features/census/contracts/censusMovementContracts';
 import {
   DEFAULT_TRANSFER_ESCORT,
   normalizeEvacuationMethod,

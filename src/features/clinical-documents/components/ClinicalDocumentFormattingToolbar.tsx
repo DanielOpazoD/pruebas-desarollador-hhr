@@ -9,10 +9,8 @@ import {
   List,
   ListOrdered,
   Printer,
-  Redo2,
-  SquarePen,
+  RotateCcw,
   Underline,
-  Undo2,
   UploadCloud,
 } from 'lucide-react';
 
@@ -45,8 +43,6 @@ const formattingActions = [
   { command: 'indent' as const, label: 'Aumentar sangría', icon: IndentIncrease },
   { command: 'outdent' as const, label: 'Disminuir sangría', icon: IndentDecrease },
   { command: 'removeFormat' as const, label: 'Quitar formato', icon: Eraser },
-  { command: 'undo' as const, label: 'Deshacer', icon: Undo2 },
-  { command: 'redo' as const, label: 'Rehacer', icon: Redo2 },
 ];
 
 export const ClinicalDocumentFormattingToolbar: React.FC<
@@ -58,7 +54,7 @@ export const ClinicalDocumentFormattingToolbar: React.FC<
   isUploadingPdf,
   formattingDisabled,
   isFormattingOpen,
-  activeEditorHistoryState,
+  activeEditorHistoryState: _activeEditorHistoryState,
   onPrint,
   onUploadPdf,
   onRestoreTemplate,
@@ -112,9 +108,10 @@ export const ClinicalDocumentFormattingToolbar: React.FC<
           disabled={!canEdit || selectedDocument.isLocked}
           aria-label="Reestablecer plantilla"
           title="Reestablecer plantilla"
-          className={`${iconButtonClass} border-amber-200 text-amber-700 hover:bg-amber-50`}
+          className="inline-flex h-8 items-center rounded-lg border border-amber-200 px-2.5 text-[10px] font-black uppercase tracking-[0.16em] text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300"
         >
-          <SquarePen size={13} />
+          <RotateCcw size={13} className="mr-1.5 inline" />
+          Restablecer
         </button>
         <button
           type="button"
@@ -157,11 +154,7 @@ export const ClinicalDocumentFormattingToolbar: React.FC<
                     className="clinical-document-toolbar-button"
                     onMouseDown={event => event.preventDefault()}
                     onClick={() => onApplyFormatting(action.command)}
-                    disabled={
-                      formattingDisabled ||
-                      (action.command === 'undo' && !activeEditorHistoryState.canUndo) ||
-                      (action.command === 'redo' && !activeEditorHistoryState.canRedo)
-                    }
+                    disabled={formattingDisabled}
                     aria-label={action.label}
                     title={action.label}
                   >

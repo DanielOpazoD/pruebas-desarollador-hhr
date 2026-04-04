@@ -1,6 +1,6 @@
 import React from 'react';
 import type { PatientData } from '@/features/census/contracts/censusPatientContracts';
-import type { IeehData } from '@/types/domain/movements';
+import type { IeehData } from '@/features/census/contracts/censusMovementContracts';
 import type { DischargeFormData } from '@/services/pdf/ieehPdfService';
 import { useIEEHForm } from '@/features/census/hooks/useIEEHForm';
 import {

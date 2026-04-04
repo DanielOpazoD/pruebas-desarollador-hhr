@@ -1,6 +1,6 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
-import type { BedDefinition } from '@/types/domain/beds';
+import type { BedDefinition } from '@/features/census/contracts/censusBedContracts';
 import type { DailyRecord } from '@/features/census/contracts/censusRecordContracts';
 import { SectionErrorBoundary } from '@/components/shared/SectionErrorBoundary';
 import { CensusTable } from './CensusTable';
