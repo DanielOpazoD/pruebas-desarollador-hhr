@@ -105,6 +105,25 @@ const commitDocumentAsBase = (
   pendingRemoteState: emptyBaseState(),
 });
 
+const commitAutosaveBaseState = (
+  state: ClinicalDocumentDraftReducerState,
+  document: ClinicalDocumentRecord,
+  snapshot: string
+): ClinicalDocumentDraftReducerState => ({
+  ...state,
+  isSaving: false,
+  hasPendingRemoteUpdate:
+    state.pendingRemoteState.snapshot !== actionSnapshotKey(snapshot) &&
+    state.hasPendingRemoteUpdate,
+  baseState: buildClinicalDocumentDraftBaseState(document, snapshot),
+  pendingRemoteState:
+    state.pendingRemoteState.snapshot === actionSnapshotKey(snapshot)
+      ? emptyBaseState()
+      : state.pendingRemoteState,
+});
+
+const actionSnapshotKey = (snapshot: string): string => snapshot;
+
 export const clinicalDocumentDraftReducer = (
   state: ClinicalDocumentDraftReducerState,
   action: ClinicalDocumentDraftAction
@@ -257,29 +276,9 @@ export const clinicalDocumentDraftReducer = (
         isSaving: true,
       };
     case 'AUTOSAVE_MARK_CLEAN':
-      return {
-        ...state,
-        isSaving: false,
-        hasPendingRemoteUpdate:
-          state.pendingRemoteState.snapshot !== action.snapshot && state.hasPendingRemoteUpdate,
-        baseState: buildClinicalDocumentDraftBaseState(action.document, action.snapshot),
-        pendingRemoteState:
-          state.pendingRemoteState.snapshot === action.snapshot
-            ? emptyBaseState()
-            : state.pendingRemoteState,
-      };
+      return commitAutosaveBaseState(state, action.document, action.snapshot);
     case 'AUTOSAVE_COMMIT_BASE':
-      return {
-        ...state,
-        isSaving: false,
-        hasPendingRemoteUpdate:
-          state.pendingRemoteState.snapshot !== action.snapshot && state.hasPendingRemoteUpdate,
-        baseState: buildClinicalDocumentDraftBaseState(action.document, action.snapshot),
-        pendingRemoteState:
-          state.pendingRemoteState.snapshot === action.snapshot
-            ? emptyBaseState()
-            : state.pendingRemoteState,
-      };
+      return commitAutosaveBaseState(state, action.document, action.snapshot);
     case 'AUTOSAVE_SUCCEEDED':
       return {
         ...commitDocumentAsBase(state, action.document, action.snapshot),

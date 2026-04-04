@@ -4,16 +4,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '@/context/UIContext';
 import { getActiveHospitalId } from '@/constants/firestorePaths';
 import type { PatientData } from '@/features/clinical-documents/contracts/clinicalDocumentsPatientContract';
-import {
-  canDeleteClinicalDocuments,
-  canEditClinicalDocuments,
-  canReadClinicalDocuments,
-} from '@/features/clinical-documents/controllers/clinicalDocumentPermissionController';
-import {
-  buildClinicalDocumentsReadOnlyMessage,
-  canMutateClinicalDocumentsEpisode,
-  resolveClinicalDocumentPersistReason,
-} from '@/features/clinical-documents/controllers/clinicalDocumentEpisodeStatusController';
 import { buildClinicalDocumentWorkspaceNotifyPort } from '@/features/clinical-documents/controllers/clinicalDocumentWorkspaceController';
 import type { ClinicalDocumentSheetProps } from '@/features/clinical-documents/components/clinicalDocumentSheetShared';
 import type { ClinicalDocumentsSidebarProps } from '@/features/clinical-documents/contracts/clinicalDocumentsSidebarContracts';
@@ -22,6 +12,12 @@ import { useClinicalDocumentWorkspaceBootstrap } from '@/features/clinical-docum
 import { useClinicalDocumentWorkspaceDraft } from '@/features/clinical-documents/hooks/useClinicalDocumentWorkspaceDraft';
 import { useClinicalDocumentWorkspaceDocumentActions } from '@/features/clinical-documents/hooks/useClinicalDocumentWorkspaceDocumentActions';
 import { useClinicalDocumentWorkspaceExportActions } from '@/features/clinical-documents/hooks/useClinicalDocumentWorkspaceExportActions';
+import {
+  buildRestoreClinicalDocumentTemplateConfirmOptions,
+  canApplyClinicalDocumentTemplateSelection,
+  mergeDraftIntoClinicalDocumentsSidebar,
+  resolveClinicalDocumentsWorkspaceAccessState,
+} from './clinicalDocumentsWorkspaceModelSupport';
 
 interface UseClinicalDocumentsWorkspaceModelParams {
   patient: PatientData;
@@ -63,14 +59,10 @@ export const useClinicalDocumentsWorkspaceModel = ({
   const { user, role } = useAuth();
   const { success, warning, error: notifyError, info, confirm } = useNotification();
 
-  const canRead = canReadClinicalDocuments(role);
-  const canEditByRole = canEditClinicalDocuments(role);
-  const canDeleteByRole = canDeleteClinicalDocuments(role);
-  const canMutateEpisode = canMutateClinicalDocumentsEpisode(patient, role);
-  const canEdit = canEditByRole && canMutateEpisode;
-  const canDelete = canDeleteByRole && canMutateEpisode;
-  const readOnlyMessage = buildClinicalDocumentsReadOnlyMessage(patient, role, canEditByRole);
-  const persistReason = resolveClinicalDocumentPersistReason(patient, role);
+  const { canRead, canEdit, canDelete, readOnlyMessage, persistReason } = useMemo(
+    () => resolveClinicalDocumentsWorkspaceAccessState(patient, role),
+    [patient, role]
+  );
   const hospitalId = getActiveHospitalId();
   const notifyPort = useMemo(
     () => buildClinicalDocumentWorkspaceNotifyPort(success, warning, notifyError, info, confirm),
@@ -130,8 +122,7 @@ export const useClinicalDocumentsWorkspaceModel = ({
 
   const selectedDocument = draft;
   const sidebarDocuments = useMemo(
-    () =>
-      draft ? documents.map(document => (document.id === draft.id ? draft : document)) : documents,
+    () => mergeDraftIntoClinicalDocumentsSidebar(documents, draft),
     [documents, draft]
   );
 
@@ -176,25 +167,18 @@ export const useClinicalDocumentsWorkspaceModel = ({
 
   const handleSelectTemplate = (templateId: string) => {
     setSelectedTemplateId(templateId);
-    if (!draft || !canEdit || draft.isLocked) {
+    if (!canApplyClinicalDocumentTemplateSelection({ draft, canEdit })) {
       return;
     }
     applyTemplate(templateId);
   };
 
   const handleRestoreTemplate = async () => {
-    if (!draft || !canEdit || draft.isLocked) {
+    if (!canApplyClinicalDocumentTemplateSelection({ draft, canEdit })) {
       return;
     }
 
-    const confirmed = await confirm({
-      title: 'Reestablecer plantilla del documento',
-      message:
-        'Se restaurarán el título, las etiquetas y las secciones base de la plantilla. El contenido clínico editable actual se reemplazará por la estructura original del documento.',
-      confirmText: 'Reestablecer',
-      cancelText: 'Cancelar',
-      variant: 'warning',
-    });
+    const confirmed = await confirm(buildRestoreClinicalDocumentTemplateConfirmOptions());
 
     if (!confirmed) {
       return;

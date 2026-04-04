@@ -10,6 +10,11 @@ import {
   recordOperationalOutcome,
   recordOperationalTelemetry,
 } from '@/services/observability/operationalTelemetryService';
+import {
+  resolveClinicalDocumentExceptionMessage,
+  updateClinicalDocumentPdfFailure,
+  updateClinicalDocumentPdfSuccess,
+} from './clinicalDocumentWorkspaceActionSupport';
 
 interface NotificationPort {
   success: (title: string, message?: string) => void;
@@ -84,21 +89,16 @@ export const useClinicalDocumentWorkspaceExportActions = ({
             context: { documentId: selectedDocument.id },
           });
           setDraft(prev =>
-            prev
-              ? {
-                  ...prev,
-                  pdf: {
-                    ...prev.pdf,
-                    exportStatus: 'failed',
-                    exportError: outcomeError || 'No se pudo exportar el PDF clínico.',
-                  },
-                }
-              : prev
+            updateClinicalDocumentPdfFailure(
+              prev,
+              outcomeError || 'No se pudo exportar el PDF clínico.'
+            )
           );
           notify.error('Falló la exportación', outcomeError || 'El PDF no se pudo subir.');
           return;
         }
-        setDraft(prev => (prev ? { ...prev, pdf: result.data!.pdf } : prev));
+        const exportedPdf = result.data.pdf;
+        setDraft(prev => updateClinicalDocumentPdfSuccess(prev, exportedPdf));
         if (options.notifySuccess !== false) {
           notify.success(
             options.successTitle || 'PDF exportado',
@@ -107,10 +107,10 @@ export const useClinicalDocumentWorkspaceExportActions = ({
           );
         }
       } catch (error) {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : 'El documento quedó guardado, pero el PDF no se pudo subir.';
+        const errorMessage = resolveClinicalDocumentExceptionMessage(
+          error,
+          'El documento quedó guardado, pero el PDF no se pudo subir.'
+        );
         recordOperationalTelemetry({
           category: 'export',
           status: 'failed',
@@ -119,18 +119,7 @@ export const useClinicalDocumentWorkspaceExportActions = ({
           issues: [errorMessage],
           context: { documentId: selectedDocument?.id },
         });
-        setDraft(prev =>
-          prev
-            ? {
-                ...prev,
-                pdf: {
-                  ...prev.pdf,
-                  exportStatus: 'failed',
-                  exportError: errorMessage,
-                },
-              }
-            : prev
-        );
+        setDraft(prev => updateClinicalDocumentPdfFailure(prev, errorMessage));
         notify.error('Falló la exportación', errorMessage);
       } finally {
         setIsUploadingPdf(false);

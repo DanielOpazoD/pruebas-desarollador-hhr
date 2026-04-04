@@ -180,6 +180,58 @@ describe('clinicalDocumentDraftReducer', () => {
     expect(committed.isSaving).toBe(false);
   });
 
+  it('clears a staged remote update only when autosave commits the same snapshot', () => {
+    const document = buildDocument();
+    const loaded = clinicalDocumentDraftReducer(createClinicalDocumentDraftReducerInitialState(), {
+      type: 'LOAD_DOCUMENT',
+      document,
+      snapshot: JSON.stringify(document),
+    });
+
+    const remote = {
+      ...document,
+      audit: {
+        ...document.audit,
+        updatedAt: '2026-03-06T13:00:00.000Z',
+      },
+    };
+    const remoteSnapshot = JSON.stringify(remote);
+    const staged = clinicalDocumentDraftReducer(loaded, {
+      type: 'REMOTE_UPDATE_RECEIVED',
+      document: remote,
+      snapshot: remoteSnapshot,
+    });
+
+    const otherAutosave = clinicalDocumentDraftReducer(staged, {
+      type: 'AUTOSAVE_MARK_CLEAN',
+      document: {
+        ...document,
+        audit: {
+          ...document.audit,
+          updatedAt: '2026-03-06T12:55:00.000Z',
+        },
+      },
+      snapshot: JSON.stringify({
+        ...document,
+        audit: {
+          ...document.audit,
+          updatedAt: '2026-03-06T12:55:00.000Z',
+        },
+      }),
+    });
+
+    expect(otherAutosave.hasPendingRemoteUpdate).toBe(true);
+
+    const matchingAutosave = clinicalDocumentDraftReducer(staged, {
+      type: 'AUTOSAVE_MARK_CLEAN',
+      document: remote,
+      snapshot: remoteSnapshot,
+    });
+
+    expect(matchingAutosave.hasPendingRemoteUpdate).toBe(false);
+    expect(matchingAutosave.pendingRemoteState.document).toBeNull();
+  });
+
   it('restores the original template structure while preserving patient values', () => {
     const document = buildDocument();
     document.title = 'Título manual';

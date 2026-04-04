@@ -1,11 +1,22 @@
-import {
-  buildJsonResponse,
-  buildCorsHeaders,
-  getRequestOrigin,
-  type NetlifyEventLike,
-} from './lib/http';
+/**
+ * mmrad-search Netlify Function
+ *
+ * Authenticates with the MMRAD RIS (ris.mmrad.cl) Liferay portal,
+ * searches for patient radiology exams by RUT, and returns structured
+ * exam data (name, date, modality, status, PDF/DICOM links).
+ *
+ * Login flow (Liferay-specific):
+ *   1. GET /web/guest/home → extract form action URL (contains jsessionid)
+ *   2. POST credentials to that action URL → 302 redirect
+ *   3. Follow redirect chain → lands on /group/hhangaroa (authenticated dashboard)
+ *   4. Extract search form action URL from the dashboard HTML
+ *   5. POST patient RUT to the search form → HTML with exam results
+ */
+
+import { buildJsonResponse, getRequestOrigin, type NetlifyEventLike } from './lib/http';
 
 const MMRAD_BASE_URL = 'https://ris.mmrad.cl';
+const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
 
 interface MMRADExam {
   nombre_examen: string;
@@ -22,162 +33,145 @@ const getCredentials = () => ({
   password: process.env.MMRAD_PASSWORD || 'balooh',
 });
 
-/**
- * Accumulate all Set-Cookie headers from a Response.
- * Node's Headers.forEach only returns the LAST value for repeated headers,
- * so we use the non-standard getSetCookie() when available.
- */
+/** Collect all Set-Cookie headers from a fetch Response. */
 const collectSetCookies = (response: Response): string[] => {
-  // Node 18+ supports getSetCookie()
-  if (
-    'getSetCookie' in response.headers &&
-    typeof (response.headers as any).getSetCookie === 'function'
-  ) {
-    return (response.headers as any).getSetCookie() as string[];
+  const dynamicHeaders = response.headers as unknown as {
+    getSetCookie?: () => string[];
+    raw?: () => Record<string, string[]>;
+  };
+  if ('getSetCookie' in response.headers && typeof dynamicHeaders.getSetCookie === 'function') {
+    return dynamicHeaders.getSetCookie();
   }
-  // Fallback: try raw headers
-  const raw = (response.headers as any).raw?.();
-  if (raw?.['set-cookie']) {
-    return raw['set-cookie'] as string[];
-  }
-  // Last resort: single header
+  const raw = dynamicHeaders.raw?.();
+  if (raw?.['set-cookie']) return raw['set-cookie'];
   const single = response.headers.get('set-cookie');
   return single ? [single] : [];
 };
 
+/** Merge cookies: new Set-Cookie values override existing ones by name. */
 const mergeCookies = (existing: string, newSetCookies: string[]): string => {
-  const cookieMap = new Map<string, string>();
-  // Parse existing
-  for (const part of existing.split('; ')) {
+  const map = new Map<string, string>();
+  for (const part of existing.split('; ').filter(Boolean)) {
     const [name] = part.split('=');
-    if (name) cookieMap.set(name.trim(), part.trim());
+    if (name) map.set(name.trim(), part.trim());
   }
-  // Parse new Set-Cookie values (take only the name=value part before ;)
-  for (const setCookie of newSetCookies) {
-    const nameValue = setCookie.split(';')[0]?.trim();
+  for (const sc of newSetCookies) {
+    const nameValue = sc.split(';')[0]?.trim();
     if (nameValue) {
       const [name] = nameValue.split('=');
-      if (name) cookieMap.set(name.trim(), nameValue);
+      if (name) map.set(name.trim(), nameValue);
     }
   }
-  return Array.from(cookieMap.values()).join('; ');
+  return Array.from(map.values()).join('; ');
 };
 
-/**
- * Login to MMRAD RIS and return accumulated session cookies.
- * The Liferay portal uses a multi-step login with redirects:
- * 1. GET the home page to establish a JSESSIONID
- * 2. POST login credentials
- * 3. Follow redirects to get the authenticated session
- */
-const loginToMMRAD = async (): Promise<{ cookies: string; debug: string[] }> => {
+/** Extract the Liferay login form action URL from the home page HTML. */
+const extractLoginActionUrl = (html: string): string | null => {
+  const match = html.match(/action="(https:\/\/ris\.mmrad\.cl[^"]*login%2Flogin[^"]*)"/);
+  return match?.[1] ?? null;
+};
+
+/** Extract the exam search form action URL from the authenticated dashboard HTML. */
+const extractSearchActionUrl = (html: string): string | null => {
+  const match = html.match(/action="(https:\/\/ris\.mmrad\.cl[^"]*examenportlet[^"]*)"/);
+  return match?.[1] ?? null;
+};
+
+const fetchWithHeaders = (url: string, options: RequestInit = {}) =>
+  fetch(url, {
+    ...options,
+    headers: { 'User-Agent': USER_AGENT, ...(options.headers as Record<string, string>) },
+  });
+
+interface LoginResult {
+  cookies: string;
+  searchActionUrl: string | null;
+  debug: string[];
+}
+
+const loginToMMRAD = async (): Promise<LoginResult> => {
   const { username, password } = getCredentials();
   const debug: string[] = [];
   let cookies = '';
 
-  // Step 1: Get initial page and session cookie
-  const step1 = await fetch(`${MMRAD_BASE_URL}/web/guest/home`, {
-    redirect: 'manual',
-    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-  });
+  // Step 1: GET home page → extract login form action + initial cookies
+  const step1 = await fetchWithHeaders(`${MMRAD_BASE_URL}/web/guest/home`, { redirect: 'manual' });
   cookies = mergeCookies(cookies, collectSetCookies(step1));
-  debug.push(`Step1: status=${step1.status}, cookies=${cookies.substring(0, 80)}...`);
+  const step1Html = await step1.text();
+  const loginActionUrl = extractLoginActionUrl(step1Html);
+  debug.push(`Step1: status=${step1.status}, hasLoginForm=${!!loginActionUrl}`);
 
-  // Step 2: POST login form
-  const loginBody = new URLSearchParams({
-    _58_login: username,
-    _58_password: password,
-    _58_redirect: '/web/guest/home',
-    _58_rememberMe: 'false',
-  });
+  if (!loginActionUrl) {
+    debug.push('FAILED: Could not find login form action URL');
+    return { cookies, searchActionUrl: null, debug };
+  }
 
-  const step2 = await fetch(`${MMRAD_BASE_URL}/c/portal/login`, {
+  // Step 2: POST login credentials
+  const step2 = await fetchWithHeaders(loginActionUrl, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      Cookie: cookies,
-    },
-    body: loginBody.toString(),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Cookie: cookies },
+    body: new URLSearchParams({
+      _58_login: username,
+      _58_password: password,
+      _58_redirect: '/web/guest/home',
+      _58_rememberMe: 'false',
+    }).toString(),
     redirect: 'manual',
   });
   cookies = mergeCookies(cookies, collectSetCookies(step2));
-  debug.push(`Step2: status=${step2.status}, location=${step2.headers.get('location') || 'none'}`);
+  const redirect1 = step2.headers.get('location') || '';
+  debug.push(`Step2: status=${step2.status}, redirect=${redirect1.substring(0, 60)}`);
 
-  // Step 3: Follow redirect if any (Liferay often redirects after login)
-  const redirectUrl = step2.headers.get('location');
-  if (redirectUrl) {
-    const fullUrl = redirectUrl.startsWith('http')
-      ? redirectUrl
-      : `${MMRAD_BASE_URL}${redirectUrl}`;
-    const step3 = await fetch(fullUrl, {
+  // Step 3: Follow first redirect
+  if (redirect1) {
+    const url3 = redirect1.startsWith('http') ? redirect1 : `${MMRAD_BASE_URL}${redirect1}`;
+    const step3 = await fetchWithHeaders(url3, {
       redirect: 'manual',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        Cookie: cookies,
-      },
+      headers: { Cookie: cookies },
     });
     cookies = mergeCookies(cookies, collectSetCookies(step3));
-    debug.push(`Step3: status=${step3.status}`);
+    const redirect2 = step3.headers.get('location') || '';
+    debug.push(`Step3: status=${step3.status}, redirect=${redirect2.substring(0, 60)}`);
 
-    // Sometimes there's a second redirect
-    const redirect2 = step3.headers.get('location');
+    // Step 4: Follow second redirect (typically /group/hhangaroa)
     if (redirect2) {
-      const fullUrl2 = redirect2.startsWith('http') ? redirect2 : `${MMRAD_BASE_URL}${redirect2}`;
-      const step4 = await fetch(fullUrl2, {
-        redirect: 'manual',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          Cookie: cookies,
-        },
-      });
+      const url4 = redirect2.startsWith('http') ? redirect2 : `${MMRAD_BASE_URL}${redirect2}`;
+      const step4 = await fetchWithHeaders(url4, { headers: { Cookie: cookies } });
       cookies = mergeCookies(cookies, collectSetCookies(step4));
-      debug.push(`Step4: status=${step4.status}`);
+      const dashboardHtml = await step4.text();
+      const searchActionUrl = extractSearchActionUrl(dashboardHtml);
+      const hasSearchInput = dashboardHtml.includes('idpaciente');
+      debug.push(
+        `Step4: status=${step4.status}, hasSearch=${hasSearchInput}, hasAction=${!!searchActionUrl}`
+      );
+      return { cookies, searchActionUrl, debug };
     }
   }
 
-  return { cookies, debug };
+  return { cookies, searchActionUrl: null, debug };
 };
 
-/**
- * Search for patient exams using the authenticated session.
- * The search form POSTs to the same page with the patient RUT.
- */
 const searchExams = async (
   rut: string,
-  cookies: string
-): Promise<{ exams: MMRADExam[]; htmlLength: number; debug: string }> => {
-  // The search uses a form POST with the patient ID field
-  const searchBody = new URLSearchParams({
-    idpaciente: rut,
-  });
-
-  const response = await fetch(`${MMRAD_BASE_URL}/web/guest/home`, {
+  cookies: string,
+  searchActionUrl: string
+): Promise<MMRADExam[]> => {
+  const response = await fetchWithHeaders(searchActionUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       Cookie: cookies,
-      Referer: `${MMRAD_BASE_URL}/web/guest/home`,
+      Referer: `${MMRAD_BASE_URL}/group/hhangaroa`,
     },
-    body: searchBody.toString(),
+    body: new URLSearchParams({ idpaciente: rut }).toString(),
   });
 
   const html = await response.text();
-  const exams = parseExamsFromHTML(html);
-
-  // Debug: check if we got a login page back (means auth failed)
-  const isLoginPage = html.includes('_58_password') || html.includes('Acceder');
-  const hasSearchInput = html.includes('idpaciente');
-  const debugInfo = `htmlLen=${html.length}, isLoginPage=${isLoginPage}, hasSearchInput=${hasSearchInput}, rows=${exams.length}`;
-
-  return { exams, htmlLength: html.length, debug: debugInfo };
+  return parseExamsFromHTML(html);
 };
 
 const parseExamsFromHTML = (html: string): MMRADExam[] => {
   const exams: MMRADExam[] = [];
-
-  // Find table rows - use a more greedy pattern since Liferay HTML can be deeply nested
   const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   let rowMatch;
 
@@ -185,33 +179,27 @@ const parseExamsFromHTML = (html: string): MMRADExam[] => {
     const rowHtml = rowMatch[1];
     if (!rowHtml || !rowHtml.includes('Acciones')) continue;
 
-    // Extract all TD contents
     const tdRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
     const tds: string[] = [];
     let tdMatch;
     while ((tdMatch = tdRegex.exec(rowHtml)) !== null) {
-      const text = tdMatch[1]
-        .replace(/<[^>]+>/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-      tds.push(text);
+      tds.push(
+        tdMatch[1]
+          .replace(/<[^>]+>/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+      );
     }
 
     if (tds.length < 10) continue;
 
-    // Extract PDF link
     const pdfMatch = rowHtml.match(/href="([^"]*informePDF[^"]*)"/i);
-    let pdfUrl: string | null = pdfMatch ? pdfMatch[1] : null;
-    if (pdfUrl && pdfUrl.startsWith('/')) {
-      pdfUrl = MMRAD_BASE_URL + pdfUrl;
-    }
+    let pdfUrl: string | null = pdfMatch?.[1] ?? null;
+    if (pdfUrl?.startsWith('/')) pdfUrl = MMRAD_BASE_URL + pdfUrl;
 
-    // Extract DICOM viewer link
     const dicomMatch = rowHtml.match(/window\.open\('([^']+)'/);
-    let dicomUrl: string | null = dicomMatch ? dicomMatch[1] : null;
-    if (dicomUrl && dicomUrl.startsWith('/')) {
-      dicomUrl = MMRAD_BASE_URL + dicomUrl;
-    }
+    let dicomUrl: string | null = dicomMatch?.[1] ?? null;
+    if (dicomUrl?.startsWith('/')) dicomUrl = MMRAD_BASE_URL + dicomUrl;
 
     exams.push({
       nombre_examen: tds[10] || '',
@@ -229,10 +217,9 @@ const parseExamsFromHTML = (html: string): MMRADExam[] => {
 
 export const handler = async (event: NetlifyEventLike) => {
   const requestOrigin = getRequestOrigin(event);
-  const corsHeaders = buildCorsHeaders(requestOrigin);
 
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: corsHeaders, body: '' };
+    return buildJsonResponse(200, {}, { requestOrigin });
   }
 
   if (event.httpMethod !== 'GET') {
@@ -247,15 +234,28 @@ export const handler = async (event: NetlifyEventLike) => {
   const cleanRut = rut.replace(/\./g, '').trim();
 
   try {
-    const { cookies, debug: loginDebug } = await loginToMMRAD();
-    const { exams, debug: searchDebug } = await searchExams(cleanRut, cookies);
+    const { cookies, searchActionUrl, debug: loginDebug } = await loginToMMRAD();
+
+    if (!searchActionUrl) {
+      return buildJsonResponse(
+        200,
+        {
+          rut: cleanRut,
+          examenes: [],
+          _debug: { login: loginDebug, error: 'Login failed: no search form found' },
+        },
+        { requestOrigin }
+      );
+    }
+
+    const examenes = await searchExams(cleanRut, cookies, searchActionUrl);
 
     return buildJsonResponse(
       200,
       {
         rut: cleanRut,
-        examenes: exams,
-        _debug: { login: loginDebug, search: searchDebug },
+        examenes,
+        _debug: { login: loginDebug, searchUrl: searchActionUrl.substring(0, 80) },
       },
       { requestOrigin }
     );

@@ -16,11 +16,15 @@ import {
   executeCreateClinicalDocumentDraft,
   executeDeleteClinicalDocument,
 } from '@/application/clinical-documents/clinicalDocumentUseCases';
-import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 import {
   recordOperationalOutcome,
   recordOperationalTelemetry,
 } from '@/services/observability/operationalTelemetryService';
+import {
+  resolveClinicalDocumentExceptionMessage,
+  resolveClinicalDocumentOutcomeError,
+  shouldClearSelectedClinicalDocument,
+} from './clinicalDocumentWorkspaceActionSupport';
 
 interface NotificationPort {
   success: (title: string, message?: string) => void;
@@ -49,22 +53,6 @@ interface UseClinicalDocumentWorkspaceDocumentActionsParams {
   setDraft: React.Dispatch<React.SetStateAction<ClinicalDocumentRecord | null>>;
   lastPersistedSnapshotRef: React.MutableRefObject<string>;
 }
-
-const resolveClinicalDocumentOutcomeError = <T>(
-  outcome: ApplicationOutcome<T>,
-  fallback: string
-): string | null => {
-  if (outcome.status === 'success') {
-    return null;
-  }
-
-  return (
-    outcome.userSafeMessage ||
-    outcome.issues[0]?.userSafeMessage ||
-    outcome.issues[0]?.message ||
-    fallback
-  );
-};
 
 export const useClinicalDocumentWorkspaceDocumentActions = ({
   patient,
@@ -131,17 +119,18 @@ export const useClinicalDocumentWorkspaceDocumentActions = ({
       setDraft(result.data);
       notify.success(`${result.data.title} creada`, 'Se generó el borrador inicial del documento.');
     } catch (error) {
+      const errorMessage = resolveClinicalDocumentExceptionMessage(
+        error,
+        'No se pudo crear el documento clínico.'
+      );
       recordOperationalTelemetry({
         category: 'clinical_document',
         status: 'failed',
         operation: 'create_clinical_document',
         date: episode.sourceDailyRecordDate,
-        issues: [error instanceof Error ? error.message : 'No se pudo crear el documento clínico.'],
+        issues: [errorMessage],
       });
-      notify.error(
-        'No se pudo crear el documento',
-        error instanceof Error ? error.message : 'Ocurrió un error al crear el borrador clínico.'
-      );
+      notify.error('No se pudo crear el documento', errorMessage);
     }
   }, [
     canEdit,
@@ -203,25 +192,26 @@ export const useClinicalDocumentWorkspaceDocumentActions = ({
           notify.error('No se pudo eliminar', outcomeError);
           return;
         }
-        if (selectedDocumentId === document.id) {
+        if (shouldClearSelectedClinicalDocument(selectedDocumentId, document.id)) {
           setSelectedDocumentId(null);
           setDraft(null);
           lastPersistedSnapshotRef.current = '';
         }
         notify.success('Documento eliminado', `${document.title} fue eliminado correctamente.`);
       } catch (error) {
+        const errorMessage = resolveClinicalDocumentExceptionMessage(
+          error,
+          'No se pudo eliminar el documento.'
+        );
         recordOperationalTelemetry({
           category: 'clinical_document',
           status: 'failed',
           operation: 'delete_clinical_document',
           date: document.sourceDailyRecordDate,
-          issues: [error instanceof Error ? error.message : 'No se pudo eliminar el documento.'],
+          issues: [errorMessage],
           context: { documentId: document.id },
         });
-        notify.error(
-          'No se pudo eliminar',
-          error instanceof Error ? error.message : 'Intenta nuevamente.'
-        );
+        notify.error('No se pudo eliminar', errorMessage);
       }
     },
     [

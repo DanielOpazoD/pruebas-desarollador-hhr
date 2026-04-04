@@ -13,6 +13,10 @@ import {
   isSpecialistCensusAccessProfile,
   type CensusAccessProfile,
 } from '@/shared/access/censusAccessProfile';
+import {
+  canAccessSpecialAppModuleRoute,
+  resolvePassiveBackupEditableModule,
+} from '@/shared/access/operationalAccessPolicySupport';
 import { canEditSpecialistTodayBoundRecord } from '@/shared/access/specialistAccessPolicy';
 
 type SupportedRole = UserRole | string | undefined;
@@ -40,15 +44,8 @@ export const canVerifyPassiveBackupForRole = (
   role: SupportedRole,
   moduleType: ModuleType | string
 ): boolean => {
-  if (moduleType === 'CENSUS') {
-    return canEditAppModule(role, 'CENSUS');
-  }
-
-  if (moduleType === 'NURSING_HANDOFF') {
-    return canEditAppModule(role, 'NURSING_HANDOFF');
-  }
-
-  return false;
+  const editableModule = resolvePassiveBackupEditableModule(moduleType);
+  return editableModule ? canEditAppModule(role, editableModule) : false;
 };
 
 export const canViewOrManageBackupFiles = (role: SupportedRole): boolean =>
@@ -68,22 +65,15 @@ export const canAccessAppModuleRoute = ({
     return false;
   }
 
-  switch (module) {
-    case 'AUDIT':
-      return canAccessAuditViewForRole(role);
-    case 'BACKUP_FILES':
-      return canViewOrManageBackupFiles(role);
-    case 'DATA_MAINTENANCE':
-    case 'DIAGNOSTICS':
-    case 'PATIENT_MASTER_INDEX':
-    case 'REMINDERS':
-    case 'ERRORS':
-      return canUseAdminMaintenanceActions(role);
-    case 'ROLE_MANAGEMENT':
-      return canUseAdminMaintenanceActions(role) || role === undefined;
-    default:
-      return true;
-  }
+  const specialAccess = canAccessSpecialAppModuleRoute({
+    module,
+    isAuditAllowed: canAccessAuditViewForRole(role),
+    canManageBackupFiles: canViewOrManageBackupFiles(role),
+    canUseAdminMaintenance: canUseAdminMaintenanceActions(role),
+    allowRoleManagementBootstrap: role === undefined,
+  });
+
+  return specialAccess ?? true;
 };
 
 export const canManageGlobalCensusEmailRecipients = ({
