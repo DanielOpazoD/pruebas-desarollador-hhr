@@ -34,6 +34,7 @@ import {
   getCachedRole,
   saveRoleToCache,
 } from '@/services/auth/authRoleCache';
+import { hasPersistedFirebaseAuthHint } from '@/services/auth/authStorageHints';
 import { ROLE_CACHE_PREFIX, normalizeEmail } from '@/services/auth/authShared';
 
 describe('authRuntimeSupport', () => {
@@ -182,5 +183,16 @@ describe('authRuntimeSupport', () => {
     await expect(getCachedRole('user@hospital.cl')).resolves.toBeNull();
 
     expect(mockLoggerWarn).toHaveBeenCalledTimes(2);
+  });
+
+  it('detects persisted Firebase auth hints in localStorage and sessionStorage', () => {
+    expect(hasPersistedFirebaseAuthHint()).toBe(false);
+
+    window.localStorage.setItem('firebase:authUser:test:[DEFAULT]', '{"uid":"abc"}');
+    expect(hasPersistedFirebaseAuthHint()).toBe(true);
+
+    window.localStorage.removeItem('firebase:authUser:test:[DEFAULT]');
+    window.sessionStorage.setItem('firebase:authUser:test:[DEFAULT]', '{"uid":"abc"}');
+    expect(hasPersistedFirebaseAuthHint()).toBe(true);
   });
 });

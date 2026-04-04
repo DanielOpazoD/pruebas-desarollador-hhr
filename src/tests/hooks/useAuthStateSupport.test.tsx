@@ -237,4 +237,66 @@ describe('useResolvedAuthBootstrap', () => {
       expect.objectContaining({ allowSuccess: true })
     );
   });
+
+  it('ignores a transient unauthenticated auth event while a persisted Firebase session still exists', async () => {
+    window.localStorage.setItem('firebase:authUser:test:[DEFAULT]', '{"uid":"abc"}');
+
+    const onAuthSessionStateChange = vi.fn(
+      (callback: (sessionState: AuthSessionState) => void | Promise<void>) => {
+        setTimeout(() => {
+          void callback({
+            status: 'unauthenticated',
+            user: null,
+          });
+        }, 10);
+        setTimeout(() => {
+          void callback({
+            status: 'authorized',
+            user: {
+              uid: 'persisted-1',
+              email: 'persisted@hospital.cl',
+              displayName: 'Persisted Session',
+              role: 'admin',
+            },
+          });
+        }, 100);
+        return () => {};
+      }
+    );
+
+    const { result } = renderHook(() => {
+      const [sessionState, setSessionState] = useState<AuthSessionState>({
+        status: 'authenticating',
+        user: null,
+      });
+      const [authLoading, setAuthLoading] = useState(true);
+
+      useResolvedAuthBootstrap({
+        e2eBootstrapUser: null,
+        resolveRedirectAuthSessionOutcome: vi
+          .fn()
+          .mockResolvedValue({ status: 'success', data: null, issues: [] }),
+        resolveCurrentAuthSessionOutcome: vi
+          .fn()
+          .mockResolvedValue({ status: 'success', data: null, issues: [] }),
+        onAuthSessionStateChange,
+        setSessionState,
+        setAuthLoading,
+      });
+
+      return { sessionState, authLoading };
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(150);
+    });
+
+    expect(result.current.authLoading).toBe(false);
+    expect(result.current.sessionState).toEqual(
+      expect.objectContaining({
+        status: 'authorized',
+        user: expect.objectContaining({ uid: 'persisted-1' }),
+      })
+    );
+  });
 });

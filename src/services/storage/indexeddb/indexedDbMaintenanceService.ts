@@ -2,6 +2,13 @@ import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRunti
 import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 
 const canUseWindow = (): boolean => typeof window !== 'undefined';
+const APP_STORAGE_PREFIXES = ['hhr_', 'hanga_roa_', 'indexeddb_'];
+const APP_STORAGE_KEYS = new Set(['offlineQueue']);
+
+interface ClearBrowserStorageOptions {
+  preserveFirebaseAuth?: boolean;
+  clearAll?: boolean;
+}
 
 const clearIndexedDatabases = async (): Promise<void> => {
   if (!canUseWindow()) return;
@@ -23,11 +30,42 @@ const clearIndexedDatabases = async (): Promise<void> => {
   }
 };
 
-const clearBrowserStorage = (): void => {
+const clearStorageBucket = (storage: Storage, options: ClearBrowserStorageOptions = {}): void => {
+  if (options.clearAll) {
+    storage.clear();
+    return;
+  }
+
+  const keysToRemove: string[] = [];
+
+  for (let index = 0; index < storage.length; index += 1) {
+    const key = storage.key(index);
+    if (!key) {
+      continue;
+    }
+
+    if (
+      options.preserveFirebaseAuth &&
+      (key.startsWith('firebase:authUser:') || key.startsWith('firebase:redirectUser:'))
+    ) {
+      continue;
+    }
+
+    if (APP_STORAGE_KEYS.has(key) || APP_STORAGE_PREFIXES.some(prefix => key.startsWith(prefix))) {
+      keysToRemove.push(key);
+    }
+  }
+
+  for (const key of keysToRemove) {
+    storage.removeItem(key);
+  }
+};
+
+const clearBrowserStorage = (options: ClearBrowserStorageOptions = {}): void => {
   if (!canUseWindow()) return;
 
-  localStorage.clear();
-  sessionStorage.clear();
+  clearStorageBucket(localStorage, options);
+  clearStorageBucket(sessionStorage, options);
 };
 
 const unregisterServiceWorkers = async (): Promise<void> => {
@@ -48,17 +86,20 @@ const unregisterServiceWorkers = async (): Promise<void> => {
 
 export const resetLocalDatabase = async (): Promise<void> => {
   await clearIndexedDatabases();
-  clearBrowserStorage();
+  clearBrowserStorage({ preserveFirebaseAuth: true });
   defaultBrowserWindowRuntime.reload();
 };
 
 export const performClientHardReset = async (): Promise<void> => {
   await unregisterServiceWorkers();
   await clearIndexedDatabases();
-  clearBrowserStorage();
+  clearBrowserStorage({ preserveFirebaseAuth: true });
   defaultBrowserWindowRuntime.reload();
 };
 
 export const resetLocalAppStorage = async (): Promise<void> => {
-  await performClientHardReset();
+  await unregisterServiceWorkers();
+  await clearIndexedDatabases();
+  clearBrowserStorage({ clearAll: true });
+  defaultBrowserWindowRuntime.reload();
 };

@@ -26,6 +26,7 @@ import {
   recordOperationalTelemetry,
 } from '@/services/observability/operationalTelemetryService';
 import { resolveAuthBootstrapBudget } from '@/services/auth/authBootstrapBudgets';
+import { hasPersistedFirebaseAuthHint } from '@/services/auth/authStorageHints';
 
 export const getE2EBootstrapUser = (): AuthUser | null => {
   if (typeof window === 'undefined' || !window.__HHR_E2E_OVERRIDE__) {
@@ -165,6 +166,8 @@ export const subscribeToResolvedAuthState = async ({
   setSessionState: (sessionState: AuthSessionState) => void;
   setAuthLoading: (value: boolean) => void;
 }): Promise<() => void> => {
+  let isBootstrapLoading = true;
+
   const applyResolvedBootstrapSession = (sessionState: AuthSessionState): void => {
     if (isAuthBootstrapPending()) {
       restoreAuthBootstrapReturnTo();
@@ -182,6 +185,7 @@ export const subscribeToResolvedAuthState = async ({
     }
     setSessionState(sessionState);
     setAuthLoading(false);
+    isBootstrapLoading = false;
     clearAuthBootstrapPending();
   };
 
@@ -250,11 +254,24 @@ export const subscribeToResolvedAuthState = async ({
       }
       setSessionState(sessionState);
     } else {
+      if (
+        isBootstrapLoading &&
+        sessionState.status === 'unauthenticated' &&
+        !hasRecentManualLogout() &&
+        hasPersistedFirebaseAuthHint()
+      ) {
+        authStateLogger.warn(
+          'Ignoring transient unauthenticated auth event while persistence rehydrates'
+        );
+        return;
+      }
+
       if (hasRecentManualLogout()) {
         clearRecentManualLogout();
         clearAuthBootstrapPending();
         setSessionState(createUnauthenticatedAuthSessionState());
         setAuthLoading(false);
+        isBootstrapLoading = false;
         return;
       }
       if (isAuthBootstrapPending() && sessionState.status === 'unauthenticated') {
@@ -265,6 +282,7 @@ export const subscribeToResolvedAuthState = async ({
 
     clearAuthBootstrapPending();
     setAuthLoading(false);
+    isBootstrapLoading = false;
   });
 };
 
@@ -327,6 +345,7 @@ export const useResolvedAuthBootstrap = ({
         issues: ['La inicializacion de autenticacion excedio el tiempo esperado.'],
       });
       clearAuthBootstrapPending();
+      setSessionState(createUnauthenticatedAuthSessionState());
       setResolvedAuthLoading(false);
     }, timeoutMs);
 

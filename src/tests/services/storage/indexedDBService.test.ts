@@ -293,12 +293,16 @@ describe('indexedDBService', () => {
         configurable: true,
         value: { getRegistrations },
       });
+      localStorage.setItem('firebase:authUser:test:[DEFAULT]', '{"uid":"abc"}');
+      localStorage.setItem('hhr_bootstrap_storage_repair_v1', '1');
 
       await idbService.performClientHardReset();
 
       expect(getRegistrations).toHaveBeenCalled();
       expect(unregister).toHaveBeenCalled();
       expect(window.indexedDB.deleteDatabase).toHaveBeenCalledWith('HangaRoaDB');
+      expect(localStorage.getItem('firebase:authUser:test:[DEFAULT]')).toBe('{"uid":"abc"}');
+      expect(localStorage.getItem('hhr_bootstrap_storage_repair_v1')).toBeNull();
       expect(window.location.reload).toHaveBeenCalled();
 
       Object.defineProperty(window, 'location', { configurable: true, value: originalLocation });
@@ -328,12 +332,14 @@ describe('indexedDBService', () => {
         configurable: true,
         value: { getRegistrations },
       });
+      localStorage.setItem('firebase:authUser:test:[DEFAULT]', '{"uid":"abc"}');
 
       await idbService.resetLocalAppStorage();
 
       expect(getRegistrations).toHaveBeenCalled();
       expect(unregister).toHaveBeenCalled();
       expect(window.indexedDB.deleteDatabase).toHaveBeenCalledWith('HangaRoaDB');
+      expect(localStorage.getItem('firebase:authUser:test:[DEFAULT]')).toBeNull();
       expect(window.location.reload).toHaveBeenCalled();
 
       Object.defineProperty(window, 'location', { configurable: true, value: originalLocation });
