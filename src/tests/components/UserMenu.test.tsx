@@ -31,9 +31,9 @@ describe('UserMenu', () => {
 
     fireEvent.click(screen.getByRole('button'));
 
-    expect(screen.getByText('Usuario')).toBeInTheDocument();
     expect(screen.getByText('doctor@hospital.cl')).toBeInTheDocument();
-    expect(screen.getByText('Conectado')).toBeInTheDocument();
+    expect(screen.getByText('Invitado')).toBeInTheDocument();
+    expect(screen.getByText('Online')).toBeInTheDocument();
   });
 
   it('displays role correctly', () => {
@@ -41,7 +41,7 @@ describe('UserMenu', () => {
 
     fireEvent.click(screen.getByRole('button'));
 
-    expect(screen.getByText(/Rol:/)).toBeInTheDocument();
+    expect(screen.getByText('Administrador')).toBeInTheDocument();
   });
 
   it('calls onLogout when logout button is clicked', () => {
@@ -60,7 +60,7 @@ describe('UserMenu', () => {
     fireEvent.click(screen.getByText('Cerrar sesión'));
 
     // Dropdown should be closed
-    expect(screen.queryByText('Usuario')).not.toBeInTheDocument();
+    expect(screen.queryByText('doctor@hospital.cl')).not.toBeInTheDocument();
   });
 
   it('has correct title attribute with email', () => {
@@ -82,16 +82,16 @@ describe('UserMenu', () => {
 
     fireEvent.click(screen.getByRole('button'));
 
-    expect(screen.getByText('Sin conexión')).toBeInTheDocument();
+    expect(screen.getByText('Offline')).toBeInTheDocument();
   });
 
   it('closes dropdown when clicking outside', () => {
     render(<UserMenu {...defaultProps} />);
 
     fireEvent.click(screen.getByRole('button'));
-    expect(screen.getByText('Usuario')).toBeInTheDocument();
+    expect(screen.getByText('doctor@hospital.cl')).toBeInTheDocument();
 
     fireEvent.mouseDown(document.body);
-    expect(screen.queryByText('Usuario')).not.toBeInTheDocument();
+    expect(screen.queryByText('doctor@hospital.cl')).not.toBeInTheDocument();
   });
 });

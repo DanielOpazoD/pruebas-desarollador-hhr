@@ -46,6 +46,14 @@ vi.mock('@/features/clinical-documents/services/clinicalDocumentPrintSupport', (
   waitForClinicalDocumentSheetAssets: waitForAssetsMock,
 }));
 
+vi.mock('@/features/clinical-documents/services/clinicalDocumentLoggers', () => ({
+  clinicalDocumentPdfRenderLogger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
 describe('clinicalDocumentPdfRenderService', () => {
   beforeEach(() => {
     vi.clearAllMocks();

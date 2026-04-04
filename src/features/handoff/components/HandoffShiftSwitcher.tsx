@@ -1,4 +1,5 @@
 import React from 'react';
+import { Sun, Moon } from 'lucide-react';
 import clsx from 'clsx';
 
 interface HandoffShiftSwitcherProps {
@@ -14,25 +15,27 @@ export const HandoffShiftSwitcher: React.FC<HandoffShiftSwitcherProps> = ({
     <button
       onClick={() => setSelectedShift('day')}
       className={clsx(
-        'px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-200 cursor-pointer',
+        'flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-200 cursor-pointer',
         selectedShift === 'day'
           ? 'bg-white text-teal-700 shadow-sm ring-1 ring-black/[0.04]'
           : 'text-slate-500 hover:text-slate-700'
       )}
       aria-pressed={selectedShift === 'day'}
     >
+      <Sun size={13} />
       Turno Largo
     </button>
     <button
       onClick={() => setSelectedShift('night')}
       className={clsx(
-        'px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-200 cursor-pointer',
+        'flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-200 cursor-pointer',
         selectedShift === 'night'
           ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-black/[0.04]'
           : 'text-slate-500 hover:text-slate-700'
       )}
       aria-pressed={selectedShift === 'night'}
     >
+      <Moon size={13} />
       Turno Noche
     </button>
   </div>

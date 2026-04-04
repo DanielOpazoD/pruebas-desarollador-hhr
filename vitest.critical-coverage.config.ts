@@ -4,6 +4,7 @@ import path from 'node:path';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
+import { minsalSharedInteropPlugin } from './scripts/config/minsalSharedInteropPlugin';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 const criticalCoverageConfigPath = path.join(
@@ -27,7 +28,7 @@ const criticalCoverageInclude = [
 ];
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [minsalSharedInteropPlugin(dirname), react()],
   resolve: {
     alias: {
       '@/services/exporters/excelJsModuleLoader': path.resolve(

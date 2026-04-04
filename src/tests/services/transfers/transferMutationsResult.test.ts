@@ -19,6 +19,13 @@ vi.mock('firebase/firestore', () => ({
 
 vi.mock('@/firebaseConfig', () => ({ db: {} }));
 
+vi.mock('@/services/transfers/transferLoggers', () => ({
+  transferMutationsLogger: {
+    info: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
 describe('transfer mutation results', () => {
   beforeEach(() => {
     vi.clearAllMocks();

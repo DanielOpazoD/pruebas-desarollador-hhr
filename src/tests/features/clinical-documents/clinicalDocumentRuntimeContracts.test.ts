@@ -3,8 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { createClinicalDocumentDraft } from '@/features/clinical-documents/domain/factories';
 import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domain/entities';
 import {
+  formatClinicalDocumentContractIssues,
   parseClinicalDocumentRecord,
   parseClinicalDocumentTemplate,
+  safeParseClinicalDocumentRecord,
+  safeParseClinicalDocumentTemplate,
 } from '@/features/clinical-documents/contracts/clinicalDocumentRuntimeContracts';
 import { CLINICAL_DOCUMENT_TEMPLATES } from '@/features/clinical-documents/domain/rules';
 
@@ -58,5 +61,28 @@ describe('clinicalDocumentRuntimeContracts', () => {
     expect(parseClinicalDocumentTemplate(CLINICAL_DOCUMENT_TEMPLATES.epicrisis).id).toBe(
       'epicrisis'
     );
+  });
+
+  it('safe parses invalid runtime records and templates', () => {
+    const invalidRecord = safeParseClinicalDocumentRecord({
+      ...buildRecord(),
+      patientName: 123,
+    });
+    const invalidTemplate = safeParseClinicalDocumentTemplate({
+      ...CLINICAL_DOCUMENT_TEMPLATES.epicrisis,
+      status: 'broken',
+    });
+
+    expect(invalidRecord.success).toBe(false);
+    expect(invalidTemplate.success).toBe(false);
+  });
+
+  it('formats contract issues using root and nested paths', () => {
+    expect(
+      formatClinicalDocumentContractIssues([
+        { path: [], message: 'General error' },
+        { path: ['sections', 0, 'title'], message: 'Required' },
+      ])
+    ).toEqual(['root: General error', 'sections.0.title: Required']);
   });
 });

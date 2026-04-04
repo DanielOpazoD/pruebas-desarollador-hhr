@@ -56,6 +56,13 @@ vi.mock('@/firebaseConfig', () => ({
   db: {},
 }));
 
+vi.mock('@/services/transfers/transferLoggers', () => ({
+  transferMutationsLogger: {
+    info: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
 describe('Transfer Service', () => {
   type TransferInput = Parameters<typeof createTransferRequest>[0];
   const flushAsyncSubscription = async () => {

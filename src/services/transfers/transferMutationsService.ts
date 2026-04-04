@@ -1,9 +1,5 @@
-import { deleteDoc, doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
-import type { StatusChange, TransferRequest, TransferStatus } from '@/types/transfers';
-import {
-  getTransferHistoryCollection,
-  getTransfersCollection,
-} from '@/services/transfers/transferFirestoreCollections';
+import { deleteDoc, setDoc, Timestamp } from 'firebase/firestore';
+import type { TransferRequest, TransferStatus } from '@/types/transfers';
 import {
   buildTransferOperationError,
   resolveTransferOperationErrorKind,
@@ -12,6 +8,18 @@ import {
 import { transferMutationsLogger } from '@/services/transfers/transferLoggers';
 import { defaultFirestoreServiceRuntime } from '@/services/storage/firestore/firestoreServiceRuntime';
 import type { FirestoreServiceRuntimePort } from '@/services/storage/firestore/ports/firestoreServiceRuntimePort';
+import {
+  buildCompletedTransferRecord,
+  buildStatusChange,
+  buildTransferHistoryDeletionPatch,
+  buildTransferRequestRecord,
+  createTransferDocumentRef,
+  createTransferHistoryDocumentRef,
+  generateTransferId,
+  readTransferRequestOrThrow,
+  type CreateTransferRequestData,
+  writeTransferMergePatch,
+} from '@/services/transfers/transferMutationSupport';
 
 export type TransferMutationResult<T = null> =
   | { status: 'success'; data: T }
@@ -21,9 +29,6 @@ export type TransferMutationResult<T = null> =
       data: null;
       userSafeMessage: string;
     };
-
-const generateTransferId = (): string =>
-  `TR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 const buildTransferFailureResult = <T = null>(
   error: unknown,
@@ -44,30 +49,14 @@ export const createTransferMutationsService = (
   runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
 ) => {
   const createTransferRequestWithResult = async (
-    data: Omit<TransferRequest, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory'>
+    data: CreateTransferRequestData
   ): Promise<TransferMutationResult<TransferRequest>> => {
     await runtime.ready;
     const id = generateTransferId();
-    const now = new Date().toISOString();
-
-    const transfer: TransferRequest = {
-      ...data,
-      id,
-      status: 'REQUESTED',
-      statusHistory: [
-        {
-          from: null,
-          to: 'REQUESTED',
-          timestamp: now,
-          userId: data.createdBy,
-        },
-      ],
-      createdAt: now,
-      updatedAt: now,
-    };
+    const transfer = buildTransferRequestRecord(data, id);
 
     try {
-      const docRef = doc(getTransfersCollection(runtime), id);
+      const docRef = createTransferDocumentRef(runtime, id);
       await setDoc(docRef, {
         ...transfer,
         createdAt: Timestamp.now(),
@@ -82,7 +71,7 @@ export const createTransferMutationsService = (
   };
 
   const createTransferRequest = async (
-    data: Omit<TransferRequest, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory'>
+    data: CreateTransferRequestData
   ): Promise<TransferRequest> => {
     const result = await createTransferRequestWithResult(data);
     if (result.status !== 'success') throw result.error;
@@ -95,15 +84,8 @@ export const createTransferMutationsService = (
   ): Promise<TransferMutationResult> => {
     try {
       await runtime.ready;
-      const docRef = doc(getTransfersCollection(runtime), id);
-      await setDoc(
-        docRef,
-        {
-          ...data,
-          updatedAt: Timestamp.now(),
-        },
-        { merge: true }
-      );
+      const docRef = createTransferDocumentRef(runtime, id);
+      await writeTransferMergePatch(docRef, data);
       transferMutationsLogger.info('Updated transfer request', {
         transferId: id,
         fields: Object.keys(data),
@@ -129,31 +111,15 @@ export const createTransferMutationsService = (
     userId: string,
     notes?: string
   ): Promise<TransferMutationResult> => {
-    await runtime.ready;
-    const docRef = doc(getTransfersCollection(runtime), id);
     try {
-      const docSnap = await getDoc(docRef);
-      if (!docSnap.exists()) {
-        throw new Error(`Transfer request ${id} not found`);
-      }
-      const current = docSnap.data() as TransferRequest;
-      const statusChange: StatusChange = {
-        from: current.status,
-        to: newStatus,
-        timestamp: new Date().toISOString(),
-        userId,
-        notes,
-      };
-
-      await setDoc(
-        docRef,
-        {
-          status: newStatus,
-          statusHistory: [...(current.statusHistory || []), statusChange],
-          updatedAt: Timestamp.now(),
-        },
-        { merge: true }
-      );
+      const { docRef, transfer } = await readTransferRequestOrThrow(runtime, id);
+      await writeTransferMergePatch(docRef, {
+        status: newStatus,
+        statusHistory: [
+          ...(transfer.statusHistory || []),
+          buildStatusChange(transfer.status, newStatus, userId, notes),
+        ],
+      });
       transferMutationsLogger.info('Changed transfer status', { transferId: id, to: newStatus });
       return { status: 'success', data: null };
     } catch (error) {
@@ -176,30 +142,10 @@ export const createTransferMutationsService = (
     id: string,
     userId: string
   ): Promise<TransferMutationResult> => {
-    await runtime.ready;
-    const docRef = doc(getTransfersCollection(runtime), id);
     try {
-      const docSnap = await getDoc(docRef);
-      if (!docSnap.exists()) {
-        throw new Error(`Transfer request ${id} not found`);
-      }
-
-      const transfer = docSnap.data() as TransferRequest;
-      const statusChange: StatusChange = {
-        from: transfer.status,
-        to: 'TRANSFERRED',
-        timestamp: new Date().toISOString(),
-        userId,
-      };
-
-      const completedTransfer = {
-        ...transfer,
-        status: 'TRANSFERRED' as TransferStatus,
-        statusHistory: [...(transfer.statusHistory || []), statusChange],
-        updatedAt: Timestamp.now(),
-      };
-
-      const historyRef = doc(getTransferHistoryCollection(runtime), id);
+      const { docRef, transfer } = await readTransferRequestOrThrow(runtime, id);
+      const completedTransfer = buildCompletedTransferRecord(transfer, userId);
+      const historyRef = createTransferHistoryDocumentRef(runtime, id);
       await setDoc(historyRef, completedTransfer);
       await deleteDoc(docRef);
       transferMutationsLogger.info('Completed transfer request', { transferId: id });
@@ -218,7 +164,7 @@ export const createTransferMutationsService = (
   const deleteTransferRequestWithResult = async (id: string): Promise<TransferMutationResult> => {
     try {
       await runtime.ready;
-      const docRef = doc(getTransfersCollection(runtime), id);
+      const docRef = createTransferDocumentRef(runtime, id);
       await deleteDoc(docRef);
       transferMutationsLogger.info('Deleted transfer request', { transferId: id });
       return { status: 'success', data: null };
@@ -237,32 +183,11 @@ export const createTransferMutationsService = (
     id: string,
     historyIndex: number
   ): Promise<TransferMutationResult> => {
-    await runtime.ready;
-    const docRef = doc(getTransfersCollection(runtime), id);
     try {
-      const docSnap = await getDoc(docRef);
-      if (!docSnap.exists()) {
-        throw new Error(`Transfer request ${id} not found`);
-      }
-
-      const current = docSnap.data() as TransferRequest;
-      const history = current.statusHistory || [];
-
-      if (historyIndex === 0 || historyIndex >= history.length) {
-        throw new Error('Cannot delete this history entry');
-      }
-
-      const newHistory = history.filter((_, idx) => idx !== historyIndex);
-      const newStatus = newHistory[newHistory.length - 1]?.to || 'REQUESTED';
-
-      await setDoc(
+      const { docRef, transfer } = await readTransferRequestOrThrow(runtime, id);
+      await writeTransferMergePatch(
         docRef,
-        {
-          status: newStatus,
-          statusHistory: newHistory,
-          updatedAt: Timestamp.now(),
-        },
-        { merge: true }
+        buildTransferHistoryDeletionPatch(transfer, historyIndex)
       );
       transferMutationsLogger.info('Deleted transfer history entry', {
         transferId: id,
@@ -301,18 +226,22 @@ export const createTransferMutationsService = (
 
 const defaultTransferMutationsService = createTransferMutationsService();
 
+const resolveTransferMutationsService = (
+  runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
+) =>
+  runtime === defaultFirestoreServiceRuntime
+    ? defaultTransferMutationsService
+    : createTransferMutationsService(runtime);
+
 export const createTransferRequestMutation = async (
   data: Omit<TransferRequest, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory'>
 ): Promise<TransferRequest> => defaultTransferMutationsService.createTransferRequest(data);
 
 export const createTransferRequestMutationWithResult = async (
-  data: Omit<TransferRequest, 'id' | 'createdAt' | 'updatedAt' | 'statusHistory'>,
+  data: CreateTransferRequestData,
   runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
 ): Promise<TransferMutationResult<TransferRequest>> =>
-  (runtime === defaultFirestoreServiceRuntime
-    ? defaultTransferMutationsService
-    : createTransferMutationsService(runtime)
-  ).createTransferRequestWithResult(data);
+  resolveTransferMutationsService(runtime).createTransferRequestWithResult(data);
 
 export const updateTransferRequestMutation = async (
   id: string,
@@ -324,10 +253,7 @@ export const updateTransferRequestMutationWithResult = async (
   data: Partial<TransferRequest>,
   runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
 ): Promise<TransferMutationResult> =>
-  (runtime === defaultFirestoreServiceRuntime
-    ? defaultTransferMutationsService
-    : createTransferMutationsService(runtime)
-  ).updateTransferRequestWithResult(id, data);
+  resolveTransferMutationsService(runtime).updateTransferRequestWithResult(id, data);
 
 export const changeTransferStatusMutation = async (
   id: string,
@@ -344,10 +270,12 @@ export const changeTransferStatusMutationWithResult = async (
   notes?: string,
   runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
 ): Promise<TransferMutationResult> =>
-  (runtime === defaultFirestoreServiceRuntime
-    ? defaultTransferMutationsService
-    : createTransferMutationsService(runtime)
-  ).changeTransferStatusWithResult(id, newStatus, userId, notes);
+  resolveTransferMutationsService(runtime).changeTransferStatusWithResult(
+    id,
+    newStatus,
+    userId,
+    notes
+  );
 
 export const completeTransferMutation = async (id: string, userId: string): Promise<void> =>
   defaultTransferMutationsService.completeTransfer(id, userId);
@@ -357,10 +285,7 @@ export const completeTransferMutationWithResult = async (
   userId: string,
   runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
 ): Promise<TransferMutationResult> =>
-  (runtime === defaultFirestoreServiceRuntime
-    ? defaultTransferMutationsService
-    : createTransferMutationsService(runtime)
-  ).completeTransferWithResult(id, userId);
+  resolveTransferMutationsService(runtime).completeTransferWithResult(id, userId);
 
 export const deleteTransferRequestMutation = async (id: string): Promise<void> =>
   defaultTransferMutationsService.deleteTransferRequest(id);
@@ -369,10 +294,7 @@ export const deleteTransferRequestMutationWithResult = async (
   id: string,
   runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
 ): Promise<TransferMutationResult> =>
-  (runtime === defaultFirestoreServiceRuntime
-    ? defaultTransferMutationsService
-    : createTransferMutationsService(runtime)
-  ).deleteTransferRequestWithResult(id);
+  resolveTransferMutationsService(runtime).deleteTransferRequestWithResult(id);
 
 export const deleteStatusHistoryEntryMutation = async (
   id: string,
@@ -384,7 +306,4 @@ export const deleteStatusHistoryEntryMutationWithResult = async (
   historyIndex: number,
   runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
 ): Promise<TransferMutationResult> =>
-  (runtime === defaultFirestoreServiceRuntime
-    ? defaultTransferMutationsService
-    : createTransferMutationsService(runtime)
-  ).deleteStatusHistoryEntryWithResult(id, historyIndex);
+  resolveTransferMutationsService(runtime).deleteStatusHistoryEntryWithResult(id, historyIndex);
