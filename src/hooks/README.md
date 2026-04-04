@@ -40,9 +40,10 @@ Cuando una operación necesita coordinar repositorios, clasificar outcomes remot
 - **Ports-backed use cases**: cuando un use-case requiere acceso remoto, la dependencia preferida es `src/application/ports/*`, no servicios concretos desde el hook.
 - **Command Hooks**: ejecutan comandos tipados y notifican errores.
 - **Controller-backed hooks**: validación/transformación extraída a `controllers`.
-- `useDailyRecordQuery.ts` ahora delega construcción de query/subscription/prefetch a [controllers/dailyRecordQueryController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/dailyRecordQueryController.ts) para concentrar decisiones de cache en un único punto.
-- `useDailyRecordSyncQuery.ts` delega resolución de estado y bootstrap de creación de día a [controllers/dailyRecordSyncController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/dailyRecordSyncController.ts).
-- El bootstrap del registro diario vive en [controllers/dailyRecordBootstrapController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/dailyRecordBootstrapController.ts): allí se nombran las fases `local_only`, `remote_runtime_bootstrapping`, `remote_record_bootstrapping`, `remote_record_timeout`, `record_ready` y `confirmed_empty`.
+- `useDailyRecordQuery.ts` delega construcción de query/subscription/prefetch a [controllers/dailyRecordQueryController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/dailyRecordQueryController.ts), pero el contrato operativo quedó deliberadamente simple:
+  si `remoteSyncStatus === 'ready'` y Firestore está habilitado, la query lee/suscribe remoto; si no, lee local.
+- `useDailyRecordSyncQuery.ts` mantiene la API estable del censo, mapea resultados de query/mutations a `syncStatus` y expone `bootstrapPhase` sin introducir una segunda máquina de estados del runtime.
+- El vocabulario de bootstrap del registro diario vive en [controllers/dailyRecordBootstrapController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/dailyRecordBootstrapController.ts), pero hoy se usa solo como semántica de UI para loader/empty-state/recovery, no como orquestador adicional del arranque global.
 - `useDailyRecord.ts` ahora usa [useDailyRecordDomainModules.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/useDailyRecordDomainModules.ts) y [useDailyRecordCopyActions.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/useDailyRecordCopyActions.ts) para bajar carga cognitiva del hook raíz sin cambiar su API.
 - `useCensusEmail.ts` usa [useCensusEmailRecipientLists.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/useCensusEmailRecipientLists.ts) y casos de uso en `src/application/census-email/*` para separar bootstrap/sync/CRUD de listas del estado UI del envío.
 - `useAudit.ts` delega escritura/lectura remota a `src/application/audit/*` y mantiene en el hook solo la fachada de UI + debounce.
@@ -65,7 +66,7 @@ Cuando una operación necesita coordinar repositorios, clasificar outcomes remot
 - `persistence`: save/patch/delete.
 - `query`: lectura reactiva y caché.
 - `compat`: bridge temporal o adapter técnico.
-- `bootstrapPhase`: semántica canonica del primer ciclo de resolución del `DailyRecord`. La UI no debe inventar flags paralelos para decidir spinner, estado vacío o recovery.
+- `bootstrapPhase`: semántica canonica del primer ciclo de resolución del `DailyRecord`. La UI no debe inventar flags paralelos para decidir spinner, estado vacío o recovery, ni reconstruir runtime desde timers propios.
 
 Referencia detallada: [docs/hooks-reference.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/hooks-reference.md)
 
@@ -85,6 +86,7 @@ dailyRecord.updatePatient('R1', 'patientName', 'Paciente Demo');
 4. Los tests de hooks deben mockear use-cases, ports o adapters antes que servicios concretos.
 5. Mantener API estable y documentar breaking changes en este README.
 6. Evitar `ReturnType<typeof hook>` para contratos semánticos del core cuando ya exista `*Contracts.ts` o `*Types.ts`.
+7. Si el hot path de arranque/login cambia, agregar al menos un test directo del hook afectado además del test de integración; no depender solo de Netlify para detectar regresiones.
 
 ## Guardrails activos
 

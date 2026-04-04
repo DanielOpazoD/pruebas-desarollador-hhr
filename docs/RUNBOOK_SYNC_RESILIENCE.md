@@ -28,24 +28,34 @@ Umbrales operativos:
 - Snapshot técnico base: `reports/operational-health.md`
 - Budgets completos: `docs/RUNBOOK_OPERATIONAL_BUDGETS.md`
 
-## Fases de bootstrap del registro diario
+## Diagnostico rapido del arranque
 
-Cuando el incidente ocurre "solo al abrir" o "tras F5", revisar primero la fase de bootstrap
-del `DailyRecord` antes de asumir pérdida real de datos:
+Cuando el incidente ocurre "solo al abrir" o "tras F5", revisar este orden antes de asumir
+pérdida real de datos:
 
-- `remote_runtime_bootstrapping`: auth/runtime remoto aun no termina de rehidratarse.
-- `remote_record_bootstrapping`: el runtime ya está listo, pero la primera lectura remota del día
-  sigue pendiente.
-- `remote_record_timeout`: la primera lectura remota excedió la ventana de gracia; ya no conviene
-  ocultar el estado vacío y hay que revisar latencia o errores de fetch.
-- `confirmed_empty`: el repositorio confirmó ausencia real del registro para esa fecha.
-- `local_only`: el flujo quedó degradado a IndexedDB/local, sin runtime remoto activo.
-- `record_ready`: el registro quedó resuelto para la UI.
+1. `remoteSyncStatus`
+   - `bootstrapping`: auth/Firebase aun no terminan de resolver.
+   - `ready`: el runtime remoto ya puede leer/suscribirse.
+   - `local_only`: la app quedó degradada a modo local.
+2. `isFirebaseConnected`
+   - si está en `false`, el shell no debe habilitar realtime.
+3. `recordRuntime.availabilityState`
+   - `resolved` o `recoverable_local`: hay registro usable.
+   - `temporarily_unavailable`: falló la lectura remota; no tratarlo como "no existe".
+   - `confirmed_missing`: el repositorio sí confirmó ausencia real.
+4. `bootstrapPhase`
+   - `remote_runtime_bootstrapping`: auth/runtime remoto aun se está rehidratando.
+   - `remote_record_bootstrapping`: el runtime está listo, pero la primera lectura del día sigue pendiente.
+   - `remote_record_timeout`: la primera lectura remota no resolvió dentro de la ventana esperada.
+   - `confirmed_empty`: ausencia real confirmada.
+   - `local_only`: degradación a IndexedDB/local.
+   - `record_ready`: el registro quedó resuelto para la UI.
 
 Referencia técnica:
 
 - [dailyRecordBootstrapController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/controllers/dailyRecordBootstrapController.ts)
 - [useDailyRecordSyncQuery.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/useDailyRecordSyncQuery.ts)
+- [useDailyRecordQuery.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/hooks/useDailyRecordQuery.ts)
 
 ## Procedimiento 1: IndexedDB bloqueado
 

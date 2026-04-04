@@ -26,9 +26,6 @@ import { isDailyRecordWriteBlockedResult } from '@/services/repositories/contrac
 import type { DailyRecordQueryResult } from '@/services/repositories/contracts/dailyRecordQueries';
 import type { RemoteSyncRuntimeStatus } from '@/services/repositories/repositoryConfig';
 
-const INITIAL_REMOTE_RETRY_DELAY_MS = 1_000;
-const MAX_INITIAL_REMOTE_RETRIES = 3;
-
 const saveDailyRecordWithCompatibility = async (
   dailyRecord: ReturnType<typeof useRepositories>['dailyRecord'],
   record: DailyRecord
@@ -75,9 +72,6 @@ export const useDailyRecordQuery = (
     isOfflineMode,
     remoteSyncStatus
   );
-  const remoteHydrationAttemptRef = useRef<string | null>(null);
-  const remoteHydrationRetryCountRef = useRef(0);
-  const remoteHydrationRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previousShouldSyncFromRemoteRef = useRef(shouldSyncFromRemote);
 
   const queryKey = getDailyRecordQueryKey(date);
@@ -88,110 +82,20 @@ export const useDailyRecordQuery = (
   });
 
   useEffect(() => {
-    return () => {
-      if (remoteHydrationRetryTimeoutRef.current) {
-        clearTimeout(remoteHydrationRetryTimeoutRef.current);
-        remoteHydrationRetryTimeoutRef.current = null;
-      }
-    };
-  }, []);
-
-  useEffect(() => {
     const didRemoteSyncJustBecomeReady =
       !previousShouldSyncFromRemoteRef.current && shouldSyncFromRemote;
     previousShouldSyncFromRemoteRef.current = shouldSyncFromRemote;
 
     if (!shouldSyncFromRemote) {
-      remoteHydrationAttemptRef.current = null;
-      remoteHydrationRetryCountRef.current = 0;
-      if (remoteHydrationRetryTimeoutRef.current) {
-        clearTimeout(remoteHydrationRetryTimeoutRef.current);
-        remoteHydrationRetryTimeoutRef.current = null;
-      }
       return;
     }
 
-    if (didRemoteSyncJustBecomeReady) {
-      remoteHydrationAttemptRef.current = null;
-      remoteHydrationRetryCountRef.current = 0;
-    }
-
-    const runtime = query.data?.runtime;
-    const remoteAlreadyResolved =
-      runtime?.sourceOfTruth === 'remote' ||
-      (remoteHydrationAttemptRef.current === date &&
-        runtime?.sourceOfTruth === 'none' &&
-        runtime?.availabilityState === 'confirmed_missing');
-
-    if (remoteAlreadyResolved) {
-      remoteHydrationAttemptRef.current = date;
+    if (!didRemoteSyncJustBecomeReady) {
       return;
     }
 
-    if (remoteHydrationAttemptRef.current === date) {
-      return;
-    }
-
-    remoteHydrationAttemptRef.current = date;
     void query.refetch();
-  }, [
-    date,
-    query,
-    query.data?.runtime.availabilityState,
-    query.data?.runtime.sourceOfTruth,
-    shouldSyncFromRemote,
-  ]);
-
-  useEffect(() => {
-    if (!shouldSyncFromRemote) {
-      return;
-    }
-
-    const runtime = query.data?.runtime;
-    const shouldRetryRemoteHydration =
-      runtime?.availabilityState === 'temporarily_unavailable' &&
-      runtime?.sourceOfTruth === 'none' &&
-      remoteHydrationRetryCountRef.current < MAX_INITIAL_REMOTE_RETRIES;
-
-    if (!shouldRetryRemoteHydration) {
-      if (
-        runtime?.sourceOfTruth === 'remote' ||
-        runtime?.availabilityState === 'confirmed_missing' ||
-        query.data?.record
-      ) {
-        remoteHydrationRetryCountRef.current = 0;
-      }
-      if (remoteHydrationRetryTimeoutRef.current) {
-        clearTimeout(remoteHydrationRetryTimeoutRef.current);
-        remoteHydrationRetryTimeoutRef.current = null;
-      }
-      return;
-    }
-
-    if (remoteHydrationRetryTimeoutRef.current) {
-      return;
-    }
-
-    const nextAttempt = remoteHydrationRetryCountRef.current + 1;
-    remoteHydrationRetryTimeoutRef.current = setTimeout(() => {
-      remoteHydrationRetryTimeoutRef.current = null;
-      remoteHydrationRetryCountRef.current = nextAttempt;
-      void query.refetch();
-    }, INITIAL_REMOTE_RETRY_DELAY_MS * nextAttempt);
-
-    return () => {
-      if (remoteHydrationRetryTimeoutRef.current) {
-        clearTimeout(remoteHydrationRetryTimeoutRef.current);
-        remoteHydrationRetryTimeoutRef.current = null;
-      }
-    };
-  }, [
-    query,
-    query.data?.record,
-    query.data?.runtime.availabilityState,
-    query.data?.runtime.sourceOfTruth,
-    shouldSyncFromRemote,
-  ]);
+  }, [query, shouldSyncFromRemote]);
 
   // Subscribe to real-time updates
   useEffect(() => {

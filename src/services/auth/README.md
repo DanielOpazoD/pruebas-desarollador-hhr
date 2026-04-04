@@ -14,6 +14,7 @@ Resolver autenticacion, bootstrap de sesion, claims, roles y degradacion operati
 - `authService.ts` e `index.ts`: superficies legacy/compatibilidad controladas.
 - `clientOperationalRuntimeSnapshot.ts` compone auth con persistencia local y sync desde observability.
 - `useAuthState.ts` expone `remoteSyncStatus` como contrato canonico para consumers que necesitan decidir si el runtime remoto esta `ready`, `bootstrapping` o `local_only`.
+  Ese estado debe seguir siendo una derivacion liviana del bootstrap de auth, no una segunda FSM con timers y overrides implícitos.
 
 ## Decision Guide
 

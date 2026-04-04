@@ -260,6 +260,25 @@ describe('useDailyRecordSyncQuery', () => {
     });
   });
 
+  it('does not attempt today-empty recovery while the runtime is local_only', async () => {
+    vi.mocked(defaultDailyRecordRepositoryPort.getForDateWithMeta).mockResolvedValue(
+      buildReadResult(null)
+    );
+
+    renderHook(() => useDailyRecordSyncQuery(mockDate, false, 'local_only'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(defaultDailyRecordRepositoryPort.getForDateWithMeta).toHaveBeenCalledWith(
+        mockDate,
+        false
+      );
+    });
+
+    expect(defaultDailyRecordRepositoryPort.syncWithFirestoreDetailed).not.toHaveBeenCalled();
+  });
+
   it('retries remote hydration when the runtime becomes ready after an initial local-empty read', async () => {
     vi.mocked(defaultDailyRecordRepositoryPort.getForDateWithMeta).mockImplementation(
       async (_date, syncFromRemote) => buildReadResult(syncFromRemote ? mockRecord : null)
