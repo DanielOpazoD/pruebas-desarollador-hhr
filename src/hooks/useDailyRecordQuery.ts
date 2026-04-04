@@ -73,6 +73,7 @@ export const useDailyRecordQuery = (
     remoteSyncStatus
   );
   const remoteHydrationAttemptRef = useRef<string | null>(null);
+  const previousShouldSyncFromRemoteRef = useRef(shouldSyncFromRemote);
 
   const queryKey = getDailyRecordQueryKey(date);
   const query = useQuery<DailyRecordQueryResult>({
@@ -82,15 +83,25 @@ export const useDailyRecordQuery = (
   });
 
   useEffect(() => {
+    const didRemoteSyncJustBecomeReady =
+      !previousShouldSyncFromRemoteRef.current && shouldSyncFromRemote;
+    previousShouldSyncFromRemoteRef.current = shouldSyncFromRemote;
+
     if (!shouldSyncFromRemote) {
       remoteHydrationAttemptRef.current = null;
       return;
     }
 
+    if (didRemoteSyncJustBecomeReady) {
+      remoteHydrationAttemptRef.current = null;
+    }
+
     const runtime = query.data?.runtime;
     const remoteAlreadyResolved =
       runtime?.sourceOfTruth === 'remote' ||
-      (runtime?.sourceOfTruth === 'none' && runtime?.availabilityState === 'confirmed_missing');
+      (remoteHydrationAttemptRef.current === date &&
+        runtime?.sourceOfTruth === 'none' &&
+        runtime?.availabilityState === 'confirmed_missing');
 
     if (remoteAlreadyResolved) {
       remoteHydrationAttemptRef.current = date;

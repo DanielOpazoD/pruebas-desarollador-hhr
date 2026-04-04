@@ -75,7 +75,11 @@ export const resolveRemoteSyncRuntimeStatus = ({
     return 'bootstrapping';
   }
 
-  if (isFirebaseConnected && state.mode === 'enabled') {
+  if (state.mode === 'local_only' && state.reason === 'manual_override') {
+    return 'local_only';
+  }
+
+  if (isFirebaseConnected) {
     return 'ready';
   }
 

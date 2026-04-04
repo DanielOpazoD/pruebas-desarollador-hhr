@@ -7,6 +7,7 @@ import { useAuthState } from '@/hooks/useAuthState';
 import * as authService from '@/services/auth/authService';
 import * as authUseCases from '@/application/auth';
 import * as auditService from '@/services/admin/auditService';
+import { setFirestoreSyncState } from '@/services/repositories/repositoryConfig';
 import type { AuthSessionState, AuthUser, UserRole } from '@/types/auth';
 
 vi.mock('@/services/auth/authService', () => ({
@@ -63,6 +64,10 @@ describe('useAuthState baseline', () => {
       issues: [],
     });
     vi.mocked(authService.hasActiveFirebaseSession).mockReturnValue(false);
+    setFirestoreSyncState({
+      mode: 'enabled',
+      reason: 'ready',
+    });
 
     setOnlineStatus(true);
   });
@@ -210,6 +215,37 @@ describe('useAuthState baseline', () => {
       vi.advanceTimersByTime(1100);
     });
     expect(result.current.isFirebaseConnected).toBe(true);
+  });
+
+  it('recovers remote sync readiness after an early local_only snapshot', async () => {
+    setFirestoreSyncState({
+      mode: 'local_only',
+      reason: 'auth_unavailable',
+    });
+
+    const { result } = renderHook(() => useAuthState());
+    await waitFor(() => expect(result.current.authLoading).toBe(false));
+
+    expect(result.current.remoteSyncStatus).toBe('local_only');
+
+    const user: AuthUser = {
+      uid: 'u123',
+      email: 'test@hhr.cl',
+      role: 'editor' as UserRole,
+      displayName: 'Test Editor',
+    };
+
+    vi.mocked(authService.hasActiveFirebaseSession).mockReturnValue(true);
+
+    await act(async () => {
+      await authSessionStateCallback?.({
+        status: 'authorized',
+        user,
+      });
+    });
+
+    await waitFor(() => expect(result.current.isFirebaseConnected).toBe(true));
+    await waitFor(() => expect(result.current.remoteSyncStatus).toBe('ready'));
   });
 
   it('extends auth bootstrap timeout while redirect login is pending', async () => {

@@ -242,4 +242,39 @@ describe('useDailyRecordSyncQuery', () => {
       );
     });
   });
+
+  it('retries remote hydration when the runtime becomes ready after an initial local-empty read', async () => {
+    vi.mocked(defaultDailyRecordRepositoryPort.getForDateWithMeta).mockImplementation(
+      async (_date, syncFromRemote) => buildReadResult(syncFromRemote ? mockRecord : null)
+    );
+
+    const { result, rerender } = renderHook(
+      ({ remoteSyncStatus }: { remoteSyncStatus: 'local_only' | 'ready' }) =>
+        useDailyRecordSyncQuery(mockDate, false, remoteSyncStatus),
+      {
+        initialProps: { remoteSyncStatus: 'local_only' } as {
+          remoteSyncStatus: 'local_only' | 'ready';
+        },
+        wrapper: createWrapper(),
+      }
+    );
+
+    await waitFor(() => {
+      expect(defaultDailyRecordRepositoryPort.getForDateWithMeta).toHaveBeenCalledWith(
+        mockDate,
+        false
+      );
+    });
+    expect(result.current.record).toBeNull();
+
+    rerender({ remoteSyncStatus: 'ready' });
+
+    await waitFor(() => {
+      expect(defaultDailyRecordRepositoryPort.getForDateWithMeta).toHaveBeenCalledWith(
+        mockDate,
+        true
+      );
+      expect(result.current.record).toEqual(mockRecord);
+    });
+  });
 });

@@ -37,49 +37,58 @@ const AUTH_PERSISTENCE_TIMEOUTS_MS = {
 const getErrorMessage = (error: unknown): string =>
   error && typeof error === 'object' && 'message' in error ? String(error.message) : String(error);
 
-const withPersistenceTimeout = async <T>(
-  operation: Promise<T>,
-  mode: keyof typeof AUTH_PERSISTENCE_TIMEOUTS_MS
-): Promise<T> => {
-  const timeoutMs = AUTH_PERSISTENCE_TIMEOUTS_MS[mode];
-  const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(
-      () => reject(new Error(`Auth persistence (${mode}) timed out after ${timeoutMs}ms`)),
-      timeoutMs
-    )
-  );
-
-  return Promise.race([operation, timeoutPromise]);
-};
-
-const configureAuthPersistence = async (
-  auth: Auth
-): Promise<'local' | 'session' | 'memory' | 'unconfigured'> => {
+const startAuthPersistenceConfiguration = (auth: Auth): void => {
   const persistenceCandidates = [
     { mode: 'local' as const, persistence: browserLocalPersistence },
     { mode: 'session' as const, persistence: browserSessionPersistence },
     { mode: 'memory' as const, persistence: inMemoryPersistence },
   ];
 
-  for (const candidate of persistenceCandidates) {
-    try {
-      await withPersistenceTimeout(setPersistence(auth, candidate.persistence), candidate.mode);
-      firebaseBootstrapLogger.info('Auth persistence configured', {
-        persistenceMode: candidate.mode,
+  const attemptCandidate = (index: number): void => {
+    const candidate = persistenceCandidates[index];
+    if (!candidate) {
+      firebaseBootstrapLogger.warn('[FirebaseConfig] Auth persistence could not be configured', {
+        mode: 'unconfigured',
       });
-      return candidate.mode;
-    } catch (error) {
+      return;
+    }
+
+    const timeoutMs = AUTH_PERSISTENCE_TIMEOUTS_MS[candidate.mode];
+    let didTimeout = false;
+    const timeoutId = setTimeout(() => {
+      didTimeout = true;
       firebaseBootstrapLogger.warn(
         `[FirebaseConfig] ⚠️ Auth persistence (${candidate.mode}) failed`,
         {
-          message: getErrorMessage(error),
+          message: `Auth persistence (${candidate.mode}) timed out after ${timeoutMs}ms`,
           mode: candidate.mode,
         }
       );
-    }
-  }
+    }, timeoutMs);
 
-  return 'unconfigured';
+    void setPersistence(auth, candidate.persistence)
+      .then(() => {
+        clearTimeout(timeoutId);
+        firebaseBootstrapLogger.info('Auth persistence configured', {
+          persistenceMode: candidate.mode,
+          settledAfterTimeout: didTimeout,
+        });
+      })
+      .catch(error => {
+        clearTimeout(timeoutId);
+        firebaseBootstrapLogger.warn(
+          `[FirebaseConfig] ⚠️ Auth persistence (${candidate.mode}) failed`,
+          {
+            message: getErrorMessage(error),
+            mode: candidate.mode,
+            settledAfterTimeout: didTimeout,
+          }
+        );
+        attemptCandidate(index + 1);
+      });
+  };
+
+  attemptCandidate(0);
 };
 
 export const initializeFirebaseServices = async (
@@ -114,7 +123,7 @@ export const initializeFirebaseServices = async (
     });
   }
 
-  await configureAuthPersistence(auth);
+  startAuthPersistenceConfiguration(auth);
 
   firebaseBootstrapLogger.info('Firebase services ready');
   return { app, auth, db };

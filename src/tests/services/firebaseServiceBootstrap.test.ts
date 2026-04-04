@@ -54,53 +54,81 @@ describe('firebaseServiceBootstrap', () => {
     vi.useRealTimers();
   });
 
-  it('falls back to session persistence when local persistence stalls', async () => {
-    mockSetPersistence
-      .mockImplementationOnce(() => new Promise(() => {}))
-      .mockResolvedValueOnce(undefined);
+  it('does not block bootstrap when local persistence stalls', async () => {
+    mockSetPersistence.mockImplementationOnce(() => new Promise(() => {}));
 
-    const bootstrapPromise = initializeFirebaseServices({
+    const services = await initializeFirebaseServices({
       apiKey: 'test',
       projectId: 'project',
       appId: 'app-id',
     });
 
     await vi.advanceTimersByTimeAsync(2_500);
-    const services = await bootstrapPromise;
 
     expect(services).toEqual({
       app: { name: 'app' },
       auth: { name: 'auth' },
       db: { name: 'db' },
     });
-    expect(mockSetPersistence).toHaveBeenCalledTimes(2);
+    expect(mockSetPersistence).toHaveBeenCalledTimes(1);
     expect(mockSetPersistence.mock.calls[0]?.[1]).toEqual({ mode: 'local' });
-    expect(mockSetPersistence.mock.calls[1]?.[1]).toEqual({ mode: 'session' });
   });
 
-  it('falls back to memory persistence only after local and session both stall', async () => {
+  it('falls back to session persistence when local persistence rejects', async () => {
     mockSetPersistence
-      .mockImplementationOnce(() => new Promise(() => {}))
-      .mockImplementationOnce(() => new Promise(() => {}))
+      .mockRejectedValueOnce(new Error('local broken'))
       .mockResolvedValueOnce(undefined);
 
-    const bootstrapPromise = initializeFirebaseServices({
+    const services = await initializeFirebaseServices({
       apiKey: 'test',
       projectId: 'project',
       appId: 'app-id',
     });
 
-    await vi.advanceTimersByTimeAsync(4_000);
-    const services = await bootstrapPromise;
+    expect(services).toEqual({
+      app: { name: 'app' },
+      auth: { name: 'auth' },
+      db: { name: 'db' },
+    });
+    await vi.runAllTicks();
+    await Promise.resolve();
+
+    expect(mockSetPersistence).toHaveBeenCalledTimes(2);
+    expect(mockSetPersistence.mock.calls[0]?.[1]).toEqual({ mode: 'local' });
+    expect(mockSetPersistence.mock.calls[1]?.[1]).toEqual({ mode: 'session' });
+  });
+
+  it('does not start fallback candidates on timeout before the previous attempt settles', async () => {
+    let rejectLocal: ((error: Error) => void) | undefined;
+    mockSetPersistence
+      .mockImplementationOnce(
+        () =>
+          new Promise((_, reject: (error: Error) => void) => {
+            rejectLocal = reject;
+          })
+      )
+      .mockResolvedValueOnce(undefined);
+
+    const services = await initializeFirebaseServices({
+      apiKey: 'test',
+      projectId: 'project',
+      appId: 'app-id',
+    });
 
     expect(services).toEqual({
       app: { name: 'app' },
       auth: { name: 'auth' },
       db: { name: 'db' },
     });
-    expect(mockSetPersistence).toHaveBeenCalledTimes(3);
-    expect(mockSetPersistence.mock.calls[0]?.[1]).toEqual({ mode: 'local' });
+
+    await vi.advanceTimersByTimeAsync(2_500);
+    expect(mockSetPersistence).toHaveBeenCalledTimes(1);
+
+    rejectLocal?.(new Error('late local failure'));
+    await vi.runAllTicks();
+    await Promise.resolve();
+
+    expect(mockSetPersistence).toHaveBeenCalledTimes(2);
     expect(mockSetPersistence.mock.calls[1]?.[1]).toEqual({ mode: 'session' });
-    expect(mockSetPersistence.mock.calls[2]?.[1]).toEqual({ mode: 'memory' });
   });
 });
