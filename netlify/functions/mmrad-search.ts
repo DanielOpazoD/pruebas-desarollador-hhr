@@ -26,7 +26,17 @@ interface MMRADExam {
   estado: string;
   pdf_url: string | null;
   dicom_url: string | null;
+  informe_html_url: string | null;
 }
+
+/** Decode common HTML entities in Liferay-generated markup. */
+const decodeHtmlEntities = (text: string): string =>
+  text
+    .replace(/&#039;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"');
 
 const getCredentials = () => ({
   username: process.env.MMRAD_USERNAME || 'vsalfate',
@@ -171,11 +181,13 @@ const searchExams = async (
 };
 
 const parseExamsFromHTML = (html: string): MMRADExam[] => {
+  // Decode HTML entities first so regex can match quotes properly
+  const decoded = decodeHtmlEntities(html);
   const exams: MMRADExam[] = [];
   const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   let rowMatch;
 
-  while ((rowMatch = rowRegex.exec(html)) !== null) {
+  while ((rowMatch = rowRegex.exec(decoded)) !== null) {
     const rowHtml = rowMatch[1];
     if (!rowHtml || !rowHtml.includes('Acciones')) continue;
 
@@ -193,13 +205,35 @@ const parseExamsFromHTML = (html: string): MMRADExam[] => {
 
     if (tds.length < 10) continue;
 
+    // PDF download link (direct download)
     const pdfMatch = rowHtml.match(/href="([^"]*informePDF[^"]*)"/i);
     let pdfUrl: string | null = pdfMatch?.[1] ?? null;
     if (pdfUrl?.startsWith('/')) pdfUrl = MMRAD_BASE_URL + pdfUrl;
 
-    const dicomMatch = rowHtml.match(/window\.open\('([^']+)'/);
-    let dicomUrl: string | null = dicomMatch?.[1] ?? null;
-    if (dicomUrl?.startsWith('/')) dicomUrl = MMRAD_BASE_URL + dicomUrl;
+    // DICOM viewer link — Liferay uses javascript:window.open('http://'+hostname+':80/...')
+    // We extract the path after the hostname concatenation and build a proper HTTPS URL
+    let dicomUrl: string | null = null;
+    const dicomVisorMatch = rowHtml.match(
+      /window\.open\('http:\/\/'\+document\.location\.hostname\+':80([^']+)'/
+    );
+    if (dicomVisorMatch?.[1]) {
+      dicomUrl = `${MMRAD_BASE_URL}${dicomVisorMatch[1]}`;
+    } else {
+      // Fallback: try standard window.open('...')
+      const dicomFallback = rowHtml.match(/window\.open\('(\/ingrad-telerad-visor[^']+)'/);
+      if (dicomFallback?.[1]) {
+        dicomUrl = `${MMRAD_BASE_URL}${dicomFallback[1]}`;
+      }
+    }
+
+    // HTML report link (full report with description) — UtilServlet?a=1
+    let informeHtmlUrl: string | null = null;
+    const informeMatch = rowHtml.match(
+      /window\.open\('(\/ingrad-ris-informehtml\/UtilServlet\?a=1[^']+)'/
+    );
+    if (informeMatch?.[1]) {
+      informeHtmlUrl = `${MMRAD_BASE_URL}${informeMatch[1]}`;
+    }
 
     exams.push({
       nombre_examen: tds[10] || '',
@@ -209,6 +243,7 @@ const parseExamsFromHTML = (html: string): MMRADExam[] => {
       estado: tds[13] || '',
       pdf_url: pdfUrl,
       dicom_url: dicomUrl,
+      informe_html_url: informeHtmlUrl,
     });
   }
 

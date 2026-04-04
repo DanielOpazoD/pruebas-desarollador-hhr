@@ -15,6 +15,7 @@ export interface MMRADExam {
   estado: string;
   pdf_url: string | null;
   dicom_url: string | null;
+  informe_html_url: string | null;
 }
 
 export interface MMRADSearchResult {

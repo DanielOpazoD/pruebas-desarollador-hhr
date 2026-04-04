@@ -192,7 +192,7 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
                     {exam.estado || 'Sin estado'}
                   </span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {exam.pdf_url && (
                     <a
                       href={exam.pdf_url}
@@ -201,7 +201,18 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
                       className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800"
                     >
                       <FileText size={12} />
-                      Ver PDF
+                      PDF
+                    </a>
+                  )}
+                  {exam.informe_html_url && (
+                    <a
+                      href={exam.informe_html_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] font-medium text-sky-700 transition-colors hover:bg-sky-100"
+                    >
+                      <FileText size={12} />
+                      Informe
                     </a>
                   )}
                   {exam.dicom_url && (
@@ -212,10 +223,10 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
                       className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-[11px] font-medium text-violet-700 transition-colors hover:bg-violet-100"
                     >
                       <Monitor size={12} />
-                      Ver DICOM
+                      Visor DICOM
                     </a>
                   )}
-                  {!exam.pdf_url && !exam.dicom_url && (
+                  {!exam.pdf_url && !exam.dicom_url && !exam.informe_html_url && (
                     <span className="text-[11px] text-slate-400 italic">
                       Sin acciones disponibles
                     </span>
