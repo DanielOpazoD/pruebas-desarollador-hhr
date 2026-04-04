@@ -2,7 +2,7 @@
  * MedicalHandoffHeader Component
  *
  * Displays the medical handoff header with doctor signature information
- * and bed statistics for the medical shift handoff view.
+ * for the medical shift handoff view.
  */
 
 import React from 'react';
@@ -20,6 +20,13 @@ import {
   resolveMedicalHandoffDoctorName,
 } from '@/features/handoff/controllers/medicalHandoffHeaderController';
 
+export interface MedicalHandoffBedStatsData {
+  totalBeds: number;
+  occupiedBeds: number;
+  freeBeds: number;
+  blockedBeds: number;
+}
+
 interface MedicalHandoffHeaderProps {
   record: DailyRecord;
   visibleBeds: BedDefinition[];
@@ -31,8 +38,9 @@ interface MedicalHandoffHeaderProps {
   updateMedicalHandoffDoctor?: (name: string) => void;
   markMedicalHandoffAsSent?: (doctorName: string) => void;
   resetMedicalHandoffState?: () => Promise<void>;
-  /** Share actions (WhatsApp + Links firma) rendered at the end of the doctor row */
   shareActions?: React.ReactNode;
+  /** Callback to pass bed stats up to parent for rendering elsewhere */
+  onBedStats?: (stats: MedicalHandoffBedStatsData) => void;
 }
 
 export const MedicalHandoffHeader: React.FC<MedicalHandoffHeaderProps> = ({
@@ -47,6 +55,7 @@ export const MedicalHandoffHeader: React.FC<MedicalHandoffHeaderProps> = ({
   markMedicalHandoffAsSent,
   resetMedicalHandoffState,
   shareActions,
+  onBedStats,
 }) => {
   const { confirm: showConfirm, alert: showAlert } = useConfirmDialog();
 
@@ -72,144 +81,108 @@ export const MedicalHandoffHeader: React.FC<MedicalHandoffHeaderProps> = ({
     }
   };
 
-  const { totalBeds, occupiedBeds, freeBeds, blockedBeds } = buildMedicalHandoffBedStats(
-    record,
-    visibleBeds
-  );
+  const bedStats = buildMedicalHandoffBedStats(record, visibleBeds);
+
+  // Pass bed stats to parent so it can render them in the specialty card
+  React.useEffect(() => {
+    onBedStats?.(bedStats);
+  }, [bedStats.totalBeds, bedStats.occupiedBeds, bedStats.freeBeds, bedStats.blockedBeds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm ring-1 ring-black/[0.02] print:shadow-none print:border-none print:p-0 print:mb-2">
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 print:flex-row print:items-start print:gap-6">
-        {/* LEFT: Deliver / Receive Info */}
-        <div className="flex flex-col gap-4 flex-1">
-          <div className="flex flex-col sm:flex-row gap-4 print:gap-6">
-            {/* Delivers */}
-            {showDeliverySection && (
-              <div className="flex-1 min-w-[200px] max-w-xs">
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1 print:text-[9px] print:text-black">
-                  Entregado por (Dr.):
-                </label>
-                {!readOnly && canEditDoctorName ? (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder=""
-                      value={record.medicalHandoffDoctor || ''}
-                      onChange={e => updateMedicalHandoffDoctor?.(e.target.value)}
-                      className="flex-1 p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none print:hidden text-sm"
-                    />
-                    {canSignMedicalHandoff && canPromptMedicalHandoffSign(record) && (
-                      <button
-                        onClick={handleSign}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs font-bold whitespace-nowrap print:hidden"
-                        title="Firmar entrega de turno"
-                      >
-                        <ShieldCheck size={14} />
-                        Firmar
-                      </button>
-                    )}
-                    {canRestoreSignatures && canRestoreMedicalHandoffSignatures(record) && (
-                      <button
-                        onClick={() => void handleRestore()}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors text-xs font-bold whitespace-nowrap print:hidden"
-                        title="Restaurar firmas médicas"
-                      >
-                        <RotateCcw size={14} />
-                        Restaurar
-                      </button>
-                    )}
-                  </div>
-                ) : null}
-                <div
-                  className={clsx(
-                    'text-sm font-medium text-slate-800 print:text-[11px]',
-                    !readOnly && canEditDoctorName && 'hidden print:block'
-                  )}
-                >
-                  {record.medicalHandoffDoctor || (
-                    <span className="text-slate-400 italic">No especificado</span>
-                  )}
-                </div>
-
-                {record.medicalHandoffSentAt && (
-                  <div className="mt-1 flex items-center gap-1.5 text-xs text-blue-600">
+      <div className="flex flex-col sm:flex-row items-start gap-4 print:flex-row print:gap-6">
+        {/* Delivers */}
+        {showDeliverySection && (
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-[0.06em] mb-1 print:text-[9px] print:text-black">
+              Entregado por (Dr.):
+            </label>
+            {!readOnly && canEditDoctorName ? (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder=""
+                  value={record.medicalHandoffDoctor || ''}
+                  onChange={e => updateMedicalHandoffDoctor?.(e.target.value)}
+                  className="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:outline-none print:hidden text-sm"
+                />
+                {canSignMedicalHandoff && canPromptMedicalHandoffSign(record) && (
+                  <button
+                    onClick={handleSign}
+                    className="flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors text-[10px] font-semibold whitespace-nowrap print:hidden"
+                    title="Firmar entrega de turno"
+                  >
                     <ShieldCheck size={12} />
-                    <span className="font-medium">
-                      Entregado y firmado:{' '}
-                      {new Date(record.medicalHandoffSentAt).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                  </div>
+                    Firmar
+                  </button>
+                )}
+                {canRestoreSignatures && canRestoreMedicalHandoffSignatures(record) && (
+                  <button
+                    onClick={() => void handleRestore()}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors text-xs font-bold whitespace-nowrap print:hidden"
+                    title="Restaurar firmas médicas"
+                  >
+                    <RotateCcw size={14} />
+                    Restaurar
+                  </button>
                 )}
               </div>
-            )}
-
-            {/* Receives */}
-            <div className="flex-1 min-w-[200px] max-w-xs sm:ml-8 md:ml-12 lg:ml-16">
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1 print:text-[9px] print:text-black">
-                Recibido por (Dr.):
-              </label>
-              {record.medicalSignature ? (
-                <div>
-                  <div className="font-bold text-green-700 text-sm print:text-[11px]">
-                    {record.medicalSignature.doctorName}
-                  </div>
-                  <div className="text-xs text-green-600 flex items-center gap-1">
-                    <CheckCircle size={12} />
-                    Firmado{' '}
-                    {new Date(record.medicalSignature.signedAt).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-slate-400 italic flex items-center gap-2 text-sm print:text-[11px]">
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-300 print:w-1 print:h-1"></div>
-                  Pendiente de firma
-                </div>
+            ) : null}
+            <div
+              className={clsx(
+                'text-sm font-medium text-slate-800 print:text-[11px]',
+                !readOnly && canEditDoctorName && 'hidden print:block'
+              )}
+            >
+              {record.medicalHandoffDoctor || (
+                <span className="text-slate-400 italic">No especificado</span>
               )}
             </div>
-          </div>
-        </div>
 
-        {/* RIGHT: Share actions + Bed Stats */}
-        <div className="flex flex-col items-end gap-2 self-start print:items-start">
-          {shareActions && <div className="print:hidden">{shareActions}</div>}
-          <div className="p-2 bg-slate-50 rounded-xl border border-slate-200/80 min-w-[160px] print:min-w-[120px] print:border text-[10px] print:text-[9px] print:p-1.5">
-            <h3 className="font-bold text-slate-700 uppercase border-b border-slate-200 pb-0.5 mb-1 text-center text-[9px] print:text-[8px]">
-              Resumen Camas
-            </h3>
-            <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
-              <div className="flex justify-between items-center">
-                <span className="text-slate-600">Totales:</span>
-                <span className="font-bold text-slate-800 text-xs print:text-[10px]">
-                  {totalBeds}
+            {record.medicalHandoffSentAt && (
+              <div className="mt-1 flex items-center gap-1.5 text-xs text-blue-600">
+                <ShieldCheck size={12} />
+                <span className="font-medium">
+                  Firmado:{' '}
+                  {new Date(record.medicalHandoffSentAt).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-600">Ocupadas:</span>
-                <span className="font-bold text-blue-600 text-xs print:text-[10px]">
-                  {occupiedBeds}
-                </span>
+            )}
+          </div>
+        )}
+
+        {/* Receives — same level as Delivers */}
+        <div className="flex-1 min-w-[200px]">
+          <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-[0.06em] mb-1 print:text-[9px] print:text-black">
+            Recibido por (Dr.):
+          </label>
+          {record.medicalSignature ? (
+            <div>
+              <div className="font-bold text-green-700 text-sm print:text-[11px]">
+                {record.medicalSignature.doctorName}
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-600">Libres:</span>
-                <span className="font-bold text-green-600 text-xs print:text-[10px]">
-                  {freeBeds}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400">Bloqueadas:</span>
-                <span className="font-bold text-slate-400 text-xs print:text-[10px]">
-                  {blockedBeds}
-                </span>
+              <div className="text-xs text-green-600 flex items-center gap-1">
+                <CheckCircle size={12} />
+                Firmado{' '}
+                {new Date(record.medicalSignature.signedAt).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="text-slate-400 italic flex items-center gap-2 text-sm print:text-[11px]">
+              <div className="w-1.5 h-1.5 rounded-full bg-slate-300 print:w-1 print:h-1"></div>
+              Pendiente de firma
+            </div>
+          )}
         </div>
+
+        {/* Share actions — right aligned */}
+        {shareActions && <div className="shrink-0 self-center print:hidden">{shareActions}</div>}
       </div>
     </div>
   );

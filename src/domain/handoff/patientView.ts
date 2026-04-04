@@ -23,13 +23,15 @@ export interface MedicalEntryMetadataViewModel {
 }
 
 export const resolveMedicalEntryInlineMeta = (entry: MedicalHandoffEntry): string => {
+  // After validation, show the most recent actor and timestamp (updatedBy/updatedAt),
+  // not the original. This makes a validated note look like it was written now.
   const actor = formatMedicalHandoffActorLabel(
-    entry.originalNoteBy?.displayName ||
-      entry.originalNoteBy?.email ||
-      entry.updatedBy?.displayName ||
-      entry.updatedBy?.email
+    entry.updatedBy?.displayName ||
+      entry.updatedBy?.email ||
+      entry.originalNoteBy?.displayName ||
+      entry.originalNoteBy?.email
   );
-  const timestamp = formatMedicalHandoffTimestamp(entry.originalNoteAt || entry.updatedAt);
+  const timestamp = formatMedicalHandoffTimestamp(entry.updatedAt || entry.originalNoteAt);
   return [actor, timestamp].filter(Boolean).join(' · ');
 };
 
@@ -57,7 +59,12 @@ export const resolveMedicalHandoffValidityViewModel = (
   entry: MedicalHandoffEntry,
   reportDate: string
 ): MedicalHandoffValidityViewModel => {
-  const wasUpdatedToday = Boolean(entry.updatedAt) && entry.updatedAt?.slice(0, 10) === reportDate;
+  // A note is "active today" if either:
+  // 1. updatedAt matches the reportDate (note was written/edited on this day), OR
+  // 2. currentStatusDate matches the reportDate (note was validated for this day)
+  const wasUpdatedToday =
+    (Boolean(entry.updatedAt) && entry.updatedAt?.slice(0, 10) === reportDate) ||
+    entry.currentStatusDate === reportDate;
   const statusLabel = wasUpdatedToday ? 'Nota vigente' : 'Nota: pendiente de actualizar';
   const canRefreshAsCurrent = Boolean(entry.note.trim());
 

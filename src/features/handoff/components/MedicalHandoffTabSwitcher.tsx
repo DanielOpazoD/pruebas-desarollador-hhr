@@ -15,13 +15,13 @@ export const MedicalHandoffTabSwitcher: React.FC<MedicalHandoffTabSwitcherProps>
   upcPatientCount,
   nonUpcPatientCount,
 }) => (
-  <div className="flex bg-slate-100 p-1 rounded-lg w-fit">
+  <div className="flex bg-slate-100/80 p-0.5 rounded-lg border border-slate-200/50">
     <button
       onClick={() => setActiveTab('all')}
       className={clsx(
-        'px-4 py-2 rounded-md text-sm font-medium transition-colors',
+        'px-3 py-1 rounded-md text-[12px] font-semibold transition-all duration-200',
         activeTab === 'all'
-          ? 'bg-white text-slate-800 shadow-sm'
+          ? 'bg-white text-slate-800 shadow-sm ring-1 ring-black/[0.04]'
           : 'text-slate-500 hover:text-slate-700'
       )}
     >
@@ -30,24 +30,26 @@ export const MedicalHandoffTabSwitcher: React.FC<MedicalHandoffTabSwitcherProps>
     <button
       onClick={() => setActiveTab('upc')}
       className={clsx(
-        'px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2',
+        'px-3 py-1 rounded-md text-[12px] font-semibold transition-all duration-200 flex items-center gap-1.5',
         activeTab === 'upc'
-          ? 'bg-red-100 text-red-700 shadow-sm'
+          ? 'bg-red-50 text-red-700 shadow-sm ring-1 ring-red-200/50'
           : 'text-slate-500 hover:text-slate-700'
       )}
     >
-      🔴 UPC ({upcPatientCount})
+      <span className="h-2 w-2 rounded-full bg-red-500" />
+      UPC ({upcPatientCount})
     </button>
     <button
       onClick={() => setActiveTab('no-upc')}
       className={clsx(
-        'px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2',
+        'px-3 py-1 rounded-md text-[12px] font-semibold transition-all duration-200 flex items-center gap-1.5',
         activeTab === 'no-upc'
-          ? 'bg-green-100 text-green-700 shadow-sm'
+          ? 'bg-green-50 text-green-700 shadow-sm ring-1 ring-green-200/50'
           : 'text-slate-500 hover:text-slate-700'
       )}
     >
-      🟢 No UPC ({nonUpcPatientCount})
+      <span className="h-2 w-2 rounded-full bg-green-500" />
+      No UPC ({nonUpcPatientCount})
     </button>
   </div>
 );

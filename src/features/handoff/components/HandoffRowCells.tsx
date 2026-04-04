@@ -3,7 +3,6 @@ import type { ClinicalEvent } from '@/types/domain/clinicalEvents';
 import { PatientData } from '@/domain/handoff/patientContracts';
 import { Baby, ChevronDown, Clock } from 'lucide-react';
 import clsx from 'clsx';
-import { formatDateDDMMYYYY } from '@/utils/dateUtils';
 import { ClinicalEventsPanel } from './ClinicalEventsPanel';
 import { calculateDeviceDays } from '@/components/device-selector/DeviceDateConfigModal';
 import { DebouncedTextarea } from '@/components/ui/DebouncedTextarea';
@@ -71,11 +70,7 @@ export const HandoffPatientCell: React.FC<HandoffPatientCellProps> = ({ patient,
           ({patient.age})
         </div>
       )}
-      {patient.admissionDate && (
-        <div className="text-slate-400 font-bold text-[9px] mt-0.5">
-          FI: {formatDateDDMMYYYY(patient.admissionDate)}
-        </div>
-      )}
+      {/* Admission date hidden — available in census, not needed in handoff */}
     </div>
   </td>
 );
@@ -281,9 +276,9 @@ export const HandoffMedicalObservationsCell: React.FC<HandoffMedicalObservations
             <button
               type="button"
               onClick={onCreatePrimaryEntry}
-              className="inline-flex items-center rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800 transition-colors hover:bg-sky-100 print:hidden"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-white px-2.5 py-1 text-[10px] font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 print:hidden"
             >
-              Crear entrega médica
+              + Crear entrega
             </button>
           ) : (
             <div className="text-sm text-slate-400 italic print:text-[8px]">

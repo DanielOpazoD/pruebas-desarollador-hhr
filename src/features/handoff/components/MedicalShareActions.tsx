@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Send, Share2 } from 'lucide-react';
+import { ChevronDown, Link2, MessageCircle } from 'lucide-react';
 import clsx from 'clsx';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 
@@ -13,13 +13,9 @@ interface MedicalShareActionsProps {
 }
 
 const LINK_OPTIONS: Array<{ scope: MedicalHandoffScope; label: string; className: string }> = [
-  { scope: 'all', label: 'Copiar link: todos', className: 'text-slate-700 hover:bg-slate-50' },
-  { scope: 'upc', label: 'Copiar link: UPC', className: 'text-red-700 hover:bg-red-50' },
-  {
-    scope: 'no-upc',
-    label: 'Copiar link: No UPC',
-    className: 'text-emerald-700 hover:bg-emerald-50',
-  },
+  { scope: 'all', label: 'Link: todos', className: 'text-slate-700 hover:bg-slate-50' },
+  { scope: 'upc', label: 'Link: UPC', className: 'text-red-700 hover:bg-red-50' },
+  { scope: 'no-upc', label: 'Link: No UPC', className: 'text-emerald-700 hover:bg-emerald-50' },
 ];
 
 export const MedicalShareActions: React.FC<MedicalShareActionsProps> = ({
@@ -44,38 +40,41 @@ export const MedicalShareActions: React.FC<MedicalShareActionsProps> = ({
   }, [showShareMenu]);
 
   return (
-    <div className="flex items-center gap-2 md:ml-auto">
+    <div className="flex items-center gap-1.5">
       <button
         onClick={onSendWhatsApp}
         disabled={!!medicalSignature}
         className={clsx(
-          'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer',
+          'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-colors',
           medicalSignature
-            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-            : 'bg-green-500 text-white hover:bg-green-600'
+            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+            : 'bg-green-500 text-white hover:bg-green-600 active:scale-[0.98]'
         )}
-        title="Enviar entrega por WhatsApp (Manual)"
-        aria-label="Enviar entrega por WhatsApp (Manual)"
+        title="Enviar por WhatsApp"
       >
-        <Send size={14} aria-hidden="true" /> Enviar por WhatsApp
+        <MessageCircle size={13} />
+        Enviar
       </button>
       <div className="relative" ref={shareMenuRef}>
         <button
           onClick={() => setShowShareMenu(previous => !previous)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-sky-100 text-sky-700 rounded-lg hover:bg-sky-200 transition-colors text-xs font-bold cursor-pointer"
-          title="Generar link para firma del médico"
-          aria-label="Generar link para firma del médico"
+          className={clsx(
+            'inline-flex items-center gap-1 rounded-lg p-1.5 transition-colors',
+            showShareMenu
+              ? 'bg-sky-100 text-sky-700'
+              : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'
+          )}
+          title="Links de firma"
         >
-          <Share2 size={14} aria-hidden="true" />
-          Links firma
+          <Link2 size={14} />
           <ChevronDown
-            size={14}
+            size={10}
             className={clsx('transition-transform', showShareMenu && 'rotate-180')}
           />
         </button>
 
         {showShareMenu && (
-          <div className="absolute right-0 top-full mt-1 min-w-[220px] rounded-lg border border-slate-200 bg-white py-1 shadow-lg z-50">
+          <div className="absolute right-0 top-full mt-1 min-w-[180px] rounded-xl border border-slate-200 bg-white py-1 shadow-xl ring-1 ring-black/[0.04] z-50">
             {LINK_OPTIONS.map(option => (
               <button
                 key={option.scope}
@@ -83,7 +82,10 @@ export const MedicalShareActions: React.FC<MedicalShareActionsProps> = ({
                   onShareLink(option.scope);
                   setShowShareMenu(false);
                 }}
-                className={clsx('w-full px-4 py-2 text-left text-sm', option.className)}
+                className={clsx(
+                  'w-full px-3 py-1.5 text-left text-[12px] font-medium transition-colors',
+                  option.className
+                )}
               >
                 {option.label}
               </button>

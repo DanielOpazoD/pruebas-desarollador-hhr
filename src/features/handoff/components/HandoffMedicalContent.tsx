@@ -1,18 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { BedDefinition } from '@/types/domain/beds';
 import type { Specialty } from '@/types/domain/patientClassification';
 import type { DailyRecord } from '@/domain/handoff/recordContracts';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import type { HandoffClinicalEventActions, HandoffMedicalActions } from './handoffRowContracts';
-import {
-  defaultBrowserWindowRuntime,
-  writeClipboardText,
-} from '@/shared/runtime/browserWindowRuntime';
-import {
-  buildMedicalSpecialtyFilterChips,
-  resolveMedicalSpecialistLink,
-} from '@/features/handoff/controllers/handoffMedicalContentController';
-import { MedicalHandoffHeader } from './MedicalHandoffHeader';
+import { buildMedicalSpecialtyFilterChips } from '@/features/handoff/controllers/handoffMedicalContentController';
+import { MedicalHandoffHeader, type MedicalHandoffBedStatsData } from './MedicalHandoffHeader';
 import { MedicalShareActions } from './MedicalShareActions';
 import { MedicalHandoffTabs } from './MedicalHandoffTabs';
 import type { MedicalHandoffScope as ScopeType } from '@/types/medicalHandoff';
@@ -54,7 +47,7 @@ export const HandoffMedicalContent: React.FC<HandoffMedicalContentProps> = ({
   specialtyFilteredBeds,
   readOnly,
   role: _role,
-  canCopySpecialistLink,
+  canCopySpecialistLink: _canCopySpecialistLink,
   scopedMedicalSignature,
   scopedMedicalHandoffSentAt,
   showDeliverySection,
@@ -66,7 +59,7 @@ export const HandoffMedicalContent: React.FC<HandoffMedicalContentProps> = ({
   selectedMedicalSpecialty,
   setSelectedMedicalSpecialty,
   medicalSpecialties,
-  success,
+  success: _success,
   noteField,
   onNoteChange,
   medicalActions,
@@ -78,6 +71,7 @@ export const HandoffMedicalContent: React.FC<HandoffMedicalContentProps> = ({
   onSendWhatsApp,
   onShareLink,
 }) => {
+  const [bedStats, setBedStats] = useState<MedicalHandoffBedStatsData | null>(null);
   const filterChips = buildMedicalSpecialtyFilterChips(
     selectedMedicalSpecialty,
     medicalSpecialties
@@ -86,6 +80,7 @@ export const HandoffMedicalContent: React.FC<HandoffMedicalContentProps> = ({
   return (
     <div className="space-y-3">
       <MedicalHandoffHeader
+        onBedStats={setBedStats}
         record={{
           ...record,
           medicalSignature: scopedMedicalSignature || undefined,
@@ -111,28 +106,44 @@ export const HandoffMedicalContent: React.FC<HandoffMedicalContentProps> = ({
         }
       />
 
-      <div className="bg-white rounded-xl border border-sky-100/80 p-3 print:hidden ring-1 ring-black/[0.02]">
-        <div className="mb-2">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-slate-400">
+      {/* Unified filter bar: Specialty + UPC scope + Bed stats */}
+      <div className="flex items-center gap-3 rounded-xl border border-slate-200/80 bg-white px-3 py-2 print:hidden ring-1 ring-black/[0.02]">
+        {/* Specialty selector */}
+        <div className="flex items-center gap-2">
+          <label className="text-[10px] font-semibold uppercase tracking-[0.06em] text-slate-400 shrink-0">
             Especialidad
+          </label>
+          <select
+            value={selectedMedicalSpecialty}
+            onChange={e =>
+              setSelectedMedicalSpecialty(e.target.value as typeof selectedMedicalSpecialty)
+            }
+            className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[12px] font-medium text-slate-700 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500/10"
+          >
+            {filterChips.map(chip => (
+              <option key={chip.key} value={chip.key}>
+                {chip.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="h-5 w-px bg-slate-200/60" />
+
+        {/* Bed stats inline */}
+        {bedStats && (
+          <div className="flex items-center gap-3 text-[10px]">
+            <span className="text-slate-400">
+              Ocu: <strong className="text-blue-600">{bedStats.occupiedBeds}</strong>
+            </span>
+            <span className="text-slate-400">
+              Lib: <strong className="text-green-600">{bedStats.freeBeds}</strong>
+            </span>
+            <span className="text-slate-300">
+              Cap: <strong className="text-slate-500">{bedStats.totalBeds}</strong>
+            </span>
           </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {filterChips.map(chip => (
-            <button
-              key={chip.key}
-              type="button"
-              onClick={() => setSelectedMedicalSpecialty(chip.key)}
-              className={
-                chip.isActive
-                  ? 'px-3 py-1.5 rounded-lg bg-sky-100 text-sky-800 text-[13px] font-semibold ring-1 ring-sky-200/50 shadow-sm'
-                  : 'px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 text-[13px] font-medium hover:bg-slate-100 transition-colors'
-              }
-            >
-              {chip.label}
-            </button>
-          ))}
-        </div>
+        )}
       </div>
 
       <MedicalHandoffTabs
