@@ -40,6 +40,7 @@ import {
   getAvailableDatesFromFirestore,
   getMonthRecordsFromFirestore,
   getRecordFromFirestore,
+  getRecordFromFirestoreDetailed,
   getRecordsRangeFromFirestore,
   isFirestoreAvailable,
   subscribeToRecord,
@@ -83,6 +84,22 @@ describe('firestoreRecordQueries', () => {
 
     vi.mocked(getDoc).mockRejectedValueOnce(new Error('boom'));
     await expect(getRecordFromFirestore('2026-03-16')).resolves.toBeNull();
+  });
+
+  it('distinguishes missing records from failed record reads', async () => {
+    vi.mocked(getDoc).mockResolvedValueOnce({
+      exists: () => false,
+    } as never);
+    await expect(getRecordFromFirestoreDetailed('2026-03-17')).resolves.toEqual({
+      status: 'missing',
+      record: null,
+    });
+
+    vi.mocked(getDoc).mockRejectedValueOnce(new Error('denied'));
+    await expect(getRecordFromFirestoreDetailed('2026-03-18')).resolves.toMatchObject({
+      status: 'failed',
+      record: null,
+    });
   });
 
   it('maps all records and date ranges from snapshots', async () => {

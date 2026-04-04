@@ -30,6 +30,7 @@ export interface ResolveRemoteSyncRuntimeStatusInput {
 // State
 // ============================================================================
 
+let firestoreEnabled = true;
 let firestoreSyncState: FirestoreSyncState = {
   mode: 'enabled',
   reason: 'ready',
@@ -44,6 +45,7 @@ let firestoreSyncState: FirestoreSyncState = {
  * When disabled, only local IndexedDB storage is used.
  */
 export const setFirestoreEnabled = (enabled: boolean): void => {
+  firestoreEnabled = enabled;
   firestoreSyncState = enabled
     ? {
         mode: 'enabled',
@@ -51,17 +53,18 @@ export const setFirestoreEnabled = (enabled: boolean): void => {
       }
     : {
         mode: 'local_only',
-        reason: 'manual_override',
+        reason: 'auth_unavailable',
       };
 };
 
 /**
  * Check if Firestore synchronization is enabled.
  */
-export const isFirestoreEnabled = (): boolean => firestoreSyncState.mode === 'enabled';
+export const isFirestoreEnabled = (): boolean => firestoreEnabled;
 
 export const setFirestoreSyncState = (state: FirestoreSyncState): void => {
   firestoreSyncState = state;
+  firestoreEnabled = state.mode !== 'local_only';
 };
 
 export const getFirestoreSyncState = (): FirestoreSyncState => firestoreSyncState;
@@ -69,14 +72,9 @@ export const getFirestoreSyncState = (): FirestoreSyncState => firestoreSyncStat
 export const resolveRemoteSyncRuntimeStatus = ({
   authLoading,
   isFirebaseConnected,
-  firestoreSyncState: state = getFirestoreSyncState(),
 }: ResolveRemoteSyncRuntimeStatusInput): RemoteSyncRuntimeStatus => {
-  if (authLoading || state.mode === 'bootstrapping') {
+  if (authLoading) {
     return 'bootstrapping';
-  }
-
-  if (state.mode === 'local_only' && state.reason === 'manual_override') {
-    return 'local_only';
   }
 
   if (isFirebaseConnected) {

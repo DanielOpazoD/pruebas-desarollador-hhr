@@ -1,5 +1,5 @@
 import { DailyRecord } from '@/types/domain/dailyRecord';
-import { getRecordFromFirestore } from '@/services/storage/firestore';
+import { getRecordFromFirestoreDetailed } from '@/services/storage/firestore';
 import { migrateLegacyDataWithReport } from '@/services/repositories/dataMigration';
 import {
   LegacyMigrationRule,
@@ -63,9 +63,13 @@ export const loadRemoteRecordWithFallback = async (
   const request = measureRepositoryOperation(
     'dailyRecord.loadRemoteWithFallback',
     async () => {
-      const remoteRecord = await getRecordFromFirestore(date);
-      if (remoteRecord) {
-        const normalizedRemoteRecord = normalizeRemoteRecord(remoteRecord, date);
+      const remoteRead = await getRecordFromFirestoreDetailed(date);
+      if (remoteRead.status === 'failed') {
+        throw remoteRead.error ?? new Error(`Remote Firestore read failed for ${date}`);
+      }
+
+      if (remoteRead.record) {
+        const normalizedRemoteRecord = normalizeRemoteRecord(remoteRead.record, date);
         return createRemoteLoadResult(
           'firestore',
           normalizedRemoteRecord.record,

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { useAuthState } from '@/hooks/useAuthState';
+import { useAuth } from '@/context/AuthContext';
 import { useDailyRecordStaff } from '@/context/DailyRecordContext';
 import { useUI } from '@/context/UIContext';
 import { resolveShiftNurseSignature } from '@/services/staff/dailyRecordStaffing';
@@ -26,7 +26,7 @@ export const useFugaNotificationModalModel = ({
   dischargeItem,
   recordDate,
 }: UseFugaNotificationModalModelParams) => {
-  const { role } = useAuthState();
+  const { role } = useAuth();
   const staffRecord = useDailyRecordStaff();
   const { confirm } = useUI();
   const nursesSignature = useMemo(

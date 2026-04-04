@@ -68,7 +68,7 @@ const ChecklistItem: React.FC<{
           </svg>
         </span>
       </div>
-      <span className="text-slate-700 font-medium group-hover:text-slate-900 transition-colors text-xs print:text-[8px] print:text-black">
+      <span className="text-slate-700 font-medium group-hover:text-slate-900 transition-colors text-[10px] print:text-[8px] print:text-black">
         {label}
       </span>
     </label>
@@ -84,7 +84,7 @@ export const HandoffChecklistNight: React.FC<HandoffChecklistNightProps> = ({
     <div className="flex items-center gap-3 print:gap-3 print:bg-transparent print:border-none print:p-0">
       <div className="flex items-center gap-2 text-slate-700 shrink-0">
         <ClipboardList size={14} className="print:w-3 print:h-3" />
-        <span className="text-xs font-bold uppercase print:text-black print:text-[9px]">
+        <span className="text-[10px] font-bold uppercase print:text-black print:text-[9px]">
           Checklist
         </span>
       </div>

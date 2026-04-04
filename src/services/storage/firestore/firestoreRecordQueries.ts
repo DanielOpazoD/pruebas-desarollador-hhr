@@ -14,6 +14,40 @@ import {
 } from '@/services/storage/firestore/firestoreQuerySupport';
 import { firestoreQueryLogger } from '@/services/storage/storageLoggers';
 
+export interface FirestoreSingleRecordReadResult {
+  status: 'resolved' | 'missing' | 'failed';
+  record: DailyRecord | null;
+  error?: unknown;
+}
+
+export const getRecordFromFirestoreDetailed = async (
+  date: string
+): Promise<FirestoreSingleRecordReadResult> => {
+  try {
+    const docRef = getRecordDocRef(date);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return {
+        status: 'resolved',
+        record: docToRecord(docSnap.data(), date),
+      };
+    }
+
+    return {
+      status: 'missing',
+      record: null,
+    };
+  } catch (error) {
+    firestoreQueryLogger.error(`Failed to get record ${date}`, error);
+    return {
+      status: 'failed',
+      record: null,
+      error,
+    };
+  }
+};
+
 export const getAvailableDatesFromFirestore = async (): Promise<string[]> => {
   try {
     const q = query(getRecordsCollection());
@@ -29,18 +63,8 @@ export const getAvailableDatesFromFirestore = async (): Promise<string[]> => {
 };
 
 export const getRecordFromFirestore = async (date: string): Promise<DailyRecord | null> => {
-  try {
-    const docRef = getRecordDocRef(date);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      return docToRecord(docSnap.data(), date);
-    }
-    return null;
-  } catch (error) {
-    firestoreQueryLogger.error(`Failed to get record ${date}`, error);
-    return null;
-  }
+  const result = await getRecordFromFirestoreDetailed(date);
+  return result.record;
 };
 
 export const getAllRecordsFromFirestore = async (): Promise<Record<string, DailyRecord>> => {

@@ -4,10 +4,10 @@ import { loadRemoteRecordWithFallback } from '@/services/repositories/dailyRecor
 import { DataFactory } from '@/tests/factories/DataFactory';
 
 vi.mock('@/services/storage/firestore', () => ({
-  getRecordFromFirestore: vi.fn(),
+  getRecordFromFirestoreDetailed: vi.fn(),
 }));
 
-import { getRecordFromFirestore } from '@/services/storage/firestore';
+import { getRecordFromFirestoreDetailed } from '@/services/storage/firestore';
 
 describe('dailyRecordRemoteLoader', () => {
   const date = '2025-01-01';
@@ -17,9 +17,10 @@ describe('dailyRecordRemoteLoader', () => {
   });
 
   it('returns firestore metadata when the primary remote record exists', async () => {
-    vi.mocked(getRecordFromFirestore).mockResolvedValue(
-      DataFactory.createMockDailyRecord(date, { schemaVersion: 1 })
-    );
+    vi.mocked(getRecordFromFirestoreDetailed).mockResolvedValue({
+      status: 'resolved',
+      record: DataFactory.createMockDailyRecord(date, { schemaVersion: 1 }),
+    });
 
     const result = await loadRemoteRecordWithFallback(date);
 
@@ -31,7 +32,10 @@ describe('dailyRecordRemoteLoader', () => {
   });
 
   it('returns not_found metadata when neither remote source has data', async () => {
-    vi.mocked(getRecordFromFirestore).mockResolvedValue(null);
+    vi.mocked(getRecordFromFirestoreDetailed).mockResolvedValue({
+      status: 'missing',
+      record: null,
+    });
 
     const result = await loadRemoteRecordWithFallback(date);
 
@@ -45,10 +49,13 @@ describe('dailyRecordRemoteLoader', () => {
 
   it('deduplicates concurrent remote loads for the same date', async () => {
     let resolveRemote:
-      | ((value: ReturnType<typeof DataFactory.createMockDailyRecord>) => void)
+      | ((value: {
+          status: 'resolved';
+          record: ReturnType<typeof DataFactory.createMockDailyRecord>;
+        }) => void)
       | undefined;
 
-    vi.mocked(getRecordFromFirestore).mockImplementationOnce(
+    vi.mocked(getRecordFromFirestoreDetailed).mockImplementationOnce(
       () =>
         new Promise(resolve => {
           resolveRemote = resolve;
@@ -62,20 +69,36 @@ describe('dailyRecordRemoteLoader', () => {
       throw new Error('Remote resolver was not captured');
     }
 
-    resolveRemote(DataFactory.createMockDailyRecord(date));
+    resolveRemote({
+      status: 'resolved',
+      record: DataFactory.createMockDailyRecord(date),
+    });
     const [firstResult, secondResult] = await Promise.all([firstCall, secondCall]);
 
-    expect(getRecordFromFirestore).toHaveBeenCalledTimes(1);
+    expect(getRecordFromFirestoreDetailed).toHaveBeenCalledTimes(1);
     expect(firstResult.record?.date).toBe(date);
     expect(secondResult.record?.date).toBe(date);
   });
 
   it('does not consult legacy storage in the hot path anymore', async () => {
-    vi.mocked(getRecordFromFirestore).mockResolvedValue(null);
+    vi.mocked(getRecordFromFirestoreDetailed).mockResolvedValue({
+      status: 'missing',
+      record: null,
+    });
 
     const result = await loadRemoteRecordWithFallback(date);
 
     expect(result.source).toBe('not_found');
     expect(result.cachedLocally).toBe(false);
+  });
+
+  it('propagates failed remote reads so the repository can mark them unavailable', async () => {
+    vi.mocked(getRecordFromFirestoreDetailed).mockResolvedValue({
+      status: 'failed',
+      record: null,
+      error: new Error('permission-denied'),
+    });
+
+    await expect(loadRemoteRecordWithFallback(date)).rejects.toThrow('permission-denied');
   });
 });

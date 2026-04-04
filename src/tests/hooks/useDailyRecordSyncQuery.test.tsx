@@ -119,6 +119,23 @@ describe('useDailyRecordSyncQuery', () => {
     repairApplied: false,
   });
 
+  const buildUnavailableReadResult = () => ({
+    date: mockDate,
+    record: null,
+    source: 'not_found' as const,
+    compatibilityTier: 'none' as const,
+    compatibilityIntensity: 'none' as const,
+    migrationRulesApplied: [],
+    consistencyState: 'unavailable' as const,
+    sourceOfTruth: 'none' as const,
+    retryability: 'automatic_retry' as const,
+    recoveryAction: 'defer_remote_sync' as const,
+    conflictSummary: null,
+    observabilityTags: ['daily_record', 'read', 'remote_unavailable'],
+    userSafeMessage: 'No se pudo consultar el registro remoto.',
+    repairApplied: false,
+  });
+
   it('should fetch the record on mount', async () => {
     vi.mocked(defaultDailyRecordRepositoryPort.getForDateWithMeta).mockResolvedValue(
       buildReadResult(mockRecord)
@@ -277,4 +294,29 @@ describe('useDailyRecordSyncQuery', () => {
       expect(result.current.record).toEqual(mockRecord);
     });
   });
+
+  it('retries automatically after an initial temporarily unavailable remote read', async () => {
+    vi.mocked(defaultDailyRecordRepositoryPort.getForDateWithMeta)
+      .mockResolvedValueOnce(buildUnavailableReadResult())
+      .mockResolvedValueOnce(buildReadResult(mockRecord));
+
+    const { result } = renderHook(() => useDailyRecordSyncQuery(mockDate, false, 'ready'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(defaultDailyRecordRepositoryPort.getForDateWithMeta).toHaveBeenCalledWith(
+        mockDate,
+        true
+      );
+    });
+
+    await waitFor(
+      () => {
+        expect(defaultDailyRecordRepositoryPort.getForDateWithMeta).toHaveBeenCalledTimes(2);
+        expect(result.current.record).toEqual(mockRecord);
+      },
+      { timeout: 2_500 }
+    );
+  }, 4_000);
 });

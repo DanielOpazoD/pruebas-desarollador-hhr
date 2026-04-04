@@ -53,8 +53,8 @@ export const HandoffChecklistSection: React.FC<HandoffChecklistSectionProps> = (
         {extraAction}
       </div>
 
-      {/* Row 2: Staff names */}
-      <div className="flex flex-wrap gap-x-6 gap-y-2 items-center mb-2.5 pb-2.5 border-b border-slate-100/80">
+      {/* Row 2: Staff names — min-h ensures consistent height between day/night shifts */}
+      <div className="flex flex-wrap gap-x-6 gap-y-2 items-center mb-2.5 pb-2.5 border-b border-slate-100/80 min-h-[32px]">
         <HandoffStaffDisplay label="Entrega" type="delivers" nurses={deliversList} compact />
 
         {isReceivesEditable ? (
@@ -75,8 +75,8 @@ export const HandoffChecklistSection: React.FC<HandoffChecklistSectionProps> = (
         <div className="flex-1" />
       </div>
 
-      {/* Row 3: Checklist */}
-      <div>
+      {/* Row 3: Checklist — min-h ensures consistent height between day/night */}
+      <div className="min-h-[28px]">
         {selectedShift === 'day' ? (
           <HandoffChecklistDay
             data={record.handoffDayChecklist}

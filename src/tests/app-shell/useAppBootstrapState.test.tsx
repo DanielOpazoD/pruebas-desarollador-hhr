@@ -7,14 +7,14 @@ const {
   mockUseSignatureMode,
   mockUseStorageMigration,
   mockUseVersionCheck,
-  mockSetFirestoreSyncState,
+  mockSetFirestoreEnabled,
 } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
   mockUseDateNavigation: vi.fn(),
   mockUseSignatureMode: vi.fn(),
   mockUseStorageMigration: vi.fn(),
   mockUseVersionCheck: vi.fn(),
-  mockSetFirestoreSyncState: vi.fn(),
+  mockSetFirestoreEnabled: vi.fn(),
 }));
 
 vi.mock('@/context', () => ({
@@ -32,7 +32,7 @@ vi.mock('@/hooks/useStorageMigration', () => ({
 }));
 
 vi.mock('@/services/repositories/repositoryConfig', () => ({
-  setFirestoreSyncState: (...args: unknown[]) => mockSetFirestoreSyncState(...args),
+  setFirestoreEnabled: (...args: unknown[]) => mockSetFirestoreEnabled(...args),
 }));
 
 import { useAppBootstrapState } from '@/app-shell/bootstrap/useAppBootstrapState';
@@ -98,14 +98,11 @@ describe('useAppBootstrapState', () => {
     expect(mockUseVersionCheck).toHaveBeenCalledTimes(1);
     expect(mockUseSignatureMode).toHaveBeenCalledWith('2026-03-27', null, true);
     await waitFor(() => {
-      expect(mockSetFirestoreSyncState).toHaveBeenCalledWith({
-        mode: 'bootstrapping',
-        reason: 'auth_loading',
-      });
+      expect(mockSetFirestoreEnabled).toHaveBeenCalledWith(true);
     });
   });
 
-  it('keeps the app in loading while an authenticated session is still rehydrating', async () => {
+  it('falls back to unauthenticated when the session has no active loading flag', async () => {
     mockUseAuth.mockReturnValue(
       createAuthState({
         sessionState: { status: 'authenticating', user: null },
@@ -118,13 +115,8 @@ describe('useAppBootstrapState', () => {
 
     const { result } = renderHook(() => useAppBootstrapState());
 
-    expect(result.current.status).toBe('loading');
-    await waitFor(() => {
-      expect(mockSetFirestoreSyncState).toHaveBeenCalledWith({
-        mode: 'bootstrapping',
-        reason: 'auth_loading',
-      });
-    });
+    expect(result.current.status).toBe('unauthenticated');
+    await waitFor(() => expect(mockSetFirestoreEnabled).toHaveBeenCalledWith(false));
   });
 
   it('prioritizes signature mode over loading and auth gating', () => {
@@ -149,10 +141,7 @@ describe('useAppBootstrapState', () => {
     const { result } = renderHook(() => useAppBootstrapState());
 
     expect(result.current.status).toBe('unauthenticated');
-    expect(mockSetFirestoreSyncState).toHaveBeenCalledWith({
-      mode: 'local_only',
-      reason: 'auth_unavailable',
-    });
+    expect(mockSetFirestoreEnabled).toHaveBeenCalledWith(false);
   });
 
   it('returns authenticated with the resolved app date navigation', () => {
@@ -190,13 +179,10 @@ describe('useAppBootstrapState', () => {
     }
     expect(mockUseStorageMigration).toHaveBeenCalledWith({ enabled: true });
     expect(mockUseSignatureMode).toHaveBeenCalledWith('2026-03-27', currentUser, false);
-    expect(mockSetFirestoreSyncState).toHaveBeenCalledWith({
-      mode: 'enabled',
-      reason: 'ready',
-    });
+    expect(mockSetFirestoreEnabled).toHaveBeenCalledWith(true);
   });
 
-  it('keeps Firestore in bootstrapping while an authenticated session reconnects Firebase', () => {
+  it('keeps Firestore disabled while an authenticated session reconnects Firebase', () => {
     const currentUser = {
       uid: 'user-1',
       email: 'admin@hospital.cl',
@@ -220,9 +206,6 @@ describe('useAppBootstrapState', () => {
 
     renderHook(() => useAppBootstrapState());
 
-    expect(mockSetFirestoreSyncState).toHaveBeenCalledWith({
-      mode: 'bootstrapping',
-      reason: 'auth_connecting',
-    });
+    expect(mockSetFirestoreEnabled).toHaveBeenCalledWith(false);
   });
 });

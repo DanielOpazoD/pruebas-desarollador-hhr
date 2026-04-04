@@ -2,11 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { queryKeys } from '../config/queryClient';
 import { CatalogRepository } from '@/services/repositories/CatalogRepository';
-import { useAuthState } from './useAuthState';
+import { useAuth } from '@/context/AuthContext';
 import type { ProfessionalCatalogItem } from '@/types/domain/professionals';
 
 const useCatalogRealtimeReady = (): boolean => {
-  const { remoteSyncStatus } = useAuthState();
+  const { remoteSyncStatus } = useAuth();
   return remoteSyncStatus === 'ready';
 };
 

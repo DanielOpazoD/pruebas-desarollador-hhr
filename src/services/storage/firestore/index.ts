@@ -9,6 +9,7 @@ export {
   getAllRecordsFromFirestore,
   getMonthRecordsFromFirestore,
   getRecordFromFirestore,
+  getRecordFromFirestoreDetailed,
   getRecordsRangeFromFirestore,
   isFirestoreAvailable,
   subscribeToRecord,

@@ -3,11 +3,7 @@ import { firebaseEnvironmentPolicyLogger } from '@/services/firebase-runtime/fir
 export const shouldUseSingleTabFirestoreCache = () => {
   if (typeof window === 'undefined') return false;
 
-  const hostname = window.location.hostname;
-  const isLocalhost =
-    hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0';
-
-  return import.meta.env.DEV || isLocalhost;
+  return import.meta.env.VITE_FIRESTORE_FORCE_SINGLE_TAB_CACHE === 'true';
 };
 
 export const parseEmulatorHost = (rawHost: string): { host: string; port: number } | null => {

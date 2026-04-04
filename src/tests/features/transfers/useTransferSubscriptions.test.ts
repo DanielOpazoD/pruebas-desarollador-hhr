@@ -1,18 +1,22 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTransferSubscriptions } from '@/features/transfers/hooks/useTransferSubscriptions';
+import { useAuth } from '@/context/AuthContext';
 import { setFirestoreSyncState } from '@/services/repositories/repositoryConfig';
 
 const subscribeToTransfersMock = vi.fn();
-const useAuthStateMock = vi.fn();
 
 vi.mock('@/services/transfers/transferService', () => ({
   subscribeToTransfers: (...args: unknown[]) => subscribeToTransfersMock(...args),
 }));
 
-vi.mock('@/hooks/useAuthState', () => ({
-  useAuthState: () => useAuthStateMock(),
-}));
+vi.mock('@/context/AuthContext', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/context/AuthContext')>();
+  return {
+    ...actual,
+    useAuth: vi.fn(),
+  };
+});
 
 describe('useTransferSubscriptions', () => {
   beforeEach(() => {
@@ -21,11 +25,9 @@ describe('useTransferSubscriptions', () => {
       mode: 'enabled',
       reason: 'ready',
     });
-    useAuthStateMock.mockReturnValue({
-      isFirebaseConnected: true,
-      authLoading: false,
+    vi.mocked(useAuth).mockReturnValue({
       remoteSyncStatus: 'ready',
-    });
+    } as ReturnType<typeof useAuth>);
   });
 
   it('loads transfers from subscription callback', async () => {
@@ -66,11 +68,9 @@ describe('useTransferSubscriptions', () => {
       mode: 'bootstrapping',
       reason: 'auth_loading',
     });
-    useAuthStateMock.mockReturnValue({
-      isFirebaseConnected: true,
-      authLoading: true,
+    vi.mocked(useAuth).mockReturnValue({
       remoteSyncStatus: 'bootstrapping',
-    });
+    } as ReturnType<typeof useAuth>);
 
     const { result } = renderHook(() => useTransferSubscriptions());
 
@@ -79,11 +79,9 @@ describe('useTransferSubscriptions', () => {
   });
 
   it('stays local-only without subscribing when remote sync is unavailable', async () => {
-    useAuthStateMock.mockReturnValue({
-      isFirebaseConnected: false,
-      authLoading: false,
+    vi.mocked(useAuth).mockReturnValue({
       remoteSyncStatus: 'local_only',
-    });
+    } as ReturnType<typeof useAuth>);
 
     const { result } = renderHook(() => useTransferSubscriptions());
 

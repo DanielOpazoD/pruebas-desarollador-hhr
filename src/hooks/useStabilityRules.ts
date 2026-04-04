@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { DailyRecordDateRef } from '@/types/domain/dailyRecordSlices';
-import { useAuthState } from './useAuthState';
+import { useAuth } from '@/context/AuthContext';
 import { buildStabilityRules, type StabilityRules } from './stabilityRulesController';
 import { isE2EEditableRecordOverrideEnabled } from '@/shared/runtime/e2eRuntime';
 export type { StabilityRules } from './stabilityRulesController';
@@ -16,7 +16,7 @@ export type { StabilityRules } from './stabilityRulesController';
  *    corresponding fields are locked.
  */
 export const useStabilityRules = (record: DailyRecordDateRef | null): StabilityRules => {
-  const { role, isEditor } = useAuthState();
+  const { role, isEditor } = useAuth();
   const e2eEditableOverride = isE2EEditableRecordOverrideEnabled();
   const isAdmin = role === 'admin' || e2eEditableOverride;
 

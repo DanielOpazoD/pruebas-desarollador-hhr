@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { TransferRequest } from '@/types/transfers';
 import { subscribeToTransfers } from '@/services/transfers/transferService';
-import { useAuthState } from '@/hooks/useAuthState';
+import { useAuth } from '@/context/AuthContext';
 
 interface UseTransferSubscriptionsResult {
   transfers: TransferRequest[];
@@ -10,7 +10,7 @@ interface UseTransferSubscriptionsResult {
 }
 
 export const useTransferSubscriptions = (): UseTransferSubscriptionsResult => {
-  const { remoteSyncStatus } = useAuthState();
+  const { remoteSyncStatus } = useAuth();
   const [transfers, setTransfers] = useState<TransferRequest[]>([]);
   const [isLoading, setIsLoading] = useState(remoteSyncStatus === 'bootstrapping');
   const [error, setError] = useState<string | null>(null);

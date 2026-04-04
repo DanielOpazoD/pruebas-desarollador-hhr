@@ -15,7 +15,7 @@ import {
   exportTableConfig,
   importTableConfig,
 } from '@/services/storage/tableConfigService';
-import { useAuthState } from '@/hooks/useAuthState';
+import { useAuth } from './AuthContext';
 import { tableConfigLogger } from '@/services/storage/storageLoggers';
 
 // ============================================================================
@@ -45,7 +45,7 @@ const TableConfigContext = createContext<TableConfigContextType | undefined>(und
 // ============================================================================
 
 export const TableConfigProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { remoteSyncStatus } = useAuthState();
+  const { remoteSyncStatus } = useAuth();
   const [config, setConfig] = useState<TableConfig>(getDefaultConfig);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);

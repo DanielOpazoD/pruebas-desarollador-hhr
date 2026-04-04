@@ -9,7 +9,7 @@ import {
   useSaveProfessionalsMutation,
 } from '@/hooks/useStaffQuery';
 import { CatalogRepository } from '@/services/repositories/CatalogRepository';
-import { useAuthState } from '@/hooks/useAuthState';
+import { useAuth } from '@/context/AuthContext';
 import { setFirestoreSyncState } from '@/services/repositories/repositoryConfig';
 import {
   createQueryClientTestWrapper,
@@ -18,12 +18,18 @@ import {
 
 // Mock dependencies
 vi.mock('@/services/repositories/CatalogRepository');
-vi.mock('@/hooks/useAuthState');
+vi.mock('@/context/AuthContext', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/context/AuthContext')>();
+  return {
+    ...actual,
+    useAuth: vi.fn(),
+  };
+});
 
 const createWrapper = () => createQueryClientTestWrapper().wrapper;
 
 describe('useStaffQuery Hooks', () => {
-  type AuthStateValue = ReturnType<typeof useAuthState>;
+  type AuthContextValue = ReturnType<typeof useAuth>;
   type SubscribeNursesFn = typeof CatalogRepository.subscribeNurses;
   type SubscribeTensFn = typeof CatalogRepository.subscribeTens;
   type SubscribeProfessionalsFn = typeof CatalogRepository.subscribeProfessionals;
@@ -36,11 +42,9 @@ describe('useStaffQuery Hooks', () => {
       mode: 'enabled',
       reason: 'ready',
     });
-    vi.mocked(useAuthState).mockReturnValue({
-      isFirebaseConnected: true,
-      authLoading: false,
+    vi.mocked(useAuth).mockReturnValue({
       remoteSyncStatus: 'ready',
-    } as AuthStateValue);
+    } as AuthContextValue);
   });
 
   describe('Queries', () => {
@@ -92,11 +96,9 @@ describe('useStaffQuery Hooks', () => {
     });
 
     it('should not subscribe if firebase is not connected', async () => {
-      vi.mocked(useAuthState).mockReturnValue({
-        isFirebaseConnected: false,
-        authLoading: false,
+      vi.mocked(useAuth).mockReturnValue({
         remoteSyncStatus: 'local_only',
-      } as AuthStateValue);
+      } as AuthContextValue);
       const subscribeMock = vi.fn();
       vi.mocked(CatalogRepository.subscribeNurses).mockImplementation(
         subscribeMock as unknown as SubscribeNursesFn
@@ -112,11 +114,9 @@ describe('useStaffQuery Hooks', () => {
         mode: 'bootstrapping',
         reason: 'auth_loading',
       });
-      vi.mocked(useAuthState).mockReturnValue({
-        isFirebaseConnected: true,
-        authLoading: true,
+      vi.mocked(useAuth).mockReturnValue({
         remoteSyncStatus: 'bootstrapping',
-      } as AuthStateValue);
+      } as AuthContextValue);
       const subscribeMock = vi.fn();
       vi.mocked(CatalogRepository.subscribeNurses).mockImplementation(
         subscribeMock as unknown as SubscribeNursesFn

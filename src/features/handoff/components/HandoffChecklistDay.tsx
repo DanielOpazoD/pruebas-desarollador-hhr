@@ -74,7 +74,7 @@ const ChecklistItem: React.FC<{
       </div>
       <span
         className={clsx(
-          'text-slate-700 font-medium transition-colors text-xs print:text-[8px] print:text-black',
+          'text-slate-700 font-medium transition-colors text-[10px] print:text-[8px] print:text-black',
           hoverTextColor
         )}
       >
@@ -93,7 +93,7 @@ export const HandoffChecklistDay: React.FC<HandoffChecklistDayProps> = ({
     <div className="flex items-center gap-4 print:gap-3 print:bg-transparent print:border-none print:p-0">
       <div className="flex items-center gap-2 text-sky-700 shrink-0">
         <ClipboardCheck size={14} className="print:w-3 print:h-3" />
-        <span className="text-xs font-bold uppercase print:text-black print:text-[9px]">
+        <span className="text-[10px] font-bold uppercase print:text-black print:text-[9px]">
           Checklist
         </span>
       </div>

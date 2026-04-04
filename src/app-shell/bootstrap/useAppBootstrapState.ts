@@ -2,10 +2,7 @@ import React from 'react';
 import { useDateNavigation, useSignatureMode, useVersionCheck } from '@/hooks';
 import type { UseDateNavigationReturn } from '@/hooks/useDateNavigation';
 import { useStorageMigration } from '@/hooks/useStorageMigration';
-import {
-  setFirestoreSyncState,
-  type FirestoreSyncState,
-} from '@/services/repositories/repositoryConfig';
+import { setFirestoreEnabled } from '@/services/repositories/repositoryConfig';
 import { createScopedLogger } from '@/services/utils/loggerScope';
 import { useAuth, type AuthContextType } from '@/context';
 
@@ -40,62 +37,31 @@ const isIgnorableWorkerShutdownImportError = (error: unknown): boolean => {
 
 const appLogger = createScopedLogger('App');
 
-const resolveFirestoreSyncState = (auth: AuthContextType): FirestoreSyncState => {
-  if (auth.remoteSyncStatus === 'ready') {
-    return {
-      mode: 'enabled',
-      reason: 'ready',
-    };
-  }
-
-  if (auth.remoteSyncStatus === 'bootstrapping') {
-    return {
-      mode: 'bootstrapping',
-      reason:
-        auth.isLoading || auth.sessionState.status === 'authenticating'
-          ? 'auth_loading'
-          : 'auth_connecting',
-    };
-  }
-
-  return {
-    mode: 'local_only',
-    reason: 'auth_unavailable',
-  };
-};
-
-const useSyncFirestoreStatus = (auth: AuthContextType) => {
+const useSyncFirestoreStatus = (isFirebaseConnected: boolean) => {
   React.useEffect(() => {
     try {
-      setFirestoreSyncState(resolveFirestoreSyncState(auth));
+      setFirestoreEnabled(isFirebaseConnected);
     } catch (error) {
       if (isIgnorableWorkerShutdownImportError(error)) {
         return;
       }
       appLogger.error('Failed to sync Firestore status', error);
     }
-  }, [
-    auth.isAuthenticated,
-    auth.isFirebaseConnected,
-    auth.isLoading,
-    auth.remoteSyncStatus,
-    auth.sessionState.status,
-  ]);
+  }, [isFirebaseConnected]);
 };
 
 export const useAppBootstrapState = (): AppBootstrapState => {
   const auth = useAuth();
-  const isAuthBootstrapPending = auth.isLoading || auth.sessionState.status === 'authenticating';
 
-  useStorageMigration({ enabled: !isAuthBootstrapPending && auth.isAuthenticated });
+  useStorageMigration({ enabled: !auth.isLoading && auth.isAuthenticated });
   useVersionCheck();
-  useSyncFirestoreStatus(auth);
+  useSyncFirestoreStatus(auth.isFirebaseConnected);
 
   const dateNav = useDateNavigation();
   const { isSignatureMode, currentDateString } = useSignatureMode(
     dateNav.currentDateString,
     auth.currentUser,
-    isAuthBootstrapPending
+    auth.isLoading
   );
 
   return React.useMemo<AppBootstrapState>(() => {
@@ -106,7 +72,7 @@ export const useAppBootstrapState = (): AppBootstrapState => {
       };
     }
 
-    if (isAuthBootstrapPending) {
+    if (auth.isLoading) {
       return {
         status: 'loading',
         auth,
@@ -129,5 +95,5 @@ export const useAppBootstrapState = (): AppBootstrapState => {
         currentDateString,
       },
     };
-  }, [auth, currentDateString, dateNav, isAuthBootstrapPending, isSignatureMode]);
+  }, [auth, currentDateString, dateNav, isSignatureMode]);
 };
