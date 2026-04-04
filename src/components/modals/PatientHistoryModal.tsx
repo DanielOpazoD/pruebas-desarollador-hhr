@@ -115,17 +115,31 @@ export const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({
       headerIconColor="text-blue-600"
     >
       <div className="space-y-4">
-        {/* Patient Info Header - Compact */}
-        <div className="flex items-center gap-2 p-3 bg-slate-50/80 rounded-lg border border-slate-100">
-          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold shrink-0 text-sm">
+        {/* Patient Info Header - Compact inline */}
+        <div className="flex items-center gap-2 p-2.5 bg-slate-50/80 rounded-xl border border-slate-100">
+          <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold shrink-0 text-[11px]">
             {patientName ? patientName.charAt(0) : 'P'}
           </div>
-          <div>
-            <h4 className="font-bold text-slate-800 text-sm leading-tight">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <span className="font-semibold text-slate-800 text-[13px] truncate">
               {patientName || history?.patientName || 'Paciente'}
-            </h4>
-            <p className="text-[10px] text-slate-500 font-mono leading-tight">{patientRut}</p>
+            </span>
+            <span className="text-[10px] text-slate-400 font-mono shrink-0">{patientRut}</span>
           </div>
+          {history && (
+            <div className="flex items-center gap-3 shrink-0 text-[10px]">
+              <span className="text-slate-400">
+                Ingreso:{' '}
+                <strong className="text-slate-600">
+                  {formatHandoffVerboseDate(history.firstSeen)}
+                </strong>
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 font-semibold text-blue-700">
+                <Clock size={9} />
+                {history.totalDays}d
+              </span>
+            </div>
+          )}
         </div>
 
         {isLoading ? (
@@ -140,27 +154,7 @@ export const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({
           </div>
         ) : history ? (
           <>
-            {/* Summary Stats - More compact grid */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 bg-blue-50/30 rounded-lg border border-blue-100/50 flex items-center justify-between">
-                <span className="text-[10px] text-blue-600 uppercase font-black tracking-widest">
-                  Días Totales
-                </span>
-                <span className="text-xl font-black text-slate-700">{history.totalDays}</span>
-              </div>
-              <div className="p-3 bg-slate-50/50 rounded-lg border border-slate-100 flex items-center justify-between">
-                <span className="text-[10px] text-slate-500 uppercase font-black tracking-widest">
-                  Ingreso
-                </span>
-                <div className="text-right">
-                  <span className="text-[10px] font-bold text-slate-600 block">
-                    {formatHandoffVerboseDate(history.firstSeen)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Timeline - Compact */}
+            {/* Timeline */}
             <div className="relative pl-0.5">
               {/* Vertical line connection */}
               <div className="absolute left-[19px] top-4 bottom-4 w-0.5 bg-slate-100" />
