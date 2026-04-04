@@ -8,6 +8,10 @@ import { createUnauthenticatedAuthSessionState } from '@/services/auth/authSessi
 import type { AuthSessionState, AuthUser } from '@/types/auth';
 import { safeJsonParse } from '@/utils/jsonUtils';
 import { authStateLogger } from '@/hooks/hookLoggers';
+import {
+  clearSessionScopedClientState,
+  resolveSessionOwnerKey,
+} from '@/services/storage/sessionScopedStorageService';
 
 export const getE2EBootstrapUser = (): AuthUser | null => {
   if (typeof window === 'undefined' || !window.__HHR_E2E_OVERRIDE__) {
@@ -70,6 +74,7 @@ export const createHandleLogout =
     setSessionState: (sessionState: AuthSessionState) => void
   ): ((reason?: 'manual' | 'automatic') => Promise<void>) =>
   async (reason: 'manual' | 'automatic' = 'manual') => {
+    const ownerKey = resolveSessionOwnerKey(user?.uid);
     if (user?.email) {
       await defaultAuditPort.logUserLogout(user.email, reason);
     }
@@ -88,6 +93,14 @@ export const createHandleLogout =
       await signOut();
     } catch (error) {
       authStateLogger.warn('Firebase signOut failed (probably offline)', error);
+    }
+
+    try {
+      if (ownerKey) {
+        await clearSessionScopedClientState(reason);
+      }
+    } catch (error) {
+      authStateLogger.warn('Local session cleanup failed during logout', error);
     }
 
     setSessionState(createUnauthenticatedAuthSessionState());

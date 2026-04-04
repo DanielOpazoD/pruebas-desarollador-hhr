@@ -34,6 +34,7 @@ export interface AuthContextType {
   isViewer: boolean;
   isFirebaseConnected: boolean;
   remoteSyncStatus: ReturnType<typeof useAuthState>['remoteSyncStatus'];
+  remoteSyncState: ReturnType<typeof useAuthState>['remoteSyncState'];
   signOut: () => Promise<void>;
 }
 
@@ -76,6 +77,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       isViewer: authState.isViewer,
       isFirebaseConnected: authState.isFirebaseConnected,
       remoteSyncStatus: authState.remoteSyncStatus,
+      remoteSyncState: authState.remoteSyncState,
       signOut: authState.handleLogout,
     }),
     [
@@ -89,6 +91,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       authState.isViewer,
       authState.isFirebaseConnected,
       authState.remoteSyncStatus,
+      authState.remoteSyncState,
       authState.handleLogout,
     ]
   );

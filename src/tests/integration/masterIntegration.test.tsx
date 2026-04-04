@@ -61,7 +61,17 @@ vi.mock('@/context/UIContext', () => ({
   UIProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 vi.mock('@/context/VersionContext', () => ({
-  useVersion: () => ({ checkVersion: vi.fn(), currentVersion: '1.0.0' }),
+  useVersion: () => ({
+    checkVersion: vi.fn(),
+    checkRuntimeContract: vi.fn(),
+    currentVersion: '1.0.0',
+    isOutdated: false,
+    appVersion: 1,
+    remoteVersion: null,
+    updateReason: 'current',
+    runtimeContract: null,
+    forceUpdate: vi.fn(),
+  }),
   VersionProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 

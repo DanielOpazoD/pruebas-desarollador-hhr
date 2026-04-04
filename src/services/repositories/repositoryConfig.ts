@@ -11,7 +11,9 @@ export type FirestoreSyncReason =
   | 'auth_loading'
   | 'auth_connecting'
   | 'auth_unavailable'
-  | 'manual_override';
+  | 'manual_override'
+  | 'offline'
+  | 'runtime_unavailable';
 
 export interface FirestoreSyncState {
   mode: FirestoreSyncMode;
@@ -19,6 +21,11 @@ export interface FirestoreSyncState {
 }
 
 export type RemoteSyncRuntimeStatus = 'ready' | 'bootstrapping' | 'local_only';
+
+export interface RemoteSyncRuntimeState {
+  status: RemoteSyncRuntimeStatus;
+  reason: FirestoreSyncReason;
+}
 
 export interface ResolveRemoteSyncRuntimeStatusInput {
   authLoading: boolean;
@@ -69,20 +76,48 @@ export const setFirestoreSyncState = (state: FirestoreSyncState): void => {
 
 export const getFirestoreSyncState = (): FirestoreSyncState => firestoreSyncState;
 
-export const resolveRemoteSyncRuntimeStatus = ({
+export const resolveRemoteSyncRuntimeState = ({
   authLoading,
   isFirebaseConnected,
-}: ResolveRemoteSyncRuntimeStatusInput): RemoteSyncRuntimeStatus => {
+  firestoreSyncState,
+}: ResolveRemoteSyncRuntimeStatusInput): RemoteSyncRuntimeState => {
   if (authLoading) {
-    return 'bootstrapping';
+    return {
+      status: 'bootstrapping',
+      reason: 'auth_loading',
+    };
   }
 
   if (isFirebaseConnected) {
-    return 'ready';
+    return {
+      status: 'ready',
+      reason: 'ready',
+    };
   }
 
-  return 'local_only';
+  if (firestoreSyncState?.mode === 'bootstrapping') {
+    return {
+      status: 'bootstrapping',
+      reason: firestoreSyncState.reason,
+    };
+  }
+
+  if (firestoreSyncState?.mode === 'enabled') {
+    return {
+      status: 'bootstrapping',
+      reason: firestoreSyncState.reason === 'ready' ? 'auth_connecting' : firestoreSyncState.reason,
+    };
+  }
+
+  return {
+    status: 'local_only',
+    reason: firestoreSyncState?.reason || 'auth_unavailable',
+  };
 };
 
+export const resolveRemoteSyncRuntimeStatus = (
+  input: ResolveRemoteSyncRuntimeStatusInput
+): RemoteSyncRuntimeStatus => resolveRemoteSyncRuntimeState(input).status;
+
 export const shouldUseRemoteSyncRuntime = (input: ResolveRemoteSyncRuntimeStatusInput): boolean =>
-  resolveRemoteSyncRuntimeStatus(input) === 'ready';
+  resolveRemoteSyncRuntimeState(input).status === 'ready';

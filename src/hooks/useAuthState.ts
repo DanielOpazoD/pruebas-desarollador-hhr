@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { onAuthSessionStateChange, signOut, hasActiveFirebaseSession } from '@/services/auth';
 import {
   executeRedirectAuthResolution,
@@ -28,9 +28,15 @@ import {
   type AuthRuntimeSnapshot,
 } from '@/services/auth/authRuntimeSnapshot';
 import {
-  resolveRemoteSyncRuntimeStatus,
+  resolveRemoteSyncRuntimeState,
+  type FirestoreSyncState,
   type RemoteSyncRuntimeStatus,
 } from '@/services/repositories/repositoryConfig';
+import { buildAuthRemoteSyncState } from '@/services/auth/authRemoteSyncState';
+import {
+  reconcileAuthorizedSessionOwner,
+  resolveSessionOwnerKey,
+} from '@/services/storage/sessionScopedStorageService';
 
 /**
  * Return type for the useAuthState hook.
@@ -51,6 +57,8 @@ export interface UseAuthStateReturn {
   isFirebaseConnected: boolean;
   /** Estado operativo del runtime remoto para sync y suscripciones */
   remoteSyncStatus: RemoteSyncRuntimeStatus;
+  /** Estado operativo enriquecido del runtime remoto */
+  remoteSyncState: FirestoreSyncState;
   /** Snapshot operativo de auth bootstrap y sesión */
   authRuntime: AuthRuntimeSnapshot;
   /** Signs out the current user */
@@ -120,13 +128,24 @@ export const useAuthState = (): UseAuthStateReturn => {
   const isEditor = canEditAnyAppModule(role);
   const isViewer = !isEditor;
   const canEdit = isEditor;
-  const remoteSyncStatus = useMemo(
+  const remoteSyncState = useMemo(
     () =>
-      resolveRemoteSyncRuntimeStatus({
+      buildAuthRemoteSyncState({
+        sessionState,
         authLoading,
         isFirebaseConnected,
+        isOnline,
       }),
-    [authLoading, isFirebaseConnected]
+    [sessionState, authLoading, isFirebaseConnected, isOnline]
+  );
+  const remoteSyncStatus = useMemo(
+    () =>
+      resolveRemoteSyncRuntimeState({
+        authLoading,
+        isFirebaseConnected,
+        firestoreSyncState: remoteSyncState,
+      }),
+    [authLoading, isFirebaseConnected, remoteSyncState]
   );
   const authRuntime = useMemo(
     () =>
@@ -139,6 +158,19 @@ export const useAuthState = (): UseAuthStateReturn => {
     [sessionState, authLoading, isFirebaseConnected, isOnline]
   );
 
+  useEffect(() => {
+    if (authLoading || !authorizedUser) {
+      return;
+    }
+
+    const ownerKey = resolveSessionOwnerKey(authorizedUser.uid);
+    if (!ownerKey) {
+      return;
+    }
+
+    void reconcileAuthorizedSessionOwner(ownerKey);
+  }, [authLoading, authorizedUser]);
+
   return {
     sessionState,
     currentUser,
@@ -146,7 +178,8 @@ export const useAuthState = (): UseAuthStateReturn => {
     user: currentUser,
     authLoading,
     isFirebaseConnected,
-    remoteSyncStatus,
+    remoteSyncStatus: remoteSyncStatus.status,
+    remoteSyncState,
     authRuntime,
     handleLogout,
     role,

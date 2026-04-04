@@ -1,18 +1,26 @@
 import type { SyncTask } from '@/services/storage/syncQueueTypes';
 
 export interface SyncQueueStorePort {
-  listAll(): Promise<SyncTask[]>;
-  listRecent(limit: number): Promise<SyncTask[]>;
-  listReadyPending(now: number, limit: number): Promise<SyncTask[]>;
-  findReusableTask(type: SyncTask['type'], key: string): Promise<SyncTask | null>;
+  listAll(ownerKey?: string | null): Promise<SyncTask[]>;
+  listRecent(limit: number, ownerKey?: string | null): Promise<SyncTask[]>;
+  listReadyPending(now: number, limit: number, ownerKey?: string | null): Promise<SyncTask[]>;
+  findReusableTask(
+    type: SyncTask['type'],
+    key: string,
+    ownerKey?: string | null
+  ): Promise<SyncTask | null>;
   add(task: SyncTask): Promise<void>;
   update(taskId: number, patch: Partial<SyncTask>): Promise<void>;
   delete(taskId: number): Promise<void>;
+  deleteAll(): Promise<void>;
+  deleteByOwner(ownerKey: string | null): Promise<void>;
+  countForeign(ownerKey: string | null): Promise<number>;
 }
 
 export interface SyncRuntimePort {
   isOnline(): boolean;
   onOnline(callback: () => void): void;
+  getOwnerKey(): string | null;
 }
 
 export interface SyncTransportPort {

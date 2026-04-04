@@ -35,4 +35,29 @@ describe('useVersionCheck', () => {
     expect(mockReconcileBootstrapRuntime).toHaveBeenCalledTimes(1);
     expect(mockWarn).not.toHaveBeenCalled();
   });
+
+  it('re-checks on an interval during long-lived sessions', async () => {
+    renderHook(() => useVersionCheck());
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+    });
+
+    expect(mockReconcileBootstrapRuntime).toHaveBeenCalledTimes(2);
+  });
+
+  it('re-checks when the window regains focus', async () => {
+    renderHook(() => useVersionCheck());
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'));
+    });
+
+    expect(mockReconcileBootstrapRuntime).toHaveBeenCalledTimes(2);
+  });
 });

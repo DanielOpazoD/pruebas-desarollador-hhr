@@ -40,9 +40,12 @@ vi.mock('@/context/UIContext', () => ({
 vi.mock('@/context/VersionContext', () => ({
   useVersion: () => ({
     checkVersion: vi.fn(),
+    checkRuntimeContract: vi.fn(),
     isOutdated: false,
     appVersion: 1,
     remoteVersion: null,
+    updateReason: 'current',
+    runtimeContract: null,
     forceUpdate: vi.fn(),
   }),
 }));

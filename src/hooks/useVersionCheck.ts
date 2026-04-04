@@ -2,12 +2,16 @@ import { useEffect, useRef } from 'react';
 import { reconcileBootstrapRuntime } from '@/app-shell/bootstrap/bootstrapAppRuntime';
 import { versionCheckLogger } from '@/hooks/hookLoggers';
 
+const VERSION_CHECK_DELAY_MS = 1000;
+const VERSION_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+
 export const useVersionCheck = (): void => {
   const hasChecked = useRef(false);
 
   useEffect(() => {
-    // Only run once per session
-    if (hasChecked.current) return;
+    if (hasChecked.current) {
+      return;
+    }
     hasChecked.current = true;
 
     const checkVersion = async () => {
@@ -18,7 +22,32 @@ export const useVersionCheck = (): void => {
       }
     };
 
-    // Small delay to not block initial render
-    setTimeout(checkVersion, 1000);
+    const timeoutId = window.setTimeout(() => {
+      void checkVersion();
+    }, VERSION_CHECK_DELAY_MS);
+
+    const intervalId = window.setInterval(() => {
+      void checkVersion();
+    }, VERSION_CHECK_INTERVAL_MS);
+
+    const handleFocus = () => {
+      void checkVersion();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void checkVersion();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 };

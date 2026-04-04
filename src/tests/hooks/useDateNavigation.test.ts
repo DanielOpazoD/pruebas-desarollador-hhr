@@ -8,128 +8,151 @@ import { renderHook, act } from '@testing-library/react';
 import { useDateNavigation } from '@/hooks/useDateNavigation';
 
 describe('useDateNavigation', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-        vi.useFakeTimers();
-        vi.setSystemTime(new Date('2026-02-20T09:00:00.000Z'));
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-02-20T09:00:00.000Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  describe('Initial State', () => {
+    it('should initialize with current date', () => {
+      const { result } = renderHook(() => useDateNavigation());
+      const today = new Date();
+
+      expect(result.current.selectedYear).toBe(today.getFullYear());
+      expect(result.current.selectedMonth).toBe(today.getMonth());
+      expect(result.current.selectedDay).toBe(today.getDate());
     });
 
-    afterEach(() => {
-        vi.useRealTimers();
+    it('should initialize from the date query string when present', () => {
+      window.history.replaceState({}, '', '/?date=2026-03-14');
+
+      const { result } = renderHook(() => useDateNavigation());
+
+      expect(result.current.selectedYear).toBe(2026);
+      expect(result.current.selectedMonth).toBe(2);
+      expect(result.current.selectedDay).toBe(14);
     });
 
-    describe('Initial State', () => {
-        it('should initialize with current date', () => {
-            const { result } = renderHook(() => useDateNavigation());
-            const today = new Date();
+    it('should generate correct date string format', () => {
+      const { result } = renderHook(() => useDateNavigation());
 
-            expect(result.current.selectedYear).toBe(today.getFullYear());
-            expect(result.current.selectedMonth).toBe(today.getMonth());
-            expect(result.current.selectedDay).toBe(today.getDate());
-        });
+      // Should be in YYYY-MM-DD format
+      expect(result.current.currentDateString).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+  });
 
-        it('should generate correct date string format', () => {
-            const { result } = renderHook(() => useDateNavigation());
+  describe('setSelectedYear', () => {
+    it('should update the year', () => {
+      const { result } = renderHook(() => useDateNavigation());
 
-            // Should be in YYYY-MM-DD format
-            expect(result.current.currentDateString).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-        });
+      act(() => {
+        result.current.setSelectedYear(2020);
+      });
+
+      expect(result.current.selectedYear).toBe(2020);
+    });
+  });
+
+  describe('setSelectedMonth', () => {
+    it('should update the month', () => {
+      const { result } = renderHook(() => useDateNavigation());
+
+      act(() => {
+        result.current.setSelectedMonth(5); // June (0-indexed)
+      });
+
+      expect(result.current.selectedMonth).toBe(5);
+    });
+  });
+
+  describe('setSelectedDay', () => {
+    it('should update the day', () => {
+      const { result } = renderHook(() => useDateNavigation());
+
+      act(() => {
+        result.current.setSelectedDay(15);
+      });
+
+      expect(result.current.selectedDay).toBe(15);
+    });
+  });
+
+  describe('daysInMonth', () => {
+    it('should return correct days for January', () => {
+      const { result } = renderHook(() => useDateNavigation());
+
+      act(() => {
+        result.current.setSelectedYear(2024);
+        result.current.setSelectedMonth(0); // January
+      });
+
+      expect(result.current.daysInMonth).toBe(31);
     });
 
-    describe('setSelectedYear', () => {
-        it('should update the year', () => {
-            const { result } = renderHook(() => useDateNavigation());
+    it('should return correct days for February in leap year', () => {
+      const { result } = renderHook(() => useDateNavigation());
 
-            act(() => {
-                result.current.setSelectedYear(2020);
-            });
+      act(() => {
+        result.current.setSelectedYear(2024); // Leap year
+        result.current.setSelectedMonth(1); // February
+      });
 
-            expect(result.current.selectedYear).toBe(2020);
-        });
+      expect(result.current.daysInMonth).toBe(29);
     });
 
-    describe('setSelectedMonth', () => {
-        it('should update the month', () => {
-            const { result } = renderHook(() => useDateNavigation());
+    it('should return correct days for February in non-leap year', () => {
+      const { result } = renderHook(() => useDateNavigation());
 
-            act(() => {
-                result.current.setSelectedMonth(5); // June (0-indexed)
-            });
+      act(() => {
+        result.current.setSelectedYear(2025); // Not a leap year
+        result.current.setSelectedMonth(1); // February
+      });
 
-            expect(result.current.selectedMonth).toBe(5);
-        });
+      expect(result.current.daysInMonth).toBe(28);
+    });
+  });
+
+  describe('currentDateString', () => {
+    it('should format date with zero-padded month and day', () => {
+      const { result } = renderHook(() => useDateNavigation());
+
+      act(() => {
+        result.current.setSelectedYear(2024);
+        result.current.setSelectedMonth(0); // January
+        result.current.setSelectedDay(5);
+      });
+
+      expect(result.current.currentDateString).toBe('2024-01-05');
     });
 
-    describe('setSelectedDay', () => {
-        it('should update the day', () => {
-            const { result } = renderHook(() => useDateNavigation());
+    it('should format date correctly for double-digit month/day', () => {
+      const { result } = renderHook(() => useDateNavigation());
 
-            act(() => {
-                result.current.setSelectedDay(15);
-            });
+      act(() => {
+        result.current.setSelectedYear(2024);
+        result.current.setSelectedMonth(11); // December
+        result.current.setSelectedDay(25);
+      });
 
-            expect(result.current.selectedDay).toBe(15);
-        });
+      expect(result.current.currentDateString).toBe('2024-12-25');
     });
 
-    describe('daysInMonth', () => {
-        it('should return correct days for January', () => {
-            const { result } = renderHook(() => useDateNavigation());
+    it('should keep the current date reflected in the URL for refresh recovery', () => {
+      const { result } = renderHook(() => useDateNavigation());
 
-            act(() => {
-                result.current.setSelectedYear(2024);
-                result.current.setSelectedMonth(0); // January
-            });
+      act(() => {
+        result.current.setSelectedYear(2024);
+        result.current.setSelectedMonth(11);
+        result.current.setSelectedDay(25);
+      });
 
-            expect(result.current.daysInMonth).toBe(31);
-        });
-
-        it('should return correct days for February in leap year', () => {
-            const { result } = renderHook(() => useDateNavigation());
-
-            act(() => {
-                result.current.setSelectedYear(2024); // Leap year
-                result.current.setSelectedMonth(1); // February
-            });
-
-            expect(result.current.daysInMonth).toBe(29);
-        });
-
-        it('should return correct days for February in non-leap year', () => {
-            const { result } = renderHook(() => useDateNavigation());
-
-            act(() => {
-                result.current.setSelectedYear(2025); // Not a leap year
-                result.current.setSelectedMonth(1); // February
-            });
-
-            expect(result.current.daysInMonth).toBe(28);
-        });
+      const params = new URLSearchParams(window.location.search);
+      expect(params.get('date')).toBe('2024-12-25');
     });
-
-    describe('currentDateString', () => {
-        it('should format date with zero-padded month and day', () => {
-            const { result } = renderHook(() => useDateNavigation());
-
-            act(() => {
-                result.current.setSelectedYear(2024);
-                result.current.setSelectedMonth(0); // January
-                result.current.setSelectedDay(5);
-            });
-
-            expect(result.current.currentDateString).toBe('2024-01-05');
-        });
-
-        it('should format date correctly for double-digit month/day', () => {
-            const { result } = renderHook(() => useDateNavigation());
-
-            act(() => {
-                result.current.setSelectedYear(2024);
-                result.current.setSelectedMonth(11); // December
-                result.current.setSelectedDay(25);
-            });
-
-            expect(result.current.currentDateString).toBe('2024-12-25');
-        });
-    });
+  });
 });

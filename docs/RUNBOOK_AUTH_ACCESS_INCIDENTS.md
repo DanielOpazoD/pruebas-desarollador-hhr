@@ -60,6 +60,10 @@ Chequeo operativo adicional:
 3. confirmar que el frontend publicado ya haga `signOut` en usuarios sin rol;
 4. cerrar sesión y volver a entrar;
 5. si persiste, revisar si la sesión actual está rehidratando desde un build viejo.
+6. confirmar que el logout manual limpió también estado sensible local:
+   - ownership de la cola de sync;
+   - cache clínica de sesión;
+   - marcas de sesión reciente.
 
 ## Caso 3: el usuario entra a Google pero vuelve al login con “Acceso no autorizado”
 
@@ -84,6 +88,21 @@ Chequeo operativo adicional:
    - `redirect_resolution`
    - `current_session_resolution`
      antes de depender del observer continuo de auth.
+7. revisar si `VersionContext` marcó:
+   - `new_build_available`
+   - `runtime_contract_mismatch`
+   - `schema_ahead_of_client`
+     Si hay mismatch real, no insistir con la sesión vieja: la acción correcta es actualización/recarga segura.
+
+## Caso 5: tras `F5` no vuelve a la misma vista funcional
+
+1. validar que la URL conserve al menos:
+   - `module`
+   - `date`
+2. si falta `module`, revisar shell/navigation state.
+3. si falta `date`, revisar `useDateNavigation`.
+4. si la sesión ya no es válida, el comportamiento esperado es volver a login, no restaurar shell.
+5. si la app quedó bloqueada por mismatch de runtime/schema, tratarlo como incidente de versión, no de navegación.
 
 ## Señales esperadas del sistema sano
 

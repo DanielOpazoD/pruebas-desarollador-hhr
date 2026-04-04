@@ -5,6 +5,8 @@
  */
 
 export {
+  clearAllSyncQueue,
+  clearSyncQueueForOwner,
   ensureSyncQueueOnlineListener,
   getSyncQueueDomainMetrics,
   getSyncQueueStats,
@@ -14,6 +16,7 @@ export {
   listRecentSyncQueueOperations,
   processSyncQueue,
   queueSyncTask,
+  recordSyncQueueOwnershipTelemetry,
 } from '@/services/storage/sync/publicSyncQueue';
 
 export type {

@@ -9,6 +9,7 @@ import * as authUseCases from '@/application/auth';
 import * as auditService from '@/services/admin/auditService';
 import { setFirestoreSyncState } from '@/services/repositories/repositoryConfig';
 import type { AuthSessionState, AuthUser, UserRole } from '@/types/auth';
+import * as sessionScopedStorageService from '@/services/storage/sessionScopedStorageService';
 
 vi.mock('@/services/auth/authService', () => ({
   onAuthSessionStateChange: vi.fn(),
@@ -24,6 +25,12 @@ vi.mock('@/application/auth', () => ({
 vi.mock('@/services/admin/auditService', () => ({
   logUserLogin: vi.fn(),
   logUserLogout: vi.fn(),
+}));
+
+vi.mock('@/services/storage/sessionScopedStorageService', () => ({
+  clearSessionScopedClientState: vi.fn().mockResolvedValue(undefined),
+  reconcileAuthorizedSessionOwner: vi.fn().mockResolvedValue(undefined),
+  resolveSessionOwnerKey: (uid: string | null | undefined) => (uid ? `user:${uid}` : null),
 }));
 
 const setOnlineStatus = (online: boolean) => {
@@ -96,6 +103,11 @@ describe('useAuthState baseline', () => {
 
     expect(result.current.user?.uid).toBe('u123');
     expect(result.current.isEditor).toBe(true);
+    await waitFor(() =>
+      expect(sessionScopedStorageService.reconcileAuthorizedSessionOwner).toHaveBeenCalledWith(
+        'user:u123'
+      )
+    );
   });
 
   it('treats doctor_specialist as editor-capable for restricted medical handoff editing', async () => {
@@ -144,6 +156,9 @@ describe('useAuthState baseline', () => {
     expect(result.current.user).toBe(null);
     expect(authService.signOut).toHaveBeenCalled();
     expect(sessionStorage.getItem(RECENT_MANUAL_LOGOUT_KEY)).toBeTruthy();
+    expect(sessionScopedStorageService.clearSessionScopedClientState).toHaveBeenCalledWith(
+      'manual'
+    );
   });
 
   it('should skip auth loading after a recent manual logout when no firebase session remains', async () => {

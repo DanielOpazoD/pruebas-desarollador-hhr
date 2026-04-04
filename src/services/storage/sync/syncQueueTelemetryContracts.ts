@@ -8,6 +8,7 @@ export interface SyncQueueTelemetry {
   failed: number;
   conflict: number;
   retrying: number;
+  orphanedTasks?: number;
   oldestPendingAgeMs: number;
   batchSize: number;
   oldestPendingBudgetState: SyncQueueBudgetState;
@@ -15,4 +16,5 @@ export interface SyncQueueTelemetry {
   runtimeState: SyncQueueRuntimeState;
   readState?: 'ok' | 'unavailable';
   issues?: string[];
+  ownerKey?: string | null;
 }

@@ -569,7 +569,10 @@ const mockVersionContextValue = {
   isOutdated: false,
   appVersion: 1,
   remoteVersion: 1,
+  updateReason: 'current',
+  runtimeContract: null,
   checkVersion: vi.fn(),
+  checkRuntimeContract: vi.fn(),
   forceUpdate: vi.fn(),
 };
 

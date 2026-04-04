@@ -57,6 +57,16 @@ export class HangaRoaDatabase extends Dexie {
       syncQueue:
         '++id, status, timestamp, type, key, nextAttemptAt, [status+timestamp], [status+nextAttemptAt]',
     });
+
+    this.version(10).stores({
+      dailyRecords: 'date, lastUpdated, dateTimestamp',
+      catalogs: 'id',
+      errorLogs: 'id, timestamp, severity',
+      auditLogs: 'id, timestamp, action, entityId, recordDate',
+      settings: 'id',
+      syncQueue:
+        '++id, status, timestamp, type, key, ownerKey, nextAttemptAt, [status+timestamp], [status+nextAttemptAt], [ownerKey+status], [ownerKey+type]',
+    });
   }
 }
 

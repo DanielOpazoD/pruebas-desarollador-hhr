@@ -210,29 +210,14 @@ const parseExamsFromHTML = (html: string): MMRADExam[] => {
     let pdfUrl: string | null = pdfMatch?.[1] ?? null;
     if (pdfUrl?.startsWith('/')) pdfUrl = MMRAD_BASE_URL + pdfUrl;
 
-    // DICOM viewer link — Liferay uses javascript:window.open('http://'+hostname+':80/...')
-    // We extract the path after the hostname concatenation and build a proper HTTPS URL
+    // DICOM HTML5 viewer link — uses UtilServlet?a=3 (image viewer)
+    // Pattern: window.open('/ingrad-ris-informehtml/UtilServlet?a=3&u=...&idexamen=...&idprestacion=...')
     let dicomUrl: string | null = null;
-    const dicomVisorMatch = rowHtml.match(
-      /window\.open\('http:\/\/'\+document\.location\.hostname\+':80([^']+)'/
+    const dicomMatch = rowHtml.match(
+      /window\.open\('(\/ingrad-ris-informehtml\/UtilServlet\?a=3[^']+)'/
     );
-    if (dicomVisorMatch?.[1]) {
-      dicomUrl = `${MMRAD_BASE_URL}${dicomVisorMatch[1]}`;
-    } else {
-      // Fallback: try standard window.open('...')
-      const dicomFallback = rowHtml.match(/window\.open\('(\/ingrad-telerad-visor[^']+)'/);
-      if (dicomFallback?.[1]) {
-        dicomUrl = `${MMRAD_BASE_URL}${dicomFallback[1]}`;
-      }
-    }
-
-    // HTML report link (full report with description) — UtilServlet?a=1
-    let informeHtmlUrl: string | null = null;
-    const informeMatch = rowHtml.match(
-      /window\.open\('(\/ingrad-ris-informehtml\/UtilServlet\?a=1[^']+)'/
-    );
-    if (informeMatch?.[1]) {
-      informeHtmlUrl = `${MMRAD_BASE_URL}${informeMatch[1]}`;
+    if (dicomMatch?.[1]) {
+      dicomUrl = `${MMRAD_BASE_URL}${dicomMatch[1]}`;
     }
 
     exams.push({
@@ -243,7 +228,7 @@ const parseExamsFromHTML = (html: string): MMRADExam[] => {
       estado: tds[13] || '',
       pdf_url: pdfUrl,
       dicom_url: dicomUrl,
-      informe_html_url: informeHtmlUrl,
+      informe_html_url: null,
     });
   }
 

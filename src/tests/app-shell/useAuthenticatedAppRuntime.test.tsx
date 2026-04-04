@@ -1,6 +1,7 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthContextType } from '@/context';
+import type { FirestoreSyncState } from '@/services/repositories/repositoryConfig';
 import type { AuthSessionState, AuthUser } from '@/types/auth';
 
 const {
@@ -49,6 +50,7 @@ const createAuthorizedUser = (): AuthUser => ({
 const createAuthState = (overrides: Partial<AuthContextType> = {}): AuthContextType => {
   const authorizedUser = createAuthorizedUser();
   const sessionState: AuthSessionState = { status: 'authorized', user: authorizedUser };
+  const remoteSyncState: FirestoreSyncState = { mode: 'enabled', reason: 'ready' };
 
   return {
     sessionState,
@@ -66,6 +68,7 @@ const createAuthState = (overrides: Partial<AuthContextType> = {}): AuthContextT
     isViewer: false,
     isFirebaseConnected: true,
     remoteSyncStatus: 'ready',
+    remoteSyncState,
     signOut: vi.fn(),
     ...overrides,
   };

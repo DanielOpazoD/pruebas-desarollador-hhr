@@ -35,6 +35,17 @@ describe('useAppState', () => {
 
       expect(result.current.currentModule).toBe('CUDYR');
     });
+
+    it('should persist the selected module in the URL for refresh recovery', () => {
+      const { result } = renderHook(() => useAppState());
+
+      act(() => {
+        result.current.setCurrentModule('MEDICAL_HANDOFF');
+      });
+
+      const params = new URLSearchParams(window.location.search);
+      expect(params.get('module')).toBe('MEDICAL_HANDOFF');
+    });
   });
 
   describe('Census View Mode', () => {

@@ -22,6 +22,7 @@ export interface SyncTask {
   lastErrorAction?: string;
   lastErrorAt?: number;
   key?: string;
+  ownerKey?: string;
   contexts?: SyncDomainContext[];
   origin?: SyncTaskOrigin;
   recoveryPolicy?: string;

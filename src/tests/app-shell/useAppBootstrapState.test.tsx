@@ -7,14 +7,14 @@ const {
   mockUseSignatureMode,
   mockUseStorageMigration,
   mockUseVersionCheck,
-  mockSetFirestoreEnabled,
+  mockSetFirestoreSyncState,
 } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
   mockUseDateNavigation: vi.fn(),
   mockUseSignatureMode: vi.fn(),
   mockUseStorageMigration: vi.fn(),
   mockUseVersionCheck: vi.fn(),
-  mockSetFirestoreEnabled: vi.fn(),
+  mockSetFirestoreSyncState: vi.fn(),
 }));
 
 vi.mock('@/context', () => ({
@@ -32,30 +32,54 @@ vi.mock('@/hooks/useStorageMigration', () => ({
 }));
 
 vi.mock('@/services/repositories/repositoryConfig', () => ({
-  setFirestoreEnabled: (...args: unknown[]) => mockSetFirestoreEnabled(...args),
+  setFirestoreSyncState: (...args: unknown[]) => mockSetFirestoreSyncState(...args),
 }));
 
 import { useAppBootstrapState } from '@/app-shell/bootstrap/useAppBootstrapState';
 
-const createAuthState = (overrides: Record<string, unknown> = {}) => ({
-  sessionState: { status: 'unauthenticated', user: null },
-  authRuntime: {} as never,
-  currentUser: null,
-  authorizedUser: null,
-  user: null,
-  role: 'viewer',
-  isLoading: false,
-  isAuthenticated: false,
-  isAuthorizedSession: false,
-  isAnonymousSignature: false,
-  isUnauthorized: false,
-  isEditor: false,
-  isViewer: true,
-  isFirebaseConnected: false,
-  remoteSyncStatus: 'local_only',
-  signOut: vi.fn(),
-  ...overrides,
-});
+const createAuthState = (overrides: Record<string, unknown> = {}) => {
+  const remoteSyncStatus = (overrides.remoteSyncStatus || 'local_only') as
+    | 'ready'
+    | 'bootstrapping'
+    | 'local_only';
+  const remoteSyncState =
+    overrides.remoteSyncState ||
+    (remoteSyncStatus === 'ready'
+      ? {
+          mode: 'enabled',
+          reason: 'ready',
+        }
+      : remoteSyncStatus === 'bootstrapping'
+        ? {
+            mode: 'bootstrapping',
+            reason: 'auth_loading',
+          }
+        : {
+            mode: 'local_only',
+            reason: 'auth_unavailable',
+          });
+
+  return {
+    sessionState: { status: 'unauthenticated', user: null },
+    authRuntime: {} as never,
+    currentUser: null,
+    authorizedUser: null,
+    user: null,
+    role: 'viewer',
+    isLoading: false,
+    isAuthenticated: false,
+    isAuthorizedSession: false,
+    isAnonymousSignature: false,
+    isUnauthorized: false,
+    isEditor: false,
+    isViewer: true,
+    isFirebaseConnected: false,
+    remoteSyncStatus,
+    remoteSyncState,
+    signOut: vi.fn(),
+    ...overrides,
+  };
+};
 
 const createDateNavigation = (overrides: Record<string, unknown> = {}) => ({
   selectedYear: 2026,
@@ -98,7 +122,10 @@ describe('useAppBootstrapState', () => {
     expect(mockUseVersionCheck).toHaveBeenCalledTimes(1);
     expect(mockUseSignatureMode).toHaveBeenCalledWith('2026-03-27', null, true);
     await waitFor(() => {
-      expect(mockSetFirestoreEnabled).toHaveBeenCalledWith(true);
+      expect(mockSetFirestoreSyncState).toHaveBeenCalledWith({
+        mode: 'bootstrapping',
+        reason: 'auth_loading',
+      });
     });
   });
 
@@ -116,7 +143,12 @@ describe('useAppBootstrapState', () => {
     const { result } = renderHook(() => useAppBootstrapState());
 
     expect(result.current.status).toBe('unauthenticated');
-    await waitFor(() => expect(mockSetFirestoreEnabled).toHaveBeenCalledWith(false));
+    await waitFor(() =>
+      expect(mockSetFirestoreSyncState).toHaveBeenCalledWith({
+        mode: 'bootstrapping',
+        reason: 'auth_loading',
+      })
+    );
   });
 
   it('prioritizes signature mode over loading and auth gating', () => {
@@ -141,7 +173,10 @@ describe('useAppBootstrapState', () => {
     const { result } = renderHook(() => useAppBootstrapState());
 
     expect(result.current.status).toBe('unauthenticated');
-    expect(mockSetFirestoreEnabled).toHaveBeenCalledWith(false);
+    expect(mockSetFirestoreSyncState).toHaveBeenCalledWith({
+      mode: 'local_only',
+      reason: 'auth_unavailable',
+    });
   });
 
   it('returns authenticated with the resolved app date navigation', () => {
@@ -179,7 +214,10 @@ describe('useAppBootstrapState', () => {
     }
     expect(mockUseStorageMigration).toHaveBeenCalledWith({ enabled: true });
     expect(mockUseSignatureMode).toHaveBeenCalledWith('2026-03-27', currentUser, false);
-    expect(mockSetFirestoreEnabled).toHaveBeenCalledWith(true);
+    expect(mockSetFirestoreSyncState).toHaveBeenCalledWith({
+      mode: 'enabled',
+      reason: 'ready',
+    });
   });
 
   it('keeps Firestore disabled while an authenticated session reconnects Firebase', () => {
@@ -206,6 +244,9 @@ describe('useAppBootstrapState', () => {
 
     renderHook(() => useAppBootstrapState());
 
-    expect(mockSetFirestoreEnabled).toHaveBeenCalledWith(false);
+    expect(mockSetFirestoreSyncState).toHaveBeenCalledWith({
+      mode: 'bootstrapping',
+      reason: 'auth_loading',
+    });
   });
 });

@@ -146,6 +146,8 @@ export const createSyncQueueEngine = ({
     meta?: Pick<SyncTask, 'contexts' | 'origin' | 'recoveryPolicy'>
   ): Promise<void> => {
     const key = getTaskKey(type, payload);
+    const ownerKey = runtime.getOwnerKey();
+    const taskOwnerKey = ownerKey ?? undefined;
     const now = Date.now();
     const contextMeta = buildSyncQueueTaskContextMeta({
       contexts: meta?.contexts,
@@ -153,13 +155,14 @@ export const createSyncQueueEngine = ({
     });
 
     if (key) {
-      const existing = await store.findReusableTask(type, key);
+      const existing = await store.findReusableTask(type, key, ownerKey);
       if (existing?.id) {
         await store.update(existing.id, {
           payload,
           timestamp: now,
           retryCount: 0,
           key,
+          ownerKey: taskOwnerKey,
           contexts: contextMeta.contexts,
           origin: meta?.origin || existing.origin || 'direct_queue',
           recoveryPolicy: contextMeta.recoveryPolicy,
@@ -177,6 +180,7 @@ export const createSyncQueueEngine = ({
       timestamp: now,
       retryCount: 0,
       key,
+      ownerKey: taskOwnerKey,
       contexts: contextMeta.contexts,
       origin: meta?.origin || 'direct_queue',
       recoveryPolicy: contextMeta.recoveryPolicy,
@@ -186,7 +190,8 @@ export const createSyncQueueEngine = ({
   };
 
   const getTelemetry = async (): Promise<SyncQueueTelemetry> => {
-    const rows = await store.listAll();
+    const ownerKey = runtime.getOwnerKey();
+    const rows = await store.listAll(ownerKey);
     return buildSyncQueueTelemetryFromRows(rows, Date.now(), batchSize);
   };
 
@@ -200,7 +205,7 @@ export const createSyncQueueEngine = ({
   };
 
   const listRecentOperations = async (limit: number): Promise<SyncQueueOperationSnapshot[]> => {
-    const rows = await store.listRecent(limit);
+    const rows = await store.listRecent(limit, runtime.getOwnerKey());
     return rows.map(row => ({
       id: row.id,
       type: row.type,
@@ -217,7 +222,7 @@ export const createSyncQueueEngine = ({
   };
 
   const getDomainMetrics = async (): Promise<SyncQueueDomainMetrics> => {
-    const rows = await store.listAll();
+    const rows = await store.listAll(runtime.getOwnerKey());
     return buildSyncQueueDomainMetrics(rows);
   };
 
@@ -230,7 +235,11 @@ export const createSyncQueueEngine = ({
         'syncQueue.process',
         async () => {
           while (true) {
-            const readyTasks = await store.listReadyPending(Date.now(), batchSize);
+            const readyTasks = await store.listReadyPending(
+              Date.now(),
+              batchSize,
+              runtime.getOwnerKey()
+            );
             if (readyTasks.length === 0) {
               return;
             }

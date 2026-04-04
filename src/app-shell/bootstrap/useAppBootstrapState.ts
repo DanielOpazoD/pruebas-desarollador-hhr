@@ -2,7 +2,7 @@ import React from 'react';
 import { useDateNavigation, useSignatureMode, useVersionCheck } from '@/hooks';
 import type { UseDateNavigationReturn } from '@/hooks/useDateNavigation';
 import { useStorageMigration } from '@/hooks/useStorageMigration';
-import { setFirestoreEnabled } from '@/services/repositories/repositoryConfig';
+import { setFirestoreSyncState } from '@/services/repositories/repositoryConfig';
 import { createScopedLogger } from '@/services/utils/loggerScope';
 import { useAuth, type AuthContextType } from '@/context';
 
@@ -37,17 +37,17 @@ const isIgnorableWorkerShutdownImportError = (error: unknown): boolean => {
 
 const appLogger = createScopedLogger('App');
 
-const useSyncFirestoreStatus = (isFirebaseConnected: boolean) => {
+const useSyncFirestoreStatus = (remoteSyncState: AuthContextType['remoteSyncState']) => {
   React.useEffect(() => {
     try {
-      setFirestoreEnabled(isFirebaseConnected);
+      setFirestoreSyncState(remoteSyncState);
     } catch (error) {
       if (isIgnorableWorkerShutdownImportError(error)) {
         return;
       }
       appLogger.error('Failed to sync Firestore status', error);
     }
-  }, [isFirebaseConnected]);
+  }, [remoteSyncState]);
 };
 
 export const useAppBootstrapState = (): AppBootstrapState => {
@@ -55,7 +55,7 @@ export const useAppBootstrapState = (): AppBootstrapState => {
 
   useStorageMigration({ enabled: !auth.isLoading && auth.isAuthenticated });
   useVersionCheck();
-  useSyncFirestoreStatus(auth.isFirebaseConnected);
+  useSyncFirestoreStatus(auth.remoteSyncState);
 
   const dateNav = useDateNavigation();
   const { isSignatureMode, currentDateString } = useSignatureMode(

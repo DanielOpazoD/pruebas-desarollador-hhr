@@ -21,6 +21,8 @@ import {
 import { recordSyncQueueBudgetTelemetry } from '@/services/storage/sync/syncQueueTelemetryController';
 
 const syncObservability = createDomainObservability('sync', 'SyncQueue');
+const syncQueueStore = createDexieSyncQueueStore();
+const syncRuntime = createBrowserSyncRuntime();
 
 const toSyncIssueMessage = (error: unknown, fallback: string): string =>
   error instanceof Error && error.message.trim().length > 0 ? error.message : fallback;
@@ -45,24 +47,45 @@ const buildUnavailableSyncQueueTelemetry = (error: unknown): SyncQueueTelemetry 
   failed: 0,
   conflict: 0,
   retrying: 0,
+  orphanedTasks: 0,
   oldestPendingAgeMs: 0,
   batchSize: SYNC_QUEUE_BATCH_SIZE,
   oldestPendingBudgetState: 'ok',
   retryingBudgetState: 'ok',
   runtimeState: 'blocked',
   readState: 'unavailable',
+  ownerKey: syncRuntime.getOwnerKey(),
   issues: [toSyncIssueMessage(error, 'La cola de sincronizacion no pudo leerse.')],
 });
 
 const syncQueueEngine = createSyncQueueEngine({
-  store: createDexieSyncQueueStore(),
-  runtime: createBrowserSyncRuntime(),
+  store: syncQueueStore,
+  runtime: syncRuntime,
   transport: createFirestoreSyncTransport(),
   batchSize: SYNC_QUEUE_BATCH_SIZE,
   maxRetries: MAX_RETRIES,
   baseRetryDelayMs: BASE_RETRY_DELAY_MS,
   maxRetryDelayMs: MAX_RETRY_DELAY_MS,
 });
+
+export const recordSyncQueueOwnershipTelemetry = (
+  operation: 'session_owner_changed' | 'session_owner_cleared',
+  context: Record<string, unknown> = {}
+): void => {
+  recordOperationalTelemetry({
+    category: 'sync',
+    operation,
+    status: 'degraded',
+    runtimeState: 'recoverable',
+    issues: [
+      'La cola de sincronizacion actualizo su ownership local para mantener aislamiento entre sesiones.',
+    ],
+    context: {
+      ownerKey: syncRuntime.getOwnerKey(),
+      ...context,
+    },
+  });
+};
 
 export const isConflictSyncError = (error: unknown): boolean =>
   classifySyncError(error).category === 'conflict';
@@ -90,13 +113,19 @@ export const getSyncQueueTelemetry = async (): Promise<SyncQueueTelemetry> => {
   try {
     await ensureDbReady();
     const telemetry = await syncQueueEngine.getTelemetry();
+    const ownerKey = syncRuntime.getOwnerKey();
+    const orphanedTasks = await syncQueueStore.countForeign(ownerKey);
     recordSyncQueueBudgetTelemetry(telemetry, {
       source: 'public_sync_queue',
       batchSize: SYNC_QUEUE_BATCH_SIZE,
       maxRetries: MAX_RETRIES,
+      ownerKey,
+      orphanedTasks,
     });
     return {
       ...telemetry,
+      ownerKey,
+      orphanedTasks,
       readState: 'ok',
     };
   } catch (error) {
@@ -191,6 +220,45 @@ export const processSyncQueue = async (): Promise<void> => {
       context: {
         source: 'public_sync_queue',
       },
+    });
+  }
+};
+
+export const clearSyncQueueForOwner = async (ownerKey: string | null): Promise<void> => {
+  try {
+    await ensureDbReady();
+    await syncQueueStore.deleteByOwner(ownerKey);
+  } catch (error) {
+    syncObservability.logger.error('Failed to clear sync queue for owner', error);
+    recordOperationalTelemetry({
+      category: 'sync',
+      operation: 'sync_queue_owner_clear_failure',
+      status: 'failed',
+      runtimeState: 'blocked',
+      issues: [
+        toSyncIssueMessage(error, 'La cola de sincronizacion no pudo limpiarse para esta sesion.'),
+      ],
+      context: {
+        ownerKey,
+      },
+    });
+  }
+};
+
+export const clearAllSyncQueue = async (): Promise<void> => {
+  try {
+    await ensureDbReady();
+    await syncQueueStore.deleteAll();
+  } catch (error) {
+    syncObservability.logger.error('Failed to clear full sync queue', error);
+    recordOperationalTelemetry({
+      category: 'sync',
+      operation: 'sync_queue_clear_all_failure',
+      status: 'failed',
+      runtimeState: 'blocked',
+      issues: [
+        toSyncIssueMessage(error, 'La cola de sincronizacion no pudo limpiarse por completo.'),
+      ],
     });
   }
 };

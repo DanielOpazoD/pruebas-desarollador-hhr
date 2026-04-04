@@ -12,7 +12,7 @@
  * ```
  */
 
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useModal, UseModalReturn } from './useModal';
 import type { ModuleType } from '@/constants/navigationConfig';
 
@@ -39,6 +39,16 @@ const resolveInitialModule = (): ModuleType => {
   const rawModule = params.get('module');
   if (!rawModule) return 'CENSUS';
   return MODULES_FROM_URL.includes(rawModule as ModuleType) ? (rawModule as ModuleType) : 'CENSUS';
+};
+
+const syncModuleToUrl = (module: ModuleType): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const url = new URL(window.location.href);
+  url.searchParams.set('module', module);
+  window.history.replaceState(window.history.state, '', url);
 };
 
 export interface UseAppStateReturn {
@@ -107,6 +117,10 @@ export function useAppState(): UseAppStateReturn {
       currentModule === 'NURSING_HANDOFF' ||
       currentModule === 'MEDICAL_HANDOFF'
     );
+  }, [currentModule]);
+
+  useEffect(() => {
+    syncModuleToUrl(currentModule);
   }, [currentModule]);
 
   return {
