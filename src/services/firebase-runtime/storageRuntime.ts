@@ -1,15 +1,19 @@
 import type { FirebaseStorage } from 'firebase/storage';
-import * as firebaseConfig from '@/firebaseConfig';
+import {
+  defaultFirebaseConfigRuntimeAdapter,
+  type FirebaseConfigRuntimeAdapter,
+} from '@/services/firebase-runtime/firebaseConfigRuntimeAdapter';
 
 export interface StorageRuntime {
   ready: Promise<unknown>;
   getStorage: () => Promise<FirebaseStorage>;
 }
 
-export const defaultStorageRuntime: StorageRuntime = {
-  ready:
-    'firebaseReady' in firebaseConfig
-      ? (firebaseConfig as { firebaseReady: Promise<unknown> }).firebaseReady
-      : Promise.resolve(),
-  getStorage: () => firebaseConfig.getStorageInstance(),
-};
+export const createStorageRuntime = (
+  adapter: FirebaseConfigRuntimeAdapter = defaultFirebaseConfigRuntimeAdapter
+): StorageRuntime => ({
+  ready: adapter.ready,
+  getStorage: () => adapter.getStorage(),
+});
+
+export const defaultStorageRuntime: StorageRuntime = createStorageRuntime();

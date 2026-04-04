@@ -6,7 +6,10 @@ import {
   uploadBytes,
   type FirebaseStorage,
 } from 'firebase/storage';
-import * as firebaseConfig from '@/firebaseConfig';
+import {
+  defaultFirebaseConfigRuntimeAdapter,
+  type FirebaseConfigRuntimeAdapter,
+} from '@/services/firebase-runtime/firebaseConfigRuntimeAdapter';
 
 export interface ReminderFirestoreRuntime {
   firestore: Firestore;
@@ -22,18 +25,26 @@ export interface ReminderStorageRuntime {
   deleteObject: typeof deleteObject;
 }
 
-export const defaultReminderFirestoreRuntime: ReminderFirestoreRuntime = {
+export const createReminderFirestoreRuntime = (
+  adapter: FirebaseConfigRuntimeAdapter = defaultFirebaseConfigRuntimeAdapter
+): ReminderFirestoreRuntime => ({
   get firestore() {
-    return firebaseConfig.db;
+    return adapter.getDb();
   },
   collection,
   doc,
-};
+});
 
-export const defaultReminderStorageRuntime: ReminderStorageRuntime = {
-  getStorage: firebaseConfig.getStorageInstance,
+export const createReminderStorageRuntime = (
+  adapter: FirebaseConfigRuntimeAdapter = defaultFirebaseConfigRuntimeAdapter
+): ReminderStorageRuntime => ({
+  getStorage: () => adapter.getStorage(),
   ref,
   uploadBytes,
   getDownloadURL,
   deleteObject,
-};
+});
+
+export const defaultReminderFirestoreRuntime: ReminderFirestoreRuntime =
+  createReminderFirestoreRuntime();
+export const defaultReminderStorageRuntime: ReminderStorageRuntime = createReminderStorageRuntime();

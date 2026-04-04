@@ -119,6 +119,22 @@ export const EXAM_CATEGORIES: ExamCategory[] = [
   },
 ];
 
+const EXAM_CATEGORY_LOOKUP = EXAM_CATEGORIES.reduce<Record<string, ExamCategory>>(
+  (lookup, category) => {
+    lookup[category.id] = category;
+    return lookup;
+  },
+  {}
+);
+
+export const getExamCategoryById = (id: string): ExamCategory => {
+  const category = EXAM_CATEGORY_LOOKUP[id];
+  if (!category) {
+    throw new Error(`Unknown exam category: ${id}`);
+  }
+  return category;
+};
+
 /** Procedencia options for the form */
 export const PROCEDENCIA_OPTIONS = [
   'Infantil',

@@ -1,17 +1,21 @@
 import type { Firestore } from 'firebase/firestore';
-import * as firebaseConfig from '@/firebaseConfig';
+import {
+  defaultFirebaseConfigRuntimeAdapter,
+  type FirebaseConfigRuntimeAdapter,
+} from '@/services/firebase-runtime/firebaseConfigRuntimeAdapter';
 
 export interface FirestoreRuntime {
   db: Firestore;
   ready: Promise<unknown>;
 }
 
-export const defaultFirestoreRuntime: FirestoreRuntime = {
+export const createFirestoreRuntime = (
+  adapter: FirebaseConfigRuntimeAdapter = defaultFirebaseConfigRuntimeAdapter
+): FirestoreRuntime => ({
   get db() {
-    return firebaseConfig.db;
+    return adapter.getDb();
   },
-  ready:
-    'firebaseReady' in firebaseConfig
-      ? (firebaseConfig as { firebaseReady: Promise<unknown> }).firebaseReady
-      : Promise.resolve(),
-};
+  ready: adapter.ready,
+});
+
+export const defaultFirestoreRuntime: FirestoreRuntime = createFirestoreRuntime();

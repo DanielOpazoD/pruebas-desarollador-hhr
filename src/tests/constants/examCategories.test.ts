@@ -9,6 +9,7 @@ import {
   PROCEDENCIA_OPTIONS,
   FONASA_LEVELS,
   ExamCategory,
+  getExamCategoryById,
 } from '@/constants/examCategories';
 
 describe('EXAM_CATEGORIES', () => {
@@ -30,6 +31,11 @@ describe('EXAM_CATEGORIES', () => {
     const ids = EXAM_CATEGORIES.map(c => c.id);
     const uniqueIds = new Set(ids);
     expect(uniqueIds.size).toBe(ids.length);
+  });
+
+  it('should resolve categories by id without depending on array position', () => {
+    expect(getExamCategoryById('bioquimica').name).toBe('BIOQUIMICA');
+    expect(getExamCategoryById('inmunologia').name).toBe('INMUNOLOGIA/SEROLOGÍA');
   });
 
   describe('Bioquimica Category', () => {

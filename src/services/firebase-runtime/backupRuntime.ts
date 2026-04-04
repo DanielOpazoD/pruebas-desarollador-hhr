@@ -1,7 +1,10 @@
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 import type { FirebaseStorage } from 'firebase/storage';
-import * as firebaseConfig from '@/firebaseConfig';
+import {
+  defaultFirebaseConfigRuntimeAdapter,
+  type FirebaseConfigRuntimeAdapter,
+} from '@/services/firebase-runtime/firebaseConfigRuntimeAdapter';
 
 export interface BackupFirestoreRuntime {
   auth: Auth;
@@ -14,19 +17,26 @@ export interface BackupStorageRuntime {
   getStorage: () => Promise<FirebaseStorage>;
 }
 
-export const defaultBackupFirestoreRuntime: BackupFirestoreRuntime = {
+export const createBackupFirestoreRuntime = (
+  adapter: FirebaseConfigRuntimeAdapter = defaultFirebaseConfigRuntimeAdapter
+): BackupFirestoreRuntime => ({
   get auth() {
-    return firebaseConfig.auth;
+    return adapter.getAuth();
   },
   get db() {
-    return firebaseConfig.db;
+    return adapter.getDb();
   },
-};
+});
 
-export const defaultBackupStorageRuntime: BackupStorageRuntime = {
+export const createBackupStorageRuntime = (
+  adapter: FirebaseConfigRuntimeAdapter = defaultFirebaseConfigRuntimeAdapter
+): BackupStorageRuntime => ({
   get auth() {
-    return firebaseConfig.auth;
+    return adapter.getAuth();
   },
-  ready: firebaseConfig.firebaseReady,
-  getStorage: firebaseConfig.getStorageInstance,
-};
+  ready: adapter.ready,
+  getStorage: () => adapter.getStorage(),
+});
+
+export const defaultBackupFirestoreRuntime: BackupFirestoreRuntime = createBackupFirestoreRuntime();
+export const defaultBackupStorageRuntime: BackupStorageRuntime = createBackupStorageRuntime();

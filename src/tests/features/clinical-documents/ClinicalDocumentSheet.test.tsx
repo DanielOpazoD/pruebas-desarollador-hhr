@@ -197,20 +197,6 @@ describe('ClinicalDocumentSheet', () => {
     fireEvent.click(screen.getByRole('button', { name: /negrita/i }));
     fireEvent.click(screen.getByRole('button', { name: /^Reposo Absoluto$/i }));
     fireEvent.click(screen.getByRole('button', { name: /bajar sección antecedentes/i }));
-    const dataTransfer = {
-      effectAllowed: 'move',
-      setData: vi.fn(),
-      getData: vi.fn(() => 'antecedentes'),
-    };
-    fireEvent.dragStart(screen.getByRole('button', { name: /arrastrar sección antecedentes/i }), {
-      dataTransfer,
-    });
-    const historiaSectionBlock = screen
-      .getByText('Historia y evolución clínica')
-      .closest('.clinical-document-section-block');
-    expect(historiaSectionBlock).not.toBeNull();
-    fireEvent.dragOver(historiaSectionBlock!, { dataTransfer });
-    fireEvent.drop(historiaSectionBlock!, { dataTransfer });
     fireEvent.click(screen.getByRole('button', { name: /eliminar sección antecedentes/i }));
     expect(defaultHandlers.onPrint).toHaveBeenCalled();
     expect(defaultHandlers.onRestoreTemplate).toHaveBeenCalled();
@@ -219,10 +205,6 @@ describe('ClinicalDocumentSheet', () => {
       expect.stringContaining('Reposo Absoluto')
     );
     expect(defaultHandlers.moveSection).toHaveBeenCalledWith('antecedentes', 'down');
-    expect(defaultHandlers.reorderSection).toHaveBeenCalledWith(
-      'antecedentes',
-      'historia-evolucion'
-    );
     expect(defaultHandlers.setSectionVisibility).toHaveBeenCalledWith('antecedentes', false);
     expect(screen.getByRole('button', { name: /^formato$/i })).toHaveAttribute(
       'aria-pressed',

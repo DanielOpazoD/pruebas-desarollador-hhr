@@ -39,22 +39,6 @@ const ALLOWED_ROOT_DAILY_RECORD_IMPORTS = [
   'src/services/repositories/ports/repositoryLegacyBridgePort.ts',
   'src/services/repositories/schemaEvolutionPolicy.ts',
   'src/services/repositories/schemaGovernance.ts',
-  'src/services/storage/firestore/firestoreQuerySupport.ts',
-  'src/services/storage/firestore/firestoreRecordQueries.ts',
-  'src/services/storage/firestore/firestoreRecordWrites.ts',
-  'src/services/storage/firestore/firestoreShared.ts',
-  'src/services/storage/indexeddb/indexedDbContracts.ts',
-  'src/services/storage/indexeddb/indexedDbCore.ts',
-  'src/services/storage/indexeddb/indexedDbMigrationService.ts',
-  'src/services/storage/indexeddb/indexedDbRecordService.ts',
-  'src/services/storage/legacyfirebase/legacyFirebaseRecordQueries.ts',
-  'src/services/storage/legacyfirebase/legacyFirebaseRecordReads.ts',
-  'src/services/storage/legacyfirebase/legacyFirebaseRecordSubscription.ts',
-  'src/services/storage/localpersistence/localPersistenceService.ts',
-  'src/services/storage/localstorage/localStorageCore.ts',
-  'src/services/storage/localstorage/localStorageRecordService.ts',
-  'src/services/storage/sync/firestoreSyncTransport.ts',
-  'src/services/storage/sync/syncQueueEngine.ts',
 ];
 
 describe('DailyRecord root import governance', () => {

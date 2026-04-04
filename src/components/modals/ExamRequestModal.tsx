@@ -12,7 +12,7 @@ import React from 'react';
 import { Printer, FlaskConical, UserRound } from 'lucide-react';
 import { PatientData } from '@/types/domain/patient';
 import { BaseModal } from '@/components/shared/BaseModal';
-import { EXAM_CATEGORIES } from '@/constants/examCategories';
+import { getExamCategoryById } from '@/constants/examCategories';
 import { useExamRequest } from '@/hooks/useExamRequest';
 import { EXAM_REQUEST_PRINT_STYLES } from '@/components/modals/examRequestPrintStyles';
 import {
@@ -29,6 +29,17 @@ interface ExamRequestModalProps {
 }
 
 export const ExamRequestModal: React.FC<ExamRequestModalProps> = ({ isOpen, onClose, patient }) => {
+  const bioquimica = getExamCategoryById('bioquimica');
+  const hematologia = getExamCategoryById('hematologia');
+  const coagulacion = getExamCategoryById('coagulacion');
+  const hormonas = getExamCategoryById('hormonas');
+  const microbiologicos = getExamCategoryById('microbiologicos');
+  const orina = getExamCategoryById('orina');
+  const parasitologia = getExamCategoryById('parasitologia');
+  const virologia = getExamCategoryById('virologia');
+  const inmunologia = getExamCategoryById('inmunologia');
+  const otros = getExamCategoryById('otros');
+
   const {
     selectedExams,
     procedencia,
@@ -131,16 +142,12 @@ export const ExamRequestModal: React.FC<ExamRequestModalProps> = ({ isOpen, onCl
             <div className="col-span-4 border-r-2 border-slate-900 flex flex-col">
               <div className="bg-white border-b-2 border-slate-900 text-slate-900 py-0.5 text-center flex flex-col items-center">
                 <span className="text-[9px] font-black tracking-widest uppercase">
-                  {EXAM_CATEGORIES[0].name}
+                  {bioquimica.name}
                 </span>
-                <span className="text-[6px] text-slate-500 font-bold">
-                  ({EXAM_CATEGORIES[0].tube})
-                </span>
+                <span className="text-[6px] text-slate-500 font-bold">({bioquimica.tube})</span>
               </div>
               <div className="p-2 flex flex-col gap-0.5 flex-1">
-                {EXAM_CATEGORIES[0].exams.map(exam =>
-                  renderExamItem(exam, EXAM_CATEGORIES[0].name)
-                )}
+                {bioquimica.exams.map(exam => renderExamItem(exam, bioquimica.name))}
               </div>
               <div className="bg-white border-t border-slate-300 p-2">
                 <span className="text-[8px] font-black text-slate-400 uppercase block mb-1 underline">
@@ -155,43 +162,33 @@ export const ExamRequestModal: React.FC<ExamRequestModalProps> = ({ isOpen, onCl
             <div className="col-span-4 border-r-2 border-slate-900 flex flex-col">
               <div className="bg-white border-b-2 border-slate-900 text-slate-900 py-0.5 text-center flex flex-col items-center">
                 <span className="text-[9px] font-black tracking-widest uppercase">
-                  {EXAM_CATEGORIES[1].name}
+                  {hematologia.name}
                 </span>
-                <span className="text-[6px] text-slate-500 font-bold">
-                  ({EXAM_CATEGORIES[1].tube})
-                </span>
+                <span className="text-[6px] text-slate-500 font-bold">({hematologia.tube})</span>
               </div>
               <div className="p-1 flex flex-col gap-0.5">
                 <div className="grid grid-cols-2 gap-x-2">
-                  {EXAM_CATEGORIES[1].exams.map(exam =>
-                    renderExamItem(exam, EXAM_CATEGORIES[1].name)
-                  )}
+                  {hematologia.exams.map(exam => renderExamItem(exam, hematologia.name))}
                 </div>
               </div>
 
               <div className="bg-white border-b-2 border-t-2 border-slate-900 text-slate-900 py-0.5 text-center flex flex-col items-center">
                 <span className="text-[9px] font-black tracking-widest uppercase">
-                  {EXAM_CATEGORIES[2].name}
+                  {coagulacion.name}
                 </span>
-                <span className="text-[6px] text-slate-500 font-bold">
-                  ({EXAM_CATEGORIES[2].tube})
-                </span>
+                <span className="text-[6px] text-slate-500 font-bold">({coagulacion.tube})</span>
               </div>
               <div className="p-2 flex flex-col gap-0.5">
-                {EXAM_CATEGORIES[2].exams.map(exam =>
-                  renderExamItem(exam, EXAM_CATEGORIES[2].name)
-                )}
+                {coagulacion.exams.map(exam => renderExamItem(exam, coagulacion.name))}
               </div>
 
               <div className="bg-white border-t-2 border-b-2 border-slate-900 text-slate-900 p-1 text-center">
                 <span className="text-[10px] font-black tracking-widest uppercase">
-                  {EXAM_CATEGORIES[4].name}
+                  {microbiologicos.name}
                 </span>
               </div>
               <div className="p-2 flex flex-col gap-0.5 flex-1 bg-slate-50/50">
-                {EXAM_CATEGORIES[4].exams.map(exam =>
-                  renderExamItem(exam, EXAM_CATEGORIES[4].name)
-                )}
+                {microbiologicos.exams.map(exam => renderExamItem(exam, microbiologicos.name))}
               </div>
             </div>
 
@@ -199,16 +196,12 @@ export const ExamRequestModal: React.FC<ExamRequestModalProps> = ({ isOpen, onCl
             <div className="col-span-4 flex flex-col">
               <div className="bg-white border-b-2 border-slate-900 text-slate-900 py-0.5 text-center flex flex-col items-center">
                 <span className="text-[9px] font-black tracking-widest uppercase">
-                  {EXAM_CATEGORIES[3].name}
+                  {hormonas.name}
                 </span>
-                <span className="text-[6px] text-slate-500 font-bold">
-                  ({EXAM_CATEGORIES[3].tube})
-                </span>
+                <span className="text-[6px] text-slate-500 font-bold">({hormonas.tube})</span>
               </div>
               <div className="p-1 flex flex-col gap-0.5 border-b border-slate-200">
-                {EXAM_CATEGORIES[3].exams.map(exam =>
-                  renderExamItem(exam, EXAM_CATEGORIES[3].name)
-                )}
+                {hormonas.exams.map(exam => renderExamItem(exam, hormonas.name))}
               </div>
 
               <div className="bg-white border-t-2 border-b-2 border-slate-900 text-slate-900 py-0.5 text-center">
@@ -217,13 +210,9 @@ export const ExamRequestModal: React.FC<ExamRequestModalProps> = ({ isOpen, onCl
                 </span>
               </div>
               <div className="p-2 flex flex-col gap-0.5 border-b border-slate-200">
-                {EXAM_CATEGORIES[5].exams.map(exam =>
-                  renderExamItem(exam, EXAM_CATEGORIES[5].name)
-                )}
+                {orina.exams.map(exam => renderExamItem(exam, orina.name))}
                 <div className="h-px bg-slate-200 my-1"></div>
-                {EXAM_CATEGORIES[6].exams.map(exam =>
-                  renderExamItem(exam, EXAM_CATEGORIES[6].name)
-                )}
+                {parasitologia.exams.map(exam => renderExamItem(exam, parasitologia.name))}
               </div>
 
               <div className="bg-white border-t-2 border-b-2 border-slate-900 text-slate-900 py-0.5 text-center">
@@ -232,13 +221,9 @@ export const ExamRequestModal: React.FC<ExamRequestModalProps> = ({ isOpen, onCl
                 </span>
               </div>
               <div className="p-2 flex flex-col gap-0.5 flex-1">
-                {EXAM_CATEGORIES[7].exams.map(exam =>
-                  renderExamItem(exam, EXAM_CATEGORIES[7].name)
-                )}
+                {virologia.exams.map(exam => renderExamItem(exam, virologia.name))}
                 <div className="h-px bg-slate-200 my-1"></div>
-                {EXAM_CATEGORIES[9].exams.map(exam =>
-                  renderExamItem(exam, EXAM_CATEGORIES[9].name)
-                )}
+                {otros.exams.map(exam => renderExamItem(exam, otros.name))}
               </div>
             </div>
           </div>
@@ -248,16 +233,12 @@ export const ExamRequestModal: React.FC<ExamRequestModalProps> = ({ isOpen, onCl
             <div className="col-span-4 border-r-2 border-slate-900 flex flex-col">
               <div className="bg-white border-b-2 border-slate-900 text-slate-900 py-0.5 text-center flex flex-col items-center">
                 <span className="text-[9px] font-black tracking-widest uppercase">
-                  {EXAM_CATEGORIES[8].name}
+                  {inmunologia.name}
                 </span>
-                <span className="text-[6px] text-slate-500 font-bold">
-                  ({EXAM_CATEGORIES[8].tube})
-                </span>
+                <span className="text-[6px] text-slate-500 font-bold">({inmunologia.tube})</span>
               </div>
               <div className="p-1 flex flex-col gap-0.5">
-                {EXAM_CATEGORIES[8].exams.map(exam =>
-                  renderExamItem(exam, EXAM_CATEGORIES[8].name)
-                )}
+                {inmunologia.exams.map(exam => renderExamItem(exam, inmunologia.name))}
               </div>
             </div>
 

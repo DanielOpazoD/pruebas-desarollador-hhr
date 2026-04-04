@@ -344,7 +344,7 @@ describe('TransferManagementView', () => {
     expect(screen.queryByText('Paciente rechazado')).not.toBeInTheDocument();
     expect(screen.queryByText('Paciente sin respuesta')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /gestión de traslados finalizados/i }));
+    fireEvent.click(screen.getByRole('button', { name: /traslados finalizados/i }));
 
     expect(screen.getByText('Paciente trasladado')).toBeInTheDocument();
     expect(screen.getByText('Paciente cancelado')).toBeInTheDocument();

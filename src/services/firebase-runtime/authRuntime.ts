@@ -1,5 +1,8 @@
 import type { Auth, User } from 'firebase/auth';
-import * as firebaseConfig from '@/firebaseConfig';
+import {
+  defaultFirebaseConfigRuntimeAdapter,
+  type FirebaseConfigRuntimeAdapter,
+} from '@/services/firebase-runtime/firebaseConfigRuntimeAdapter';
 
 export interface AuthRuntime {
   auth: Auth;
@@ -7,24 +10,14 @@ export interface AuthRuntime {
   getCurrentUser: () => User | null;
 }
 
-const resolveAuthInstance = (): Auth => {
-  const auth = (firebaseConfig as { auth?: Auth }).auth;
-  if (!auth) {
-    throw new Error('Auth instance is not available yet.');
-  }
-  return auth;
-};
-
-export const defaultAuthRuntime: AuthRuntime = {
+export const createAuthRuntime = (
+  adapter: FirebaseConfigRuntimeAdapter = defaultFirebaseConfigRuntimeAdapter
+): AuthRuntime => ({
   get auth() {
-    return resolveAuthInstance();
+    return adapter.getAuth();
   },
-  ready:
-    'firebaseReady' in firebaseConfig
-      ? (firebaseConfig as { firebaseReady: Promise<unknown> }).firebaseReady
-      : Promise.resolve(),
-  getCurrentUser: () => {
-    const auth = (firebaseConfig as { auth?: Auth }).auth;
-    return auth?.currentUser ?? null;
-  },
-};
+  ready: adapter.ready,
+  getCurrentUser: () => adapter.getOptionalAuth()?.currentUser ?? null,
+});
+
+export const defaultAuthRuntime: AuthRuntime = createAuthRuntime();

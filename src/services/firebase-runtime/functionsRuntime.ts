@@ -1,15 +1,19 @@
 import type { Functions } from 'firebase/functions';
-import * as firebaseConfig from '@/firebaseConfig';
+import {
+  defaultFirebaseConfigRuntimeAdapter,
+  type FirebaseConfigRuntimeAdapter,
+} from '@/services/firebase-runtime/firebaseConfigRuntimeAdapter';
 
 export interface FunctionsRuntime {
   ready: Promise<unknown>;
   getFunctions: () => Promise<Functions>;
 }
 
-export const defaultFunctionsRuntime: FunctionsRuntime = {
-  ready:
-    'firebaseReady' in firebaseConfig
-      ? (firebaseConfig as { firebaseReady: Promise<unknown> }).firebaseReady
-      : Promise.resolve(),
-  getFunctions: () => firebaseConfig.getFunctionsInstance(),
-};
+export const createFunctionsRuntime = (
+  adapter: FirebaseConfigRuntimeAdapter = defaultFirebaseConfigRuntimeAdapter
+): FunctionsRuntime => ({
+  ready: adapter.ready,
+  getFunctions: () => adapter.getFunctions(),
+});
+
+export const defaultFunctionsRuntime: FunctionsRuntime = createFunctionsRuntime();
