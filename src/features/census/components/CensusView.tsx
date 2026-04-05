@@ -1,7 +1,5 @@
 import React, { Suspense, lazy } from 'react';
 import { ViewLoader } from '@/components/ui/ViewLoader';
-import { SectionErrorBoundary } from '@/components/shared/SectionErrorBoundary';
-import { AnalyticsView } from '@/features/analytics/public';
 import { useCensusViewScreenModel } from '@/features/census/hooks/useCensusViewScreenModel';
 import type { CensusAccessProfile } from '@/features/census/types/censusAccessProfile';
 
@@ -17,10 +15,7 @@ const LazyEmptyDayPrompt = lazy(() =>
   }))
 );
 
-type ViewMode = 'REGISTER' | 'ANALYTICS';
-
 interface CensusViewProps {
-  viewMode: ViewMode;
   selectedDay: number;
   selectedMonth: number;
   currentDateString: string;
@@ -34,13 +29,12 @@ interface CensusViewProps {
 }
 
 const CensusViewContent: React.FC<CensusViewProps> = ({
-  viewMode,
   selectedDay,
   selectedMonth,
   currentDateString,
   showBedManagerModal,
   onCloseBedManagerModal,
-  onOpenCensusDate,
+  onOpenCensusDate: _onOpenCensusDate,
   readOnly = false,
   allowAdminCopyOverride = false,
   localViewMode = 'TABLE',
@@ -53,7 +47,6 @@ const CensusViewContent: React.FC<CensusViewProps> = ({
     shouldDeferTodayEmptyState,
     resolvedTodayEmptyDate,
   } = useCensusViewScreenModel({
-    viewMode,
     selectedDay,
     selectedMonth,
     currentDateString,
@@ -64,14 +57,6 @@ const CensusViewContent: React.FC<CensusViewProps> = ({
     localViewMode,
     accessProfile,
   });
-
-  if (branch === 'analytics') {
-    return (
-      <SectionErrorBoundary sectionName="Estadísticas">
-        <AnalyticsView onOpenCensusDate={onOpenCensusDate} />
-      </SectionErrorBoundary>
-    );
-  }
 
   if (branch === 'empty') {
     if (shouldDeferTodayEmptyState && resolvedTodayEmptyDate !== currentDateString) {

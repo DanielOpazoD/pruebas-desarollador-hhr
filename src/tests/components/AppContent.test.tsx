@@ -187,8 +187,15 @@ describe('AppContent', () => {
     expect(screen.queryByTestId('bookmark-bar')).not.toBeInTheDocument();
   });
 
-  it('hides DateStrip in analytics mode', () => {
-    render(<AppContent ui={{ ...mockUI, censusViewMode: 'ANALYTICS' }} />);
+  it('hides DateStrip in the standalone statistics module', () => {
+    render(
+      <AppContent
+        ui={{
+          ...mockUI,
+          currentModule: 'ANALYTICS' as unknown as AppContentUi['currentModule'],
+        }}
+      />
+    );
     expect(screen.queryByTestId('datestrip')).not.toBeInTheDocument();
   });
 

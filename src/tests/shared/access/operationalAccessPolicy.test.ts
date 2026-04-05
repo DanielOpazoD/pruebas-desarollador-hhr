@@ -78,7 +78,9 @@ describe('operationalAccessPolicy', () => {
     expect(getVisibleAppModules('doctor_specialist')).toEqual(['CENSUS', 'MEDICAL_HANDOFF']);
     expect(getDefaultAppModuleForRole('doctor_specialist')).toBe('CENSUS');
     expect(sanitizeAppModuleForRole('doctor_specialist', 'AUDIT')).toBe('CENSUS');
+    expect(sanitizeAppModuleForRole('doctor_specialist', 'ANALYTICS')).toBe('CENSUS');
     expect(sanitizeAppModuleForRole('admin', 'AUDIT')).toBe('AUDIT');
+    expect(sanitizeAppModuleForRole('admin', 'ANALYTICS')).toBe('ANALYTICS');
   });
 
   it('keeps medical handoff edit access bound to specialist current-day policy', () => {

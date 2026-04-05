@@ -45,10 +45,6 @@ vi.mock('@/components/shared/SectionErrorBoundary', () => ({
   SectionErrorBoundary: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-vi.mock('@/features/analytics/public', () => ({
-  AnalyticsView: () => <div data-testid="analytics-view">Analytics View</div>,
-}));
-
 vi.mock('@/features/census/components/EmptyDayPrompt', () => ({
   EmptyDayPrompt: () => <div data-testid="empty-day-prompt">Empty Day Prompt</div>,
 }));
@@ -80,7 +76,6 @@ vi.mock('@/features/census/components/CensusRegisterContent', () => ({
 
 describe('CensusView', () => {
   const defaultProps = {
-    viewMode: 'REGISTER' as const,
     selectedDay: 1,
     selectedMonth: 0,
     currentDateString: '2025-01-01',
@@ -129,12 +124,6 @@ describe('CensusView', () => {
 
   afterEach(() => {
     vi.useRealTimers();
-  });
-
-  it('renders AnalyticsView when viewMode is ANALYTICS', () => {
-    render(<CensusView {...defaultProps} viewMode="ANALYTICS" />);
-    expect(screen.getByTestId('analytics-view')).toBeInTheDocument();
-    expect(vi.mocked(useCensusMigrationBootstrap)).toHaveBeenCalledWith(false);
   });
 
   it('renders EmptyDayPrompt when record is missing', async () => {

@@ -15,6 +15,7 @@ import {
 
 export type ModuleType =
   | 'CENSUS'
+  | 'ANALYTICS'
   | 'CUDYR'
   | 'NURSING_HANDOFF'
   | 'MEDICAL_HANDOFF'
@@ -29,7 +30,7 @@ export type ModuleType =
   | 'REMINDERS'
   | 'ERRORS';
 
-export type NavActionType = 'MODULE_CHANGE' | 'SETTINGS' | 'ANALYTICS_TOGGLE';
+export type NavActionType = 'MODULE_CHANGE' | 'SETTINGS';
 
 export interface NavItemConfig {
   id: string;
@@ -85,13 +86,13 @@ export const NAVIGATION_CONFIG: NavItemConfig[] = [
   // --- Utility Dropdown Items (NavbarTabs Dropdown) ---
   {
     id: 'analytics',
-    label: 'Estadística',
+    label: 'Estadísticas',
     icon: BarChart3,
-    module: 'CENSUS',
-    actionType: 'ANALYTICS_TOGGLE',
-    censusMode: 'ANALYTICS',
+    module: 'ANALYTICS',
+    actionType: 'MODULE_CHANGE',
     isUtility: true,
     adminOnly: true,
+    requiredModule: 'ANALYTICS',
   },
   {
     id: 'backup-files',

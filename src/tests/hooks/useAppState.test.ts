@@ -32,6 +32,12 @@ describe('useAppState', () => {
       expect(result.current.currentModule).toBe('MEDICAL_HANDOFF');
     });
 
+    it('should initialize the statistics module from its own path slug', () => {
+      window.history.replaceState({}, '', '/statistics');
+      const { result } = renderHook(() => useAppState());
+      expect(result.current.currentModule).toBe('ANALYTICS');
+    });
+
     it('should update current module', () => {
       const { result } = renderHook(() => useAppState());
 
@@ -50,6 +56,17 @@ describe('useAppState', () => {
       });
 
       expect(window.location.pathname).toBe('/medical-handoff');
+      expect(window.location.search).toBe('');
+    });
+
+    it('should persist statistics as its own clean path', () => {
+      const { result } = renderHook(() => useAppState());
+
+      act(() => {
+        result.current.setCurrentModule('ANALYTICS');
+      });
+
+      expect(window.location.pathname).toBe('/statistics');
       expect(window.location.search).toBe('');
     });
   });

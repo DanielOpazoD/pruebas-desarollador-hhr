@@ -5,7 +5,7 @@ import {
 } from '@/components/layout/app-content/appContentVisibilityController';
 
 describe('appContentVisibilityController', () => {
-  it('renders date strip for clinical modules and REGISTER mode in CENSUS', () => {
+  it('renders date strip for clinical modules and hides it for statistics', () => {
     expect(
       shouldRenderDateStrip({
         currentModule: 'CENSUS',
@@ -16,8 +16,8 @@ describe('appContentVisibilityController', () => {
 
     expect(
       shouldRenderDateStrip({
-        currentModule: 'CENSUS',
-        censusViewMode: 'ANALYTICS',
+        currentModule: 'ANALYTICS',
+        censusViewMode: 'REGISTER',
         isSignatureMode: false,
       })
     ).toBe(false);

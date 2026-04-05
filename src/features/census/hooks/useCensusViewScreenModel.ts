@@ -7,10 +7,7 @@ import { useCensusViewRouteModel } from './useCensusViewRouteModel';
 import type { CensusAccessProfile } from '../types/censusAccessProfile';
 import { resolveCensusEmptyStatePolicy } from '@/hooks/controllers/dailyRecordBootstrapController';
 
-type ViewMode = 'REGISTER' | 'ANALYTICS';
-
 interface UseCensusViewScreenModelParams {
-  viewMode: ViewMode;
   selectedDay: number;
   selectedMonth: number;
   currentDateString: string;
@@ -23,7 +20,6 @@ interface UseCensusViewScreenModelParams {
 }
 
 export const useCensusViewScreenModel = ({
-  viewMode,
   selectedDay,
   selectedMonth,
   currentDateString,
@@ -37,7 +33,6 @@ export const useCensusViewScreenModel = ({
   const auth = useAuth();
   const { bootstrapPhase } = useDailyRecordData();
   const routeModel = useCensusViewRouteModel({
-    viewMode,
     selectedDay,
     selectedMonth,
     currentDateString,
@@ -59,7 +54,7 @@ export const useCensusViewScreenModel = ({
         auth.remoteSyncStatus === 'bootstrapping' ? 'remote_runtime_bootstrapping' : bootstrapPhase,
     });
 
-  useCensusMigrationBootstrap(routeModel.branch !== 'analytics');
+  useCensusMigrationBootstrap(true);
 
   useEffect(() => {
     if (!shouldDeferTodayEmptyState) {

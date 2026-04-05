@@ -50,7 +50,7 @@ clinicalShiftCalendarController
 | `hooks/useTransferModalForm.ts`                          | Form flow de traslados                                          |
 | `hooks/useBedManagerModalModel.ts`                       | Orquestación UI vs dominio del modal de camas                   |
 | `hooks/useCensusMovementActionsCellModel.ts`             | View-model para celda de acciones de movimientos                |
-| `hooks/useCensusViewScreenModel.ts`                      | Fachada de pantalla para ramas `analytics/empty/register`       |
+| `hooks/useCensusViewScreenModel.ts`                      | Fachada de pantalla para ramas `empty/register`                 |
 | `hooks/useCensusTableRuntime.ts`                         | Runtime unificado de tabla (dependencias + resize + activación) |
 | `hooks/useDischargesSectionModel.ts`                     | Fachada de wiring para altas                                    |
 | `hooks/useTransfersSectionModel.ts`                      | Fachada de wiring para traslados                                |
@@ -80,8 +80,8 @@ clinicalShiftCalendarController
   y `falla real de inicialización`.
 - El bootstrap de migración del censo es pasivo y no crítico: debe correr fuera del render inicial
   de `CensusView` y nunca bloquear la primera pintura del registro o del prompt de día vacío.
-- `useCensusViewRouteModel` debe construir props solo para la rama visible (`analytics`, `empty`,
-  `register`) para mantener bajo el costo sincrónico del primer render del censo.
+- `useCensusViewRouteModel` debe construir props solo para la rama visible (`empty`, `register`)
+  para mantener bajo el costo sincrónico del primer render del censo.
 - Los componentes grandes (`CensusView`, `DischargesSection`, `TransfersSection`) deben preferir
   facades locales de feature (`use*ScreenModel`, `use*SectionModel`, `use*Runtime`) en vez de
   recomponer dependencias de contexto y acciones manualmente en cada render.
@@ -92,7 +92,7 @@ clinicalShiftCalendarController
 - `components/` no debe recalcular reglas clínicas ya resueltas por controllers.
 - Las acciones del censo deben salir de los command/runtime controllers, no de callbacks ad hoc embebidos.
 - La tabla web puede abreviar visualmente especialidades concretas como `GyO` o `TMT`, pero esas
-  etiquetas no deben filtrarse a persistencia, analytics ni contratos de dominio.
+  etiquetas no deben filtrarse a persistencia ni contratos de dominio del censo.
 - El formateo de fechas compactas de `census` debe reutilizar presentation helpers compartidos;
   no deben reaparecer `toLocaleDateString()` o `toLocaleString()` inline en controllers de UI.
 

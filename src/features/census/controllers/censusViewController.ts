@@ -4,12 +4,9 @@ import type { DailyRecord } from '@/features/census/contracts/censusRecordContra
 import type { CSSProperties } from 'react';
 import type { CensusAccessProfile } from '@/features/census/types/censusAccessProfile';
 
-type ViewMode = 'REGISTER' | 'ANALYTICS';
-
-export type CensusViewBranch = 'analytics' | 'empty' | 'register';
+export type CensusViewBranch = 'empty' | 'register';
 
 export interface ResolveCensusViewBranchParams {
-  viewMode: ViewMode;
   beds: DailyRecord['beds'] | null;
 }
 
@@ -43,15 +40,8 @@ export interface BuildRegisterContentPropsParams {
 }
 
 export const resolveCensusViewBranch = ({
-  viewMode,
   beds,
-}: ResolveCensusViewBranchParams): CensusViewBranch => {
-  if (viewMode === 'ANALYTICS') {
-    return 'analytics';
-  }
-
-  return beds ? 'register' : 'empty';
-};
+}: ResolveCensusViewBranchParams): CensusViewBranch => (beds ? 'register' : 'empty');
 
 export const buildEmptyDayPromptProps = ({
   selectedDay,

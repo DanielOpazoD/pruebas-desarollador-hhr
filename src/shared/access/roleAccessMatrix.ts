@@ -27,6 +27,7 @@ const ROLE_ACCESS_MATRIX = {
     assignableInRoleManagement: true,
     modules: [
       'CENSUS',
+      'ANALYTICS',
       'CUDYR',
       'NURSING_HANDOFF',
       'MEDICAL_HANDOFF',
@@ -43,6 +44,7 @@ const ROLE_ACCESS_MATRIX = {
     ],
     canEdit: [
       'CENSUS',
+      'ANALYTICS',
       'CUDYR',
       'NURSING_HANDOFF',
       'MEDICAL_HANDOFF',

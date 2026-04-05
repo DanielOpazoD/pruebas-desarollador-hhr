@@ -17,6 +17,12 @@ export const CensusEmailConfigModal = lazy(() =>
   }))
 );
 
+export const AnalyticsView = lazy(() =>
+  import('@/features/analytics').then(module => ({
+    default: module.AnalyticsView,
+  }))
+);
+
 // CUDYR module (prefetch)
 export const CudyrView = lazy(() =>
   import(/* webpackPrefetch: true */ '@/features/cudyr').then(module => ({

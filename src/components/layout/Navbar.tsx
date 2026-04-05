@@ -59,6 +59,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     switch (currentModule) {
       case 'CENSUS':
         return 'bg-gradient-to-r from-[#0c4a6e] via-[#0369a1] to-[#0c4a6e]';
+      case 'ANALYTICS':
+        return 'bg-gradient-to-r from-sky-800 via-sky-700 to-cyan-700';
       case 'NURSING_HANDOFF':
         return 'bg-gradient-to-r from-sky-700 via-sky-600 to-sky-700';
       case 'MEDICAL_HANDOFF':

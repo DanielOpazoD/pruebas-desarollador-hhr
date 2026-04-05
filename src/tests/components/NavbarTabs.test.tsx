@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { NavbarTabs } from '@/components/layout/NavbarTabs';
 import { ModuleType } from '@/constants/navigationConfig';
 
@@ -23,6 +23,7 @@ describe('NavbarTabs', () => {
     onModuleChange: vi.fn(),
     visibleModules: [
       'CENSUS',
+      'ANALYTICS',
       'CUDYR',
       'NURSING_HANDOFF',
       'MEDICAL_HANDOFF',
@@ -51,7 +52,7 @@ describe('NavbarTabs', () => {
     const menuBtn = screen.getByTitle('Más módulos');
     fireEvent.click(menuBtn);
 
-    expect(screen.getByText('Estadística')).toBeInTheDocument();
+    expect(screen.getByText('Estadísticas')).toBeInTheDocument();
   });
 
   it('does not render hidden tabs', () => {
@@ -64,13 +65,11 @@ describe('NavbarTabs', () => {
   it('calls onModuleChange when tab is clicked', () => {
     render(<NavbarTabs {...defaultProps} />);
 
-    // Open dropdown for Estadística
     fireEvent.click(screen.getByTitle('Más módulos'));
-    fireEvent.click(screen.getByText('Estadística'));
+    fireEvent.click(screen.getByText('Estadísticas'));
 
-    // It should call setCensusViewMode('ANALYTICS') if not in CENSUS
-    // But since default is CENSUS, it toggles
-    expect(defaultProps.setCensusViewMode).toHaveBeenCalled();
+    expect(defaultProps.onModuleChange).toHaveBeenCalledWith('ANALYTICS');
+    expect(defaultProps.setCensusViewMode).not.toHaveBeenCalled();
   });
 
   it('changes to a clinical handoff module when clicking a clinical tab', () => {
@@ -84,7 +83,7 @@ describe('NavbarTabs', () => {
 
   it('reapplies register mode when clicking the main census tab', () => {
     render(
-      <NavbarTabs {...defaultProps} currentModule="MEDICAL_HANDOFF" censusViewMode="ANALYTICS" />
+      <NavbarTabs {...defaultProps} currentModule="MEDICAL_HANDOFF" censusViewMode="REGISTER" />
     );
 
     fireEvent.click(screen.getByText('Censo Diario'));
@@ -104,40 +103,14 @@ describe('NavbarTabs', () => {
     expect(nursingButton?.className).toContain('bg-white/[0.12]');
   });
 
-  it('handles ANALYTICS_TOGGLE from non-CENSUS module', async () => {
-    vi.useFakeTimers();
+  it('navigates to the standalone analytics module from any current module', () => {
     render(<NavbarTabs {...defaultProps} currentModule="NURSING_HANDOFF" />);
 
-    // Open utility menu and click Estadística (which has ANALYTICS_TOGGLE)
     fireEvent.click(screen.getByTitle('Más módulos'));
-    fireEvent.click(screen.getByText('Estadística'));
+    fireEvent.click(screen.getByText('Estadísticas'));
 
-    expect(defaultProps.onModuleChange).toHaveBeenCalledWith('CENSUS');
-
-    // Fast-forward timeout
-    await act(async () => {
-      vi.runAllTimers();
-    });
-
-    expect(defaultProps.setCensusViewMode).toHaveBeenCalledWith('ANALYTICS');
-    vi.useRealTimers();
-  });
-
-  it('toggles census view mode when clicking ANALYTICS_TOGGLE in CENSUS module', () => {
-    const { rerender } = render(
-      <NavbarTabs {...defaultProps} currentModule="CENSUS" censusViewMode="REGISTER" />
-    );
-
-    fireEvent.click(screen.getByTitle('Más módulos'));
-    fireEvent.click(screen.getByText('Estadística'));
-
-    expect(defaultProps.setCensusViewMode).toHaveBeenCalledWith('ANALYTICS');
-
-    rerender(<NavbarTabs {...defaultProps} currentModule="CENSUS" censusViewMode="ANALYTICS" />);
-    fireEvent.click(screen.getByTitle('Más módulos'));
-    fireEvent.click(screen.getByText('Estadística'));
-
-    expect(defaultProps.setCensusViewMode).toHaveBeenCalledWith('REGISTER');
+    expect(defaultProps.onModuleChange).toHaveBeenCalledWith('ANALYTICS');
+    expect(defaultProps.setCensusViewMode).not.toHaveBeenCalled();
   });
 
   it('closes utility menu on outside click', () => {
@@ -145,21 +118,19 @@ describe('NavbarTabs', () => {
 
     const menuBtn = screen.getByTitle('Más módulos');
     fireEvent.click(menuBtn);
-    expect(screen.getByText('Estadística')).toBeVisible();
+    expect(screen.getByText('Estadísticas')).toBeVisible();
 
     // Click outside
     fireEvent.mouseDown(document.body);
-    expect(screen.queryByText('Estadística')).not.toBeInTheDocument();
+    expect(screen.queryByText('Estadísticas')).not.toBeInTheDocument();
   });
 
   it('shows active utility menu state', () => {
-    // useNavbarNavigation mock or real hook will determine isUtilityActive
-    // Testing the branch for line 135 in NavbarTabs.tsx
     const { rerender } = render(<NavbarTabs {...defaultProps} currentModule="BACKUP_FILES" />);
     const menuBtn = screen.getByTitle('Más módulos');
-    expect(menuBtn.className).toContain('bg-white/[0.15]'); // isUtilityActive should be true for BACKUP_FILES
+    expect(menuBtn.className).toContain('bg-white/[0.15]');
 
-    rerender(<NavbarTabs {...defaultProps} currentModule="CUDYR" />);
-    expect(menuBtn.className).toContain('bg-white/[0.15]'); // currentModule === 'CUDYR' condition
+    rerender(<NavbarTabs {...defaultProps} currentModule="ANALYTICS" />);
+    expect(menuBtn.className).toContain('bg-white/[0.15]');
   });
 });

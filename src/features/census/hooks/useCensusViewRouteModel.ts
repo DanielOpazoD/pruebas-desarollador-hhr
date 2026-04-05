@@ -7,10 +7,7 @@ import {
 } from '@/features/census/controllers/censusViewController';
 import type { CensusAccessProfile } from '@/features/census/types/censusAccessProfile';
 
-type ViewMode = 'REGISTER' | 'ANALYTICS';
-
 interface UseCensusViewRouteModelParams {
-  viewMode: ViewMode;
   selectedDay: number;
   selectedMonth: number;
   currentDateString: string;
@@ -23,7 +20,6 @@ interface UseCensusViewRouteModelParams {
 }
 
 export const useCensusViewRouteModel = ({
-  viewMode,
   selectedDay,
   selectedMonth,
   currentDateString,
@@ -39,10 +35,9 @@ export const useCensusViewRouteModel = ({
   const branch = useMemo(
     () =>
       resolveCensusViewBranch({
-        viewMode,
         beds: viewModel.beds,
       }),
-    [viewMode, viewModel.beds]
+    [viewModel.beds]
   );
 
   const emptyDayPromptProps = useMemo(() => {

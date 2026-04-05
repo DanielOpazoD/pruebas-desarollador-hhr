@@ -6,16 +6,12 @@ import {
 } from '@/features/census/controllers/censusViewController';
 
 describe('censusViewController', () => {
-  it('prioritizes analytics branch over record presence', () => {
-    expect(resolveCensusViewBranch({ viewMode: 'ANALYTICS', beds: {} })).toBe('analytics');
-  });
-
-  it('returns empty branch when register view has no beds', () => {
-    expect(resolveCensusViewBranch({ viewMode: 'REGISTER', beds: null })).toBe('empty');
+  it('returns empty branch when record has no beds', () => {
+    expect(resolveCensusViewBranch({ beds: null })).toBe('empty');
   });
 
   it('returns register branch when record exists', () => {
-    expect(resolveCensusViewBranch({ viewMode: 'REGISTER', beds: {} })).toBe('register');
+    expect(resolveCensusViewBranch({ beds: {} })).toBe('register');
   });
 
   it('builds empty day prompt props without reshaping values', () => {

@@ -36,6 +36,20 @@ describe('useAppContentShellEffects', () => {
     expect(baseParams.setCurrentModule).toHaveBeenCalledWith('CENSUS');
   });
 
+  it('sanitizes direct statistics entry for roles without analytics access', () => {
+    const baseParams = createBaseParams();
+
+    renderHook(() =>
+      useAppContentShellEffects({
+        ...baseParams,
+        role: 'doctor_specialist',
+        currentModule: 'ANALYTICS',
+      })
+    );
+
+    expect(baseParams.setCurrentModule).toHaveBeenCalledWith('CENSUS');
+  });
+
   it('forces table mode for specialist roles', () => {
     const baseParams = createBaseParams();
 

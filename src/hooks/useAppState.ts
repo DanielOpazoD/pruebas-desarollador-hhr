@@ -18,6 +18,7 @@ import type { ModuleType } from '@/constants/navigationConfig';
 
 const MODULES_FROM_URL: readonly ModuleType[] = [
   'CENSUS',
+  'ANALYTICS',
   'CUDYR',
   'NURSING_HANDOFF',
   'MEDICAL_HANDOFF',
@@ -35,6 +36,7 @@ const MODULES_FROM_URL: readonly ModuleType[] = [
 
 const MODULE_PATH_SEGMENTS: Record<ModuleType, string> = {
   CENSUS: 'census',
+  ANALYTICS: 'statistics',
   CUDYR: 'cudyr',
   NURSING_HANDOFF: 'nursing-handoff',
   MEDICAL_HANDOFF: 'medical-handoff',

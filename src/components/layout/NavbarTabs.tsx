@@ -9,11 +9,7 @@ import clsx from 'clsx';
 import { ModuleType, NavItemConfig } from '@/constants/navigationConfig';
 import { useNavbarNavigation } from '@/hooks/useNavbarNavigation';
 import { useDropdownMenu } from '@/hooks/useDropdownMenu';
-import {
-  resolveAnalyticsToggleTarget,
-  resolveIsNavbarItemActive,
-} from '@/components/layout/navbar/navbarTabsController';
-import { useDeferredCensusModeUpdate } from '@/components/layout/navbar/useDeferredCensusModeUpdate';
+import { resolveIsNavbarItemActive } from '@/components/layout/navbar/navbarTabsController';
 
 interface NavTabProps {
   label: string;
@@ -86,9 +82,6 @@ export const NavbarTabs: React.FC<NavbarTabsProps> = ({
   setCensusViewMode,
 }) => {
   const { isOpen: isUtilityMenuOpen, menuRef, toggle, close } = useDropdownMenu();
-  const { schedule: scheduleDeferredModeUpdate } = useDeferredCensusModeUpdate({
-    onUpdate: setCensusViewMode,
-  });
 
   const { clinicalTabs, utilityItems, isUtilityActive } = useNavbarNavigation(
     currentModule,
@@ -101,17 +94,6 @@ export const NavbarTabs: React.FC<NavbarTabsProps> = ({
       if (item.module) {
         onModuleChange(item.module);
         if (item.censusMode) setCensusViewMode(item.censusMode);
-      }
-    } else if (item.actionType === 'ANALYTICS_TOGGLE') {
-      const analyticsTarget = resolveAnalyticsToggleTarget({ currentModule, censusViewMode });
-      if (analyticsTarget.moduleToChange) {
-        onModuleChange(analyticsTarget.moduleToChange);
-      }
-
-      if (analyticsTarget.deferCensusModeUpdate) {
-        scheduleDeferredModeUpdate(analyticsTarget.censusModeToSet);
-      } else {
-        setCensusViewMode(analyticsTarget.censusModeToSet);
       }
     }
     close();

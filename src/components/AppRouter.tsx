@@ -10,9 +10,11 @@ import { SectionErrorBoundary } from '@/components/shared/SectionErrorBoundary';
 import { ViewLoader } from '@/components/ui/ViewLoader';
 import { UserRole } from '@/context';
 import { UseUIStateReturn } from '@/hooks/useUIState';
+import type { ModuleType } from '@/constants/navigationConfig';
 
 // Lazy-loaded views
 import {
+  AnalyticsView,
   CensusView,
   CudyrView,
   HandoffView,
@@ -38,21 +40,7 @@ import {
 } from '@/shared/access/operationalAccessPolicy';
 import { isE2EEditableRecordOverrideEnabled } from '@/shared/runtime/e2eRuntime';
 
-export type AppModule =
-  | 'CENSUS'
-  | 'CUDYR'
-  | 'NURSING_HANDOFF'
-  | 'MEDICAL_HANDOFF'
-  | 'AUDIT'
-  | 'WHATSAPP'
-  | 'TRANSFER_MANAGEMENT'
-  | 'BACKUP_FILES'
-  | 'PATIENT_MASTER_INDEX'
-  | 'DATA_MAINTENANCE'
-  | 'DIAGNOSTICS'
-  | 'ROLE_MANAGEMENT'
-  | 'REMINDERS'
-  | 'ERRORS';
+export type AppModule = ModuleType;
 export type CensusViewMode = 'REGISTER' | 'ANALYTICS';
 
 interface AppRouterProps {
@@ -87,7 +75,7 @@ interface AppRouterProps {
 export const AppRouter: React.FC<AppRouterProps> = ({
   ui,
   currentModule,
-  censusViewMode,
+  censusViewMode: _censusViewMode,
   selectedDay,
   selectedMonth,
   currentDateString,
@@ -113,7 +101,6 @@ export const AppRouter: React.FC<AppRouterProps> = ({
             {currentModule === 'CENSUS' && (
               <SectionErrorBoundary sectionName="Censo">
                 <CensusView
-                  viewMode={censusViewMode}
                   selectedDay={selectedDay}
                   selectedMonth={selectedMonth}
                   currentDateString={currentDateString}
@@ -125,6 +112,11 @@ export const AppRouter: React.FC<AppRouterProps> = ({
                   localViewMode={ui.censusLocalViewMode}
                   accessProfile={censusAccessProfile}
                 />
+              </SectionErrorBoundary>
+            )}
+            {currentModule === 'ANALYTICS' && (
+              <SectionErrorBoundary sectionName="Estadísticas MINSAL/DEIS">
+                <AnalyticsView onOpenCensusDate={onOpenCensusDate} />
               </SectionErrorBoundary>
             )}
             {currentModule === 'CUDYR' && (
