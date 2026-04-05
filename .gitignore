@@ -25,7 +25,6 @@ tmp
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 **/.DS_Store
 *.suo
 *.ntvs*
@@ -63,7 +62,6 @@ tsc_*.txt
 tsc_*.log
 
 # Misc
-.DS_Store
 .env*
 # Archivo local opcional no trackeado. El mirror debe configurarse por secretos
 # de entorno/runtime (BETA_SERVICE_ACCOUNT_JSON/B64 o functions config).

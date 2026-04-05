@@ -143,19 +143,22 @@ Los accesos directos al handoff médico ya no usan un “modo especialista” se
 
 ### Capas en `src/`
 
-| Capa/Directorio   | Rol                                                                               |
-| ----------------- | --------------------------------------------------------------------------------- |
-| `src/features/`   | Módulos de negocio por feature (census, handoff, transfers, etc.)                 |
-| `src/components/` | Componentes UI reutilizables y layout global                                      |
-| `src/hooks/`      | Hooks de orquestación y lógica de aplicación                                      |
-| `src/context/`    | Context providers y contratos de estado global                                    |
-| `src/services/`   | Acceso a datos, repositorios, integración externa y utilidades de infraestructura |
-| `src/domain/`     | Lógica de dominio transversal                                                     |
-| `src/shared/`     | Runtime adapters y tipos transversales de UI                                      |
-| `src/types/`      | Contratos TypeScript de entidades y DTOs                                          |
-| `src/schemas/`    | Esquemas de validación                                                            |
-| `src/utils/`      | Helpers puros transversales                                                       |
-| `src/tests/`      | Pruebas por capa y por feature                                                    |
+| Capa/Directorio    | Rol                                                                               |
+| ------------------ | --------------------------------------------------------------------------------- |
+| `src/features/`    | Módulos de negocio por feature (census, handoff, transfers, etc.)                 |
+| `src/application/` | Casos de uso compartidos, outcomes y puertos                                      |
+| `src/components/`  | Componentes UI reutilizables y layout global                                      |
+| `src/hooks/`       | Hooks de orquestación y lógica de aplicación                                      |
+| `src/context/`     | Context providers y contratos de estado global                                    |
+| `src/services/`    | Acceso a datos, repositorios, integración externa y utilidades de infraestructura |
+| `src/domain/`      | Lógica de dominio transversal                                                     |
+| `src/shared/`      | Runtime adapters y tipos transversales de UI                                      |
+| `src/types/`       | Contratos TypeScript de entidades y DTOs                                          |
+| `src/schemas/`     | Esquemas de validación                                                            |
+| `src/utils/`       | Helpers puros transversales                                                       |
+| `src/tests/`       | Pruebas por capa y por feature                                                    |
+
+Taxonomía canónica y reglas de ownership: [docs/CODEBASE_CANON.md](docs/CODEBASE_CANON.md)
 
 ## Path Aliases
 
@@ -176,6 +179,7 @@ import { useDailyRecord } from '@/hooks/useDailyRecord';
 ### Documentos troncales
 
 - [Auditoría técnica de la aplicación](docs/TECHNICAL_APPLICATION_AUDIT.md)
+- [Taxonomía canónica del código](docs/CODEBASE_CANON.md)
 - [Modelo de acceso y login](docs/AUTH_ACCESS_MODEL.md)
 - [Runbook de incidentes de acceso](docs/RUNBOOK_AUTH_ACCESS_INCIDENTS.md)
 - [Arquitectura global](docs/architecture.md)
@@ -200,6 +204,7 @@ import { useDailyRecord } from '@/hooks/useDailyRecord';
 - [ADR clinical-documents workspace contract](docs/ADR_CLINICAL_DOCUMENT_WORKSPACE_CONTRACT.md)
 - [ADR handoff runtime surfaces](docs/ADR_HANDOFF_RUNTIME_SURFACES.md)
 - [Mapa de código fuente](src/README.md)
+- [Tracker de cimientos](docs/FOUNDATION_TRACKER.md)
 
 ### Documentación existente relevante
 

@@ -55,6 +55,7 @@ flowchart TB
 
 Para más detalle de flujos y decisiones, ver `docs/architecture.md`.
 Para resumen ejecutivo y stack, ver este documento.
+La taxonomía canónica del repo vive en `docs/CODEBASE_CANON.md`.
 
 ## Guardrails de calidad
 
@@ -115,8 +116,9 @@ src/
 │   └── pdf/                    # Generación dinámica de documentos
 │
 ├── context/                    # Estado Global (Shared Contexts)
-├── hooks/                      # Hooks transversales (Query, UI, Validation)
+├── hooks/                      # Hooks transversales y composición React
 ├── application/                # Casos de uso, outcomes homogéneos y puertos
+├── infrastructure/             # Placeholder retirado (no agregar código nuevo)
 ├── schemas/                    # Validación Zod (Seguridad en runtime)
 ├── types/                      # Definiciones de tipos del dominio
 ├── utils/                      # Helpers y utilidades técnicas

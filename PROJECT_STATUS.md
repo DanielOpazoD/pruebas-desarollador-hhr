@@ -1,6 +1,6 @@
 # HHR Hospital Tracker - Estado del Proyecto
 
-> **Última actualización:** 2026-03-02
+> **Última actualización:** 2026-04-05
 > **Evaluación técnica de referencia:** 6.1 / 7.0
 
 ## Resumen
@@ -33,6 +33,13 @@ Las mejoras recientes se han concentrado en:
 1. Seguir reduciendo dependencias sobre fachadas legacy.
 2. Limpiar y aislar código experimental/no clínico del flujo principal.
 3. Mantener la documentación basada en artefactos generados, no en snapshots manuales.
+
+## Tracker de cimientos
+
+El seguimiento persistente del roadmap estructural vive en:
+
+- [docs/FOUNDATION_TRACKER.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/FOUNDATION_TRACKER.md)
+- Taxonomía canónica: [docs/CODEBASE_CANON.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/CODEBASE_CANON.md)
 
 ## Fuente de verdad
 
