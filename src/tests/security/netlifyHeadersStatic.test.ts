@@ -10,6 +10,7 @@ describe('netlify security headers', () => {
     expect(content).toContain('https://accounts.google.com');
     expect(content).toContain('https://www.gstatic.com');
     expect(content).toContain('https://*.cloudfunctions.net');
+    expect(content).toContain("worker-src 'self' blob:");
     expect(content).not.toContain('https://fonts.googleapis.com');
     expect(content).not.toContain('https://fonts.gstatic.com');
   });
