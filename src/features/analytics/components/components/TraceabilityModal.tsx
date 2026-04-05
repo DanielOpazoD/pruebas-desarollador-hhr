@@ -124,7 +124,7 @@ export const TraceabilityModal: React.FC<TraceabilityModalProps> = ({
       onClose={onClose}
       title={title}
       icon={<Users size={20} />}
-      size="2xl"
+      size={isStayView || isGroupedView ? '5xl' : '3xl'}
       bodyClassName="p-0 space-y-0"
     >
       {patients.length === 0 ? (

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { DebouncedInput } from '@/components/ui/DebouncedInput';
 import { isValidRut } from '@/utils/rutUtils';
+import { writeClipboardText } from '@/shared/runtime/browserWindowRuntime';
 import { PatientEmptyCell } from './PatientEmptyCell';
 
 interface RutPassportInputProps {
@@ -33,6 +34,7 @@ export const RutPassportInput: React.FC<RutPassportInputProps> = ({
   hasError = false,
 }) => {
   const [isRutManuallyUnlocked, setIsRutManuallyUnlocked] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState<'idle' | 'copied'>('idle');
 
   const isRnClinicalCribRutMode = isClinicalCribPatient && documentType === 'RUT';
   const canKeepUnlocked = isRnClinicalCribRutMode && isRutManuallyUnlocked && value.trim() !== '-';
@@ -46,11 +48,33 @@ export const RutPassportInput: React.FC<RutPassportInputProps> = ({
     }
   }, [canKeepUnlocked, isRnClinicalCribRutMode, onChange, readOnly, value]);
 
+  useEffect(() => {
+    if (copyFeedback !== 'copied') {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setCopyFeedback('idle');
+    }, 1200);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [copyFeedback]);
+
   // Validation logic for visual feedback
   const isRutValid = documentType === 'RUT' && !!value && value !== '-' && isValidRut(value);
   const hasRutValue =
     documentType === 'RUT' && !!value && value.trim() !== '' && value.trim() !== '-';
   const isRutInvalid = hasRutValue && !isRutValid;
+  const handleRutClick = React.useCallback(async () => {
+    if (!hasRutValue || isAutoLockedByRnPlaceholder) {
+      return;
+    }
+
+    await writeClipboardText(value.trim());
+    setCopyFeedback('copied');
+  }, [hasRutValue, isAutoLockedByRnPlaceholder, value]);
 
   // Show empty state for main row when no patient
   if (isEmpty && !isSubRow) {
@@ -65,7 +89,7 @@ export const RutPassportInput: React.FC<RutPassportInputProps> = ({
         <DebouncedInput
           type="text"
           className={clsx(
-            'w-full p-0.5 h-7 border rounded focus:ring-2 focus:outline-none text-xs pr-5 transition-all',
+            'w-full p-0.5 h-7 border rounded focus:outline-none text-xs pr-5 transition-all',
             isSubRow && 'h-6',
             isAutoLockedByRnPlaceholder && 'bg-slate-100 text-slate-500 cursor-not-allowed',
             documentType === 'Pasaporte'
@@ -78,10 +102,10 @@ export const RutPassportInput: React.FC<RutPassportInputProps> = ({
                   ? 'border-red-300 bg-red-50/30'
                   : 'border-slate-300 bg-white',
             hasError && value !== '0' && value !== ''
-              ? 'focus:ring-red-200 focus:border-red-500'
+              ? 'focus:border-red-400'
               : isRutInvalid
-                ? 'focus:ring-red-100 focus:border-red-400'
-                : 'focus:ring-medical-500 focus:border-medical-500'
+                ? 'focus:border-red-300'
+                : 'focus:border-slate-300'
           )}
           placeholder={
             isAutoLockedByRnPlaceholder
@@ -95,6 +119,8 @@ export const RutPassportInput: React.FC<RutPassportInputProps> = ({
           value={isAutoLockedByRnPlaceholder ? '' : value || ''}
           disabled={isAutoLockedByRnPlaceholder}
           readOnly={readOnly}
+          title={hasRutValue ? 'Click para copiar RUT' : undefined}
+          onClick={documentType === 'RUT' ? handleRutClick : undefined}
           onChange={val => {
             onChange(val);
           }}
@@ -166,13 +192,19 @@ export const RutPassportInput: React.FC<RutPassportInputProps> = ({
         {documentType === 'RUT' && hasRutValue && !isAutoLockedByRnPlaceholder && (
           <span
             className={clsx(
-              'absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none select-none inline-flex items-center justify-center w-3 h-3 text-[10px] font-semibold leading-none',
-              isRutValid ? 'text-slate-500' : 'text-red-500'
+              'absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none select-none inline-flex items-center justify-center w-3 h-3 text-[10px] font-semibold leading-none transition-all duration-200',
+              copyFeedback === 'copied'
+                ? 'scale-110 text-emerald-600'
+                : isRutValid
+                  ? 'text-slate-500'
+                  : 'text-red-500'
             )}
             aria-hidden="true"
-            title={isRutValid ? 'RUT válido' : 'RUT inválido'}
+            title={
+              copyFeedback === 'copied' ? 'RUT copiado' : isRutValid ? 'RUT válido' : 'RUT inválido'
+            }
           >
-            {isRutValid ? '✓' : '✕'}
+            {copyFeedback === 'copied' ? '⧉' : isRutValid ? '✓' : '✕'}
           </span>
         )}
       </div>
