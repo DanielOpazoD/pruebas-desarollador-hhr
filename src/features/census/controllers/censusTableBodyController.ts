@@ -9,7 +9,7 @@ export const resolvePatientRowMenuAlign = (index: number, totalRows: number): Ro
   return index >= totalRows - MENU_ALIGN_BOTTOM_THRESHOLD ? 'bottom' : 'top';
 };
 
-interface BuildResolvedUnifiedRowsParams {
+interface BuildResolvedOccupiedRowsParams {
   unifiedRows: UnifiedBedRow[];
   currentDateString: string;
   clinicalDocumentPresenceByBedId: Record<string, boolean>;
@@ -19,9 +19,9 @@ export const buildResolvedOccupiedRows = ({
   unifiedRows,
   currentDateString,
   clinicalDocumentPresenceByBedId,
-}: BuildResolvedUnifiedRowsParams): CensusTableResolvedOccupiedRow[] => {
+}: BuildResolvedOccupiedRowsParams): CensusTableResolvedOccupiedRow[] => {
   const occupiedRows = unifiedRows.filter(
-    (r): r is Extract<UnifiedBedRow, { kind: 'occupied' }> => r.kind === 'occupied'
+    (row): row is Extract<UnifiedBedRow, { kind: 'occupied' }> => row.kind === 'occupied'
   );
 
   return occupiedRows.map((row, index) => ({

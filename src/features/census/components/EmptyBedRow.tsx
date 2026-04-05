@@ -59,7 +59,7 @@ export const EmptyBedRow: React.FC<EmptyBedRowProps> = ({
       >
         {!readOnly && (
           <button
-            className="flex items-center gap-1 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 bg-slate-50 hover:bg-medical-100 border border-transparent group-hover:border-slate-200 text-slate-400 hover:text-medical-600 text-[11px] transition-all duration-200"
+            className="flex items-center gap-1 px-1.5 py-0.5 rounded-md opacity-0 group-hover:opacity-100 bg-slate-50 hover:bg-medical-100 border border-transparent group-hover:border-slate-200 text-slate-400 hover:text-medical-600 text-[11px] transition-all duration-200"
             onClick={event => {
               event.stopPropagation();
               onClick();

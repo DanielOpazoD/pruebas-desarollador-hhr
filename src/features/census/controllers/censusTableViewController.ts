@@ -40,8 +40,8 @@ export const buildCensusBedRows = ({ visibleBeds, beds }: BuildBedRowsParams): C
     const hasPatient = Boolean(bedData?.patientName || bedData?.isBlocked);
 
     if (!hasPatient || !bedData) {
-      emptyBedCount++;
       unifiedRows.push({ kind: 'empty', id: bed.id, bed });
+      emptyBedCount++;
       return;
     }
 
@@ -64,7 +64,10 @@ export const buildCensusBedRows = ({ visibleBeds, beds }: BuildBedRowsParams): C
     }
   });
 
-  return { unifiedRows, emptyBedCount };
+  return {
+    unifiedRows,
+    emptyBedCount,
+  };
 };
 
 export const resolveVisibleBedTypes = ({
