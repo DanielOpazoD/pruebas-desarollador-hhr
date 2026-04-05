@@ -40,6 +40,9 @@ Identificar tests grandes con mayor costo de mantenimiento para partirlos sin pe
 - `src/tests/features/transfers/TransferManagementView.test.tsx`
   ahora se reparte entre `TransferManagementView.grouping.test.tsx` y
   `TransferManagementView.notes-inline.test.tsx`.
+- `src/tests/components/PatientRow.test.tsx`
+  ahora se reparte entre `PatientRow.layout-and-actions.test.tsx` y
+  `PatientRow.crib-and-demographics.test.tsx`.
 
 ## Criterio de priorización
 
@@ -50,8 +53,11 @@ Identificar tests grandes con mayor costo de mantenimiento para partirlos sin pe
 
 ## Candidatos prioritarios
 
-| Prioridad | Archivo | Líneas | Riesgo dominante | Estrategia de partición |
-| --------- | ------- | -----: | ---------------- | ----------------------- |
+| Prioridad | Archivo                                                                   | Líneas | Riesgo dominante                                      | Estrategia de partición                                                            |
+| --------- | ------------------------------------------------------------------------- | -----: | ----------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `P3`      | `src/tests/hooks/useHandoffLogic.test.ts`                                 |  `580` | Mezcla eventos clínicos, notas y persistencia médica  | Partir por nursing handoff, medical handoff y clinical events si el módulo se toca |
+| `P3`      | `src/tests/schemas/zodSchemas.test.ts`                                    |  `701` | Alto tamaño, pero fuerte valor de contrato integrado  | Mantener integrada salvo que cambie con frecuencia o empiece a bloquear edición    |
+| `P3`      | `src/tests/services/repositories/DailyRecordRepository.lifecycle.test.ts` |  `539` | Aún mezcla lifecycle e inicialización del repositorio | Partir solo si vuelve a crecer o aparece fricción de edición concreta              |
 
 ## Segunda ola sugerida
 
@@ -70,6 +76,6 @@ Identificar tests grandes con mayor costo de mantenimiento para partirlos sin pe
 
 ## Siguiente acción recomendada
 
-1. Evaluar si conviene seguir con una ola sobre integración (`daily-record-sync` o `census-export`) o cerrar aquí la fase `P2`.
-2. Medir si baja el tiempo de diagnóstico de fallos y el costo de edición.
-3. Mantener suites integradas donde realmente entregan señal de flujo extremo a extremo.
+1. Tratar `useHandoffLogic.test.ts` como siguiente candidato solo si vuelve a tocarse el módulo y el costo de edición reaparece.
+2. Mantener `zodSchemas.test.ts` integrado mientras siga actuando como contrato transversal útil.
+3. Medir si la baja de `megatests >500` a `3` reduce realmente tiempo de diagnóstico y costo de cambio.

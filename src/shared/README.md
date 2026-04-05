@@ -18,6 +18,7 @@ Utilidades y contratos transversales compartidos entre múltiples capas/features
 
 - Runtime Adapter Pattern para reducir acoplamiento directo a APIs globales del navegador.
 - `ApplicationOutcome` y sus helpers de mensaje viven en `shared/contracts/` porque los consumen `application`, `services`, `hooks`, `context` y features.
+- `patientDomainContracts.ts` vive en `shared/contracts/` como fachada curada para consumers transversales que necesitan tipos del hotspot `patient` sin importar directo desde `src/types/domain/patient`.
 - `src/shared/` no es owner de tipos de dominio: si un tipo viene de entidad/payload estable, vive en `src/types/`.
 - Los aliases históricos como `shared/census/patientContracts.ts` existen solo como compatibilidad y no deben recibir imports productivos nuevos.
 

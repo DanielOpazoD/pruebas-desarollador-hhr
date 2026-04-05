@@ -15,7 +15,7 @@ Capa de persistencia concreta: IndexedDB, localStorage, Firestore bridge y sincr
 | `storage/runtime`                         | bootstrap/bindings y política visible de fallback           |
 | `storage/migration/legacyFirestoreBridge` | compatibilidad histórica explícita y controlada             |
 
-Las fachadas `index.ts` y `legacyFirebaseService.ts` se mantienen solo como compatibilidad temporal.
+La fachada `index.ts` se mantiene como compatibilidad mínima; nuevos imports no deben entrar por bridges deprecated.
 
 ## Mapa
 
@@ -66,7 +66,6 @@ Los adapters de storage que necesiten `DailyRecord` deben importarlo desde
 - `unifiedLocalService.ts` conserva compatibilidad útil para acceso local no-demo.
 - `localStorageService.ts` sigue existiendo solo como gateway legacy mínimo y deprecated.
 - `migration/legacyFirestoreBridge.ts` concentra la compatibilidad histórica de lectura desde rutas Firestore antiguas.
-- `legacyFirebaseService.ts` queda como fachada deprecated detrás de ese bridge.
 - La compatibilidad legacy que entra por Firebase debe preservarse como frontera explícita de lectura
   y normalización; la simplificación de storage no debe convertirla otra vez en fallback implícito
   del hot path ni retirar los paths todavía soportados para registros históricos.

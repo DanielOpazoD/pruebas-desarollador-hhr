@@ -26,7 +26,7 @@ import {
 import { CatalogRepository } from '@/services/repositories/CatalogRepository';
 import * as idbService from '@/services/storage/indexedDBService';
 import * as firestoreService from '@/services/storage/firestore';
-import * as legacyFirebaseService from '@/services/storage/legacyFirebaseService';
+import * as legacyBridge from '@/services/storage/migration/legacyFirestoreBridge';
 import type { CudyrScore } from '@/types/domain/cudyr';
 import type { DailyRecord } from '@/types/domain/dailyRecord';
 import type { DailyRecordPatch } from '@/types/domain/dailyRecordPatch';
@@ -82,7 +82,6 @@ const { legacyFirebaseMock, indexedDbFacadeMock, firestoreMock } = vi.hoisted(()
   },
 }));
 
-vi.mock('@/services/storage/legacyFirebaseService', () => legacyFirebaseMock);
 vi.mock('@/services/storage/migration/legacyFirestoreBridge', () => legacyFirebaseMock);
 vi.mock('@/services/storage/indexedDBService', () => indexedDbFacadeMock);
 vi.mock('@/services/storage/indexeddb/indexedDbRecordService', () => ({
@@ -385,13 +384,13 @@ describe('DailyRecordRepository lifecycle', () => {
   it('creates a fresh record when Firestore has no record and legacy is isolated from initialization hot path', async () => {
     vi.mocked(idbService.getRecordForDate).mockResolvedValueOnce(null);
     vi.mocked(firestoreService.getRecordFromFirestore).mockResolvedValueOnce(null);
-    vi.mocked(legacyFirebaseService.getLegacyRecord).mockResolvedValueOnce(mockRecord);
+    vi.mocked(legacyBridge.getLegacyRecord).mockResolvedValueOnce(mockRecord);
 
     const result = await Repository.initializeDay(mockDate);
 
     expect(result.date).toBe(mockDate);
     expect(result.beds).toBeDefined();
-    expect(legacyFirebaseService.getLegacyRecord).not.toHaveBeenCalled();
+    expect(legacyBridge.getLegacyRecord).not.toHaveBeenCalled();
   });
 
   it('creates a fresh record if no previous day exists', async () => {

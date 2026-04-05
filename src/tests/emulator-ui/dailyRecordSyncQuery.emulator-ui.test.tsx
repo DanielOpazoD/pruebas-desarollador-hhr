@@ -50,7 +50,7 @@ vi.mock('@/context/VersionContext', () => ({
   }),
 }));
 
-vi.mock('@/services/storage/legacyFirebaseService', () => ({
+vi.mock('@/services/storage/migration/legacyFirestoreBridge', () => ({
   getLegacyRecord: vi.fn().mockResolvedValue(null),
 }));
 
