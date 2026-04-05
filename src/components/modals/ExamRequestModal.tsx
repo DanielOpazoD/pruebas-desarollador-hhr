@@ -13,7 +13,7 @@ import { Printer, FlaskConical, UserRound } from 'lucide-react';
 import { BaseModal } from '@/components/shared/BaseModal';
 import { getExamCategoryById } from '@/constants/examCategories';
 import { useExamRequest } from '@/hooks/useExamRequest';
-import type { PatientData } from '@/shared/census/patientContracts';
+import type { PatientData } from '@/types/domain/patient';
 import { EXAM_REQUEST_PRINT_STYLES } from '@/components/modals/examRequestPrintStyles';
 import {
   ExamCheckbox,

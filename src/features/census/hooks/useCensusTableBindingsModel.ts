@@ -20,7 +20,7 @@ export const useCensusTableBindingsModel = ({
   const tableViewModel = useCensusTableViewModel({ currentDateString });
   const canReadClinical = canReadClinicalDocuments(tableViewModel.role);
   const clinicalDocumentPresenceByBedId = useClinicalDocumentPresenceByBed({
-    occupiedRows: tableViewModel.occupiedRows,
+    unifiedRows: tableViewModel.unifiedRows,
     currentDateString,
     enabled: canReadClinical,
   });
@@ -42,8 +42,7 @@ export const useCensusTableBindingsModel = ({
       accessProfile,
       onToggleDiagnosisMode: tableViewModel.toggleDiagnosisMode,
       onResizeColumn: tableViewModel.handleColumnResize,
-      occupiedRows: tableViewModel.occupiedRows,
-      emptyBeds: tableViewModel.emptyBeds,
+      unifiedRows: tableViewModel.unifiedRows,
       bedTypes: tableViewModel.bedTypes,
       role: tableViewModel.role,
       clinicalDocumentPresenceByBedId,
@@ -62,12 +61,11 @@ export const useCensusTableBindingsModel = ({
     tableViewModel.canDeleteRecord,
     tableViewModel.columns,
     tableViewModel.diagnosisMode,
-    tableViewModel.emptyBeds,
     tableViewModel.handleClearAll,
     tableViewModel.handleColumnResize,
     tableViewModel.handleRowAction,
     tableViewModel.isEditMode,
-    tableViewModel.occupiedRows,
+    tableViewModel.unifiedRows,
     tableViewModel.resetDayDeniedMessage,
     tableViewModel.role,
     tableViewModel.toggleDiagnosisMode,

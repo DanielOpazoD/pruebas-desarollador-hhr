@@ -1,6 +1,6 @@
 import { useMemo, useRef, useEffect } from 'react';
-import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
-import type { DailyRecordPatch } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecord } from '@/application/shared/dailyRecordContracts';
+import type { DailyRecordPatch } from '@/application/shared/dailyRecordContracts';
 import { useNotification } from '@/context/UIContext';
 import { useAuditContext } from '@/context/AuditContext';
 import { useAuth } from '@/context';

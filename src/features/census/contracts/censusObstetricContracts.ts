@@ -2,7 +2,7 @@ import type {
   CesareanLabor as RootCesareanLabor,
   DeliveryRoute as RootDeliveryRoute,
   GinecobstetriciaType as RootGinecobstetriciaType,
-} from '@/shared/census/patientContracts';
+} from '@/types/domain/patient';
 
 export type DeliveryRoute = RootDeliveryRoute;
 export type CesareanLabor = RootCesareanLabor;

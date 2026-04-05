@@ -1,7 +1,7 @@
 import type { RowMenuAlign } from '@/features/census/components/patient-row/patientRowUiContracts';
 import { buildOccupiedPatientRowIndicators } from '@/features/census/controllers/patientRowIndicatorsController';
 import type { CensusTableResolvedOccupiedRow } from '@/features/census/types/censusTableComponentContracts';
-import type { OccupiedBedRow } from '@/features/census/types/censusTableTypes';
+import type { UnifiedBedRow } from '@/features/census/types/censusTableTypes';
 
 const MENU_ALIGN_BOTTOM_THRESHOLD = 4;
 
@@ -9,20 +9,22 @@ export const resolvePatientRowMenuAlign = (index: number, totalRows: number): Ro
   return index >= totalRows - MENU_ALIGN_BOTTOM_THRESHOLD ? 'bottom' : 'top';
 };
 
-export const shouldRenderEmptyBedsDivider = (emptyBedsCount: number): boolean => emptyBedsCount > 0;
-
 interface BuildResolvedOccupiedRowsParams {
-  occupiedRows: OccupiedBedRow[];
+  unifiedRows: UnifiedBedRow[];
   currentDateString: string;
   clinicalDocumentPresenceByBedId: Record<string, boolean>;
 }
 
 export const buildResolvedOccupiedRows = ({
-  occupiedRows,
+  unifiedRows,
   currentDateString,
   clinicalDocumentPresenceByBedId,
-}: BuildResolvedOccupiedRowsParams): CensusTableResolvedOccupiedRow[] =>
-  occupiedRows.map((row, index) => ({
+}: BuildResolvedOccupiedRowsParams): CensusTableResolvedOccupiedRow[] => {
+  const occupiedRows = unifiedRows.filter(
+    (row): row is Extract<UnifiedBedRow, { kind: 'occupied' }> => row.kind === 'occupied'
+  );
+
+  return occupiedRows.map((row, index) => ({
     row,
     actionMenuAlign: resolvePatientRowMenuAlign(index, occupiedRows.length),
     indicators: buildOccupiedPatientRowIndicators({
@@ -33,3 +35,4 @@ export const buildResolvedOccupiedRows = ({
       hasClinicalDocument: Boolean(clinicalDocumentPresenceByBedId[row.bed.id]),
     }),
   }));
+};

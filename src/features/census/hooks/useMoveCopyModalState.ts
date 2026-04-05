@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getTodayISO } from '@/utils/dateUtils';
+import { getTodayISO } from '@/utils/dateFormattingUtils';
 import {
   buildMoveCopyDateOptions,
   resolveMoveCopyBaseDate,

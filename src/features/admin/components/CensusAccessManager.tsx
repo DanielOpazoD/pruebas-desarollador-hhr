@@ -18,7 +18,7 @@ import {
   executeGetAuthorizedCensusEmails,
   executeRemoveAuthorizedCensusEmail,
 } from '@/application/census-access/censusAccessManagementUseCases';
-import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
+import { resolveApplicationOutcomeMessage } from '@/shared/contracts/applicationOutcomeMessage';
 import { CensusAuthorizedEmail, CensusAccessRole } from '@/types/censusAccess';
 import { useAuth } from '@/context/AuthContext';
 import clsx from 'clsx';

@@ -4,7 +4,7 @@ import {
   createApplicationSuccess,
   type ApplicationIssue,
   type ApplicationOutcome,
-} from '@/application/shared/applicationOutcome';
+} from '@/shared/contracts/applicationOutcome';
 import {
   ReminderImageService,
   ReminderReadService,

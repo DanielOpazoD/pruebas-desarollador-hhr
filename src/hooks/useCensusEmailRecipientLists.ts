@@ -15,7 +15,7 @@ import {
   executeSyncCensusRecipientList,
 } from '@/application/census-email/censusRecipientListUseCases';
 import { resolveStoredRecipients } from '@/hooks/controllers/censusEmailRecipientsController';
-import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
+import { resolveApplicationOutcomeMessage } from '@/shared/contracts/applicationOutcomeMessage';
 
 const RECIPIENT_LIST_KEY = 'censusEmailActiveRecipientListId';
 

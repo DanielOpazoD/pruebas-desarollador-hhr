@@ -1,5 +1,5 @@
 import type { PatientEpisodeContract } from '@/application/patient-flow/clinicalEpisodeContracts';
-import { isNewAdmissionForClinicalDay } from '@/utils/dateUtils';
+import { isNewAdmissionForClinicalDay } from '@/utils/clinicalDayUtils';
 
 export interface ClinicalEpisode {
   patientRut: string;

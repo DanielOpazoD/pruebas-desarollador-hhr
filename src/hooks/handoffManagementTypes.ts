@@ -1,9 +1,9 @@
 import type {
   MedicalHandoffActor,
   MedicalSpecialty,
-} from '@/hooks/contracts/dailyRecordHookContracts';
+} from '@/application/shared/dailyRecordContracts';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
-import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
+import type { ApplicationOutcome } from '@/shared/contracts/applicationOutcome';
 
 export interface ConfirmMedicalSpecialtyNoChangesInput {
   specialty: MedicalSpecialty;

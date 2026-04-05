@@ -1,4 +1,4 @@
-import type { DailyRecordStaffingState } from '@/types/domain/dailyRecordSlices';
+import type { DailyRecordStaffingState } from '@/services/contracts/dailyRecordServiceContracts';
 
 type DailyRecordStaffingCompatShape = Pick<
   DailyRecordStaffingState,

@@ -8,7 +8,7 @@ import {
   createApplicationPartial,
   createApplicationSuccess,
   type ApplicationOutcome,
-} from '@/application/shared/applicationOutcome';
+} from '@/shared/contracts/applicationOutcome';
 import { runMonthlyBackfill } from '@/services/backup/monthlyBackfillService';
 
 export const executeImportJsonBackup = async (

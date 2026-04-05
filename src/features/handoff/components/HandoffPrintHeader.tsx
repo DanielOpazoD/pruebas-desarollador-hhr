@@ -1,6 +1,6 @@
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
-import type { ShiftSchedule } from '@/utils/dateUtils';
+import type { ShiftSchedule } from '@/utils/clinicalDayUtils';
 import {
   resolvePrintableShiftLabel,
   resolvePrintableStaffList,

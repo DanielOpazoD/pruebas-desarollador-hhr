@@ -1,4 +1,4 @@
-import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
+import { resolveApplicationOutcomeMessage } from '@/shared/contracts/applicationOutcomeMessage';
 import type { TransferStatus } from '@/types/transfers';
 
 export const getTransferAuthError = (hasUserEmail: boolean): string | null =>

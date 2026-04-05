@@ -4,8 +4,8 @@ import {
   createApplicationFailed,
   createApplicationSuccess,
   type ApplicationOutcome,
-} from '@/application/shared/applicationOutcome';
-import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
+} from '@/shared/contracts/applicationOutcome';
+import { resolveApplicationOutcomeMessage } from '@/shared/contracts/applicationOutcomeMessage';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EMAIL_RECIPIENT_LISTS_COLLECTION = 'emailRecipientLists';

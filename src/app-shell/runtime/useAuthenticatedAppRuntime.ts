@@ -10,7 +10,7 @@ import { useSystemHealthReporter } from '@/hooks/admin/useSystemHealthReporter';
 import type { UseAppStateReturn } from '@/hooks/useAppState';
 import type { UseCensusEmailReturn } from '@/hooks/useCensusEmail';
 import type { UseFileOperationsReturn } from '@/hooks/useFileOperations';
-import type { DailyRecordContextType } from '@/hooks/useDailyRecordTypes';
+import type { DailyRecordContextType } from '@/context/dailyRecordContextContracts';
 import { resolveShiftNurseSignature } from '@/services/staff/dailyRecordStaffing';
 import type { AuthContextType } from '@/context';
 import type { CensusContextType } from '@/context/CensusContext';

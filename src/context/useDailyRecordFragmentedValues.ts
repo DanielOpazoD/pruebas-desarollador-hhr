@@ -5,7 +5,7 @@ import type {
   DailyRecordDataContextType,
   InventoryStats,
   SyncStatus,
-} from '@/hooks/useDailyRecordTypes';
+} from '@/context/dailyRecordContextContracts';
 import type { CMAData, DischargeData, TransferData } from '@/types/domain/movements';
 import type { PatientData } from '@/hooks/contracts/patientHookContracts';
 import type { StabilityRules } from '@/hooks/useStabilityRules';

@@ -4,8 +4,8 @@ import type { ConfirmOptions } from '@/context/uiContracts';
 import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domain/entities';
 import { buildClinicalDocumentPdfFileName } from '@/features/clinical-documents/controllers/clinicalDocumentWorkspaceController';
 import type { ExportClinicalDocumentPdfOutput } from '@/application/clinical-documents/clinicalDocumentPdfExportUseCase';
-import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
-import { resolveFailedApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
+import type { ApplicationOutcome } from '@/shared/contracts/applicationOutcome';
+import { resolveFailedApplicationOutcomeMessage } from '@/shared/contracts/applicationOutcomeMessage';
 import {
   recordOperationalOutcome,
   recordOperationalTelemetry,

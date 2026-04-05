@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { DailyRecordActionsContextType } from '@/hooks/useDailyRecordTypes';
+import type { DailyRecordActionsContextType } from '@/context/dailyRecordContextContracts';
 
 export const DailyRecordActionsContext = createContext<DailyRecordActionsContextType | undefined>(
   undefined

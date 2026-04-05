@@ -1,6 +1,6 @@
 import type { ShiftType } from '@/types/domain/shift';
 import type { HandoffPdfStaffingRecord } from '@/services/pdf/contracts/handoffPdfContracts';
-import { calculateHospitalizedDays } from '@/utils/dateUtils';
+import { calculateHospitalizedDays } from '@/utils/clinicalDayUtils';
 import { resolveHandoffShiftStaff } from '@/services/staff/dailyRecordStaffing';
 
 export interface Schedule {

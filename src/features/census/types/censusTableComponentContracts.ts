@@ -3,11 +3,10 @@ import type { CensusAccessProfile } from '@/features/census/types/censusAccessPr
 import type {
   BedTypesById,
   DiagnosisMode,
-  OccupiedBedRow,
+  UnifiedBedRow,
 } from '@/features/census/types/censusTableTypes';
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';
 import type { RowMenuAlign } from '@/features/census/components/patient-row/patientRowUiContracts';
-import type { BedDefinition } from '@/features/census/contracts/censusBedContracts';
 import type { PatientData } from '@/features/census/types/censusTablePatientContracts';
 import type { UserRole } from '@/types/auth';
 import type { PatientActionMenuIndicators } from '@/features/census/components/patient-row/patientRowActionContracts';
@@ -26,8 +25,7 @@ export interface CensusTableHeaderProps {
 }
 
 export interface CensusTableBodyProps {
-  occupiedRows: OccupiedBedRow[];
-  emptyBeds: BedDefinition[];
+  unifiedRows: UnifiedBedRow[];
   currentDateString: string;
   readOnly: boolean;
   diagnosisMode: DiagnosisMode;
@@ -42,7 +40,7 @@ export interface CensusTableBodyProps {
 }
 
 export interface CensusTableResolvedOccupiedRow {
-  row: OccupiedBedRow;
+  row: Extract<UnifiedBedRow, { kind: 'occupied' }>;
   actionMenuAlign: RowMenuAlign;
   indicators: Required<PatientActionMenuIndicators>;
 }

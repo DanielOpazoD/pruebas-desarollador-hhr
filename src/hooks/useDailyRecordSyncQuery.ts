@@ -14,8 +14,8 @@ import {
 } from './useDailyRecordQuery';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../config/queryClient';
-import { SyncStatus, UseDailyRecordSyncResult } from './useDailyRecordTypes';
-import type { DailyRecord, DailyRecordPatch } from '@/hooks/contracts/dailyRecordHookContracts';
+import { SyncStatus, UseDailyRecordSyncResult } from '@/context/dailyRecordContextContracts';
+import type { DailyRecord, DailyRecordPatch } from '@/application/shared/dailyRecordContracts';
 import { useRepositories } from '@/services/RepositoryContext';
 import { useNotification } from '@/context/UIContext';
 import { useVersion } from '@/context/VersionContext';
@@ -33,7 +33,7 @@ import { executeSyncDailyRecord } from '@/application/daily-record/syncDailyReco
 import { presentDailyRecordRefreshOutcome } from '@/hooks/controllers/dailyRecordRefreshOutcomeController';
 import { dailyRecordSyncLogger } from '@/hooks/hookLoggers';
 import { dailyRecordObservability } from '@/services/repositories/dailyRecordOperationalTelemetry';
-import { getTodayISO } from '@/utils/dateUtils';
+import { getTodayISO } from '@/utils/dateFormattingUtils';
 import { setDailyRecordQueryData } from '@/hooks/controllers/dailyRecordQueryController';
 import type { RemoteSyncRuntimeStatus } from '@/services/repositories/repositoryConfig';
 import {

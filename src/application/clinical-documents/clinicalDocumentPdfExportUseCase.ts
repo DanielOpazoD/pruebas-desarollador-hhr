@@ -1,16 +1,16 @@
 import {
   exportClinicalDocumentPdfViaBackend,
   generateClinicalDocumentPdfBlob,
-} from '@/features/clinical-documents/public';
+} from '@/features/clinical-documents';
 import type {
   ClinicalDocumentPdfMeta,
   ClinicalDocumentRecord,
-} from '@/features/clinical-documents/public';
+} from '@/features/clinical-documents';
 import {
   createApplicationFailed,
   createApplicationSuccess,
   type ApplicationOutcome,
-} from '@/application/shared/applicationOutcome';
+} from '@/shared/contracts/applicationOutcome';
 import {
   defaultClinicalDocumentPort,
   type ClinicalDocumentPort,

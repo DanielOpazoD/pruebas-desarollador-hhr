@@ -48,11 +48,20 @@ describe('patientRowMainViewController', () => {
 
   it('resolves row classes and action availability from patient state', () => {
     const rowClassName = resolvePatientMainRowClassName({
+      bedId: 'R1',
       isBlocked: true,
       patientName: '',
     });
     expect(rowClassName).toContain('bg-slate-50/50');
     expect(rowClassName).toContain('animate-slide-fade-in');
+
+    const upcRowClassName = resolvePatientMainRowClassName({
+      bedId: 'R1',
+      isBlocked: false,
+      isUpc: true,
+      patientName: 'Paciente UPC',
+    });
+    expect(upcRowClassName).toContain('bg-rose-50/50');
 
     expect(
       resolvePatientMainRowActionsAvailability({

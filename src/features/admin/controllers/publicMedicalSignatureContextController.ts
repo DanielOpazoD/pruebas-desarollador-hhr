@@ -1,5 +1,5 @@
 import type { DailyRecord } from '@/features/admin/contracts/publicMedicalSignatureContracts';
-import type { DailyRecordContextType } from '@/hooks/useDailyRecordTypes';
+import type { DailyRecordContextType } from '@/context/dailyRecordContextContracts';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 
 const noop = () => {};

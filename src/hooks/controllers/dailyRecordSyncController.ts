@@ -1,5 +1,5 @@
-import type { DailyRecordDateRef } from '@/hooks/contracts/dailyRecordHookContracts';
-import type { SyncStatus } from '@/hooks/useDailyRecordTypes';
+import type { DailyRecordDateRef } from '@/application/shared/dailyRecordContracts';
+import type { SyncStatus } from '@/context/dailyRecordContextContracts';
 import { resolveDailyRecordSyncStatus } from '@/hooks/controllers/dailyRecordSyncStatusController';
 
 interface MutationLike {

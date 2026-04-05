@@ -1,4 +1,5 @@
-import { getTodayISO, normalizeDateOnly } from '@/utils/dateUtils';
+import { getTodayISO } from '@/utils/dateFormattingUtils';
+import { normalizeDateOnly } from '@/utils/clinicalDayUtils';
 import {
   resolveAdmissionDateAudit as resolveAdmissionDateAuditPolicy,
   type AdmissionDateAuditResolution,

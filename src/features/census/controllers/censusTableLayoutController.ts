@@ -2,10 +2,9 @@ import type { CSSProperties } from 'react';
 import type { TableColumnConfig } from '@/context/TableConfigContext';
 import type {
   DiagnosisMode,
-  OccupiedBedRow,
+  UnifiedBedRow,
   BedTypesById,
 } from '@/features/census/types/censusTableTypes';
-import type { BedDefinition } from '@/features/census/contracts/censusBedContracts';
 import type { PatientData } from '@/features/census/types/censusTablePatientContracts';
 import type { UserRole } from '@/types/auth';
 import type { PatientRowAction } from '@/features/census/types/patientRowActionTypes';
@@ -32,8 +31,7 @@ export interface CensusTableLayoutParams {
   accessProfile?: CensusAccessProfile;
   onToggleDiagnosisMode: () => void;
   onResizeColumn: (column: keyof TableColumnConfig) => (width: number) => void;
-  occupiedRows: OccupiedBedRow[];
-  emptyBeds: BedDefinition[];
+  unifiedRows: UnifiedBedRow[];
   bedTypes: BedTypesById;
   role?: UserRole;
   clinicalDocumentPresenceByBedId: Record<string, boolean>;
@@ -74,8 +72,7 @@ export const buildCensusTableLayoutBindings = (
       onResizeColumn: params.onResizeColumn,
     },
     bodyProps: {
-      occupiedRows: params.occupiedRows,
-      emptyBeds: params.emptyBeds,
+      unifiedRows: params.unifiedRows,
       currentDateString: params.currentDateString,
       readOnly: params.readOnly,
       diagnosisMode: params.diagnosisMode,

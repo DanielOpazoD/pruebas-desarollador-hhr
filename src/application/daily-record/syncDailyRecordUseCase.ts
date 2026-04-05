@@ -7,7 +7,7 @@ import {
   createApplicationSuccess,
   type ApplicationOutcome,
   type UseCase,
-} from '@/application/shared/applicationOutcome';
+} from '@/shared/contracts/applicationOutcome';
 import {
   defaultDailyRecordSyncPort,
   type DailyRecordSyncPort,

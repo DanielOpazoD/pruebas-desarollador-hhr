@@ -1,5 +1,9 @@
 import type { DailyRecord } from '@/features/census/contracts/censusRecordContracts';
-import { DischargeType, TransferData } from '@/features/census/contracts/censusMovementContracts';
+import {
+  DischargeType,
+  TransferData,
+  type IeehData,
+} from '@/features/census/contracts/censusMovementContracts';
 
 interface UpdateDischargeMovementInput {
   record: DailyRecord;
@@ -9,6 +13,7 @@ interface UpdateDischargeMovementInput {
   dischargeTypeOther?: string;
   time?: string;
   movementDate?: string;
+  ieehData?: IeehData;
 }
 
 interface DeleteMovementInput {
@@ -30,6 +35,7 @@ export const resolveUpdateDischargeMovement = ({
   dischargeTypeOther,
   time,
   movementDate,
+  ieehData,
 }: UpdateDischargeMovementInput): DailyRecord => {
   const discharges = record.discharges.map(discharge =>
     discharge.id === id
@@ -40,6 +46,7 @@ export const resolveUpdateDischargeMovement = ({
           dischargeTypeOther: dischargeType === 'Otra' ? dischargeTypeOther : undefined,
           movementDate: movementDate ?? discharge.movementDate,
           time: time ?? discharge.time,
+          ieehData: ieehData ?? discharge.ieehData,
         }
       : discharge
   );

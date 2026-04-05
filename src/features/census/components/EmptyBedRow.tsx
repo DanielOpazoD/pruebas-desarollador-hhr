@@ -25,20 +25,26 @@ export const EmptyBedRow: React.FC<EmptyBedRowProps> = ({
 
   return (
     <tr
-      className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors cursor-pointer group"
+      className="border-b border-slate-100/60 hover:bg-slate-50/50 transition-colors cursor-pointer group h-7"
       onClick={!readOnly ? onClick : undefined}
     >
       <td
         style={{ width: columns.actions }}
-        className="p-1 border-r border-slate-100 print:hidden"
+        className="py-0 px-1 border-r border-slate-100 print:hidden"
       />
 
-      <td style={{ width: columns.bed }} className="p-1 border-r border-slate-100 text-center">
+      <td
+        style={{ width: columns.bed }}
+        className="py-0 px-1 border-r border-slate-100 text-center"
+      >
         <span className="text-slate-400 font-medium text-xs">{bed.name}</span>
       </td>
 
-      <td style={{ width: columns.type }} className="p-1 border-r border-slate-100 text-center">
-        <MedicalBadge variant={bed.type === 'UTI' ? 'red' : 'slate'} className="opacity-50">
+      <td
+        style={{ width: columns.type }}
+        className="py-0 px-1 border-r border-slate-100 text-center"
+      >
+        <MedicalBadge variant="slate" className="opacity-40 scale-90">
           {bed.type}
         </MedicalBadge>
       </td>
@@ -46,17 +52,17 @@ export const EmptyBedRow: React.FC<EmptyBedRowProps> = ({
       <td
         colSpan={Math.max(1, visibleColumnCount - 3)}
         style={{ width: remainingWidth }}
-        className="p-1 pl-3"
+        className="py-0 pl-3"
       >
         {!readOnly && (
           <button
-            className="flex items-center gap-1.5 px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 bg-slate-50 hover:bg-medical-100 border border-transparent group-hover:border-slate-200 text-slate-400 hover:text-medical-600 text-xs transition-all duration-200"
+            className="flex items-center gap-1 px-1.5 py-0.5 rounded-md opacity-0 group-hover:opacity-100 bg-slate-50 hover:bg-medical-100 border border-transparent group-hover:border-slate-200 text-slate-400 hover:text-medical-600 text-[11px] transition-all duration-200"
             onClick={event => {
               event.stopPropagation();
               onClick();
             }}
           >
-            <Plus size={14} className="transition-transform group-hover:scale-110" />
+            <Plus size={12} className="transition-transform group-hover:scale-110" />
             <span className="font-medium">Agregar paciente</span>
           </button>
         )}

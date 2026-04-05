@@ -1,6 +1,6 @@
-import type { DailyRecordBedAuditState } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordBedAuditState } from '@/application/shared/dailyRecordContracts';
 import type { PatientData } from '@/hooks/contracts/patientHookContracts';
-import type { DailyRecordContextType } from '@/hooks/useDailyRecordTypes';
+import type { DailyRecordContextType } from '@/context/dailyRecordContextContracts';
 
 interface CopyPatientParams {
   record: DailyRecordBedAuditState | null;

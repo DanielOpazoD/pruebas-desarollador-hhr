@@ -1,7 +1,7 @@
 // Barrel exports for handoff module
 export { HandoffHeader } from './HandoffHeader';
 export { HandoffRow } from './HandoffRow';
-export { calculateHospitalizedDays } from '@/utils/dateUtils';
+export { calculateHospitalizedDays } from '@/utils/clinicalDayUtils';
 
 //export { HandoffRow } from './HandoffRow';
 export { HandoffChecklistDay } from './HandoffChecklistDay';

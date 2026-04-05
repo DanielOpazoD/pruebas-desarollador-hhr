@@ -64,6 +64,9 @@ Evitar que la deuda estructural vuelva a crecer después de las fases de estabil
 ## Operación diaria
 
 - El mapa corto de ejecución y fallback vive en [docs/CI_GATES_AND_FAILURE_RUNBOOKS.md](./CI_GATES_AND_FAILURE_RUNBOOKS.md).
+- La superficie pública mínima de comandos vive en [docs/DEVELOPER_COMMANDS.md](./DEVELOPER_COMMANDS.md).
+- La cadencia mensual de convergencia vive en [docs/FOUNDATION_MAINTENANCE_CADENCE.md](./FOUNDATION_MAINTENANCE_CADENCE.md).
+- El estado persistente del roadmap estructural vive en [docs/FOUNDATION_TRACKER.md](./FOUNDATION_TRACKER.md).
 - `ci:inner-loop` es la ruta local rápida.
 - `ci:pre-merge` es la verificación compacta obligatoria antes de merge.
 - `ci:merge-gate` es la ruta blocking ampliada previa a merge.
@@ -80,6 +83,18 @@ Evitar que la deuda estructural vuelva a crecer después de las fases de estabil
 - La deuda priorizada vive en [docs/TECHNICAL_DEBT_REGISTER.md](./TECHNICAL_DEBT_REGISTER.md).
 - Los fallos conocidos no resueltos deben vivir en `scripts/config/test-failure-catalog.json` con owner, clasificación y SLA.
 - Los riesgos flaky aceptados temporalmente deben vivir en `scripts/config/flaky-quarantine.json` y reflejarse también en el catálogo de fallos.
+
+## Señales de convergencia
+
+Además de tamaño, lint y coverage, la base debe vigilar:
+
+- imports profundos fuera de la API pública de `census`, `handoff`, `transfers` y `clinical-documents`;
+- imports nuevos hacia shims de compatibilidad;
+- drift entre owners documentados y owners reales en controllers compartidos;
+- megatests de más de `500` líneas;
+- fallos de `typecheck` causados por contratos o shapes ya retirados.
+
+La referencia reportable de estas señales vive en `reports/quality-metrics.md` y el backlog operativo en `docs/FOUNDATION_TRACKER.md`.
 
 ## Cuándo abrir una excepción
 

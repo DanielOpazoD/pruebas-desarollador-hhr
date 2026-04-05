@@ -3,7 +3,7 @@ import type {
   DailyRecordCmaState,
   DailyRecordCsvExportState,
   DailyRecordMetadataState,
-} from '@/types/domain/dailyRecordSlices';
+} from '@/services/contracts/dailyRecordServiceContracts';
 
 export type CensusExportRecord = DailyRecordMetadataState &
   Pick<DailyRecordBedLayoutState, 'beds' | 'bedTypeOverrides' | 'activeExtraBeds'> &

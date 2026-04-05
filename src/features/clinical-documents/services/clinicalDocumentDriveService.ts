@@ -8,7 +8,7 @@ import {
   createApplicationFailed,
   createApplicationSuccess,
   type ApplicationOutcome,
-} from '@/application/shared/applicationOutcome';
+} from '@/shared/contracts/applicationOutcome';
 
 const ROOT_FOLDER = 'Hospitalizados';
 const DOCUMENT_ROOT_FOLDER = 'Documentos Clinicos';

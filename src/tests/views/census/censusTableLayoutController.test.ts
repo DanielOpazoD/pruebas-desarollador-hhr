@@ -39,8 +39,7 @@ describe('censusTableLayoutController', () => {
       diagnosisMode: 'free',
       onToggleDiagnosisMode,
       onResizeColumn,
-      occupiedRows: [],
-      emptyBeds: [],
+      unifiedRows: [],
       bedTypes: {},
       clinicalDocumentPresenceByBedId: {},
       onAction,
@@ -58,15 +57,20 @@ describe('censusTableLayoutController', () => {
   });
 
   it('keeps rows and bed data references untouched', () => {
-    const occupiedRows = [
+    const unifiedRows = [
       {
+        kind: 'occupied' as const,
         id: 'row-1',
         bed: { id: 'R1', name: 'R1', type: BedType.MEDIA, isCuna: false },
         data: DataFactory.createMockPatient('R1'),
         isSubRow: false,
       },
+      {
+        kind: 'empty' as const,
+        id: 'R2',
+        bed: { id: 'R2', name: 'R2', type: BedType.MEDIA, isCuna: false },
+      },
     ];
-    const emptyBeds = [{ id: 'R2', name: 'R2', type: BedType.MEDIA, isCuna: false }];
     const bedTypes = { R1: BedType.MEDIA, R2: BedType.MEDIA };
 
     const bindings = buildCensusTableLayoutBindings({
@@ -94,8 +98,7 @@ describe('censusTableLayoutController', () => {
       diagnosisMode: 'cie10',
       onToggleDiagnosisMode: vi.fn(),
       onResizeColumn: vi.fn(() => vi.fn()),
-      occupiedRows,
-      emptyBeds,
+      unifiedRows,
       bedTypes,
       clinicalDocumentPresenceByBedId: {},
       onAction: vi.fn(),
@@ -103,8 +106,7 @@ describe('censusTableLayoutController', () => {
       totalWidth: 1200,
     });
 
-    expect(bindings.bodyProps.occupiedRows).toBe(occupiedRows);
-    expect(bindings.bodyProps.emptyBeds).toBe(emptyBeds);
+    expect(bindings.bodyProps.unifiedRows).toBe(unifiedRows);
     expect(bindings.bodyProps.bedTypes).toBe(bedTypes);
   });
 

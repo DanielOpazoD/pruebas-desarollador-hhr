@@ -8,7 +8,7 @@ import {
 import {
   createApplicationSuccess,
   type ApplicationOutcome,
-} from '@/application/shared/applicationOutcome';
+} from '@/shared/contracts/applicationOutcome';
 import type {
   DailyRecord,
   MedicalHandoffActor,

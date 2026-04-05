@@ -3,7 +3,7 @@ import {
   createApplicationSuccess,
   type ApplicationIssue,
   type ApplicationOutcome,
-} from '@/application/shared/applicationOutcome';
+} from '@/shared/contracts/applicationOutcome';
 import type { AuthSessionState } from '@/types/auth';
 import {
   getCurrentAuthSessionState,

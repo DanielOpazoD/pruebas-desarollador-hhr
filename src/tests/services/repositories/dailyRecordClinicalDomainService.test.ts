@@ -146,6 +146,18 @@ describe('dailyRecordClinicalDomainService', () => {
     expect(carried.bedId).toBe('R1');
   });
 
+  it('clears UPC during carryover when the target bed is not UPC-eligible', () => {
+    const source = buildPatient('R1', {
+      patientName: 'Paciente UPC',
+      isUPC: true,
+    });
+
+    const carried = preparePatientForCarryover(source, 'H1C1');
+
+    expect(carried.bedId).toBe('H1C1');
+    expect(carried.isUPC).toBe(false);
+  });
+
   it('preserves cie10 only when patient names match', () => {
     const newBeds = {
       R1: buildPatient('R1', { patientName: 'Paciente Uno' }),

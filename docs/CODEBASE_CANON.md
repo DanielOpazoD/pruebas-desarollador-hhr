@@ -4,18 +4,18 @@ Este documento define la taxonomía canónica del repo. Su objetivo es bajar amb
 
 ## Capas canónicas
 
-| Zona               | Dueño                | Qué vive aquí                                                                   | Qué no debe vivir aquí                                        |
-| ------------------ | -------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `src/features/`    | bounded context      | UI, hooks locales, controllers y contratos propios de una feature               | utilidades transversales sin dueño de negocio                 |
-| `src/application/` | casos de uso         | use cases, outcomes, puertos y coordinación cross-feature                       | componentes React, providers globales, adapters concretos     |
-| `src/services/`    | infraestructura      | repositorios, storage, auth, integraciones externas, runtime adapters concretos | componentes, lógica de presentación, wiring de feature        |
-| `src/hooks/`       | shell/UI transversal | hooks de composición reutilizables por más de una feature o por el shell        | duplicados de controllers dueños de feature                   |
-| `src/context/`     | estado global        | providers, access hooks y contratos de estado global                            | reglas de negocio profundas, acceso directo a infraestructura |
-| `src/domain/`      | dominio puro         | reglas agnósticas de framework y modelos puros                                  | side effects, React, detalles de storage                      |
-| `src/shared/`      | transversal real     | contratos y runtime helpers usados por varios contextos                         | dumping ground de código sin dueño claro                      |
-| `src/types/`       | tipos globales       | DTOs y tipos estables de dominio o integración no ligados a React               | tipos efímeros de una sola feature o un solo hook             |
-| `src/schemas/`     | validación runtime   | schemas Zod y contratos de entrada/salida validados                             | reglas de UI o helpers genéricos                              |
-| `src/utils/`       | utilidades puras     | helpers pequeños y genéricos sin semántica clínica fuerte                       | reglas de negocio, adapters, estado                           |
+| Zona               | Dueño                | Qué vive aquí                                                                            | Qué no debe vivir aquí                                        |
+| ------------------ | -------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `src/features/`    | bounded context      | UI, hooks locales, controllers y contratos propios de una feature                        | utilidades transversales sin dueño de negocio                 |
+| `src/application/` | casos de uso         | use cases, outcomes, puertos y coordinación cross-feature                                | componentes React, providers globales, adapters concretos     |
+| `src/services/`    | infraestructura      | repositorios, storage, auth, integraciones externas, runtime adapters concretos          | componentes, lógica de presentación, wiring de feature        |
+| `src/hooks/`       | shell/UI transversal | hooks de composición reutilizables por más de una feature o por el shell                 | duplicados de controllers dueños de feature                   |
+| `src/context/`     | estado global        | providers, access hooks y contratos de estado global                                     | reglas de negocio profundas, acceso directo a infraestructura |
+| `src/domain/`      | dominio puro         | reglas agnósticas de framework y modelos puros                                           | side effects, React, detalles de storage                      |
+| `src/shared/`      | transversal real     | contracts genéricos, presentation helpers y runtime adapters usados por varios contextos | dumping ground de código sin dueño claro o aliases de dominio |
+| `src/types/`       | tipos globales       | DTOs y tipos estables de dominio o integración no ligados a React                        | tipos efímeros de una sola feature o un solo hook             |
+| `src/schemas/`     | validación runtime   | schemas Zod y contratos de entrada/salida validados                                      | reglas de UI o helpers genéricos                              |
+| `src/utils/`       | utilidades puras     | helpers pequeños y genéricos sin semántica clínica fuerte                                | reglas de negocio, adapters, estado                           |
 
 ## Reglas rápidas de decisión
 
@@ -24,6 +24,7 @@ Este documento define la taxonomía canónica del repo. Su objetivo es bajar amb
 3. Si toca red, storage, Firebase, Netlify o vendors externos, vive en `services`.
 4. Si solo sirve al shell o a más de una feature desde React, vive en `hooks` o `context`.
 5. Si parece transversal pero solo lo usa una feature, no va a `shared`: se queda en la feature.
+6. Si es una entidad de dominio o payload estable, el owner es `src/types/`; `shared` solo puede ofrecer compatibilidad temporal o helpers derivados.
 
 ## Reglas de ownership
 
@@ -31,6 +32,8 @@ Este documento define la taxonomía canónica del repo. Su objetivo es bajar amb
 - `src/hooks/controllers` no debe duplicar controllers dueños de `src/features/*/controllers`.
 - `src/shared/` y `src/types/` requieren justificación transversal real.
 - Nuevas compatibilidades legacy deben entrar por boundaries explícitos, no por convenience imports.
+- Outcomes y helpers de mensaje reutilizados por varias capas pertenecen a `src/shared/contracts/`, no a `application/shared/`.
+- Cuando un hotspot de dominio como `patient` necesita una surface transversal curada, la fachada vive en `src/shared/contracts/`; no se importan entidades hotspot directo desde `shared`, `features` o `application`.
 
 ## Estado de `src/infrastructure`
 

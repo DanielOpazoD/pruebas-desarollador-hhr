@@ -17,7 +17,7 @@ vi.mock('@/services/storage/firestore', () => ({
   getRecordFromFirestoreDetailed: vi.fn(),
   saveRecordToFirestore: vi.fn(),
 }));
-vi.mock('../../services/storage/legacyFirebaseService', () => ({
+vi.mock('../../services/storage/migration/legacyFirestoreBridge', () => ({
   getLegacyRecord: vi.fn().mockResolvedValue(null),
   getLegacyNurseCatalog: vi.fn().mockResolvedValue([]),
   getLegacyTensCatalog: vi.fn().mockResolvedValue([]),

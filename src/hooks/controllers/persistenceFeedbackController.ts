@@ -1,4 +1,4 @@
-import { resolvePrimaryApplicationIssueMessage } from '@/application/shared/applicationOutcomeMessage';
+import { resolvePrimaryApplicationIssueMessage } from '@/shared/contracts/applicationOutcomeMessage';
 
 interface CreateDayFeedbackInput {
   sourceDate?: string;

@@ -3,7 +3,7 @@ import {
   createApplicationFailed,
   createApplicationSuccess,
   type ApplicationOutcome,
-} from '@/application/shared/applicationOutcome';
+} from '@/shared/contracts/applicationOutcome';
 import { defaultBackupFilesPort, type BackupFilesPort } from '@/application/ports/backupFilesPort';
 import type { BackupFile, BackupFilePreview, BackupFilters, BackupShiftType } from '@/types/backup';
 

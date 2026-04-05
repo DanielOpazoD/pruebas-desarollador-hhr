@@ -57,8 +57,12 @@ describe('useCensusTableModel', () => {
     );
 
     expect(result.current.canDeleteRecord).toBe(true);
-    expect(result.current.occupiedRows.map(row => row.id)).toContain('R1-cuna');
-    expect(result.current.emptyBeds.some(bed => bed.id === 'R2')).toBe(true);
+    expect(
+      result.current.unifiedRows.filter(row => row.kind === 'occupied').map(row => row.id)
+    ).toContain('R1-cuna');
+    expect(
+      result.current.unifiedRows.filter(row => row.kind === 'empty').some(row => row.id === 'R2')
+    ).toBe(true);
     expect(result.current.bedTypes.R1).toBe(BedType.UCI);
     expect(result.current.totalWidth).toBe(
       Object.values(TEST_COLUMNS).reduce((sum, width) => sum + width, 0)

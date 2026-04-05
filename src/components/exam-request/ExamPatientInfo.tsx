@@ -4,8 +4,8 @@
  */
 
 import React from 'react';
-import type { PatientData } from '@/shared/census/patientContracts';
-import { formatDateDDMMYYYY } from '@/utils/dateUtils';
+import type { PatientData } from '@/types/domain/patient';
+import { formatDateDDMMYYYY } from '@/utils/dateFormattingUtils';
 
 interface ExamPatientInfoProps {
   patient: PatientData;

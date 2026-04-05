@@ -1,6 +1,23 @@
 import type { DailyRecord as RootDailyRecord } from '@/types/domain/dailyRecord';
 import type { DailyRecordPatch as RootDailyRecordPatch } from '@/types/domain/dailyRecordPatch';
 import type {
+  DailyRecordBackfillRef as RootDailyRecordBackfillRef,
+  DailyRecordBedLayoutState as RootDailyRecordBedLayoutState,
+  DailyRecordBedsState as RootDailyRecordBedsState,
+  DailyRecordCmaState as RootDailyRecordCmaState,
+  DailyRecordCriticalValidationState as RootDailyRecordCriticalValidationState,
+  DailyRecordCsvExportState as RootDailyRecordCsvExportState,
+  DailyRecordCudyrExportState as RootDailyRecordCudyrExportState,
+  DailyRecordCudyrState as RootDailyRecordCudyrState,
+  DailyRecordDateRef as RootDailyRecordDateRef,
+  DailyRecordHandoffPdfState as RootDailyRecordHandoffPdfState,
+  DailyRecordMetadataState as RootDailyRecordMetadataState,
+  DailyRecordMovementState as RootDailyRecordMovementState,
+  DailyRecordPatientHistoryState as RootDailyRecordPatientHistoryState,
+  DailyRecordRawExportState as RootDailyRecordRawExportState,
+  DailyRecordStaffingState as RootDailyRecordStaffingState,
+} from '@/types/domain/dailyRecordSlices';
+import type {
   MedicalHandoffActor as RootMedicalHandoffActor,
   MedicalSpecialty as RootMedicalSpecialty,
 } from '@/types/domain/dailyRecordMedicalHandoff';
@@ -16,3 +33,18 @@ export type DailyRecord = RootDailyRecord;
 export type DailyRecordPatch = RootDailyRecordPatch;
 export type MedicalHandoffActor = RootMedicalHandoffActor;
 export type MedicalSpecialty = RootMedicalSpecialty;
+export type DailyRecordDateRef = RootDailyRecordDateRef;
+export type DailyRecordBackfillRef = RootDailyRecordBackfillRef;
+export type DailyRecordMetadataState = RootDailyRecordMetadataState;
+export type DailyRecordBedsState = RootDailyRecordBedsState;
+export type DailyRecordBedLayoutState = RootDailyRecordBedLayoutState;
+export type DailyRecordMovementState = RootDailyRecordMovementState;
+export type DailyRecordPatientHistoryState = RootDailyRecordPatientHistoryState;
+export type DailyRecordStaffingState = RootDailyRecordStaffingState;
+export type DailyRecordCriticalValidationState = RootDailyRecordCriticalValidationState;
+export type DailyRecordCmaState = RootDailyRecordCmaState;
+export type DailyRecordCudyrState = RootDailyRecordCudyrState;
+export type DailyRecordCudyrExportState = RootDailyRecordCudyrExportState;
+export type DailyRecordCsvExportState = RootDailyRecordCsvExportState;
+export type DailyRecordRawExportState = RootDailyRecordRawExportState;
+export type DailyRecordHandoffPdfState = RootDailyRecordHandoffPdfState;

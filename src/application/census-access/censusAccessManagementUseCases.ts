@@ -3,7 +3,7 @@ import {
   createApplicationFailed,
   createApplicationSuccess,
   type ApplicationOutcome,
-} from '@/application/shared/applicationOutcome';
+} from '@/shared/contracts/applicationOutcome';
 import {
   defaultCensusAccessManagementPort,
   type CensusAccessManagementPort,

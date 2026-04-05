@@ -1,6 +1,6 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { OccupiedBedRow } from '@/features/census/types/censusTableTypes';
+import type { UnifiedBedRow } from '@/features/census/types/censusTableTypes';
 import { useClinicalDocumentPresenceByBed } from '@/features/census/hooks/useClinicalDocumentPresenceByBed';
 import { executeListClinicalDocumentsByEpisodeKeys } from '@/application/clinical-documents/clinicalDocumentUseCases';
 import { createQueryClientTestWrapper } from '@/tests/utils/queryClientTestUtils';
@@ -21,8 +21,9 @@ vi.mock('@/services/utils/loggerService', () => ({
 }));
 
 describe('useClinicalDocumentPresenceByBed', () => {
-  const occupiedRows: OccupiedBedRow[] = [
+  const unifiedRows: UnifiedBedRow[] = [
     {
+      kind: 'occupied',
       id: 'row-r1',
       bed: { id: 'R1', name: 'R1', type: BedType.MEDIA, isCuna: false },
       data: {
@@ -31,7 +32,7 @@ describe('useClinicalDocumentPresenceByBed', () => {
         admissionDate: '2026-03-05',
       },
       isSubRow: false,
-    } as OccupiedBedRow,
+    } as UnifiedBedRow,
   ];
 
   beforeEach(() => {
@@ -48,7 +49,7 @@ describe('useClinicalDocumentPresenceByBed', () => {
     const { result } = renderHook(
       () =>
         useClinicalDocumentPresenceByBed({
-          occupiedRows,
+          unifiedRows,
           currentDateString: '2026-03-05',
           enabled: false,
         }),
@@ -66,7 +67,7 @@ describe('useClinicalDocumentPresenceByBed', () => {
     const { result } = renderHook(
       () =>
         useClinicalDocumentPresenceByBed({
-          occupiedRows,
+          unifiedRows,
           currentDateString: '2026-03-05',
           enabled: true,
         }),
@@ -95,7 +96,7 @@ describe('useClinicalDocumentPresenceByBed', () => {
     renderHook(
       () =>
         useClinicalDocumentPresenceByBed({
-          occupiedRows,
+          unifiedRows,
           currentDateString: '2026-03-05',
           enabled: true,
         }),

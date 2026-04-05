@@ -22,11 +22,11 @@ import {
   resolveTransferMutationErrorMessage,
   getTransferStatusAdvanceError,
 } from '@/hooks/controllers/transferManagementFeedbackController';
-import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecord } from '@/application/shared/dailyRecordContracts';
 import type {
   DailyRecordBedActions,
   DailyRecordMovementActions,
-} from '@/hooks/useDailyRecordTypes';
+} from '@/context/dailyRecordContextContracts';
 import { transferManagementLogger } from '@/hooks/hookLoggers';
 import type { TransferMutationResult } from '@/services/transfers/transferService';
 

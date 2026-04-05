@@ -1,3 +1,4 @@
+import React from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -18,7 +19,6 @@ import { useConfirmDialog, useNotification } from '@/context/UIContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCensusActionCommands } from '@/features/census/context/censusActionContexts';
 import { CensusTable } from '@/features/census/components/CensusTable';
-import { useClinicalDocumentPresenceByBed } from '@/features/census/hooks/useClinicalDocumentPresenceByBed';
 import { DataFactory } from '../../factories/DataFactory';
 
 vi.mock('@tanstack/react-virtual', () => ({
@@ -110,7 +110,7 @@ vi.mock('@/components/ui/ResizableHeader', () => ({
 
 const asContextReturn = <T,>(value: Partial<T>): T => value as T;
 
-describe('CensusTable', () => {
+describe('CensusTable layout and actions', () => {
   const mockRecord = DataFactory.createMockDailyRecord('2025-01-08', {
     activeExtraBeds: ['E1'],
   });
@@ -258,6 +258,7 @@ describe('CensusTable', () => {
         signOut: vi.fn(),
       })
     );
+
     render(<CensusTable currentDateString="2025-01-08" />);
 
     await act(async () => {
@@ -316,87 +317,5 @@ describe('CensusTable', () => {
     render(<CensusTable currentDateString="2025-01-08" />);
     fireEvent.click(screen.getByText('R2'));
     expect(updatePatientMock).toHaveBeenCalledWith('R2', 'patientName', ' ');
-  });
-
-  it('should disable clinical document presence lookup for non-clinical roles', () => {
-    render(<CensusTable currentDateString="2025-01-08" />);
-
-    expect(useClinicalDocumentPresenceByBed).toHaveBeenCalledWith(
-      expect.objectContaining({
-        currentDateString: '2025-01-08',
-        enabled: false,
-      })
-    );
-  });
-
-  it('should enable clinical document presence lookup for clinical roles', async () => {
-    vi.mocked(useAuth).mockReturnValue(
-      asContextReturn<ReturnType<typeof useAuth>>({
-        user: null,
-        role: 'nurse_hospital',
-        isLoading: false,
-        isAuthenticated: false,
-        isEditor: true,
-        isViewer: false,
-        isFirebaseConnected: true,
-        signOut: vi.fn(),
-      })
-    );
-
-    render(<CensusTable currentDateString="2025-01-08" />);
-
-    expect(useClinicalDocumentPresenceByBed).toHaveBeenCalledWith(
-      expect.objectContaining({
-        currentDateString: '2025-01-08',
-        enabled: true,
-      })
-    );
-  });
-
-  it('passes clinical-document and new-admission indicators to the main row binding', () => {
-    const patient = DataFactory.createMockPatient('R1', {
-      patientName: 'Paciente indicador',
-      rut: '11.111.111-1',
-      admissionDate: '2025-01-09',
-      admissionTime: '07:30',
-    });
-
-    vi.mocked(useAuth).mockReturnValue(
-      asContextReturn<ReturnType<typeof useAuth>>({
-        user: null,
-        role: 'nurse_hospital',
-        isLoading: false,
-        isAuthenticated: false,
-        isEditor: true,
-        isViewer: false,
-        isFirebaseConnected: true,
-        signOut: vi.fn(),
-      })
-    );
-    vi.mocked(useDailyRecordBeds).mockReturnValue(
-      asContextReturn<ReturnType<typeof useDailyRecordBeds>>({
-        R1: patient,
-      })
-    );
-    vi.mocked(useClinicalDocumentPresenceByBed).mockReturnValue({
-      R1: true,
-    });
-
-    render(<CensusTable currentDateString="2025-01-08" />);
-
-    expect(
-      patientRowMock.mock.calls.some(call => {
-        const props = call[0] as unknown as {
-          indicators?: { hasClinicalDocument?: boolean; isNewAdmission?: boolean };
-        };
-        const rowProps = props as {
-          indicators?: { hasClinicalDocument?: boolean; isNewAdmission?: boolean };
-        };
-        return (
-          rowProps.indicators?.hasClinicalDocument === true &&
-          rowProps.indicators?.isNewAdmission === true
-        );
-      })
-    ).toBe(true);
   });
 });

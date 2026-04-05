@@ -1,3 +1,7 @@
+// Public API for code outside the clinical-documents feature. Internal consumers should import local modules directly.
+export { ClinicalDocumentsModal } from './components/ClinicalDocumentsModal';
+export { ClinicalDocumentsPanel } from './components/ClinicalDocumentsPanel';
+export { ClinicalDocumentsWorkspace } from './components/ClinicalDocumentsWorkspace';
 export type {
   ClinicalDocumentAuditActor,
   ClinicalDocumentPdfMeta,
@@ -11,6 +15,11 @@ export type {
   ClinicalDocumentType,
 } from './domain/entities';
 export type { ClinicalDocumentDraftBaseState } from './hooks/clinicalDocumentDraftReducer';
+export {
+  createTemplatePatientField,
+  createTemplateSection,
+  normalizeTemplateForSave,
+} from './controllers/clinicalDocumentTemplateEditorController';
 export {
   buildClinicalDocumentActor,
   hydrateLegacyClinicalDocument,

@@ -1,11 +1,11 @@
 import { useCallback } from 'react';
-import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecord } from '@/application/shared/dailyRecordContracts';
 import {
   MovementCreationError,
   MovementCreationErrorCode,
 } from '@/hooks/controllers/patientMovementCreationController';
 import { MovementKind } from '@/hooks/controllers/patientMovementCreationErrorPresentation';
-import { ControllerResult } from '@/shared/controllerResult';
+import { ControllerResult } from '@/shared/contracts/controllerResult';
 
 type MovementCreationResolution<TValue extends { updatedRecord: DailyRecord }> = ControllerResult<
   TValue,

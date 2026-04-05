@@ -2,7 +2,7 @@ import {
   createApplicationFailed,
   createApplicationSuccess,
   type ApplicationOutcome,
-} from '@/application/shared/applicationOutcome';
+} from '@/shared/contracts/applicationOutcome';
 import type { PatientMasterWritePort } from '@/application/ports/patientMasterPort';
 import type { AuditPort } from '@/application/ports/auditPort';
 import {

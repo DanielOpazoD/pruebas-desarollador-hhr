@@ -1,7 +1,7 @@
 import {
   openClinicalDocumentBrowserPrintPreview,
   type ClinicalDocumentRecord,
-} from '@/features/clinical-documents/public';
+} from '@/features/clinical-documents';
 
 export const executeOpenClinicalDocumentPrint = (
   record: ClinicalDocumentRecord

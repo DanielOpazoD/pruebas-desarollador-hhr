@@ -1,8 +1,8 @@
-import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
+import type { ApplicationOutcome } from '@/shared/contracts/applicationOutcome';
 import {
   joinApplicationIssueMessages,
   resolvePrimaryApplicationIssueMessage,
-} from '@/application/shared/applicationOutcomeMessage';
+} from '@/shared/contracts/applicationOutcomeMessage';
 import type { OperationalNotice } from '@/shared/feedback/operationalNoticePolicy';
 
 interface CensusEmailOutcomePresentation {

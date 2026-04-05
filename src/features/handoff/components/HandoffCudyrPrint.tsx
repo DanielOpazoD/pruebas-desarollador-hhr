@@ -7,7 +7,7 @@ import { getCategorization } from '@/features/cudyr/public';
 import type { CudyrScore } from '@/types/domain/cudyr';
 import { calculateStats } from '@/services/calculations/statsCalculator';
 import { resolveNightShiftNurses } from '@/services/staff/dailyRecordStaffing';
-import { formatTimeHHMM } from '@/utils/dateUtils';
+import { formatTimeHHMM } from '@/utils/dateFormattingUtils';
 
 // ... (existing imports)
 

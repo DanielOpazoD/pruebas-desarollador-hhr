@@ -1,4 +1,4 @@
-import { formatDateDDMMYYYY as formatDate } from '@/utils/dateUtils';
+import { formatDateDDMMYYYY as formatDate } from '@/utils/dateFormattingUtils';
 import { resolveSendingRecipients } from '@/hooks/controllers/censusEmailRecipientsController';
 import { buildCensusWorkbookPlan } from '@/hooks/controllers/censusExcelSheetController';
 import {
@@ -12,7 +12,7 @@ import {
   createApplicationPartial,
   createApplicationSuccess,
   type ApplicationOutcome,
-} from '@/application/shared/applicationOutcome';
+} from '@/shared/contracts/applicationOutcome';
 import {
   defaultDailyRecordReadPort,
   type DailyRecordReadPort,

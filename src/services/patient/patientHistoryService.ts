@@ -5,7 +5,7 @@
  * Searches by RUT to find all beds, discharges, and transfers.
  */
 
-import type { DailyRecordPatientHistoryState } from '@/types/domain/dailyRecordSlices';
+import type { DailyRecordPatientHistoryState } from '@/services/contracts/dailyRecordServiceContracts';
 import { getAllRecords } from '@/services/storage/records';
 import { BEDS } from '@/constants/beds';
 

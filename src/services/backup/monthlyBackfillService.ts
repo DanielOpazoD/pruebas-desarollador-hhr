@@ -1,7 +1,8 @@
 import type jsPDF from 'jspdf';
 import type { ShiftType } from '@/types/domain/shift';
 import { getMonthRecordsFromFirestore } from '@/services/storage/firestore';
-import { generateDateRange, getShiftSchedule } from '@/utils/dateUtils';
+import { generateDateRange } from '@/utils/dateFormattingUtils';
+import { getShiftSchedule } from '@/utils/clinicalDayUtils';
 import type { BaseStoredFile } from '@/services/backup/baseStorageService';
 import type { StoredPdfFile } from '@/services/backup/pdfStorageService';
 import { formatBackupShiftLabel } from '@/shared/backup/backupPresentation';
@@ -10,7 +11,7 @@ import type { HandoffPdfRecord } from '@/services/pdf/contracts/handoffPdfContra
 import type {
   DailyRecordBackfillRef,
   DailyRecordCudyrExportState,
-} from '@/types/domain/dailyRecordSlices';
+} from '@/services/contracts/dailyRecordServiceContracts';
 
 export type MonthlyBackfillType = 'handoff' | 'census' | 'cudyr';
 

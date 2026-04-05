@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import { PdfViewerModal } from '@/components/shared/PdfViewerModal';
-import { formatTimeHHMM } from '@/utils/dateUtils';
+import { formatTimeHHMM } from '@/utils/dateFormattingUtils';
 import { cudyrExportLogger } from '@/services/cudyr/cudyrLoggers';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 

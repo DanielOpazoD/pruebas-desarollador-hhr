@@ -8,6 +8,12 @@ Controladores puros consumidos por hooks para separar:
 - estado derivado,
 - traducción de errores/mensajes.
 
+## Ownership
+
+- Los controllers específicos de `census` tienen owner canónico en `src/features/census/controllers`.
+- Si el mismo basename existe en `src/hooks/controllers`, ese archivo debe ser solo un shim de compatibilidad.
+- No se admiten dos implementaciones activas del mismo controller entre ambas rutas.
+
 ## Mapa
 
 | Archivo                                       | Propósito                                                                      |
@@ -27,3 +33,5 @@ Controladores puros consumidos por hooks para separar:
 Hook -> controller -> hook.
 
 Esto permite tests unitarios directos de controller sin montar React.
+
+Para `census`, los imports legacy desde `src/hooks/controllers/*` siguen soportados, pero reexportan la implementación dueña de la feature.

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
+import type { ApplicationOutcome } from '@/shared/contracts/applicationOutcome';
 import {
   executeAddMedicalEntry,
   executeCreateMedicalPrimaryEntry,

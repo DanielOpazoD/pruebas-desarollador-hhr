@@ -7,13 +7,14 @@ import {
   buildBedEpisodeBindings,
   buildClinicalDocumentPresenceByBed,
 } from '@/features/census/controllers/clinicalDocumentPresenceController';
-import type { OccupiedBedRow } from '@/features/census/types/censusTableTypes';
+import type { UnifiedBedRow } from '@/features/census/types/censusTableTypes';
 import { DataFactory } from '@/tests/factories/DataFactory';
 
 describe('clinicalDocumentPresenceController', () => {
   it('builds episode bindings only for main occupied rows with rut and admission date', () => {
-    const occupiedRows: OccupiedBedRow[] = [
+    const unifiedRows: UnifiedBedRow[] = [
       {
+        kind: 'occupied',
         id: 'R1-main',
         bed: BEDS.find(bed => bed.id === 'R1')!,
         data: DataFactory.createMockPatient('R1', {
@@ -24,6 +25,7 @@ describe('clinicalDocumentPresenceController', () => {
         isSubRow: false,
       },
       {
+        kind: 'occupied',
         id: 'R1-crib',
         bed: BEDS.find(bed => bed.id === 'R1')!,
         data: DataFactory.createMockPatient('R1-crib', {
@@ -34,6 +36,7 @@ describe('clinicalDocumentPresenceController', () => {
         isSubRow: true,
       },
       {
+        kind: 'occupied',
         id: 'R2-main',
         bed: BEDS.find(bed => bed.id === 'R2')!,
         data: DataFactory.createMockPatient('R2', {
@@ -45,7 +48,7 @@ describe('clinicalDocumentPresenceController', () => {
       },
     ];
 
-    expect(buildBedEpisodeBindings(occupiedRows)).toEqual([
+    expect(buildBedEpisodeBindings(unifiedRows)).toEqual([
       {
         bedId: 'R1',
         episodeKey: '11.111.111-1__2026-03-05',

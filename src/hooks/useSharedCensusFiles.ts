@@ -13,7 +13,7 @@ import {
   executeLoadSharedCensusFiles,
   executeLogSharedCensusAccess,
 } from '@/application/backup-export/sharedCensusFilesUseCases';
-import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
+import { resolveApplicationOutcomeMessage } from '@/shared/contracts/applicationOutcomeMessage';
 import { logger } from '@/services/utils/loggerService';
 
 const sharedCensusFilesLogger = logger.child('useSharedCensusFiles');

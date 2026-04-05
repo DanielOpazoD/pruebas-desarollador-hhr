@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecord } from '@/application/shared/dailyRecordContracts';
 import {
   getWhatsAppConfig,
   getMessageTemplates,
@@ -11,8 +11,8 @@ import {
 import { isE2ERuntimeEnabled } from '@/shared/runtime/e2eRuntime';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import { createScopedLogger } from '@/services/utils/loggerScope';
-import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
-import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
+import type { ApplicationOutcome } from '@/shared/contracts/applicationOutcome';
+import { resolveApplicationOutcomeMessage } from '@/shared/contracts/applicationOutcomeMessage';
 import { resolveHandoffShareLinkPlan } from '@/hooks/controllers/handoffShareLinkController';
 import { buildManualMedicalHandoffMessageModel } from '@/hooks/controllers/manualMedicalHandoffMessageController';
 

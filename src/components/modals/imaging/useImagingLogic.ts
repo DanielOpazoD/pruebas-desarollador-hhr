@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { PatientData } from '@/shared/census/patientContracts';
+import type { PatientData } from '@/types/domain/patient';
 import {
   printImagingRequestForm,
   printImagingEncuestaForm,

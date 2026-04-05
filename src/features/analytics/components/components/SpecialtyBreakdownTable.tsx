@@ -10,7 +10,7 @@ import {
   buildSpecialtyTraceability,
   SpecialtyTraceabilityType,
 } from '@/services/calculations/minsalStatsCalculator';
-import { calculateDischargeStayDays } from '@/utils/dateUtils';
+import { calculateDischargeStayDays } from '@/utils/clinicalDayUtils';
 import { TraceabilityModal } from './TraceabilityModal';
 
 interface SpecialtyBreakdownTableProps {

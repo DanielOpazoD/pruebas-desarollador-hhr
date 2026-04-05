@@ -51,6 +51,8 @@ describe('auditViewThrottle', () => {
         VIEW_THROTTLE_WINDOW_MS
       )
     ).toBe(false);
-    expect(shouldThrottleAuditViewAction('USER_LOGIN', state, Date.now())).toBe(false);
+    expect(
+      shouldThrottleAuditViewAction('USER_LOGIN', state, Date.parse('2026-04-04T12:15:00.000Z'))
+    ).toBe(false);
   });
 });

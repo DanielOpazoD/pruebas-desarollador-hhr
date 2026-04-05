@@ -4,9 +4,9 @@ import {
   serializeClinicalDocument,
   type ClinicalDocumentDraftBaseState,
   type ClinicalDocumentRecord,
-} from '@/features/clinical-documents/public';
+} from '@/features/clinical-documents';
 import { executePersistClinicalDocumentDraft } from '@/application/clinical-documents/clinicalDocumentUseCases';
-import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
+import type { ApplicationOutcome } from '@/shared/contracts/applicationOutcome';
 
 export type ClinicalDocumentDraftLoadResolution =
   | { kind: 'clear' }

@@ -11,15 +11,15 @@ import {
 } from '@/features/handoff/controllers/medicalHandoffTabsController';
 
 const BEDS: BedDefinition[] = [
-  { id: 'R1', name: '101', type: 'MEDIA', isCuna: false },
-  { id: 'R2', name: '102', type: 'MEDIA', isCuna: false },
+  { id: 'R1', name: 'R1', type: 'MEDIA', isCuna: false },
+  { id: 'H1C1', name: 'H1C1', type: 'MEDIA', isCuna: false },
 ] as BedDefinition[];
 
 const RECORD = {
   date: '2026-03-03',
   beds: {
     R1: { patientName: 'UPC', isUPC: true },
-    R2: { patientName: 'Sala', isUPC: false },
+    H1C1: { patientName: 'Sala', isUPC: true },
   },
 } as unknown as DailyRecord;
 
@@ -28,7 +28,7 @@ describe('medicalHandoffTabsController', () => {
     const { upcBeds, nonUpcBeds } = splitMedicalBedsByScope(BEDS, RECORD);
 
     expect(upcBeds.map(bed => bed.id)).toEqual(['R1']);
-    expect(nonUpcBeds.map(bed => bed.id)).toEqual(['R2']);
+    expect(nonUpcBeds.map(bed => bed.id)).toEqual(['H1C1']);
     expect(countScopedPatients(upcBeds, RECORD)).toBe(1);
   });
 
@@ -43,7 +43,7 @@ describe('medicalHandoffTabsController', () => {
         activeTab: 'no-upc',
         fixedScope: null,
       }).map(bed => bed.id)
-    ).toEqual(['R2']);
+    ).toEqual(['H1C1']);
 
     expect(
       resolveMedicalPrintBeds({
@@ -65,7 +65,7 @@ describe('medicalHandoffTabsController', () => {
         activeTab: 'upc',
         fixedScope: 'no-upc',
       }).map(bed => bed.id)
-    ).toEqual(['R1', 'R2']);
+    ).toEqual(['R1', 'H1C1']);
 
     expect(
       resolveMedicalPrintBeds({

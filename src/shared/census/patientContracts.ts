@@ -1,3 +1,4 @@
+// Compatibility shim: the canonical owner for patient domain types is "@/types/domain/patient".
 import type {
   CesareanLabor as RootCesareanLabor,
   DeliveryRoute as RootDeliveryRoute,

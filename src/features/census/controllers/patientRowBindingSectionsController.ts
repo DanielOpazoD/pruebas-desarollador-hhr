@@ -51,6 +51,7 @@ export const buildPatientMainSectionBindings = ({
     isEmpty: runtime.rowState.isEmpty,
     isBlocked: runtime.rowState.isBlocked,
     capabilities: viewContext.capabilities,
+    isUpc: data.isUPC,
     patientName: data.patientName,
   });
 

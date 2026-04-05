@@ -1,5 +1,5 @@
-import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
-import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
+import type { ApplicationOutcome } from '@/shared/contracts/applicationOutcome';
+import { resolveApplicationOutcomeMessage } from '@/shared/contracts/applicationOutcomeMessage';
 
 export interface HandoffManagementOutcomeNotice {
   message: string;

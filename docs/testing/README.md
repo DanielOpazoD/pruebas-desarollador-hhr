@@ -18,6 +18,8 @@ Playwright cubre auth, startup, módulos críticos y regresiones de UX prioritar
 
 ## 2. Comandos vigentes
 
+Superficie pública mínima recomendada para trabajo diario: [docs/DEVELOPER_COMMANDS.md](../DEVELOPER_COMMANDS.md)
+
 | Comando                                   | Descripción                                                                                                               |
 | :---------------------------------------- | :------------------------------------------------------------------------------------------------------------------------ |
 | `npm run test:ci:unit`                    | Suite unitaria/integración de CI sin reglas ni emulador                                                                   |
@@ -83,6 +85,8 @@ El budget diferencia entre:
 2. Antes de merge, correr al menos `npm run ci:pre-merge`.
 3. Si toca código clínico, runtime, bundle o cobertura, cerrar con `npm run ci:merge-gate`.
 4. Si toca Firestore, reglas, emulador o UX crítica, cerrar con `npm run ci:release-gate`.
+
+Los demás scripts de este documento deben tratarse como validaciones especializadas, no como superficie pública mínima.
 
 ## 5.1 Smoke Pack Crítico
 

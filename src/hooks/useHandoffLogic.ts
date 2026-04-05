@@ -26,7 +26,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { MedicalHandoffAuditActor, PatientData } from '@/hooks/contracts/patientHookContracts';
-import { getShiftSchedule } from '@/utils/dateUtils';
+import { getShiftSchedule } from '@/utils/clinicalDayUtils';
 import { useAuditContext } from '@/context/AuditContext';
 import { useDailyRecordData } from '@/context/DailyRecordContext';
 import { useAuth } from '@/context';
