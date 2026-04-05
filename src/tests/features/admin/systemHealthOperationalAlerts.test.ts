@@ -21,7 +21,10 @@ const baseStatus = (): UserHealthStatus => ({
   failedSyncTasks: 0,
   conflictSyncTasks: 0,
   retryingSyncTasks: 0,
+  syncOrphanedTasks: 0,
   oldestPendingAgeMs: 0,
+  remoteSyncReason: 'ready',
+  versionUpdateReason: 'current',
   localErrorCount: 0,
   degradedLocalPersistence: false,
   repositoryWarningCount: 0,
@@ -82,6 +85,16 @@ describe('systemHealthOperationalAlerts', () => {
     const alerts = buildOperationalAlerts([status], FIXED_NOW_MS);
     expect(alerts.some(alert => alert.key === 'sync-runtime-unavailable')).toBe(true);
     expect(alerts.some(alert => alert.key === 'daily-record-null-recovered')).toBe(true);
+  });
+
+  it('returns critical alerts for ownership drift and runtime mismatch', () => {
+    const status = baseStatus();
+    status.syncOrphanedTasks = 2;
+    status.versionUpdateReason = 'runtime_contract_mismatch';
+
+    const alerts = buildOperationalAlerts([status], FIXED_NOW_MS);
+    expect(alerts.some(alert => alert.key === 'sync-ownership-drift')).toBe(true);
+    expect(alerts.some(alert => alert.key === 'runtime-contract-mismatch')).toBe(true);
   });
 
   it('tracks open and resolved events in snapshot history', () => {

@@ -26,6 +26,7 @@ export const evaluateSystemHealthState = (
   if (!status.isOnline) reasons.push('usuario sin conectividad');
   if (status.failedSyncTasks > 0) reasons.push('hay sincronizaciones fallidas');
   if (conflictSyncTasks > 0) reasons.push('hay conflictos pendientes');
+  if ((status.syncOrphanedTasks || 0) > 0) reasons.push('ownership local del outbox contaminado');
   if (retryingSyncTasks >= thresholds.warningRetryingSyncTasks)
     reasons.push('cola en modo reintento');
   if (oldestPendingAgeMs >= thresholds.warningOldestPendingAgeMs)
@@ -35,6 +36,7 @@ export const evaluateSystemHealthState = (
   if (status.localErrorCount >= thresholds.warningLocalErrorCount)
     reasons.push('errores locales acumulados');
   if (status.degradedLocalPersistence) reasons.push('persistencia local degradada');
+  if (status.isOutdated) reasons.push('cliente desactualizado o incompatible');
   if (status.repositoryWarningCount > 0) reasons.push('operaciones lentas del repositorio');
   if (status.slowestRepositoryOperationMs >= thresholds.warningSlowRepositoryOperationMs)
     reasons.push('operaciones criticas con latencia elevada');
@@ -48,6 +50,8 @@ export const evaluateSystemHealthState = (
     status.pendingMutations >= thresholds.criticalPendingMutations ||
     status.localErrorCount >= thresholds.criticalLocalErrorCount ||
     status.degradedLocalPersistence ||
+    status.isOutdated ||
+    (status.syncOrphanedTasks || 0) > 0 ||
     status.repositoryWarningCount >= thresholds.criticalRepositoryWarningCount ||
     status.slowestRepositoryOperationMs >= thresholds.criticalSlowRepositoryOperationMs;
 

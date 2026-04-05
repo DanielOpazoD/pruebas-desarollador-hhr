@@ -70,6 +70,13 @@ export const buildOperationalAlerts = (
   const syncReadUnavailableUsers = statuses.filter(
     status => (status.operationalSyncReadUnavailableCount || 0) > 0
   );
+  const syncOwnershipDriftUsers = statuses.filter(status => (status.syncOrphanedTasks || 0) > 0);
+  const runtimeContractMismatchUsers = statuses.filter(
+    status => status.versionUpdateReason === 'runtime_contract_mismatch'
+  );
+  const schemaAheadUsers = statuses.filter(
+    status => status.versionUpdateReason === 'schema_ahead_of_client'
+  );
   const indexedDbFallbackUsers = statuses.filter(
     status => (status.operationalIndexedDbFallbackModeCount || 0) > 0
   );
@@ -151,6 +158,48 @@ export const buildOperationalAlerts = (
       slaMinutes: SYSTEM_HEALTH_ALERT_SLA_MINUTES.failedSync,
       affectedUsers: uniqueEmails(syncReadUnavailableUsers),
       affectedCount: syncReadUnavailableUsers.length,
+    });
+  }
+
+  if (syncOwnershipDriftUsers.length > 0) {
+    alerts.push({
+      key: 'sync-ownership-drift',
+      title: 'Outbox heredado entre sesiones',
+      description: 'Hay clientes con tareas pendientes que no pertenecen a la sesión actual.',
+      severity: 'critical',
+      recommendedAction:
+        'Forzar logout manual y validar limpieza local antes de permitir que otro usuario continúe trabajando.',
+      slaMinutes: SYSTEM_HEALTH_ALERT_SLA_MINUTES.failedSync,
+      affectedUsers: uniqueEmails(syncOwnershipDriftUsers),
+      affectedCount: syncOwnershipDriftUsers.length,
+    });
+  }
+
+  if (runtimeContractMismatchUsers.length > 0) {
+    alerts.push({
+      key: 'runtime-contract-mismatch',
+      title: 'Contrato runtime incompatible',
+      description: 'Hay clientes con frontend/backend fuera de contrato compatible.',
+      severity: 'critical',
+      recommendedAction:
+        'Solicitar recarga inmediata y confirmar que el usuario ya esté en el deploy vigente antes de continuar.',
+      slaMinutes: SYSTEM_HEALTH_ALERT_SLA_MINUTES.failedSync,
+      affectedUsers: uniqueEmails(runtimeContractMismatchUsers),
+      affectedCount: runtimeContractMismatchUsers.length,
+    });
+  }
+
+  if (schemaAheadUsers.length > 0) {
+    alerts.push({
+      key: 'schema-ahead-client',
+      title: 'Schema remoto por delante del cliente',
+      description: 'Hay clientes viejos que podrían quedar bloqueados para evitar corrupción.',
+      severity: 'critical',
+      recommendedAction:
+        'Actualizar el cliente inmediatamente. No continuar operando hasta confirmar recarga del deploy vigente.',
+      slaMinutes: SYSTEM_HEALTH_ALERT_SLA_MINUTES.failedSync,
+      affectedUsers: uniqueEmails(schemaAheadUsers),
+      affectedCount: schemaAheadUsers.length,
     });
   }
 

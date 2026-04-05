@@ -117,6 +117,22 @@ export const SystemHealthUserCard = ({ user }: { user: UserHealthStatus }) => {
           <span>Cola más antigua: {oldestPendingAgeMinutes} min</span>
         </div>
 
+        {(user.syncOrphanedTasks || 0) > 0 ||
+        user.versionUpdateReason === 'runtime_contract_mismatch' ||
+        user.versionUpdateReason === 'schema_ahead_of_client' ? (
+          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500">
+            {(user.syncOrphanedTasks || 0) > 0 ? (
+              <span>Ownership drift {user.syncOrphanedTasks}</span>
+            ) : null}
+            {user.remoteSyncReason ? <span>Sync {user.remoteSyncReason}</span> : null}
+            {user.versionUpdateReason &&
+            user.versionUpdateReason !== 'current' &&
+            user.versionUpdateReason !== 'new_build_available' ? (
+              <span>Versión {user.versionUpdateReason}</span>
+            ) : null}
+          </div>
+        ) : null}
+
         {user.operationalObservedCount > 0 ? (
           <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500">
             <span>12h {user.operationalObservedCount}</span>

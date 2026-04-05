@@ -18,7 +18,10 @@ const baseStatus = (overrides: Partial<UserHealthStatus> = {}): UserHealthStatus
   failedSyncTasks: 0,
   conflictSyncTasks: 0,
   retryingSyncTasks: 0,
+  syncOrphanedTasks: 0,
   oldestPendingAgeMs: 0,
+  remoteSyncReason: 'ready',
+  versionUpdateReason: 'current',
   localErrorCount: 0,
   degradedLocalPersistence: false,
   repositoryWarningCount: 0,
@@ -81,6 +84,7 @@ describe('systemHealthDashboardUtils', () => {
       totalPendingSyncTasks: 0,
       totalFailedSyncTasks: 1,
       totalConflictSyncTasks: 1,
+      totalSyncOrphanedTasks: 2,
       totalLocalErrorCount: 3,
       totalRepositoryWarnings: 2,
       maxSlowRepositoryOperationMs: 2500,
@@ -104,6 +108,9 @@ describe('systemHealthDashboardUtils', () => {
       totalOperationalSyncReadUnavailableCount: 1,
       totalOperationalIndexedDbFallbackModeCount: 1,
       totalOperationalAuthBootstrapTimeoutCount: 1,
+      usersWithSyncOwnershipDrift: 1,
+      usersWithRuntimeContractMismatch: 1,
+      usersWithSchemaAheadClient: 0,
       topOperationalCategory: 'sync',
       topOperationalOperation: 'retry_queue',
       topOperationalRuntimeState: 'recoverable',
@@ -114,8 +121,10 @@ describe('systemHealthDashboardUtils', () => {
     expect(cards).toHaveLength(11);
     expect(cards[0].title).toBe('Usuarios');
     expect(cards[3].detail).toContain('1 usuarios');
+    expect(cards[3].detail).toContain('ownership drift 1');
     expect(cards[6].detail).toContain('Bloqueadas: 1');
     expect(cards[8].detail).toContain('Sync unreadable 1');
+    expect(cards[8].detail).toContain('Contract mismatch 1');
     expect(cards[9].detail).toContain('Estado dominante: recoverable');
   });
 });

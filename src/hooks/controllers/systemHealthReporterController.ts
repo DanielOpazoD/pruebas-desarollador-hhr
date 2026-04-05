@@ -5,6 +5,8 @@ import { CURRENT_SCHEMA_VERSION } from '@/constants/version';
 import { BACKEND_RUNTIME_CONTRACT_VERSION } from '@/constants/runtimeContracts';
 import type { UserRole } from '@/types/auth';
 import type { OperationalTelemetrySummary } from '@/services/observability/operationalTelemetryContracts';
+import type { FirestoreSyncReason } from '@/services/repositories/repositoryConfig';
+import type { VersionUpdateReason } from '@/services/admin/healthService';
 
 export interface BuildUserHealthStatusOptions {
   uid: string;
@@ -12,6 +14,8 @@ export interface BuildUserHealthStatusOptions {
   displayName?: string | null;
   isFirebaseConnected: boolean;
   isOutdated: boolean;
+  remoteSyncReason: FirestoreSyncReason;
+  versionUpdateReason: VersionUpdateReason;
   mutatingCount: number;
   localErrorCount: number;
   degradedLocalPersistence: boolean;
@@ -40,7 +44,10 @@ export const buildUserHealthStatus = (options: BuildUserHealthStatusOptions): Us
   failedSyncTasks: options.syncTelemetry.failed,
   conflictSyncTasks: options.syncTelemetry.conflict,
   retryingSyncTasks: options.syncTelemetry.retrying,
+  syncOrphanedTasks: options.syncTelemetry.orphanedTasks || 0,
   oldestPendingAgeMs: options.syncTelemetry.oldestPendingAgeMs,
+  remoteSyncReason: options.remoteSyncReason,
+  versionUpdateReason: options.versionUpdateReason,
   localErrorCount: options.localErrorCount,
   degradedLocalPersistence: options.degradedLocalPersistence,
   repositoryWarningCount: options.repositoryPerformance.warningCount,

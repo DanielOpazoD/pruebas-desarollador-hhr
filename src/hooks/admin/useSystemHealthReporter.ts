@@ -25,7 +25,7 @@ const REPORT_INTERVAL_MS = 2 * 60 * 1000; // Report every 2 minutes
 export const useSystemHealthReporter = () => {
   const auth = useAuth();
   const { currentUser, role } = auth;
-  const { isOutdated } = useVersion();
+  const { isOutdated, updateReason } = useVersion();
   const mutatingCount = useIsMutating();
   const lastReportTime = useRef<number>(0);
 
@@ -67,6 +67,8 @@ export const useSystemHealthReporter = () => {
           displayName: currentUser.displayName,
           isFirebaseConnected: authRuntime.isFirebaseConnected,
           isOutdated: !!isOutdated,
+          remoteSyncReason: auth.remoteSyncState.reason,
+          versionUpdateReason: updateReason,
           mutatingCount,
           localErrorCount,
           degradedLocalPersistence: runtimeSnapshot.degradedLocalPersistence,
@@ -78,6 +80,7 @@ export const useSystemHealthReporter = () => {
             failed: failedSyncTasks,
             conflict: conflictSyncTasks,
             retrying: retryingSyncTasks,
+            orphanedTasks: syncTelemetry.orphanedTasks || 0,
             oldestPendingAgeMs,
             batchSize: syncBatchSize,
             oldestPendingBudgetState: syncTelemetry.oldestPendingBudgetState,
@@ -108,5 +111,5 @@ export const useSystemHealthReporter = () => {
     }, REPORT_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [auth, currentUser, role, isOutdated, mutatingCount]);
+  }, [auth, currentUser, role, isOutdated, mutatingCount, updateReason]);
 };

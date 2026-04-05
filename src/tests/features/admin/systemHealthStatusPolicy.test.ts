@@ -17,7 +17,10 @@ const baseStatus = (): UserHealthStatus => ({
   failedSyncTasks: 0,
   conflictSyncTasks: 0,
   retryingSyncTasks: 0,
+  syncOrphanedTasks: 0,
   oldestPendingAgeMs: 0,
+  remoteSyncReason: 'ready',
+  versionUpdateReason: 'current',
   localErrorCount: 0,
   degradedLocalPersistence: false,
   repositoryWarningCount: 0,
@@ -88,6 +91,17 @@ describe('systemHealthStatusPolicy', () => {
     const result = evaluateSystemHealthState(status);
     expect(result.level).toBe('critical');
     expect(result.reasons).toContain('persistencia local degradada');
+  });
+
+  it('returns critical when the client is outdated or the outbox owner drifts', () => {
+    const status = baseStatus();
+    status.isOutdated = true;
+    status.syncOrphanedTasks = 1;
+
+    const result = evaluateSystemHealthState(status);
+    expect(result.level).toBe('critical');
+    expect(result.reasons).toContain('cliente desactualizado o incompatible');
+    expect(result.reasons).toContain('ownership local del outbox contaminado');
   });
 
   it('returns warning when repository operations get slow', () => {

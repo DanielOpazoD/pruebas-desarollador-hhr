@@ -58,7 +58,7 @@ export const buildSystemHealthMetricCards = (
     title: 'Sync fallido',
     value: summary.totalFailedSyncTasks + summary.totalConflictSyncTasks,
     accentClassName: 'text-red-600',
-    detail: `${summary.usersWithSyncFailures} usuarios`,
+    detail: `${summary.usersWithSyncFailures} usuarios · ownership drift ${summary.usersWithSyncOwnershipDrift}`,
   },
   {
     title: 'Errores locales',
@@ -89,10 +89,12 @@ export const buildSystemHealthMetricCards = (
     accentClassName:
       summary.totalOperationalSyncReadUnavailableCount > 0 ||
       summary.totalOperationalIndexedDbFallbackModeCount > 0 ||
-      summary.totalOperationalAuthBootstrapTimeoutCount > 0
+      summary.totalOperationalAuthBootstrapTimeoutCount > 0 ||
+      summary.usersWithRuntimeContractMismatch > 0 ||
+      summary.usersWithSchemaAheadClient > 0
         ? 'text-amber-600'
         : 'text-slate-900',
-    detail: `Sync unreadable ${summary.totalOperationalSyncReadUnavailableCount} · IndexedDB fallback ${summary.totalOperationalIndexedDbFallbackModeCount} · Auth timeout ${summary.totalOperationalAuthBootstrapTimeoutCount}`,
+    detail: `Sync unreadable ${summary.totalOperationalSyncReadUnavailableCount} · IndexedDB fallback ${summary.totalOperationalIndexedDbFallbackModeCount} · Auth timeout ${summary.totalOperationalAuthBootstrapTimeoutCount} · Contract mismatch ${summary.usersWithRuntimeContractMismatch} · Schema ahead ${summary.usersWithSchemaAheadClient}`,
   },
   {
     title: 'Operación dominante',

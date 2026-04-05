@@ -20,6 +20,8 @@ describe('systemHealthReporterController', () => {
       displayName: 'User',
       isFirebaseConnected: true,
       isOutdated: false,
+      remoteSyncReason: 'ready',
+      versionUpdateReason: 'current',
       mutatingCount: 2,
       localErrorCount: 3,
       degradedLocalPersistence: true,
@@ -31,6 +33,7 @@ describe('systemHealthReporterController', () => {
         failed: 1,
         conflict: 2,
         retrying: 1,
+        orphanedTasks: 2,
         oldestPendingAgeMs: 9000,
         batchSize: 25,
         oldestPendingBudgetState: 'ok',
@@ -80,6 +83,9 @@ describe('systemHealthReporterController', () => {
 
     expect(status.pendingMutations).toBe(6);
     expect(status.pendingSyncTasks).toBe(4);
+    expect(status.syncOrphanedTasks).toBe(2);
+    expect(status.remoteSyncReason).toBe('ready');
+    expect(status.versionUpdateReason).toBe('current');
     expect(status.failedSyncTasks).toBe(1);
     expect(status.degradedLocalPersistence).toBe(true);
     expect(status.repositoryWarningCount).toBe(3);

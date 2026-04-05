@@ -36,7 +36,10 @@ describe('healthService', () => {
     failedSyncTasks: 0,
     conflictSyncTasks: 0,
     retryingSyncTasks: 0,
+    syncOrphanedTasks: 0,
     oldestPendingAgeMs: 0,
+    remoteSyncReason: 'ready',
+    versionUpdateReason: 'current',
     localErrorCount: 0,
     degradedLocalPersistence: false,
     repositoryWarningCount: 0,
@@ -142,6 +145,7 @@ describe('healthService', () => {
       expect(results[0].email).toBe('unknown@local');
       expect(results[0].pendingMutations).toBe(3);
       expect(results[0].displayName).toBe('Usuario sin nombre');
+      expect(results[0].syncOrphanedTasks).toBe(0);
     });
   });
 
@@ -196,6 +200,8 @@ describe('healthService', () => {
       expect(normalized.operationalBlockedCount).toBe(0);
       expect(normalized.operationalSyncObservedCount).toBe(0);
       expect(normalized.operationalTopObservedOperation).toBeUndefined();
+      expect(normalized.remoteSyncReason).toBeUndefined();
+      expect(normalized.versionUpdateReason).toBeUndefined();
     });
   });
 
@@ -210,6 +216,8 @@ describe('healthService', () => {
           degradedLocalPersistence: true,
           failedSyncTasks: 2,
           conflictSyncTasks: 1,
+          syncOrphanedTasks: 2,
+          versionUpdateReason: 'runtime_contract_mismatch',
           localErrorCount: 3,
           repositoryWarningCount: 4,
           slowestRepositoryOperationMs: 280,
@@ -246,6 +254,7 @@ describe('healthService', () => {
       expect(summary.usersWithRepositoryWarnings).toBe(1);
       expect(summary.totalFailedSyncTasks).toBe(2);
       expect(summary.totalConflictSyncTasks).toBe(1);
+      expect(summary.totalSyncOrphanedTasks).toBe(2);
       expect(summary.totalRepositoryWarnings).toBe(4);
       expect(summary.maxSlowRepositoryOperationMs).toBe(280);
       expect(summary.oldestObservedPendingAgeMs).toBe(0);
@@ -268,6 +277,9 @@ describe('healthService', () => {
       expect(summary.totalOperationalSyncReadUnavailableCount).toBe(1);
       expect(summary.totalOperationalIndexedDbFallbackModeCount).toBe(1);
       expect(summary.totalOperationalAuthBootstrapTimeoutCount).toBe(1);
+      expect(summary.usersWithSyncOwnershipDrift).toBe(1);
+      expect(summary.usersWithRuntimeContractMismatch).toBe(1);
+      expect(summary.usersWithSchemaAheadClient).toBe(0);
       expect(summary.topOperationalCategory).toBe('backup');
       expect(summary.topOperationalOperation).toBe('backup_handoff_pdf');
       expect(summary.topOperationalRuntimeState).toBe('recoverable');

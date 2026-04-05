@@ -1,10 +1,17 @@
 import { db } from '../infrastructure/db';
 import { healthServiceLogger } from '@/services/admin/adminLoggers';
 import type { OperationalRuntimeState } from '@/services/observability/operationalRuntimeState';
+import type { FirestoreSyncReason } from '@/services/repositories/repositoryConfig';
 
 const HEALTH_COLLECTION = 'system_health';
 const STATS_DOC = 'stats';
 const USERS_SUBCOLLECTION = 'users';
+
+export type VersionUpdateReason =
+  | 'current'
+  | 'new_build_available'
+  | 'runtime_contract_mismatch'
+  | 'schema_ahead_of_client';
 
 export interface UserHealthStatus {
   uid: string;
@@ -18,7 +25,10 @@ export interface UserHealthStatus {
   failedSyncTasks: number;
   conflictSyncTasks: number;
   retryingSyncTasks: number;
+  syncOrphanedTasks?: number;
   oldestPendingAgeMs: number;
+  remoteSyncReason?: FirestoreSyncReason;
+  versionUpdateReason?: VersionUpdateReason;
   localErrorCount: number;
   degradedLocalPersistence: boolean;
   repositoryWarningCount: number;
@@ -63,6 +73,7 @@ export interface SystemHealthSummary {
   totalPendingSyncTasks: number;
   totalFailedSyncTasks: number;
   totalConflictSyncTasks: number;
+  totalSyncOrphanedTasks: number;
   totalLocalErrorCount: number;
   totalRepositoryWarnings: number;
   maxSlowRepositoryOperationMs: number;
@@ -86,6 +97,9 @@ export interface SystemHealthSummary {
   totalOperationalSyncReadUnavailableCount: number;
   totalOperationalIndexedDbFallbackModeCount: number;
   totalOperationalAuthBootstrapTimeoutCount: number;
+  usersWithSyncOwnershipDrift: number;
+  usersWithRuntimeContractMismatch: number;
+  usersWithSchemaAheadClient: number;
   topOperationalCategory?: string;
   topOperationalOperation?: string;
   topOperationalRuntimeState?: OperationalRuntimeState;
@@ -123,7 +137,25 @@ export const normalizeUserHealthStatus = (raw: Partial<UserHealthStatus>): UserH
   failedSyncTasks: toNumber(raw.failedSyncTasks),
   conflictSyncTasks: toNumber(raw.conflictSyncTasks),
   retryingSyncTasks: toNumber(raw.retryingSyncTasks),
+  syncOrphanedTasks: toNumber(raw.syncOrphanedTasks),
   oldestPendingAgeMs: toNumber(raw.oldestPendingAgeMs),
+  remoteSyncReason:
+    raw.remoteSyncReason === 'ready' ||
+    raw.remoteSyncReason === 'auth_loading' ||
+    raw.remoteSyncReason === 'auth_connecting' ||
+    raw.remoteSyncReason === 'auth_unavailable' ||
+    raw.remoteSyncReason === 'manual_override' ||
+    raw.remoteSyncReason === 'offline' ||
+    raw.remoteSyncReason === 'runtime_unavailable'
+      ? raw.remoteSyncReason
+      : undefined,
+  versionUpdateReason:
+    raw.versionUpdateReason === 'current' ||
+    raw.versionUpdateReason === 'new_build_available' ||
+    raw.versionUpdateReason === 'runtime_contract_mismatch' ||
+    raw.versionUpdateReason === 'schema_ahead_of_client'
+      ? raw.versionUpdateReason
+      : undefined,
   localErrorCount: toNumber(raw.localErrorCount),
   degradedLocalPersistence: toBoolean(raw.degradedLocalPersistence, false),
   repositoryWarningCount: toNumber(raw.repositoryWarningCount),
@@ -221,6 +253,10 @@ export const buildSystemHealthSummary = (statuses: UserHealthStatus[]): SystemHe
     totalPendingSyncTasks: statuses.reduce((sum, status) => sum + status.pendingSyncTasks, 0),
     totalFailedSyncTasks: statuses.reduce((sum, status) => sum + status.failedSyncTasks, 0),
     totalConflictSyncTasks: statuses.reduce((sum, status) => sum + status.conflictSyncTasks, 0),
+    totalSyncOrphanedTasks: statuses.reduce(
+      (sum, status) => sum + (status.syncOrphanedTasks || 0),
+      0
+    ),
     totalLocalErrorCount: statuses.reduce((sum, status) => sum + status.localErrorCount, 0),
     totalRepositoryWarnings: statuses.reduce(
       (sum, status) => sum + status.repositoryWarningCount,
@@ -310,6 +346,14 @@ export const buildSystemHealthSummary = (statuses: UserHealthStatus[]): SystemHe
       (sum, status) => sum + (status.operationalAuthBootstrapTimeoutCount || 0),
       0
     ),
+    usersWithSyncOwnershipDrift: statuses.filter(status => (status.syncOrphanedTasks || 0) > 0)
+      .length,
+    usersWithRuntimeContractMismatch: statuses.filter(
+      status => status.versionUpdateReason === 'runtime_contract_mismatch'
+    ).length,
+    usersWithSchemaAheadClient: statuses.filter(
+      status => status.versionUpdateReason === 'schema_ahead_of_client'
+    ).length,
     topOperationalCategory,
     topOperationalOperation,
     topOperationalRuntimeState,
