@@ -113,6 +113,21 @@ const getGitSha = () => {
 const isTestFile = relative =>
   relative.includes('/tests/') || TEST_FILE_PATTERN.test(relative) || relative.includes('.spec.');
 
+const isGovernedCensusControllerShim = ({ importer, imported, importPath, source }) => {
+  if (!importer.startsWith('src/hooks/controllers/')) return false;
+  if (!imported.startsWith('src/features/census/controllers/')) return false;
+  if (!importPath.startsWith('@/features/census/controllers/')) return false;
+
+  const importedModule = path.basename(imported, path.extname(imported));
+  const expectedSource = `export * from '@/features/census/controllers/${importedModule}';`;
+  return source.trim() === expectedSource;
+};
+
+const isGovernedCensusControllerShimSource = ({ relative, source }) => {
+  if (!relative.startsWith('src/hooks/controllers/')) return false;
+  return /^export \* from '@\/features\/census\/controllers\/[^']+';$/u.test(source.trim());
+};
+
 const getSourceMetrics = () => {
   const files = walkFiles(SRC_ROOT).filter(filePath => {
     const extension = path.extname(filePath);
@@ -265,6 +280,17 @@ const getFolderDependencyDebtMetrics = () => {
       const importedZone = getZone(imported);
       if (!importedZone || importedZone === importerZone) continue;
 
+      if (
+        isGovernedCensusControllerShim({
+          importer,
+          imported,
+          importPath,
+          source: content,
+        })
+      ) {
+        continue;
+      }
+
       const allowed = matrix.zones[importerZone]?.allowedDependencies || [];
       if (allowed.includes(importedZone)) continue;
 
@@ -402,6 +428,7 @@ const getConvergenceSignals = () => {
   let featureBoundaryViolations = 0;
   let deprecatedShimImports = 0;
   let dailyRecordBoundaryViolations = 0;
+  let governedCompatibilityShims = 0;
 
   for (const filePath of files) {
     const relative = toPosix(path.relative(ROOT, filePath));
@@ -412,6 +439,11 @@ const getConvergenceSignals = () => {
     }
 
     if (isTestFile(relative)) {
+      continue;
+    }
+
+    if (isGovernedCensusControllerShimSource({ relative, source })) {
+      governedCompatibilityShims += 1;
       continue;
     }
 
@@ -505,6 +537,7 @@ const getConvergenceSignals = () => {
     featureBoundaryViolations,
     deprecatedShimImports,
     dailyRecordBoundaryViolations,
+    governedCompatibilityShims,
     controllerOwnershipDrift,
   };
 };
@@ -578,6 +611,7 @@ const mdLines = [
   '## Convergence Signals',
   '',
   `- Accidental copy files in src: ${metrics.convergence.accidentalCopies}`,
+  `- Governed compatibility shims in source: ${metrics.convergence.governedCompatibilityShims}`,
   `- Feature public API boundary violations: ${metrics.convergence.featureBoundaryViolations}`,
   `- Deprecated shim imports in source: ${metrics.convergence.deprecatedShimImports}`,
   `- DailyRecord root-boundary violations in source: ${metrics.convergence.dailyRecordBoundaryViolations}`,

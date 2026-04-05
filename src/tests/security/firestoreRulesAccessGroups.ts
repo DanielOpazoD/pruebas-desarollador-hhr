@@ -1,0 +1,546 @@
+import { assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
+import { beforeEach, describe, it } from 'vitest';
+
+import type { FirestoreRulesHarness } from './firestoreRulesTestHarness';
+
+export function registerFirestoreRulesAccessGroups({
+  unauth,
+  authed,
+  admin,
+  nurse,
+  doctor,
+  specialist,
+  specialistWithoutClaim,
+  unauthorizedAuthed,
+  NOW_MS,
+  THREE_DAYS_MS,
+  CURRENT_RECORD_DATE,
+  PREVIOUS_RECORD_DATE,
+  setupDoc,
+}: FirestoreRulesHarness): void {
+  describe('Audit Logs Collection', () => {
+    const auditCollection = (db: ReturnType<FirestoreRulesHarness['authed']>) =>
+      db.collection('hospitals/H1/auditLogs');
+
+    it('Unauthenticated users cannot read audit logs', async () => {
+      await assertFails(auditCollection(unauth()).get());
+    });
+
+    it('Admins can read audit logs', async () => {
+      await assertSucceeds(auditCollection(admin()).get());
+    });
+
+    it('Any authenticated user can create an audit log', async () => {
+      await assertSucceeds(
+        auditCollection(authed()).add({ action: 'TEST_ACTION', timestamp: 123456 })
+      );
+    });
+
+    it('Regular users CANNOT delete audit logs', async () => {
+      const db = authed();
+      await setupDoc(admin(), 'hospitals/H1/auditLogs/log1', { action: 'TEST' });
+      await assertFails(db.doc('hospitals/H1/auditLogs/log1').delete());
+    });
+
+    it('Admins CAN delete audit logs (for Consolidation)', async () => {
+      const db = admin();
+      await setupDoc(db, 'hospitals/H1/auditLogs/log1', { action: 'TEST' });
+      await assertSucceeds(db.doc('hospitals/H1/auditLogs/log1').delete());
+    });
+  });
+
+  describe('Daily Records Collection', () => {
+    const recordPath = `hospitals/H1/dailyRecords/${CURRENT_RECORD_DATE}`;
+    const historyPath = `hospitals/H1/dailyRecords/${CURRENT_RECORD_DATE}/history/h-1`;
+
+    it('Authenticated users can read daily records', async () => {
+      await setupDoc(admin(), recordPath, { date: CURRENT_RECORD_DATE });
+      await assertSucceeds(authed().doc(recordPath).get());
+    });
+
+    it('Authenticated users without role cannot read daily records', async () => {
+      await setupDoc(admin(), recordPath, { date: CURRENT_RECORD_DATE });
+      await assertFails(unauthorizedAuthed().doc(recordPath).get());
+    });
+
+    it('Unauthenticated users cannot read daily records', async () => {
+      await assertFails(unauth().doc(recordPath).get());
+    });
+
+    it('Nurses can update records within the editing window', async () => {
+      await setupDoc(admin(), recordPath, {
+        date: CURRENT_RECORD_DATE,
+        dateTimestamp: NOW_MS,
+      });
+
+      await assertSucceeds(
+        nurse()
+          .doc(recordPath)
+          .update({ nursesDayShift: ['Nurse1'] })
+      );
+    });
+
+    it('Nurses cannot update records outside the editing window', async () => {
+      await setupDoc(admin(), recordPath, {
+        date: CURRENT_RECORD_DATE,
+        dateTimestamp: NOW_MS - THREE_DAYS_MS,
+      });
+
+      await assertFails(
+        nurse()
+          .doc(recordPath)
+          .update({ nursesDayShift: ['Nurse1'] })
+      );
+    });
+
+    it('Doctors can update only medical signature fields', async () => {
+      await setupDoc(admin(), recordPath, { date: CURRENT_RECORD_DATE, dateTimestamp: NOW_MS });
+
+      await assertSucceeds(
+        doctor().doc(recordPath).update({
+          medicalSignature: 'signed',
+          lastUpdated: NOW_MS,
+          medicalHandoffDoctor: 'Dr. X',
+          medicalHandoffSentAt: NOW_MS,
+        })
+      );
+    });
+
+    it('Doctors cannot update non-medical fields', async () => {
+      await setupDoc(admin(), recordPath, { date: CURRENT_RECORD_DATE, dateTimestamp: NOW_MS });
+
+      await assertFails(
+        doctor()
+          .doc(recordPath)
+          .update({
+            nursesDayShift: ['Nurse1'],
+          })
+      );
+    });
+
+    it('Specialists can update only medical handoff and clinical event fields for one bed', async () => {
+      await setupDoc(admin(), recordPath, {
+        date: CURRENT_RECORD_DATE,
+        dateTimestamp: NOW_MS,
+        beds: {
+          R1: {
+            patientName: 'Paciente Test',
+            rut: '1-9',
+            pathology: 'Neumonia',
+            specialty: 'Med Interna',
+            medicalHandoffNote: '',
+            medicalHandoffEntries: [],
+            clinicalEvents: [],
+          },
+        },
+      });
+
+      await assertSucceeds(
+        specialist()
+          .doc(recordPath)
+          .update({
+            'beds.R1.medicalHandoffNote': 'Evolución especialista',
+            'beds.R1.medicalHandoffEntries': [
+              {
+                id: 'primary-entry',
+                specialty: 'Med Interna',
+                note: 'Evolución especialista',
+              },
+            ],
+            'beds.R1.medicalHandoffAudit': {
+              lastSpecialistUpdateAt: new Date(NOW_MS).toISOString(),
+              lastSpecialistUpdateBy: {
+                uid: 'user_specialist',
+                email: 'specialist@example.com',
+                displayName: 'Especialista',
+                role: 'doctor_specialist',
+              },
+              currentStatus: 'updated_by_specialist',
+            },
+            'beds.R1.clinicalEvents': [
+              {
+                id: 'event-1',
+                name: 'Evento clínico',
+                date: CURRENT_RECORD_DATE,
+                note: 'Control diario',
+                createdAt: new Date(NOW_MS).toISOString(),
+              },
+            ],
+            lastUpdated: NOW_MS,
+          })
+      );
+    });
+
+    it('Specialists resolved via config/roles can persist medical handoff changes', async () => {
+      await setupDoc(admin(), 'config/roles', {
+        'specialist.dynamic@example.com': 'doctor_specialist',
+      });
+      await setupDoc(admin(), recordPath, {
+        date: CURRENT_RECORD_DATE,
+        dateTimestamp: NOW_MS,
+        beds: {
+          R1: {
+            patientName: 'Paciente Test',
+            rut: '1-9',
+            pathology: 'Neumonia',
+            specialty: 'Med Interna',
+            medicalHandoffNote: '',
+            medicalHandoffEntries: [],
+            clinicalEvents: [],
+          },
+        },
+      });
+
+      await assertSucceeds(
+        specialistWithoutClaim()
+          .doc(recordPath)
+          .update({
+            'beds.R1.medicalHandoffNote': 'Persistencia por rol dinámico',
+            'beds.R1.medicalHandoffEntries': [
+              {
+                id: 'primary-entry',
+                specialty: 'Med Interna',
+                note: 'Persistencia por rol dinámico',
+              },
+            ],
+            'beds.R1.medicalHandoffAudit': {
+              lastSpecialistUpdateAt: new Date(NOW_MS).toISOString(),
+              lastSpecialistUpdateBy: {
+                uid: 'user_specialist_dynamic',
+                email: 'specialist.dynamic@example.com',
+                displayName: 'Especialista dinámico',
+                role: 'doctor_specialist',
+              },
+              currentStatus: 'updated_by_specialist',
+            },
+            lastUpdated: NOW_MS,
+          })
+      );
+    });
+
+    it('Specialists cannot update general census fields outside the allowed handoff scope', async () => {
+      await setupDoc(admin(), recordPath, {
+        date: CURRENT_RECORD_DATE,
+        dateTimestamp: NOW_MS,
+        beds: {
+          R1: {
+            patientName: 'Paciente Test',
+            rut: '1-9',
+            pathology: 'Neumonia',
+            specialty: 'Med Interna',
+            status: 'Estable',
+            medicalHandoffNote: '',
+            medicalHandoffEntries: [],
+            clinicalEvents: [],
+          },
+        },
+      });
+
+      await assertFails(
+        specialist().doc(recordPath).update({
+          'beds.R1.status': 'Grave',
+          lastUpdated: NOW_MS,
+        })
+      );
+    });
+
+    it('Specialists cannot update two beds at once', async () => {
+      await setupDoc(admin(), recordPath, {
+        date: CURRENT_RECORD_DATE,
+        dateTimestamp: NOW_MS,
+        beds: {
+          R1: {
+            patientName: 'Paciente Uno',
+            rut: '1-9',
+            pathology: 'Neumonia',
+            specialty: 'Med Interna',
+            medicalHandoffNote: '',
+            medicalHandoffEntries: [],
+            clinicalEvents: [],
+          },
+          R2: {
+            patientName: 'Paciente Dos',
+            rut: '2-7',
+            pathology: 'Fractura',
+            specialty: 'Cirugía',
+            medicalHandoffNote: '',
+            medicalHandoffEntries: [],
+            clinicalEvents: [],
+          },
+        },
+      });
+
+      await assertFails(
+        specialist().doc(recordPath).update({
+          'beds.R1.medicalHandoffNote': 'Cambio 1',
+          'beds.R2.medicalHandoffNote': 'Cambio 2',
+          lastUpdated: NOW_MS,
+        })
+      );
+    });
+
+    it('Specialists cannot update previous-day handoff records', async () => {
+      const previousRecordPath = `hospitals/H1/dailyRecords/${PREVIOUS_RECORD_DATE}`;
+      await setupDoc(admin(), previousRecordPath, {
+        date: PREVIOUS_RECORD_DATE,
+        dateTimestamp: NOW_MS - 86400000,
+        beds: {
+          R1: {
+            patientName: 'Paciente Prev',
+            rut: '3-5',
+            pathology: 'Control',
+            specialty: 'Med Interna',
+            medicalHandoffNote: '',
+            medicalHandoffEntries: [],
+            clinicalEvents: [],
+          },
+        },
+      });
+
+      await assertFails(
+        specialist().doc(previousRecordPath).update({
+          'beds.R1.medicalHandoffNote': 'Intento sobre día previo',
+          lastUpdated: NOW_MS,
+        })
+      );
+    });
+
+    it('Specialists can repair missing dateTimestamp while persisting today handoff changes', async () => {
+      await setupDoc(admin(), recordPath, {
+        date: CURRENT_RECORD_DATE,
+        beds: {
+          R1: {
+            patientName: 'Paciente Legacy',
+            rut: '4-4',
+            pathology: 'Control',
+            specialty: 'Med Interna',
+            medicalHandoffNote: '',
+            medicalHandoffEntries: [],
+            clinicalEvents: [],
+          },
+        },
+      });
+
+      await assertSucceeds(
+        specialist()
+          .doc(recordPath)
+          .update({
+            'beds.R1.medicalHandoffNote': 'Actualización sobre registro legacy',
+            'beds.R1.medicalHandoffEntries': [
+              {
+                id: 'primary-entry',
+                specialty: 'Med Interna',
+                note: 'Actualización sobre registro legacy',
+              },
+            ],
+            'beds.R1.medicalHandoffAudit': {
+              lastSpecialistUpdateAt: new Date(NOW_MS).toISOString(),
+              lastSpecialistUpdateBy: {
+                uid: 'user_specialist',
+                email: 'specialist@example.com',
+                displayName: 'Especialista',
+                role: 'doctor_specialist',
+              },
+              currentStatus: 'updated_by_specialist',
+            },
+            dateTimestamp: NOW_MS,
+            lastUpdated: NOW_MS,
+          })
+      );
+    });
+
+    it('Admins can delete daily records', async () => {
+      await setupDoc(admin(), recordPath, { date: CURRENT_RECORD_DATE });
+      await assertSucceeds(admin().doc(recordPath).delete());
+    });
+
+    it('Nurses CANNOT delete daily records', async () => {
+      await setupDoc(admin(), recordPath, { date: CURRENT_RECORD_DATE, dateTimestamp: NOW_MS });
+      await assertFails(nurse().doc(recordPath).delete());
+    });
+
+    it('Nurses can create history snapshots under daily records', async () => {
+      await setupDoc(admin(), recordPath, { date: CURRENT_RECORD_DATE, dateTimestamp: NOW_MS });
+
+      await assertSucceeds(
+        nurse().doc(historyPath).set({
+          snapshotTimestamp: NOW_MS,
+          source: 'auto-save',
+        })
+      );
+    });
+
+    it('Doctors cannot create history snapshots under daily records', async () => {
+      await setupDoc(admin(), recordPath, { date: CURRENT_RECORD_DATE, dateTimestamp: NOW_MS });
+
+      await assertFails(
+        doctor().doc(historyPath).set({
+          snapshotTimestamp: NOW_MS,
+          source: 'manual',
+        })
+      );
+    });
+
+    it('Only admins can update or delete history snapshots', async () => {
+      await setupDoc(admin(), recordPath, { date: CURRENT_RECORD_DATE, dateTimestamp: NOW_MS });
+      await setupDoc(admin(), historyPath, {
+        snapshotTimestamp: NOW_MS,
+        source: 'seed',
+      });
+
+      await assertFails(nurse().doc(historyPath).update({ source: 'nurse-edit' }));
+      await assertFails(nurse().doc(historyPath).delete());
+      await assertSucceeds(admin().doc(historyPath).update({ source: 'admin-edit' }));
+      await assertSucceeds(admin().doc(historyPath).delete());
+    });
+  });
+
+  describe('Reminders Collection', () => {
+    const reminderPath = 'hospitals/H1/reminders/rem-1';
+    const receiptPath = `${reminderPath}/readReceipts/user_nurse__2026-01-01__day`;
+
+    beforeEach(async () => {
+      await setupDoc(admin(), reminderPath, {
+        title: 'Aviso de prueba',
+        message: 'Mensaje',
+        type: 'info',
+        targetRoles: ['nurse_hospital'],
+        targetShifts: ['day'],
+        startDate: CURRENT_RECORD_DATE,
+        endDate: CURRENT_RECORD_DATE,
+        priority: 2,
+        isActive: true,
+        createdBy: 'admin',
+        createdByName: 'Admin',
+        createdAt: new Date(NOW_MS).toISOString(),
+        updatedAt: new Date(NOW_MS).toISOString(),
+      });
+    });
+
+    it('allows clinical users with role access to read reminders', async () => {
+      await assertSucceeds(nurse().doc(reminderPath).get());
+      await assertSucceeds(doctor().doc(reminderPath).get());
+    });
+
+    it('blocks unauthorized users from reading reminders', async () => {
+      await assertFails(unauthorizedAuthed().doc(reminderPath).get());
+    });
+
+    it('allows admins to create reminders', async () => {
+      await assertSucceeds(
+        admin()
+          .doc('hospitals/H1/reminders/rem-2')
+          .set({
+            title: 'Nuevo aviso',
+            message: 'Texto',
+            type: 'warning',
+            targetRoles: ['nurse_hospital'],
+            targetShifts: ['day'],
+            startDate: CURRENT_RECORD_DATE,
+            endDate: CURRENT_RECORD_DATE,
+            priority: 3,
+            isActive: true,
+            createdBy: 'admin',
+            createdByName: 'Admin',
+            createdAt: new Date(NOW_MS).toISOString(),
+            updatedAt: new Date(NOW_MS).toISOString(),
+          })
+      );
+    });
+
+    it('blocks non-admin users from creating reminders', async () => {
+      await assertFails(
+        nurse()
+          .doc('hospitals/H1/reminders/rem-3')
+          .set({
+            title: 'Sin permiso',
+            message: 'Texto',
+            type: 'warning',
+            targetRoles: ['nurse_hospital'],
+            targetShifts: ['day'],
+            startDate: CURRENT_RECORD_DATE,
+            endDate: CURRENT_RECORD_DATE,
+            priority: 1,
+            isActive: true,
+            createdBy: 'nurse',
+            createdByName: 'Nurse',
+            createdAt: new Date(NOW_MS).toISOString(),
+            updatedAt: new Date(NOW_MS).toISOString(),
+          })
+      );
+    });
+
+    it('allows users to create their own read receipt only', async () => {
+      await assertSucceeds(
+        nurse()
+          .doc(receiptPath)
+          .set({
+            userId: 'user_nurse',
+            userName: 'Nurse',
+            readAt: new Date(NOW_MS).toISOString(),
+            shift: 'day',
+            dateKey: CURRENT_RECORD_DATE,
+          })
+      );
+    });
+
+    it('blocks users from creating read receipts for another uid', async () => {
+      await assertFails(
+        nurse()
+          .doc(`${reminderPath}/readReceipts/other-user`)
+          .set({
+            userId: 'other-user',
+            userName: 'Nurse',
+            readAt: new Date(NOW_MS).toISOString(),
+            shift: 'day',
+            dateKey: CURRENT_RECORD_DATE,
+          })
+      );
+    });
+
+    it('allows users to read their own receipt but blocks other users', async () => {
+      await setupDoc(admin(), receiptPath, {
+        userId: 'user_nurse',
+        userName: 'Nurse',
+        readAt: new Date(NOW_MS).toISOString(),
+        shift: 'day',
+        dateKey: CURRENT_RECORD_DATE,
+      });
+
+      await assertSucceeds(nurse().doc(receiptPath).get());
+      await assertFails(doctor().doc(receiptPath).get());
+    });
+
+    it('allows only admins to read aggregated receipts for any user', async () => {
+      await setupDoc(admin(), receiptPath, {
+        userId: 'user_nurse',
+        userName: 'Nurse',
+        readAt: new Date(NOW_MS).toISOString(),
+        shift: 'day',
+        dateKey: CURRENT_RECORD_DATE,
+      });
+
+      await assertSucceeds(admin().doc(receiptPath).get());
+    });
+  });
+
+  describe('Settings Collection', () => {
+    const settingsPath = 'hospitals/H1/settings/tableConfig';
+
+    it('Admins can write settings', async () => {
+      await assertSucceeds(admin().doc(settingsPath).set({ foo: 'bar' }));
+    });
+
+    it('Regular users CANNOT write settings', async () => {
+      await assertFails(authed().doc(settingsPath).set({ foo: 'bar' }));
+    });
+
+    it('Nurses can write settings', async () => {
+      await assertSucceeds(nurse().doc(settingsPath).set({ foo: 'bar' }));
+    });
+
+    it('Unauthenticated users cannot read settings', async () => {
+      await assertFails(unauth().doc(settingsPath).get());
+    });
+  });
+}
