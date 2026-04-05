@@ -28,8 +28,43 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<MMRADSearchResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ pct: number; text: string } | null>(null);
 
   const selectedPatient = patients.find(p => p.rut === selectedRut);
+
+  // Simulated progress bar — advances through stages while loading
+  React.useEffect(() => {
+    if (!isLoading) {
+      if (progress) {
+        // Complete the bar briefly before hiding
+        setProgress({ pct: 100, text: '¡Completado!' });
+        const timeout = setTimeout(() => setProgress(null), 600);
+        return () => clearTimeout(timeout);
+      }
+      return;
+    }
+
+    const steps = [
+      { pct: 15, text: 'Conectando con el servidor...' },
+      { pct: 35, text: 'Iniciando sesión en RIS...' },
+      { pct: 55, text: 'Buscando exámenes del paciente...' },
+      { pct: 75, text: 'Extrayendo información...' },
+      { pct: 90, text: 'Procesando resultados...' },
+    ];
+
+    let step = 0;
+    setProgress({ pct: steps[0].pct, text: steps[0].text });
+    step = 1;
+
+    const interval = setInterval(() => {
+      if (step < steps.length) {
+        setProgress({ pct: steps[step].pct, text: steps[step].text });
+        step++;
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearch = useCallback(async () => {
     if (!selectedRut) return;
@@ -138,12 +173,16 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
           </div>
         )}
 
-        {/* Loading */}
-        {isLoading && (
-          <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 size={28} className="animate-spin text-violet-500 mb-3" />
-            <p className="text-[13px] text-slate-400">Consultando sistema de imagenología...</p>
-            <p className="text-[11px] text-slate-300 mt-1">Esto puede tomar unos segundos</p>
+        {/* Progress bar */}
+        {progress && (
+          <div className="mb-4">
+            <div className="h-[3px] w-full overflow-hidden rounded-full bg-slate-200/80">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-violet-500 to-violet-400 transition-[width] duration-500 ease-out"
+                style={{ width: `${progress.pct}%` }}
+              />
+            </div>
+            <p className="mt-1.5 text-center text-[11px] text-slate-400">{progress.text}</p>
           </div>
         )}
 
