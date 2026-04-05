@@ -16,6 +16,7 @@ import type {
 } from '@/features/census/components/patient-row/patientInputSectionContracts';
 import type { CensusAccessProfile } from '@/features/census/types/censusAccessProfile';
 import { isSpecialistCensusAccessProfile } from '@/features/census/types/censusAccessProfile';
+import { isUpcEligibleBedId, resolveNormalizedUpcFlag } from '@/shared/census/upcBedPolicy';
 
 export const PatientInputIdentitySection: React.FC<PatientInputIdentitySectionBindings> = ({
   shared,
@@ -123,28 +124,35 @@ export const PatientInputFlowSection: React.FC<
 export const PatientInputFlagsSection: React.FC<PatientInputFlagsSectionBindings> = ({
   shared,
   onChange,
-}) => (
-  <>
-    <CheckboxCell
-      data={shared.data}
-      isSubRow={shared.isSubRow}
-      isEmpty={shared.isEmpty}
-      readOnly={shared.isLocked}
-      field="surgicalComplication"
-      onChange={onChange.check}
-      title="Comp. Qx"
-      colorClass="text-red-600"
-    />
-    <CheckboxCell
-      data={shared.data}
-      isSubRow={shared.isSubRow}
-      isEmpty={shared.isEmpty}
-      readOnly={shared.isLocked}
-      field="isUPC"
-      onChange={onChange.check}
-      title="UPC"
-      colorClass="text-purple-600"
-      isLastColumn
-    />
-  </>
-);
+}) => {
+  const upcEligible = isUpcEligibleBedId(shared.data.bedId);
+  const normalizedIsUpc = resolveNormalizedUpcFlag(shared.data.bedId, shared.data.isUPC);
+
+  return (
+    <>
+      <CheckboxCell
+        data={shared.data}
+        isSubRow={shared.isSubRow}
+        isEmpty={shared.isEmpty}
+        readOnly={shared.isLocked}
+        field="surgicalComplication"
+        onChange={onChange.check}
+        title="Comp. Qx"
+        colorClass="text-red-600"
+      />
+      <CheckboxCell
+        data={shared.data}
+        isSubRow={shared.isSubRow}
+        isEmpty={shared.isEmpty}
+        readOnly={shared.isLocked}
+        field="isUPC"
+        onChange={onChange.check}
+        title={upcEligible ? 'UPC' : 'UPC disponible solo en R1-R4, NEO 1 y NEO 2'}
+        colorClass={upcEligible ? 'text-purple-600' : 'text-slate-300'}
+        checked={normalizedIsUpc}
+        disabled={!upcEligible}
+        isLastColumn
+      />
+    </>
+  );
+};

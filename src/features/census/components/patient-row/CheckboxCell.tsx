@@ -13,6 +13,8 @@ interface CheckboxCellProps extends BaseCellProps {
   title: string;
   colorClass?: string;
   isLastColumn?: boolean;
+  checked?: boolean;
+  disabled?: boolean;
 }
 
 export const CheckboxCell: React.FC<CheckboxCellProps> = ({
@@ -25,6 +27,8 @@ export const CheckboxCell: React.FC<CheckboxCellProps> = ({
   title,
   colorClass = 'text-slate-600',
   isLastColumn = false,
+  checked,
+  disabled = false,
 }) => {
   const cellClasses = isLastColumn
     ? 'p-0.5 text-center w-10'
@@ -38,11 +42,11 @@ export const CheckboxCell: React.FC<CheckboxCellProps> = ({
     <td className={cellClasses}>
       <input
         type="checkbox"
-        checked={Boolean(data[field])}
+        checked={checked ?? Boolean(data[field])}
         onChange={onChange(field)}
         className={`w-4 h-4 ${colorClass} rounded`}
         title={title}
-        disabled={readOnly}
+        disabled={readOnly || disabled}
       />
     </td>
   );

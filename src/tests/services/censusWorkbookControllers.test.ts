@@ -95,4 +95,33 @@ describe('census workbook controllers', () => {
     expect(sheet?.getCell('A1').value).toBe('CENSO CAMAS DIARIO - HOSPITAL HANGA ROA');
     expect(sheet?.columns[0]?.width).toBe(4);
   });
+
+  it('renders UPC as No in the visible sheet for non-eligible beds even with stale source data', () => {
+    const workbook = new ExcelJS.Workbook();
+    createCensusWorkbookDaySheet(
+      workbook,
+      {
+        ...buildRecord('2024-05-01', ''),
+        beds: {
+          H1C1: {
+            ...buildPatient('H1C1', 'Paciente Sala'),
+            isUPC: true,
+          },
+        },
+      } as DailyRecord,
+      '01-05-2024'
+    );
+
+    const sheet = workbook.getWorksheet('01-05-2024');
+    let patientRow = -1;
+
+    sheet?.eachRow((row, rowNumber) => {
+      if (row.getCell(4).value === 'Paciente Sala') {
+        patientRow = rowNumber;
+      }
+    });
+
+    expect(patientRow).toBeGreaterThan(0);
+    expect(sheet?.getCell(`M${patientRow}`).value).toBe('No');
+  });
 });

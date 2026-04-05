@@ -232,6 +232,30 @@ describe('PatientRow crib and demographics', () => {
     expect(mockContext.updatePatient).not.toHaveBeenCalledWith('R1', 'hasCompanionCrib', true);
   });
 
+  it('allows UPC on clinical crib when the parent bed is UPC-eligible', () => {
+    const clinicalCrib = DataFactory.createMockPatient('R1', {
+      patientName: 'RN UPC',
+      bedMode: 'Cuna',
+    });
+
+    render(
+      <table>
+        <tbody>
+          <PatientRow
+            data={clinicalCrib}
+            bed={mockBedDef}
+            currentDateString="2023-01-01"
+            onAction={mockOnAction}
+            isSubRow={true}
+            bedType={BedType.UTI}
+          />
+        </tbody>
+      </table>
+    );
+
+    expect(screen.getByTitle('UPC')).toBeEnabled();
+  });
+
   it('renders sub-row when clinicalCrib exists', () => {
     const dataWithCrib = {
       ...mockPatient,

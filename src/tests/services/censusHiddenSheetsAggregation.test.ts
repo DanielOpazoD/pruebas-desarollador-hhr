@@ -170,4 +170,23 @@ describe('censusHiddenSheetsAggregation', () => {
     expect(patients[0].changedBed).toBe(false);
     expect(patients[0].history).toContain('R1 (24-03-2026 a 25-03-2026)');
   });
+
+  it('ignores stale UPC flags on non-eligible beds', () => {
+    const patients = buildUpcPatients(
+      buildLogicalSnapshotSheets([
+        buildSnapshotSheet(
+          buildRecord('2026-03-24', {
+            H1C1: buildPatient('H1C1', {
+              patientName: 'Paciente Sala',
+              rut: '22.222.222-2',
+              isUPC: true,
+            }),
+          }),
+          '24-03-2026'
+        ),
+      ])
+    );
+
+    expect(patients).toHaveLength(0);
+  });
 });

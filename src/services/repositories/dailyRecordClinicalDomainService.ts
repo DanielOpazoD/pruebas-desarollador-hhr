@@ -11,6 +11,7 @@ import {
   inheritPatientMedicalHandoff,
 } from '@/services/repositories/dailyRecordHandoffDomainService';
 import { touchDailyRecordLastUpdated } from '@/services/repositories/dailyRecordMetadataDomainService';
+import { normalizePatientUpcForBed } from '@/shared/census/upcBedPolicy';
 
 const normalizeComparablePatientName = (patientName: string | undefined): string =>
   String(patientName || '')
@@ -46,11 +47,11 @@ const shouldClonePreviousPatient = (prevPatient: PatientData): boolean =>
     prevPatient.diagnosisComments
   );
 
-export const preparePatientForCarryover = (sourcePatient: PatientData): PatientData => {
-  const clonedPatient = parsePatientDataWithDefaults(
-    clonePatient(sourcePatient),
-    sourcePatient.bedId
-  );
+export const preparePatientForCarryover = (
+  sourcePatient: PatientData,
+  targetBedId = sourcePatient.bedId
+): PatientData => {
+  const clonedPatient = parsePatientDataWithDefaults(clonePatient(sourcePatient), targetBedId);
   resetCarryoverCudyr(clonedPatient);
   inheritPatientHandoffNotes(clonedPatient, sourcePatient);
   inheritPatientMedicalHandoff(clonedPatient, sourcePatient);
@@ -60,7 +61,7 @@ export const preparePatientForCarryover = (sourcePatient: PatientData): PatientD
     inheritPatientMedicalHandoff(clonedPatient.clinicalCrib, sourcePatient.clinicalCrib);
   }
 
-  return clonedPatient;
+  return normalizePatientUpcForBed(clonedPatient, targetBedId);
 };
 
 export const assignCarriedPatientToRecord = (
@@ -68,7 +69,7 @@ export const assignCarriedPatientToRecord = (
   targetBedId: string,
   sourcePatient: PatientData
 ): DailyRecord => {
-  targetRecord.beds[targetBedId] = preparePatientForCarryover(sourcePatient);
+  targetRecord.beds[targetBedId] = preparePatientForCarryover(sourcePatient, targetBedId);
   touchDailyRecordLastUpdated(targetRecord);
   return targetRecord;
 };

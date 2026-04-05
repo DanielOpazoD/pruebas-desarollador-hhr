@@ -14,6 +14,7 @@ import {
   isGinecobstetriciaSpecialty,
   isObstetricGinecobstetricia,
 } from '@/shared/census/ginecobstetriciaClassification';
+import { normalizePatientUpcForBed, resolveNormalizedUpcFlag } from '@/shared/census/upcBedPolicy';
 
 const getCudyrTimestampPatch = () => ({
   cudyrUpdatedAt: new Date().toISOString(),
@@ -64,7 +65,8 @@ export const bedManagementReducer = (
     case 'UPDATE_PATIENT': {
       const { bedId, field, value } = action;
       const patches: Record<string, unknown> = {
-        [`beds.${bedId}.${field}`]: value,
+        [`beds.${bedId}.${field}`]:
+          field === 'isUPC' ? resolveNormalizedUpcFlag(bedId, Boolean(value)) : value,
       };
 
       // Identity logic side-effects
@@ -107,7 +109,8 @@ export const bedManagementReducer = (
       let hasIdentityChange = false;
 
       Object.entries(fields).forEach(([key, value]) => {
-        patches[`beds.${bedId}.${key}`] = value;
+        patches[`beds.${bedId}.${key}`] =
+          key === 'isUPC' ? resolveNormalizedUpcFlag(bedId, Boolean(value)) : value;
         if (
           (key === 'rut' || key === 'patientName') &&
           value !== oldPatient[key as keyof PatientData]
@@ -177,11 +180,12 @@ export const bedManagementReducer = (
         bedId: targetBedId,
         location: state.beds[targetBedId].location,
       };
+      const normalizedTargetPatient = normalizePatientUpcForBed(targetPatient, targetBedId);
       const cleanSource = createEmptyPatient(sourceBedId);
       cleanSource.location = state.beds[sourceBedId].location;
 
       return {
-        [`beds.${targetBedId}`]: targetPatient,
+        [`beds.${targetBedId}`]: normalizedTargetPatient,
         [`beds.${sourceBedId}`]: cleanSource,
       } as DailyRecordPatch;
     }
@@ -189,11 +193,14 @@ export const bedManagementReducer = (
     case 'COPY_PATIENT': {
       const { sourceBedId, targetBedId } = action;
       const sourceData = state.beds[sourceBedId];
-      const targetPatient = {
-        ...deepClone(sourceData),
-        bedId: targetBedId,
-        location: state.beds[targetBedId].location,
-      };
+      const targetPatient = normalizePatientUpcForBed(
+        {
+          ...deepClone(sourceData),
+          bedId: targetBedId,
+          location: state.beds[targetBedId].location,
+        },
+        targetBedId
+      );
 
       return {
         [`beds.${targetBedId}`]: targetPatient,

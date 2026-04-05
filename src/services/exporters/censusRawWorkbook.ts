@@ -7,6 +7,7 @@ import { getBedTypeForRecord } from '../../utils/bedTypeUtils';
 import { resolveDayShiftNurses } from '@/services/staff/dailyRecordStaffing';
 import { formatCensusDateTime } from '@/shared/census/censusPresentation';
 import type { DailyRecordRawExportState } from '@/services/contracts/dailyRecordServiceContracts';
+import { resolveNormalizedUpcFlag } from '@/shared/census/upcBedPolicy';
 
 const getRawHeader = () => [
   'FECHA',
@@ -70,7 +71,7 @@ const generateRawRow = (
     p.hasWristband ? 'SI' : 'NO',
     p.devices?.join(', ') || '',
     p.surgicalComplication ? 'SI' : 'NO',
-    p.isUPC ? 'SI' : 'NO',
+    resolveNormalizedUpcFlag(bedId, p.isUPC) ? 'SI' : 'NO',
     nurses.join(' & '),
     formatCensusDateTime(lastUpdated),
   ];

@@ -113,6 +113,25 @@ describe('useBedManagement operations', () => {
       );
     });
 
+    it('clears UPC automatically when moving to a non-eligible bed', () => {
+      const patient = createMockPatient('R1', { isUPC: true });
+      const targetEmpty = createMockPatient('H1C1', { patientName: '', isUPC: false });
+      const record = createMockRecord({ R1: patient, H1C1: targetEmpty });
+      const { result } = renderHook(() =>
+        useBedManagement(record, mockSaveAndUpdate, mockPatchRecord)
+      );
+
+      act(() => {
+        result.current.moveOrCopyPatient('move', 'R1', 'H1C1');
+      });
+
+      expect(mockPatchRecord).toHaveBeenCalledWith(
+        expect.objectContaining({
+          'beds.H1C1': expect.objectContaining({ bedId: 'H1C1', isUPC: false }),
+        })
+      );
+    });
+
     it('handles clearAllBeds', () => {
       const record = createMockRecord({ R1: createMockPatient('R1'), R2: createMockPatient('R2') });
       const { result } = renderHook(() =>

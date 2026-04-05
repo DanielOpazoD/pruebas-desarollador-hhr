@@ -2,6 +2,7 @@ import type { BedDefinition } from '@/types/domain/beds';
 import type { Specialty } from '@/domain/handoff/patientContracts';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import type { HandoffMedicalRecordContract } from '@/domain/handoff/viewContracts';
+import { resolveNormalizedUpcFlag } from '@/shared/census/upcBedPolicy';
 
 export const resolveInitialMedicalSpecialtyFromSearch = (
   search: string | undefined
@@ -29,10 +30,10 @@ export const filterBedsByMedicalScope = (
 ): BedDefinition[] => {
   if (!isMedical || !record) return visibleBeds;
   if (scope === 'upc') {
-    return visibleBeds.filter(bed => record.beds[bed.id]?.isUPC);
+    return visibleBeds.filter(bed => resolveNormalizedUpcFlag(bed.id, record.beds[bed.id]?.isUPC));
   }
   if (scope === 'no-upc') {
-    return visibleBeds.filter(bed => !record.beds[bed.id]?.isUPC);
+    return visibleBeds.filter(bed => !resolveNormalizedUpcFlag(bed.id, record.beds[bed.id]?.isUPC));
   }
   return visibleBeds;
 };

@@ -5,6 +5,7 @@ import type { PatientData } from '@/hooks/contracts/patientHookContracts';
 import { BedType } from '@/types/domain/beds';
 import { getBedTypeForRecord } from '@/utils/bedTypeUtils';
 import { deepClone } from '@/utils/deepClone';
+import { normalizePatientUpcForBed } from '@/shared/census/upcBedPolicy';
 
 export const buildClearedPatient = (record: DailyRecord, bedId: string): PatientData => {
   // Reuse the same empty-bed contract after discharge, transfer, or manual clear.
@@ -41,11 +42,14 @@ export const buildMoveOrCopyPatch = (
   }
 
   const patch: DailyRecordPatch = {};
-  patch[`beds.${targetBedId}`] = {
-    ...deepClone(sourceData),
-    bedId: targetBedId,
-    location: record.beds[targetBedId].location,
-  };
+  patch[`beds.${targetBedId}`] = normalizePatientUpcForBed(
+    {
+      ...deepClone(sourceData),
+      bedId: targetBedId,
+      location: record.beds[targetBedId].location,
+    },
+    targetBedId
+  );
 
   if (type === 'move') {
     patch[`beds.${sourceBedId}`] = buildClearedPatient(record, sourceBedId);

@@ -112,6 +112,37 @@ describe('PatientRow layout and actions', () => {
     expect(mockContext.updatePatient).toHaveBeenCalledWith('R1', 'isUPC', true);
   });
 
+  it('disables and clears UPC checkbox on non-eligible beds', () => {
+    const hBedDef = {
+      id: 'H1C1',
+      name: 'H1C1',
+      type: BedType.MEDIA,
+      isCuna: false,
+    };
+    const patientInGeneralBed = DataFactory.createMockPatient('H1C1', {
+      patientName: 'Paciente Sala',
+      isUPC: true,
+    });
+
+    render(
+      <table>
+        <tbody>
+          <PatientRow
+            data={patientInGeneralBed}
+            bed={hBedDef}
+            currentDateString="2023-01-01"
+            onAction={mockOnAction}
+            bedType={BedType.MEDIA}
+          />
+        </tbody>
+      </table>
+    );
+
+    const upcCheckbox = screen.getByTitle('UPC disponible solo en R1-R4, NEO 1 y NEO 2');
+    expect(upcCheckbox).toBeDisabled();
+    expect(upcCheckbox).not.toBeChecked();
+  });
+
   it('calls updatePatient when status changes', () => {
     const { mockContext } = render(
       <table>
