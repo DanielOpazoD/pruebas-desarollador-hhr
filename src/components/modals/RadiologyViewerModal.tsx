@@ -1,7 +1,12 @@
-import React, { useState, useCallback } from 'react';
-import { Calendar, FileText, Loader2, Monitor, Radio, Search, UserRound } from 'lucide-react';
+import React, { useState, useCallback, useMemo } from 'react';
+import { Calendar, FileText, Loader2, Monitor, Radio, Search } from 'lucide-react';
+import clsx from 'clsx';
 import { BaseModal } from '@/components/shared/BaseModal';
-import { searchMMRADExams, type MMRADSearchResult } from '@/services/radiology/mmradService';
+import {
+  searchMMRADExams,
+  type MMRADExam,
+  type MMRADSearchResult,
+} from '@/services/radiology/mmradService';
 
 interface RadiologyPatient {
   bedId: string;
@@ -18,6 +23,21 @@ interface RadiologyViewerModalProps {
   initialPatientRut?: string;
 }
 
+/** Extract unique modality codes from exams, sorted with CT first. */
+const extractModalities = (exams: MMRADExam[]): string[] => {
+  const mods = new Set<string>();
+  for (const exam of exams) {
+    const mod = (exam.mod || '').trim().toUpperCase();
+    if (mod) mods.add(mod);
+  }
+  const sorted = Array.from(mods).sort((a, b) => {
+    if (a === 'CT') return -1;
+    if (b === 'CT') return 1;
+    return a.localeCompare(b);
+  });
+  return sorted;
+};
+
 export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
   isOpen,
   onClose,
@@ -31,19 +51,40 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
   const [progress, setProgress] = useState<{ pct: number; text: string } | null>(null);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [activeModTab, setActiveModTab] = useState<string | null>(null);
 
-  const selectedPatient = patients.find(p => p.rut === selectedRut);
+  // Deduplicate patients by RUT
+  const uniquePatients = useMemo(() => {
+    const seen = new Set<string>();
+    return patients.filter(p => {
+      if (!p.rut || seen.has(p.rut)) return false;
+      seen.add(p.rut);
+      return true;
+    });
+  }, [patients]);
+
+  // Modality tabs from results
+  const modalities = useMemo(() => (result ? extractModalities(result.examenes) : []), [result]);
+
+  // Filtered exams by active tab
+  const filteredExams = useMemo(() => {
+    if (!result) return [];
+    if (!activeModTab) return result.examenes;
+    return result.examenes.filter(e => (e.mod || '').trim().toUpperCase() === activeModTab);
+  }, [result, activeModTab]);
+
+  // Reset tab when results change
+  React.useEffect(() => {
+    if (result && modalities.length > 0) {
+      // Default to CT if available, otherwise first modality
+      setActiveModTab(modalities.includes('CT') ? 'CT' : null);
+    } else {
+      setActiveModTab(null);
+    }
+  }, [result, modalities]);
 
   /**
-   * Simulated progress bar — advances through stages while the API call runs.
-   *
-   * Rules:
-   *  - Never reaches 100% until the API actually responds (via finally).
-   *  - After the last named step, creeps slowly toward 95% so the user
-   *    sees continued activity if the call takes longer than expected.
-   *  - Messages describe real backend steps, not generic text.
-   *  - Uses transition: width 0.5s ease in the CSS for smooth movement.
-   *  - Hidden by default; only visible during an active search.
+   * Simulated progress bar.
    */
   React.useEffect(() => {
     if (!isLoading) {
@@ -55,7 +96,6 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
       return;
     }
 
-    // Stages modeled after the real backend flow (~10s / 5 = 2s per step)
     const steps = [
       { pct: 10, text: 'Conectando con el servidor de imágenes...' },
       { pct: 30, text: 'Iniciando sesión en RIS MMRAD...' },
@@ -73,7 +113,6 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
         setProgress({ pct: steps[step].pct, text: steps[step].text });
         step++;
       } else {
-        // Past the last named step — creep slowly toward 95% (never 100%)
         setProgress(prev =>
           prev && prev.pct < 95
             ? { pct: Math.min(prev.pct + 1, 95), text: 'Finalizando consulta...' }
@@ -105,7 +144,6 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
     }
   }, [selectedRut, dateFrom, dateTo]);
 
-  /** Set date preset: compute from/to relative to today. */
   const setDatePreset = (preset: 'last-month' | 'last-year' | 'last-5-years') => {
     const today = new Date();
     const to = today.toISOString().split('T')[0];
@@ -141,20 +179,13 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 text-white shadow-md shadow-violet-500/20">
               <Radio size={16} />
             </span>
-            <span className="flex flex-col leading-tight">
-              <span className="text-[15px] font-bold tracking-tight text-slate-800">
-                Radiología / Imagenología
-              </span>
-              {selectedPatient && (
-                <span className="text-[11px] font-medium text-slate-400">
-                  {selectedPatient.patientName}
-                </span>
-              )}
+            <span className="text-[15px] font-bold tracking-tight text-slate-800">
+              Radiología / Imagenología
             </span>
           </span>
         }
       >
-        {/* Patient selector + date range + search */}
+        {/* Controls */}
         <div className="mb-4 space-y-2">
           {/* Row 1: Patient + Search */}
           <div className="flex items-center gap-2">
@@ -171,7 +202,7 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
                 }}
                 className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-700 shadow-sm focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
               >
-                {patients.map(p => (
+                {uniquePatients.map(p => (
                   <option key={p.bedId} value={p.rut}>
                     {p.label} — {p.patientName} ({p.rut})
                   </option>
@@ -196,7 +227,6 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
               value={dateFrom}
               onChange={e => setDateFrom(e.target.value)}
               className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[12px] text-slate-600 shadow-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/10"
-              placeholder="Desde"
               title="Fecha desde"
             />
             <span className="text-[10px] text-slate-400">—</span>
@@ -205,7 +235,6 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
               value={dateTo}
               onChange={e => setDateTo(e.target.value)}
               className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[12px] text-slate-600 shadow-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/10"
-              placeholder="Hasta"
               title="Fecha hasta"
             />
             <div className="h-4 w-px bg-slate-200/60" />
@@ -245,28 +274,6 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
           </div>
         </div>
 
-        {/* Patient banner */}
-        {selectedPatient && (
-          <div className="mb-4 flex items-center gap-3 rounded-xl border border-violet-100 bg-gradient-to-r from-violet-50/80 via-violet-50/40 to-transparent px-4 py-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-600">
-              <UserRound size={14} />
-            </div>
-            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 text-[12px]">
-              <span className="font-semibold text-slate-700">{selectedPatient.patientName}</span>
-              <span className="text-slate-400">|</span>
-              <span className="font-mono text-slate-500">{selectedPatient.rut}</span>
-              {selectedPatient.diagnosis && (
-                <>
-                  <span className="text-slate-400">|</span>
-                  <span className="text-slate-500 truncate max-w-[200px]">
-                    {selectedPatient.diagnosis}
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Progress bar */}
         {progress && (
           <div className="mb-4">
@@ -290,73 +297,124 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
         {/* Results */}
         {result && !isLoading && (
           <div className="space-y-3">
+            {/* Modality tabs */}
+            {modalities.length > 1 && (
+              <div className="flex items-center gap-1 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setActiveModTab(null)}
+                  className={clsx(
+                    'rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all',
+                    activeModTab === null
+                      ? 'bg-violet-100 text-violet-800 ring-1 ring-violet-200/50 shadow-sm'
+                      : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                  )}
+                >
+                  Todos ({result.examenes.length})
+                </button>
+                {modalities.map(mod => {
+                  const count = result.examenes.filter(
+                    e => (e.mod || '').trim().toUpperCase() === mod
+                  ).length;
+                  return (
+                    <button
+                      key={mod}
+                      type="button"
+                      onClick={() => setActiveModTab(mod)}
+                      className={clsx(
+                        'rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all',
+                        activeModTab === mod
+                          ? 'bg-violet-100 text-violet-800 ring-1 ring-violet-200/50 shadow-sm'
+                          : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                      )}
+                    >
+                      {mod} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-slate-400">
-              {result.examenes.length} exámenes encontrados
+              {filteredExams.length} exámenes
+              {activeModTab ? ` · ${activeModTab}` : ''}
             </p>
-            {result.examenes.length === 0 ? (
+
+            {filteredExams.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-center">
                 <Radio size={28} className="text-slate-200 mb-2" />
                 <p className="text-[13px] text-slate-400">
-                  No se encontraron exámenes para este paciente
+                  No se encontraron exámenes
+                  {activeModTab ? ` de tipo ${activeModTab}` : ''}
                 </p>
               </div>
             ) : (
-              result.examenes.map((exam, index) => (
-                <div
-                  key={index}
-                  className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm ring-1 ring-black/[0.02] transition-all hover:shadow-md"
-                >
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div>
-                      <h4 className="text-[13px] font-semibold text-slate-700">
-                        {exam.nombre_examen || 'Examen sin nombre'}
-                      </h4>
-                      <div className="flex items-center gap-3 mt-0.5 text-[10px] text-slate-400">
-                        {exam.fecha_examen && <span>Fecha: {exam.fecha_examen}</span>}
-                        {exam.mod && <span>Mod: {exam.mod}</span>}
+              filteredExams.map((exam, index) => {
+                const isCR = (exam.mod || '').trim().toUpperCase() === 'CR';
+                return (
+                  <div
+                    key={index}
+                    className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm ring-1 ring-black/[0.02] transition-all hover:shadow-md"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div>
+                        <h4 className="text-[13px] font-semibold text-slate-700">
+                          {exam.nombre_examen || 'Examen sin nombre'}
+                        </h4>
+                        <div className="flex items-center gap-3 mt-0.5 text-[10px] text-slate-400">
+                          {exam.fecha_examen && <span>Fecha: {exam.fecha_examen}</span>}
+                          {exam.mod && (
+                            <span className="rounded bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-500">
+                              {exam.mod}
+                            </span>
+                          )}
+                        </div>
                       </div>
+                      {/* Hide status badge for CR (always "por informar") */}
+                      {!isCR && exam.estado && (
+                        <span
+                          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                            exam.estado.toLowerCase() === 'validado'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
+                              : 'bg-amber-50 text-amber-700 border border-amber-200/80'
+                          }`}
+                        >
+                          {exam.estado}
+                        </span>
+                      )}
                     </div>
-                    <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                        (exam.estado || '').toLowerCase() === 'validado'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
-                          : 'bg-amber-50 text-amber-700 border border-amber-200/80'
-                      }`}
-                    >
-                      {exam.estado || 'Sin estado'}
-                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {exam.pdf_url && (
+                        <a
+                          href={exam.pdf_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800"
+                        >
+                          <FileText size={12} />
+                          Ver PDF
+                        </a>
+                      )}
+                      {exam.dicom_url && (
+                        <a
+                          href={exam.dicom_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-[11px] font-medium text-violet-700 transition-colors hover:bg-violet-100"
+                        >
+                          <Monitor size={12} />
+                          Visualizador DICOM HTML5
+                        </a>
+                      )}
+                      {!exam.pdf_url && !exam.dicom_url && (
+                        <span className="text-[11px] text-slate-400 italic">
+                          Sin acciones disponibles
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {exam.pdf_url && (
-                      <a
-                        href={exam.pdf_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800"
-                      >
-                        <FileText size={12} />
-                        Ver PDF
-                      </a>
-                    )}
-                    {exam.dicom_url && (
-                      <a
-                        href={exam.dicom_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-[11px] font-medium text-violet-700 transition-colors hover:bg-violet-100"
-                      >
-                        <Monitor size={12} />
-                        Visualizador DICOM HTML5
-                      </a>
-                    )}
-                    {!exam.pdf_url && !exam.dicom_url && (
-                      <span className="text-[11px] text-slate-400 italic">
-                        Sin acciones disponibles
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
