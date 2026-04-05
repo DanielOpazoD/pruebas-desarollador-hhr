@@ -1,6 +1,6 @@
-import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
+import type { ApplicationOutcome } from '@/shared/contracts/applicationOutcome';
 import type { SyncOutcome } from '@/application/daily-record/syncDailyRecordUseCase';
-import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
+import { resolveApplicationOutcomeMessage } from '@/shared/contracts/applicationOutcomeMessage';
 import {
   createBlockedNotice,
   createDegradedNotice,

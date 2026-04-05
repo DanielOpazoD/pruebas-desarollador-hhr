@@ -2,7 +2,7 @@ import {
   createApplicationFailed,
   createApplicationSuccess,
   type ApplicationOutcome,
-} from '@/application/shared/applicationOutcome';
+} from '@/shared/contracts/applicationOutcome';
 import { defaultAuditPort, type AuditPort } from '@/application/ports/auditPort';
 import type { AuditLogEntry } from '@/types/audit';
 

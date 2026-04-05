@@ -7,7 +7,7 @@ import {
   buildClinicalDocumentPresenceByBed,
 } from '@/features/census/controllers/clinicalDocumentPresenceController';
 import { executeListClinicalDocumentsByEpisodeKeys } from '@/application/clinical-documents/clinicalDocumentUseCases';
-import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
+import { resolveApplicationOutcomeMessage } from '@/shared/contracts/applicationOutcomeMessage';
 import { clinicalDocumentPresenceLogger } from '@/features/census/hooks/censusHookLoggers';
 
 interface UseClinicalDocumentPresenceByBedParams {

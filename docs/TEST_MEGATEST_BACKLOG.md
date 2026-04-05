@@ -25,6 +25,15 @@ Identificar tests grandes con mayor costo de mantenimiento para partirlos sin pe
   ahora se reduce a un entrypoint con harness común y grupos separados en
   `firestoreRulesAccessGroups.ts`, `firestoreRulesDomainGroups.ts` y
   `firestoreRulesIdentityGroups.ts`.
+- `src/tests/hooks/useDailyRecord.test.tsx`
+  ahora se reparte entre `useDailyRecord.lifecycle.test.tsx` y
+  `useDailyRecord.validation-guards.test.tsx`.
+- `src/tests/views/census/CensusActionsContext.test.tsx`
+  ahora se reparte entre `CensusActionsContext.state-and-contract.test.tsx` y
+  `CensusActionsContext.execution-and-feedback.test.tsx`.
+- `src/tests/hooks/useTransferViewStates.test.ts`
+  ahora se reparte entre `useTransferViewStates.modal-state.test.ts` y
+  `useTransferViewStates.document-package.test.ts`.
 
 ## Criterio de priorización
 
@@ -35,13 +44,10 @@ Identificar tests grandes con mayor costo de mantenimiento para partirlos sin pe
 
 ## Candidatos prioritarios
 
-| Prioridad | Archivo                                                        | Líneas | Riesgo dominante                                      | Estrategia de partición                                                 |
-| --------- | -------------------------------------------------------------- | -----: | ----------------------------------------------------- | ----------------------------------------------------------------------- |
-| `P2`      | `src/tests/hooks/useDailyRecord.test.tsx`                      |  `432` | Hook principal todavía arrastra demasiados escenarios | Partir por bootstrap, save/update, sync y failure handling              |
-| `P2`      | `src/tests/views/census/CensusActionsContext.test.tsx`         |  `425` | Mucho wiring contextual en una sola prueba            | Partir por provider state, command exposure y mutation effects          |
-| `P2`      | `src/tests/hooks/useTransferViewStates.test.ts`                |  `410` | Mezcla modales, documentos y selección activa         | Partir por modal state, current transfer y document package             |
-| `P2`      | `src/tests/views/census/CensusTable.test.tsx`                  |  `402` | Tabla crítica con escenarios heterogéneos             | Partir por filas, columnas, documentos clínicos y rendering conditional |
-| `P2`      | `src/tests/features/transfers/TransferManagementView.test.tsx` |  `400` | Vista grande con varios concerns                      | Partir por active/finished grouping, modales y user actions             |
+| Prioridad | Archivo                                                        | Líneas | Riesgo dominante                          | Estrategia de partición                                                 |
+| --------- | -------------------------------------------------------------- | -----: | ----------------------------------------- | ----------------------------------------------------------------------- |
+| `P2`      | `src/tests/views/census/CensusTable.test.tsx`                  |  `402` | Tabla crítica con escenarios heterogéneos | Partir por filas, columnas, documentos clínicos y rendering conditional |
+| `P2`      | `src/tests/features/transfers/TransferManagementView.test.tsx` |  `400` | Vista grande con varios concerns          | Partir por active/finished grouping, modales y user actions             |
 
 ## Segunda ola sugerida
 
@@ -60,6 +66,6 @@ Identificar tests grandes con mayor costo de mantenimiento para partirlos sin pe
 
 ## Siguiente acción recomendada
 
-1. Reducir el archivo flake restante y revisar si coincide con alguno de los `P2`.
-2. Evaluar si `useDailyRecord.test.tsx` o `CensusActionsContext.test.tsx` son mejor siguiente ola local por costo/beneficio.
-3. Medir si baja el tiempo de diagnóstico de fallos y el costo de edición.
+1. Evaluar si `CensusTable.test.tsx` o `TransferManagementView.test.tsx` son mejor siguiente ola local por costo/beneficio.
+2. Medir si baja el tiempo de diagnóstico de fallos y el costo de edición.
+3. Seguir reduciendo el inventario `P2` sin fragmentar suites que aún entregan buena señal integrada.

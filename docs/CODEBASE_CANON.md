@@ -32,6 +32,7 @@ Este documento define la taxonomía canónica del repo. Su objetivo es bajar amb
 - `src/hooks/controllers` no debe duplicar controllers dueños de `src/features/*/controllers`.
 - `src/shared/` y `src/types/` requieren justificación transversal real.
 - Nuevas compatibilidades legacy deben entrar por boundaries explícitos, no por convenience imports.
+- Outcomes y helpers de mensaje reutilizados por varias capas pertenecen a `src/shared/contracts/`, no a `application/shared/`.
 
 ## Estado de `src/infrastructure`
 

@@ -3,7 +3,7 @@ import {
   createApplicationPartial,
   createApplicationSuccess,
   type ApplicationOutcome,
-} from '@/application/shared/applicationOutcome';
+} from '@/shared/contracts/applicationOutcome';
 import { defaultDailyRecordReadPort } from '@/application/ports/dailyRecordPort';
 import { defaultCensusEmailDeliveryPort } from '@/application/ports/censusEmailPort';
 import {

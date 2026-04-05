@@ -2,7 +2,7 @@ import {
   createApplicationFailed,
   createApplicationSuccess,
   type ApplicationOutcome,
-} from '@/application/shared/applicationOutcome';
+} from '@/shared/contracts/applicationOutcome';
 import type { ClinicalDocumentTemplate } from '@/features/clinical-documents';
 import { ClinicalDocumentTemplateRepository } from '@/services/repositories/ClinicalDocumentTemplateRepository';
 

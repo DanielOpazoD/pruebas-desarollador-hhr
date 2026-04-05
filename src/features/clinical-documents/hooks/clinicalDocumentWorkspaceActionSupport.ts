@@ -1,4 +1,4 @@
-import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
+import type { ApplicationOutcome } from '@/shared/contracts/applicationOutcome';
 import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domain/entities';
 
 export const resolveClinicalDocumentOutcomeError = <T>(

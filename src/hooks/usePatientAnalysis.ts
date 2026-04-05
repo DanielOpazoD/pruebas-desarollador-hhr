@@ -17,7 +17,7 @@ import {
   type PatientMasterWritePort,
 } from '@/application/ports/patientMasterPort';
 import { defaultAuditPort, type AuditPort } from '@/application/ports/auditPort';
-import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
+import { resolveApplicationOutcomeMessage } from '@/shared/contracts/applicationOutcomeMessage';
 import { patientAnalysisLogger } from '@/hooks/hookLoggers';
 
 export type { Conflict, AnalysisResult } from '@/application/patient-flow/patientAnalysisUseCase';

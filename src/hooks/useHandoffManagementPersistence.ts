@@ -7,7 +7,7 @@ import type {
 } from '@/application/shared/dailyRecordContracts';
 import type { AuditAction, AuditLogEntry } from '@/types/audit';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
-import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
+import type { ApplicationOutcome } from '@/shared/contracts/applicationOutcome';
 import type { ConfirmMedicalSpecialtyNoChangesInput } from '@/hooks/handoffManagementTypes';
 import {
   executeConfirmMedicalSpecialtyNoChanges,

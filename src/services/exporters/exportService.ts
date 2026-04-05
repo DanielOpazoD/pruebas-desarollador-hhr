@@ -14,7 +14,7 @@ import {
   createApplicationFailed,
   createApplicationSuccess,
   type ApplicationOutcome,
-} from '@/application/shared/applicationOutcome';
+} from '@/shared/contracts/applicationOutcome';
 import { exportServiceLogger } from '@/services/exporters/exporterLoggers';
 
 export const exportDataJSON = async () => {

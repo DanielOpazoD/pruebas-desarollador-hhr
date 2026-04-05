@@ -1,6 +1,6 @@
 import { ConcurrencyError } from '@/services/storage/firestore';
 import { DataRegressionError, VersionMismatchError } from '@/utils/integrityGuard';
-import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
+import { resolveApplicationOutcomeMessage } from '@/shared/contracts/applicationOutcomeMessage';
 import { AdmissionDatePolicyViolationError } from '@/application/patient-flow/admissionDatePolicy';
 import type {
   SaveDailyRecordResult,

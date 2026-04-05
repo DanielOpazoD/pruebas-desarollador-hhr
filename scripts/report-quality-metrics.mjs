@@ -17,6 +17,7 @@ const FLAKY_QUARANTINE_PATH = path.join(ROOT, 'scripts', 'config', 'flaky-quaran
 const TEST_FAILURE_CATALOG_PATH = path.join(ROOT, 'scripts', 'config', 'test-failure-catalog.json');
 const HOOK_CONTROLLERS_DIR = path.join(SRC_ROOT, 'hooks', 'controllers');
 const FEATURE_CENSUS_CONTROLLERS_DIR = path.join(SRC_ROOT, 'features', 'census', 'controllers');
+const LOGGER_CONSOLE_SINK_PATH = 'src/services/utils/loggerConsoleSink.ts';
 
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
 const TEST_FILE_PATTERN = /\.(test|spec)\.(ts|tsx|js|jsx)$/;
@@ -429,6 +430,7 @@ const getConvergenceSignals = () => {
   let deprecatedShimImports = 0;
   let dailyRecordBoundaryViolations = 0;
   let governedCompatibilityShims = 0;
+  let rawConsoleOutsideStructuredSink = 0;
 
   for (const filePath of files) {
     const relative = toPosix(path.relative(ROOT, filePath));
@@ -445,6 +447,12 @@ const getConvergenceSignals = () => {
     if (isGovernedCensusControllerShimSource({ relative, source })) {
       governedCompatibilityShims += 1;
       continue;
+    }
+
+    const hasRawConsoleWarnOrError =
+      source.includes('console.warn(') || source.includes('console.error(');
+    if (relative !== LOGGER_CONSOLE_SINK_PATH && hasRawConsoleWarnOrError) {
+      rawConsoleOutsideStructuredSink += 1;
     }
 
     for (const boundary of FEATURE_PUBLIC_BOUNDARIES) {
@@ -539,6 +547,7 @@ const getConvergenceSignals = () => {
     dailyRecordBoundaryViolations,
     governedCompatibilityShims,
     controllerOwnershipDrift,
+    rawConsoleOutsideStructuredSink,
   };
 };
 
@@ -616,6 +625,7 @@ const mdLines = [
   `- Deprecated shim imports in source: ${metrics.convergence.deprecatedShimImports}`,
   `- DailyRecord root-boundary violations in source: ${metrics.convergence.dailyRecordBoundaryViolations}`,
   `- Census controller ownership drift: ${metrics.convergence.controllerOwnershipDrift}`,
+  `- Raw console warn/error outside structured sink: ${metrics.convergence.rawConsoleOutsideStructuredSink}`,
   '',
   '## Release Confidence Governance',
   '',

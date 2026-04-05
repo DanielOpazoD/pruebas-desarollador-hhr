@@ -7,7 +7,7 @@ import {
   createApplicationFailed,
   createApplicationSuccess,
   type ApplicationOutcome,
-} from '@/application/shared/applicationOutcome';
+} from '@/shared/contracts/applicationOutcome';
 import {
   EMPTY_STORAGE_LIST_REPORT,
   hasDegradedStorageListReport,

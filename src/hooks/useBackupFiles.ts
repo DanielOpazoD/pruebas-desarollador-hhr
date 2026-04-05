@@ -12,7 +12,7 @@ import {
   executeCheckBackupCrudExists,
 } from '@/application/backup-export/backupFilesUseCases';
 import { BackupFile, BackupFilePreview, BackupFilters, BackupShiftType } from '@/types/backup';
-import { resolveApplicationOutcomeMessage } from '@/application/shared/applicationOutcomeMessage';
+import { resolveApplicationOutcomeMessage } from '@/shared/contracts/applicationOutcomeMessage';
 
 interface UseBackupFilesReturn {
   // State

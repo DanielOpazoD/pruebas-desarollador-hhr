@@ -1,5 +1,5 @@
-import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
-import { createApplicationSuccess } from '@/application/shared/applicationOutcome';
+import type { ApplicationOutcome } from '@/shared/contracts/applicationOutcome';
+import { createApplicationSuccess } from '@/shared/contracts/applicationOutcome';
 import {
   buildMedicalEntryAddFields,
   buildMedicalEntryContinuityFields,

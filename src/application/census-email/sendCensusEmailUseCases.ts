@@ -12,7 +12,7 @@ import {
   createApplicationPartial,
   createApplicationSuccess,
   type ApplicationOutcome,
-} from '@/application/shared/applicationOutcome';
+} from '@/shared/contracts/applicationOutcome';
 import {
   defaultDailyRecordReadPort,
   type DailyRecordReadPort,

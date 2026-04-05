@@ -121,7 +121,7 @@ const createWrapper = () => {
   return wrapper;
 };
 
-describe('useDailyRecord', () => {
+describe('useDailyRecord validation guards', () => {
   const mockDate = '2025-01-01';
   let recordsMap: Record<string, DailyRecord> = {};
 
@@ -233,94 +233,6 @@ describe('useDailyRecord', () => {
     });
   });
 
-  it('should initialize with record for the given date', async () => {
-    const { result } = renderHook(() => useDailyRecord(mockDate), { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      expect(result.current.record).not.toBeNull();
-      expect(result.current.record?.date).toBe(mockDate);
-    });
-    expect(defaultDailyRecordRepositoryPort.getForDateWithMeta).toHaveBeenCalledWith(
-      mockDate,
-      false
-    );
-  });
-
-  it('should update record when date changes', async () => {
-    const { result, rerender } = renderHook(({ date }) => useDailyRecord(date), {
-      initialProps: { date: mockDate },
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => expect(result.current.record).not.toBeNull());
-
-    const newDate = '2025-01-02';
-    recordsMap[newDate] = DataFactory.createMockDailyRecord(newDate);
-
-    rerender({ date: newDate });
-
-    await waitFor(() => {
-      expect(result.current.record?.date).toBe(newDate);
-    });
-  });
-
-  it('should create a new day', async () => {
-    const { result } = renderHook(() => useDailyRecord(mockDate), { wrapper: createWrapper() });
-
-    // Wait for initial load (which might be null if currentRecord setup failed or similar)
-    // But in our mock it returns currentRecord.
-
-    await waitFor(() => expect(result.current.record).not.toBeNull());
-
-    await act(async () => {
-      await result.current.createDay(false);
-    });
-
-    await waitFor(() => {
-      expect(result.current.record?.date).toBe(mockDate);
-    });
-  });
-
-  it('should not create a copied day before the selected day reaches 08:00', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2025, 0, 1, 8, 0, 0));
-
-    const futureDate = '2025-01-02';
-    const { result } = renderHook(() => useDailyRecord(futureDate), { wrapper: createWrapper() });
-
-    await act(async () => {
-      await result.current.createDay(true, mockDate);
-    });
-
-    expect(mockDailyRecordPorts.initializeDayDetailed).not.toHaveBeenCalledWith(
-      futureDate,
-      mockDate
-    );
-
-    vi.useRealTimers();
-  });
-
-  it('should create a copied day when the selected day has reached 08:00', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2025, 0, 2, 8, 1, 0));
-
-    const sourceDate = '2025-01-01';
-    const targetDate = '2025-01-02';
-    recordsMap[sourceDate] = DataFactory.createMockDailyRecord(sourceDate);
-    const { result } = renderHook(() => useDailyRecord(targetDate), { wrapper: createWrapper() });
-
-    await act(async () => {
-      await result.current.createDay(true, sourceDate);
-    });
-
-    expect(defaultDailyRecordRepositoryPort.initializeDay).toHaveBeenCalledWith(
-      targetDate,
-      sourceDate
-    );
-
-    vi.useRealTimers();
-  });
-
   it('should not move patient if source bed is empty', async () => {
     recordsMap[mockDate] = DataFactory.createMockDailyRecord(mockDate, {
       beds: {
@@ -393,40 +305,5 @@ describe('useDailyRecord', () => {
     });
 
     expect(defaultDailyRecordRepositoryPort.updatePartial).not.toHaveBeenCalled();
-  });
-
-  describe('copyPatientToDate', () => {
-    it('should copy patient to a future date and specific bed', async () => {
-      // Setup source record
-      recordsMap[mockDate] = DataFactory.createMockDailyRecord(mockDate, {
-        beds: {
-          R1: DataFactory.createMockPatient('R1', {
-            patientName: 'John Doe',
-            rut: '12345678-9',
-          }),
-        },
-      });
-
-      // Setup target record (future date, empty bed)
-      const targetDate = '2025-01-02';
-      recordsMap[targetDate] = DataFactory.createMockDailyRecord(targetDate);
-
-      const { result } = renderHook(() => useDailyRecord(mockDate), { wrapper: createWrapper() });
-
-      // Wait for initial load
-      await waitFor(() => expect(result.current.record?.beds).toBeDefined());
-
-      await act(async () => {
-        await result.current.copyPatientToDate('R1', targetDate, 'R2');
-      });
-
-      // Verify copyPatientToDate called with correct arguments
-      expect(defaultDailyRecordRepositoryPort.copyPatientToDateDetailed).toHaveBeenCalledWith(
-        mockDate,
-        'R1',
-        targetDate,
-        'R2'
-      );
-    });
   });
 });

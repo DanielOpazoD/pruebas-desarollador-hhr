@@ -93,7 +93,6 @@ const parseFilePath = (path: string): { date: string; shiftType: 'day' | 'night'
     };
   }
 
-  // console.warn(`[PdfStorage] 🔍 Failed to parse path: "${path}"`);
   return null;
 };
 
