@@ -23,13 +23,27 @@ export interface MMRADSearchResult {
   examenes: MMRADExam[];
 }
 
-export const searchMMRADExams = async (rut: string): Promise<MMRADSearchResult> => {
+export interface MMRADSearchParams {
+  rut: string;
+  /** ISO format YYYY-MM-DD */
+  dateFrom?: string;
+  /** ISO format YYYY-MM-DD */
+  dateTo?: string;
+}
+
+export const searchMMRADExams = async ({
+  rut,
+  dateFrom,
+  dateTo,
+}: MMRADSearchParams): Promise<MMRADSearchResult> => {
   const cleanRut = rut.replace(/\./g, '').trim();
 
+  let url = `/.netlify/functions/mmrad-search?rut=${encodeURIComponent(cleanRut)}`;
+  if (dateFrom) url += `&from=${encodeURIComponent(dateFrom)}`;
+  if (dateTo) url += `&to=${encodeURIComponent(dateTo)}`;
+
   try {
-    const response = await fetch(
-      `/.netlify/functions/mmrad-search?rut=${encodeURIComponent(cleanRut)}`
-    );
+    const response = await fetch(url);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Error de conexión' }));

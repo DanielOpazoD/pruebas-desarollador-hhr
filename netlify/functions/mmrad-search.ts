@@ -29,6 +29,15 @@ interface MMRADExam {
   informe_html_url: string | null;
 }
 
+/** Convert ISO date (YYYY-MM-DD) to RIS format (DD/MM/YYYY). */
+const isoToRisDate = (isoDate: string): string => {
+  const [y, m, d] = isoDate.split('-');
+  return `${d}/${m}/${y}`;
+};
+
+/** Validate ISO date format. */
+const isValidIsoDate = (value: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(value);
+
 /** Decode common HTML entities in Liferay-generated markup. */
 const decodeHtmlEntities = (text: string): string =>
   text
@@ -164,8 +173,20 @@ const loginToMMRAD = async (): Promise<LoginResult> => {
 const searchExams = async (
   rut: string,
   cookies: string,
-  searchActionUrl: string
+  searchActionUrl: string,
+  dateFrom?: string,
+  dateTo?: string
 ): Promise<MMRADExam[]> => {
+  const params: Record<string, string> = { idpaciente: rut };
+
+  // Add date filters in DD/MM/YYYY format (RIS expects this, not ISO)
+  if (dateFrom && isValidIsoDate(dateFrom)) {
+    params.fechaexamendesde = isoToRisDate(dateFrom);
+  }
+  if (dateTo && isValidIsoDate(dateTo)) {
+    params.fechaexamenhasta = isoToRisDate(dateTo);
+  }
+
   const response = await fetchWithHeaders(searchActionUrl, {
     method: 'POST',
     headers: {
@@ -173,7 +194,7 @@ const searchExams = async (
       Cookie: cookies,
       Referer: `${MMRAD_BASE_URL}/group/hhangaroa`,
     },
-    body: new URLSearchParams({ idpaciente: rut }).toString(),
+    body: new URLSearchParams(params).toString(),
   });
 
   const html = await response.text();
@@ -246,7 +267,8 @@ export const handler = async (event: NetlifyEventLike) => {
     return buildJsonResponse(405, { error: 'Method not allowed' }, { requestOrigin });
   }
 
-  const rut = new URLSearchParams(event.rawQuery || '').get('rut');
+  const queryParams = new URLSearchParams(event.rawQuery || '');
+  const rut = queryParams.get('rut');
   if (!rut) {
     return buildJsonResponse(400, { error: 'RUT es requerido' }, { requestOrigin });
   }
@@ -268,7 +290,13 @@ export const handler = async (event: NetlifyEventLike) => {
       );
     }
 
-    const examenes = await searchExams(cleanRut, cookies, searchActionUrl);
+    const examenes = await searchExams(
+      cleanRut,
+      cookies,
+      searchActionUrl,
+      queryParams.get('from') || undefined,
+      queryParams.get('to') || undefined
+    );
 
     return buildJsonResponse(
       200,

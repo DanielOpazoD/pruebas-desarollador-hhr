@@ -41,7 +41,11 @@ export async function exportMinsalToExcel(
     ['Días Cama Disponibles', stats.diasCamaDisponibles, 'Total de días-cama ofertados'],
     ['Días Cama Ocupados', stats.diasCamaOcupados, 'Total de días-cama utilizados'],
     ['Tasa de Ocupación (%)', stats.tasaOcupacion, 'Índice Ocupacional MINSAL'],
-    ['Promedio Días Estada', stats.promedioDiasEstada, 'Estancia media hospitalaria'],
+    [
+      'Promedio Días Estada',
+      stats.promedioDiasEstada,
+      'Σ días de estada de egresados del período / egresos del período',
+    ],
     ['Egresos Total', stats.egresosTotal, 'Total de salidas del período'],
     ['Egresos Vivos', stats.egresosVivos, 'Altas de pacientes vivos'],
     ['Egresos Fallecidos', stats.egresosFallecidos, 'Muertes intrahospitalarias'],
@@ -86,8 +90,8 @@ export async function exportMinsalToExcel(
     'Días-cama del período',
     'Contribución (%)',
     'Mortalidad del período (%)',
-    'Estada media del período (días)',
-    'Rango estada',
+    'Estada media de egresos (días)',
+    'Rango estada egresos',
   ];
 
   const headerRow = specialtySheet.addRow(specialtyHeaders);
@@ -111,7 +115,7 @@ export async function exportMinsalToExcel(
       spec.diasOcupados,
       spec.contribucionRelativa.toFixed(1),
       spec.tasaMortalidad.toFixed(1),
-      spec.promedioDiasEstada.toFixed(1),
+      spec.promedioDiasEstada.toFixed(2),
       spec.promedioDiasEstadaMinima !== undefined && spec.promedioDiasEstadaMaxima !== undefined
         ? `${spec.promedioDiasEstadaMinima.toFixed(1)} - ${spec.promedioDiasEstadaMaxima.toFixed(1)} días`
         : '—',
@@ -126,7 +130,7 @@ export async function exportMinsalToExcel(
     stats.diasCamaOcupados,
     '100.0',
     stats.mortalidadHospitalaria.toFixed(1),
-    stats.promedioDiasEstada.toFixed(1),
+    stats.promedioDiasEstada.toFixed(2),
     stats.promedioDiasEstadaMinima !== undefined && stats.promedioDiasEstadaMaxima !== undefined
       ? `${stats.promedioDiasEstadaMinima.toFixed(1)} - ${stats.promedioDiasEstadaMaxima.toFixed(1)} días`
       : '—',

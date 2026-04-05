@@ -242,8 +242,8 @@ describe('admission episode consistency integration', () => {
     const cirugia = stats.porEspecialidad.find(item => item.specialty === Specialty.CIRUGIA);
 
     expect(cirugia?.egresos).toBe(2);
-    expect(cirugia?.promedioDiasEstadaMinima).toBe(2);
-    expect(cirugia?.promedioDiasEstadaMaxima).toBe(3);
+    expect(cirugia?.promedioDiasEstadaMinima).toBe(1);
+    expect(cirugia?.promedioDiasEstadaMaxima).toBe(2);
     expect(cirugia?.egresosList?.[0]?.admissionDate).toBe('2026-03-01');
     expect(cirugia?.egresosList?.[1]?.admissionDate).toBe('2026-03-18');
   });

@@ -16,6 +16,7 @@ import {
   isWithinDayShift,
   isAdmittedDuringShift,
   calculateHospitalizedDays,
+  calculateDischargeStayDays,
 } from '@/utils/dateUtils';
 
 describe('dateUtils', () => {
@@ -368,6 +369,32 @@ describe('dateUtils', () => {
       // Force a crash type in calculateHospitalizedDays by passing non-string that .split fails on
       // but the type is string, so we use 'any'
       expect(calculateHospitalizedDays(null as unknown as string, '2024-12-10')).toBeNull();
+    });
+  });
+
+  describe('calculateDischargeStayDays', () => {
+    it('should return 1 for same-day discharge stays', () => {
+      expect(calculateDischargeStayDays('2024-12-10', '2024-12-10')).toBe(1);
+    });
+
+    it('should use discharge minus admission dates for DEIS stays', () => {
+      expect(calculateDischargeStayDays('2024-12-10', '2024-12-11')).toBe(1);
+      expect(calculateDischargeStayDays('2024-12-10', '2024-12-12')).toBe(2);
+      expect(calculateDischargeStayDays('2026-01-23', '2026-01-26')).toBe(3);
+    });
+
+    it('should accept DD-MM-YYYY values used by the IEEH flow', () => {
+      expect(calculateDischargeStayDays('23-01-2026', '26-01-2026')).toBe(3);
+    });
+
+    it('should exclude invalid chronology instead of forcing 1 day', () => {
+      expect(calculateDischargeStayDays('2024-12-11', '2024-12-10')).toBeNull();
+    });
+
+    it('should return null if dates are missing or invalid', () => {
+      expect(calculateDischargeStayDays(undefined, '2024-12-10')).toBeNull();
+      expect(calculateDischargeStayDays('2024-12-10', undefined)).toBeNull();
+      expect(calculateDischargeStayDays('invalid', '2024-12-10')).toBeNull();
     });
   });
 

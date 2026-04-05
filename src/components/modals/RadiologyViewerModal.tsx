@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { FileText, Loader2, Monitor, Radio, Search, UserRound } from 'lucide-react';
+import { Calendar, FileText, Loader2, Monitor, Radio, Search, UserRound } from 'lucide-react';
 import { BaseModal } from '@/components/shared/BaseModal';
 import { searchMMRADExams, type MMRADSearchResult } from '@/services/radiology/mmradService';
 
@@ -29,6 +29,8 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
   const [result, setResult] = useState<MMRADSearchResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ pct: number; text: string } | null>(null);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   const selectedPatient = patients.find(p => p.rut === selectedRut);
 
@@ -90,14 +92,30 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
     setResult(null);
 
     try {
-      const data = await searchMMRADExams(selectedRut);
+      const data = await searchMMRADExams({
+        rut: selectedRut,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+      });
       setResult(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al buscar exámenes');
     } finally {
       setIsLoading(false);
     }
-  }, [selectedRut]);
+  }, [selectedRut, dateFrom, dateTo]);
+
+  /** Set date preset: compute from/to relative to today. */
+  const setDatePreset = (preset: 'last-month' | 'last-year' | 'last-5-years') => {
+    const today = new Date();
+    const to = today.toISOString().split('T')[0];
+    const from = new Date(today);
+    if (preset === 'last-month') from.setMonth(from.getMonth() - 1);
+    else if (preset === 'last-year') from.setFullYear(from.getFullYear() - 1);
+    else from.setFullYear(from.getFullYear() - 5);
+    setDateFrom(from.toISOString().split('T')[0]);
+    setDateTo(to);
+  };
 
   React.useEffect(() => {
     if (isOpen && initialPatientRut) {
@@ -136,36 +154,95 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
           </span>
         }
       >
-        {/* Patient selector + search */}
-        <div className="mb-4 flex items-center gap-2">
-          <div className="flex items-center gap-2 flex-1">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 shrink-0">
-              Paciente
-            </label>
-            <select
-              value={selectedRut}
-              onChange={e => {
-                setSelectedRut(e.target.value);
-                setResult(null);
-                setError(null);
-              }}
-              className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-700 shadow-sm focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
+        {/* Patient selector + date range + search */}
+        <div className="mb-4 space-y-2">
+          {/* Row 1: Patient + Search */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-1">
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 shrink-0">
+                Paciente
+              </label>
+              <select
+                value={selectedRut}
+                onChange={e => {
+                  setSelectedRut(e.target.value);
+                  setResult(null);
+                  setError(null);
+                }}
+                className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-700 shadow-sm focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
+              >
+                {patients.map(p => (
+                  <option key={p.bedId} value={p.rut}>
+                    {p.label} — {p.patientName} ({p.rut})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={handleSearch}
+              disabled={!selectedRut || isLoading}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-b from-violet-500 to-violet-600 px-4 py-2 text-[13px] font-semibold text-white shadow-md shadow-violet-600/25 transition-all hover:from-violet-600 hover:to-violet-700 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
             >
-              {patients.map(p => (
-                <option key={p.bedId} value={p.rut}>
-                  {p.label} — {p.patientName} ({p.rut})
-                </option>
-              ))}
-            </select>
+              {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+              Buscar
+            </button>
           </div>
-          <button
-            onClick={handleSearch}
-            disabled={!selectedRut || isLoading}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-b from-violet-500 to-violet-600 px-4 py-2 text-[13px] font-semibold text-white shadow-md shadow-violet-600/25 transition-all hover:from-violet-600 hover:to-violet-700 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
-          >
-            {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
-            Buscar
-          </button>
+
+          {/* Row 2: Date range + presets */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Calendar size={13} className="text-slate-400 shrink-0" />
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={e => setDateFrom(e.target.value)}
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[12px] text-slate-600 shadow-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/10"
+              placeholder="Desde"
+              title="Fecha desde"
+            />
+            <span className="text-[10px] text-slate-400">—</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={e => setDateTo(e.target.value)}
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[12px] text-slate-600 shadow-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/10"
+              placeholder="Hasta"
+              title="Fecha hasta"
+            />
+            <div className="h-4 w-px bg-slate-200/60" />
+            <button
+              type="button"
+              onClick={() => setDatePreset('last-month')}
+              className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-medium text-slate-500 hover:bg-slate-100 transition-colors"
+            >
+              Último mes
+            </button>
+            <button
+              type="button"
+              onClick={() => setDatePreset('last-year')}
+              className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-medium text-slate-500 hover:bg-slate-100 transition-colors"
+            >
+              Último año
+            </button>
+            <button
+              type="button"
+              onClick={() => setDatePreset('last-5-years')}
+              className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-medium text-slate-500 hover:bg-slate-100 transition-colors"
+            >
+              Últimos 5 años
+            </button>
+            {(dateFrom || dateTo) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDateFrom('');
+                  setDateTo('');
+                }}
+                className="text-[10px] text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Patient banner */}

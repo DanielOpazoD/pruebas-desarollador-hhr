@@ -34,7 +34,8 @@ describe('MinsalKPICards', () => {
 
     expect(screen.getByText('Ocupación del período')).toBeInTheDocument();
     expect(screen.getByText('Promedio del rango seleccionado')).toBeInTheDocument();
-    expect(screen.getByText('Estada media del período')).toBeInTheDocument();
+    expect(screen.getByText('Estada media de egresos')).toBeInTheDocument();
+    expect(screen.getByText('Σ días de estada / egresos del rango')).toBeInTheDocument();
     expect(screen.getByText('Egresos del período')).toBeInTheDocument();
     expect(
       screen.getByText('Total acumulado del rango seleccionado · 36 vivos, 2 trasl.')

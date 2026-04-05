@@ -64,7 +64,12 @@ export interface SpecialtyStats {
   contribucionRelativa: number;
   /** Mortality rate for this specialty over period discharges (percentage) */
   tasaMortalidad: number;
-  /** Average length of stay in days across the selected period, using all discharge modes */
+  /**
+   * Average length of stay in days across exit events in the selected period.
+   * Formula: Σ días de estada de egresos/traslados con ingreso resuelto ÷ número de esas estadías resueltas.
+   * Uses the DEIS discharge rule: discharge date - admission date, with same-day admission/discharge = 1.
+   * Invalid chronology (discharge before admission) is excluded instead of forcing a minimum.
+   */
   promedioDiasEstada: number;
   /** Minimum observed stay among exit events in the selected period, resolved from the shared episode timeline */
   promedioDiasEstadaMinima?: number;
@@ -126,7 +131,9 @@ export interface MinsalStatistics {
   /**
    * Promedio Días Estada
    * Average length of stay in days
-   * Formula: Días Ocupados / Total Egresos
+   * Formula: Σ días de estada de egresos/traslados con ingreso resuelto ÷ número de esas estadías resueltas
+   * Uses the DEIS discharge rule: discharge date - admission date, with same-day admission/discharge = 1.
+   * Invalid chronology (discharge before admission) is excluded instead of forcing a minimum.
    */
   promedioDiasEstada: number;
   /** Minimum observed stay among exit events in the selected period, resolved from the shared episode timeline */

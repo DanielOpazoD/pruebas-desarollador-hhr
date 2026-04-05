@@ -90,8 +90,8 @@ describe('minsalExcelExporter', () => {
       'Días-cama del período',
       'Contribución (%)',
       'Mortalidad del período (%)',
-      'Estada media del período (días)',
-      'Rango estada',
+      'Estada media de egresos (días)',
+      'Rango estada egresos',
     ]);
 
     const lastRow = specialtySheet?.getRow((specialtySheet?.rowCount ?? 0) as number).values as
@@ -105,7 +105,7 @@ describe('minsalExcelExporter', () => {
       434,
       '100.0',
       '5.3',
-      '5.6',
+      '5.60',
       '2.0 - 10.0 días',
     ]);
   });

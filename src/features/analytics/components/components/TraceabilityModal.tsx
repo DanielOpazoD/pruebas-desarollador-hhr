@@ -7,7 +7,7 @@ import React from 'react';
 import { BaseModal } from '@/components/shared/BaseModal';
 import { PatientTraceability } from '@/types/minsalTypes';
 import { Users, Calendar, BedDouble } from 'lucide-react';
-import { formatDateDDMMYYYY } from '@/utils/dateUtils';
+import { calculateDischargeStayDays, formatDateDDMMYYYY } from '@/utils/dateUtils';
 
 interface TraceabilityModalProps {
   isOpen: boolean;
@@ -25,20 +25,7 @@ const resolveAdmissionDate = (dateValue?: string): string | null => {
 };
 
 const getStayDays = (patient: PatientTraceability): number | null => {
-  if (!patient.admissionDate || !patient.dischargeDate) return null;
-
-  try {
-    const admission = patient.admissionDate.split('T')[0];
-    const discharge = patient.dischargeDate.split('T')[0];
-    const [aYear, aMonth, aDay] = admission.split('-').map(Number);
-    const [dYear, dMonth, dDay] = discharge.split('-').map(Number);
-    const start = Date.UTC(aYear, aMonth - 1, aDay, 12, 0, 0);
-    const end = Date.UTC(dYear, dMonth - 1, dDay, 12, 0, 0);
-    const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays < 1 ? 1 : diffDays;
-  } catch {
-    return null;
-  }
+  return calculateDischargeStayDays(patient.admissionDate, patient.dischargeDate);
 };
 
 export const TraceabilityModal: React.FC<TraceabilityModalProps> = ({

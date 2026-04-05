@@ -21,6 +21,34 @@ export const normalizeDateOnly = (value?: string): string | undefined => {
   return value.split('T')[0];
 };
 
+const normalizeCalendarDate = (value?: string): string | undefined => {
+  if (!value) return undefined;
+
+  const datePart = value.split('T')[0].trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+    return datePart;
+  }
+
+  if (/^\d{2}-\d{2}-\d{4}$/.test(datePart)) {
+    const [day, month, year] = datePart.split('-');
+    return `${year}-${month}-${day}`;
+  }
+
+  return undefined;
+};
+
+const parseCalendarDateUtcNoon = (value?: string): number | null => {
+  const normalized = normalizeCalendarDate(value);
+  if (!normalized) return null;
+
+  const [year, month, day] = normalized.split('-').map(Number);
+  if ([year, month, day].some(part => Number.isNaN(part))) {
+    return null;
+  }
+
+  return Date.UTC(year, month - 1, day, 12, 0, 0);
+};
+
 export const parseTimeMinutes = (value?: string): number | null => {
   if (!value) return null;
 
@@ -203,4 +231,28 @@ export const calculateHospitalizedDays = (
   } catch {
     return null;
   }
+};
+
+/**
+ * DEIS/MINSAL discharge stay rule:
+ * - difference between discharge date and admission date
+ * - same-day admission/discharge counts as 1
+ * - invalid chronology is excluded from the indicator (null)
+ */
+export const calculateDischargeStayDays = (
+  admissionDate?: string,
+  dischargeDate?: string
+): number | null => {
+  const start = parseCalendarDateUtcNoon(admissionDate);
+  const end = parseCalendarDateUtcNoon(dischargeDate);
+  if (start === null || end === null) {
+    return null;
+  }
+
+  const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) {
+    return null;
+  }
+
+  return diffDays === 0 ? 1 : diffDays;
 };

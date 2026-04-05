@@ -1,5 +1,6 @@
 import type { PatientData } from '@/services/contracts/patientServiceContracts';
 import { calculateAge, formatDateToCL, splitPatientName } from '@/utils/clinicalUtils';
+import { calculateDischargeStayDays } from '@/utils/dateUtils';
 import type { DischargeFormData } from './ieehPdfContracts';
 
 const CHAR_SPACING = 1;
@@ -121,20 +122,7 @@ export const calculateDaysOfStay = (
   admissionDate: string | undefined,
   dischargeDate: string | undefined
 ): number => {
-  if (!admissionDate || !dischargeDate) return 0;
-  try {
-    const parseFlexibleDate = (value: string) => {
-      const parts = value.split('-');
-      if (parts[0].length === 4) return new Date(`${parts[0]}-${parts[1]}-${parts[2]}`);
-      return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-    };
-    const adm = parseFlexibleDate(admissionDate);
-    const dis = parseFlexibleDate(dischargeDate);
-    const diff = Math.ceil((dis.getTime() - adm.getTime()) / (1000 * 60 * 60 * 24));
-    return Math.max(diff, 1);
-  } catch {
-    return 0;
-  }
+  return calculateDischargeStayDays(admissionDate, dischargeDate) ?? 0;
 };
 
 export const buildIEEHFileName = (patientName: string | undefined): string => {

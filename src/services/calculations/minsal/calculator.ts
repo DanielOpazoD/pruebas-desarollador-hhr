@@ -5,7 +5,7 @@ import { MinsalStatistics, SpecialtyStats, PatientTraceability } from '@/types/m
 import { normalizeSpecialty, isFachEvacuationMethod } from './normalization';
 import { countOccupiedBeds, countBlockedBeds, calculateDailySnapshot } from './snapshot';
 import { getPatientsBySpecialty } from './specialty';
-import { calculateHospitalizedDays } from '@/utils/dateUtils';
+import { calculateDischargeStayDays } from '@/utils/dateUtils';
 import { createEpisodeAdmissionTracker } from './episodeTracker';
 import type { MinsalDailyRecord } from './minsalRecordContracts';
 import { normalizeMovementReportingSnapshot } from './movementCompatibility';
@@ -45,6 +45,9 @@ const buildStaySummary = (durations: number[]): StaySummary => {
     maximum: Math.max(...durations),
   };
 };
+
+const sumStayDurations = (durations: number[]): number =>
+  durations.reduce((total, duration) => total + duration, 0);
 
 /**
  * Filter records by date range
@@ -176,7 +179,7 @@ export function calculateMinsalStats(
       existing.egresos++;
 
       const resolvedAdmissionDate = resolveMovementAdmissionDate(discharge, episodeTracker);
-      const stayDays = calculateHospitalizedDays(resolvedAdmissionDate, record.date);
+      const stayDays = calculateDischargeStayDays(resolvedAdmissionDate, record.date);
       if (stayDays !== null) {
         existing.stayDurations.push(stayDays);
         totalStayDurations.push(stayDays);
@@ -210,7 +213,7 @@ export function calculateMinsalStats(
       existing.traslados++;
 
       const resolvedAdmissionDate = resolveMovementAdmissionDate(transfer, episodeTracker);
-      const stayDays = calculateHospitalizedDays(resolvedAdmissionDate, record.date);
+      const stayDays = calculateDischargeStayDays(resolvedAdmissionDate, record.date);
       if (stayDays !== null) {
         existing.stayDurations.push(stayDays);
         totalStayDurations.push(stayDays);
@@ -248,7 +251,9 @@ export function calculateMinsalStats(
   const egresosTotal = totalEgresosVivos + totalEgresosFallecidos + totalEgresosTraslados;
   const tasaOcupacion =
     totalDiasCamaDisponibles > 0 ? (totalDiasCamaOcupados / totalDiasCamaDisponibles) * 100 : 0;
-  const promedioDiasEstada = egresosTotal > 0 ? totalDiasCamaOcupados / egresosTotal : 0;
+  const totalStayDays = sumStayDurations(totalStayDurations);
+  const promedioDiasEstada =
+    totalStayDurations.length > 0 ? totalStayDays / totalStayDurations.length : 0;
   const mortalidadHospitalaria =
     egresosTotal > 0 ? (totalEgresosFallecidos / egresosTotal) * 100 : 0;
 
@@ -273,6 +278,7 @@ export function calculateMinsalStats(
   const porEspecialidad: SpecialtyStats[] = Array.from(specialtyData.entries())
     .map(([specialty, data]) => {
       const egresosEspecialidad = data.egresos + data.traslados;
+      const specialtyStayDays = sumStayDurations(data.stayDurations);
       const staySummary = buildStaySummary(data.stayDurations);
       return {
         specialty: specialty as Specialty,
@@ -287,7 +293,8 @@ export function calculateMinsalStats(
         traslados: data.traslados || 0,
         aerocardal: data.aerocardal || 0,
         fach: data.fach || 0,
-        promedioDiasEstada: egresosEspecialidad > 0 ? data.diasOcupados / egresosEspecialidad : 0,
+        promedioDiasEstada:
+          data.stayDurations.length > 0 ? specialtyStayDays / data.stayDurations.length : 0,
         promedioDiasEstadaMinima: staySummary.minimum,
         promedioDiasEstadaMaxima: staySummary.maximum,
         diasOcupadosList: data.diasOcupadosList,
@@ -308,7 +315,7 @@ export function calculateMinsalStats(
     diasCamaDisponibles: totalDiasCamaDisponibles,
     diasCamaOcupados: totalDiasCamaOcupados,
     tasaOcupacion: Math.round(tasaOcupacion * 10) / 10,
-    promedioDiasEstada: Math.round(promedioDiasEstada * 10) / 10,
+    promedioDiasEstada,
     promedioDiasEstadaMinima: totalStaySummary.minimum,
     promedioDiasEstadaMaxima: totalStaySummary.maximum,
     egresosTotal,

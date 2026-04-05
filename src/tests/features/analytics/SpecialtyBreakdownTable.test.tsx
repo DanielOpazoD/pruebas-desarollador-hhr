@@ -72,7 +72,8 @@ describe('SpecialtyBreakdownTable', () => {
 
     expect(screen.getByText('Días-cama del período')).toBeInTheDocument();
     expect(screen.queryByText('Pacientes (Días-Cama del período)')).not.toBeInTheDocument();
-    expect(screen.getByText('Rango estada')).toBeInTheDocument();
+    expect(screen.getByText('Estada media de egresos')).toBeInTheDocument();
+    expect(screen.getByText('Rango estada egresos')).toBeInTheDocument();
     expect(screen.getByText('Total')).toBeInTheDocument();
   });
 
@@ -139,19 +140,19 @@ describe('SpecialtyBreakdownTable', () => {
             diasOcupados: 10,
             contribucionRelativa: 50,
             tasaMortalidad: 0,
-            promedioDiasEstada: 10,
-            promedioDiasEstadaMinima: 4,
-            promedioDiasEstadaMaxima: 10,
+            promedioDiasEstada: 3,
+            promedioDiasEstadaMinima: 3,
+            promedioDiasEstadaMaxima: 3,
             diasOcupadosList: [],
             egresosList: [
               {
                 name: 'Paciente Rango',
                 rut: '22.222.222-2',
                 diagnosis: 'Apendicitis',
-                date: '2026-03-10',
+                date: '2026-01-26',
                 bedName: 'Cama 1',
-                admissionDate: '2026-03-01',
-                dischargeDate: '2026-03-10',
+                admissionDate: '2026-01-23',
+                dischargeDate: '2026-01-26',
               },
             ],
             trasladosList: [],
@@ -168,17 +169,61 @@ describe('SpecialtyBreakdownTable', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Ver casos de estada de Cirugía/ }));
 
-    expect(screen.getByText('Detalle: Estada - Cirugía')).toBeInTheDocument();
+    expect(screen.getByText('Detalle: Estada de egresos - Cirugía')).toBeInTheDocument();
     expect(screen.getByText('Ingreso')).toBeInTheDocument();
     expect(screen.getByText('Egreso')).toBeInTheDocument();
     expect(screen.getByText('Días estada')).toBeInTheDocument();
-    expect(screen.getByText('01-03-2026')).toBeInTheDocument();
-    expect(screen.getByText('10-03-2026')).toBeInTheDocument();
+    expect(screen.getByText('23-01-2026')).toBeInTheDocument();
+    expect(screen.getByText('26-01-2026')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
     expect(screen.getByText('Mínimo')).toBeInTheDocument();
     expect(screen.getByText('Máximo')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Abrir censo' }));
 
-    expect(onOpenCensusDate).toHaveBeenCalledWith('2026-03-01');
+    expect(onOpenCensusDate).toHaveBeenCalledWith('2026-01-23');
+  });
+
+  it('falls back to resolved discharge stays when summary is not provided', () => {
+    render(
+      <SpecialtyBreakdownTable
+        data={[
+          {
+            specialty: 'Cirugía',
+            pacientesActuales: 0,
+            egresos: 1,
+            fallecidos: 0,
+            traslados: 0,
+            aerocardal: 0,
+            fach: 0,
+            diasOcupados: 4,
+            contribucionRelativa: 100,
+            tasaMortalidad: 0,
+            promedioDiasEstada: 4,
+            promedioDiasEstadaMinima: 4,
+            promedioDiasEstadaMaxima: 4,
+            diasOcupadosList: [],
+            egresosList: [
+              {
+                name: 'Paciente DEIS',
+                rut: '11.111.111-1',
+                diagnosis: 'Diagnóstico',
+                date: '2026-03-05',
+                bedName: 'Cama 1',
+                admissionDate: '2026-03-01',
+                dischargeDate: '2026-03-05',
+              },
+            ],
+            trasladosList: [],
+            aerocardalList: [],
+            fachList: [],
+            fallecidosList: [],
+          },
+        ]}
+        records={[]}
+      />
+    );
+
+    expect(screen.getAllByText('4.00 días')).toHaveLength(2);
   });
 });

@@ -86,7 +86,7 @@ export const MinsalKPICards: React.FC<MinsalKPICardsProps> = ({ stats }) => {
       {/* Promedio Días Estada */}
       <KPICard
         title={copy.periodStayTitle}
-        value={`${stats.promedioDiasEstada}d`}
+        value={`${stats.promedioDiasEstada.toFixed(2)}d`}
         subtitle={copy.periodStaySubtitle}
         icon={<Calendar className="w-5 h-5" />}
         color="green"

@@ -10,6 +10,7 @@ import {
   buildSpecialtyTraceability,
   SpecialtyTraceabilityType,
 } from '@/services/calculations/minsalStatsCalculator';
+import { calculateDischargeStayDays } from '@/utils/dateUtils';
 import { TraceabilityModal } from './TraceabilityModal';
 
 interface SpecialtyBreakdownTableProps {
@@ -21,6 +22,23 @@ interface SpecialtyBreakdownTableProps {
 
 const formatRange = (min?: number, max?: number): string =>
   min !== undefined && max !== undefined ? `${min.toFixed(1)} - ${max.toFixed(1)} días` : '—';
+
+const getStayDays = (
+  patient: import('@/types/minsalTypes').PatientTraceability | undefined
+): number | null => calculateDischargeStayDays(patient?.admissionDate, patient?.dischargeDate);
+
+const calculateStayAverageFromTraceability = (rows: SpecialtyStats[]): number => {
+  const stayDays = rows.flatMap(row =>
+    (row.egresosList ?? []).map(getStayDays).filter((value): value is number => value !== null)
+  );
+
+  if (stayDays.length === 0) {
+    return 0;
+  }
+
+  const totalStayDays = stayDays.reduce((sum, value) => sum + value, 0);
+  return totalStayDays / stayDays.length;
+};
 
 export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = ({
   data = [],
@@ -77,7 +95,7 @@ export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = (
         titleType = 'FACH';
         break;
       case 'estada':
-        titleType = 'Estada';
+        titleType = 'Estada de egresos';
         break;
     }
 
@@ -94,13 +112,11 @@ export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = (
   const totalTraslados = data.reduce((sum, row) => sum + (row.traslados ?? 0), 0);
   const totalAerocardal = data.reduce((sum, row) => sum + (row.aerocardal ?? 0), 0);
   const totalFach = data.reduce((sum, row) => sum + (row.fach ?? 0), 0);
-  const totalDiasOcupados = data.reduce((sum, row) => sum + (row.diasOcupados ?? 0), 0);
   const totalPacientesActuales =
     summary?.pacientesActuales ?? data.reduce((sum, row) => sum + (row.pacientesActuales ?? 0), 0);
   const totalEgresosConTraslados = totalEgresos + totalTraslados;
   const totalPromedioDiasEstada =
-    summary?.promedioDiasEstada ??
-    (totalEgresosConTraslados > 0 ? totalDiasOcupados / totalEgresosConTraslados : 0);
+    summary?.promedioDiasEstada ?? calculateStayAverageFromTraceability(data);
   const totalMortalidad =
     summary?.mortalidadHospitalaria ??
     (totalEgresosConTraslados > 0 ? (totalFallecidos / totalEgresosConTraslados) * 100 : 0);
@@ -140,10 +156,10 @@ export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = (
               Mortalidad del período
             </th>
             <th className="text-center px-4 py-3 font-semibold text-slate-700">
-              Estada media del período
+              Estada media de egresos
             </th>
             <th className="text-center px-4 py-3 font-semibold text-slate-700 rounded-tr-lg">
-              Rango estada
+              Rango estada egresos
             </th>
           </tr>
         </thead>
@@ -281,7 +297,7 @@ export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = (
                   </span>
                 </td>
                 <td className="px-4 py-3 text-center text-slate-600">
-                  {row.promedioDiasEstada.toFixed(1)} días
+                  {row.promedioDiasEstada.toFixed(2)} días
                 </td>
                 <td className="px-4 py-3 text-center text-slate-600">
                   <button
@@ -310,7 +326,7 @@ export const SpecialtyBreakdownTable: React.FC<SpecialtyBreakdownTableProps> = (
             <td className="px-4 py-3 text-center text-slate-800">100.0%</td>
             <td className="px-4 py-3 text-center text-slate-800">{totalMortalidad.toFixed(1)}%</td>
             <td className="px-4 py-3 text-center text-slate-800">
-              {totalPromedioDiasEstada.toFixed(1)} días
+              {totalPromedioDiasEstada.toFixed(2)} días
             </td>
             <td className="px-4 py-3 text-center text-slate-800">{totalRange}</td>
           </tr>

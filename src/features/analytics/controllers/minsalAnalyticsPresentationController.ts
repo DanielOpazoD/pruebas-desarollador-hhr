@@ -23,8 +23,8 @@ export interface AnalyticsPresentationCopy {
 export const DEFAULT_ANALYTICS_PRESENTATION_COPY: AnalyticsPresentationCopy = {
   periodOccupancyTitle: 'Ocupación del período',
   periodOccupancySubtitle: 'Promedio del rango seleccionado',
-  periodStayTitle: 'Estada media del período',
-  periodStaySubtitle: 'Promedio de hospitalización del rango',
+  periodStayTitle: 'Estada media de egresos',
+  periodStaySubtitle: 'Σ días de estada / egresos del rango',
   periodDischargesTitle: 'Egresos del período',
   periodDischargesSubtitle: 'Total acumulado del rango seleccionado',
   periodMortalityTitle: 'Mortalidad del período',
