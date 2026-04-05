@@ -204,7 +204,7 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
               >
                 {uniquePatients.map(p => (
                   <option key={p.bedId} value={p.rut}>
-                    {p.label} — {p.patientName} ({p.rut})
+                    {p.label} ({p.rut})
                   </option>
                 ))}
               </select>
@@ -350,7 +350,8 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
               </div>
             ) : (
               filteredExams.map((exam, index) => {
-                const isCR = (exam.mod || '').trim().toUpperCase() === 'CR';
+                const modUpper = (exam.mod || '').trim().toUpperCase();
+                const hideStatusBadge = modUpper === 'CR' || modUpper === 'US';
                 return (
                   <div
                     key={index}
@@ -371,7 +372,7 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
                         </div>
                       </div>
                       {/* Hide status badge for CR (always "por informar") */}
-                      {!isCR && exam.estado && (
+                      {!hideStatusBadge && exam.estado && (
                         <span
                           className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                             exam.estado.toLowerCase() === 'validado'
