@@ -1,3 +1,4 @@
+import { waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getDoc, onSnapshot, setDoc } from 'firebase/firestore';
 
@@ -179,7 +180,7 @@ describe('clinicalDocumentIndicationsCatalogService', () => {
     expect(catalog.specialties.tmt.items.length).toBeGreaterThan(0);
   });
 
-  it('falls back to default catalog when subscription receives empty or error states', () => {
+  it('falls back to default catalog when subscription receives empty or error states', async () => {
     const callback = vi.fn();
 
     vi.mocked(onSnapshot).mockImplementationOnce((...args: unknown[]) => {
@@ -192,11 +193,13 @@ describe('clinicalDocumentIndicationsCatalogService', () => {
     });
 
     subscribeToClinicalDocumentIndicationsCatalog(callback, 'hhr');
-    expect(callback).toHaveBeenCalledWith(
-      expect.objectContaining({
-        specialties: expect.any(Object),
-      })
-    );
+    await waitFor(() => {
+      expect(callback).toHaveBeenCalledWith(
+        expect.objectContaining({
+          specialties: expect.any(Object),
+        })
+      );
+    });
 
     vi.mocked(onSnapshot).mockImplementationOnce((...args: unknown[]) => {
       const onError = args[2] as (error: unknown) => void;
@@ -205,6 +208,8 @@ describe('clinicalDocumentIndicationsCatalogService', () => {
     });
 
     subscribeToClinicalDocumentIndicationsCatalog(callback, 'hhr');
-    expect(callback).toHaveBeenCalledTimes(2);
+    await waitFor(() => {
+      expect(callback).toHaveBeenCalledTimes(2);
+    });
   });
 });

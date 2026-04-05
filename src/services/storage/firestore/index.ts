@@ -15,6 +15,12 @@ export type {
   QueryConstraint,
   QueryOptions,
 } from '@/services/storage/firestore/firestoreDatabaseProvider';
+export {
+  readFirestoreDocument,
+  saveFirestoreDocument,
+  subscribeToFirestoreDocument,
+} from '@/services/storage/firestore/firestoreDocumentStore';
+export type { FirestoreDocumentRuntimePort } from '@/services/storage/firestore/firestoreDocumentStore';
 
 export {
   getAvailableDatesFromFirestore,

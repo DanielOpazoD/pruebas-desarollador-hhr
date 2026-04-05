@@ -39,6 +39,8 @@ Las fachadas `index.ts` y `legacyFirebaseService.ts` se mantienen solo como comp
 `storage/firestore` es el entrypoint remoto soportado.
 La construcción de rangos mensuales y helpers de escritura sigue viviendo en
 `firestore/firestoreQuerySupport.ts` y `firestore/firestoreWriteSupport.ts`.
+Los flujos de documento único deben preferir `firestore/firestoreDocumentStore.ts`
+para centralizar `runtime.ready`, `getDoc/setDoc` y preparación de suscripciones.
 `storage/sync` es la fuente soportada para telemetría (`getSyncQueueTelemetry()`), stats (`getSyncQueueStats()`) y operaciones recientes (`listRecentSyncQueueOperations()`).
 La fachada pública vive en `sync/publicSyncQueue.ts`.
 El outbox ahora se arma sobre un engine con puertos (`sync/syncQueueEngine.ts`, `sync/syncQueuePorts.ts`) para separar runtime navegador, store Dexie y transporte Firestore.

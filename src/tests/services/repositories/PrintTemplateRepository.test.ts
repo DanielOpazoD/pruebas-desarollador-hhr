@@ -1,3 +1,4 @@
+import { waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const getDocMock = vi.fn();
@@ -62,7 +63,7 @@ describe('PrintTemplateRepository', () => {
     );
   });
 
-  it('falls back to null on subscription error', () => {
+  it('falls back to null on subscription error', async () => {
     const callback = vi.fn();
     const unsubscribe = vi.fn();
     onSnapshotMock.mockImplementation((_ref, _next, errorHandler) => {
@@ -72,8 +73,11 @@ describe('PrintTemplateRepository', () => {
 
     const result = PrintTemplateRepository.subscribe('handoff-lite', callback);
 
-    expect(callback).toHaveBeenCalledWith(null);
-    expect(result).toBe(unsubscribe);
+    await waitFor(() => {
+      expect(callback).toHaveBeenCalledWith(null);
+    });
+    result();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
 
   it('supports injected runtime for template persistence', async () => {

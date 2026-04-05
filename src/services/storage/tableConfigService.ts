@@ -3,10 +3,15 @@
  * Manages table column widths with Firebase sync and export/import
  */
 
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { SETTINGS_DOCS, getSettingsDocPath } from '@/constants/firestorePaths';
 import { defaultFirestoreServiceRuntime } from '@/services/storage/firestore/firestoreServiceRuntime';
 import type { FirestoreServiceRuntimePort } from '@/services/storage/firestore/ports/firestoreServiceRuntimePort';
+import {
+  readFirestoreDocument,
+  saveFirestoreDocument,
+  subscribeToFirestoreDocument,
+} from '@/services/storage/firestore/firestoreDocumentStore';
 import { safeJsonParse } from '@/utils/jsonUtils';
 import { tableConfigLogger } from '@/services/storage/storageLoggers';
 
@@ -99,10 +104,9 @@ export const createTableConfigService = (
   async load(): Promise<TableConfig> {
     if (!firestoreEnabled) return getDefaultConfig();
     try {
-      await runtime.ready;
-      const docSnap = await getDoc(getDocRef(runtime));
-      if (docSnap.exists()) {
-        return mergeWithDefaultConfig(docSnap.data() as TableConfig);
+      const config = await readFirestoreDocument(runtime, getDocRef);
+      if (config) {
+        return mergeWithDefaultConfig(config as Partial<TableConfig>);
       }
       return getDefaultConfig();
     } catch (_error) {
@@ -113,8 +117,7 @@ export const createTableConfigService = (
   async save(config: TableConfig): Promise<void> {
     if (!firestoreEnabled) return;
     try {
-      await runtime.ready;
-      await setDoc(getDocRef(runtime), {
+      await saveFirestoreDocument(runtime, getDocRef, {
         ...config,
         lastUpdated: new Date().toISOString(),
       });
@@ -128,39 +131,19 @@ export const createTableConfigService = (
       callback(getDefaultConfig());
       return () => {};
     }
-    let active = true;
-    let unsubscribeSnapshot = () => {};
-
-    void runtime.ready
-      .then(() => {
-        if (!active) {
-          return;
-        }
-
-        unsubscribeSnapshot = onSnapshot(
-          getDocRef(runtime),
-          docSnap => {
-            if (docSnap.exists()) {
-              callback(mergeWithDefaultConfig(docSnap.data() as TableConfig));
-            } else {
-              callback(getDefaultConfig());
-            }
-          },
-          error => {
-            tableConfigLogger.error('Error subscribing to table config', error);
-            callback(getDefaultConfig());
-          }
+    return subscribeToFirestoreDocument({
+      runtime,
+      resolveRef: getDocRef,
+      onData: config => {
+        callback(
+          config ? mergeWithDefaultConfig(config as Partial<TableConfig>) : getDefaultConfig()
         );
-      })
-      .catch(error => {
+      },
+      onError: error => {
         tableConfigLogger.error('Error preparing table config subscription', error);
         callback(getDefaultConfig());
-      });
-
-    return () => {
-      active = false;
-      unsubscribeSnapshot();
-    };
+      },
+    });
   },
 });
 

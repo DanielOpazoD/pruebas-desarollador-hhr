@@ -1,4 +1,4 @@
-import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import type { ProfessionalCatalogItem } from '@/types/domain/professionals';
 import { withRetry } from '@/utils/networkUtils';
 import {
@@ -12,11 +12,16 @@ import { readStringCatalogFromSnapshot } from '@/services/storage/firestore/fire
 import { defaultFirestoreServiceRuntime } from '@/services/storage/firestore/firestoreServiceRuntime';
 import type { FirestoreServiceRuntimePort } from '@/services/storage/firestore/ports/firestoreServiceRuntimePort';
 import {
+  readFirestoreDocument,
+  saveFirestoreDocument,
+  subscribeToFirestoreDocument,
+} from '@/services/storage/firestore/firestoreDocumentStore';
+import {
   normalizeProfessionalCatalog,
   normalizeStringCatalog,
 } from '@/services/repositories/contracts/catalogContracts';
 
-const getSettingsDocRef = (docId: string, runtime: FirestoreServiceRuntimePort) =>
+const getSettingsDocRef = (docId: string, runtime: Pick<FirestoreServiceRuntimePort, 'getDb'>) =>
   doc(
     runtime.getDb(),
     COLLECTIONS.HOSPITALS,
@@ -25,8 +30,13 @@ const getSettingsDocRef = (docId: string, runtime: FirestoreServiceRuntimePort) 
     docId
   );
 
-const getProfessionalsCatalogDocRef = (runtime: FirestoreServiceRuntimePort) =>
+const getProfessionalsCatalogDocRef = (runtime: Pick<FirestoreServiceRuntimePort, 'getDb'>) =>
   getSettingsDocRef('professionals_catalog', runtime);
+
+const toSnapshotLike = (catalog: unknown) => ({
+  exists: () => Boolean(catalog),
+  data: () => (catalog as Record<string, unknown> | undefined) ?? undefined,
+});
 
 const saveStringCatalog = async (
   docId: typeof SETTINGS_DOCS.NURSES | typeof SETTINGS_DOCS.TENS,
@@ -35,10 +45,8 @@ const saveStringCatalog = async (
   runtime: FirestoreServiceRuntimePort
 ): Promise<void> => {
   const normalizedValues = normalizeStringCatalog(values);
-  await runtime.ready;
-  const docRef = getSettingsDocRef(docId, runtime);
   await withRetry(() =>
-    setDoc(docRef, {
+    saveFirestoreDocument(runtime, activeRuntime => getSettingsDocRef(docId, activeRuntime), {
       list: normalizedValues,
       [key]: normalizedValues,
       lastUpdated: new Date().toISOString(),
@@ -53,45 +61,29 @@ const subscribeStringCatalog = (
   errorLabel: string,
   runtime: FirestoreServiceRuntimePort
 ): (() => void) => {
-  let active = true;
-  let unsubscribeSnapshot = () => {};
-
-  void runtime.ready
-    .then(() => {
-      if (!active) {
+  return subscribeToFirestoreDocument({
+    runtime,
+    resolveRef: activeRuntime => getSettingsDocRef(docId, activeRuntime),
+    onData: catalog => {
+      if (!catalog) {
+        callback([]);
         return;
       }
 
-      const docRef = getSettingsDocRef(docId, runtime);
-      unsubscribeSnapshot = onSnapshot(
-        docRef,
-        docSnap => {
-          if (docSnap.exists()) {
-            const values = readStringCatalogFromSnapshot(
-              docSnap as unknown as {
-                exists: () => boolean;
-                data: () => Record<string, unknown> | undefined;
-              },
-              legacyField
-            );
-            callback(values);
-          }
+      const values = readStringCatalogFromSnapshot(
+        {
+          exists: () => true,
+          data: () => catalog as Record<string, unknown>,
         },
-        error => {
-          firestoreCatalogLogger.error(`Error subscribing to ${errorLabel}`, error);
-          callback([]);
-        }
+        legacyField
       );
-    })
-    .catch(error => {
+      callback(values);
+    },
+    onError: error => {
       firestoreCatalogLogger.error(`Error preparing ${errorLabel} subscription`, error);
       callback([]);
-    });
-
-  return () => {
-    active = false;
-    unsubscribeSnapshot();
-  };
+    },
+  });
 };
 
 const getStringCatalog = async (
@@ -101,16 +93,11 @@ const getStringCatalog = async (
   runtime: FirestoreServiceRuntimePort
 ): Promise<string[]> => {
   try {
-    await runtime.ready;
-    const docRef = getSettingsDocRef(docId, runtime);
-    const docSnap = await getDoc(docRef);
-    return readStringCatalogFromSnapshot(
-      docSnap as unknown as {
-        exists: () => boolean;
-        data: () => Record<string, unknown> | undefined;
-      },
-      legacyField
+    const catalog: Record<string, unknown> | null = await readFirestoreDocument(
+      runtime,
+      activeRuntime => getSettingsDocRef(docId, activeRuntime)
     );
+    return readStringCatalogFromSnapshot(toSnapshotLike(catalog), legacyField);
   } catch (error) {
     firestoreCatalogLogger.error(`Error fetching ${errorLabel} from Firestore`, error);
     return [];
@@ -121,11 +108,12 @@ const getProfessionalsCatalog = async (
   runtime: FirestoreServiceRuntimePort
 ): Promise<ProfessionalCatalogItem[]> => {
   try {
-    await runtime.ready;
-    const docSnap = await getDoc(getProfessionalsCatalogDocRef(runtime));
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      return normalizeProfessionalCatalog(data.list);
+    const catalog: { list?: unknown } | null = await readFirestoreDocument(
+      runtime,
+      getProfessionalsCatalogDocRef
+    );
+    if (catalog) {
+      return normalizeProfessionalCatalog(catalog.list);
     }
     return [];
   } catch (error) {
@@ -139,9 +127,8 @@ const saveProfessionalsCatalog = async (
   runtime: FirestoreServiceRuntimePort
 ): Promise<void> => {
   const normalized = normalizeProfessionalCatalog(professionals);
-  await runtime.ready;
   await withRetry(() =>
-    setDoc(getProfessionalsCatalogDocRef(runtime), {
+    saveFirestoreDocument(runtime, getProfessionalsCatalogDocRef, {
       list: normalized,
       lastUpdated: new Date().toISOString(),
     })
@@ -152,39 +139,17 @@ const subscribeToProfessionalsCatalogWithRuntime = (
   callback: (professionals: ProfessionalCatalogItem[]) => void,
   runtime: FirestoreServiceRuntimePort
 ): (() => void) => {
-  let active = true;
-  let unsubscribeSnapshot = () => {};
-
-  void runtime.ready
-    .then(() => {
-      if (!active) {
-        return;
-      }
-
-      unsubscribeSnapshot = onSnapshot(
-        getProfessionalsCatalogDocRef(runtime),
-        docSnap => {
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            const professionals = normalizeProfessionalCatalog(data.list);
-            callback(professionals);
-          }
-        },
-        error => {
-          firestoreCatalogLogger.error('Error subscribing to professionals catalog', error);
-          callback([]);
-        }
-      );
-    })
-    .catch(error => {
+  return subscribeToFirestoreDocument({
+    runtime,
+    resolveRef: getProfessionalsCatalogDocRef,
+    onData: catalog => {
+      callback(catalog ? normalizeProfessionalCatalog((catalog as { list?: unknown }).list) : []);
+    },
+    onError: error => {
       firestoreCatalogLogger.error('Error preparing professionals catalog subscription', error);
       callback([]);
-    });
-
-  return () => {
-    active = false;
-    unsubscribeSnapshot();
-  };
+    },
+  });
 };
 
 export const getNurseCatalogFromFirestore = async (): Promise<string[]> =>
