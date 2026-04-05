@@ -22,12 +22,12 @@ export const DEFAULT_HOSPITAL_FLOOR_LAYOUT: Record<string, SavedBedTransform> = 
   H3C1: { x: 2.5, z: 4.9, rotation: 0 },
   H3C2: { x: 4.2, z: 4.9, rotation: 0 },
 
-  H4C1: { x: -4.2, z: -0.5, rotation: 0 },
-  H4C2: { x: -2.5, z: -0.5, rotation: 0 },
-  H5C1: { x: -4.2, z: 2.2, rotation: 0 },
-  H5C2: { x: -2.5, z: 2.2, rotation: 0 },
-  H6C1: { x: -4.2, z: 4.9, rotation: 0 },
-  H6C2: { x: -2.5, z: 4.9, rotation: 0 },
+  H6C2: { x: -4.2, z: -0.5, rotation: 0 },
+  H6C1: { x: -2.5, z: -0.5, rotation: 0 },
+  H5C2: { x: -4.2, z: 2.2, rotation: 0 },
+  H5C1: { x: -2.5, z: 2.2, rotation: 0 },
+  H4C2: { x: -4.2, z: 4.9, rotation: 0 },
+  H4C1: { x: -2.5, z: 4.9, rotation: 0 },
 };
 
 const DEFAULT_BED_COLUMNS = 4;

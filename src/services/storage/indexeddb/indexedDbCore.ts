@@ -20,6 +20,14 @@ import {
   recordIndexedDbRecoveryFailure,
 } from './indexedDbRecoveryController';
 import {
+  isDatabaseClosedError,
+  resolveIndexedDbErrorDetails,
+  resolveIndexedDbRecoveryDelay,
+  shouldAttemptIndexedDbRecreation,
+  sleep,
+  waitForIndexedDbOpenResolution,
+} from './indexedDbCoreSupport';
+import {
   INDEXED_DB_DELETE_TIMEOUT_MS,
   INDEXED_DB_OPEN_TIMEOUT_MS,
   INDEXED_DB_RECOVERY_RETRY_DELAYS_MS,
@@ -112,6 +120,13 @@ const assignMockTables = (mock: IndexedDbDatabaseLike) => {
   db.syncQueue = mock.syncQueue;
 };
 
+const resetIndexedDbRecoveryTracking = () => {
+  stickyFallbackMode = false;
+  stickyFallbackWarningShown = false;
+  backgroundRecoveryAttempts = 0;
+  emittedIndexedDbWarnings.clear();
+};
+
 const scheduleBackgroundRecoveryRetry = () => {
   if (recoveryRetryTimer || typeof window === 'undefined') return;
 
@@ -150,10 +165,10 @@ const scheduleBackgroundRecoveryRetry = () => {
   }
 
   backgroundRecoveryAttempts++;
-  const scheduledDelayMs =
-    INDEXED_DB_RECOVERY_RETRY_DELAYS_MS[
-      Math.min(backgroundRecoveryAttempts - 1, INDEXED_DB_RECOVERY_RETRY_DELAYS_MS.length - 1)
-    ];
+  const scheduledDelayMs = resolveIndexedDbRecoveryDelay(
+    backgroundRecoveryAttempts,
+    INDEXED_DB_RECOVERY_RETRY_DELAYS_MS
+  );
   recoveryRetryTimer = setTimeout(() => {
     recoveryRetryTimer = null;
     void ensureDbReady({ allowRecoveryWhenMock: true });
@@ -213,6 +228,7 @@ export const ensureDbReady = async (options: EnsureDbReadyOptions = {}): Promise
       db = new HangaRoaDatabase();
       attachDatabaseEvents(db);
       isUsingMock = false;
+      resetIndexedDbRecoveryTracking();
     } catch (error) {
       recordIndexedDbRecoveryFailure(error);
       isUsingMock = true;
@@ -226,11 +242,7 @@ export const ensureDbReady = async (options: EnsureDbReadyOptions = {}): Promise
       await db.settings.get('__health_check__');
       return;
     } catch (error: unknown) {
-      if (
-        error &&
-        typeof error === 'object' &&
-        (error as { name?: string }).name === 'DatabaseClosedError'
-      ) {
+      if (isDatabaseClosedError(error)) {
         recordIndexedDbRecoveryNotice(
           'indexeddb_database_closed',
           'Se detecto cierre inesperado de IndexedDB; se intentara reabrir.',
@@ -244,13 +256,15 @@ export const ensureDbReady = async (options: EnsureDbReadyOptions = {}): Promise
   }
 
   if (isOpening) {
-    let attempts = 0;
-    while (isOpening && attempts < 50) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      attempts++;
-      if (db.isOpen() || isUsingMock) return;
+    const waitOutcome = await waitForIndexedDbOpenResolution({
+      isOpening: () => isOpening,
+      isDbOpen: () => db.isOpen(),
+      isUsingMock: () => isUsingMock,
+    });
+    if (waitOutcome === 'opened' || waitOutcome === 'mock') {
+      return;
     }
-    if (isOpening) {
+    if (waitOutcome === 'stalled') {
       recordIndexedDbRecoveryNotice(
         'indexeddb_open_stalled',
         'La apertura de IndexedDB excedio el tiempo esperado; se activo fallback.',
@@ -274,7 +288,7 @@ export const ensureDbReady = async (options: EnsureDbReadyOptions = {}): Promise
         break;
       } catch (attemptError) {
         openError = attemptError;
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        await sleep(retryDelay);
       }
     }
 
@@ -282,17 +296,9 @@ export const ensureDbReady = async (options: EnsureDbReadyOptions = {}): Promise
       throw openError || new Error('IndexedDB open failed');
     }
 
-    stickyFallbackMode = false;
-    stickyFallbackWarningShown = false;
-    backgroundRecoveryAttempts = 0;
-    emittedIndexedDbWarnings.clear();
+    resetIndexedDbRecoveryTracking();
   } catch (error: unknown) {
-    const errorName =
-      error && typeof error === 'object' && 'name' in error ? String(error.name) : 'Unknown';
-    const errorMessage =
-      error && typeof error === 'object' && 'message' in error
-        ? String(error.message)
-        : String(error);
+    const { errorName, errorMessage } = resolveIndexedDbErrorDetails(error);
 
     recordIndexedDbRecoveryNotice(
       'indexeddb_initial_open_failed',
@@ -306,7 +312,7 @@ export const ensureDbReady = async (options: EnsureDbReadyOptions = {}): Promise
 
     const isBackingStoreError = isIndexedDbBackingStoreError(error);
 
-    if ((errorName === 'UnknownError' || errorName === 'VersionError') && !isBackingStoreError) {
+    if (shouldAttemptIndexedDbRecreation(errorName, isBackingStoreError)) {
       try {
         db.close();
 
@@ -322,10 +328,7 @@ export const ensureDbReady = async (options: EnsureDbReadyOptions = {}): Promise
         await tryOpenWithTimeout();
 
         isUsingMock = false;
-        stickyFallbackMode = false;
-        stickyFallbackWarningShown = false;
-        backgroundRecoveryAttempts = 0;
-        emittedIndexedDbWarnings.clear();
+        resetIndexedDbRecoveryTracking();
         onDatabaseRecreated?.();
         return;
       } catch (recoveryError) {

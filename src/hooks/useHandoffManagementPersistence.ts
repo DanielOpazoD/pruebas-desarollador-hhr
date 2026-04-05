@@ -7,6 +7,7 @@ import type {
 } from '@/hooks/contracts/dailyRecordHookContracts';
 import type { AuditAction, AuditLogEntry } from '@/types/audit';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
+import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 import type { ConfirmMedicalSpecialtyNoChangesInput } from '@/hooks/handoffManagementTypes';
 import {
   executeConfirmMedicalSpecialtyNoChanges,
@@ -17,6 +18,8 @@ import {
   executeUpdateMedicalHandoffDoctor,
   executeUpdateMedicalSignature,
   executeUpdateMedicalSpecialtyNote,
+  type ConfirmMedicalSpecialtyNoChangesOutput,
+  type PersistedHandoffRecordOutput,
 } from '@/application/handoff';
 import {
   buildHandoffNovedadesAuditEvent,
@@ -26,7 +29,7 @@ import {
   buildMedicalSpecialtyAuditEvent,
   buildResetMedicalHandoffAuditEvent,
 } from '@/hooks/controllers/handoffManagementPersistenceController';
-import { presentHandoffManagementFailure } from '@/hooks/controllers/handoffManagementOutcomeController';
+import { runHandoffMutation } from '@/hooks/controllers/handoffManagementMutationController';
 import { canEditMedicalHandoffForDate } from '@/shared/access/operationalAccessPolicy';
 
 interface HandoffManagementPersistenceInput {
@@ -55,6 +58,12 @@ interface HandoffManagementPersistenceInput {
   notifyError: (title: string, message: string) => void;
 }
 
+interface MutationFailureOptions {
+  fallbackMessage: string;
+  fallbackTitle: string;
+  reasonTitles?: Partial<Record<string, string>>;
+}
+
 export const useHandoffManagementPersistence = ({
   recordRef,
   role,
@@ -65,6 +74,7 @@ export const useHandoffManagementPersistence = ({
   notifyError,
 }: HandoffManagementPersistenceInput) => {
   const getCurrentRecord = useCallback(() => recordRef.current, [recordRef]);
+
   const canMutateCurrentMedicalRecord = useCallback(
     () =>
       canEditMedicalHandoffForDate({
@@ -82,63 +92,76 @@ export const useHandoffManagementPersistence = ({
     );
   }, [notifyError]);
 
+  const runMutation = useCallback(
+    async <TData>(
+      execute: (record: DailyRecord | null) => Promise<ApplicationOutcome<TData | null>>,
+      failureOptions: MutationFailureOptions,
+      onSuccess?: (context: { currentRecord: DailyRecord; data: TData }) => void | Promise<void>
+    ) =>
+      runHandoffMutation<TData>({
+        execute,
+        getCurrentRecord,
+        notifyError,
+        failureOptions,
+        onSuccess: onSuccess
+          ? async ({ currentRecord, data }) => {
+              await onSuccess({ currentRecord, data });
+            }
+          : undefined,
+      }),
+    [getCurrentRecord, notifyError]
+  );
+
   const updateHandoffChecklist = useCallback(
     (shift: 'day' | 'night', field: string, value: boolean | string) => {
-      void (async () => {
-        const outcome = await executeUpdateHandoffChecklist({
-          field,
-          record: getCurrentRecord(),
-          saveRecord: saveAndUpdate,
-          shift,
-          value,
-        });
-        if (outcome.status === 'failed' && outcome.reason !== 'missing_record') {
-          const notice = presentHandoffManagementFailure(outcome, {
-            fallbackMessage: 'No se pudo actualizar el checklist de entrega.',
-            fallbackTitle: 'Error al guardar',
-          });
-          notifyError(notice.title, notice.message);
+      void runMutation<PersistedHandoffRecordOutput>(
+        record =>
+          executeUpdateHandoffChecklist({
+            field,
+            record,
+            saveRecord: saveAndUpdate,
+            shift,
+            value,
+          }),
+        {
+          fallbackMessage: 'No se pudo actualizar el checklist de entrega.',
+          fallbackTitle: 'Error al guardar',
         }
-      })();
+      );
     },
-    [getCurrentRecord, notifyError, saveAndUpdate]
+    [runMutation, saveAndUpdate]
   );
 
   const updateHandoffNovedades = useCallback(
     (shift: 'day' | 'night' | 'medical', value: string) => {
-      const currentRecord = getCurrentRecord();
-      void (async () => {
-        const outcome = await executeUpdateHandoffNovedades({
-          record: currentRecord,
-          saveRecord: saveAndUpdate,
-          shift,
-          value,
-        });
-        if (outcome.status === 'failed' || !currentRecord) {
-          if (outcome.reason !== 'missing_record') {
-            const notice = presentHandoffManagementFailure(outcome, {
-              fallbackMessage: 'No se pudo actualizar las novedades.',
-              fallbackTitle: 'Error al guardar',
-            });
-            notifyError(notice.title, notice.message);
-          }
-          return;
+      void runMutation<PersistedHandoffRecordOutput>(
+        record =>
+          executeUpdateHandoffNovedades({
+            record,
+            saveRecord: saveAndUpdate,
+            shift,
+            value,
+          }),
+        {
+          fallbackMessage: 'No se pudo actualizar las novedades.',
+          fallbackTitle: 'Error al guardar',
+        },
+        ({ currentRecord }) => {
+          const auditEvent = buildHandoffNovedadesAuditEvent(currentRecord, shift, value, userId);
+
+          logDebouncedEvent(
+            auditEvent.action,
+            auditEvent.entityType,
+            auditEvent.entityId,
+            auditEvent.details,
+            undefined,
+            auditEvent.recordDate,
+            auditEvent.authors
+          );
         }
-
-        const auditEvent = buildHandoffNovedadesAuditEvent(currentRecord, shift, value, userId);
-
-        logDebouncedEvent(
-          auditEvent.action,
-          auditEvent.entityType,
-          auditEvent.entityId,
-          auditEvent.details,
-          undefined,
-          auditEvent.recordDate,
-          auditEvent.authors
-        );
-      })();
+      );
     },
-    [getCurrentRecord, logDebouncedEvent, notifyError, saveAndUpdate, userId]
+    [logDebouncedEvent, runMutation, saveAndUpdate, userId]
   );
 
   const updateMedicalSpecialtyNote = useCallback(
@@ -148,41 +171,38 @@ export const useHandoffManagementPersistence = ({
         return;
       }
 
-      const currentRecord = getCurrentRecord();
-      const outcome = await executeUpdateMedicalSpecialtyNote({
-        actor,
-        record: currentRecord,
-        saveRecord: saveAndUpdate,
-        specialty,
-        value,
-      });
-      if (outcome.status === 'failed' || !currentRecord) {
-        if (outcome.reason !== 'missing_record') {
-          const notice = presentHandoffManagementFailure(outcome, {
-            fallbackMessage: 'No se pudo actualizar la nota médica.',
-            fallbackTitle: 'Error al guardar',
-          });
-          notifyError(notice.title, notice.message);
-        }
-        return;
-      }
-      const auditEvent = buildMedicalSpecialtyAuditEvent(currentRecord, specialty, value);
+      await runMutation<PersistedHandoffRecordOutput>(
+        record =>
+          executeUpdateMedicalSpecialtyNote({
+            actor,
+            record,
+            saveRecord: saveAndUpdate,
+            specialty,
+            value,
+          }),
+        {
+          fallbackMessage: 'No se pudo actualizar la nota médica.',
+          fallbackTitle: 'Error al guardar',
+        },
+        ({ currentRecord }) => {
+          const auditEvent = buildMedicalSpecialtyAuditEvent(currentRecord, specialty, value);
 
-      logDebouncedEvent(
-        auditEvent.action,
-        auditEvent.entityType,
-        auditEvent.entityId,
-        auditEvent.details,
-        undefined,
-        auditEvent.recordDate
+          logDebouncedEvent(
+            auditEvent.action,
+            auditEvent.entityType,
+            auditEvent.entityId,
+            auditEvent.details,
+            undefined,
+            auditEvent.recordDate
+          );
+        }
       );
     },
     [
       canMutateCurrentMedicalRecord,
-      getCurrentRecord,
       logDebouncedEvent,
-      notifyError,
       presentSpecialistHistoricalEditError,
+      runMutation,
       saveAndUpdate,
     ]
   );
@@ -194,116 +214,108 @@ export const useHandoffManagementPersistence = ({
         return;
       }
 
-      const currentRecord = getCurrentRecord();
-      const outcome = await executeConfirmMedicalSpecialtyNoChanges({
-        actor,
-        comment,
-        dateKey,
-        record: currentRecord,
-        saveRecord: saveAndUpdate,
-        specialty,
-      });
-      if (outcome.status === 'failed' || !currentRecord || !outcome.data) {
-        if (outcome.reason !== 'missing_record') {
-          const notice = presentHandoffManagementFailure(outcome, {
-            fallbackMessage: 'No se pudo confirmar continuidad de la especialidad.',
-            fallbackTitle: 'Error al guardar',
-            reasonTitles: {
-              missing_base_note: 'Sin nota base',
-              already_updated_today: 'Ya actualizado hoy',
-            },
-          });
-          notifyError(notice.title, notice.message);
+      await runMutation<ConfirmMedicalSpecialtyNoChangesOutput>(
+        record =>
+          executeConfirmMedicalSpecialtyNoChanges({
+            actor,
+            comment,
+            dateKey,
+            record,
+            saveRecord: saveAndUpdate,
+            specialty,
+          }),
+        {
+          fallbackMessage: 'No se pudo confirmar continuidad de la especialidad.',
+          fallbackTitle: 'Error al guardar',
+          reasonTitles: {
+            missing_base_note: 'Sin nota base',
+            already_updated_today: 'Ya actualizado hoy',
+          },
+        },
+        ({ currentRecord, data }) => {
+          const auditDetails = buildMedicalNoChangesAuditPayload(
+            data.updatedRecord,
+            specialty,
+            actor,
+            data.effectiveDateKey,
+            data.confirmedAt
+          );
+          const auditEvent = buildMedicalNoChangesAuditEvent(currentRecord, auditDetails);
+
+          logEvent(
+            auditEvent.action,
+            auditEvent.entityType,
+            auditEvent.entityId,
+            auditEvent.details,
+            undefined,
+            auditEvent.recordDate
+          );
         }
-        return;
-      }
-
-      const auditDetails = buildMedicalNoChangesAuditPayload(
-        outcome.data.updatedRecord,
-        specialty,
-        actor,
-        outcome.data.effectiveDateKey,
-        outcome.data.confirmedAt
-      );
-      const auditEvent = buildMedicalNoChangesAuditEvent(currentRecord, auditDetails);
-
-      logEvent(
-        auditEvent.action,
-        auditEvent.entityType,
-        auditEvent.entityId,
-        auditEvent.details,
-        undefined,
-        auditEvent.recordDate
       );
     },
     [
       canMutateCurrentMedicalRecord,
-      getCurrentRecord,
       logEvent,
-      notifyError,
       presentSpecialistHistoricalEditError,
+      runMutation,
       saveAndUpdate,
     ]
   );
 
   const updateHandoffStaff = useCallback(
     (shift: 'day' | 'night', type: 'delivers' | 'receives' | 'tens', staffList: string[]) => {
-      void (async () => {
-        const outcome = await executeUpdateHandoffStaff({
-          record: getCurrentRecord(),
-          saveRecord: saveAndUpdate,
-          shift,
-          staffList,
-          type,
-        });
-        if (outcome.status === 'failed' && outcome.reason !== 'missing_record') {
-          const notice = presentHandoffManagementFailure(outcome, {
-            fallbackMessage: 'No se pudo actualizar el personal de entrega.',
-            fallbackTitle: 'Error al guardar',
-          });
-          notifyError(notice.title, notice.message);
+      void runMutation<PersistedHandoffRecordOutput>(
+        record =>
+          executeUpdateHandoffStaff({
+            record,
+            saveRecord: saveAndUpdate,
+            shift,
+            staffList,
+            type,
+          }),
+        {
+          fallbackMessage: 'No se pudo actualizar el personal de entrega.',
+          fallbackTitle: 'Error al guardar',
         }
-      })();
+      );
     },
-    [getCurrentRecord, notifyError, saveAndUpdate]
+    [runMutation, saveAndUpdate]
   );
 
   const updateMedicalSignature = useCallback(
     async (doctorName: string, scope: MedicalHandoffScope = 'all') => {
-      const currentRecord = getCurrentRecord();
-      const outcome = await executeUpdateMedicalSignature({
-        doctorName,
-        record: currentRecord,
-        saveRecord: saveAndUpdate,
-        scope,
-      });
-      if (outcome.status === 'failed' || !currentRecord || !outcome.data) {
-        if (outcome.reason !== 'missing_record') {
-          const notice = presentHandoffManagementFailure(outcome, {
-            fallbackMessage: 'No se pudo registrar la firma médica.',
-            fallbackTitle: 'Error al guardar',
-          });
-          notifyError(notice.title, notice.message);
-        }
-        return;
-      }
-      const auditEvent = buildMedicalSignatureAuditEvent(
-        currentRecord,
-        outcome.data.updatedRecord,
-        doctorName,
-        scope
-      );
+      await runMutation<PersistedHandoffRecordOutput>(
+        record =>
+          executeUpdateMedicalSignature({
+            doctorName,
+            record,
+            saveRecord: saveAndUpdate,
+            scope,
+          }),
+        {
+          fallbackMessage: 'No se pudo registrar la firma médica.',
+          fallbackTitle: 'Error al guardar',
+        },
+        ({ currentRecord, data }) => {
+          const auditEvent = buildMedicalSignatureAuditEvent(
+            currentRecord,
+            data.updatedRecord,
+            doctorName,
+            scope
+          );
 
-      logEvent(
-        auditEvent.action,
-        auditEvent.entityType,
-        auditEvent.entityId,
-        auditEvent.details,
-        undefined,
-        auditEvent.recordDate
+          logEvent(
+            auditEvent.action,
+            auditEvent.entityType,
+            auditEvent.entityId,
+            auditEvent.details,
+            undefined,
+            auditEvent.recordDate
+          );
+        }
       );
     },
-    [getCurrentRecord, logEvent, notifyError, saveAndUpdate]
+    [logEvent, runMutation, saveAndUpdate]
   );
 
   const updateMedicalHandoffDoctor = useCallback(
@@ -313,55 +325,52 @@ export const useHandoffManagementPersistence = ({
         return;
       }
 
-      const outcome = await executeUpdateMedicalHandoffDoctor({
-        doctorName,
-        record: getCurrentRecord(),
-        saveRecord: saveAndUpdate,
-      });
-      if (outcome.status === 'failed' && outcome.reason !== 'missing_record') {
-        const notice = presentHandoffManagementFailure(outcome, {
+      await runMutation<PersistedHandoffRecordOutput>(
+        record =>
+          executeUpdateMedicalHandoffDoctor({
+            doctorName,
+            record,
+            saveRecord: saveAndUpdate,
+          }),
+        {
           fallbackMessage: 'No se pudo actualizar el médico de entrega.',
           fallbackTitle: 'Error al guardar',
-        });
-        notifyError(notice.title, notice.message);
-      }
+        }
+      );
     },
     [
       canMutateCurrentMedicalRecord,
-      getCurrentRecord,
-      notifyError,
       presentSpecialistHistoricalEditError,
+      runMutation,
       saveAndUpdate,
     ]
   );
 
   const resetMedicalHandoffState = useCallback(async () => {
-    const currentRecord = getCurrentRecord();
-    const outcome = await executeResetMedicalHandoffState({
-      record: currentRecord,
-      saveRecord: saveAndUpdate,
-    });
-    if (outcome.status === 'failed' || !currentRecord) {
-      if (outcome.reason !== 'missing_record') {
-        const notice = presentHandoffManagementFailure(outcome, {
-          fallbackMessage: 'No se pudo restaurar la entrega médica.',
-          fallbackTitle: 'Error al guardar',
-        });
-        notifyError(notice.title, notice.message);
-      }
-      return;
-    }
-    const auditEvent = buildResetMedicalHandoffAuditEvent(currentRecord);
+    await runMutation<PersistedHandoffRecordOutput>(
+      record =>
+        executeResetMedicalHandoffState({
+          record,
+          saveRecord: saveAndUpdate,
+        }),
+      {
+        fallbackMessage: 'No se pudo restaurar la entrega médica.',
+        fallbackTitle: 'Error al guardar',
+      },
+      ({ currentRecord }) => {
+        const auditEvent = buildResetMedicalHandoffAuditEvent(currentRecord);
 
-    logEvent(
-      auditEvent.action,
-      auditEvent.entityType,
-      auditEvent.entityId,
-      auditEvent.details,
-      undefined,
-      auditEvent.recordDate
+        logEvent(
+          auditEvent.action,
+          auditEvent.entityType,
+          auditEvent.entityId,
+          auditEvent.details,
+          undefined,
+          auditEvent.recordDate
+        );
+      }
     );
-  }, [getCurrentRecord, logEvent, notifyError, saveAndUpdate]);
+  }, [logEvent, runMutation, saveAndUpdate]);
 
   return {
     updateHandoffChecklist,

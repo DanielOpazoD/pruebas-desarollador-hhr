@@ -30,6 +30,81 @@ describe('patientAnalysisUseCase', () => {
     expect(outcome.data?.uniquePatients).toBe(1);
   });
 
+  it('detects name conflicts and closes missing census episodes automatically', async () => {
+    const records = new Map([
+      [
+        '2026-03-05',
+        {
+          date: '2026-03-05',
+          beds: {
+            R1: {
+              rut: '11.111.111-1',
+              patientName: 'John Doe',
+              admissionDate: '2026-03-05',
+              pathology: 'Neumonía',
+            },
+          },
+          discharges: [],
+          transfers: [],
+        },
+      ],
+      [
+        '2026-03-06',
+        {
+          date: '2026-03-06',
+          beds: {
+            R1: {
+              rut: '11.111.111-1',
+              patientName: 'Jon Doe',
+              admissionDate: '2026-03-05',
+              pathology: 'Neumonía',
+            },
+          },
+          discharges: [],
+          transfers: [],
+        },
+      ],
+      [
+        '2026-03-07',
+        {
+          date: '2026-03-07',
+          beds: {},
+          discharges: [],
+          transfers: [],
+        },
+      ],
+    ]);
+    const repository = {
+      getAvailableDates: vi.fn().mockResolvedValue(['2026-03-05', '2026-03-06', '2026-03-07']),
+      getForDate: vi.fn().mockImplementation(async (date: string) => records.get(date) ?? null),
+      updatePartial: vi.fn(),
+    };
+
+    const outcome = await executeAnalyzePatients({ dailyRecordRepository: repository });
+
+    expect(outcome.status).toBe('success');
+    expect(outcome.data?.conflicts).toEqual([
+      expect.objectContaining({
+        rut: '11.111.111-1',
+        options: ['John Doe', 'Jon Doe'],
+        records: ['2026-03-06'],
+        bedMap: { '2026-03-06': 'R1' },
+      }),
+    ]);
+    expect(outcome.data?.validPatients[0]).toEqual(
+      expect.objectContaining({
+        lastAdmission: '2026-03-05',
+        lastDischarge: '2026-03-06',
+      })
+    );
+    expect(outcome.data?.validPatients[0].hospitalizations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'Ingreso', date: '2026-03-05' }),
+        expect.objectContaining({ type: 'Egreso', date: '2026-03-06' }),
+      ])
+    );
+  });
+
   it('resolves a conflict and optionally harmonizes history', async () => {
     const repository = {
       getAvailableDates: vi.fn(),

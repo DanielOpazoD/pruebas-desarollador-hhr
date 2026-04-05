@@ -21,6 +21,15 @@ describe('hospitalFloorMapViewController', () => {
     expect(DEFAULT_HOSPITAL_FLOOR_LAYOUT.R1).toEqual({ x: -2.5, z: -6, rotation: 0 });
   });
 
+  it('keeps the left ward crib sequence ordered from bottom to top as H6, H5, H4 and C2 to C1', () => {
+    expect(DEFAULT_HOSPITAL_FLOOR_LAYOUT.H6C2).toEqual({ x: -4.2, z: -0.5, rotation: 0 });
+    expect(DEFAULT_HOSPITAL_FLOOR_LAYOUT.H6C1).toEqual({ x: -2.5, z: -0.5, rotation: 0 });
+    expect(DEFAULT_HOSPITAL_FLOOR_LAYOUT.H5C2).toEqual({ x: -4.2, z: 2.2, rotation: 0 });
+    expect(DEFAULT_HOSPITAL_FLOOR_LAYOUT.H5C1).toEqual({ x: -2.5, z: 2.2, rotation: 0 });
+    expect(DEFAULT_HOSPITAL_FLOOR_LAYOUT.H4C2).toEqual({ x: -4.2, z: 4.9, rotation: 0 });
+    expect(DEFAULT_HOSPITAL_FLOOR_LAYOUT.H4C1).toEqual({ x: -2.5, z: 4.9, rotation: 0 });
+  });
+
   it('builds default saved layout config', () => {
     expect(createDefaultSavedLayout()).toEqual({
       beds: {},
