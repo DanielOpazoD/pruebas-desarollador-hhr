@@ -32,11 +32,20 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
 
   const selectedPatient = patients.find(p => p.rut === selectedRut);
 
-  // Simulated progress bar — advances through stages while loading
+  /**
+   * Simulated progress bar — advances through stages while the API call runs.
+   *
+   * Rules:
+   *  - Never reaches 100% until the API actually responds (via finally).
+   *  - After the last named step, creeps slowly toward 95% so the user
+   *    sees continued activity if the call takes longer than expected.
+   *  - Messages describe real backend steps, not generic text.
+   *  - Uses transition: width 0.5s ease in the CSS for smooth movement.
+   *  - Hidden by default; only visible during an active search.
+   */
   React.useEffect(() => {
     if (!isLoading) {
       if (progress) {
-        // Complete the bar briefly before hiding
         setProgress({ pct: 100, text: '¡Completado!' });
         const timeout = setTimeout(() => setProgress(null), 600);
         return () => clearTimeout(timeout);
@@ -44,12 +53,13 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
       return;
     }
 
+    // Stages modeled after the real backend flow (~10s / 5 = 2s per step)
     const steps = [
-      { pct: 15, text: 'Conectando con el servidor...' },
-      { pct: 35, text: 'Iniciando sesión en RIS...' },
-      { pct: 55, text: 'Buscando exámenes del paciente...' },
-      { pct: 75, text: 'Extrayendo información...' },
-      { pct: 90, text: 'Procesando resultados...' },
+      { pct: 10, text: 'Conectando con el servidor de imágenes...' },
+      { pct: 30, text: 'Iniciando sesión en RIS MMRAD...' },
+      { pct: 50, text: 'Buscando exámenes del paciente...' },
+      { pct: 70, text: 'Extrayendo informes y enlaces...' },
+      { pct: 85, text: 'Procesando resultados...' },
     ];
 
     let step = 0;
@@ -60,6 +70,13 @@ export const RadiologyViewerModal: React.FC<RadiologyViewerModalProps> = ({
       if (step < steps.length) {
         setProgress({ pct: steps[step].pct, text: steps[step].text });
         step++;
+      } else {
+        // Past the last named step — creep slowly toward 95% (never 100%)
+        setProgress(prev =>
+          prev && prev.pct < 95
+            ? { pct: Math.min(prev.pct + 1, 95), text: 'Finalizando consulta...' }
+            : prev
+        );
       }
     }, 2000);
 
