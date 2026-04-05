@@ -37,6 +37,7 @@ import {
   ACTION_ROW_HEIGHT,
   ACTION_ROW_WIDTH,
   ACTION_STACK_GAP,
+  ACTION_STACK_HORIZONTAL_SHIFT,
   ACTION_STACK_TOP,
   TRIGGER_HITBOX_SIZE,
   TRIGGER_VISUAL_SIZE,
@@ -129,6 +130,7 @@ export const PatientRowOrbitalQuickActionsPortal: React.FC<
                   top: `${ACTION_STACK_TOP}px`,
                   width: `${ACTION_ROW_WIDTH}px`,
                   gap: `${ACTION_STACK_GAP}px`,
+                  marginLeft: `-${ACTION_STACK_HORIZONTAL_SHIFT}px`,
                   padding: '2px 0',
                 }}
                 onMouseEnter={handleLauncherMouseEnter}

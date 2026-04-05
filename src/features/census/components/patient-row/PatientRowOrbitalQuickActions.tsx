@@ -67,7 +67,7 @@ export const PatientRowOrbitalQuickActions: React.FC<PatientRowOrbitalQuickActio
     20;
   const launcherWrapperWidth = isOpen ? OPEN_WRAPPER_WIDTH : CLOSED_WRAPPER_SIZE;
   const launcherWrapperHeight = isOpen ? openWrapperHeight : CLOSED_WRAPPER_SIZE;
-  const triggerCenterX = launcherWrapperWidth / 2;
+  const triggerCenterX = CLOSED_WRAPPER_SIZE / 2;
   const triggerCenterY = isOpen ? TRIGGER_CENTER_Y_OPEN : CLOSED_WRAPPER_SIZE / 2;
   const {
     anchorRef,

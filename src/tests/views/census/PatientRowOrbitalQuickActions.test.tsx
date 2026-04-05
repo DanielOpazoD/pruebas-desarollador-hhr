@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { PatientRowOrbitalQuickActions } from '@/features/census/components/patient-row/PatientRowOrbitalQuickActions';
+import { ACTION_STACK_HORIZONTAL_SHIFT } from '@/features/census/components/patient-row/patientRowOrbitalQuickActionLayout';
 
 const mockMatchMedia = (matches: boolean) => {
   Object.defineProperty(window, 'matchMedia', {
@@ -13,6 +14,8 @@ const mockMatchMedia = (matches: boolean) => {
     })),
   });
 };
+
+const parsePx = (value: string): number => Number.parseFloat(value.replace('px', ''));
 
 /**
  * Test suite for the PatientRowOrbitalQuickActions component.
@@ -296,6 +299,84 @@ describe('PatientRowOrbitalQuickActions', () => {
     });
   });
 
+  it('keeps the honu in the same screen position after opening the menu', async () => {
+    const originalInnerWidth = window.innerWidth;
+    try {
+      Object.defineProperty(window, 'innerWidth', {
+        configurable: true,
+        writable: true,
+        value: 280,
+      });
+
+      render(
+        <table>
+          <tbody>
+            <tr className="group/patient-row" data-testid="patient-row">
+              <td className="relative">
+                <PatientRowOrbitalQuickActions
+                  showClinicalDocumentsAction={true}
+                  showExamRequestAction={true}
+                  showImagingRequestAction={true}
+                  onViewClinicalDocuments={vi.fn()}
+                  onViewExamRequest={vi.fn()}
+                  onViewImagingRequest={vi.fn()}
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      );
+
+      const row = screen.getByTestId('patient-row');
+      vi.spyOn(row, 'getBoundingClientRect').mockReturnValue({
+        x: 240,
+        y: 120,
+        top: 120,
+        left: 240,
+        right: 920,
+        bottom: 164,
+        width: 680,
+        height: 44,
+        toJSON: () => ({}),
+      } as DOMRect);
+
+      fireEvent.mouseMove(row, { clientX: 0 });
+
+      const trigger = screen.getByRole('button', { name: /acciones clínicas rápidas/i });
+      const closedWrapper = trigger.closest('.fixed');
+      if (!(closedWrapper instanceof HTMLDivElement)) {
+        throw new Error('Launcher wrapper not found');
+      }
+
+      const closedTriggerScreenLeft =
+        parsePx(closedWrapper.style.left) + parsePx(trigger.style.left);
+      const closedTriggerScreenTop = parsePx(closedWrapper.style.top) + parsePx(trigger.style.top);
+
+      fireEvent.click(trigger);
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /documentos clínicos/i })).toBeInTheDocument();
+      });
+
+      const openWrapper = trigger.closest('.fixed');
+      if (!(openWrapper instanceof HTMLDivElement)) {
+        throw new Error('Open launcher wrapper not found');
+      }
+
+      const openTriggerScreenLeft = parsePx(openWrapper.style.left) + parsePx(trigger.style.left);
+      const openTriggerScreenTop = parsePx(openWrapper.style.top) + parsePx(trigger.style.top);
+
+      expect(openTriggerScreenLeft).toBe(closedTriggerScreenLeft);
+      expect(openTriggerScreenTop).toBe(closedTriggerScreenTop);
+    } finally {
+      Object.defineProperty(window, 'innerWidth', {
+        configurable: true,
+        writable: true,
+        value: originalInnerWidth,
+      });
+    }
+  });
+
   it('keeps other launchers hidden while one row launcher is open', async () => {
     render(
       <table>
@@ -485,6 +566,9 @@ describe('PatientRowOrbitalQuickActions', () => {
     // container children are wrapper divs, each containing an action button.
     const stack = documentsButton.parentElement!.parentElement!;
     expect(stack.className).toContain('flex-col');
+    expect(stack).toHaveStyle({
+      marginLeft: `-${ACTION_STACK_HORIZONTAL_SHIFT}px`,
+    });
 
     const wrapperDivs = Array.from(stack.children);
     expect(wrapperDivs).toHaveLength(4);

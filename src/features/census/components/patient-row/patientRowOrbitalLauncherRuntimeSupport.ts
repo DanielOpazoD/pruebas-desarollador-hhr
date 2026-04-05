@@ -109,7 +109,7 @@ export const isPointerInExternalLeftActivationBand = (
 export const resolveLauncherPosition = (
   row: HTMLTableRowElement | null,
   launcherOffset: number,
-  wrapperWidth: number,
+  _wrapperWidth: number,
   _wrapperHeight: number,
   triggerCenterX: number,
   triggerCenterY: number
@@ -120,7 +120,8 @@ export const resolveLauncherPosition = (
 
   const rect = row.getBoundingClientRect();
   const rawLeft = rect.left - launcherOffset - triggerCenterX;
-  const clampedLeft = Math.max(8, Math.min(rawLeft, window.innerWidth - wrapperWidth - 8));
+  const triggerShellWidth = triggerCenterX * 2;
+  const clampedLeft = Math.max(8, Math.min(rawLeft, window.innerWidth - triggerShellWidth - 8));
 
   return {
     left: clampedLeft,
