@@ -26,6 +26,12 @@ describe('useAppState', () => {
       expect(result.current.currentModule).toBe('MEDICAL_HANDOFF');
     });
 
+    it('should initialize the module from a clean path slug', () => {
+      window.history.replaceState({}, '', '/medical-handoff');
+      const { result } = renderHook(() => useAppState());
+      expect(result.current.currentModule).toBe('MEDICAL_HANDOFF');
+    });
+
     it('should update current module', () => {
       const { result } = renderHook(() => useAppState());
 
@@ -36,15 +42,15 @@ describe('useAppState', () => {
       expect(result.current.currentModule).toBe('CUDYR');
     });
 
-    it('should persist the selected module in the URL for refresh recovery', () => {
+    it('should persist the selected module as a clean path for refresh recovery', () => {
       const { result } = renderHook(() => useAppState());
 
       act(() => {
         result.current.setCurrentModule('MEDICAL_HANDOFF');
       });
 
-      const params = new URLSearchParams(window.location.search);
-      expect(params.get('module')).toBe('MEDICAL_HANDOFF');
+      expect(window.location.pathname).toBe('/medical-handoff');
+      expect(window.location.search).toBe('');
     });
   });
 

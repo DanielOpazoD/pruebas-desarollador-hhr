@@ -33,8 +33,33 @@ const MODULES_FROM_URL: readonly ModuleType[] = [
   'ERRORS',
 ] as const;
 
+const MODULE_PATH_SEGMENTS: Record<ModuleType, string> = {
+  CENSUS: 'census',
+  CUDYR: 'cudyr',
+  NURSING_HANDOFF: 'nursing-handoff',
+  MEDICAL_HANDOFF: 'medical-handoff',
+  AUDIT: 'audit',
+  WHATSAPP: 'whatsapp',
+  TRANSFER_MANAGEMENT: 'transfer-management',
+  BACKUP_FILES: 'backup-files',
+  PATIENT_MASTER_INDEX: 'patient-master-index',
+  DATA_MAINTENANCE: 'data-maintenance',
+  DIAGNOSTICS: 'diagnostics',
+  ROLE_MANAGEMENT: 'role-management',
+  REMINDERS: 'reminders',
+  ERRORS: 'errors',
+};
+
+const MODULE_FROM_PATH_SEGMENT = Object.fromEntries(
+  Object.entries(MODULE_PATH_SEGMENTS).map(([module, segment]) => [segment, module])
+) as Record<string, ModuleType>;
+
 const resolveInitialModule = (): ModuleType => {
   if (typeof window === 'undefined') return 'CENSUS';
+  const pathSegment = window.location.pathname.replace(/^\/+|\/+$/g, '');
+  if (pathSegment && MODULE_FROM_PATH_SEGMENT[pathSegment]) {
+    return MODULE_FROM_PATH_SEGMENT[pathSegment];
+  }
   const params = new URLSearchParams(window.location.search);
   const rawModule = params.get('module');
   if (!rawModule) return 'CENSUS';
@@ -47,7 +72,9 @@ const syncModuleToUrl = (module: ModuleType): void => {
   }
 
   const url = new URL(window.location.href);
-  url.searchParams.set('module', module);
+  url.pathname = `/${MODULE_PATH_SEGMENTS[module]}`;
+  url.searchParams.delete('module');
+  url.searchParams.delete('date');
   window.history.replaceState(window.history.state, '', url);
 };
 

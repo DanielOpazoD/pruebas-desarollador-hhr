@@ -1,15 +1,5 @@
 import React, { useState, useMemo } from 'react';
 
-const syncDateToUrl = (date: string): void => {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  const url = new URL(window.location.href);
-  url.searchParams.set('date', date);
-  window.history.replaceState(window.history.state, '', url);
-};
-
 /**
  * Return type for useDateNavigation hook.
  * Provides date selection state and derived values for navigation.
@@ -101,10 +91,6 @@ export const useDateNavigation = (): UseDateNavigationReturn => {
     },
     [selectedYear, selectedMonth, selectedDay]
   );
-
-  React.useEffect(() => {
-    syncDateToUrl(currentDateString);
-  }, [currentDateString]);
 
   return {
     selectedYear,

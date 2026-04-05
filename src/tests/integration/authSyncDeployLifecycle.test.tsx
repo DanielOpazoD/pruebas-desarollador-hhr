@@ -66,7 +66,7 @@ describe('auth/sync/deploy lifecycle integration', () => {
     vi.useFakeTimers();
     authSessionStateCallback = null;
     setOnlineStatus(true);
-    window.history.replaceState({}, '', '/?module=MEDICAL_HANDOFF&date=2026-03-14');
+    window.history.replaceState({}, '', '/medical-handoff');
 
     vi.mocked(authService.onAuthSessionStateChange).mockImplementation(
       (cb: (sessionState: AuthSessionState) => void | Promise<void>) => {
@@ -111,7 +111,6 @@ describe('auth/sync/deploy lifecycle integration', () => {
     expect(firstRender.result.current.auth.authLoading).toBe(false);
 
     expect(firstRender.result.current.app.currentModule).toBe('MEDICAL_HANDOFF');
-    expect(firstRender.result.current.dateNav.currentDateString).toBe('2026-03-14');
 
     await act(async () => {
       await authSessionStateCallback?.({
@@ -126,11 +125,10 @@ describe('auth/sync/deploy lifecycle integration', () => {
 
     await act(async () => {
       firstRender.result.current.app.setCurrentModule('CUDYR');
-      firstRender.result.current.dateNav.setSelectedDay(20);
     });
 
-    expect(new URLSearchParams(window.location.search).get('module')).toBe('CUDYR');
-    expect(new URLSearchParams(window.location.search).get('date')).toBe('2026-03-20');
+    expect(window.location.pathname).toBe('/cudyr');
+    expect(window.location.search).toBe('');
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
@@ -146,7 +144,6 @@ describe('auth/sync/deploy lifecycle integration', () => {
     expect(secondRender.result.current.auth.authLoading).toBe(false);
 
     expect(secondRender.result.current.app.currentModule).toBe('CUDYR');
-    expect(secondRender.result.current.dateNav.currentDateString).toBe('2026-03-20');
 
     await act(async () => {
       await authSessionStateCallback?.({

@@ -12,6 +12,7 @@ describe('useDateNavigation', () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-02-20T09:00:00.000Z'));
+    window.history.replaceState({}, '', '/');
   });
 
   afterEach(() => {
@@ -142,7 +143,7 @@ describe('useDateNavigation', () => {
       expect(result.current.currentDateString).toBe('2024-12-25');
     });
 
-    it('should keep the current date reflected in the URL for refresh recovery', () => {
+    it('should not force the current date into the URL while navigating days', () => {
       const { result } = renderHook(() => useDateNavigation());
 
       act(() => {
@@ -151,8 +152,7 @@ describe('useDateNavigation', () => {
         result.current.setSelectedDay(25);
       });
 
-      const params = new URLSearchParams(window.location.search);
-      expect(params.get('date')).toBe('2024-12-25');
+      expect(window.location.search).toBe('');
     });
   });
 });
