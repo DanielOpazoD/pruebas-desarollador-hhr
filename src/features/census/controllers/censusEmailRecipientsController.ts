@@ -36,6 +36,56 @@ export const resolveSafeRecipients = (recipients: string[] | null | undefined): 
     .filter(Boolean);
 };
 
+export const resolveStoredRecipients = (value: unknown): string[] | null => {
+  const recipients = resolveSafeRecipients(Array.isArray(value) ? value : null);
+  return recipients.length > 0 ? recipients : null;
+};
+
+export const resolveLegacyRecipients = (value: string | null | undefined): string[] | null => {
+  if (typeof value !== 'string' || !value.trim()) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return resolveStoredRecipients(parsed);
+  } catch {
+    return null;
+  }
+};
+
+interface ResolveSendingRecipientsParams {
+  recipients: string[];
+  shouldUseTestMode: boolean;
+  testRecipient: string;
+}
+
+type ResolveSendingRecipientsResult =
+  | { ok: true; recipients: string[] }
+  | { ok: false; error: string };
+
+export const resolveSendingRecipients = ({
+  recipients,
+  shouldUseTestMode,
+  testRecipient,
+}: ResolveSendingRecipientsParams): ResolveSendingRecipientsResult => {
+  if (shouldUseTestMode) {
+    const normalizedTestRecipient = normalizeEmail(testRecipient);
+    if (!normalizedTestRecipient || !isValidEmail(normalizedTestRecipient)) {
+      return { ok: false, error: 'Ingresa un correo válido para modo prueba.' };
+    }
+
+    return { ok: true, recipients: [normalizedTestRecipient] };
+  }
+
+  const normalizedRecipients = resolveSafeRecipients(recipients).filter(isValidEmail);
+  if (normalizedRecipients.length === 0) {
+    return { ok: false, error: 'Agrega al menos un destinatario válido.' };
+  }
+
+  return { ok: true, recipients: Array.from(new Set(normalizedRecipients)) };
+};
+
 interface ResolveAddRecipientParams {
   recipients: string[];
   input: string;

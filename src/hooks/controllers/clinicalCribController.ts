@@ -1,5 +1,5 @@
 import { createEmptyPatient } from '@/services/factories/patientFactory';
-import type { DailyRecordPatch } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordPatch } from '@/application/shared/dailyRecordContracts';
 import type { PatientData } from '@/hooks/contracts/patientHookContracts';
 
 const isFutureDate = (value: string): boolean => {

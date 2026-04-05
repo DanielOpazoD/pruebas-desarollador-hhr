@@ -6,8 +6,8 @@
 
 import { useCallback } from 'react';
 import type { DailyRecordBedsState } from '@/types/domain/dailyRecordSlices';
-import type { DailyRecordPatch } from '@/hooks/contracts/dailyRecordHookContracts';
-import type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordPatch } from '@/application/shared/dailyRecordContracts';
+import type { DailyRecord } from '@/application/shared/dailyRecordContracts';
 import { PatientData } from '@/hooks/contracts/patientHookContracts';
 import { PatientFieldValue } from '@/types/valueTypes';
 import { clinicalCribLogger } from '@/hooks/hookLoggers';

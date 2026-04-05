@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import type { DailyRecordStaffingState } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordStaffingState } from '@/application/shared/dailyRecordContracts';
 import { DailyRecordPatch } from './useDailyRecordTypes';
 import { useLatestRef } from '@/hooks/useLatestRef';
 

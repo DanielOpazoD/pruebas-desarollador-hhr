@@ -1,4 +1,4 @@
-import type { DailyRecordBedsState } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordBedsState } from '@/application/shared/dailyRecordContracts';
 import type { TransferRequest } from '@/types/transfers';
 import type {
   GeneratedDocument,

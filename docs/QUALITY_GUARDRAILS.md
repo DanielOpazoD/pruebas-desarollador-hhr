@@ -64,6 +64,7 @@ Evitar que la deuda estructural vuelva a crecer después de las fases de estabil
 ## Operación diaria
 
 - El mapa corto de ejecución y fallback vive en [docs/CI_GATES_AND_FAILURE_RUNBOOKS.md](./CI_GATES_AND_FAILURE_RUNBOOKS.md).
+- La superficie pública mínima de comandos vive en [docs/DEVELOPER_COMMANDS.md](./DEVELOPER_COMMANDS.md).
 - `ci:inner-loop` es la ruta local rápida.
 - `ci:pre-merge` es la verificación compacta obligatoria antes de merge.
 - `ci:merge-gate` es la ruta blocking ampliada previa a merge.

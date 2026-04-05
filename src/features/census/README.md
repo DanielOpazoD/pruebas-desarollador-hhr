@@ -16,6 +16,12 @@ Módulo central del producto: censo diario, acciones sobre camas/pacientes, movi
 | `types/`       | Tipos internos del módulo                                |
 | `validation/`  | Validaciones específicas de acciones de censo            |
 
+## Ownership de controllers
+
+- `src/features/census/controllers` es la fuente de verdad para controllers propios de `census`.
+- Si un consumer histórico importa el mismo basename desde `src/hooks/controllers`, ese archivo existe solo como shim de compatibilidad.
+- Nuevos cambios en controllers de `census` deben entrar por la ruta de la feature.
+
 ## Flujos críticos
 
 ### Acción de movimiento
@@ -170,6 +176,7 @@ botón IEEH
 ## Runtime boundaries
 
 - `controllers/` no debe importar React ni hooks.
+- `hooks/controllers` no debe volver a alojar implementaciones paralelas de controllers dueños de `census`.
 - `components/` no debe recalcular reglas clínicas ya resueltas por controllers.
 - Las acciones del censo deben salir de los command/runtime controllers, no de callbacks ad hoc embebidos.
 - La tabla web puede abreviar visualmente especialidades concretas como `GyO` o `TMT`, pero esas

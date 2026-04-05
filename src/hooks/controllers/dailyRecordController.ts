@@ -1,4 +1,4 @@
-import type { DailyRecordBedAuditState } from '@/hooks/contracts/dailyRecordHookContracts';
+import type { DailyRecordBedAuditState } from '@/application/shared/dailyRecordContracts';
 import type { PatientData } from '@/hooks/contracts/patientHookContracts';
 import type { DailyRecordContextType } from '@/hooks/useDailyRecordTypes';
 

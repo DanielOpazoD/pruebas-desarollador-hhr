@@ -9,7 +9,7 @@ import type {
   DailyRecordPatch,
   MedicalHandoffActor,
   MedicalSpecialty,
-} from '@/hooks/contracts/dailyRecordHookContracts';
+} from '@/application/shared/dailyRecordContracts';
 import { PatientData } from '@/hooks/contracts/patientHookContracts';
 import type { CudyrScore } from '@/types/domain/cudyr';
 import { CMAData } from '@/types/domain/movements';
@@ -18,8 +18,8 @@ import type { PatientMovementActions } from '@/types/movements';
 import type { MedicalHandoffScope } from '@/types/medicalHandoff';
 import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 import type { DailyRecordBootstrapPhase } from '@/hooks/controllers/dailyRecordBootstrapController';
-export type { DailyRecord } from '@/hooks/contracts/dailyRecordHookContracts';
-export type { DailyRecordPatch } from '@/hooks/contracts/dailyRecordHookContracts';
+export type { DailyRecord } from '@/application/shared/dailyRecordContracts';
+export type { DailyRecordPatch } from '@/application/shared/dailyRecordContracts';
 
 // ============================================================================
 // Sync Types
