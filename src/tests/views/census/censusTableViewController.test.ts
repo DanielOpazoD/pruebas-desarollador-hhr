@@ -53,8 +53,12 @@ describe('censusTableViewController', () => {
       beds: bedsMap,
     });
 
-    expect(result.occupiedRows.map(row => row.id)).toEqual(['R1', 'R1-cuna', 'R2']);
-    expect(result.emptyBeds.map(bed => bed.id)).toEqual(['E1']);
+    const occupiedIds = result.unifiedRows
+      .filter(row => row.kind === 'occupied')
+      .map(row => row.id);
+    const emptyIds = result.unifiedRows.filter(row => row.kind === 'empty').map(row => row.id);
+    expect(occupiedIds).toEqual(['R1', 'R1-cuna', 'R2']);
+    expect(emptyIds).toEqual(['E1']);
   });
 
   it('resolveVisibleBedTypes applies only valid overrides', () => {
@@ -78,8 +82,12 @@ describe('censusTableViewController', () => {
       beds: undefined,
     });
 
-    expect(result.occupiedRows).toEqual([]);
-    expect(result.emptyBeds.map(bed => bed.id)).toEqual(['R1', 'R2', 'E1']);
+    expect(result.unifiedRows.filter(row => row.kind === 'occupied')).toEqual([]);
+    expect(result.unifiedRows.filter(row => row.kind === 'empty').map(row => row.id)).toEqual([
+      'R1',
+      'R2',
+      'E1',
+    ]);
   });
 
   it('does not create orphan crib sub-row when primary bed is empty', () => {
@@ -98,7 +106,11 @@ describe('censusTableViewController', () => {
       beds: bedsMap,
     });
 
-    expect(result.occupiedRows).toEqual([]);
-    expect(result.emptyBeds.map(bed => bed.id)).toEqual(['R1', 'R2', 'E1']);
+    expect(result.unifiedRows.filter(row => row.kind === 'occupied')).toEqual([]);
+    expect(result.unifiedRows.filter(row => row.kind === 'empty').map(row => row.id)).toEqual([
+      'R1',
+      'R2',
+      'E1',
+    ]);
   });
 });

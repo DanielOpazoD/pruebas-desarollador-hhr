@@ -15,6 +15,8 @@ const MODULE_ALLOWLIST_PATH = path.join(ROOT, 'scripts', 'module-size-allowlist.
 const FOLDER_MATRIX_PATH = path.join(ROOT, 'scripts', 'folder-dependency-matrix.json');
 const FLAKY_QUARANTINE_PATH = path.join(ROOT, 'scripts', 'config', 'flaky-quarantine.json');
 const TEST_FAILURE_CATALOG_PATH = path.join(ROOT, 'scripts', 'config', 'test-failure-catalog.json');
+const HOOK_CONTROLLERS_DIR = path.join(SRC_ROOT, 'hooks', 'controllers');
+const FEATURE_CENSUS_CONTROLLERS_DIR = path.join(SRC_ROOT, 'features', 'census', 'controllers');
 
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
 const TEST_FILE_PATTERN = /\.(test|spec)\.(ts|tsx|js|jsx)$/;
@@ -22,6 +24,50 @@ const IMPORT_REGEX =
   /(?:^|\n)\s*import(?:[\s\S]*?\sfrom\s*)?["']([^"']+)["']|(?:^|\n)\s*export\s+[^;\n]*\sfrom\s*["']([^"']+)["']/g;
 
 const ALLOWED_SKIP_FILES = new Set(['src/tests/security/firestore-rules.test.ts']);
+const FEATURE_PUBLIC_BOUNDARIES = [
+  {
+    importPrefix: '@/features/census/',
+    allowBypass: file =>
+      file.startsWith('src/features/census/') ||
+      file.startsWith('src/tests/') ||
+      file.startsWith('src/hooks/controllers/'),
+  },
+  {
+    importPrefix: '@/features/handoff/',
+    allowBypass: file => file.startsWith('src/features/handoff/') || file.startsWith('src/tests/'),
+  },
+  {
+    importPrefix: '@/features/transfers/',
+    allowBypass: file =>
+      file.startsWith('src/features/transfers/') || file.startsWith('src/tests/'),
+  },
+  {
+    importPrefix: '@/features/clinical-documents/',
+    allowBypass: file =>
+      file.startsWith('src/features/clinical-documents/') || file.startsWith('src/tests/'),
+  },
+];
+const DEPRECATED_IMPORTS = [
+  {
+    importPath: '@/shared/census/patientContracts',
+    allowBypass: file => file === 'src/shared/census/patientContracts.ts' || file.startsWith('src/tests/'),
+  },
+  {
+    importPath: '@/shared/controllerResult',
+    allowBypass: file => file === 'src/shared/controllerResult.ts' || file.startsWith('src/tests/'),
+  },
+  {
+    importPath: '@/hooks/contracts/dailyRecordHookContracts',
+    allowBypass: file =>
+      file === 'src/hooks/contracts/dailyRecordHookContracts.ts' || file.startsWith('src/tests/'),
+  },
+];
+const DAILY_RECORD_ROOT_IMPORTS = [
+  '@/types/domain/dailyRecord',
+  '@/types/domain/dailyRecordPatch',
+  '@/types/domain/dailyRecordSlices',
+  '@/types/domain/dailyRecordMedicalHandoff',
+];
 
 const toPosix = value => value.split(path.sep).join('/');
 
@@ -63,6 +109,9 @@ const getGitSha = () => {
     return 'unknown';
   }
 };
+
+const isTestFile = relative =>
+  relative.includes('/tests/') || TEST_FILE_PATTERN.test(relative) || relative.includes('.spec.');
 
 const getSourceMetrics = () => {
   const files = walkFiles(SRC_ROOT).filter(filePath => {
@@ -253,6 +302,7 @@ const getTestMetrics = () => {
   let skipCount = 0;
   let onlyCount = 0;
   let flakeRiskFiles = 0;
+  let megatestFilesOver500 = 0;
 
   const skipPattern = /\b(?:it|test|describe)\.skip\s*\(/g;
   const onlyPattern = /\b(?:it|test|describe)\.only\s*\(/g;
@@ -260,6 +310,10 @@ const getTestMetrics = () => {
   for (const filePath of testFiles) {
     const relative = toPosix(path.relative(ROOT, filePath));
     const content = fs.readFileSync(filePath, 'utf8');
+    const lineCount = countLines(content);
+    if (lineCount > 500) {
+      megatestFilesOver500 += 1;
+    }
 
     const skipMatches = content.match(skipPattern)?.length || 0;
     if (!ALLOWED_SKIP_FILES.has(relative)) {
@@ -295,6 +349,7 @@ const getTestMetrics = () => {
     skippedMarkers: skipCount,
     onlyMarkers: onlyCount,
     flakeRiskFiles,
+    megatestFilesOver500,
     quarantinedFiles: quarantinedFiles.size,
     knownFailureEntries: Array.isArray(failureCatalog?.entries) ? failureCatalog.entries.length : 0,
     openKnownFailureEntries: Array.isArray(failureCatalog?.entries)
@@ -335,6 +390,125 @@ const getTypeSafetySignals = () => {
   return { explicitAnyCount, explicitAnySourceCount, explicitAnyTestCount };
 };
 
+const getConvergenceSignals = () => {
+  const files = walkFiles(SRC_ROOT).filter(filePath => {
+    const extension = path.extname(filePath);
+    if (!SOURCE_EXTENSIONS.has(extension)) return false;
+    if (filePath.endsWith('.d.ts')) return false;
+    return true;
+  });
+
+  let accidentalCopies = 0;
+  let featureBoundaryViolations = 0;
+  let deprecatedShimImports = 0;
+  let dailyRecordBoundaryViolations = 0;
+
+  for (const filePath of files) {
+    const relative = toPosix(path.relative(ROOT, filePath));
+    const source = fs.readFileSync(filePath, 'utf8');
+
+    if (/(^|\/)[^/]+ 2\.(ts|tsx|js|jsx|md)$/.test(relative)) {
+      accidentalCopies += 1;
+    }
+
+    if (isTestFile(relative)) {
+      continue;
+    }
+
+    for (const boundary of FEATURE_PUBLIC_BOUNDARIES) {
+      if (boundary.allowBypass(relative) || !source.includes(boundary.importPrefix)) {
+        continue;
+      }
+      featureBoundaryViolations += 1;
+    }
+
+    for (const deprecatedImport of DEPRECATED_IMPORTS) {
+      if (deprecatedImport.allowBypass(relative) || !source.includes(deprecatedImport.importPath)) {
+        continue;
+      }
+      deprecatedShimImports += 1;
+    }
+
+    const importsDailyRecordRoot = DAILY_RECORD_ROOT_IMPORTS.some(importPath =>
+      source.includes(importPath)
+    );
+    if (!importsDailyRecordRoot) {
+      continue;
+    }
+
+    const isApplicationBypass =
+      relative === 'src/application/shared/dailyRecordContracts.ts' || isTestFile(relative);
+    const isHookBypass =
+      relative === 'src/hooks/contracts/dailyRecordHookContracts.ts' || isTestFile(relative);
+    const isServiceBypass =
+      relative === 'src/services/contracts/dailyRecordServiceContracts.ts' ||
+      relative.startsWith('src/services/repositories/') ||
+      relative.startsWith('src/services/storage/') ||
+      isTestFile(relative);
+
+    if (relative.startsWith('src/application/') && !isApplicationBypass) {
+      dailyRecordBoundaryViolations += 1;
+    }
+
+    if (relative.startsWith('src/hooks/') && !isHookBypass) {
+      dailyRecordBoundaryViolations += 1;
+    }
+
+    if (relative.startsWith('src/services/') && !isServiceBypass) {
+      dailyRecordBoundaryViolations += 1;
+    }
+  }
+
+  const getSourceBasenameSet = dirPath => {
+    if (!fs.existsSync(dirPath)) {
+      return new Set();
+    }
+
+    return new Set(
+      fs
+        .readdirSync(dirPath, { withFileTypes: true })
+        .filter(
+          entry => entry.isFile() && ['.ts', '.tsx', '.js', '.jsx'].includes(path.extname(entry.name))
+        )
+        .map(entry => entry.name)
+    );
+  };
+
+  let controllerOwnershipDrift = 0;
+  const hookControllerBasenames = getSourceBasenameSet(HOOK_CONTROLLERS_DIR);
+  const featureControllerBasenames = getSourceBasenameSet(FEATURE_CENSUS_CONTROLLERS_DIR);
+
+  for (const basename of hookControllerBasenames) {
+    if (!featureControllerBasenames.has(basename)) {
+      continue;
+    }
+
+    const moduleName = basename.replace(/\.[^.]+$/, '');
+    const hookPath = path.join(HOOK_CONTROLLERS_DIR, basename);
+    const featurePath = path.join(FEATURE_CENSUS_CONTROLLERS_DIR, basename);
+    const hookSource = fs.readFileSync(hookPath, 'utf8').trim();
+    const featureSource = fs.readFileSync(featurePath, 'utf8');
+    const expectedHookShim = `export * from '@/features/census/controllers/${moduleName}';`;
+    const forbiddenFeatureBackImport = `@/hooks/controllers/${moduleName}`;
+
+    if (hookSource !== expectedHookShim) {
+      controllerOwnershipDrift += 1;
+    }
+
+    if (featureSource.includes(forbiddenFeatureBackImport)) {
+      controllerOwnershipDrift += 1;
+    }
+  }
+
+  return {
+    accidentalCopies,
+    featureBoundaryViolations,
+    deprecatedShimImports,
+    dailyRecordBoundaryViolations,
+    controllerOwnershipDrift,
+  };
+};
+
 const generatedAt = new Date().toISOString();
 const releaseConfidenceMatrix = buildReleaseConfidenceMatrixReport(ROOT);
 const metrics = {
@@ -345,6 +519,7 @@ const metrics = {
   folderDependencyDebt: getFolderDependencyDebtMetrics(),
   tests: getTestMetrics(),
   typeSafety: getTypeSafetySignals(),
+  convergence: getConvergenceSignals(),
   releaseConfidence: {
     overall: releaseConfidenceMatrix.overall,
     areaCount: releaseConfidenceMatrix.counts.areaCount,
@@ -389,6 +564,7 @@ const mdLines = [
   `- Forbidden .skip markers: ${metrics.tests.skippedMarkers}`,
   `- Forbidden .only markers: ${metrics.tests.onlyMarkers}`,
   `- Flake-risk test files: ${metrics.tests.flakeRiskFiles}`,
+  `- Megatests >500 lines: ${metrics.tests.megatestFilesOver500}`,
   `- Quarantined test files: ${metrics.tests.quarantinedFiles}`,
   `- Known failure entries: ${metrics.tests.knownFailureEntries}`,
   `- Open known failure entries: ${metrics.tests.openKnownFailureEntries}`,
@@ -398,6 +574,14 @@ const mdLines = [
   `- Explicit any occurrences (total): ${metrics.typeSafety.explicitAnyCount}`,
   `- Explicit any in source (non-test): ${metrics.typeSafety.explicitAnySourceCount}`,
   `- Explicit any in tests: ${metrics.typeSafety.explicitAnyTestCount}`,
+  '',
+  '## Convergence Signals',
+  '',
+  `- Accidental copy files in src: ${metrics.convergence.accidentalCopies}`,
+  `- Feature public API boundary violations: ${metrics.convergence.featureBoundaryViolations}`,
+  `- Deprecated shim imports in source: ${metrics.convergence.deprecatedShimImports}`,
+  `- DailyRecord root-boundary violations in source: ${metrics.convergence.dailyRecordBoundaryViolations}`,
+  `- Census controller ownership drift: ${metrics.convergence.controllerOwnershipDrift}`,
   '',
   '## Release Confidence Governance',
   '',

@@ -12,8 +12,7 @@ import {
   executeResetDayController,
   resolveResetDayPermission,
 } from '@/features/census/controllers/censusResetDayController';
-import type { BedTypesById, OccupiedBedRow } from '@/features/census/types/censusTableTypes';
-import type { BedDefinition } from '@/features/census/contracts/censusBedContracts';
+import type { BedTypesById, UnifiedBedRow } from '@/features/census/types/censusTableTypes';
 import type { PatientData } from '@/features/census/types/censusTablePatientContracts';
 
 interface UseCensusTableModelParams {
@@ -31,8 +30,7 @@ interface UseCensusTableModelParams {
 interface UseCensusTableModelResult {
   canDeleteRecord: boolean;
   resetDayDeniedMessage: string;
-  occupiedRows: OccupiedBedRow[];
-  emptyBeds: BedDefinition[];
+  unifiedRows: UnifiedBedRow[];
   bedTypes: BedTypesById;
   totalWidth: number;
   handleClearAll: () => Promise<void>;
@@ -65,7 +63,7 @@ export const useCensusTableModel = ({
     });
   }, [activeExtraBeds]);
 
-  const { occupiedRows, emptyBeds } = useMemo(() => {
+  const { unifiedRows } = useMemo(() => {
     return buildCensusBedRows({
       visibleBeds,
       beds,
@@ -98,8 +96,7 @@ export const useCensusTableModel = ({
   return {
     canDeleteRecord: resetDayPermission.canDeleteRecord,
     resetDayDeniedMessage: resetDayPermission.denialMessage,
-    occupiedRows,
-    emptyBeds,
+    unifiedRows,
     bedTypes,
     totalWidth,
     handleClearAll,

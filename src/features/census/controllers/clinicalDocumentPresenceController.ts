@@ -1,5 +1,5 @@
 import { buildPatientPresenceSnapshot } from '@/application/patient-flow/clinicalEpisode';
-import type { OccupiedBedRow } from '@/features/census/types/censusTableTypes';
+import type { UnifiedBedRow } from '@/features/census/types/censusTableTypes';
 
 type ClinicalDocumentPresenceRecord = {
   status: string;
@@ -11,9 +11,12 @@ export interface BedEpisodeBinding {
   episodeKey: string;
 }
 
-export const buildBedEpisodeBindings = (occupiedRows: OccupiedBedRow[]): BedEpisodeBinding[] =>
-  occupiedRows
-    .filter(row => !row.isSubRow)
+export const buildBedEpisodeBindings = (unifiedRows: UnifiedBedRow[]): BedEpisodeBinding[] =>
+  unifiedRows
+    .filter(
+      (row): row is Extract<UnifiedBedRow, { kind: 'occupied' }> =>
+        row.kind === 'occupied' && !row.isSubRow
+    )
     .flatMap(row => {
       const snapshot = buildPatientPresenceSnapshot(row.data, row.bed.id);
       if (!snapshot) {

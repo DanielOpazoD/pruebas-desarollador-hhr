@@ -1,16 +1,11 @@
 import React from 'react';
 import { EmptyBedRow } from '@/features/census/components/EmptyBedRow';
 import { PatientRow } from '@/features/census/components/PatientRow';
-import { CensusEmptyBedsDividerRow } from '@/features/census/components/CensusEmptyBedsDividerRow';
-import {
-  buildResolvedOccupiedRows,
-  shouldRenderEmptyBedsDivider,
-} from '@/features/census/controllers/censusTableBodyController';
+import { buildResolvedOccupiedRows } from '@/features/census/controllers/censusTableBodyController';
 import type { CensusTableBodyProps } from '@/features/census/types/censusTableComponentContracts';
 
 export const CensusTableBody: React.FC<CensusTableBodyProps> = ({
-  occupiedRows,
-  emptyBeds,
+  unifiedRows,
   currentDateString,
   readOnly,
   diagnosisMode,
@@ -23,50 +18,54 @@ export const CensusTableBody: React.FC<CensusTableBodyProps> = ({
   onAction,
   onActivateEmptyBed,
 }) => {
-  const showEmptyBedsDivider = shouldRenderEmptyBedsDivider(emptyBeds.length);
-  const resolvedOccupiedRows = buildResolvedOccupiedRows({
-    occupiedRows,
-    currentDateString,
-    clinicalDocumentPresenceByBedId,
-  });
+  const resolvedOccupiedMap = React.useMemo(() => {
+    const resolved = buildResolvedOccupiedRows({
+      unifiedRows,
+      currentDateString,
+      clinicalDocumentPresenceByBedId,
+    });
+    const map = new Map<string, (typeof resolved)[number]>();
+    resolved.forEach(entry => map.set(entry.row.id, entry));
+    return map;
+  }, [unifiedRows, currentDateString, clinicalDocumentPresenceByBedId]);
 
   return (
     <tbody>
-      {resolvedOccupiedRows.map(({ row, actionMenuAlign, indicators }) => (
-        <PatientRow
-          key={row.id}
-          bed={row.bed}
-          data={row.data}
-          currentDateString={currentDateString}
-          onAction={onAction}
-          readOnly={readOnly}
-          actionMenuAlign={actionMenuAlign}
-          diagnosisMode={diagnosisMode}
-          isSubRow={row.isSubRow}
-          bedType={bedTypes[row.bed.id]}
-          role={role}
-          accessProfile={accessProfile}
-          indicators={indicators}
-        />
-      ))}
+      {unifiedRows.map(row => {
+        if (row.kind === 'empty') {
+          return (
+            <EmptyBedRow
+              key={row.id}
+              bed={row.bed}
+              columns={columns}
+              visibleColumnCount={visibleColumnCount}
+              readOnly={readOnly}
+              onClick={() => onActivateEmptyBed(row.bed.id)}
+            />
+          );
+        }
 
-      {showEmptyBedsDivider ? (
-        <CensusEmptyBedsDividerRow
-          emptyBedsCount={emptyBeds.length}
-          visibleColumnCount={visibleColumnCount}
-        />
-      ) : null}
+        const resolved = resolvedOccupiedMap.get(row.id);
+        if (!resolved) return null;
 
-      {emptyBeds.map(bed => (
-        <EmptyBedRow
-          key={bed.id}
-          bed={bed}
-          columns={columns}
-          visibleColumnCount={visibleColumnCount}
-          readOnly={readOnly}
-          onClick={() => onActivateEmptyBed(bed.id)}
-        />
-      ))}
+        return (
+          <PatientRow
+            key={row.id}
+            bed={row.bed}
+            data={row.data}
+            currentDateString={currentDateString}
+            onAction={onAction}
+            readOnly={readOnly}
+            actionMenuAlign={resolved.actionMenuAlign}
+            diagnosisMode={diagnosisMode}
+            isSubRow={row.isSubRow}
+            bedType={bedTypes[row.bed.id]}
+            role={role}
+            accessProfile={accessProfile}
+            indicators={resolved.indicators}
+          />
+        );
+      })}
     </tbody>
   );
 };

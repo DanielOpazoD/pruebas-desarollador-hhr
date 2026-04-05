@@ -10,9 +10,13 @@ export interface OccupiedBedRow {
   isSubRow: boolean;
 }
 
+export type UnifiedBedRow =
+  | { kind: 'occupied'; id: string; bed: BedDefinition; data: PatientData; isSubRow: boolean }
+  | { kind: 'empty'; id: string; bed: BedDefinition };
+
 export interface CensusBedRows {
-  occupiedRows: OccupiedBedRow[];
-  emptyBeds: BedDefinition[];
+  unifiedRows: UnifiedBedRow[];
+  emptyBedCount: number;
 }
 
 export type BedTypesById = Record<string, BedType>;

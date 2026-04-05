@@ -2,16 +2,16 @@ import { describe, expect, it } from 'vitest';
 import {
   buildResolvedOccupiedRows,
   resolvePatientRowMenuAlign,
-  shouldRenderEmptyBedsDivider,
 } from '@/features/census/controllers/censusTableBodyController';
 import { DataFactory } from '@/tests/factories/DataFactory';
-import type { OccupiedBedRow } from '@/features/census/types/censusTableTypes';
+import type { UnifiedBedRow } from '@/features/census/types/censusTableTypes';
 import { BedType } from '@/types/domain/beds';
 
 describe('censusTableBodyController', () => {
   it('builds resolved occupied rows with menu alignment and indicators', () => {
-    const occupiedRows: OccupiedBedRow[] = [
+    const unifiedRows: UnifiedBedRow[] = [
       {
+        kind: 'occupied',
         id: 'row-1',
         bed: { id: 'R1', name: 'R1', type: BedType.MEDIA, isCuna: false },
         data: DataFactory.createMockPatient('R1', {
@@ -21,6 +21,7 @@ describe('censusTableBodyController', () => {
         isSubRow: false,
       },
       {
+        kind: 'occupied',
         id: 'row-2',
         bed: { id: 'R2', name: 'R2', type: BedType.MEDIA, isCuna: false },
         data: DataFactory.createMockPatient('R2'),
@@ -29,7 +30,7 @@ describe('censusTableBodyController', () => {
     ];
 
     const result = buildResolvedOccupiedRows({
-      occupiedRows,
+      unifiedRows,
       currentDateString: '2026-03-05',
       clinicalDocumentPresenceByBedId: { R1: true, R2: true },
     });
@@ -53,7 +54,5 @@ describe('censusTableBodyController', () => {
   it('keeps utility functions stable', () => {
     expect(resolvePatientRowMenuAlign(0, 6)).toBe('top');
     expect(resolvePatientRowMenuAlign(3, 6)).toBe('bottom');
-    expect(shouldRenderEmptyBedsDivider(0)).toBe(false);
-    expect(shouldRenderEmptyBedsDivider(1)).toBe(true);
   });
 });

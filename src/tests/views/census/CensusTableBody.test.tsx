@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { CensusTableBody } from '@/features/census/components/CensusTableBody';
 import { DataFactory } from '@/tests/factories/DataFactory';
-import type { OccupiedBedRow } from '@/features/census/types/censusTableTypes';
+import type { UnifiedBedRow } from '@/features/census/types/censusTableTypes';
 import type { BedDefinition } from '@/types/domain/beds';
 import { BedType } from '@/types/domain/beds';
 import type { TableColumnConfig } from '@/context/TableConfigContext';
@@ -48,7 +48,8 @@ describe('CensusTableBody', () => {
 
   it('assigns action menu alignment based on row position', () => {
     patientRowSpy.mockClear();
-    const occupiedRows: OccupiedBedRow[] = Array.from({ length: 6 }, (_, i) => ({
+    const unifiedRows: UnifiedBedRow[] = Array.from({ length: 6 }, (_, i) => ({
+      kind: 'occupied' as const,
       id: `row-${i}`,
       bed: { id: `R${i + 1}`, name: `R${i + 1}`, type: BedType.MEDIA, isCuna: false },
       data: DataFactory.createMockPatient(`R${i + 1}`),
@@ -58,8 +59,7 @@ describe('CensusTableBody', () => {
     render(
       <table>
         <CensusTableBody
-          occupiedRows={occupiedRows}
-          emptyBeds={[]}
+          unifiedRows={unifiedRows}
           currentDateString="2026-02-15"
           readOnly={false}
           diagnosisMode="free"
@@ -88,8 +88,9 @@ describe('CensusTableBody', () => {
 
   it('forwards specialist census access profile to each patient row', () => {
     patientRowSpy.mockClear();
-    const occupiedRows: OccupiedBedRow[] = [
+    const unifiedRows: UnifiedBedRow[] = [
       {
+        kind: 'occupied',
         id: 'row-1',
         bed: { id: 'R1', name: 'R1', type: BedType.MEDIA, isCuna: false },
         data: DataFactory.createMockPatient('R1'),
@@ -100,8 +101,7 @@ describe('CensusTableBody', () => {
     render(
       <table>
         <CensusTableBody
-          occupiedRows={occupiedRows}
-          emptyBeds={[]}
+          unifiedRows={unifiedRows}
           currentDateString="2026-02-15"
           readOnly={true}
           diagnosisMode="free"
@@ -124,8 +124,9 @@ describe('CensusTableBody', () => {
 
   it('forwards resolved indicators to main rows only', () => {
     patientRowSpy.mockClear();
-    const occupiedRows: OccupiedBedRow[] = [
+    const unifiedRows: UnifiedBedRow[] = [
       {
+        kind: 'occupied',
         id: 'row-main',
         bed: { id: 'R1', name: 'R1', type: BedType.MEDIA, isCuna: false },
         data: DataFactory.createMockPatient('R1', {
@@ -135,6 +136,7 @@ describe('CensusTableBody', () => {
         isSubRow: false,
       },
       {
+        kind: 'occupied',
         id: 'row-crib',
         bed: { id: 'R1', name: 'R1', type: BedType.MEDIA, isCuna: false },
         data: DataFactory.createMockPatient('R1-crib', {
@@ -148,8 +150,7 @@ describe('CensusTableBody', () => {
     render(
       <table>
         <CensusTableBody
-          occupiedRows={occupiedRows}
-          emptyBeds={[]}
+          unifiedRows={unifiedRows}
           currentDateString="2026-02-15"
           readOnly={false}
           diagnosisMode="free"
@@ -176,8 +177,9 @@ describe('CensusTableBody', () => {
 
   it('treats early next-day admissions as current clinical-day admissions', () => {
     patientRowSpy.mockClear();
-    const occupiedRows: OccupiedBedRow[] = [
+    const unifiedRows: UnifiedBedRow[] = [
       {
+        kind: 'occupied',
         id: 'row-main',
         bed: { id: 'R1', name: 'R1', type: BedType.MEDIA, isCuna: false },
         data: DataFactory.createMockPatient('R1', {
@@ -191,8 +193,7 @@ describe('CensusTableBody', () => {
     render(
       <table>
         <CensusTableBody
-          occupiedRows={occupiedRows}
-          emptyBeds={[]}
+          unifiedRows={unifiedRows}
           currentDateString="2026-02-15"
           readOnly={false}
           diagnosisMode="free"
@@ -213,19 +214,26 @@ describe('CensusTableBody', () => {
     });
   });
 
-  it('renders empty bed divider and forwards empty bed activation', () => {
+  it('renders empty bed rows and forwards empty bed activation', () => {
     emptyBedRowSpy.mockClear();
     const onActivateEmptyBed = vi.fn();
-    const emptyBeds: BedDefinition[] = [
-      { id: 'R9', name: 'R9', type: BedType.MEDIA, isCuna: false },
-      { id: 'R10', name: 'R10', type: BedType.MEDIA, isCuna: false },
+    const unifiedRows: UnifiedBedRow[] = [
+      {
+        kind: 'empty',
+        id: 'R9',
+        bed: { id: 'R9', name: 'R9', type: BedType.MEDIA, isCuna: false },
+      },
+      {
+        kind: 'empty',
+        id: 'R10',
+        bed: { id: 'R10', name: 'R10', type: BedType.MEDIA, isCuna: false },
+      },
     ];
 
     render(
       <table>
         <CensusTableBody
-          occupiedRows={[]}
-          emptyBeds={emptyBeds}
+          unifiedRows={unifiedRows}
           currentDateString="2026-02-15"
           readOnly={false}
           diagnosisMode="free"
@@ -240,7 +248,6 @@ describe('CensusTableBody', () => {
       </table>
     );
 
-    expect(screen.getByText('Camas disponibles (2)')).toBeInTheDocument();
     expect(emptyBedRowSpy).toHaveBeenCalledTimes(2);
 
     fireEvent.click(screen.getByTestId('empty-bed-row-R9'));

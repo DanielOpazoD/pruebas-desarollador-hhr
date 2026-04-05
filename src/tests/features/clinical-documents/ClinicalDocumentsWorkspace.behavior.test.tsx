@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { ClinicalDocumentsWorkspace } from '@/features/clinical-documents/components/ClinicalDocumentsWorkspace';
 import type {
@@ -177,7 +177,7 @@ vi.mock('@/application/clinical-documents/clinicalDocumentPdfExportUseCase', asy
   };
 });
 
-describe('ClinicalDocumentsWorkspace', () => {
+describe('ClinicalDocumentsWorkspace behavior', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     openClinicalDocumentBrowserPrintPreview.mockReset();
@@ -235,7 +235,107 @@ describe('ClinicalDocumentsWorkspace', () => {
     );
   });
 
-  it('renders the real shell and wires create/print/drive through use-case boundaries', async () => {
+  it('renders read-only sheet actions for nurse role', async () => {
+    authState.user = { uid: 'n1', email: 'nurse@test.com', displayName: 'Nurse Test' };
+    authState.role = 'nurse_hospital';
+
+    render(
+      <ClinicalDocumentsWorkspace
+        patient={workspacePatient}
+        currentDateString="2026-03-06"
+        bedId="R1"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Doctor Test')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('button', { name: /guardar/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /drive/i })).toBeInTheDocument();
+  });
+
+  it('blocks editing for non-admin users when the episode is closed', async () => {
+    authState.user = { uid: 's1', email: 'specialist@test.com', displayName: 'Specialist Test' };
+    authState.role = 'doctor_specialist';
+
+    render(
+      <ClinicalDocumentsWorkspace
+        patient={{
+          ...workspacePatient,
+          dischargeDate: '2026-03-08',
+          episodeClosureKind: 'discharge',
+        }}
+        currentDateString="2026-03-06"
+        bedId="R1"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/episodio cerrado por alta/i)).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole('button', { name: /^crear$/i })).toBeDisabled();
+    expect(screen.queryByTitle(/eliminar documento/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps admin editing enabled on closed episodes', async () => {
+    authState.user = { uid: 'a1', email: 'admin@test.com', displayName: 'Admin Test' };
+    authState.role = 'admin';
+
+    render(
+      <ClinicalDocumentsWorkspace
+        patient={{
+          ...workspacePatient,
+          transferDate: '2026-03-08',
+          episodeClosureKind: 'transfer',
+        }}
+        currentDateString="2026-03-06"
+        bedId="R1"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /^crear$/i })).toBeEnabled();
+    });
+
+    expect(screen.queryByText(/episodio cerrado/i)).not.toBeInTheDocument();
+    expect(screen.getByTitle(/eliminar documento/i)).toBeInTheDocument();
+  });
+
+  it('updates the open document to the newly selected template type', async () => {
+    render(
+      <ClinicalDocumentsWorkspace
+        patient={workspacePatient}
+        currentDateString="2026-03-06"
+        bedId="R1"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Doctor Test')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByRole('combobox', { name: /tipo de documento/i }), {
+      target: { value: 'evolucion' },
+    });
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Evolución médica').length).toBeGreaterThan(0);
+      expect(screen.getByText(/^Evolución$/, { selector: 'p' })).toBeInTheDocument();
+    });
+  });
+
+  it('keeps the current draft visible when a stale remote subscription arrives over local changes', async () => {
+    let subscriptionCallback: ((docs: ClinicalDocumentRecord[]) => void) | null = null;
+    vi.mocked(ClinicalDocumentRepository.subscribeByEpisode).mockImplementation(
+      (_episodeKey, callback) => {
+        subscriptionCallback = callback;
+        callback([clinicalDocument]);
+        return vi.fn();
+      }
+    );
+
     render(
       <ClinicalDocumentsWorkspace
         patient={workspacePatient}
@@ -249,36 +349,43 @@ describe('ClinicalDocumentsWorkspace', () => {
     });
 
     const antecedentesEditor = screen.getByRole('textbox', { name: /contenido antecedentes/i });
-    antecedentesEditor.innerHTML = 'Antecedentes actualizados';
+    antecedentesEditor.innerHTML = 'Cambio local sin guardar';
     fireEvent.input(antecedentesEditor);
-    fireEvent.click(screen.getByRole('button', { name: /^crear$/i }));
 
-    await waitFor(() => {
-      expect(clinicalDocumentUseCases.executeCreateClinicalDocumentDraft).toHaveBeenCalled();
+    expect(subscriptionCallback).toBeTruthy();
+    await act(async () => {
+      subscriptionCallback?.([
+        {
+          ...clinicalDocument,
+          audit: {
+            ...clinicalDocument.audit,
+            updatedAt: '2026-03-06T12:00:00.000Z',
+          },
+          sections: clinicalDocument.sections.map(section =>
+            section.id === 'antecedentes'
+              ? { ...section, content: 'Cambio remoto pendiente' }
+              : section
+          ),
+        },
+      ]);
     });
 
-    fireEvent.click(screen.getAllByRole('button', { name: /epicrisis médica/i })[0]);
-    fireEvent.click(screen.getByRole('button', { name: /pdf/i }));
-
     await waitFor(() => {
-      expect(openClinicalDocumentBrowserPrintPreview).toHaveBeenCalled();
-      expect(
-        clinicalDocumentPdfExportUseCase.executeExportClinicalDocumentPdf
-      ).toHaveBeenCalledWith(
-        expect.objectContaining({
-          record: expect.objectContaining({
-            id: clinicalDocument.id,
-            status: 'draft',
-          }),
-          hospitalId: 'hhr',
-          fileName: expect.any(String),
-        })
-      );
-      expect(notificationApi.info).not.toHaveBeenCalled();
+      expect(screen.queryByRole('button', { name: /recargar remoto/i })).not.toBeInTheDocument();
+      expect(screen.getByText('Cambio local sin guardar')).toBeInTheDocument();
     });
   });
 
-  it('supports manual drive upload on the real shell boundary', async () => {
+  it('does not show remote resolution buttons after a staged remote update', async () => {
+    let subscriptionCallback: ((docs: ClinicalDocumentRecord[]) => void) | null = null;
+    vi.mocked(ClinicalDocumentRepository.subscribeByEpisode).mockImplementation(
+      (_episodeKey, callback) => {
+        subscriptionCallback = callback;
+        callback([clinicalDocument]);
+        return vi.fn();
+      }
+    );
+
     render(
       <ClinicalDocumentsWorkspace
         patient={workspacePatient}
@@ -288,48 +395,34 @@ describe('ClinicalDocumentsWorkspace', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /drive/i })).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Doctor Test')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /drive/i }));
+    const antecedentesEditor = screen.getByRole('textbox', { name: /contenido antecedentes/i });
+    antecedentesEditor.innerHTML = 'Cambio local temporal';
+    fireEvent.input(antecedentesEditor);
+
+    await act(async () => {
+      subscriptionCallback?.([
+        {
+          ...clinicalDocument,
+          audit: {
+            ...clinicalDocument.audit,
+            updatedAt: '2026-03-06T12:15:00.000Z',
+          },
+          sections: clinicalDocument.sections.map(section =>
+            section.id === 'antecedentes'
+              ? { ...section, content: 'Cambio remoto definitivo' }
+              : section
+          ),
+        },
+      ]);
+    });
 
     await waitFor(() => {
-      expect(
-        clinicalDocumentPdfExportUseCase.executeExportClinicalDocumentPdf
-      ).toHaveBeenCalledWith(
-        expect.objectContaining({
-          record: expect.objectContaining({
-            id: clinicalDocument.id,
-          }),
-          hospitalId: 'hhr',
-          fileName: expect.any(String),
-        })
-      );
+      expect(screen.queryByRole('button', { name: /recargar remoto/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /descartar local/i })).not.toBeInTheDocument();
+      expect(screen.getByText('Cambio local temporal')).toBeInTheDocument();
     });
-  });
-
-  it('allows hiding and restoring sections on the real shell boundary', async () => {
-    render(
-      <ClinicalDocumentsWorkspace
-        patient={workspacePatient}
-        currentDateString="2026-03-06"
-        bedId="R1"
-      />
-    );
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Antecedentes' })).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Antecedentes' }));
-    fireEvent.click(screen.getByRole('button', { name: /eliminar sección antecedentes/i }));
-    expect(
-      screen.getByRole('button', { name: /restaurar sección: antecedentes/i })
-    ).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /restaurar sección: antecedentes/i }));
-    expect(
-      screen.getByRole('button', { name: /eliminar sección antecedentes/i })
-    ).toBeInTheDocument();
   });
 });

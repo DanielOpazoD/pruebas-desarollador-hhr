@@ -1,6 +1,8 @@
 {
   "version": 1,
   "canonicalSources": [
+    "docs/FOUNDATION_TRACKER.md",
+    "docs/FOUNDATION_MAINTENANCE_CADENCE.md",
     "docs/TECHNICAL_DEBT_REGISTER.md",
     "reports/architectural-hotspots.md",
     "reports/quality-metrics.md",
@@ -25,14 +27,18 @@
     {
       "id": "testing-governance",
       "goal": "Ampliar critical coverage y alinear scorecards/reportes con el trabajo estructural"
+    },
+    {
+      "id": "foundations-convergence",
+      "goal": "Mantener APIs públicas, shims, megatests y ownership en convergencia sostenida"
     }
   ],
   "backlog": [
     {
-      "id": "daily-record-facades",
+      "id": "census-unified-rows-test-alignment",
       "priority": "P0",
-      "stream": "domain-contracts",
-      "closureSignal": "Nuevos consumers de DailyRecord salen por facades o ports aprobados"
+      "stream": "foundations-convergence",
+      "closureSignal": "typecheck vuelve a verde y las suites de census dejan de depender de occupiedRows/emptyBeds"
     },
     {
       "id": "app-shell-critical-coverage",
@@ -47,16 +53,16 @@
       "closureSignal": "Seams clave de auth aceptan runtime explícito sin romper compatibilidad"
     },
     {
-      "id": "firestore-storage-runtime-adapters",
+      "id": "foundation-monthly-cadence",
       "priority": "P1",
-      "stream": "runtime-infrastructure",
-      "closureSignal": "Adapters base de Firestore/Storage aceptan runtime explícito y dejan el singleton como fallback"
+      "stream": "foundations-convergence",
+      "closureSignal": "Cada ciclo ejecuta al menos una baja de shim, un hotspot y una partición de megatest con tracker actualizado"
     },
     {
-      "id": "release-confidence-app-shell",
+      "id": "next-megatest-wave",
       "priority": "P1",
       "stream": "testing-governance",
-      "closureSignal": "La matriz de release confidence mapea app-shell sin zonas huérfanas"
+      "closureSignal": "PatientRowOrbitalQuickActions y transferService quedan partidos por seams concretos"
     },
     {
       "id": "legacy-console-reduction",

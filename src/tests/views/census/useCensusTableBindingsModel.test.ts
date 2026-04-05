@@ -57,8 +57,7 @@ describe('useCensusTableBindingsModel', () => {
         isEditMode: false,
         canDeleteRecord: true,
         resetDayDeniedMessage: '',
-        occupiedRows: [],
-        emptyBeds: [],
+        unifiedRows: [],
         bedTypes: {},
         totalWidth: 1200,
         handleClearAll: vi.fn(),
@@ -80,7 +79,7 @@ describe('useCensusTableBindingsModel', () => {
     );
 
     expect(useClinicalDocumentPresenceByBed).toHaveBeenCalledWith({
-      occupiedRows: [],
+      unifiedRows: [],
       currentDateString: '2026-03-10',
       enabled: true,
     });

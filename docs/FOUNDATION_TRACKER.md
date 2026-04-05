@@ -5,8 +5,8 @@
 ## Resumen
 
 - Roadmap total: `26` tareas
-- Completadas: `18`
-- Avance global: `69%`
+- Completadas: `26`
+- Avance global: `100%`
 
 ## Estado por bloque
 
@@ -15,8 +15,8 @@
 | `B01-B05` | higiene base, taxonomía, convergencia documental e infraestructura | completado | `100%` |
 | `B06-B10` | ownership de controllers, guardrails y scripts públicos            | completado | `100%` |
 | `B11-B18` | hotspots, APIs públicas y limpieza transversal                     | completado | `100%` |
-| `B19-B23` | tests y documentación generada                                     | pendiente  |   `0%` |
-| `B24-B26` | sostenibilidad y métricas de convergencia                          | pendiente  |   `0%` |
+| `B19-B23` | tests y documentación generada                                     | completado | `100%` |
+| `B24-B26` | sostenibilidad y métricas de convergencia                          | completado | `100%` |
 
 ## Tareas `B01-B05`
 
@@ -40,9 +40,9 @@
 
 ## Siguiente bloque recomendado
 
-1. `B19-B23` preparar partición de megatests y orden documental generado
-2. `B24-B26` consolidar métricas y rutina permanente de simplificación
-3. Mantener los nuevos guardrails sin abrir bypasses de compatibilidad
+1. Resolver el drift de tipos en tests de `census` para recuperar `typecheck` global
+2. Ejecutar la próxima ola de megatests sobre `PatientRowOrbitalQuickActions` y `transferService`
+3. Mantener la cadencia mensual definida en `docs/FOUNDATION_MAINTENANCE_CADENCE.md`
 
 ## Avance temprano `B11-B18`
 
@@ -55,6 +55,23 @@
 - `B17` completado: `clinical-documents` consolida su surface en `public.ts`, `index.ts` pasa a reexportarla y los consumers externos migran al root del feature.
 - `B18` completado: `ControllerResult` se centraliza en `src/shared/contracts/controllerResult.ts`, `shared/census/patientContracts.ts` queda como shim de compatibilidad y `check:repo-hygiene` bloquea imports nuevos hacia esos aliases ambiguos.
 - `B11` completado: `application/`, `hooks/` y `services/` no-repository dejan de importar contratos raíz de `dailyRecord` y ahora consumen `src/application/shared/dailyRecordContracts` o `src/services/contracts/dailyRecordServiceContracts`; `hooks/contracts/dailyRecordHookContracts.ts` queda como shim.
+- `B19` completado: inventario priorizado de megatests en `docs/TEST_MEGATEST_BACKLOG.md`.
+- `B20` completado: `ClinicalDocumentsWorkspace.test.tsx` se partió en dos suites (`ClinicalDocumentsWorkspace.test.tsx` + `ClinicalDocumentsWorkspace.behavior.test.tsx`) para separar acciones del shell de permisos/estado remoto; `useBedManagement.test.ts` se dividió en `useBedManagement.patient-updates.test.ts` y `useBedManagement.operations.test.ts`.
+- `B21` completado: clasificación de documentación canónica, operativa y generada en `docs/DOCUMENTATION_MAP.md`.
+- `B22` completado: decisión explícita sobre `docs/api` como artefacto generado versionado temporalmente.
+- `B23` completado: mapa corto de documentación y marcadores de lectura para `docs/api` y `reports`.
+- `B24` completado: rutina mensual de simplificación documentada en `docs/FOUNDATION_MAINTENANCE_CADENCE.md` y enlazada desde `docs/QUALITY_GUARDRAILS.md`.
+- `B25` completado: `report:quality-metrics` ahora expone señales de convergencia reales (`deep imports`, shims, ownership drift, megatests) además de las señales sintácticas.
+- `B26` completado: debt register, baseline técnico y política de cambio sostenible quedaron alineados con la nueva fase de mantenimiento.
+
+## Bloqueos abiertos
+
+- `typecheck` global sigue fallando por drift previo en tests de `census` que todavía esperan `occupiedRows` / `emptyBeds` y exports retirados del layout/controller antiguo. No viene de la partición de megatests del bloque `B20`.
+
+## Estado final del programa
+
+- El roadmap de cimientos `B01-B26` quedó ejecutado al `100%`.
+- La continuidad ya no depende de abrir un plan nuevo grande, sino de sostener la cadencia mensual y resolver deuda remanente puntual.
 
 ## Regla de mantenimiento
 

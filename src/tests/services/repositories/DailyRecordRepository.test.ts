@@ -202,7 +202,6 @@ describe('DailyRecordRepository', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset all specific mocks to avoid pollution
     vi.mocked(idbService.getRecordForDate).mockReset();
     vi.mocked(idbService.getPreviousDayRecord).mockReset();
     vi.mocked(idbService.saveRecord).mockReset();
@@ -211,7 +210,6 @@ describe('DailyRecordRepository', () => {
     vi.mocked(firestoreService.updateRecordPartial).mockReset();
 
     Repository.setFirestoreEnabled(true);
-    // Default mock implementations for common lookups
     vi.mocked(idbService.getRecordForDate).mockResolvedValue(null);
     vi.mocked(firestoreService.getRecordFromFirestore).mockResolvedValue(null);
     vi.mocked(firestoreService.getRecordFromFirestoreDetailed).mockImplementation(
@@ -253,7 +251,7 @@ describe('DailyRecordRepository', () => {
         ...mockRecord,
         beds: expect.any(Object),
       });
-      expect(idbService.saveRecord).toHaveBeenCalled(); // Should cache locally
+      expect(idbService.saveRecord).toHaveBeenCalled();
     });
 
     it('should return source metadata via getForDateWithMeta', async () => {
@@ -386,7 +384,7 @@ describe('DailyRecordRepository', () => {
         ...mockRecord,
         beds: expect.any(Object),
       });
-      expect(idbService.saveRecord).toHaveBeenCalled(); // Since initializeDay calls save
+      expect(idbService.saveRecord).toHaveBeenCalled();
     });
 
     it('should preserve CIE-10 from copy source when remote initialization record already exists', async () => {
@@ -540,7 +538,6 @@ describe('DailyRecordRepository', () => {
   describe('getAvailableDates', () => {
     it('should return combined dates from local and remote', async () => {
       vi.mocked(idbService.getAllDates).mockResolvedValue(['2025-01-01']);
-      // Note: getAllDates usually just returns local dates in this repo's implementation
       const dates = await Repository.getAvailableDates();
       expect(dates).toContain('2025-01-01');
     });
@@ -548,7 +545,6 @@ describe('DailyRecordRepository', () => {
 
   describe('deleteDay', () => {
     it('should delete from local and move to trash in remote', async () => {
-      // Mock firestore to have the record so it proceeds to moveRecordToTrash
       vi.mocked(firestoreService.getRecordFromFirestore).mockResolvedValueOnce(mockRecord);
 
       await Repository.deleteDay(mockDate);
@@ -613,7 +609,6 @@ describe('DailyRecordRepository', () => {
       vi.mocked(idbService.getRecordForDate).mockResolvedValue(null);
       vi.mocked(firestoreService.getRecordFromFirestore).mockRejectedValue(new Error('FS Error'));
 
-      // Should not throw, but create a new empty record
       const result = await Repository.initializeDay(mockDate);
       expect(result.date).toBe(mockDate);
       expect(consoleSpy).toHaveBeenCalledWith(

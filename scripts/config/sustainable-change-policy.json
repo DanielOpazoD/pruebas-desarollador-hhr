@@ -37,6 +37,17 @@
       "requiredArtifacts": []
     },
     {
+      "id": "foundations_convergence",
+      "label": "Convergencia estructural: shims, APIs publicas, megatests y hygiene",
+      "requiredGates": ["check:repo-hygiene", "lint", "typecheck"],
+      "requiredDocs": [
+        "docs/FOUNDATION_TRACKER.md",
+        "docs/FOUNDATION_MAINTENANCE_CADENCE.md",
+        "docs/QUALITY_GUARDRAILS.md"
+      ],
+      "requiredArtifacts": ["reports/quality-metrics.md", "reports/technical-execution-baseline.md"]
+    },
+    {
       "id": "dependency_upgrade",
       "label": "Upgrade de dependencias o toolchain",
       "requiredGates": ["typecheck", "lint", "ci:merge-gate"],

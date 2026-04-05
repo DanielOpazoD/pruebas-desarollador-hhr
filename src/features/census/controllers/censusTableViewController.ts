@@ -3,7 +3,7 @@ import type { PatientData } from '@/features/census/types/censusTablePatientCont
 import {
   BedTypesById,
   CensusBedRows,
-  OccupiedBedRow,
+  UnifiedBedRow,
 } from '@/features/census/types/censusTableTypes';
 
 interface BuildVisibleBedsParams {
@@ -32,19 +32,21 @@ export const buildVisibleBeds = ({
 };
 
 export const buildCensusBedRows = ({ visibleBeds, beds }: BuildBedRowsParams): CensusBedRows => {
-  const occupiedRows: OccupiedBedRow[] = [];
-  const emptyBeds: BedDefinition[] = [];
+  const unifiedRows: UnifiedBedRow[] = [];
+  let emptyBedCount = 0;
 
   visibleBeds.forEach(bed => {
     const bedData = beds?.[bed.id];
     const hasPatient = Boolean(bedData?.patientName || bedData?.isBlocked);
 
     if (!hasPatient || !bedData) {
-      emptyBeds.push(bed);
+      emptyBedCount++;
+      unifiedRows.push({ kind: 'empty', id: bed.id, bed });
       return;
     }
 
-    occupiedRows.push({
+    unifiedRows.push({
+      kind: 'occupied',
       id: bed.id,
       bed,
       data: bedData,
@@ -52,7 +54,8 @@ export const buildCensusBedRows = ({ visibleBeds, beds }: BuildBedRowsParams): C
     });
 
     if (bedData.clinicalCrib && !bedData.isBlocked) {
-      occupiedRows.push({
+      unifiedRows.push({
+        kind: 'occupied',
         id: `${bed.id}-cuna`,
         bed,
         data: bedData.clinicalCrib,
@@ -61,10 +64,7 @@ export const buildCensusBedRows = ({ visibleBeds, beds }: BuildBedRowsParams): C
     }
   });
 
-  return {
-    occupiedRows,
-    emptyBeds,
-  };
+  return { unifiedRows, emptyBedCount };
 };
 
 export const resolveVisibleBedTypes = ({

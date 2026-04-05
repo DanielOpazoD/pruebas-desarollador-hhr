@@ -12,7 +12,8 @@ Las mejoras recientes se han concentrado en:
 - eliminar rutas Gemini cliente no utilizadas;
 - modularizar `functions/index.js` en dominios internos;
 - reducir imports de compatibilidad desde `dataService.ts`;
-- limpiar artefactos trackeados y endurecer la higiene del repositorio.
+- limpiar artefactos trackeados y endurecer la higiene del repositorio;
+- cerrar el roadmap estructural `B01-B26` y dejar cadencia mensual de convergencia.
 
 ## Fortalezas actuales
 
@@ -30,9 +31,9 @@ Las mejoras recientes se han concentrado en:
 
 ## Próximo foco recomendado
 
-1. Seguir reduciendo dependencias sobre fachadas legacy.
-2. Limpiar y aislar código experimental/no clínico del flujo principal.
-3. Mantener la documentación basada en artefactos generados, no en snapshots manuales.
+1. Recuperar `typecheck` global alineando tests de `census` al modelo `unifiedRows`.
+2. Ejecutar la siguiente ola de megatests (`PatientRowOrbitalQuickActions`, `transferService`).
+3. Mantener la convergencia con la rutina de [docs/FOUNDATION_MAINTENANCE_CADENCE.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/FOUNDATION_MAINTENANCE_CADENCE.md).
 
 ## Tracker de cimientos
 
@@ -40,6 +41,7 @@ El seguimiento persistente del roadmap estructural vive en:
 
 - [docs/FOUNDATION_TRACKER.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/FOUNDATION_TRACKER.md)
 - Taxonomía canónica: [docs/CODEBASE_CANON.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/CODEBASE_CANON.md)
+- Mapa documental: [docs/DOCUMENTATION_MAP.md](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/docs/DOCUMENTATION_MAP.md)
 
 ## Fuente de verdad
 
