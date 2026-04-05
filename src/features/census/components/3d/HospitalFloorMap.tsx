@@ -1,7 +1,7 @@
 /* eslint-disable react/no-unknown-property */
 import React from 'react';
 import { Canvas } from '@react-three/fiber';
-import { ContactShadows, Environment, OrbitControls } from '@react-three/drei';
+import { ContactShadows, OrbitControls } from '@react-three/drei';
 import type { BedDefinition } from '@/features/census/contracts/censusBedContracts';
 import type { PatientData } from '@/features/census/contracts/censusPatientContracts';
 import { HospitalFloorMapBedMesh } from '@/features/census/components/3d/HospitalFloorMapBedMesh';
@@ -16,6 +16,21 @@ interface HospitalFloorMapProps {
   patients: Record<string, PatientData>;
   onBedClick?: (bedId: string) => void;
 }
+
+const HospitalFloorMapLightRig = () => (
+  <>
+    <ambientLight intensity={0.7} />
+    <hemisphereLight args={['#f8fafc', '#cbd5e1', 0.65]} />
+    <directionalLight
+      position={[5, 15, 5]}
+      intensity={1.2}
+      castShadow
+      shadow-mapSize={[1024, 1024]}
+    />
+    <directionalLight position={[-8, 10, -6]} intensity={0.45} color="#dbeafe" />
+    <pointLight position={[0, 8, 10]} intensity={0.35} color="#ffffff" />
+  </>
+);
 
 export const HospitalFloorMap = ({ beds, patients, onBedClick }: HospitalFloorMapProps) => {
   const {
@@ -42,14 +57,7 @@ export const HospitalFloorMap = ({ beds, patients, onBedClick }: HospitalFloorMa
   return (
     <div className="w-full h-[600px] bg-slate-50 rounded-xl overflow-hidden border border-slate-200 shadow-inner relative group">
       <Canvas shadows camera={{ position: [0, 21.8, 0], fov: 45 }}>
-        <ambientLight intensity={0.7} />
-        <directionalLight
-          position={[5, 15, 5]}
-          intensity={1.2}
-          castShadow
-          shadow-mapSize={[1024, 1024]}
-        />
-        <Environment preset="city" />
+        <HospitalFloorMapLightRig />
 
         <OrbitControls
           ref={controlsRef}
