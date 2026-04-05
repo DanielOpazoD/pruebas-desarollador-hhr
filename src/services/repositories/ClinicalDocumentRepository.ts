@@ -1,4 +1,4 @@
-import { db } from '@/services/infrastructure/db';
+import { firestoreDb } from '@/services/storage/firestore';
 import { getActiveHospitalId } from '@/constants/firestorePaths';
 import type {
   ClinicalDocumentPdfMeta,
@@ -91,7 +91,7 @@ export const ClinicalDocumentRepository = {
     episodeKey: string,
     hospitalId: string = getActiveHospitalId()
   ): Promise<ClinicalDocumentRecord[]> {
-    const documents = await db.getDocs<ClinicalDocumentRecord>(
+    const documents = await firestoreDb.getDocs<ClinicalDocumentRecord>(
       getClinicalDocumentsCollectionPath(hospitalId),
       {
         where: [{ field: 'episodeKey', operator: '==', value: episodeKey }],
@@ -116,9 +116,12 @@ export const ClinicalDocumentRepository = {
     const chunks = chunkArray(sanitizedEpisodeKeys, EPISODE_KEY_QUERY_CHUNK_SIZE);
     const chunkedResults = await Promise.all(
       chunks.map(chunk =>
-        db.getDocs<ClinicalDocumentRecord>(getClinicalDocumentsCollectionPath(hospitalId), {
-          where: [{ field: 'episodeKey', operator: 'in', value: chunk }],
-        })
+        firestoreDb.getDocs<ClinicalDocumentRecord>(
+          getClinicalDocumentsCollectionPath(hospitalId),
+          {
+            where: [{ field: 'episodeKey', operator: 'in', value: chunk }],
+          }
+        )
       )
     );
 
@@ -139,7 +142,7 @@ export const ClinicalDocumentRepository = {
     documentId: string,
     hospitalId: string = getActiveHospitalId()
   ): Promise<ClinicalDocumentRecord | null> {
-    const document = await db.getDoc<ClinicalDocumentRecord>(
+    const document = await firestoreDb.getDoc<ClinicalDocumentRecord>(
       getClinicalDocumentsCollectionPath(hospitalId),
       documentId
     );
@@ -151,7 +154,7 @@ export const ClinicalDocumentRepository = {
     hospitalId: string = getActiveHospitalId()
   ): Promise<ClinicalDocumentRecord> {
     const enriched = sanitizeForFirestore(enrichRecord(record));
-    await db.setDoc(getClinicalDocumentsCollectionPath(hospitalId), record.id, enriched);
+    await firestoreDb.setDoc(getClinicalDocumentsCollectionPath(hospitalId), record.id, enriched);
     return enriched;
   },
 
@@ -160,7 +163,7 @@ export const ClinicalDocumentRepository = {
     hospitalId: string = getActiveHospitalId()
   ): Promise<ClinicalDocumentRecord> {
     const enriched = sanitizeForFirestore(enrichRecord(record));
-    await db.setDoc(getClinicalDocumentsCollectionPath(hospitalId), record.id, enriched, {
+    await firestoreDb.setDoc(getClinicalDocumentsCollectionPath(hospitalId), record.id, enriched, {
       merge: true,
     });
     return enriched;
@@ -171,7 +174,7 @@ export const ClinicalDocumentRepository = {
     patch: Pick<ClinicalDocumentRecord, 'status' | 'audit'>,
     hospitalId: string = getActiveHospitalId()
   ): Promise<void> {
-    await db.updateDoc(getClinicalDocumentsCollectionPath(hospitalId), documentId, {
+    await firestoreDb.updateDoc(getClinicalDocumentsCollectionPath(hospitalId), documentId, {
       status: patch.status,
       audit: patch.audit,
       isActiveEpisodeDocument: false,
@@ -183,7 +186,7 @@ export const ClinicalDocumentRepository = {
     pdf: ClinicalDocumentPdfMeta,
     hospitalId: string = getActiveHospitalId()
   ): Promise<void> {
-    await db.updateDoc(getClinicalDocumentsCollectionPath(hospitalId), documentId, {
+    await firestoreDb.updateDoc(getClinicalDocumentsCollectionPath(hospitalId), documentId, {
       pdf: sanitizeForFirestore(pdf),
     });
   },
@@ -193,7 +196,7 @@ export const ClinicalDocumentRepository = {
     callback: (documents: ClinicalDocumentRecord[]) => void,
     hospitalId: string = getActiveHospitalId()
   ): () => void {
-    return db.subscribeQuery<ClinicalDocumentRecord>(
+    return firestoreDb.subscribeQuery<ClinicalDocumentRecord>(
       getClinicalDocumentsCollectionPath(hospitalId),
       { where: [{ field: 'episodeKey', operator: '==', value: episodeKey }] },
       docs =>
@@ -208,6 +211,6 @@ export const ClinicalDocumentRepository = {
   },
 
   async delete(documentId: string, hospitalId: string = getActiveHospitalId()): Promise<void> {
-    await db.deleteDoc(getClinicalDocumentsCollectionPath(hospitalId), documentId);
+    await firestoreDb.deleteDoc(getClinicalDocumentsCollectionPath(hospitalId), documentId);
   },
 };

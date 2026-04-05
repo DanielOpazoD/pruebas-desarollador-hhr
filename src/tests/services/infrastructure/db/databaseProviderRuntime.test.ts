@@ -13,7 +13,7 @@ vi.mock('@/services/infrastructure/db/FirestoreProvider', () => ({
   },
 }));
 
-import { createFirestoreDatabaseProvider } from '@/services/infrastructure/db';
+import { createFirestoreDatabaseProvider } from '@/services/storage/firestore/firestoreDatabaseProvider';
 
 describe('createFirestoreDatabaseProvider', () => {
   beforeEach(() => {

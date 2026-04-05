@@ -39,6 +39,11 @@ Capa de datos e integración: repositorios, persistencia, exportadores, integrac
   - `createRepositoryContainer` y `createTestRepositoryContainer` quedan para composición explícita e inyección en tests.
 - **Service split por responsabilidad** (`read/write/sync/init` en repositorio diario).
 - **Storage abstraction** con estrategia offline-first y fallback.
+- **Ownership explícito del acceso Firestore concreto**:
+  - `storage/firestore/firestoreServiceRuntime.ts` define el runtime canónico.
+  - `storage/firestore/firestoreDatabaseProvider.ts` expone el provider Firestore-backed soportado.
+  - `services/infrastructure/db` conserva implementación y tipos del provider, pero no es el
+    entrypoint recomendado para nuevos consumers del singleton concreto.
 - **Domain observability**:
   - `observability/domainObservability.ts` crea adapters pequenos por dominio
   - `operationalTelemetryService.ts` queda como sink/base compartida

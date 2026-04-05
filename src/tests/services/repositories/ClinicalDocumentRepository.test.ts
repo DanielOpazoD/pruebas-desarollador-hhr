@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ClinicalDocumentRecord } from '@/features/clinical-documents/domain/entities';
 
-vi.mock('@/services/infrastructure/db', () => ({
-  db: {
+vi.mock('@/services/storage/firestore', () => ({
+  firestoreDb: {
     getDocs: vi.fn(),
     getDoc: vi.fn(),
     setDoc: vi.fn(),
@@ -12,7 +12,7 @@ vi.mock('@/services/infrastructure/db', () => ({
   },
 }));
 
-import { db } from '@/services/infrastructure/db';
+import { firestoreDb } from '@/services/storage/firestore';
 import { ClinicalDocumentRepository } from '@/services/repositories/ClinicalDocumentRepository';
 
 const buildDoc = (
@@ -75,11 +75,11 @@ describe('ClinicalDocumentRepository.listByEpisodeKeys', () => {
   it('returns empty and avoids querying when no episode keys are provided', async () => {
     const result = await ClinicalDocumentRepository.listByEpisodeKeys([], 'hhr');
     expect(result).toEqual([]);
-    expect(db.getDocs).not.toHaveBeenCalled();
+    expect(firestoreDb.getDocs).not.toHaveBeenCalled();
   });
 
   it('trims, deduplicates and ignores blank episode keys before querying', async () => {
-    vi.mocked(db.getDocs).mockResolvedValueOnce([
+    vi.mocked(firestoreDb.getDocs).mockResolvedValueOnce([
       buildDoc('d-1', 'rut-1__2026-03-01', '2026-03-05T10:00:00.000Z'),
     ]);
 
@@ -88,8 +88,8 @@ describe('ClinicalDocumentRepository.listByEpisodeKeys', () => {
       'hhr'
     );
 
-    expect(db.getDocs).toHaveBeenCalledTimes(1);
-    expect(db.getDocs).toHaveBeenCalledWith(
+    expect(firestoreDb.getDocs).toHaveBeenCalledTimes(1);
+    expect(firestoreDb.getDocs).toHaveBeenCalledWith(
       'hospitals/hhr/clinicalDocuments',
       expect.objectContaining({
         where: [
@@ -104,7 +104,7 @@ describe('ClinicalDocumentRepository.listByEpisodeKeys', () => {
   });
 
   it('chunks by 10, queries each chunk, and deduplicates by document id', async () => {
-    vi.mocked(db.getDocs)
+    vi.mocked(firestoreDb.getDocs)
       .mockResolvedValueOnce([
         buildDoc('d-1', 'rut-1__2026-03-01', '2026-03-05T10:00:00.000Z'),
         buildDoc('d-2', 'rut-2__2026-03-01', '2026-03-05T11:00:00.000Z'),
@@ -131,15 +131,15 @@ describe('ClinicalDocumentRepository.listByEpisodeKeys', () => {
       'hhr'
     );
 
-    expect(db.getDocs).toHaveBeenCalledTimes(2);
-    expect(db.getDocs).toHaveBeenNthCalledWith(
+    expect(firestoreDb.getDocs).toHaveBeenCalledTimes(2);
+    expect(firestoreDb.getDocs).toHaveBeenNthCalledWith(
       1,
       'hospitals/hhr/clinicalDocuments',
       expect.objectContaining({
         where: [expect.objectContaining({ field: 'episodeKey', operator: 'in' })],
       })
     );
-    expect(db.getDocs).toHaveBeenNthCalledWith(
+    expect(firestoreDb.getDocs).toHaveBeenNthCalledWith(
       2,
       'hospitals/hhr/clinicalDocuments',
       expect.objectContaining({
@@ -148,10 +148,10 @@ describe('ClinicalDocumentRepository.listByEpisodeKeys', () => {
     );
 
     const firstChunk = (
-      vi.mocked(db.getDocs).mock.calls[0][1] as { where: Array<{ value: string[] }> }
+      vi.mocked(firestoreDb.getDocs).mock.calls[0][1] as { where: Array<{ value: string[] }> }
     ).where[0].value;
     const secondChunk = (
-      vi.mocked(db.getDocs).mock.calls[1][1] as { where: Array<{ value: string[] }> }
+      vi.mocked(firestoreDb.getDocs).mock.calls[1][1] as { where: Array<{ value: string[] }> }
     ).where[0].value;
     expect(firstChunk).toHaveLength(10);
     expect(secondChunk).toHaveLength(1);
@@ -164,7 +164,7 @@ describe('ClinicalDocumentRepository.listByEpisodeKeys', () => {
       ...buildDoc('broken', 'rut-1__2026-03-01', '2026-03-05T10:00:00.000Z'),
     };
     delete invalid.id;
-    vi.mocked(db.getDocs).mockResolvedValueOnce([
+    vi.mocked(firestoreDb.getDocs).mockResolvedValueOnce([
       buildDoc('d-1', 'rut-1__2026-03-01', '2026-03-05T10:00:00.000Z'),
       invalid as ClinicalDocumentRecord,
     ]);
@@ -175,7 +175,7 @@ describe('ClinicalDocumentRepository.listByEpisodeKeys', () => {
   });
 
   it('normalizes legacy signed documents back to editable drafts on read', async () => {
-    vi.mocked(db.getDocs).mockResolvedValueOnce([
+    vi.mocked(firestoreDb.getDocs).mockResolvedValueOnce([
       {
         ...buildDoc('legacy-signed', 'rut-1__2026-03-01', '2026-03-05T10:00:00.000Z', 'signed'),
         isLocked: true,

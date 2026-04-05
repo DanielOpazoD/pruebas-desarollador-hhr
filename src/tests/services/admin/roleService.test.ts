@@ -6,8 +6,8 @@ const setDocMock = vi.fn();
 const getFunctionsMock = vi.fn();
 const callableMock = vi.fn();
 
-vi.mock('@/services/infrastructure/db', () => ({
-  db: {
+vi.mock('@/services/storage/firestore', () => ({
+  firestoreDb: {
     getDoc: (...args: unknown[]) => getDocMock(...args),
     setDoc: (...args: unknown[]) => setDocMock(...args),
   },

@@ -16,8 +16,8 @@ import {
   deleteGlobalEmailRecipientList,
 } from '@/services/email/emailRecipientListService';
 
-vi.mock('@/services/infrastructure/db', () => ({
-  db: {
+vi.mock('@/services/storage/firestore', () => ({
+  firestoreDb: {
     getDoc: vi.fn().mockResolvedValue(null),
     getDocs: vi.fn().mockResolvedValue([]),
     setDoc: vi.fn().mockResolvedValue(undefined),
@@ -27,7 +27,7 @@ vi.mock('@/services/infrastructure/db', () => ({
   },
 }));
 
-import { db } from '@/services/infrastructure/db';
+import { firestoreDb } from '@/services/storage/firestore';
 
 describe('emailRecipientListService', () => {
   beforeEach(() => {
@@ -52,7 +52,7 @@ describe('emailRecipientListService', () => {
   });
 
   it('fetches and normalizes a global list', async () => {
-    vi.mocked(db.getDoc).mockResolvedValueOnce({
+    vi.mocked(firestoreDb.getDoc).mockResolvedValueOnce({
       name: CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.name,
       recipients: ['A@MAIL.COM', 'invalid'],
       updatedAt: '2026-03-02T10:00:00.000Z',
@@ -60,7 +60,7 @@ describe('emailRecipientListService', () => {
 
     const result = await getGlobalEmailRecipientList(CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.id);
 
-    expect(db.getDoc).toHaveBeenCalledWith(
+    expect(firestoreDb.getDoc).toHaveBeenCalledWith(
       'emailRecipientLists',
       CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.id
     );
@@ -73,7 +73,7 @@ describe('emailRecipientListService', () => {
   });
 
   it('returns a failed outcome when global list loading throws', async () => {
-    vi.mocked(db.getDoc).mockRejectedValueOnce(new Error('boom'));
+    vi.mocked(firestoreDb.getDoc).mockRejectedValueOnce(new Error('boom'));
 
     const result = await getGlobalEmailRecipientListWithResult('missing');
 
@@ -91,7 +91,7 @@ describe('emailRecipientListService', () => {
       updatedByEmail: 'admin@test.com',
     });
 
-    expect(db.setDoc).toHaveBeenCalledWith(
+    expect(firestoreDb.setDoc).toHaveBeenCalledWith(
       'emailRecipientLists',
       CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.id,
       expect.objectContaining({
@@ -103,7 +103,7 @@ describe('emailRecipientListService', () => {
   });
 
   it('returns a typed save failure when persistence fails', async () => {
-    vi.mocked(db.setDoc).mockRejectedValueOnce(new Error('boom'));
+    vi.mocked(firestoreDb.setDoc).mockRejectedValueOnce(new Error('boom'));
 
     const result = await saveGlobalEmailRecipientListWithResult({
       listId: CENSUS_GLOBAL_EMAIL_RECIPIENT_LIST.id,
@@ -117,7 +117,7 @@ describe('emailRecipientListService', () => {
   });
 
   it('throws userSafeMessage from the save wrapper when persistence fails', async () => {
-    vi.mocked(db.setDoc).mockRejectedValueOnce(new Error('boom'));
+    vi.mocked(firestoreDb.setDoc).mockRejectedValueOnce(new Error('boom'));
 
     await expect(
       saveGlobalEmailRecipientList({
@@ -133,7 +133,7 @@ describe('emailRecipientListService', () => {
     const onUpdate = vi.fn();
     let capturedCallback: ((data: unknown) => void) | undefined;
 
-    vi.mocked(db.subscribeDoc).mockImplementation((_path, _id, callback) => {
+    vi.mocked(firestoreDb.subscribeDoc).mockImplementation((_path, _id, callback) => {
       capturedCallback = callback as (data: unknown) => void;
       return vi.fn();
     });
@@ -153,7 +153,7 @@ describe('emailRecipientListService', () => {
   });
 
   it('lists normalized recipient lists from the collection', async () => {
-    vi.mocked(db.getDocs).mockResolvedValueOnce([
+    vi.mocked(firestoreDb.getDocs).mockResolvedValueOnce([
       {
         id: 'lista-1',
         name: 'Lista 1',
@@ -172,7 +172,7 @@ describe('emailRecipientListService', () => {
   });
 
   it('returns a typed list failure when collection loading throws', async () => {
-    vi.mocked(db.getDocs).mockRejectedValueOnce(new Error('boom'));
+    vi.mocked(firestoreDb.getDocs).mockRejectedValueOnce(new Error('boom'));
 
     const result = await getGlobalEmailRecipientListsWithResult();
 
@@ -181,7 +181,7 @@ describe('emailRecipientListService', () => {
   });
 
   it('returns a typed delete failure when deletion throws', async () => {
-    vi.mocked(db.deleteDoc).mockRejectedValueOnce(new Error('boom'));
+    vi.mocked(firestoreDb.deleteDoc).mockRejectedValueOnce(new Error('boom'));
 
     const result = await deleteGlobalEmailRecipientListWithResult('lista-1');
 
@@ -190,7 +190,7 @@ describe('emailRecipientListService', () => {
   });
 
   it('throws userSafeMessage from the delete wrapper when deletion fails', async () => {
-    vi.mocked(db.deleteDoc).mockRejectedValueOnce(new Error('boom'));
+    vi.mocked(firestoreDb.deleteDoc).mockRejectedValueOnce(new Error('boom'));
 
     await expect(deleteGlobalEmailRecipientList('lista-1')).rejects.toThrow(
       'No se pudo eliminar la lista global de destinatarios.'
@@ -201,7 +201,7 @@ describe('emailRecipientListService', () => {
     const onUpdate = vi.fn();
     let capturedCallback: ((data: unknown[]) => void) | undefined;
 
-    vi.mocked(db.subscribeQuery).mockImplementation((_path, _options, callback) => {
+    vi.mocked(firestoreDb.subscribeQuery).mockImplementation((_path, _options, callback) => {
       capturedCallback = callback as (data: unknown[]) => void;
       return vi.fn();
     });

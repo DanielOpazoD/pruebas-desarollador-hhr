@@ -1,4 +1,4 @@
-import { db } from '../infrastructure/db';
+import { firestoreDb, type IDatabaseProvider } from '@/services/storage/firestore';
 import { httpsCallable } from 'firebase/functions';
 import {
   isGeneralLoginRole,
@@ -11,7 +11,6 @@ import {
   defaultFunctionsRuntime,
   type FunctionsRuntime,
 } from '@/services/firebase-runtime/functionsRuntime';
-import type { IDatabaseProvider } from '@/services/infrastructure/db';
 
 const LEGACY_ROLE_ALIASES = {
   viewer_census: 'viewer',
@@ -56,7 +55,7 @@ export interface RoleService {
 }
 
 export const createRoleService = (
-  database: Pick<IDatabaseProvider, 'getDoc' | 'setDoc'> = db,
+  database: Pick<IDatabaseProvider, 'getDoc' | 'setDoc'> = firestoreDb,
   functionsRuntime: Pick<FunctionsRuntime, 'getFunctions'> = defaultFunctionsRuntime
 ): RoleService => ({
   async getRolesSnapshot(): Promise<RoleSnapshot> {

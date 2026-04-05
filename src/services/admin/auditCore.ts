@@ -1,4 +1,4 @@
-import { db } from '../infrastructure/db';
+import { firestoreDb, type IDatabaseProvider } from '@/services/storage/firestore';
 import { AuditAction, AuditLogEntry, maskRut } from '@/types/audit';
 import {
   getAuditLogs as getIndexedDBAuditLogs,
@@ -15,7 +15,6 @@ import {
 import { generateSummary } from './utils/auditSummaryGenerator';
 import { getActiveHospitalId } from '@/constants/firestorePaths';
 import { auditCoreLogger } from '@/services/admin/adminLoggers';
-import type { IDatabaseProvider } from '@/services/infrastructure/db';
 import {
   VIEW_THROTTLE_KEY,
   buildNextViewThrottleState,
@@ -131,7 +130,7 @@ const defaultAuditLocalStore: AuditLocalStore = {
 };
 
 export const createAuditCoreService = (
-  database: Pick<IDatabaseProvider, 'setDoc' | 'getDocs'> = db,
+  database: Pick<IDatabaseProvider, 'setDoc' | 'getDocs'> = firestoreDb,
   localStore: AuditLocalStore = defaultAuditLocalStore
 ): AuditCoreService => {
   const storeLocally = async (entry: AuditLogEntry): Promise<void> => {

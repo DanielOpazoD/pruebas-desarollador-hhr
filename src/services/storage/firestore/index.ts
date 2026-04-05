@@ -5,6 +5,18 @@
  */
 
 export {
+  createFirestoreDatabaseProvider,
+  firestoreDb,
+} from '@/services/storage/firestore/firestoreDatabaseProvider';
+export type {
+  IDatabaseBatch,
+  IDatabaseProvider,
+  OrderByConstraint,
+  QueryConstraint,
+  QueryOptions,
+} from '@/services/storage/firestore/firestoreDatabaseProvider';
+
+export {
   getAvailableDatesFromFirestore,
   getAllRecordsFromFirestore,
   getMonthRecordsFromFirestore,

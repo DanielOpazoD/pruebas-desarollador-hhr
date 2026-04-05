@@ -1,4 +1,4 @@
-import { db } from '@/services/infrastructure/db';
+import { firestoreDb } from '@/services/storage/firestore';
 import { recordOperationalErrorTelemetry } from '@/services/observability/operationalTelemetryService';
 import {
   createApplicationFailed,
@@ -125,7 +125,7 @@ export const getGlobalEmailRecipientListWithResult = async (
   listId: string
 ): Promise<GlobalEmailRecipientListOutcome<GlobalEmailRecipientList | null>> => {
   try {
-    const raw = await db.getDoc<Partial<GlobalEmailRecipientList>>(
+    const raw = await firestoreDb.getDoc<Partial<GlobalEmailRecipientList>>(
       EMAIL_RECIPIENT_LISTS_COLLECTION,
       listId
     );
@@ -157,7 +157,7 @@ export const getGlobalEmailRecipientListsWithResult = async (): Promise<
   GlobalEmailRecipientListOutcome<GlobalEmailRecipientList[]>
 > => {
   try {
-    const rawLists = await db.getDocs<Partial<GlobalEmailRecipientList>>(
+    const rawLists = await firestoreDb.getDocs<Partial<GlobalEmailRecipientList>>(
       EMAIL_RECIPIENT_LISTS_COLLECTION,
       {
         orderBy: [{ field: 'updatedAt', direction: 'desc' }],
@@ -243,7 +243,7 @@ export const saveGlobalEmailRecipientListWithResult = async ({
 > => {
   const normalizedNow = new Date().toISOString();
   try {
-    await db.setDoc<GlobalEmailRecipientList>(EMAIL_RECIPIENT_LISTS_COLLECTION, listId, {
+    await firestoreDb.setDoc<GlobalEmailRecipientList>(EMAIL_RECIPIENT_LISTS_COLLECTION, listId, {
       id: listId,
       name: normalizeListName(name),
       description: normalizeString(description),
@@ -285,7 +285,7 @@ export const deleteGlobalEmailRecipientListWithResult = async (
   listId: string
 ): Promise<GlobalEmailRecipientListOutcome<{ deleted: boolean }>> => {
   try {
-    await db.deleteDoc(EMAIL_RECIPIENT_LISTS_COLLECTION, listId);
+    await firestoreDb.deleteDoc(EMAIL_RECIPIENT_LISTS_COLLECTION, listId);
     return createApplicationSuccess({ deleted: true });
   } catch (error) {
     recordOperationalErrorTelemetry('integration', 'delete_global_email_recipient_list', error, {
@@ -331,7 +331,7 @@ export const subscribeToGlobalEmailRecipientList = (
   listId: string,
   onUpdate: (list: GlobalEmailRecipientList | null) => void
 ): (() => void) =>
-  db.subscribeDoc<Partial<GlobalEmailRecipientList>>(
+  firestoreDb.subscribeDoc<Partial<GlobalEmailRecipientList>>(
     EMAIL_RECIPIENT_LISTS_COLLECTION,
     listId,
     data => onUpdate(normalizeGlobalEmailRecipientList(listId, data))
@@ -340,7 +340,7 @@ export const subscribeToGlobalEmailRecipientList = (
 export const subscribeToGlobalEmailRecipientLists = (
   onUpdate: (lists: GlobalEmailRecipientList[]) => void
 ): (() => void) =>
-  db.subscribeQuery<Partial<GlobalEmailRecipientList>>(
+  firestoreDb.subscribeQuery<Partial<GlobalEmailRecipientList>>(
     EMAIL_RECIPIENT_LISTS_COLLECTION,
     {
       orderBy: [{ field: 'updatedAt', direction: 'desc' }],

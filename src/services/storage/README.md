@@ -96,6 +96,9 @@ Cambios en esta capa requieren:
 - `storage/firestore` no debe reabsorber helpers de rango, concurrencia o snapshots.
 - `storage/firestore/firestoreServiceRuntime.ts` es el adaptador canónico hacia Firestore runtime;
   nuevos servicios de storage/transfers no deben depender directo de `defaultFirestoreRuntime`.
+- `storage/firestore/firestoreDatabaseProvider.ts` es el entrypoint canónico para servicios
+  repository-style que necesitan el provider Firestore-backed; nuevos consumers no deben entrar
+  por `services/infrastructure/db` para obtener el singleton concreto.
 - `npm run check:firestore-runtime-boundary` protege `clinical-documents`, `storage` y `transfers`
   para que nuevos servicios entren por ese adaptador y no por singletons globales.
 - `storage/sync` es el único punto de acceso soportado para telemetría, stats

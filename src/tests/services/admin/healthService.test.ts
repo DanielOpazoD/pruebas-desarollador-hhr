@@ -9,8 +9,8 @@ import {
 } from '@/services/admin/healthService';
 
 // Mock the db abstraction layer
-vi.mock('@/services/infrastructure/db', () => ({
-  db: {
+vi.mock('@/services/storage/firestore', () => ({
+  firestoreDb: {
     setDoc: vi.fn().mockResolvedValue(undefined),
     getDocs: vi.fn().mockResolvedValue([]),
     subscribeQuery: vi.fn().mockImplementation((_path, _options, _callback) => {
@@ -21,7 +21,7 @@ vi.mock('@/services/infrastructure/db', () => ({
 }));
 
 // Import the mocked db after mocking
-import { db } from '@/services/infrastructure/db';
+import { firestoreDb } from '@/services/storage/firestore';
 
 describe('healthService', () => {
   const mockStatus: UserHealthStatus = {
@@ -78,7 +78,7 @@ describe('healthService', () => {
 
   describe('reportUserHealth', () => {
     it('should silence permission errors', async () => {
-      vi.mocked(db.setDoc).mockRejectedValueOnce(
+      vi.mocked(firestoreDb.setDoc).mockRejectedValueOnce(
         new Error('FirebaseError: Missing or insufficient permissions.')
       );
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -94,7 +94,7 @@ describe('healthService', () => {
 
     it('should call db.setDoc with correct arguments', async () => {
       await reportUserHealth(mockStatus);
-      expect(db.setDoc).toHaveBeenCalledWith(
+      expect(firestoreDb.setDoc).toHaveBeenCalledWith(
         expect.stringContaining('users'),
         'user123',
         expect.objectContaining({ uid: 'user123', email: 'test@example.com' })
@@ -102,7 +102,7 @@ describe('healthService', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      vi.mocked(db.setDoc).mockRejectedValueOnce(new Error('Firebase Error'));
+      vi.mocked(firestoreDb.setDoc).mockRejectedValueOnce(new Error('Firebase Error'));
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       await reportUserHealth(mockStatus);
@@ -118,7 +118,7 @@ describe('healthService', () => {
         { ...mockStatus, uid: 'user1' },
         { ...mockStatus, uid: 'user2' },
       ];
-      vi.mocked(db.getDocs).mockResolvedValueOnce(mockUsers);
+      vi.mocked(firestoreDb.getDocs).mockResolvedValueOnce(mockUsers);
 
       const results = await getSystemHealthSnapshot();
       expect(results).toHaveLength(2);
@@ -126,7 +126,7 @@ describe('healthService', () => {
     });
 
     it('should handle fetch errors and return empty array', async () => {
-      vi.mocked(db.getDocs).mockRejectedValueOnce(new Error('Fetch Failed'));
+      vi.mocked(firestoreDb.getDocs).mockRejectedValueOnce(new Error('Fetch Failed'));
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       const results = await getSystemHealthSnapshot();
@@ -136,7 +136,7 @@ describe('healthService', () => {
     });
 
     it('normalizes partial docs when fetching snapshot', async () => {
-      vi.mocked(db.getDocs).mockResolvedValueOnce([
+      vi.mocked(firestoreDb.getDocs).mockResolvedValueOnce([
         { uid: 'u1', email: '', pendingMutations: '3' as unknown as number },
       ]);
 
@@ -153,10 +153,10 @@ describe('healthService', () => {
     it('should call db.subscribeQuery and return unsubscribe function', () => {
       const onUpdate = vi.fn();
       const unsubscribeMock = vi.fn();
-      vi.mocked(db.subscribeQuery).mockReturnValueOnce(unsubscribeMock);
+      vi.mocked(firestoreDb.subscribeQuery).mockReturnValueOnce(unsubscribeMock);
 
       const result = subscribeToSystemHealth(onUpdate);
-      expect(db.subscribeQuery).toHaveBeenCalled();
+      expect(firestoreDb.subscribeQuery).toHaveBeenCalled();
       expect(result).toBe(unsubscribeMock);
     });
 
@@ -164,7 +164,7 @@ describe('healthService', () => {
       const onUpdate = vi.fn();
       let capturedCallback: ((data: unknown[]) => void) | undefined;
 
-      vi.mocked(db.subscribeQuery).mockImplementation((path, options, callback) => {
+      vi.mocked(firestoreDb.subscribeQuery).mockImplementation((path, options, callback) => {
         capturedCallback = callback as unknown as (data: unknown[]) => void;
         return vi.fn();
       });

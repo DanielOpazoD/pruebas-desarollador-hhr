@@ -1,4 +1,4 @@
-import { db } from '@/services/infrastructure/db';
+import { firestoreDb } from '@/services/storage/firestore';
 import { getActiveHospitalId } from '@/constants/firestorePaths';
 import type { ClinicalDocumentTemplate } from '@/domain/clinical-documents/entities';
 import { CLINICAL_DOCUMENT_TEMPLATES } from '@/domain/clinical-documents/rules';
@@ -137,7 +137,7 @@ const validateTemplate = (template: ClinicalDocumentTemplate): ClinicalDocumentT
 export const ClinicalDocumentTemplateRepository = {
   async listAll(hospitalId: string = getActiveHospitalId()): Promise<ClinicalDocumentTemplate[]> {
     try {
-      const templates = await db.getDocs<Partial<ClinicalDocumentTemplate>>(
+      const templates = await firestoreDb.getDocs<Partial<ClinicalDocumentTemplate>>(
         getClinicalDocumentTemplatesCollectionPath(hospitalId),
         {
           orderBy: [{ field: 'name', direction: 'asc' }],
@@ -167,7 +167,7 @@ export const ClinicalDocumentTemplateRepository = {
     hospitalId: string = getActiveHospitalId()
   ): Promise<ClinicalDocumentTemplate[]> {
     try {
-      const templates = await db.getDocs<Partial<ClinicalDocumentTemplate>>(
+      const templates = await firestoreDb.getDocs<Partial<ClinicalDocumentTemplate>>(
         getClinicalDocumentTemplatesCollectionPath(hospitalId),
         {
           where: [{ field: 'status', operator: '==', value: 'active' }],
@@ -194,7 +194,7 @@ export const ClinicalDocumentTemplateRepository = {
   },
 
   async seedDefaults(hospitalId: string = getActiveHospitalId()): Promise<void> {
-    await db.runBatch(batch => {
+    await firestoreDb.runBatch(batch => {
       defaultTemplates.forEach(template => {
         batch.set(
           getClinicalDocumentTemplatesCollectionPath(hospitalId),
@@ -212,7 +212,7 @@ export const ClinicalDocumentTemplateRepository = {
     template: ClinicalDocumentTemplate,
     hospitalId: string = getActiveHospitalId()
   ): Promise<void> {
-    await db.setDoc(
+    await firestoreDb.setDoc(
       getClinicalDocumentTemplatesCollectionPath(hospitalId),
       template.id,
       parseClinicalDocumentTemplate(template),

@@ -12,6 +12,7 @@ import { AuthUser, UserRole } from '@/types/auth';
 export type { AuthUser, UserRole };
 import { useAuthState } from '@/hooks/useAuthState';
 import { isAuthenticatedAuthSessionState } from '@/services/auth/authSessionState';
+import { resolveNormalizedAuthOperationalState } from '@/services/auth/authOperationalState';
 
 // ============================================================================
 // Types
@@ -59,41 +60,55 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Use the hook as the single source of truth
   const authState = useAuthState();
-
-  const value = useMemo<AuthContextType>(
-    () => ({
-      sessionState: authState.sessionState,
-      authRuntime: authState.authRuntime,
-      currentUser: authState.currentUser,
-      authorizedUser: authState.authorizedUser,
-      user: authState.currentUser,
-      role: authState.role,
-      isLoading: authState.authLoading,
-      isAuthenticated: isAuthenticatedAuthSessionState(authState.sessionState),
-      isAuthorizedSession: authState.sessionState.status === 'authorized',
-      isAnonymousSignature: authState.sessionState.status === 'anonymous_signature',
-      isUnauthorized: authState.sessionState.status === 'unauthorized',
-      isEditor: authState.isEditor,
-      isViewer: authState.isViewer,
-      isFirebaseConnected: authState.isFirebaseConnected,
-      remoteSyncStatus: authState.remoteSyncStatus,
-      remoteSyncState: authState.remoteSyncState,
-      signOut: authState.handleLogout,
-    }),
+  const normalizedAuthState = useMemo(
+    () =>
+      resolveNormalizedAuthOperationalState({
+        sessionState: authState.sessionState,
+        currentUser: authState.currentUser,
+        authorizedUser: authState.authorizedUser,
+        authLoading: authState.authLoading,
+        isFirebaseConnected: authState.isFirebaseConnected,
+        remoteSyncStatus: authState.remoteSyncStatus,
+        remoteSyncState: authState.remoteSyncState,
+        authRuntime: authState.authRuntime,
+        role: authState.role,
+        handleLogout: authState.handleLogout,
+      }),
     [
       authState.sessionState,
-      authState.authRuntime,
       authState.currentUser,
       authState.authorizedUser,
-      authState.role,
       authState.authLoading,
-      authState.isEditor,
-      authState.isViewer,
       authState.isFirebaseConnected,
       authState.remoteSyncStatus,
       authState.remoteSyncState,
+      authState.authRuntime,
+      authState.role,
       authState.handleLogout,
     ]
+  );
+
+  const value = useMemo<AuthContextType>(
+    () => ({
+      sessionState: normalizedAuthState.sessionState,
+      authRuntime: normalizedAuthState.authRuntime,
+      currentUser: normalizedAuthState.currentUser,
+      authorizedUser: normalizedAuthState.authorizedUser,
+      user: normalizedAuthState.currentUser,
+      role: normalizedAuthState.role,
+      isLoading: normalizedAuthState.authLoading,
+      isAuthenticated: isAuthenticatedAuthSessionState(normalizedAuthState.sessionState),
+      isAuthorizedSession: normalizedAuthState.sessionState.status === 'authorized',
+      isAnonymousSignature: normalizedAuthState.sessionState.status === 'anonymous_signature',
+      isUnauthorized: normalizedAuthState.sessionState.status === 'unauthorized',
+      isEditor: normalizedAuthState.isEditor,
+      isViewer: normalizedAuthState.isViewer,
+      isFirebaseConnected: normalizedAuthState.isFirebaseConnected,
+      remoteSyncStatus: normalizedAuthState.remoteSyncStatus,
+      remoteSyncState: normalizedAuthState.remoteSyncState,
+      signOut: normalizedAuthState.handleLogout,
+    }),
+    [normalizedAuthState]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

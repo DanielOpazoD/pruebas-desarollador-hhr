@@ -24,6 +24,13 @@ const syncObservability = createDomainObservability('sync', 'SyncQueue');
 const syncQueueStore = createDexieSyncQueueStore();
 const syncRuntime = createBrowserSyncRuntime();
 
+const getSyncOwnerKey = (): string | null => {
+  if (typeof syncRuntime.getOwnerKey === 'function') {
+    return syncRuntime.getOwnerKey();
+  }
+  return null;
+};
+
 const toSyncIssueMessage = (error: unknown, fallback: string): string =>
   error instanceof Error && error.message.trim().length > 0 ? error.message : fallback;
 
@@ -54,7 +61,7 @@ const buildUnavailableSyncQueueTelemetry = (error: unknown): SyncQueueTelemetry 
   retryingBudgetState: 'ok',
   runtimeState: 'blocked',
   readState: 'unavailable',
-  ownerKey: syncRuntime.getOwnerKey(),
+  ownerKey: getSyncOwnerKey(),
   issues: [toSyncIssueMessage(error, 'La cola de sincronizacion no pudo leerse.')],
 });
 
@@ -81,7 +88,7 @@ export const recordSyncQueueOwnershipTelemetry = (
       'La cola de sincronizacion actualizo su ownership local para mantener aislamiento entre sesiones.',
     ],
     context: {
-      ownerKey: syncRuntime.getOwnerKey(),
+      ownerKey: getSyncOwnerKey(),
       ...context,
     },
   });
@@ -113,7 +120,7 @@ export const getSyncQueueTelemetry = async (): Promise<SyncQueueTelemetry> => {
   try {
     await ensureDbReady();
     const telemetry = await syncQueueEngine.getTelemetry();
-    const ownerKey = syncRuntime.getOwnerKey();
+    const ownerKey = getSyncOwnerKey();
     const orphanedTasks = await syncQueueStore.countForeign(ownerKey);
     recordSyncQueueBudgetTelemetry(telemetry, {
       source: 'public_sync_queue',

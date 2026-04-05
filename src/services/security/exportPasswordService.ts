@@ -8,10 +8,8 @@
 
 import { doc, setDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { getExportPasswordsPath } from '@/constants/firestorePaths';
-import {
-  defaultFirestoreRuntime,
-  type FirestoreRuntime,
-} from '@/services/firebase-runtime/firestoreRuntime';
+import { defaultFirestoreServiceRuntime } from '@/services/storage/firestore/firestoreServiceRuntime';
+import type { FirestoreServiceRuntimePort } from '@/services/storage/firestore/ports/firestoreServiceRuntimePort';
 import { exportPasswordLogger } from '@/services/security/securityLoggers';
 
 // Re-export the pure generator for convenience
@@ -38,13 +36,22 @@ interface ExportPasswordPersistenceService {
   ) => Promise<void>;
 }
 
+type ExportPasswordRuntime =
+  | Pick<FirestoreServiceRuntimePort, 'getDb'>
+  | {
+      db: ReturnType<FirestoreServiceRuntimePort['getDb']>;
+    };
+
+const resolveDb = (runtime: ExportPasswordRuntime) =>
+  'getDb' in runtime ? runtime.getDb() : runtime.db;
+
 export const createExportPasswordPersistenceService = (
-  runtime: Pick<FirestoreRuntime, 'db'> = defaultFirestoreRuntime
+  runtime: ExportPasswordRuntime = defaultFirestoreServiceRuntime
 ): ExportPasswordPersistenceService => ({
   getStoredPasswords: async (maxResults = 30): Promise<ExportPasswordRecord[]> => {
     try {
       const passwordsPath = getExportPasswordsPath();
-      const passwordsRef = collection(runtime.db, passwordsPath);
+      const passwordsRef = collection(resolveDb(runtime), passwordsPath);
       const q = query(passwordsRef, orderBy('date', 'desc'), limit(maxResults));
 
       const snapshot = await getDocs(q);
@@ -63,7 +70,7 @@ export const createExportPasswordPersistenceService = (
   savePasswordToFirestore: async (date, password, createdBy, source): Promise<void> => {
     try {
       const passwordsPath = getExportPasswordsPath();
-      const docRef = doc(runtime.db, passwordsPath, date);
+      const docRef = doc(resolveDb(runtime), passwordsPath, date);
 
       const record: ExportPasswordRecord = {
         date,
