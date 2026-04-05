@@ -18,4 +18,12 @@ describe('netlify security headers', () => {
     const content = readFileSync('netlify.toml', 'utf-8');
     expect(content).toContain('Cross-Origin-Opener-Policy = "unsafe-none"');
   });
+
+  it('keeps the SPA rewrite so refresh works on clean module routes', () => {
+    const content = readFileSync('netlify.toml', 'utf-8');
+    expect(content).toContain('[[redirects]]');
+    expect(content).toContain('from = "/*"');
+    expect(content).toContain('to = "/index.html"');
+    expect(content).toContain('status = 200');
+  });
 });
