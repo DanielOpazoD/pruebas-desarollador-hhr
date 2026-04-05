@@ -69,6 +69,30 @@ describe('useAppState', () => {
       expect(window.location.pathname).toBe('/statistics');
       expect(window.location.search).toBe('');
     });
+
+    it('should preserve the current URL when syncUrl is disabled', () => {
+      window.history.replaceState(
+        {},
+        '',
+        '/admin?mode=signature&date=2026-04-05&scope=all&token=test-token'
+      );
+
+      const { result } = renderHook(() =>
+        useAppState({
+          initialModule: 'MEDICAL_HANDOFF',
+          syncUrl: false,
+        })
+      );
+
+      act(() => {
+        result.current.setCurrentModule('CENSUS');
+      });
+
+      expect(window.location.pathname).toBe('/admin');
+      expect(window.location.search).toBe(
+        '?mode=signature&date=2026-04-05&scope=all&token=test-token'
+      );
+    });
   });
 
   describe('Census View Mode', () => {

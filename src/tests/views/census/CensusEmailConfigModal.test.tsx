@@ -85,16 +85,16 @@ describe('CensusEmailConfigModal', () => {
     expect(props.onMessageChange).toHaveBeenCalled();
   });
 
-  it('shows the fixed current-time export message', () => {
+  it('does not show the removed excel configuration box', () => {
     const props = buildProps();
     render(<CensusEmailConfigModal {...props} />);
 
     expect(
-      screen.getByText(/el excel adjunta siempre el día actual con la hora real del envío/i)
-    ).toBeInTheDocument();
+      screen.queryByText(/el excel adjunta siempre el día actual con la hora real del envío/i)
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByText(/la variante con corte a las 23:59 fue eliminada/i)
-    ).toBeInTheDocument();
+      screen.queryByText(/la variante con corte a las 23:59 fue eliminada/i)
+    ).not.toBeInTheDocument();
   });
 
   it('shows the global firebase recipients hint', () => {

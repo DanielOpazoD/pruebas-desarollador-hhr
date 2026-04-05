@@ -4,7 +4,6 @@ import { buildCensusEmailBody } from '@/constants/email';
 import { BaseModal } from '@/components/shared/BaseModal';
 import { useCensusEmailRecipientsEditor } from '@/features/census/hooks/useCensusEmailRecipientsEditor';
 import {
-  CensusEmailExcelSheetSection,
   CensusEmailMessageSection,
   CensusEmailRecipientsSection,
   CensusEmailTestModeSection,
@@ -170,8 +169,6 @@ export const CensusEmailConfigModal: React.FC<Props> = ({
               testRecipient={testRecipient}
               onTestRecipientChange={onTestRecipientChange}
             />
-
-            <CensusEmailExcelSheetSection />
           </div>
 
           <div className="flex flex-col h-full">

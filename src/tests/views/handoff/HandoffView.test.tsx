@@ -285,4 +285,26 @@ describe('HandoffView Component', () => {
 
     expect(screen.getByText('Dr. UPC')).toBeInTheDocument();
   });
+
+  it('does not rewrite the signature link URL when an external ui state is provided', () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/admin?mode=signature&date=2026-04-05&scope=all&token=test-token'
+    );
+
+    const record = createMockRecord('2026-04-05');
+    const ui = createMockUIState({
+      currentModule: 'MEDICAL_HANDOFF',
+    });
+
+    render(<HandoffView type="medical" readOnly={true} ui={ui} medicalScope="all" />, {
+      contextValue: createMockDailyRecordContext(record),
+    });
+
+    expect(window.location.pathname).toBe('/admin');
+    expect(window.location.search).toBe(
+      '?mode=signature&date=2026-04-05&scope=all&token=test-token'
+    );
+  });
 });

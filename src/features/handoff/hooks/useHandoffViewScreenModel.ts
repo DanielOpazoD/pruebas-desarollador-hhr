@@ -7,7 +7,7 @@ import { useNotification } from '@/context/UIContext';
 import { useAuditContext } from '@/context/AuditContext';
 import { useAuth } from '@/context';
 import { useHandoffLogic } from '@/hooks';
-import { useUIState, type UseUIStateReturn } from '@/hooks/useUIState';
+import type { UseUIStateReturn } from '@/hooks/useUIState';
 import { getAttributedAuthors } from '@/services/admin/attributionService';
 import {
   buildHandoffActionBundles,
@@ -30,14 +30,14 @@ import type {
 interface UseHandoffViewScreenModelParams {
   type?: 'nursing' | 'medical';
   readOnly?: boolean;
-  ui?: UseUIStateReturn;
+  ui: UseUIStateReturn;
   medicalScope?: MedicalHandoffScope;
 }
 
 export const useHandoffViewScreenModel = ({
   type = 'nursing',
   readOnly = false,
-  ui: propUi,
+  ui,
   medicalScope,
 }: UseHandoffViewScreenModelParams) => {
   const initialMedicalSpecialtyFromUrl = useMemo(
@@ -76,9 +76,6 @@ export const useHandoffViewScreenModel = ({
 
   useEffect(() => void (logEventRef.current = logEvent), [logEvent]);
   useEffect(() => void (recordRef.current = record), [record]);
-
-  const localUi = useUIState();
-  const ui = propUi || localUi;
 
   const handoffLogic = useHandoffLogic({
     type,

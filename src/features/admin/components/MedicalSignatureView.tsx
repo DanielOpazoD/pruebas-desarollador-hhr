@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { PenTool, CheckCircle } from 'lucide-react';
 import { defaultBrowserWindowRuntime } from '@/shared/runtime/browserWindowRuntime';
 import { HandoffView } from '@/features/handoff';
+import { useAppState } from '@/hooks/useAppState';
 import { DailyRecordProvider } from '@/context/DailyRecordContext';
 import { StaffContextProvider, type StaffContextType } from '@/context/StaffContext';
 import { resolveMedicalHandoffScope, resolveScopedMedicalSignature } from '@/features/handoff';
@@ -43,8 +44,13 @@ const normalizeSignatureDate = (rawDate: string | null): string | null => {
 export const MedicalSignatureView: React.FC = () => {
   const [doctorName, setDoctorName] = useState('');
   const [isSignedLocal, setIsSignedLocal] = useState(false);
+  const embeddedUi = useAppState({
+    initialModule: 'MEDICAL_HANDOFF',
+    syncUrl: false,
+  });
 
-  const locationHref = defaultBrowserWindowRuntime.getLocationHref();
+  // Preserve the original signature link identity for the whole session.
+  const locationHref = useMemo(() => defaultBrowserWindowRuntime.getLocationHref(), []);
   const searchParams = useMemo(
     () => (locationHref ? new URL(locationHref).searchParams : new URLSearchParams()),
     [locationHref]
@@ -131,7 +137,12 @@ export const MedicalSignatureView: React.FC = () => {
       <StaffContextProvider value={EMPTY_STAFF_CONTEXT}>
         <div className="min-h-screen bg-slate-50 pb-32">
           <div className="pointer-events-none select-none">
-            <HandoffView type="medical" readOnly={true} medicalScope={medicalScope} />
+            <HandoffView
+              ui={embeddedUi}
+              type="medical"
+              readOnly={true}
+              medicalScope={medicalScope}
+            />
           </div>
 
           <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white p-6 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] print:hidden">

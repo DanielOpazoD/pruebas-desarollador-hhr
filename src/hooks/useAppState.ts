@@ -113,12 +113,21 @@ export interface UseAppStateReturn {
   setCensusLocalViewMode: (v: 'TABLE' | '3D') => void;
 }
 
+export interface UseAppStateOptions {
+  initialModule?: ModuleType;
+  syncUrl?: boolean;
+}
+
 /**
  * Hook that manages all UI state for the main application shell
  */
-export function useAppState(): UseAppStateReturn {
+export function useAppState(options: UseAppStateOptions = {}): UseAppStateReturn {
+  const { initialModule, syncUrl = true } = options;
+
   // Module navigation
-  const [currentModule, setCurrentModule] = useState<ModuleType>(() => resolveInitialModule());
+  const [currentModule, setCurrentModule] = useState<ModuleType>(
+    () => initialModule ?? resolveInitialModule()
+  );
 
   // View modes
   const [censusViewMode, setCensusViewMode] = useState<'REGISTER' | 'ANALYTICS'>('REGISTER');
@@ -149,8 +158,11 @@ export function useAppState(): UseAppStateReturn {
   }, [currentModule]);
 
   useEffect(() => {
+    if (!syncUrl) {
+      return;
+    }
     syncModuleToUrl(currentModule);
-  }, [currentModule]);
+  }, [currentModule, syncUrl]);
 
   return {
     // Module navigation

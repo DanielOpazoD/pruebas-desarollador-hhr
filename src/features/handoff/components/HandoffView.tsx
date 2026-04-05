@@ -19,17 +19,21 @@ interface HandoffViewProps {
   ui?: UseUIStateReturn;
   medicalScope?: MedicalHandoffScope;
 }
-export const HandoffView: React.FC<HandoffViewProps> = ({
+
+interface HandoffViewContentProps extends Omit<HandoffViewProps, 'ui'> {
+  ui: UseUIStateReturn;
+}
+
+const HandoffViewContent: React.FC<HandoffViewContentProps> = ({
   type = 'nursing',
   readOnly = false,
-  ui: propUi,
+  ui: handoffUi,
   medicalScope,
 }) => {
-  const localUi = useUIState();
   const screenModel = useHandoffViewScreenModel({
     type,
     readOnly,
-    ui: propUi || localUi,
+    ui: handoffUi,
     medicalScope,
   });
   const {
@@ -185,4 +189,17 @@ export const HandoffView: React.FC<HandoffViewProps> = ({
       )}
     </div>
   );
+};
+
+const HandoffViewWithLocalUi: React.FC<Omit<HandoffViewProps, 'ui'>> = props => {
+  const localUi = useUIState();
+  return <HandoffViewContent {...props} ui={localUi} />;
+};
+
+export const HandoffView: React.FC<HandoffViewProps> = props => {
+  if (props.ui) {
+    return <HandoffViewContent {...props} ui={props.ui} />;
+  }
+
+  return <HandoffViewWithLocalUi {...props} />;
 };
