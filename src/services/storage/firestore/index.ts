@@ -21,6 +21,11 @@ export {
   subscribeToFirestoreDocument,
 } from '@/services/storage/firestore/firestoreDocumentStore';
 export type { FirestoreDocumentRuntimePort } from '@/services/storage/firestore/firestoreDocumentStore';
+export {
+  ensureFirestoreRuntimeReady,
+  runWithFirestoreRuntime,
+} from '@/services/storage/firestore/firestoreRuntimeSupport';
+export type { FirestoreReadyRuntimePort } from '@/services/storage/firestore/firestoreRuntimeSupport';
 
 export {
   getAvailableDatesFromFirestore,

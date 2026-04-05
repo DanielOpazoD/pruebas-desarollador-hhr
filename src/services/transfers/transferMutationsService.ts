@@ -6,6 +6,7 @@ import {
   type TransferOperationErrorKind,
 } from '@/services/transfers/transferErrorPolicy';
 import { transferMutationsLogger } from '@/services/transfers/transferLoggers';
+import { runWithFirestoreRuntime } from '@/services/storage/firestore/firestoreRuntimeSupport';
 import { defaultFirestoreServiceRuntime } from '@/services/storage/firestore/firestoreServiceRuntime';
 import type { FirestoreServiceRuntimePort } from '@/services/storage/firestore/ports/firestoreServiceRuntimePort';
 import {
@@ -51,19 +52,19 @@ export const createTransferMutationsService = (
   const createTransferRequestWithResult = async (
     data: CreateTransferRequestData
   ): Promise<TransferMutationResult<TransferRequest>> => {
-    await runtime.ready;
-    const id = generateTransferId();
-    const transfer = buildTransferRequestRecord(data, id);
-
     try {
-      const docRef = createTransferDocumentRef(runtime, id);
-      await setDoc(docRef, {
-        ...transfer,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
+      return await runWithFirestoreRuntime(runtime, async () => {
+        const id = generateTransferId();
+        const transfer = buildTransferRequestRecord(data, id);
+        const docRef = createTransferDocumentRef(runtime, id);
+        await setDoc(docRef, {
+          ...transfer,
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        });
+        transferMutationsLogger.info('Created transfer request', { transferId: id });
+        return { status: 'success', data: transfer };
       });
-      transferMutationsLogger.info('Created transfer request', { transferId: id });
-      return { status: 'success', data: transfer };
     } catch (error) {
       transferMutationsLogger.error('Error creating transfer request', error);
       return buildTransferFailureResult(error, 'No se pudo crear la solicitud de traslado.');
@@ -83,14 +84,15 @@ export const createTransferMutationsService = (
     data: Partial<TransferRequest>
   ): Promise<TransferMutationResult> => {
     try {
-      await runtime.ready;
-      const docRef = createTransferDocumentRef(runtime, id);
-      await writeTransferMergePatch(docRef, data);
-      transferMutationsLogger.info('Updated transfer request', {
-        transferId: id,
-        fields: Object.keys(data),
+      return await runWithFirestoreRuntime(runtime, async () => {
+        const docRef = createTransferDocumentRef(runtime, id);
+        await writeTransferMergePatch(docRef, data);
+        transferMutationsLogger.info('Updated transfer request', {
+          transferId: id,
+          fields: Object.keys(data),
+        });
+        return { status: 'success', data: null };
       });
-      return { status: 'success', data: null };
     } catch (error) {
       transferMutationsLogger.error('Error updating transfer request', error);
       return buildTransferFailureResult(error, 'No se pudo actualizar la solicitud de traslado.');
@@ -163,11 +165,12 @@ export const createTransferMutationsService = (
 
   const deleteTransferRequestWithResult = async (id: string): Promise<TransferMutationResult> => {
     try {
-      await runtime.ready;
-      const docRef = createTransferDocumentRef(runtime, id);
-      await deleteDoc(docRef);
-      transferMutationsLogger.info('Deleted transfer request', { transferId: id });
-      return { status: 'success', data: null };
+      return await runWithFirestoreRuntime(runtime, async () => {
+        const docRef = createTransferDocumentRef(runtime, id);
+        await deleteDoc(docRef);
+        transferMutationsLogger.info('Deleted transfer request', { transferId: id });
+        return { status: 'success', data: null };
+      });
     } catch (error) {
       transferMutationsLogger.error('Error deleting transfer request', error);
       return buildTransferFailureResult(error, 'No se pudo eliminar la solicitud de traslado.');

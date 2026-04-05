@@ -9,52 +9,53 @@ import {
   querySnapshotToTransfers,
   transferDocToEntity,
 } from '@/services/transfers/transferSerializationController';
+import { runWithFirestoreRuntime } from '@/services/storage/firestore/firestoreRuntimeSupport';
 import { defaultFirestoreServiceRuntime } from '@/services/storage/firestore/firestoreServiceRuntime';
 import type { FirestoreServiceRuntimePort } from '@/services/storage/firestore/ports/firestoreServiceRuntimePort';
 
 export const createTransferQueriesService = (
   runtime: FirestoreServiceRuntimePort = defaultFirestoreServiceRuntime
 ) => {
-  const getActiveTransfers = async (): Promise<TransferRequest[]> => {
-    await runtime.ready;
-    const q = query(
-      getTransfersCollection(runtime),
-      where('status', '!=', 'TRANSFERRED'),
-      orderBy('status'),
-      orderBy('requestDate', 'desc')
-    );
+  const getActiveTransfers = async (): Promise<TransferRequest[]> =>
+    runWithFirestoreRuntime(runtime, async () => {
+      const q = query(
+        getTransfersCollection(runtime),
+        where('status', '!=', 'TRANSFERRED'),
+        orderBy('status'),
+        orderBy('requestDate', 'desc')
+      );
 
-    const querySnapshot = await getDocs(q);
-    return querySnapshotToTransfers(querySnapshot);
-  };
+      const querySnapshot = await getDocs(q);
+      return querySnapshotToTransfers(querySnapshot);
+    });
 
-  const getTransferById = async (id: string): Promise<TransferRequest | null> => {
-    await runtime.ready;
-    const activeDocRef = doc(getTransfersCollection(runtime), id);
-    const activeSnapshot = await getDoc(activeDocRef);
+  const getTransferById = async (id: string): Promise<TransferRequest | null> =>
+    runWithFirestoreRuntime(runtime, async () => {
+      const activeDocRef = doc(getTransfersCollection(runtime), id);
+      const activeSnapshot = await getDoc(activeDocRef);
 
-    if (activeSnapshot.exists()) {
-      return transferDocToEntity(activeSnapshot.data() as Record<string, unknown>, id);
-    }
+      if (activeSnapshot.exists()) {
+        return transferDocToEntity(activeSnapshot.data() as Record<string, unknown>, id);
+      }
 
-    const historyDocRef = doc(getTransferHistoryCollection(runtime), id);
-    const historySnapshot = await getDoc(historyDocRef);
+      const historyDocRef = doc(getTransferHistoryCollection(runtime), id);
+      const historySnapshot = await getDoc(historyDocRef);
 
-    if (historySnapshot.exists()) {
-      return transferDocToEntity(historySnapshot.data() as Record<string, unknown>, id);
-    }
+      if (historySnapshot.exists()) {
+        return transferDocToEntity(historySnapshot.data() as Record<string, unknown>, id);
+      }
 
-    return null;
-  };
+      return null;
+    });
 
   const getLatestOpenTransferRequestByBedId = async (
     bedId: string
-  ): Promise<TransferRequest | null> => {
-    await runtime.ready;
-    const q = query(getTransfersCollection(runtime), where('bedId', '==', bedId));
-    const querySnapshot = await getDocs(q);
-    return pickLatestOpenTransferFromSnapshot(querySnapshot);
-  };
+  ): Promise<TransferRequest | null> =>
+    runWithFirestoreRuntime(runtime, async () => {
+      const q = query(getTransfersCollection(runtime), where('bedId', '==', bedId));
+      const querySnapshot = await getDocs(q);
+      return pickLatestOpenTransferFromSnapshot(querySnapshot);
+    });
 
   const getLatestOpenTransferRequestByPatientRut = async (
     patientRut: string
@@ -64,13 +65,14 @@ export const createTransferQueriesService = (
       return null;
     }
 
-    await runtime.ready;
-    const q = query(
-      getTransfersCollection(runtime),
-      where('patientSnapshot.rut', '==', normalizedRut)
-    );
-    const querySnapshot = await getDocs(q);
-    return pickLatestOpenTransferFromSnapshot(querySnapshot);
+    return runWithFirestoreRuntime(runtime, async () => {
+      const q = query(
+        getTransfersCollection(runtime),
+        where('patientSnapshot.rut', '==', normalizedRut)
+      );
+      const querySnapshot = await getDocs(q);
+      return pickLatestOpenTransferFromSnapshot(querySnapshot);
+    });
   };
 
   return {

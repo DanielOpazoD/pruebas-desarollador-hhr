@@ -7,6 +7,7 @@ import {
   type SetOptions,
   type SnapshotListenOptions,
 } from 'firebase/firestore';
+import { ensureFirestoreRuntimeReady } from '@/services/storage/firestore/firestoreRuntimeSupport';
 
 export interface FirestoreDocumentRuntimePort {
   getDb: () => Firestore;
@@ -16,14 +17,6 @@ export interface FirestoreDocumentRuntimePort {
 type FirestoreDocumentRefResolver<TRuntime extends FirestoreDocumentRuntimePort> = (
   runtime: TRuntime
 ) => DocumentReference;
-
-const ensureFirestoreRuntimeReady = async (
-  runtime: FirestoreDocumentRuntimePort
-): Promise<void> => {
-  if (runtime.ready) {
-    await runtime.ready;
-  }
-};
 
 export const readFirestoreDocument = async <
   TDocument,

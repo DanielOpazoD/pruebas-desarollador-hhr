@@ -5,6 +5,7 @@ import {
   getTransferHistoryCollection,
   getTransfersCollection,
 } from '@/services/transfers/transferFirestoreCollections';
+import { runWithFirestoreRuntime } from '@/services/storage/firestore/firestoreRuntimeSupport';
 import type { FirestoreServiceRuntimePort } from '@/services/storage/firestore/ports/firestoreServiceRuntimePort';
 
 export type CreateTransferRequestData = Omit<
@@ -50,20 +51,20 @@ export const createTransferDocumentRef = (runtime: FirestoreServiceRuntimePort, 
 export const readTransferRequestOrThrow = async (
   runtime: FirestoreServiceRuntimePort,
   id: string
-): Promise<{ docRef: ReturnType<typeof createTransferDocumentRef>; transfer: TransferRequest }> => {
-  await runtime.ready;
-  const docRef = createTransferDocumentRef(runtime, id);
-  const docSnap = await getDoc(docRef);
+): Promise<{ docRef: ReturnType<typeof createTransferDocumentRef>; transfer: TransferRequest }> =>
+  runWithFirestoreRuntime(runtime, async () => {
+    const docRef = createTransferDocumentRef(runtime, id);
+    const docSnap = await getDoc(docRef);
 
-  if (!docSnap.exists()) {
-    throw new Error(`Transfer request ${id} not found`);
-  }
+    if (!docSnap.exists()) {
+      throw new Error(`Transfer request ${id} not found`);
+    }
 
-  return {
-    docRef,
-    transfer: docSnap.data() as TransferRequest,
-  };
-};
+    return {
+      docRef,
+      transfer: docSnap.data() as TransferRequest,
+    };
+  });
 
 export const writeTransferMergePatch = async (
   docRef: ReturnType<typeof createTransferDocumentRef>,

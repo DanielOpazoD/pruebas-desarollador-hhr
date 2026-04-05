@@ -11,6 +11,7 @@ import {
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
+import { runWithFirestoreRuntime } from '@/services/storage/firestore/firestoreRuntimeSupport';
 import { defaultFirestoreServiceRuntime } from '@/services/storage/firestore/firestoreServiceRuntime';
 import type { FirestoreServiceRuntimePort } from '@/services/storage/firestore/ports/firestoreServiceRuntimePort';
 import { logger } from '@/services/utils/loggerService';
@@ -68,58 +69,59 @@ export const createCensusAccessService = ({
   getUserAgent = defaultGetUserAgent,
 }: CensusAccessServiceDependencies = {}) => {
   const getDb = () => runtime.getDb();
+  const withRuntime = <T>(operation: () => Promise<T>): Promise<T> =>
+    runWithFirestoreRuntime(runtime, operation);
 
-  const verifyInvitation = async (invitationId: string): Promise<CensusAccessInvitation | null> => {
-    await runtime.ready;
+  const verifyInvitation = async (invitationId: string): Promise<CensusAccessInvitation | null> =>
+    withRuntime(async () => {
+      const docRef = doc(getDb(), INVITATIONS_COLLECTION, invitationId);
+      const docSnap = await getDoc(docRef);
 
-    const docRef = doc(getDb(), INVITATIONS_COLLECTION, invitationId);
-    const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) return null;
 
-    if (!docSnap.exists()) return null;
+      const data = docSnap.data() as CensusAccessInvitation;
+      const now = new Date();
+      const expiresAt = toDate(data.expiresAt);
 
-    const data = docSnap.data() as CensusAccessInvitation;
-    const now = new Date();
-    const expiresAt = toDate(data.expiresAt);
-
-    if (data.status !== 'pending' || expiresAt < now) {
-      if (data.status === 'pending') {
-        await updateDoc(docRef, { status: 'expired' });
+      if (data.status !== 'pending' || expiresAt < now) {
+        if (data.status === 'pending') {
+          await updateDoc(docRef, { status: 'expired' });
+        }
+        return null;
       }
-      return null;
-    }
 
-    return { ...data, id: docSnap.id };
-  };
+      return { ...data, id: docSnap.id };
+    });
 
-  const checkUserAccess = async (userId: string): Promise<CensusAccessUser | null> => {
-    await runtime.ready;
+  const checkUserAccess = async (userId: string): Promise<CensusAccessUser | null> =>
+    withRuntime(async () => {
+      const docRef = doc(getDb(), USERS_COLLECTION, userId);
+      const docSnap = await getDoc(docRef);
 
-    const docRef = doc(getDb(), USERS_COLLECTION, userId);
-    const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) return null;
 
-    if (!docSnap.exists()) return null;
+      const data = docSnap.data() as CensusAccessUser;
+      const now = new Date();
+      const expiresAt = toDate(data.expiresAt);
 
-    const data = docSnap.data() as CensusAccessUser;
-    const now = new Date();
-    const expiresAt = toDate(data.expiresAt);
+      if (!data.isActive || expiresAt < now) {
+        return null;
+      }
 
-    if (!data.isActive || expiresAt < now) {
-      return null;
-    }
-
-    return data;
-  };
+      return data;
+    });
 
   const checkEmailAuthorization = async (email: string): Promise<CensusAuthorizedEmail | null> => {
     try {
-      await runtime.ready;
-      const docRef = doc(getDb(), AUTHORIZED_EMAILS_COLLECTION, email.toLowerCase().trim());
-      const snap = await getDoc(docRef);
+      return await withRuntime(async () => {
+        const docRef = doc(getDb(), AUTHORIZED_EMAILS_COLLECTION, email.toLowerCase().trim());
+        const snap = await getDoc(docRef);
 
-      if (snap.exists()) {
-        return snap.data() as CensusAuthorizedEmail;
-      }
-      return null;
+        if (snap.exists()) {
+          return snap.data() as CensusAuthorizedEmail;
+        }
+        return null;
+      });
     } catch (err) {
       censusAccessLogger.error('Error checking email authorization', err);
       return null;
@@ -132,19 +134,19 @@ export const createCensusAccessService = ({
       role: CensusAccessRole = 'viewer',
       email?: string
     ): Promise<string> {
-      await runtime.ready;
+      return withRuntime(async () => {
+        const invitation: Omit<CensusAccessInvitation, 'id'> = {
+          email: email?.toLowerCase(),
+          role,
+          createdAt: new Date(),
+          createdBy,
+          expiresAt: calculateDefaultExpiration(),
+          status: 'pending',
+        };
 
-      const invitation: Omit<CensusAccessInvitation, 'id'> = {
-        email: email?.toLowerCase(),
-        role,
-        createdAt: new Date(),
-        createdBy,
-        expiresAt: calculateDefaultExpiration(),
-        status: 'pending',
-      };
-
-      const docRef = await addDoc(collection(getDb(), INVITATIONS_COLLECTION), invitation);
-      return docRef.id;
+        const docRef = await addDoc(collection(getDb(), INVITATIONS_COLLECTION), invitation);
+        return docRef.id;
+      });
     },
 
     verifyInvitation,
@@ -153,46 +155,46 @@ export const createCensusAccessService = ({
       invitationId: string,
       user: { uid: string; email: string; displayName: string }
     ): Promise<boolean> {
-      await runtime.ready;
+      return withRuntime(async () => {
+        const invitation = await verifyInvitation(invitationId);
+        if (!invitation) return false;
 
-      const invitation = await verifyInvitation(invitationId);
-      if (!invitation) return false;
+        if (invitation.email && invitation.email !== user.email.toLowerCase()) {
+          throw new Error('Esta invitación está restringida a otro correo electrónico.');
+        }
 
-      if (invitation.email && invitation.email !== user.email.toLowerCase()) {
-        throw new Error('Esta invitación está restringida a otro correo electrónico.');
-      }
+        await updateDoc(doc(getDb(), INVITATIONS_COLLECTION, invitationId), {
+          status: 'used',
+          usedBy: user.uid,
+          usedAt: serverTimestamp(),
+        });
 
-      await updateDoc(doc(getDb(), INVITATIONS_COLLECTION, invitationId), {
-        status: 'used',
-        usedBy: user.uid,
-        usedAt: serverTimestamp(),
+        const userDoc: CensusAccessUser = {
+          id: user.uid,
+          email: user.email.toLowerCase(),
+          displayName: user.displayName || '',
+          role: invitation.role,
+          createdAt: new Date(),
+          createdBy: invitation.createdBy,
+          expiresAt: invitation.expiresAt,
+          isActive: true,
+        };
+
+        await setDoc(doc(getDb(), USERS_COLLECTION, user.uid), userDoc);
+        return true;
       });
-
-      const userDoc: CensusAccessUser = {
-        id: user.uid,
-        email: user.email.toLowerCase(),
-        displayName: user.displayName || '',
-        role: invitation.role,
-        createdAt: new Date(),
-        createdBy: invitation.createdBy,
-        expiresAt: invitation.expiresAt,
-        isActive: true,
-      };
-
-      await setDoc(doc(getDb(), USERS_COLLECTION, user.uid), userDoc);
-      return true;
     },
 
     checkUserAccess,
 
     async logAccess(config: Omit<CensusAccessLog, 'id' | 'timestamp'>): Promise<void> {
       try {
-        await runtime.ready;
-
-        await addDoc(collection(getDb(), LOGS_COLLECTION), {
-          ...config,
-          timestamp: serverTimestamp(),
-          userAgent: getUserAgent(),
+        await withRuntime(async () => {
+          await addDoc(collection(getDb(), LOGS_COLLECTION), {
+            ...config,
+            timestamp: serverTimestamp(),
+            userAgent: getUserAgent(),
+          });
         });
       } catch (error) {
         censusAccessLogger.error('Error logging access', error);
@@ -201,10 +203,11 @@ export const createCensusAccessService = ({
 
     async getAuthorizedEmails(): Promise<CensusAuthorizedEmail[]> {
       try {
-        await runtime.ready;
-        const q = query(collection(getDb(), AUTHORIZED_EMAILS_COLLECTION));
-        const snap = await getDocs(q);
-        return snap.docs.map(docSnap => docSnap.data() as CensusAuthorizedEmail);
+        return await withRuntime(async () => {
+          const q = query(collection(getDb(), AUTHORIZED_EMAILS_COLLECTION));
+          const snap = await getDocs(q);
+          return snap.docs.map(docSnap => docSnap.data() as CensusAuthorizedEmail);
+        });
       } catch (err) {
         censusAccessLogger.error('Error getting authorized emails', err);
         return [];
@@ -217,13 +220,14 @@ export const createCensusAccessService = ({
       addedBy: string
     ): Promise<void> {
       try {
-        await runtime.ready;
-        const normalizedEmail = email.toLowerCase().trim();
-        await setDoc(doc(getDb(), AUTHORIZED_EMAILS_COLLECTION, normalizedEmail), {
-          email: normalizedEmail,
-          role,
-          addedAt: serverTimestamp(),
-          addedBy,
+        await withRuntime(async () => {
+          const normalizedEmail = email.toLowerCase().trim();
+          await setDoc(doc(getDb(), AUTHORIZED_EMAILS_COLLECTION, normalizedEmail), {
+            email: normalizedEmail,
+            role,
+            addedAt: serverTimestamp(),
+            addedBy,
+          });
         });
       } catch (err) {
         censusAccessLogger.error('Error adding authorized email', err);
@@ -233,8 +237,9 @@ export const createCensusAccessService = ({
 
     async removeAuthorizedEmail(email: string): Promise<void> {
       try {
-        await runtime.ready;
-        await deleteDoc(doc(getDb(), AUTHORIZED_EMAILS_COLLECTION, email.toLowerCase().trim()));
+        await withRuntime(async () => {
+          await deleteDoc(doc(getDb(), AUTHORIZED_EMAILS_COLLECTION, email.toLowerCase().trim()));
+        });
       } catch (err) {
         censusAccessLogger.error('Error removing authorized email', err);
         throw err;
@@ -268,8 +273,9 @@ export const createCensusAccessService = ({
           isActive: true,
         };
 
-        await runtime.ready;
-        await setDoc(doc(getDb(), USERS_COLLECTION, userId), newUser);
+        await withRuntime(async () => {
+          await setDoc(doc(getDb(), USERS_COLLECTION, userId), newUser);
+        });
 
         return newUser;
       } catch (err) {
