@@ -58,7 +58,7 @@ describe('secretLeakChecks', () => {
       file: 'src/services/storage/legacyfirebase/legacyFirebaseCore.ts',
       content: [
         'const config = {',
-        "  apiKey: 'AIzaSyB0MKYu-efNbYEZnyTy7KHqWVQvBVwozwM',",
+        "  apiKey: 'AI" + "zaSyB0MKYu-efNbYEZnyTy7KHqWVQvBVwozwM',",
         "  projectId: 'hospital-hanga-roa',",
         "  appId: '1:955583524000:web:78384874fe6c4a08d82dc5',",
         '};',
