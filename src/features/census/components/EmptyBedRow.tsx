@@ -44,10 +44,7 @@ export const EmptyBedRow: React.FC<EmptyBedRowProps> = ({
         style={{ width: columns.type }}
         className="py-0 px-1 border-r border-slate-100 text-center"
       >
-        <MedicalBadge
-          variant={bed.type === 'UTI' ? 'red' : 'slate'}
-          className="opacity-40 scale-90"
-        >
+        <MedicalBadge variant="slate" className="opacity-40 scale-90">
           {bed.type}
         </MedicalBadge>
       </td>

@@ -40,7 +40,7 @@
 
 ## Siguiente bloque recomendado
 
-1. Ejecutar la próxima ola de megatests sobre `firestore-rules`, `minsalStatsCalculator` o `DailyRecordRepository`
+1. Ejecutar la próxima ola de megatests sobre `firestore-rules` o `minsalStatsCalculator`
 2. Mantener la cadencia mensual definida en `docs/FOUNDATION_MAINTENANCE_CADENCE.md`
 3. Sostener `typecheck`, `lint` y `check:repo-hygiene` en verde sin reabrir shims ni deep imports
 
@@ -56,7 +56,7 @@
 - `B18` completado: `ControllerResult` se centraliza en `src/shared/contracts/controllerResult.ts`, `shared/census/patientContracts.ts` queda como shim de compatibilidad y `check:repo-hygiene` bloquea imports nuevos hacia esos aliases ambiguos.
 - `B11` completado: `application/`, `hooks/` y `services/` no-repository dejan de importar contratos raíz de `dailyRecord` y ahora consumen `src/application/shared/dailyRecordContracts` o `src/services/contracts/dailyRecordServiceContracts`; `hooks/contracts/dailyRecordHookContracts.ts` queda como shim.
 - `B19` completado: inventario priorizado de megatests en `docs/TEST_MEGATEST_BACKLOG.md`.
-- `B20` completado: `ClinicalDocumentsWorkspace.test.tsx` se partió en dos suites (`ClinicalDocumentsWorkspace.test.tsx` + `ClinicalDocumentsWorkspace.behavior.test.tsx`); `useBedManagement.test.ts` se dividió en `useBedManagement.patient-updates.test.ts` y `useBedManagement.operations.test.ts`; la ola siguiente también partió `PatientRowOrbitalQuickActions.test.tsx` en suites `behavior` + `visibility` y `transferService.test.ts` en suites `mutations` + `queries`.
+- `B20` completado: `ClinicalDocumentsWorkspace.test.tsx` se partió en dos suites (`ClinicalDocumentsWorkspace.test.tsx` + `ClinicalDocumentsWorkspace.behavior.test.tsx`); `useBedManagement.test.ts` se dividió en `useBedManagement.patient-updates.test.ts` y `useBedManagement.operations.test.ts`; la ola siguiente también partió `PatientRowOrbitalQuickActions.test.tsx` en suites `behavior` + `visibility`, `transferService.test.ts` en suites `mutations` + `queries` y `DailyRecordRepository.test.ts` en suites `reads` + `lifecycle`.
 - `B21` completado: clasificación de documentación canónica, operativa y generada en `docs/DOCUMENTATION_MAP.md`.
 - `B22` completado: decisión explícita sobre `docs/api` como artefacto generado versionado temporalmente.
 - `B23` completado: mapa corto de documentación y marcadores de lectura para `docs/api` y `reports`.
