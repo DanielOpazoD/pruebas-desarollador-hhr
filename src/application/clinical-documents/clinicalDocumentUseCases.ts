@@ -1,7 +1,7 @@
 import type {
   ClinicalDocumentAuditActor,
   ClinicalDocumentRecord,
-} from '@/features/clinical-documents/public';
+} from '@/features/clinical-documents';
 import {
   createApplicationFailed,
   createApplicationSuccess,

@@ -1,7 +1,7 @@
 import React from 'react';
 import { DocumentOption, DocumentTypeOption, ActiveTextMark } from './types';
 import { CustomMark } from '@/services/pdf/imagingRequestPdfService';
-import type { PatientData } from '@/shared/census/patientContracts';
+import type { PatientData } from '@/types/domain/patient';
 import {
   splitPatientName,
   calculateAge,

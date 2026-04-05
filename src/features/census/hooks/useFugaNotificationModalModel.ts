@@ -10,7 +10,7 @@ import {
   resolveFugaRecipients,
   validateFugaNotificationRequest,
 } from '@/features/census/controllers/fugaNotificationPolicyController';
-import { formatDateDDMMYYYY } from '@/utils/dateUtils';
+import { formatDateDDMMYYYY } from '@/utils/dateFormattingUtils';
 import type { DischargeData } from '@/features/census/contracts/censusMovementContracts';
 
 interface UseFugaNotificationModalModelParams {

@@ -1,7 +1,7 @@
 import type {
   DailyRecordBedLayoutState,
   DailyRecordDateRef,
-} from '@/types/domain/dailyRecordSlices';
+} from '@/application/shared/dailyRecordContracts';
 
 interface BedDescriptor {
   id: string;

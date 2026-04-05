@@ -7,7 +7,7 @@ import {
   resolveMovementSummaryState,
   resolveStaffSelectorsClassName,
   resolveStaffSelectorsState,
-} from '@/features/census/public';
+} from '@/features/census';
 import type { DischargeData, TransferData } from '@/types/domain/movements';
 
 interface CensusStaffData {

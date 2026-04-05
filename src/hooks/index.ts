@@ -63,8 +63,11 @@ export { useHandoffLogic } from './useHandoffLogic';
 export { useExamRequest } from './useExamRequest';
 
 // Re-export types from hooks that define them
-export type { DailyRecordContextType, DailyRecordPatch } from './useDailyRecordTypes';
-export type { SyncStatus } from './useDailyRecordTypes';
+export type {
+  DailyRecordContextType,
+  DailyRecordPatch,
+} from '@/context/dailyRecordContextContracts';
+export type { SyncStatus } from '@/context/dailyRecordContextContracts';
 export type { BedManagementActions } from './useBedManagement';
 export type { ClinicalCribActions } from './useClinicalCrib';
 export type { ValidationResult, PatientValidationActions } from './usePatientValidation';

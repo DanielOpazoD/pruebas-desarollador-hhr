@@ -1,4 +1,4 @@
-import { parseTimeMinutes, resolveClinicalDayBounds } from '@/utils/dateUtils';
+import { parseTimeMinutes, resolveClinicalDayBounds } from '@/utils/clinicalDayUtils';
 
 export const MOVEMENT_DATE_TIME_OUT_OF_RANGE_ERROR = 'Fecha/hora fuera de rango para el turno.';
 

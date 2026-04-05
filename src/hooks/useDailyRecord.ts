@@ -15,7 +15,7 @@ import { useDailyRecordCopyActions } from '@/hooks/useDailyRecordCopyActions';
 import type { RemoteSyncRuntimeStatus } from '@/services/repositories/repositoryConfig';
 
 // Types
-import { DailyRecordContextType } from './useDailyRecordTypes';
+import { DailyRecordContextType } from '@/context/dailyRecordContextContracts';
 
 /**
  * Main hook for daily record management.

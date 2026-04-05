@@ -1,5 +1,5 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { DailyRecordContextType } from '@/hooks/useDailyRecordTypes';
+import { DailyRecordContextType } from '@/context/dailyRecordContextContracts';
 import { UseDateNavigationReturn } from '@/hooks/useDateNavigation';
 import { UseCensusEmailReturn } from '@/hooks/useCensusEmail';
 import { UseFileOperationsReturn } from '@/hooks/useFileOperations';

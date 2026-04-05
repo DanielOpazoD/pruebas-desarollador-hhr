@@ -1,4 +1,4 @@
-import type { ShiftSchedule } from '@/utils/dateUtils';
+import type { ShiftSchedule } from '@/utils/clinicalDayUtils';
 
 export const resolvePrintableShiftLabel = (
   selectedShift: 'day' | 'night' | undefined,

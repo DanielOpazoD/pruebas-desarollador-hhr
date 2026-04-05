@@ -65,9 +65,9 @@ Entrega de turno de enfermeria y medicos, con flujos de gestion, delivery y hand
 - [clinicalEventsPanelController.ts](/Users/danielopazodamiani/Desktop/HHR%20Tracker%20Marzo%202026/src/features/handoff/controllers/clinicalEventsPanelController.ts)
   para defaults, sorting y payload del panel de eventos clinicos.
 
-El consumo externo a la feature debe entrar por `public.ts` o `index.ts`. Los imports profundos a
-`components/`, `controllers/` o bridges internos quedan reservados para implementación interna del
-feature.
+El consumo externo a la feature debe entrar por `@/features/handoff`. Los imports profundos a
+`components/`, `controllers/`, `hooks/` o bridges internos quedan reservados para implementación
+interna del feature.
 
 ## Checks recomendados
 

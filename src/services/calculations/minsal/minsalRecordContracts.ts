@@ -1,3 +1,3 @@
-import type { DailyRecordMovementState } from '@/types/domain/dailyRecordSlices';
+import type { DailyRecordMovementState } from '@/services/contracts/dailyRecordServiceContracts';
 
 export type MinsalDailyRecord = DailyRecordMovementState;

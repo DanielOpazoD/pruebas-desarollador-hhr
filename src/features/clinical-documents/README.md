@@ -77,9 +77,10 @@
 
 ## Runtime boundaries
 
-- El consumo externo a la feature debe entrar por `index.ts` o `public.ts`. `public.ts` es la
-  superficie permitida para `application` y `shared` cuando necesitan tipos, helpers del
-  workspace o servicios documentales sin entrar por internals.
+- El consumo externo a la feature debe entrar por `@/features/clinical-documents`. `index.ts`
+  reexporta `public.ts` y es la única superficie soportada para `application`, `shared` y otros
+  módulos que necesiten tipos, helpers del workspace o servicios documentales sin entrar por
+  internals.
 - La hoja principal no debe recuperar `if` especiales por `documentType`; la extensibilidad entra por definiciones/section renderers.
 - Todo documento/template leído o persistido debe pasar por contratos runtime antes de salir del repositorio.
 - La impresión/exportación debe reportar fallos por telemetría operativa y no depender de logs sueltos.
@@ -91,8 +92,8 @@
   volver a formatear inline según origen (`finf`, `sourceDailyRecordDate`, `audit.updatedAt`).
 - Los servicios del feature que lean/escriban settings remotos deben consumir puertos/runtime adapters
   inyectables; `defaultFirestoreRuntime` no debe reaparecer como dependencia directa del feature.
-- `scripts/check-clinical-documents-feature-boundary.mjs` bloquea imports profundos nuevos desde
-  fuera de la feature para que `application` y `shared` dependan solo de entrypoints públicos.
+- `check:repo-hygiene` bloquea imports profundos nuevos desde fuera de la feature para que
+  `application` y `shared` dependan solo del entrypoint público.
 
 ## Test entrypoints recomendados
 

@@ -1,6 +1,6 @@
 import { useMemo, useCallback } from 'react';
 import type { DailyRecordStaffingState } from '@/application/shared/dailyRecordContracts';
-import { DailyRecordPatch } from './useDailyRecordTypes';
+import { DailyRecordPatch } from '@/context/dailyRecordContextContracts';
 import { useLatestRef } from '@/hooks/useLatestRef';
 
 export const useNurseManagement = (

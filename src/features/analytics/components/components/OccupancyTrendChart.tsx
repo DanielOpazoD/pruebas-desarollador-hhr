@@ -15,7 +15,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { DailyStatsSnapshot } from '@/types/minsalTypes';
-import { formatDateDDMMYYYY } from '@/utils/dateUtils';
+import { formatDateDDMMYYYY } from '@/utils/dateFormattingUtils';
 import { resolveAnalyticsPresentationCopy } from '@/features/analytics/controllers/minsalAnalyticsPresentationController';
 
 interface OccupancyTrendChartProps {

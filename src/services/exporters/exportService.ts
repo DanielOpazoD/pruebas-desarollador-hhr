@@ -9,7 +9,7 @@ import {
 import type {
   DailyRecordCsvExportState,
   DailyRecordDateRef,
-} from '@/types/domain/dailyRecordSlices';
+} from '@/services/contracts/dailyRecordServiceContracts';
 import {
   createApplicationFailed,
   createApplicationSuccess,

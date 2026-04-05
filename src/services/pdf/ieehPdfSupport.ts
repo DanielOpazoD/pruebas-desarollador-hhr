@@ -1,6 +1,6 @@
 import type { PatientData } from '@/services/contracts/patientServiceContracts';
 import { calculateAge, formatDateToCL, splitPatientName } from '@/utils/clinicalUtils';
-import { calculateDischargeStayDays } from '@/utils/dateUtils';
+import { calculateDischargeStayDays } from '@/utils/clinicalDayUtils';
 import type { DischargeFormData } from './ieehPdfContracts';
 
 const CHAR_SPACING = 1;

@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { BEDS } from '@/constants/beds';
 import { TableColumnConfig } from '@/context/TableConfigContext';
-import { getTodayISO } from '@/utils/dateUtils';
+import { getTodayISO } from '@/utils/dateFormattingUtils';
 import type { ControllerConfirmDescriptor } from '@/shared/contracts/controllers/confirmDescriptor';
 import {
   buildCensusBedRows,

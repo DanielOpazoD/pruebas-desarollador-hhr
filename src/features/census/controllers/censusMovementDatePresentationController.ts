@@ -1,4 +1,4 @@
-import { formatDateDDMMYYYY } from '@/utils/dateUtils';
+import { formatDateDDMMYYYY } from '@/utils/dateFormattingUtils';
 import {
   isMovementDateAllowed,
   isMovementDateTimeAllowed,

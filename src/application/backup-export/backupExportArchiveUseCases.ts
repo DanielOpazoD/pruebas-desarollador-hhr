@@ -10,14 +10,14 @@ import {
   mergeMonthlyRecordsForBackup,
   resolveHandoffBackupStaff,
 } from '@/hooks/controllers/exportManagerController';
-import { getShiftSchedule } from '@/utils/dateUtils';
+import { getShiftSchedule } from '@/utils/clinicalDayUtils';
 import { validateCriticalFields } from '@/services/validation/criticalFieldsValidator';
 import type { CensusExportRecord } from '@/services/contracts/censusExportServiceContracts';
 import type { HandoffPdfRecord } from '@/services/pdf/contracts/handoffPdfContracts';
 import type {
   DailyRecordCriticalValidationState,
   DailyRecordCudyrExportState,
-} from '@/types/domain/dailyRecordSlices';
+} from '@/application/shared/dailyRecordContracts';
 
 type HandoffBackupRecord = HandoffPdfRecord &
   DailyRecordCriticalValidationState &

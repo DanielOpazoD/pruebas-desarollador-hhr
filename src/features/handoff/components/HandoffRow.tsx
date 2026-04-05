@@ -3,7 +3,7 @@ import { PatientData } from '@/domain/handoff/patientContracts';
 import type { ClinicalEvent } from '@/types/domain/clinicalEvents';
 import { AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
-import { calculateHospitalizedDays } from '@/utils/dateUtils';
+import { calculateHospitalizedDays } from '@/utils/clinicalDayUtils';
 import { useDailyRecordData } from '@/context/DailyRecordContext';
 import {
   HandoffBedCell,

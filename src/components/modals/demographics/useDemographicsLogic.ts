@@ -10,7 +10,7 @@ import {
   BiologicalSex,
 } from './types';
 import { buildLocalData, normalizeNamePart, composeFullName, calculateFormattedAge } from './utils';
-import type { PatientData } from '@/shared/census/patientContracts';
+import type { PatientData } from '@/types/domain/patient';
 
 interface UseDemographicsLogicProps {
   data: DemographicSubset;

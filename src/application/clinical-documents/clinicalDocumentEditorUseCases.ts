@@ -4,7 +4,7 @@ import {
   serializeClinicalDocument,
   type ClinicalDocumentDraftBaseState,
   type ClinicalDocumentRecord,
-} from '@/features/clinical-documents/public';
+} from '@/features/clinical-documents';
 import { executePersistClinicalDocumentDraft } from '@/application/clinical-documents/clinicalDocumentUseCases';
 import type { ApplicationOutcome } from '@/application/shared/applicationOutcome';
 

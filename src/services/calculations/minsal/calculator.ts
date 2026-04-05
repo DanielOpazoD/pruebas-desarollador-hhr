@@ -5,7 +5,7 @@ import { MinsalStatistics, SpecialtyStats, PatientTraceability } from '@/types/m
 import { normalizeSpecialty, isFachEvacuationMethod } from './normalization';
 import { countOccupiedBeds, countBlockedBeds, calculateDailySnapshot } from './snapshot';
 import { getPatientsBySpecialty } from './specialty';
-import { calculateDischargeStayDays } from '@/utils/dateUtils';
+import { calculateDischargeStayDays } from '@/utils/clinicalDayUtils';
 import { createEpisodeAdmissionTracker } from './episodeTracker';
 import type { MinsalDailyRecord } from './minsalRecordContracts';
 import { normalizeMovementReportingSnapshot } from './movementCompatibility';

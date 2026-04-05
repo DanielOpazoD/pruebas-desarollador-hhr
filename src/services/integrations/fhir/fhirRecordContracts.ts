@@ -1,3 +1,6 @@
-import type { DailyRecordBedsState, DailyRecordDateRef } from '@/types/domain/dailyRecordSlices';
+import type {
+  DailyRecordBedsState,
+  DailyRecordDateRef,
+} from '@/services/contracts/dailyRecordServiceContracts';
 
 export type FhirRecord = DailyRecordBedsState & DailyRecordDateRef;

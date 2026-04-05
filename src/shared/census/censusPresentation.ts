@@ -1,4 +1,4 @@
-import { formatDateDDMMYYYY } from '@/utils/dateUtils';
+import { formatDateDDMMYYYY } from '@/utils/dateFormattingUtils';
 
 const parseIsoAtNoon = (isoDate: string): Date | null => {
   const [year, month, day] = isoDate.split('-').map(Number);

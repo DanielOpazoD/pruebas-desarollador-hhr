@@ -1,4 +1,4 @@
-import type { PatientData, GinecobstetriciaType } from '@/shared/census/patientContracts';
+import type { PatientData, GinecobstetriciaType } from '@/types/domain/patient';
 
 export const isGinecobstetriciaSpecialty = (specialty?: string): boolean =>
   specialty === 'Ginecobstetricia';

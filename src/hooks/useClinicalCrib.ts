@@ -5,7 +5,7 @@
  */
 
 import { useCallback } from 'react';
-import type { DailyRecordBedsState } from '@/types/domain/dailyRecordSlices';
+import type { DailyRecordBedsState } from '@/application/shared/dailyRecordContracts';
 import type { DailyRecordPatch } from '@/application/shared/dailyRecordContracts';
 import type { DailyRecord } from '@/application/shared/dailyRecordContracts';
 import { PatientData } from '@/hooks/contracts/patientHookContracts';

@@ -7,7 +7,7 @@
 
 import { PatientData } from '@/services/contracts/patientServiceContracts';
 import { BedType } from '@/types/domain/beds';
-import type { DailyRecordCudyrState } from '@/types/domain/dailyRecordSlices';
+import type { DailyRecordCudyrState } from '@/services/contracts/dailyRecordServiceContracts';
 import { BEDS } from '@/constants/beds';
 import { getCategorization } from './CudyrScoreUtils';
 

@@ -5,7 +5,7 @@ import {
   MovementCreationErrorCode,
 } from '@/hooks/controllers/patientMovementCreationController';
 import { MovementKind } from '@/hooks/controllers/patientMovementCreationErrorPresentation';
-import { ControllerResult } from '@/shared/controllerResult';
+import { ControllerResult } from '@/shared/contracts/controllerResult';
 
 type MovementCreationResolution<TValue extends { updatedRecord: DailyRecord }> = ControllerResult<
   TValue,

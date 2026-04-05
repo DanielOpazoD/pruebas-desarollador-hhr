@@ -2,7 +2,7 @@ import type { DailyRecord } from '@/services/contracts/dailyRecordServiceContrac
 import type { DischargeData, TransferData } from '@/types/domain/movements';
 import type { PatientData } from '@/types/domain/patient';
 import { deepClone } from '@/utils/deepClone';
-import { normalizeDateOnly } from '@/utils/dateUtils';
+import { normalizeDateOnly } from '@/utils/clinicalDayUtils';
 import {
   getAvailableDates,
   getForDate,

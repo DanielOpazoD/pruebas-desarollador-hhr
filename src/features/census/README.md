@@ -22,6 +22,13 @@ Módulo central del producto: censo diario, acciones sobre camas/pacientes, movi
 - Si un consumer histórico importa el mismo basename desde `src/hooks/controllers`, ese archivo existe solo como shim de compatibilidad.
 - Nuevos cambios en controllers de `census` deben entrar por la ruta de la feature.
 
+## API pública mínima
+
+- Código fuera de `src/features/census/**` debe consumir `census` solo desde `@/features/census`.
+- `src/features/census/index.ts` reexporta `public.ts` y es el único entrypoint externo soportado para código productivo.
+- Imports directos a `components/`, `hooks/`, `controllers/`, `contracts/`, `types/` o `context/` desde fuera de la feature se consideran saltos de boundary.
+- Excepción intencional: `src/tests/**` puede importar internals para testear unidades puras; `src/hooks/controllers/**` mantiene shims históricos mientras exista compatibilidad de transición.
+
 ## Flujos críticos
 
 ### Acción de movimiento
@@ -179,6 +186,7 @@ botón IEEH
 - `hooks/controllers` no debe volver a alojar implementaciones paralelas de controllers dueños de `census`.
 - `components/` no debe recalcular reglas clínicas ya resueltas por controllers.
 - Las acciones del censo deben salir de los command/runtime controllers, no de callbacks ad hoc embebidos.
+- Fuera de la feature, el acceso permitido es `@/features/census`; cualquier subruta interna queda reservada al módulo.
 - La tabla web puede abreviar visualmente especialidades concretas como `GyO` o `TMT`, pero esas
   etiquetas no deben filtrarse a persistencia ni contratos de dominio del censo.
 - El formateo de fechas compactas de `census` debe reutilizar presentation helpers compartidos;

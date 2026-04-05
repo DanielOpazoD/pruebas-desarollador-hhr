@@ -1,5 +1,5 @@
 import type { DailyRecordDateRef } from '@/application/shared/dailyRecordContracts';
-import { getTodayISO } from '@/utils/dateUtils';
+import { getTodayISO } from '@/utils/dateFormattingUtils';
 
 export interface StabilityRules {
   isDateLocked: boolean;

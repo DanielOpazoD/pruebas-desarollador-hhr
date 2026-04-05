@@ -1,4 +1,4 @@
-import { formatDateDDMMYYYY as formatDate } from '@/utils/dateUtils';
+import { formatDateDDMMYYYY as formatDate } from '@/utils/dateFormattingUtils';
 import { resolveSendingRecipients } from '@/hooks/controllers/censusEmailRecipientsController';
 import { buildCensusWorkbookPlan } from '@/hooks/controllers/censusExcelSheetController';
 import {

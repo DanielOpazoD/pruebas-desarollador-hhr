@@ -1,4 +1,4 @@
-import { normalizeDateOnly } from '@/utils/dateUtils';
+import { normalizeDateOnly } from '@/utils/clinicalDayUtils';
 
 interface CalculateHospitalizedDaysParams {
   admissionDate?: string;

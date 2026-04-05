@@ -3,7 +3,7 @@ import { BEDS } from '@/constants/beds';
 import type { CudyrScore } from '@/types/domain/cudyr';
 import type { HandoffPdfRecord } from '@/services/pdf/contracts/handoffPdfContracts';
 import { resolveNightShiftNurses } from '@/services/staff/dailyRecordStaffing';
-import { formatDateDDMMYYYY, formatTimeHHMM } from '@/utils/dateUtils';
+import { formatDateDDMMYYYY, formatTimeHHMM } from '@/utils/dateFormattingUtils';
 import { AutoTableFunction, CellHookData, JsPDFWithAutoTable } from './handoffPdfTypes';
 
 const getCudyrScores = (score: CudyrScore) => {

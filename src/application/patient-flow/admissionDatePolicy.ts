@@ -3,7 +3,7 @@ import {
   normalizeDateOnly,
   parseTimeMinutes,
   resolveClinicalDayBounds,
-} from '@/utils/dateUtils';
+} from '@/utils/clinicalDayUtils';
 
 export interface AdmissionDatePolicyInput {
   recordDate: string;

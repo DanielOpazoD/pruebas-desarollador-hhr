@@ -7,7 +7,7 @@
  */
 
 import { PatientData } from '@/services/contracts/patientServiceContracts';
-import type { DailyRecordCriticalValidationState } from '@/types/domain/dailyRecordSlices';
+import type { DailyRecordCriticalValidationState } from '@/services/contracts/dailyRecordServiceContracts';
 import { PatientStatus } from '@/types/domain/patientClassification';
 import { BEDS } from '@/constants/beds';
 

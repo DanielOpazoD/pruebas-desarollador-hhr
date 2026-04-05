@@ -10,7 +10,7 @@ import { buildCudyrWorkbook } from './cudyrWorkbookBuilder';
 import { getRecordFromFirestore } from '@/services/storage/firestore';
 import { resolvePreferredDailyRecord } from '@/services/repositories/dailyRecordSyncCompatibility';
 import { cudyrExportLogger } from '@/services/cudyr/cudyrLoggers';
-import type { DailyRecordCudyrExportState } from '@/types/domain/dailyRecordSlices';
+import type { DailyRecordCudyrExportState } from '@/services/contracts/dailyRecordServiceContracts';
 
 const fetchDailyRecord = async (dateStr: string): Promise<DailyRecordCudyrExportState | null> => {
   try {

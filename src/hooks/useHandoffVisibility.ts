@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import type { DailyRecord } from '@/application/shared/dailyRecordContracts';
 import { BEDS } from '@/constants/beds';
-import { isAdmittedDuringShift } from '@/utils/dateUtils';
+import { isAdmittedDuringShift } from '@/utils/clinicalDayUtils';
 import {
   getVisibleHandoffBeds,
   hasVisibleHandoffPatients,

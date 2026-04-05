@@ -1,12 +1,12 @@
 import type { Workbook } from 'exceljs';
 import { PatientData } from '@/services/contracts/patientServiceContracts';
 import { BEDS } from '@/constants/beds';
-import { formatDateDDMMYYYY } from '@/utils/dateUtils';
+import { formatDateDDMMYYYY } from '@/utils/dateFormattingUtils';
 import { createWorkbook } from './excelUtils';
 import { getBedTypeForRecord } from '../../utils/bedTypeUtils';
 import { resolveDayShiftNurses } from '@/services/staff/dailyRecordStaffing';
 import { formatCensusDateTime } from '@/shared/census/censusPresentation';
-import type { DailyRecordRawExportState } from '@/types/domain/dailyRecordSlices';
+import type { DailyRecordRawExportState } from '@/services/contracts/dailyRecordServiceContracts';
 
 const getRawHeader = () => [
   'FECHA',

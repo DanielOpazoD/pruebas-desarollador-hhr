@@ -1,4 +1,4 @@
-import type { SyncStatus } from '@/hooks/useDailyRecordTypes';
+import type { SyncStatus } from '@/context/dailyRecordContextContracts';
 
 export interface DailyRecordMutationFlags {
   isPending: boolean;

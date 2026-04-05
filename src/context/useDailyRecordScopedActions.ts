@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
-import type { DailyRecordActionsContextType } from '@/hooks/useDailyRecordTypes';
+import type { DailyRecordActionsContextType } from '@/context/dailyRecordContextContracts';
 import type {
   DailyRecordBedActions,
   DailyRecordDayActions,
   DailyRecordHandoffActions,
   DailyRecordMovementActions,
   DailyRecordStaffActions,
-} from '@/hooks/useDailyRecordTypes';
+} from '@/context/dailyRecordContextContracts';
 import { useRequiredDailyRecordActionsContext } from '@/context/dailyRecordActionsContext';
 type DailyRecordCudyrActions = Pick<
   DailyRecordActionsContextType,

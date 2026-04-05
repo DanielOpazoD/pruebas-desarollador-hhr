@@ -9,7 +9,7 @@ import { DailyRecordProvider, StaffProvider } from '@/context';
 import { TableConfigProvider } from '@/context/TableConfigContext';
 import { UISettingsProvider } from '@/context/UISettingsContext';
 import { SecurityProvider } from '@/context/SecurityContext';
-import { DailyRecordContextType } from '@/hooks/useDailyRecordTypes';
+import { DailyRecordContextType } from '@/context/dailyRecordContextContracts';
 
 interface AppProvidersProps {
   children: ReactNode;

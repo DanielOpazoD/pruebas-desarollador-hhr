@@ -1,9 +1,9 @@
 import { DischargeData, TransferData } from '@/types/domain/movements';
 import { PatientData } from '@/services/contracts/patientServiceContracts';
-import type { DailyRecordCsvExportState } from '@/types/domain/dailyRecordSlices';
+import type { DailyRecordCsvExportState } from '@/services/contracts/dailyRecordServiceContracts';
 import { BEDS } from '@/constants/beds';
 import { CSV_HEADERS } from '@/constants/export';
-import { formatDateDDMMYYYY } from '@/utils/dateUtils';
+import { formatDateDDMMYYYY } from '@/utils/dateFormattingUtils';
 import { resolveExportableNursesText } from '@/services/staff/dailyRecordStaffing';
 
 const escapeCsvValue = (value: unknown): string => {
